@@ -117,7 +117,12 @@ Apache-2.0 **允许**二次开发、修改、商用和再分发，但有义务�
 2. [x] 放行 bootstrap 的批量删除确认（单命令 `CODEBUDDY_SAFE_DELETE_ENABLED=0`）
 3. [x] `pnpm-workspace.yaml` 中 `allowBuilds.cpu-features: false`
 4. [x] `pnpm bootstrap` 跑通；基线验证：`pnpm typecheck` 通过（3m54s）、`pnpm lint` 0 errors / 97 warnings（上游自带）
-5. [ ] 创建自有 Git 仓库并配置 `origin`
-6. [ ] L1 品牌替换（身份文件 + 图标 + 发行包命名）并提交
+5. [x] 创建自有 Git 仓库并配置 `origin`（github.com/ShiZiMiao/RaspberryCode，私有；上游版本标签按用户要求不保留）
+6. [x] L1 品牌替换完成（2026-10-26，commit 56b16368）：桌面身份（appId `dev.raspberrycode.app`、
+   productName `RaspberryCode`/`RaspberryCode Preview`、Linux 名 `raspberrycode`）、全套图标
+   （build/ 与 public/ 的 PNG/ICO/ICNS）、窗口标题/关于页/托盘/菜单/TUI 侧边栏、i18n 261 处、
+   功能耦合点（进程名匹配、安装目录探测、deep-link、CA 元数据、User-Agent）、版本号 0.1.0；
+   并修复 MemoryFileSystem 测试桩 Windows 路径缺陷（上游基线问题）
 7. [ ] 模型服务决策：接自有 Provider / API Key，移除官方网关转发与 OAuth
-8. [ ] L2–L4 按需分阶段推进
+8. [ ] L2–L4 按需分阶段推进（L2：包名/命令名 @zcode/* 与 zcode、内部报错文案、发行包目录命名；
+   L3：ZCODE_* 环境变量与 ~/.zcode 数据目录、协议标识；L4：服务端点与账号体系）
