@@ -18,7 +18,9 @@ supportedArchitectures:
     - current
     - glibc
 allowBuilds:
-  cpu-features: true
+  # Modified for RaspberryCode: 构建脚本经 reg.exe 探测 VS（本机安全策略黑名单拦截），
+  # 且仅是 ssh2 的可选 CPU 特性探测模块，跳过不影响功能。
+  cpu-features: false
   edgedriver: true
   electron: true
   electron-winstaller: true
