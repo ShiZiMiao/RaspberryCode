@@ -113,13 +113,14 @@ function collectWindowsForbiddenAppInstallDirs(
   const programFilesX86 = readEnvValue(env, "ProgramFiles(x86)");
   const programW6432 = readEnvValue(env, "ProgramW6432");
   const localAppData = readEnvValue(env, "LOCALAPPDATA");
+  // Modified for RaspberryCode: 安装目录候选随之改名（RaspberryCode 无历史安装目录需兼容）。
   const candidates = [
     options.appInstallDir,
     readEnvValue(env, ZCODE_WINDOWS_APP_INSTALL_DIR_ENV),
-    programFiles ? win32.join(programFiles, "ZCode") : null,
-    programFilesX86 ? win32.join(programFilesX86, "ZCode") : null,
-    programW6432 ? win32.join(programW6432, "ZCode") : null,
-    localAppData ? win32.join(localAppData, "Programs", "ZCode") : null,
+    programFiles ? win32.join(programFiles, "RaspberryCode") : null,
+    programFilesX86 ? win32.join(programFilesX86, "RaspberryCode") : null,
+    programW6432 ? win32.join(programW6432, "RaspberryCode") : null,
+    localAppData ? win32.join(localAppData, "Programs", "RaspberryCode") : null,
   ];
   const seen = new Set<string>();
   const result: string[] = [];

@@ -8,7 +8,7 @@ export function createManagedCdpDescriptor(
     id: browserId,
     generation,
     type: "cdp",
-    name: "ZCode Headless Chromium",
+    name: "RaspberryCode Headless Chromium", // Modified for RaspberryCode: 浏览器描述符显示名
     capabilities: {
       browser: [],
       tab: [],

@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 关于对话框断言随产品名同步
 import { describe, expect, it } from "vitest";
 import {
   createAboutSnapshot,
@@ -53,7 +54,7 @@ describe("about", () => {
     const options = createSystemAboutPanelOptions(appleSiliconSnapshot, 2026, "en-US");
 
     expect(options).toMatchObject({
-      applicationName: "ZCode Desktop App",
+      applicationName: "RaspberryCode Desktop App",
       applicationVersion: "version 0.1.7",
       copyright: "Copyright © 2026 ZCode.",
       credits: "Optimized for Apple Silicon.",
@@ -64,7 +65,7 @@ describe("about", () => {
     const options = createSystemAboutPanelOptions(appleSiliconSnapshot, 2026, "zh-CN");
 
     expect(options).toMatchObject({
-      applicationName: "ZCode Desktop App",
+      applicationName: "RaspberryCode Desktop App",
       applicationVersion: "版本 0.1.7",
       copyright: "版权所有 © 2026 ZCode。",
       credits: "已针对 Apple Silicon 优化。",

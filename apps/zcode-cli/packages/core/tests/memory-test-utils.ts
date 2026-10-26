@@ -1,5 +1,10 @@
 import { createFileSystemError, type FileSystemPort } from "@zcode/contracts";
 
+// Modified for RaspberryCode: Windows 下 path.join 生成反斜杠路径，与模板拼接的正斜杠键
+// 字符串不相等，内存文件系统按字符串查找会把存在文件误判为缺失（Memory 索引被渲染成空）。
+// 键统一归一化为正斜杠，读取侧再兜底模糊匹配；测试直读 files 时也用同一归一化键。
+export const canonicalPathKey = (value: string): string => value.replaceAll("\\", "/");
+
 export class MemoryFileSystem implements FileSystemPort {
   readonly createdDirectories = new Set<string>();
   readonly readRequests: Array<{ maxBytes?: number; path: string }> = [];
@@ -8,30 +13,45 @@ export class MemoryFileSystem implements FileSystemPort {
   constructor(
     readonly files: Record<string, string>,
     private readonly fileMtimes: Readonly<Record<string, number>> = {},
-  ) {}
+  ) {
+    for (const key of Object.keys(files)) {
+      const normalized = canonicalPathKey(key);
+      if (normalized !== key) {
+        files[normalized] = files[key];
+        delete files[key];
+      }
+    }
+  }
+
+  private resolveKey(path: string): string {
+    if (this.files[path] !== undefined) return path;
+    const normalized = canonicalPathKey(path);
+    return Object.keys(this.files).find((key) => canonicalPathKey(key) === normalized) ?? path;
+  }
 
   async createDirectory(request: { path: string }) {
-    this.createdDirectories.add(request.path);
+    this.createdDirectories.add(canonicalPathKey(request.path));
     return { path: request.path };
   }
 
   async stat(request: { path: string }) {
-    if (this.createdDirectories.has(request.path)) {
+    if (this.createdDirectories.has(canonicalPathKey(request.path))) {
       return { kind: "directory" as const, path: request.path, sizeBytes: 0 };
     }
-    const content = this.files[request.path];
+    const key = this.resolveKey(request.path);
+    const content = this.files[key];
     if (content === undefined) throw missingFile(request.path);
     return {
       kind: "file" as const,
       path: request.path,
       sizeBytes: Buffer.byteLength(content),
-      mtimeMs: this.fileMtimes[request.path],
+      mtimeMs: this.fileMtimes[key],
     };
   }
 
   async readTextFile(request: { path: string; encoding?: BufferEncoding; maxBytes?: number }) {
     this.readRequests.push({ maxBytes: request.maxBytes, path: request.path });
-    const content = this.files[request.path];
+    const content = this.files[this.resolveKey(request.path)];
     if (content === undefined) throw missingFile(request.path);
     const sizeBytes = Buffer.byteLength(content, "utf8");
     const maxBytes = request.maxBytes ?? sizeBytes;
@@ -49,7 +69,7 @@ export class MemoryFileSystem implements FileSystemPort {
 
   async readBinaryFile(request: { path: string; maxBytes?: number }) {
     this.readRequests.push({ maxBytes: request.maxBytes, path: request.path });
-    const content = this.files[request.path];
+    const content = this.files[this.resolveKey(request.path)];
     if (content === undefined) throw missingFile(request.path);
     const buffer = Buffer.from(content, "utf8");
     if (request.maxBytes !== undefined && buffer.byteLength > request.maxBytes) {
@@ -75,7 +95,7 @@ export class MemoryFileSystem implements FileSystemPort {
     maxBytes?: number;
   }) {
     this.readRequests.push({ maxBytes: request.maxBytes, path: request.path });
-    const content = this.files[request.path];
+    const content = this.files[this.resolveKey(request.path)];
     if (content === undefined) throw missingFile(request.path);
     const sizeBytes = Buffer.byteLength(content, "utf8");
     if (request.maxBytes !== undefined && sizeBytes > request.maxBytes) {
@@ -107,14 +127,15 @@ export class MemoryFileSystem implements FileSystemPort {
   }
 
   async writeTextFile(request: { content: string; path: string }) {
-    this.files[request.path] = request.content;
+    this.files[canonicalPathKey(request.path)] = request.content;
     return { bytesWritten: Buffer.byteLength(request.content, "utf8"), path: request.path };
   }
 
   async removeFile(request: { missingOk?: boolean; path: string }) {
-    const existed = this.files[request.path] !== undefined;
+    const key = this.resolveKey(request.path);
+    const existed = this.files[key] !== undefined;
     if (!existed && request.missingOk !== true) throw missingFile(request.path);
-    delete this.files[request.path];
+    delete this.files[key];
     return { path: request.path, removed: existed };
   }
 

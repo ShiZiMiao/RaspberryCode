@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 上下文段名断言随产品名同步
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -170,7 +171,7 @@ describe("ContextBuilder meta user context", () => {
     expect(dynamicSystem.split(AUTONOMY_APPENDIX_PROMPT)).toHaveLength(2);
   });
 
-  it("injects the stable ZCode Desktop Context before dynamic behavior", () => {
+  it("injects the stable RaspberryCode Desktop Context before dynamic behavior", () => {
     const result = createContextBuilder({
       workingDirectory: "/workspace",
       presentationSurface: "zcode_desktop",
@@ -188,14 +189,14 @@ describe("ContextBuilder meta user context", () => {
     );
     expect(desktopSections).toHaveLength(1);
     expect(desktopSections[0]).toMatchObject({
-      name: "ZCode Desktop Context",
+      name: "RaspberryCode Desktop Context",
       source: "desktop_context",
       injectionTarget: "system",
       cacheHint: "stable",
     });
     expect(desktopSections[0]?.content).toBe(
       [
-        "# ZCode Desktop Context",
+        "# RaspberryCode Desktop Context",
         "",
         "### Interactive views",
         "- No visualization output directory is supplied; inline Gen UI is unavailable.",
@@ -227,8 +228,8 @@ describe("ContextBuilder meta user context", () => {
     expect(desktopIndex).toBeLessThan(dynamicBehaviorIndex);
 
     expect(result.systemMessages).toHaveLength(3);
-    expect(result.systemMessages[1]?.content).toContain("# ZCode Desktop Context");
-    expect(result.systemMessages[2]?.content).not.toContain("# ZCode Desktop Context");
+    expect(result.systemMessages[1]?.content).toContain("# RaspberryCode Desktop Context");
+    expect(result.systemMessages[2]?.content).not.toContain("# RaspberryCode Desktop Context");
   });
 
   it("does not inject the Desktop context for the default terminal surface", () => {

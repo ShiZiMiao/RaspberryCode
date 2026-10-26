@@ -60,8 +60,9 @@ function generateSelfSignedCa(): { certPem: string; keyPem: string } {
   cert.validity.notAfter = notAfter;
 
   const attrs = [
-    { name: "commonName", value: "ZCode Network CA" },
-    { name: "organizationName", value: "ZCode" },
+    // Modified for RaspberryCode: 自签 CA 元数据随之改名。
+    { name: "commonName", value: "RaspberryCode Network CA" },
+    { name: "organizationName", value: "RaspberryCode" },
   ];
   cert.setSubject(attrs);
   cert.setIssuer(attrs); // 自签：issuer == subject

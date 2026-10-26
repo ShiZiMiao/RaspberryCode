@@ -109,7 +109,7 @@ export function createLinuxDeepLinkDesktopEntry(params: {
   productName?: string;
   iconName?: string;
 }): string {
-  const productName = params.productName ?? "ZCode";
+  const productName = params.productName ?? "RaspberryCode"; // Modified for RaspberryCode: deep-link 注册默认产品名
   const iconName = params.iconName ?? "zcode";
   const command = {
     executablePath: params.executablePath,

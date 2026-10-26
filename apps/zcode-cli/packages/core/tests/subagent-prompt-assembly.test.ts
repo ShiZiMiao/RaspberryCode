@@ -10,7 +10,7 @@ import { createTestAgentRuntime } from "./test-agent-runtime.js";
 import { buildPersistentAgentMemoryPrompt } from "../src/subagent/persistent-memory-prompt.js";
 import { resolvePersistentAgentMemoryRoot } from "../src/subagent/persistent-memory.js";
 import { createSubagentContextBuilder } from "../src/subagent/context-builder.js";
-import { MemoryFileSystem } from "./memory-test-utils.js";
+import { canonicalPathKey, MemoryFileSystem } from "./memory-test-utils.js";
 import { createTestSessionEventStore } from "./test-event-store.js";
 import { createTestModelFactory } from "./test-runtime-model.js";
 
@@ -489,12 +489,16 @@ describe("subagent provider-visible prompt assembly", () => {
     async (scope) => {
       const sessionId = createSessionId(`subagent-prompt-persistent-memory-${scope}`);
       const eventStore = createTestSessionEventStore();
-      const memoryRoot = resolvePersistentAgentMemoryRoot({
+      // Modified for RaspberryCode: Windows 下路径存在反斜杠形态，生产提示词按原始形态
+      // 渲染根目录文本，而 MemoryFileSystem 的键已归一化为正斜杠。两套键各司其职：
+      // rawMemoryRoot 用于比对提示词文本，memoryRoot 用于直读 files 记录。
+      const rawMemoryRoot = resolvePersistentAgentMemoryRoot({
         agentName: "persistent-reviewer",
         scope,
         storageRoot: "/storage",
         workspaceRoot: "/repo",
       });
+      const memoryRoot = canonicalPathKey(rawMemoryRoot);
       const fileSystemPort = new MemoryFileSystem({
         [`${memoryRoot}/MEMORY.md`]: "- [Review style](review-style.md) — keep reviews concise",
       });
@@ -599,7 +603,7 @@ describe("subagent provider-visible prompt assembly", () => {
       expect(childRequests).toHaveLength(2);
       const expectedMemoryPrompt = buildPersistentAgentMemoryPrompt({
         indexContent: "- [Review style](review-style.md) — keep reviews concise",
-        rootDir: memoryRoot,
+        rootDir: rawMemoryRoot,
         scope,
       });
       expect(systemContents(childRequests[0])[1]?.split("\n\nNotes:")[0]).toBe(
@@ -682,7 +686,7 @@ describe("subagent provider-visible prompt assembly", () => {
       expect(allMessageText(request)).not.toContain(
         "You help the user with software engineering work in the current workspace.",
       );
-      expect(allMessageText(request)).not.toContain("# ZCode Desktop Context");
+      expect(allMessageText(request)).not.toContain("# RaspberryCode Desktop Context");
     }
   });
 });

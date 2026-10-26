@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 安装目录 fixture 随产品名现代化
 import {
   existsSync,
   mkdirSync,
@@ -85,24 +86,24 @@ describe("paths", () => {
     expect(existsSync(join(newV2Dir, "setting.json.123.tmp"))).toBe(false);
   });
 
-  it("Windows 数据目录不能选择 ZCode 安装目录或其子目录", async () => {
+  it("Windows 数据目录不能选择 RaspberryCode 安装目录或其子目录", async () => {
     vi.resetModules();
 
     const { validateDataBaseDirTarget } = await import("../src/paths.js");
     const env = {
       ProgramFiles: "C:\\Program Files",
       LOCALAPPDATA: "C:\\Users\\tester\\AppData\\Local",
-      ZCODE_WINDOWS_APP_INSTALL_DIR: "C:\\Users\\tester\\AppData\\Local\\Programs\\ZCode",
+      ZCODE_WINDOWS_APP_INSTALL_DIR: "C:\\Users\\tester\\AppData\\Local\\Programs\\RaspberryCode",
     };
 
     expect(
-      validateDataBaseDirTarget("c:\\program files\\zcode", {
+      validateDataBaseDirTarget("c:\\program files\\raspberrycode", {
         platform: "win32",
         env,
       }),
     ).toMatchObject({ ok: false });
     expect(
-      validateDataBaseDirTarget("C:\\Users\\tester\\AppData\\Local\\Programs\\ZCode\\data", {
+      validateDataBaseDirTarget("C:\\Users\\tester\\AppData\\Local\\Programs\\RaspberryCode\\data", {
         platform: "win32",
         env,
       }),
@@ -115,17 +116,17 @@ describe("paths", () => {
     const { validateDataBaseDirTarget } = await import("../src/paths.js");
     const env = {
       LOCALAPPDATA: "C:\\Users\\tester\\AppData\\Local",
-      ZCODE_WINDOWS_APP_INSTALL_DIR: "C:\\Users\\tester\\AppData\\Local\\Programs\\ZCode",
+      ZCODE_WINDOWS_APP_INSTALL_DIR: "C:\\Users\\tester\\AppData\\Local\\Programs\\RaspberryCode",
     };
 
     expect(
-      validateDataBaseDirTarget("C:\\Users\\tester\\AppData\\Local\\Programs\\ZCodeData", {
+      validateDataBaseDirTarget("C:\\Users\\tester\\AppData\\Local\\Programs\\RaspberryCodeData", {
         platform: "win32",
         env,
       }),
     ).toEqual({ ok: true });
     expect(
-      validateDataBaseDirTarget("C:\\Users\\tester\\Documents\\ZCode", {
+      validateDataBaseDirTarget("C:\\Users\\tester\\Documents\\RaspberryCode", {
         platform: "win32",
         env,
       }),

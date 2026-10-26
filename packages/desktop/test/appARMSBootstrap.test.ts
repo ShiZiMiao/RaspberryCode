@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 应用名断言随产品名同步
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { runInNewContext } from "node:vm";
@@ -497,12 +498,12 @@ describe("appARMSBootstrap beforeReport", () => {
   it.each([
     {
       runtime: "Linux Preview",
-      applicationName: "ZCode Preview",
+      applicationName: "RaspberryCode Preview",
       executableName: "zcode-preview",
     },
     {
       runtime: "local development",
-      applicationName: "ZCode Dev",
+      applicationName: "RaspberryCode Dev",
       executableName: "Electron",
     },
   ])(

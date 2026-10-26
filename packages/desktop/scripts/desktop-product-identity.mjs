@@ -5,21 +5,23 @@
  */
 export const ZCODE_PREVIEW_IDENTITY_ENV = "ZCODE_PREVIEW_IDENTITY";
 
+// Modified for RaspberryCode: 品牌身份（appId / 产品名 / Linux 可执行名）替换为 RaspberryCode；
+// 开发态 AUMID 同步改名，避免与打包版 Shell 身份冲突。
 const PRODUCTION_IDENTITY = Object.freeze({
   flavor: "production",
-  appId: "dev.zcode.app",
-  productName: "ZCode",
-  linuxExecutableName: "zcode",
-  linuxPackageName: "zcode",
+  appId: "dev.raspberrycode.app",
+  productName: "RaspberryCode",
+  linuxExecutableName: "raspberrycode",
+  linuxPackageName: "raspberrycode",
   cuaHelperInstallVariant: null,
 });
 
 const PREVIEW_IDENTITY = Object.freeze({
   flavor: "preview",
-  appId: "dev.zcode.app.preview",
-  productName: "ZCode Preview",
-  linuxExecutableName: "zcode-preview",
-  linuxPackageName: "zcode-preview",
+  appId: "dev.raspberrycode.app.preview",
+  productName: "RaspberryCode Preview",
+  linuxExecutableName: "raspberrycode-preview",
+  linuxPackageName: "raspberrycode-preview",
   cuaHelperInstallVariant: "preview",
 });
 
@@ -84,7 +86,7 @@ export function resolveDesktopArtifactSuffix(env = process.env) {
  */
 export function resolveWindowsAppUserModelIdForFlavor(flavor, runtime = { isPackaged: true }) {
   if (runtime.isPackaged === false) {
-    return "cn.aminer.zcode";
+    return "dev.raspberrycode.app.dev";
   }
   return desktopProductIdentities[flavor === "preview" ? "preview" : "production"].appId;
 }

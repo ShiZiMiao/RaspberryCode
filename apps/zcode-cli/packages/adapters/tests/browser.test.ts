@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 浏览器描述符断言随产品名同步
 import { accessSync, constants } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
@@ -41,7 +42,7 @@ describe("managed CDP browser adapter", () => {
     expect(descriptors).toHaveLength(1);
     expect(descriptors[0]).toMatchObject({
       type: "cdp",
-      name: "ZCode Headless Chromium",
+      name: "RaspberryCode Headless Chromium",
       metadata: { headless: "true", launchMode: "managed", provider: "zcode-cli" },
     });
     expect(descriptors[0]?.id).toMatch(/^cdp:/u);

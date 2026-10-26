@@ -49,7 +49,8 @@ export function formatZCodeHostProcessName(label?: string): string {
 
 export function formatZCodeRendererProcessName(windowTitle?: string): string {
   const normalizedTitle = windowTitle?.trim();
-  if (!normalizedTitle || normalizedTitle === "ZCode") {
+  // Modified for RaspberryCode: 窗口标题基准名随产品名同步改名，与 desktopRuntimeEnv 的标题保持一致。
+  if (!normalizedTitle || normalizedTitle === "RaspberryCode") {
     return joinZCodeProcessName("renderer", "main");
   }
 
@@ -57,7 +58,7 @@ export function formatZCodeRendererProcessName(windowTitle?: string): string {
     return joinZCodeProcessName("renderer", "resource-manager");
   }
 
-  const remoteWindowPrefix = "ZCode - ";
+  const remoteWindowPrefix = "RaspberryCode - ";
   if (normalizedTitle.startsWith(remoteWindowPrefix)) {
     return joinZCodeProcessName(
       "renderer",

@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 窗口标题模拟值随产品名同步
 import {
   formatZCodeAgentProcessName,
   formatZCodeGpuProcessName,
@@ -95,7 +96,7 @@ describe("resourceManagerWindow", () => {
       {
         id: 1,
         isDestroyed: () => false,
-        getTitle: () => "ZCode",
+        getTitle: () => "RaspberryCode",
         webContents: { getOSProcessId: () => rendererPid },
       },
     ]);
@@ -131,7 +132,7 @@ describe("resourceManagerWindow", () => {
         groupKey: "gpu",
       });
       expect(byPid.get(rendererPid)).toMatchObject({
-        name: formatZCodeRendererProcessName("ZCode"),
+        name: formatZCodeRendererProcessName("RaspberryCode"),
         groupKey: "renderer",
       });
       expect(byPid.get(hostPid)).toMatchObject({
