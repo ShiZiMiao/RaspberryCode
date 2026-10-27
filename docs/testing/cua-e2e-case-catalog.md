@@ -8,7 +8,7 @@ Passing one platform never implies another platform passed.
 
 Evidence levels:
 
-- `desktop-e2e`: ZCode Electron UI/runtime path.
+- `desktop-e2e`: RaspberryCode Electron UI/runtime path.
 - `mcp-e2e`: real MCP transport plus deterministic broker/native oracle.
 - `live-macos`, `live-windows`, `live-linux`: real OS application and independent
   post-condition oracle.
@@ -66,14 +66,14 @@ model-visible raster -> integer x/y only
 | CU-35 |  P0 | Targetless `type`/`key` fails closed across focus changes                                                                                                          | keyboard schema/runtime contracts; C16 scoped positive path                                    | mcp-e2e + live platform                       |
 | CU-36 |  P0 | Mid-input focus/modal changes do not redirect input                                                                                                                | app/window identity and frontmost gates                                                        | live platform race lane                       |
 | CU-37 |  P1 | Similar same-app windows modify only the pinned window                                                                                                             | ZGE C13/M13                                                                                    | live-macos/windows                            |
-| CU-38 |  P0 | Two ZCode/controllers cannot steal lease; stale token/socket/PID reuse fails                                                                                       | controller admission/lease/isolation suites                                                    | desktop-e2e + live controller smoke           |
+| CU-38 |  P0 | Two RaspberryCode/controllers cannot steal lease; stale token/socket/PID reuse fails                                                                                       | controller admission/lease/isolation suites                                                    | desktop-e2e + live controller smoke           |
 | CU-39 |  P0 | Official CUA is unavailable in Subagent and available to Main Agent                                                                                                | producer runtime-scope preflight; consumer subagent policy tests                               | consumer integration                          |
 | CU-40 |  P1 | Similar third-party MCP names are not blocked by official-CUA policy                                                                                               | consumer subagent computer-use policy tests                                                    | consumer integration                          |
 | CU-41 |  P1 | Windows indicator appears for each Computer Use cell, backstop-clears 30s after the latest cell, and always clears on terminal/runtime failure                                | Windows operation-indicator suite                                                              | live-windows                                  |
 | CU-42 |  P0 | Windows locked/non-interactive/Session 0 refuses blind operation                                                                                                   | Windows desktop/session preflight suite                                                        | live-windows                                  |
 | CU-43 |  P1 | macOS background element action works; Windows app-scoped keyboard requires foreground                                                                             | macOS native workflows + Windows foreground gates                                              | live-macos + live-windows                     |
-| CU-44 |  P2 | Locale/theme/narrow layout keeps entry/tool cards and macOS permission onboarding readable; permission-panel copy follows the active ZCode locale                   | UI component tests, `cua-permission-panel-i18n.test.ts`, plus visual desktop sweep              | desktop-e2e visual                            |
-| CU-45 |  P1 | Linux standalone AT-SPI is tested without claiming ZCode Linux product support                                                                                     | LAV01-LAV68 and Linux readiness docs                                                           | live-linux standalone                         |
+| CU-44 |  P2 | Locale/theme/narrow layout keeps entry/tool cards and macOS permission onboarding readable; permission-panel copy follows the active RaspberryCode locale                   | UI component tests, `cua-permission-panel-i18n.test.ts`, plus visual desktop sweep              | desktop-e2e visual                            |
+| CU-45 |  P1 | Linux standalone AT-SPI is tested without claiming RaspberryCode Linux product support                                                                                     | LAV01-LAV68 and Linux readiness docs                                                           | live-linux standalone                         |
 | CU-46 |  P0 | A multimodal model clicks a canvas-only target from the delivered raster without AX/DOM coordinates, model-side frame-token relay, or ancestor-raster fallback     | producer internal-frame binding contracts plus `glm-x-preview-f` canvas live lane              | mcp-e2e + live-macos model lane               |
 | CU-47 |  P0 | `open_application` launches the named app deterministically: ordinary placeholder window ids are ignored, bundle identity outranks display name, localized name-only launch resolves uniquely, and the model never substitutes apps or loops over guessed names | producer ZGE M17-M20 direct/model lanes plus trajectory-step contract tests | mcp-e2e + live-macos model lane |
 | CU-48 |  P0 | Anthropic transport preserves real CUA observation/action block order; an unavailable raster exposes neither image_ref nor coordinate guidance                     | deterministic adapter/core golden tests; producer MaaS echo smoke is advisory                  | consumer integration + live-provider advisory |
@@ -211,13 +211,13 @@ Retained evidence:
 - consumer dogfood report under
   `dogfood-output/cua-comprehensive-20260821/report.md`;
 - model I/O trace at
-  `~/.zcode/cli/debug/model-io-sess_3a199ff0-35cf-4f1f-969b-d3b0a8b9d633.jsonl`.
+  `~/.raspberrycode/cli/debug/model-io-sess_3a199ff0-35cf-4f1f-969b-d3b0a8b9d633.jsonl`.
 - canvas model traces at
-  `~/.zcode/cli/debug/model-io-sess_39975407-4287-4fc0-bbda-1ad2c2ef1fd4.jsonl`
+  `~/.raspberrycode/cli/debug/model-io-sess_39975407-4287-4fc0-bbda-1ad2c2ef1fd4.jsonl`
   and
-  `~/.zcode/cli/debug/model-io-sess_c2d24f67-4b69-4411-9c7a-46feaa3c49c8.jsonl`.
+  `~/.raspberrycode/cli/debug/model-io-sess_c2d24f67-4b69-4411-9c7a-46feaa3c49c8.jsonl`.
 - 0820 image-first/recovery trace at
-  `~/.zcode/cli/debug/model-io-sess_47b6badf-9faa-43c2-a252-1ad6e3c21612.jsonl`.
+  `~/.raspberrycode/cli/debug/model-io-sess_47b6badf-9faa-43c2-a252-1ad6e3c21612.jsonl`.
 
 Not executed on this machine: CU-14 true dual-display hardware switching,
 CU-41/CU-42/the Windows half of CU-43, and CU-45 Linux AT-SPI. Their platform

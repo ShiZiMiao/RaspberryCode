@@ -15,7 +15,7 @@ adapter 默认使用打包的 ripgrep WASM，并在 WASM 不可用时降级到 J
 embedded branch 不暴露 direct `Grep` tool。input schema 不添加 `minLength`、`minimum`、
 `integer` 等额外限制。
 
-当前 ZCode 不按 model 动态切换 `Grep` description，所有模型使用同一份短文案。
+当前 RaspberryCode 不按 model 动态切换 `Grep` description，所有模型使用同一份短文案。
 
 `Grep` 原本按 Explore-only 内置工具设计。当前默认采用
 embedded search 分支，主智能体和 `Explore` child runtime 都不暴露 direct `Grep`；

@@ -208,7 +208,7 @@ function assertPackagedCuaHelper(context) {
     HELPER_APP_NAME,
   );
   if (!existsSync(appPath)) {
-    throw new Error(`Packaged ZCode is missing bundled Computer Use Helper: ${appPath}`);
+    throw new Error(`Packaged RaspberryCode is missing bundled Computer Use Helper: ${appPath}`);
   }
 }
 const shouldEnableWindowsVsign =
@@ -225,7 +225,7 @@ if (
   !macSigningIdentity
 ) {
   throw new Error(
-    "ZCode Preview macOS packaging requires APPLE_SIGNING_IDENTITY or CSC_NAME when ZCODE_ENABLE_MAC_SIGN=1",
+    "RaspberryCode Preview macOS packaging requires APPLE_SIGNING_IDENTITY or CSC_NAME when ZCODE_ENABLE_MAC_SIGN=1",
   );
 }
 
@@ -730,7 +730,7 @@ export default {
       to: "config/default.json",
     },
     {
-      // Provider Registry 的 ZCode Built-in Config 是静态 Provider/Model 事实的唯一内置来源。
+      // Provider Registry 的 RaspberryCode Built-in Config 是静态 Provider/Model 事实的唯一内置来源。
       // 显式随包发布，避免正式 Host 回退到旧 Catalog/Preset hardcode。
       from: builtinProviderConfig.sourcePath,
       to: "config/provider/zcode-builtin.json",

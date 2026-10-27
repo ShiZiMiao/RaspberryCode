@@ -6,7 +6,7 @@
 
 **Architecture:** Add one dev-only staging entry that reuses the production Sharp closure copier to prepare the CUA plugin source tree. Invoke it from the shared desktop-agent preparation script before Electron starts; leave bootstrap's generic atomic seed implementation unchanged.
 
-**Tech Stack:** Node.js ESM scripts, Vitest, `node:test`, ZCode bootstrap filesystem seeding.
+**Tech Stack:** Node.js ESM scripts, Vitest, `node:test`, RaspberryCode bootstrap filesystem seeding.
 
 ---
 

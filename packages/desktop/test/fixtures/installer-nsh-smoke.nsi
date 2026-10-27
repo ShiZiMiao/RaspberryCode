@@ -1,5 +1,5 @@
 Unicode true
-Name "ZCode installer.nsh smoke"
+Name "RaspberryCode installer.nsh smoke"
 OutFile "${OUTPUT_FILE}"
 InstallDir "$TEMP\zcode-installer-nsh-smoke"
 RequestExecutionLevel user
@@ -14,8 +14,8 @@ SilentInstall silent
   !include "StrContains.nsh"
 !endif
 
-!define APP_DESCRIPTION "ZCode NSIS smoke fixture"
-!define APP_FILENAME "ZCode"
+!define APP_DESCRIPTION "RaspberryCode NSIS smoke fixture"
+!define APP_FILENAME "RaspberryCode"
 !define APP_ID "dev.zcode.installer-nsh-smoke"
 !define UNINSTALL_FILENAME "uninstaller.exe"
 ; This fixture invokes the cleanup macro from a normal section; electron-builder's real uninstaller uses un.*.
@@ -56,8 +56,8 @@ Var keepShortcuts
 
 Section
   SetOutPath "$INSTDIR"
-  File /oname=ZCode.exe "${FIXTURE_EXE}"
-  StrCpy $appExe "$INSTDIR\ZCode.exe"
+  File /oname=RaspberryCode.exe "${FIXTURE_EXE}"
+  StrCpy $appExe "$INSTDIR\RaspberryCode.exe"
   StrCpy $launchLink "$INSTDIR\stale-target.exe"
   StrCpy $newStartMenuLink "$INSTDIR\start-menu.lnk"
   StrCpy $newDesktopLink "$INSTDIR\desktop.lnk"

@@ -12,7 +12,7 @@
 还有第二个用户可见故障：模型走 PowerShell 兜底截图成功落盘
 
 ```text
-C:\Users\dev\.zcode\workspace\default\screenshot.png   518252 bytes
+C:\Users\dev\.raspberrycode\workspace\default\screenshot.png   518252 bytes
 ```
 
 但会话区里的预览打不开，`file.stat` / `file.readMediaPreview` 报 ENOENT，
@@ -22,7 +22,7 @@ C:\Users\dev\.zcode\workspace\default\screenshot.png   518252 bytes
 C:/Users/dev.zcode/workspace/default/screenshot.png
 ```
 
-`\.zcode` 变成了 `.zcode` —— 少了一个反斜杠。
+`\.raspberrycode` 变成了 `.raspberrycode` —— 少了一个反斜杠。
 
 ## 根因
 
@@ -30,7 +30,7 @@ CommonMark 规定链接目标里的反斜杠转义**只对 ASCII 标点生效**�
 时产出 X 本身，否则反斜杠原样保留。Windows 路径恰好横跨这两类：
 
 ```text
-源码   [screenshot.png](C:\Users\dev\.zcode\workspace\default\screenshot.png)
+源码   [screenshot.png](C:\Users\dev\.raspberrycode\workspace\default\screenshot.png)
                           ↑U    ↑z   ↑.      ↑w        ↑d       ↑s
                           留    留   吃掉    留        留       留
 mdast  url = C:\Users\dev.zcode\workspace\default\screenshot.png
@@ -131,9 +131,9 @@ markdown 源文本
 
 ## 验收
 
-1. 新增单测覆盖：`\.zcode` 还原、image 节点、UNC 前导反斜杠塌陷、引用式 definition、
+1. 新增单测覆盖：`\.raspberrycode` 还原、image 节点、UNC 前导反斜杠塌陷、引用式 definition、
    无需还原时不动、非 Windows URL 不动、带 title 跳过、尖括号跳过、
    验证不通过（实体引用）时保持原值。
 2. `pnpm exec vitest run packages/ui/test/windowsFileLinkEscapeRemarkPlugin.test.ts` 通过，
    且 message.tsx 依赖的 11 个既有测试文件全绿。
-3. 端到端：会话里 `[x](C:\Users\dev\.zcode\...\screenshot.png)` 预览可打开。
+3. 端到端：会话里 `[x](C:\Users\dev\.raspberrycode\...\screenshot.png)` 预览可打开。

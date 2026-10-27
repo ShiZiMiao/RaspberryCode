@@ -2,9 +2,9 @@
 
 ## 状态
 
-- 本文是 ZCode CLI 模型 provider 端点转发的事实规范；动态路由与静态网关共用同一契约和调用链。
+- 本文是 RaspberryCode CLI 模型 provider 端点转发的事实规范；动态路由与静态网关共用同一契约和调用链。
 - 能力只存在于 `apps/zcode-cli` 的默认 AI SDK provider transport，不修改用户 provider 配置、
-  ZCode Protocol、Desktop/Web renderer 网络、WebFetch、MCP、OAuth、插件下载或 tool 子进程。
+  RaspberryCode Protocol、Desktop/Web renderer 网络、WebFetch、MCP、OAuth、插件下载或 tool 子进程。
 - 受信 `custom` provider 自己持有 transport，不在透明转发范围内。
 
 ## 目标
@@ -31,7 +31,7 @@ bootstrap process registry（endpoint origin + network policy）
 
 静态实现保持既有开源网关行为：
 
-| 精确匹配的 HTTPS 端点                        | 当前 runtime ZCode origin 下的目标路径    |
+| 精确匹配的 HTTPS 端点                        | 当前 runtime RaspberryCode origin 下的目标路径    |
 | -------------------------------------------- | ----------------------------------------- |
 | `open.bigmodel.cn/api/anthropic/v1/messages` | `/api/v1/ultra/anthropic/v1/messages`     |
 | `api.z.ai/api/anthropic/v1/messages`         | `/api/v1/ultra-zai/anthropic/v1/messages` |
@@ -46,14 +46,14 @@ bootstrap process registry（endpoint origin + network policy）
 
 ### 动态实现
 
-ZCode CLI 在模型请求发生时按需读取：
+RaspberryCode CLI 在模型请求发生时按需读取：
 
 ```text
 GET https://zcode.z.ai/api/v1/agent/configs
 ```
 
 测试与非生产环境必须复用 `buildRuntimeZCodeApiUrl` 的现有 endpoint 选择规则，禁止另加平行环境变量。
-响应中 `data.proxyEndpoint.mapping` 决定是否把一个明确的 provider endpoint 改写到 ZCode 代理 endpoint。
+响应中 `data.proxyEndpoint.mapping` 决定是否把一个明确的 provider endpoint 改写到 RaspberryCode 代理 endpoint。
 服务端返回合法空映射即关闭转发；客户端不修改或持久化 provider `baseURL`。
 
 示例：
@@ -81,16 +81,16 @@ GET https://zcode.z.ai/api/v1/agent/configs
 }
 ```
 
-### ZCode 网关身份头
+### RaspberryCode 网关身份头
 
-mapping 条目的可选字段 `zcodeAuthorizationHeader` 表示命中该条目时向最终 ZCode 网关请求附加
-登录身份。字段值大小写不敏感地必须等于 `X-ZCode-Authorization`；客户端始终使用规范名称：
+mapping 条目的可选字段 `zcodeAuthorizationHeader` 表示命中该条目时向最终 RaspberryCode 网关请求附加
+登录身份。字段值大小写不敏感地必须等于 `X-RaspberryCode-Authorization`；客户端始终使用规范名称：
 
 ```http
-X-ZCode-Authorization: Bearer <zcodejwt>
+X-RaspberryCode-Authorization: Bearer <zcodejwt>
 ```
 
-身份头仅允许发送到当前 runtime ZCode origin 下的两个路径族：
+身份头仅允许发送到当前 runtime RaspberryCode origin 下的两个路径族：
 
 - `/api/v1/ultra` 本身及其子路径；
 - `/api/v1/ultra-zai` 本身及其子路径。
@@ -103,8 +103,8 @@ JWT 唯一来源是当前 Environment 凭据存储中的 `zcodejwttoken`。路�
 
 - 有非空 JWT 时附加身份头；已带 `Bearer` 前缀时不重复添加；
 - 未登录、JWT 缺失/空白或凭据读取失败时仍完成既有 URL 路由，但不附加身份头；
-- JWT 表示当前 Environment 的 ZCode 登录身份，与模型 Provider Token/API Key 相互独立，不要求账号代次一致；
-- 直连请求、未声明身份字段的 mapping 和其它 ZCode API 不读取或发送 JWT。
+- JWT 表示当前 Environment 的 RaspberryCode 登录身份，与模型 Provider Token/API Key 相互独立，不要求账号代次一致；
+- 直连请求、未声明身份字段的 mapping 和其它 RaspberryCode API 不读取或发送 JWT。
 
 SSH、WSL 与 Docker 的目标 Environment 已通过 Provider Provisioning 的凭据 allowlist 同步
 `zcodejwttoken`，因此远程 Source Server 与本地 CLI 使用相同的目标端读取逻辑；不新增
@@ -117,7 +117,7 @@ Host 到 CLI 的协议字段，也不修改 OAuth 凭据格式、登录回滚或
 | 生效 runtime | 独立 CLI、TUI、桌面 stdio Agent、主会话、workflow 与 subagent 子 runtime                 |
 | 生效请求     | 默认 AI SDK provider 发出的模型 HTTP(S) 请求                                             |
 | 不生效请求   | WebFetch、MCP、OAuth、插件、Bash/tool、Desktop/Web renderer、`custom` provider transport |
-| 配置 owner   | ZCode CLI 进程内共享 routing registry                                                    |
+| 配置 owner   | RaspberryCode CLI 进程内共享 routing registry                                                    |
 | 持久化       | 无；进程重启后重新读取                                                                   |
 | 协议/配置    | 私有 requestAuth 仅保留既有可选 apiKeyId，不新增协议字段、用户配置或环境变量             |
 
@@ -176,9 +176,9 @@ ProviderEndpointRoutingPort.resolve
 `buildZCodeSourceHeaders` 相同的共享构造规则，发送：
 
 - `Accept: application/json`
-- `HTTP-Referer`，跟随当前 runtime ZCode endpoint origin
-- `User-Agent: ZCode/<version>`
-- 有有效版本时发送 `X-ZCode-App-Version`
+- `HTTP-Referer`，跟随当前 runtime RaspberryCode endpoint origin
+- `User-Agent: RaspberryCode/<version>`
+- 有有效版本时发送 `X-RaspberryCode-App-Version`
 - `X-Title`，独立 CLI/TUI 为 `Z Code@cli`，桌面 stdio Agent 为 `Z Code@electron`
 - `X-Platform`、`X-Release-Channel`、`X-Client-Language`、`X-Client-Timezone`、
   `X-Os-Category` 与有效的 `X-Os-Version`
@@ -191,7 +191,7 @@ ID 来自鉴权 owner 的同一次 PAT 换证结果，通过专用参数传入�
 仅发送客户端来源 Header。快照仍有效时不发起 GET；single-flight 刷新使用启动者的 ID。
 空白、控制字符或非 ASCII ID 不进入 Header，但不阻止配置刷新。
 
-共享来源 header 注入点只允许提供上述 ZCode 来源标识；即使被错误注入
+共享来源 header 注入点只允许提供上述 RaspberryCode 来源标识；即使被错误注入
 `x-api-key-id`、`Authorization`、Cookie 或其它未声明 header，也不得越过配置请求边界。配置 GET
 的 `x-api-key-id` 只能来自本次 `resolve` 的专用参数。
 
@@ -199,7 +199,7 @@ ID 来自鉴权 owner 的同一次 PAT 换证结果，通过专用参数传入�
 runtime/env + OS/locale + existing deviceMid
                     |
                     v
-       shared ZCode source headers ------------------+
+       shared RaspberryCode source headers ------------------+
                                                      |
 requestAuth.apiKeyId --explicit ID only-----------------+--> agent/configs GET
                     |
@@ -218,7 +218,7 @@ requestAuth.apiKeyId --explicit ID only-----------------+--> agent/configs GET
 4. mapping 最多 256 条，且整份通过校验；坏项、重复 `from` 或超限时整份拒绝。
 5. `from` 与 `to` 都是 HTTPS URL，不含 username、password、query 或 fragment。
 6. `zcodeAuthorizationHeader` 缺失/空白时不附加身份；非空时必须是固定名称，且 `to` 必须命中当前
-   runtime ZCode origin 的 `/api/v1/ultra` 或 `/api/v1/ultra-zai` 路径族。
+   runtime RaspberryCode origin 的 `/api/v1/ultra` 或 `/api/v1/ultra-zai` 路径族。
 
 `data` 中与本功能无关的字段允许存在。`to` 是受信控制面的任意 HTTPS 目标；这意味着命中时原模型
 鉴权头与请求内容会发送到该目标，服务端配置发布权限必须按敏感控制面管理。
@@ -306,7 +306,7 @@ PER-019—023 与以下动态用例先于实现更新。动态测试继续覆盖
 | PER-025 | ultra-zai mapping 声明大小写变体字段      | 规范化为固定 header 名         |
 | PER-026 | 未登录、JWT 空白或读取失败                | 仍路由，但不附加身份 header    |
 | PER-027 | mapping 未声明身份字段                    | 不读取 JWT，不附加 header      |
-| PER-028 | 身份字段指向其它 origin 或其它 ZCode path | 整份快照拒绝，旧快照保持       |
+| PER-028 | 身份字段指向其它 origin 或其它 RaspberryCode path | 整份快照拒绝，旧快照保持       |
 | PER-029 | JWT 在两次请求之间变化                    | 下一次请求读取新值，不缓存身份 |
 | PER-030 | Request、URL、string 且无 init.headers    | 身份 header 均到达最终请求     |
 
@@ -323,7 +323,7 @@ PER-019—023 与以下动态用例先于实现更新。动态测试继续覆盖
 | 身份目标   | ultra / ultra-zai / 其它 origin / 其它 path             | PER-024、PER-025、PER-028          |
 
 个人、团队账号和手工 Provider 使用实际 HTTP 回归：账号配置 GET 携带真实 ID；命中声明身份字段的
-ultra/ultra-zai mapping 时，目标 Environment 已登录则额外携带当前 ZCode JWT，未登录则保持原模型
+ultra/ultra-zai mapping 时，目标 Environment 已登录则额外携带当前 RaspberryCode JWT，未登录则保持原模型
 鉴权。手工配置 GET 仍不携带凭据，模型请求仍用手工 Key。缓存过期后切换 ID，不能复用前一请求的
 ID。Desktop/TUI/workflow 与 SSH/WSL/Docker Source Server 共享同一 adapter、目标端凭据和进程级 port。
 

@@ -2,7 +2,7 @@
 
 ## Goal
 
-ZCode should treat `~/.zcode/AGENTS.md` as the user's default instruction file and merge it with the workspace `AGENTS.md` resolved for the current session.
+RaspberryCode should treat `~/.zcode/AGENTS.md` as the user's default instruction file and merge it with the workspace `AGENTS.md` resolved for the current session.
 
 ## Resolution
 
@@ -13,7 +13,7 @@ ZCode should treat `~/.zcode/AGENTS.md` as the user's default instruction file a
 
 ## Merge Order
 
-When both sources exist, ZCode injects both in this order:
+When both sources exist, RaspberryCode injects both in this order:
 
 1. User default instructions from `~/.zcode/AGENTS.md`.
 2. Workspace instructions from the resolved workspace `AGENTS.md`.

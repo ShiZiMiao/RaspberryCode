@@ -57,7 +57,7 @@ export interface FeedbackDeviceInfo {
   osRelease?: string;
   osVersion?: string;
   osArch?: string;
-  /** 提交反馈时的当前 Agent。单 ZCode Agent 模式下固定为 ZCode Agent。 */
+  /** 提交反馈时的当前 Agent。单 RaspberryCode Agent 模式下固定为 RaspberryCode Agent。 */
   agentProvider?: string;
   /** 提交反馈时归一到反馈平台的框架标识，当前固定为 zcode-agent。 */
   agentFramework?: FeedbackTicketFramework;

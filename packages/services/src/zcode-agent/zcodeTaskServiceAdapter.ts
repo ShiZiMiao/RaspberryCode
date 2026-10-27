@@ -5,7 +5,7 @@ import {
   waitBotGroupExecutionEnd,
 } from "#src/zcode-agent/groupRuntimeSnapshot.js";
 import { uploadBotGroupAttachments } from "./groupAttachmentUpload.js";
-/* oxlint-disable eslint(max-lines) -- 迁移期需要在一个门面里集中维护旧 task projection 到 ZCode session 的协议适配。 */
+/* oxlint-disable eslint(max-lines) -- 迁移期需要在一个门面里集中维护旧 task projection 到 RaspberryCode session 的协议适配。 */
 import { createHash, randomUUID } from "node:crypto";
 import { createZCodeAgentConnectionScope } from "#src/zcode-agent/zcodeAgentConnectionScope.js";
 import { existsSync, readFileSync } from "node:fs";
@@ -408,8 +408,8 @@ export function createZCodeTaskServiceAdapter(
     // 新输入开始时必须清掉上一轮 live-only 子工具，避免后续 snapshot 把旧工具补到新回复尾部。
     clearLiveToolProjection(target);
     clearStreamingToolInputCache(target);
-    // ZCode task wrapper 的字段仍叫 traceId，但这里语义已经是单次输入 inputId。
-    // 先记录 inputId，后续 ZCode session 事件回投 ZCode Agent 时才能让 UI 终态按输入轮次收口。
+    // RaspberryCode task wrapper 的字段仍叫 traceId，但这里语义已经是单次输入 inputId。
+    // 先记录 inputId，后续 RaspberryCode session 事件回投 RaspberryCode Agent 时才能让 UI 终态按输入轮次收口。
     activePromptInputIds.set(taskKey(target), params.traceId);
     logger.info(params.traceId, "RaspberryCode task facade sendPrompt 开始", {
       attachmentCount: params.attachments?.length ?? 0,
@@ -2780,7 +2780,7 @@ export function createZCodeTaskServiceAdapter(
             },
           });
           const meta = await syncTaskIndexSnapshot(snapshot);
-          // 导入后的任务必须是真实 ZCode session，setModel/sendPrompt 才能继续命中 runtime。
+          // 导入后的任务必须是真实 RaspberryCode session，setModel/sendPrompt 才能继续命中 runtime。
           // 同时保留 migrationSource，避免任务列表把 Claude Code 迁移历史当成本地新会话。
           return updateIndexedPresentation({ ...meta, migrationSource: "claudeCode" });
         },
@@ -2921,12 +2921,12 @@ export function createZCodeTaskServiceAdapter(
 
     async getTaskNativeSessionLogFile() {
       const path = resolveZCodeAgentCurrentLogFilePath();
-      // 返回 ZCode Agent 的结构化日志 JSONL；日志行中的 sessionId 用于按当前任务排查。
+      // 返回 RaspberryCode Agent 的结构化日志 JSONL；日志行中的 sessionId 用于按当前任务排查。
       return { provider: GLM_PROVIDER, path, exists: existsSync(path) };
     },
 
     async getModelTrajectory(params) {
-      // ZCode Agent 把 taskId 当作 sessionId 落盘 model-io（见本文件其它 sessionId: params.taskId 用法），
+      // RaspberryCode Agent 把 taskId 当作 sessionId 落盘 model-io（见本文件其它 sessionId: params.taskId 用法），
       // 这里按 sessionId 还原该 task 的模型调用轨迹，供 UI 侧边栏可视化。
       const trajectory = await readModelTrajectory(params.taskId, params.limit);
       logger.info(
@@ -2937,7 +2937,7 @@ export function createZCodeTaskServiceAdapter(
 
     async getTaskTokenUsage(params): Promise<ZCodeTaskTokenUsageResult> {
       // 摘要面板需要展示 task 的累计模型消耗，不能复用 usage_update 的 context window。
-      // 这里通过 ZCode Protocol 读 agent SQLite 的 model_usage 聚合，保持桌面和远控同一事实源。
+      // 这里通过 RaspberryCode Protocol 读 agent SQLite 的 model_usage 聚合，保持桌面和远控同一事实源。
       return options.zcodeAgentService.getTaskTokenUsage({
         workspacePath: params.workspacePath,
         workspaceIdentity: params.workspaceIdentity,
@@ -3127,7 +3127,7 @@ export function createZCodeTaskServiceAdapter(
         const localDisposable = getTaskEmitter(target).event(listener);
         if (legacySnapshotTaskKeys.has(taskKey(target))) {
           // Bugfix: legacy ACP task 没有 zcode-cli sqlite session，恢复后只能作为只读历史。
-          // 若继续向 ZCode Protocol 建 desktop-continuous/replayable 订阅，会反复触发
+          // 若继续向 RaspberryCode Protocol 建 desktop-continuous/replayable 订阅，会反复触发
           // Session is not active 并刷爆日志；本地 emitter 已足够承接 rename/archive 等元数据事件。
           return localDisposable;
         }
@@ -3771,7 +3771,7 @@ function mapToolPart(
 ): ZCodePersistedToolCall {
   const state = part.state;
   const taskNotification = backgroundTaskNotifications?.get(part.callId);
-  // ZCode Protocol 的 part.callId 是实时流和终态 snapshot 共同的工具身份。
+  // RaspberryCode Protocol 的 part.callId 是实时流和终态 snapshot 共同的工具身份。
   // 以前只保存 metadata 会丢掉 toolCallId，手机 replayable 里 result-only 临时工具就无法被终态快照覆盖。
   const raw = attachZCodeBackgroundTaskNotificationToRaw(
     attachToolCallIdToRaw("metadata" in state ? (state.metadata ?? state) : state, part.callId),
@@ -3977,7 +3977,7 @@ function mapSessionEvent(
   const inputId = stringValue(payload.inputId);
   const queryId = stringValue(payload.queryId);
   // 兼容层对外的 traceId 语义是“一次用户输入到本轮回复结束”的轮次标识。
-  // ZCode Protocol runtime trace 只在事件没有 inputId 时兜底，避免同一轮 chunk/tool/complete 被拆成不同 trace。
+  // RaspberryCode Protocol runtime trace 只在事件没有 inputId 时兜底，避免同一轮 chunk/tool/complete 被拆成不同 trace。
   const eventInputId = inputId ?? activePromptInputId;
   const traceId = eventInputId ?? protocolTraceId;
   if (eventInputId && eventInputId !== protocolTraceId) {
@@ -4709,8 +4709,8 @@ function mapToolUpdated(
   }
   if ("result" in payload) {
     const result = asRecord(payload.result);
-    // ZCode Protocol 的 ToolCallResult 只有 toolCallId/result，不再重复带 toolName。
-    // 去掉 ZCode Agent 后如果不记住前序 ToolCallScheduled 的 TodoWrite 名称，result 里的 todos
+    // RaspberryCode Protocol 的 ToolCallResult 只有 toolCallId/result，不再重复带 toolName。
+    // 去掉 RaspberryCode Agent 后如果不记住前序 ToolCallScheduled 的 TodoWrite 名称，result 里的 todos
     // 就只能当普通字符串输出，无法继续投射成顶部 todo/plan 事件。
     const toolName = rememberedToolName;
     const content = normalizeToolResultContent(toolName, result);
@@ -4877,7 +4877,7 @@ function isSubagentDispatchToolName(toolName: string | undefined): boolean {
 }
 
 function parentToolUseIdFromToolPayload(payload: Record<string, unknown>): string | null {
-  // ZCode Protocol 发送的父级字段叫 parentToolCallId；
+  // RaspberryCode Protocol 发送的父级字段叫 parentToolCallId；
   // UI stream 模型统一消费 parentToolUseId，必须在服务投影层完成一次性归一。
   return (
     stringValue(payload.parentToolUseId) ??
@@ -5626,7 +5626,7 @@ function contextUsageFromPayload(payload: Record<string, unknown>): ContextUsage
   if (size === undefined || size <= 0) {
     return null;
   }
-  // ZCode Protocol 的 session.updated 里 contextUsed/contextWindow 是 projection 事实源；
+  // RaspberryCode Protocol 的 session.updated 里 contextUsed/contextWindow 是 projection 事实源；
   // 旧 task stream 只认识 usage_update，adapter 不转换就会让右下角 context meter 永远拿不到数据。
   // used=0 只表示初始化或异常兜底，不能渲染成可用的 context meter。
   if (used === undefined || used <= 0) {

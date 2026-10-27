@@ -137,7 +137,7 @@ export function WebRemoteControlConnectionList({
   );
 }
 
-/** 同一台电脑多个在线 ZCode 时的底部选择层；选择沿用与单连接相同的 admission。 */
+/** 同一台电脑多个在线 RaspberryCode 时的底部选择层；选择沿用与单连接相同的 admission。 */
 export function WebRemoteControlConnectionSheet({
   device,
   locale,

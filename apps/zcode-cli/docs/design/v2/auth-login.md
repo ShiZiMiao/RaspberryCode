@@ -26,7 +26,7 @@ defined in [the project credential spec](../../../../../docs/model-provider-proj
 
 ## Scope
 
-ZCode CLI login uses the ZCode/Z.AI CLI OAuth device flow and shares the same
+RaspberryCode CLI login uses the RaspberryCode/Z.AI CLI OAuth device flow and shares the same
 local credential store as the desktop Z Code product. The login boundary is a
 CLI/bootstrap/adapter concern. Core runtime does not open browsers, call OAuth
 HTTP endpoints, read environment variables directly, or write credential files.
@@ -242,10 +242,10 @@ The browser opener is an adapter-level external I/O operation:
 
 If opening fails, login continues and prints the URL for manual opening.
 
-## ZCode app-server And Headless Behavior
+## RaspberryCode app-server And Headless Behavior
 
-ZCode app-server cannot complete an interactive browser flow inside protocol handlers unless
-the client provides an explicit UX. ZCode app-server should return guidance to run
+RaspberryCode app-server cannot complete an interactive browser flow inside protocol handlers unless
+the client provides an explicit UX. RaspberryCode app-server should return guidance to run
 `zcode login` locally.
 
 Headless `zcode login --no-browser` prints the URL and polls normally, which is

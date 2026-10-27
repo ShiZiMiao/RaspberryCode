@@ -3,7 +3,7 @@
 ## 状态
 
 - 当前事实 spec，日期：2026-09-09。
-- 目标场景：先执行 `pnpm dev:desktop:test`，再从线上测试 Share 页面点击“去 ZCode 继续”。
+- 目标场景：先执行 `pnpm dev:desktop:test`，再从线上测试 Share 页面点击“去 RaspberryCode 继续”。
 - 线上 Share 页面和 `zcode://share/import` 协议保持不变。
 
 ## 问题边界
@@ -17,12 +17,12 @@ Electron bundle 的 `Info.plist` 没有 `CFBundleURLTypes`，系统登记后得�
 
 ## 方案
 
-仅在 macOS Dev 启动脚本中准备一个本地 `ZCode Dev.app` bundle：
+仅在 macOS Dev 启动脚本中准备一个本地 `RaspberryCode Dev.app` bundle：
 
 1. 以当前 checkout 的 Electron runtime 为源，在 `.codex-runtime/desktop-dev/` 下准备副本。
 2. 只修改副本的 `Info.plist`，写入：
-   - `CFBundleIdentifier=dev.zcode.app.development`；
-   - `CFBundleName/CFBundleDisplayName=ZCode Dev`；
+   - `CFBundleIdentifier=dev.raspberrycode.app.development`；
+   - `CFBundleName/CFBundleDisplayName=RaspberryCode Dev`；
    - `CFBundleURLTypes` 中的 `zcode` scheme。
 3. 仍以 `packages/desktop` 目录作为 Electron 的开发入口启动副本，保留 Vite、HMR、
    `ELECTRON_RENDERER_URL`、`ZCODE_ENV` 和现有单实例锁语义。
@@ -35,7 +35,7 @@ Electron bundle 的 `Info.plist` 没有 `CFBundleURLTypes`，系统登记后得�
 ```text
 pnpm dev:desktop:test
   -> dev.mjs 等待 main/host/preload/Vite 就绪
-  -> 准备 ZCode Dev.app + Info.plist(zcode)
+  -> 准备 RaspberryCode Dev.app + Info.plist(zcode)
   -> 从 Dev.app 启动 Electron packages/desktop
   -> main 注册 zcode 默认 handler
   -> 浏览器点击 zcode://share/import?code=...
@@ -55,7 +55,7 @@ pnpm dev:desktop:test
 ## 验收标准
 
 1. `pnpm dev:desktop:test` 启动日志记录 Dev bundle 路径和 `zcode` 注册成功。
-2. macOS LaunchServices 的 `zcode` handler 指向 `dev.zcode.app.development`，而不是
+2. macOS LaunchServices 的 `zcode` handler 指向 `dev.raspberrycode.app.development`，而不是
    `com.github.electron`。
 3. 线上 Share 页面仍显示原 CTA 和原 `zcode://share/import` href。
 4. Dev 已运行时点击 CTA，不出现 Electron 默认页，现有 Dev 窗口收到 `ShareImport`。

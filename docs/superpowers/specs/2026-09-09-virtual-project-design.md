@@ -18,7 +18,7 @@
 > 已执行过 `0005_projects` 的库不补跑、不修复；migration ID 与 SQL checksum 不变。
 >
 > 2026-10-19 止血补充（同机多持库 owner）：同一台机器上本机桌面（owner=local）与 Source Server
-> （owner=server）共用 `~/.zcode/v2/tasks-index.sqlite`。`0005_projects` 按库只执行一次，只写入
+> （owner=server）共用 `~/.raspberrycode/v2/tasks-index.sqlite`。`0005_projects` 按库只执行一次，只写入
 > 首个打开者的 host 行；后打开的 owner 缺少自己的 hosts 行，新建项目因 `projects.host_id` 外键失败。
 > 每个 owner 每次启动在 `reconcileLegacy` 中幂等补齐自己的 host 行（`INSERT OR IGNORE`），
 > 不改 schema、migration ID 与 checksum，不改任何任务的 `host_id` 与项目归属。
@@ -43,13 +43,13 @@
 ### 2.1 左侧列表的数据源今天有 4 个
 
 ```text
-setting.json (~/.zcode/v2/settings/setting.json)
+setting.json (~/.raspberrycode/v2/settings/setting.json)
   ├─ recentProjects: string[]              本地路径历史（最多 10）
   └─ lastWorkspaceSession: Entry[]          真正的侧栏 workspace 列表（顺序 = 侧栏顺序）
        ├─ {kind:"local",  workspacePath, workspacePurpose}
        └─ {kind:"remote", workspacePath, workspaceIdentity, target(快照), lastConnectionStatus...}
 
-tasks-index.sqlite (~/.zcode/v2/tasks-index.sqlite，注意文件名带 s)
+tasks-index.sqlite (~/.raspberrycode/v2/tasks-index.sqlite，注意文件名带 s)
   ├─ tasks                      title / searchable_text / pinned / archived / deleted / unread / status
   │                              PK = (workspace_key, task_id)
   ├─ task_groups                 group 元数据（title/color）
@@ -59,7 +59,7 @@ tasks-index.sqlite (~/.zcode/v2/tasks-index.sqlite，注意文件名带 s)
   ├─ off_peak_tasks              闲时任务
   └─ automations / automation_runs   定时任务
 
-cli/db/db.sqlite (~/.zcode/cli/db/db.sqlite，CLI 自有，有正规 migration runner)
+cli/db/db.sqlite (~/.raspberrycode/cli/db/db.sqlite，CLI 自有，有正规 migration runner)
   └─ session / message / part / local_setting / session_task_link ...  会话正文与 CLI 侧状态
 
 renderer localStorage
@@ -72,7 +72,7 @@ UI 在 `useGroupedTaskView` / `useWorkspaceTaskLists` 里做客户端 join：`li
 
 - 口径：`workspaceKey = workspaceIdentity?.trim() || workspacePath`（`packages/shared/src/task-realtime-core.ts:92`）。
 - remote 落库值形如 `remote:ssh:dev.internal:22:developer:/work/demo`，即把 ssh 账号写进了主键。
-- 同一口径还被用于：`~/.zcode/v2/sessions/{hash}`、`agent-config/{provider}/{hash}`、CLI memory 目录 hash、web-remote bridge key、automation/off-peak 的 `workspaceKey` 字段。**改主键的同时这些派生 hash 也会变**，需要一并迁移或保留兼容映射。
+- 同一口径还被用于：`~/.raspberrycode/v2/sessions/{hash}`、`agent-config/{provider}/{hash}`、CLI memory 目录 hash、web-remote bridge key、automation/off-peak 的 `workspaceKey` 字段。**改主键的同时这些派生 hash 也会变**，需要一并迁移或保留兼容映射。
 - remote 的 `zcodeTaskService` 是 RPC 代理到远端 Host，写的是远端机器自己的 `tasks-index.sqlite`，本机没有远程 session 的索引副本。
 
 ### 2.3 现有迁移基础设施
@@ -86,16 +86,16 @@ UI 在 `useGroupedTaskView` / `useWorkspaceTaskLists` 里做客户端 join：`li
 
 | 配置                                    | 用户级                                    | 项目级路径                                                                  | 解析根                                  | 多层合并规则                                                                                   |
 | --------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| settings（model/permission/ui/storage） | `~/.zcode/cli/config.json`                | `<dir>/zcode.json`、`<dir>/.zcode/config.json`                              | cwd 向上到 git root，根在前 cwd 在后    | 深合并，后者覆盖                                                                               |
+| settings（model/permission/ui/storage） | `~/.raspberrycode/cli/config.json`                | `<dir>/zcode.json`、`<dir>/.raspberrycode/config.json`                              | cwd 向上到 git root，根在前 cwd 在后    | 深合并，后者覆盖                                                                               |
 | MCP servers                             | 同上 `mcp.servers`                        | 同上                                                                        | 同上                                    | 按 name：system → project → **user** → env → cli（用户级覆盖项目级）；project 来源标 untrusted |
 | hooks                                   | `config.json.hooks` 直接可执行            | 同上                                                                        | 同上                                    | 项目级只生成 hookCandidate，走 workspace hook trust                                            |
-| skills                                  | `~/.zcode/skills`、`~/.agents/skills`     | `<dir>/.zcode/skills`、`<dir>/.agents/skills`                               | cwd 向上到 git root 每一级              | 全部可见；同名先发现者胜（用户级 shadow 项目级）                                               |
-| commands                                | `~/.zcode/commands`、`~/.agents/commands` | `<dir>/.zcode/commands`、`<dir>/.agents/commands`                           | 同 skills                               | 同名先到先赢 + duplicate diagnostic                                                            |
-| subagents                               | `~/.zcode/cli/agents/*.md`                | `<cwd>/.zcode/agents/*.md`                                                  | **仅 cwd 本级，不向上**                 | Map 按 name，后加载覆盖（项目级覆盖用户级）                                                    |
-| AGENTS.md                               | `~/.zcode/AGENTS.md`                      | `<dir>/AGENTS.md`                                                           | cwd 向上到 git root，**只取第一个命中** | user + workspace 两段拼接                                                                      |
-| agent 自写 memory                       | —                                         | `~/.zcode/cli/memories/projects/<slug>-<sha(identity‖path)>/memory`         | 按 workspaceKey hash                    | 一目录一份                                                                                     |
+| skills                                  | `~/.raspberrycode/skills`、`~/.agents/skills`     | `<dir>/.raspberrycode/skills`、`<dir>/.agents/skills`                               | cwd 向上到 git root 每一级              | 全部可见；同名先发现者胜（用户级 shadow 项目级）                                               |
+| commands                                | `~/.raspberrycode/commands`、`~/.agents/commands` | `<dir>/.raspberrycode/commands`、`<dir>/.agents/commands`                           | 同 skills                               | 同名先到先赢 + duplicate diagnostic                                                            |
+| subagents                               | `~/.raspberrycode/cli/agents/*.md`                | `<cwd>/.raspberrycode/agents/*.md`                                                  | **仅 cwd 本级，不向上**                 | Map 按 name，后加载覆盖（项目级覆盖用户级）                                                    |
+| AGENTS.md                               | `~/.raspberrycode/AGENTS.md`                      | `<dir>/AGENTS.md`                                                           | cwd 向上到 git root，**只取第一个命中** | user + workspace 两段拼接                                                                      |
+| agent 自写 memory                       | —                                         | `~/.raspberrycode/cli/memories/projects/<slug>-<sha(identity‖path)>/memory`         | 按 workspaceKey hash                    | 一目录一份                                                                                     |
 | permissions ruleset                     | —                                         | sqlite `local_setting(scope=project, scope_id=projectIdFromDirectory(cwd))` | cwd 精确目录                            | 一目录一份                                                                                     |
-| plugins                                 | `~/.zcode/cli/plugins` + `config.json`    | 项目 config 的 plugin 段                                                    | 同 settings                             | `resolvePluginConfigSources`                                                                   |
+| plugins                                 | `~/.raspberrycode/cli/plugins` + `config.json`    | 项目 config 的 plugin 段                                                    | 同 settings                             | `resolvePluginConfigSources`                                                                   |
 | workspace-config topic（设置页）        | —                                         | —                                                                           | key = `workspace-config/<workspaceId>`  | 一 workspace 一份                                                                              |
 
 CLI 侧已有一份多工作区草案 `apps/zcode-cli/docs/design/v2/multi-workspace.md`（`WorkspaceScope{primaryRoot, additionalRoots}`、`--add-dir`、roots 存 `local_setting(scope=workspace)`），尚未实现，可作为本次 agent 侧改动的落点。
@@ -112,9 +112,9 @@ CLI 侧已有一份多工作区草案 `apps/zcode-cli/docs/design/v2/multi-works
 | A2  | 真实目录是否作为可见节点  | 不作为节点，只是项目的 root 属性                                                                                                                                                                                |
 | A3  | 公共管理移除              | 移除 Group/Project 视图切换器、group 管理菜单与新建 group 入口、集中管理页；图 7 工具栏整体移除，排序（按时间 / 按项目）放入「项目」标题右键菜单；时间线保留实现但隐藏入口，归档入口与展开/折叠全部图标不再保留 |
 | A4  | 视图模式                  | 只保留项目树 + 时间线                                                                                                                                                                                           |
-| A5  | 「任务」区                | 未归类 session 的分类：`project_id IS NULL`，不限制绑定目录；session 一定有 workspace，全局新建任务默认创建 `~/.zcode/workspace/<唯一目录>` 作为 cwd；项目里的 session 只能拖到另一个项目，不能拖到项目外       |
+| A5  | 「任务」区                | 未归类 session 的分类：`project_id IS NULL`，不限制绑定目录；session 一定有 workspace，全局新建任务默认创建 `~/.raspberrycode/workspace/<唯一目录>` 作为 cwd；项目里的 session 只能拖到另一个项目，不能拖到项目外       |
 | A6  | 同一真实目录属于多个项目  | 允许                                                                                                                                                                                                            |
-| A7  | 0 root 项目新建 session   | 自动创建 `~/.zcode/workspace/<时间戳>`，并把它加为该项目的 root 且设为主要目录                                                                                                                                  |
+| A7  | 0 root 项目新建 session   | 自动创建 `~/.raspberrycode/workspace/<时间戳>`，并把它加为该项目的 root 且设为主要目录                                                                                                                                  |
 | A8  | session 绑定目录（cwd）   | 创建后永远不变                                                                                                                                                                                                  |
 | A9  | 项目内新建 session 的 cwd | 固定为主要目录，不提供选择                                                                                                                                                                                      |
 
@@ -147,7 +147,7 @@ CLI 侧已有一份多工作区草案 `apps/zcode-cli/docs/design/v2/multi-works
 | --- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | D1  | 置顶                      | 保留全局置顶 session 区；项目也可置顶，置顶到全局置顶区并排在 session 之下；远程 session 也可置顶                                                                                |
 | D2  | 拖拽                      | session 跨项目、从「任务」区拖入项目、项目排序；不做项目内手动排序与多选拖拽；目标项目不含该 session 的真实工作区时弹窗确认加入                                                  |
-| D3  | 新建任务入口              | 项目行在该项目主要目录建草稿；Cmd/Ctrl+N 与左上角新建继承当前会话或草稿的项目，无项目才在自动创建的 `~/.zcode/workspace/<唯一目录>` 建未归类草稿；任务分区新建显式创建未归类草稿 |
+| D3  | 新建任务入口              | 项目行在该项目主要目录建草稿；Cmd/Ctrl+N 与左上角新建继承当前会话或草稿的项目，无项目才在自动创建的 `~/.raspberrycode/workspace/<唯一目录>` 建未归类草稿；任务分区新建显式创建未归类草稿 |
 | D4  | 项目右键菜单              | 编辑项目、置顶、删除项目；可编辑的远程项目与本地项目一致，不显示「从本机移除」「添加远程项目」；「从本机移除」只在不可编辑（离线 / error、legacy 单 root）时显示（2026-10-16）   |
 | D5  | Web / 手机远控侧栏        | 都显示项目层级                                                                                                                                                                   |
 | D6  | 右侧 workbench 分屏 group | 与本次无关，不动                                                                                                                                                                 |
@@ -222,8 +222,8 @@ PRO01 验证：`desktop-e2e-20260915130441227-p90013-a508c06fba08fa3a` 1/1 通�
 | F4  | 降级期 group 增删改                                                              | 忽略；group→项目只在首次升级迁移一次                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | F5  | setting.json                                                                     | 继续双写 lastWorkspaceSession / recentProjects；远程条目从本机仍保留的远程项目入口派生，移除入口后清理对应旧条目，不从远端全量项目列表重新生成                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | F6  | 执行位置                                                                         | main whenReady 后、起 Host 前同步执行；失败 fail-closed（重试 / 打开备份目录），不做第二套实现                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| F7  | 备份                                                                             | 定位：只保证「迁移失败 / 迁移把库写坏」时能恢复到升级前，不作为降级机制，也不作为通用数据保险；正常流程只产生不消费。做法：通用表级备份（见 7.1），仅在有待执行 migration 时、事务前，把这些 migration 声明的 `touchedTables` 在同一读事务里逐表导出到 `~/.zcode/backup/<版本>-<时间>/<库名>.sqlite`，写 backup.json，保留 2 份；不做整库快照（本机实测整库 770MB/12s，gzip 160MB/19s；表级 CLI 1.9MB/70ms、tasks-index 14MB/165ms）。当前卷不足依次试其他可写卷，都不足则跳过并提示，不删轨迹                                                                                                     |
-| F8  | 老 workspace                                                                     | 本地及远端各自仅将旧 lastWorkspaceSession 中保留的项目 workspace → 同名单 root 项目，其下全部 session 归入；仅历史 tasks 或 recentProjects 中的目录不建项目，其任务保留原 cwd 与组织态，无匹配项目时保持未归类；本机 lastWorkspaceSession 中的 remote 条目只在首次迁移时导入本机远程项目入口及基础信息缓存，不在本机创建远端权威项目。远端例外（2026-10-15）：持库 owner 不是 local 时，首次迁移另把仍有未删除任务、不在 `*/.zcode/workspace/*` 系统目录下、且未被 settings 标为 conversation 的历史任务 root 建为同名单 root 项目并归入；远端项目只经本机入口进入桌面侧栏，推断不会复活已移除入口 |
+| F7  | 备份                                                                             | 定位：只保证「迁移失败 / 迁移把库写坏」时能恢复到升级前，不作为降级机制，也不作为通用数据保险；正常流程只产生不消费。做法：通用表级备份（见 7.1），仅在有待执行 migration 时、事务前，把这些 migration 声明的 `touchedTables` 在同一读事务里逐表导出到 `~/.raspberrycode/backup/<版本>-<时间>/<库名>.sqlite`，写 backup.json，保留 2 份；不做整库快照（本机实测整库 770MB/12s，gzip 160MB/19s；表级 CLI 1.9MB/70ms、tasks-index 14MB/165ms）。当前卷不足依次试其他可写卷，都不足则跳过并提示，不删轨迹                                                                                                     |
+| F8  | 老 workspace                                                                     | 本地及远端各自仅将旧 lastWorkspaceSession 中保留的项目 workspace → 同名单 root 项目，其下全部 session 归入；仅历史 tasks 或 recentProjects 中的目录不建项目，其任务保留原 cwd 与组织态，无匹配项目时保持未归类；本机 lastWorkspaceSession 中的 remote 条目只在首次迁移时导入本机远程项目入口及基础信息缓存，不在本机创建远端权威项目。远端例外（2026-10-15）：持库 owner 不是 local 时，首次迁移另把仍有未删除任务、不在 `*/.raspberrycode/workspace/*` 系统目录下、且未被 settings 标为 conversation 的历史任务 root 建为同名单 root 项目并归入；远端项目只经本机入口进入桌面侧栏，推断不会复活已移除入口 |
 | F9  | 手建 group                                                                       | 仅迁移包含未删除 session 的手建 group（归档成员有效），空/悬空/仅已删成员跳过；roots = 有效成员目录去重，主要 = 成员最多的目录；名字沿用并标 name_overridden；颜色丢弃                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | F10 | 混合 host 的 group                                                               | 按 host 拆成多个项目，名字后缀 host 名                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | F11 | 系统组（定时 / 闲时）                                                            | 不转项目，成员归各自 workspace 项目，保留 cron / off-peak 图标                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
@@ -293,7 +293,7 @@ Session
  └─ CLI 事实镜像：cli_title / cli_title_source / cli_updated_at / cli_created_at / cli_last_outcome / cli_deleted
 ```
 
-普通分区由项目归属决定；置顶、归档和 session 删除继续按各自规则过滤。`~/.zcode/workspace/*` 是全局新建任务的默认执行目录，不是任务区筛选条件。
+普通分区由项目归属决定；置顶、归档和 session 删除继续按各自规则过滤。`~/.raspberrycode/workspace/*` 是全局新建任务的默认执行目录，不是任务区筛选条件。
 
 ```text
 Session（cwd 始终不变）
@@ -396,9 +396,9 @@ createSession / 显式 resume / v4/conversation/subscribe 参数新增（可选�
   additionalDirectories: string[]        // Host 解析的目录列表；本地绝对路径或远端实际路径
                                         // 仅初始化运行实例时消费；live subscribe 不更新目录范围
 CLI 消费点
-  1. skillPort.discoverSkills/loadSkill(roots?)  → 为每个附加目录追加 <dir>/.zcode/skills、<dir>/.agents/skills、<dir>/.zcode/commands
+  1. skillPort.discoverSkills/loadSkill(roots?)  → 为每个附加目录追加 <dir>/.raspberrycode/skills、<dir>/.agents/skills、<dir>/.raspberrycode/commands
                                                    来自附加目录的 skill.qualifiedName = `${basename(dir)}/${name}`；prompt 与 mention 列表使用 qualifiedName
-  2. subagents roots                             → 追加 <dir>/.zcode/agents；同名并存，qualifiedName 同上
+  2. subagents roots                             → 追加 <dir>/.raspberrycode/agents；同名并存，qualifiedName 同上
   3. tool path policy                            → additionalDirectories 并入可读写根
   4. 环境 prompt                                 → 主目录之后列出 Additional directories，仅含路径；空列表不输出
 不变：AGENTS.md、config(settings/mcp/hooks/plugins)、memory、permissions 仍只按 workingDirectory 解析。
@@ -691,7 +691,7 @@ desktop continuous / mobile replayable -> original attachment, no new runtime
 
 | 场景                                                                            | 预期                                                                         |
 | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| 全局新建任务                                                                    | 在 `~/.zcode/workspace/<唯一目录>` 下创建，`project_id = NULL`，显示在任务区 |
+| 全局新建任务                                                                    | 在 `~/.raspberrycode/workspace/<唯一目录>` 下创建，`project_id = NULL`，显示在任务区 |
 | 首次发现默认目录之外的历史 session，绑定目录匹配同 host 下唯一一个未删除项目    | 归入该项目，cwd 不变                                                         |
 | 首次发现默认目录之外的历史 session，绑定目录匹配多个未删除项目                  | 保持未归类，显示在任务区；不按主要目录优先选择，不新建项目                   |
 | 首次发现默认目录之外的历史 session，绑定目录不匹配任何未删除项目                | 保持未归类，显示在任务区，不新建项目                                         |
@@ -776,12 +776,12 @@ VP28 补充验证：真实冷启动迁移本地/remote 混排与离线刷新；S
 
 ```text
 M0 探测：tasks-index 无 schema_migration 或缺 '0001_projects' → 进入迁移；否则跳过
-M1 备份：按 7.1 表级备份两库 → ~/.zcode/backup/<ver>-<ts>/
+M1 备份：按 7.1 表级备份两库 → ~/.raspberrycode/backup/<ver>-<ts>/
 M2 建表加列（5.1、5.3）；本机远程项目入口与远端权威项目分开保存
 M3 hosts：'local' + 从 tasks.workspace_key / setting.json remote 条目解析出的 remote authority
 M4 tasks 回填：host_id、root_path（= workspace_path）、cli_* 从旧列拷贝一份初值；`deleted=1` 的行置 handoff_pending|=1，`title_overridden=1` 的行置 handoff_pending|=2（历史 Host 事实待交接给 CLI，见 7.4）
 M5 本地及远端各自仅将旧 lastWorkspaceSession 中保留的项目 workspace → 单 root 项目（name = 目录名，name_overridden=0，primary = 该 root）；
-    首次 position 仅按 setting.json 的 lastWorkspaceSession 中本 Host 项目条目的原顺序分配（同目录去重、无 session 的已保存项目也保留）；conversation 条目不参与。历史 tasks、recentProjects 和 Group 都不能扩充项目集合；已移除目录、仅已归档或已删除任务的目录不因历史记录重建项目。未归属任务按 F3 保留原 cwd、标题、时间、归档/删除/置顶/未读状态；settings 缺失或列表为空时也不从任务记录推断项目。持库 owner 不是 local 时按 F8 远端例外补充：settings 条目之后，按历史任务最近活动时间倒序，把未删除、非 `*/.zcode/workspace/*`、非 conversation 条目、尚无同目录项目的 root 建为单 root 项目；归属仍由 M6a 的唯一目录匹配完成。
+    首次 position 仅按 setting.json 的 lastWorkspaceSession 中本 Host 项目条目的原顺序分配（同目录去重、无 session 的已保存项目也保留）；conversation 条目不参与。历史 tasks、recentProjects 和 Group 都不能扩充项目集合；已移除目录、仅已归档或已删除任务的目录不因历史记录重建项目。未归属任务按 F3 保留原 cwd、标题、时间、归档/删除/置顶/未读状态；settings 缺失或列表为空时也不从任务记录推断项目。持库 owner 不是 local 时按 F8 远端例外补充：settings 条目之后，按历史任务最近活动时间倒序，把未删除、非 `*/.raspberrycode/workspace/*`、非 conversation 条目、尚无同目录项目的 root 建为单 root 项目；归属仍由 M6a 的唯一目录匹配完成。
     position 只在首次迁移初始化；已有 ledger 时不重跑转换、不从 settings 重排，也不自动清理已生成的项目，保留升级后用户的编辑与手动排序。远端条目仍按原 Host/入口边界导入，不把本机排列写成远端权威项目顺序；默认手动模式读取 position，显式选择按活动排序或置顶时沿用对应展示规则。
     其下所有 tasks.project_id = 该项目；定时/闲时定义按同 Host + workspace_path 匹配已保存项目，远端身份 key 不作为真实目录；未匹配者保留 NULL 与原执行范围。bootstrap 组（task_group_workspace_bootstraps）不再单独建项目。
     本机 lastWorkspaceSession 的 remote 条目只在首次迁移时导入 remote_project_entries，保留基础信息与原 workspace 标识，等待连接后解析远端项目 ID；不在本机建远端权威项目。已保存 Source/有效 Profile 同时导入连接成员关系，优先已有稳定 Source ID 和首选 Profile；旧地址入口关联到同一稳定 Host，未握手过的地址保留临时地址身份。已有 migration ledger 后不再从 settings 反向导入
@@ -970,7 +970,7 @@ subscribe in flight -> runtime available/restart -> old ACK rejected
 
 ### 项目编辑器源文件夹列表（2026-09-11 用户纠偏）
 
-- 零 root 显示整块“添加 ZCode 可读取和编辑的文件夹”；已有 root 后切换为同一个带边框的列表，末行是 FolderPlus +“添加文件夹”，不继续显示空态大卡片。每个 root 行显示文件夹图标、末级目录名（完整路径放 title），右侧为“主要”标记或“设为主要”按钮，以及移除按钮。
+- 零 root 显示整块“添加 RaspberryCode 可读取和编辑的文件夹”；已有 root 后切换为同一个带边框的列表，末行是 FolderPlus +“添加文件夹”，不继续显示空态大卡片。每个 root 行显示文件夹图标、末级目录名（完整路径放 title），右侧为“主要”标记或“设为主要”按钮，以及移除按钮。
 - “设为主要”只修改编辑器草稿，保存才经既有 saveProject(primaryRoot) 写入所属 Host；取消不写入。第一个目录默认主要，移除主要目录后选择剩余首项，全部移除后无主要。新任务经 prepareSession 使用最新主要目录，已有任务 cwd 不变。
 - 编辑已有项目时，底部左侧恢复删除项目按钮；创建时无删除按钮。沿用 deleteProject 的软删除语义，不删除文件或任务，不增加确认层；远端必须传原 hostId，失败停留弹窗并显示错误，不降级成本机移除。保存/删除共用提交互斥状态，成功后刷新并关闭。
 - 表单草稿归 ProjectEditor，持久态归 Host projectService，复用已有目录浏览器和 API；不增加 schema、migration 或同步队列。桌面与手机使用相同 UI/服务路径，continuous/replayable 边界不变。明暗主题、长路径与 390px 布局均需验证。
@@ -998,7 +998,7 @@ subscribe in flight -> runtime available/restart -> old ACK rejected
 - 项目列表恢复 dnd-kit 垂直排序位移和过渡，支持指针及键盘。同置顶分区内允许跨 Host 交换位置；仅写当前控制端侧栏偏好，不改远端 position。任务拖入项目继续走原生 session payload 和 moveTask，不触发项目排序。点击、菜单、新建与文件入口不误启动拖拽，Escape 取消不写入。
 - Host 是项目顺序的唯一已提交 owner；拖动期间只有 UI transform，落下通过 reorderProjects 提交后刷新，失败保留权威树并提示。桌面 continuous、手机 shared-host/replayable 边界不变。
 - 已展开空项目、在线 Host 的空任务列表显示国际化 `taskList.noTasks`（中文“暂无任务”），沿用旧任务文字缩进；空置顶区不显示标题或空态，离线/加载态不伪造“暂无任务”。
-- 系统 `~/.zcode/workspace/default` 曾因旧 settings 缺失/误写 purpose 被首次迁移建成项目。新增一次性 `0006_default_workspace_tasks`，不改已发布 0005 SQL/checksum：仅纠正旧迁移时创建、单 root 为系统 default、未改名/编辑的自动项目；任务 project_id 清空，误建容器软删。普通路径下的 default、手建/改名/多 root 项目保留。只写 Host tasks/projects，任务 cwd、CLI 镜像、置顶/归档/未读、定时/闲时执行快照不变。迁移有表级备份且事务失败回滚，重复启动不重算归属。
+- 系统 `~/.raspberrycode/workspace/default` 曾因旧 settings 缺失/误写 purpose 被首次迁移建成项目。新增一次性 `0006_default_workspace_tasks`，不改已发布 0005 SQL/checksum：仅纠正旧迁移时创建、单 root 为系统 default、未改名/编辑的自动项目；任务 project_id 清空，误建容器软删。普通路径下的 default、手建/改名/多 root 项目保留。只写 Host tasks/projects，任务 cwd、CLI 镜像、置顶/归档/未读、定时/闲时执行快照不变。迁移有表级备份且事务失败回滚，重复启动不重算归属。
 
 ```text
 拖动 -> UI 位移 -> 同 Host reorderProjects -> Host 顺序 -> readTree

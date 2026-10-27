@@ -2,7 +2,7 @@
 
 ## 目标
 
-提供一个本地可运行的完整 Web App Docker 镜像，包含 Web 静态资源、`@zcode/server` HTTP/WS 服务和 ZCode agent app-server。镜像用于本地 Docker 验证，不替代桌面端远控 shared-host 架构。
+提供一个本地可运行的完整 Web App Docker 镜像，包含 Web 静态资源、`@zcode/server` HTTP/WS 服务和 RaspberryCode agent app-server。镜像用于本地 Docker 验证，不替代桌面端远控 shared-host 架构。
 
 ## 运行结构
 
@@ -25,7 +25,7 @@ zcode.cjs app-server
   |
   | app data
   v
-/data/.zcode
+/data/.raspberrycode
   |-- v2        app settings, task index
   `-- cli       agent session DB, logs, rollout
 ```
@@ -45,7 +45,7 @@ zcode.cjs app-server
 
 - `HOME=/data`
 - `ZCODE_DATA_BASE_DIR=/data`
-- `ZCODE_STORAGE_DIR=/data/.zcode`
+- `ZCODE_STORAGE_DIR=/data/.raspberrycode`
 - 默认工作区为 `/workspace`
 
 启动脚本只在 `setting.json` 缺失或 workspace 列表为空时 seed `/workspace`，不会覆盖已有 volume 中的模型、账号或任务数据。

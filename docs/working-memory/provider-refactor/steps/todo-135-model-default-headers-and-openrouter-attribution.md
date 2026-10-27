@@ -30,8 +30,8 @@
 
 | 类别 | 恢复的默认内容 |
 | --- | --- |
-| 客户端版本 | `User-Agent: ZCode/<version>`、有效版本对应的 `X-ZCode-App-Version` |
-| 产品来源 | `HTTP-Referer`、`X-Title: Z Code@electron/cli`、`X-ZCode-Agent: glm` |
+| 客户端版本 | `User-Agent: RaspberryCode/<version>`、有效版本对应的 `X-RaspberryCode-App-Version` |
+| 产品来源 | `HTTP-Referer`、`X-Title: Z Code@electron/cli`、`X-RaspberryCode-Agent: glm` |
 | 环境 | `X-Release-Channel`、`X-Client-Language`、`X-Client-Timezone` |
 | 平台 | `X-Platform`、`X-Os-Category`、`X-Os-Version` |
 
@@ -42,7 +42,7 @@
 ### 2. OpenRouter 归因
 
 - 复用已有 URL 匹配与归因工具，传入实际配置的 Provider Base URL，不能按显示名称或 Provider ID 猜测。
-- 命中时默认补 `X-OpenRouter-Title: ZCode`、`X-OpenRouter-Categories: programming-app`；非 OpenRouter 不补。
+- 命中时默认补 `X-OpenRouter-Title: RaspberryCode`、`X-OpenRouter-Categories: programming-app`；非 OpenRouter 不补。
 - 保留现有 HTTPS、域名及子域边界，不扩大到名称相似的站点。
 
 ### 3. 保持现有组合边界
@@ -98,7 +98,7 @@
 
 根 lint 默认排除 CLI，因此额外以临时配置保留同等 max-lines 和测试例外规则，对 CLI 改动文件实际检查；没有改仓库 lint 配置。Bootstrap 测试使用 Adapter 的包导出，先构建 Adapter，避免拿旧 dist 当作当前代码验证。
 
-先写的 wire 测试在旧实现上确认缺少 ZCode 版本及 OpenRouter Header；随后完善账号鉴权 fixture 和流响应，再完成回归。安全校验测试使用不同假 Key 隔离进程级开关缓存，不重置生产缓存或访问真实服务。首次绑定测试直接改 Registry 冻结配置被正确拒绝，已调整为创建新配置再绑定，不放松冻结保护。
+先写的 wire 测试在旧实现上确认缺少 RaspberryCode 版本及 OpenRouter Header；随后完善账号鉴权 fixture 和流响应，再完成回归。安全校验测试使用不同假 Key 隔离进程级开关缓存，不重置生产缓存或访问真实服务。首次绑定测试直接改 Registry 冻结配置被正确拒绝，已调整为创建新配置再绑定，不放松冻结保护。
 
 实机限制：本次没有运行真实 Electron、手机 shared-host、SSH 工作区模型请求或 Windows/macOS 全机验证。环境传递用例与注入网络传输的 SDK 请求证明代码链路，不替代这些实机证据。
 

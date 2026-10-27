@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 让 ZCode 在所有支持平台上都能消费包内 `rg` / `bfs` / `ugrep` 二进制，并让 Bash `find` / `grep` 执行层在 embedded-search 分支下真正使用内置 `bfs` / `ugrep`。
+**Goal:** 让 RaspberryCode 在所有支持平台上都能消费包内 `rg` / `bfs` / `ugrep` 二进制，并让 Bash `find` / `grep` 执行层在 embedded-search 分支下真正使用内置 `bfs` / `ugrep`。
 
-**Architecture:** provider-visible embedded-search policy 保持现状；执行层在有可用内置二进制时从当前 `internal-cli` passthrough 切到 `argv0-dispatch`。ZCode 不做 Bun native multicall ELF，第一版用 CLI multicall shim 读取 `ARGV0` / `process.argv0` 后转发到包内 `rg` / `bfs` / `ugrep`，后续如果有真正 native multicall binary，可以只替换 backend resolver。
+**Architecture:** provider-visible embedded-search policy 保持现状；执行层在有可用内置二进制时从当前 `internal-cli` passthrough 切到 `argv0-dispatch`。RaspberryCode 不做 Bun native multicall ELF，第一版用 CLI multicall shim 读取 `ARGV0` / `process.argv0` 后转发到包内 `rg` / `bfs` / `ugrep`，后续如果有真正 native multicall binary，可以只替换 backend resolver。
 
 **Tech Stack:** TypeScript, Node.js CLI, Electron runtime resources, SEA assets, shell snapshot startup scripts, `@zcode/contracts`, `@zcode/shared`, `@zcode/adapters`, Vitest.
 
@@ -17,7 +17,7 @@
 - `grep` bypass patterns：`-*-filter*`, `-*-pager*`, `-*-view*`, `-*-format-open*`, `-*-config*`, `---*`, `-@*`, `-*-save-config*`。
 - 支持平台矩阵必须显式覆盖：`darwin-arm64`, `darwin-x64`, `linux-arm64`, `linux-x64`, `win32-arm64`, `win32-x64`。
 - 每个支持平台都必须提供并验证 `rg` / `bfs` / `ugrep` 三个包内二进制；release、desktop packaging、remote resource、SEA smoke 缺任一二进制都必须失败，不允许产出“支持平台但只 fallback 系统命令”的正式包。
-- 上游现实：`bfs` release 只有源码包；`ugrep` release 只有 Windows x64 预编译包；npm 无可用 `ugrep` / 真 `bfs` binary 包。因此全平台内置能力必须依赖 ZCode 自建或内网托管的预编译产物。
+- 上游现实：`bfs` release 只有源码包；`ugrep` release 只有 Windows x64 预编译包；npm 无可用 `ugrep` / 真 `bfs` binary 包。因此全平台内置能力必须依赖 RaspberryCode 自建或内网托管的预编译产物。
 - 运行时缺少内置二进制时仍必须优雅降级，不得让 Bash tool call 无输出或卡死；但该 fallback 只用于 dev/manual/异常损坏环境，不是支持平台 release 产物的可接受状态。
 - 不改变 provider-visible prompt/tool surface，除非后续另开 prompt 调整任务。
 - 不提交大二进制 blob 到 git；通过下载脚本、desktop bundled-tools、remote resource package、SEA asset 机制携带。
@@ -1018,7 +1018,7 @@ function isExecutableSearchTool(path: string | undefined): path is string {
 }
 ```
 
-When `argv[1]` is a script entrypoint, include it in `args` exactly like current `internal-cli` does; `argv0-dispatch` still needs to execute the same ZCode entrypoint, only with `ARGV0` / `exec -a` changed by the shell function.
+When `argv[1]` is a script entrypoint, include it in `args` exactly like current `internal-cli` does; `argv0-dispatch` still needs to execute the same RaspberryCode entrypoint, only with `ARGV0` / `exec -a` changed by the shell function.
 
 - [ ] **Step 3: Run tests**
 
@@ -1209,9 +1209,9 @@ bfs 4.1.1
 ugrep 7.5.0
 ```
 
-- [ ] **Step 2: Verify Bash alias behavior through ZCode**
+- [ ] **Step 2: Verify Bash alias behavior through RaspberryCode**
 
-Run a Bash tool call in a ZCode session:
+Run a Bash tool call in a RaspberryCode session:
 
 ```bash
 tmp=$(mktemp -d)
@@ -1251,7 +1251,7 @@ Expected:
 ## V1 Decisions
 
 1. 版本严格钉到：`rg 14.1.1`、`bfs 4.1.1`、`ugrep 7.5.0`。
-2. `rg` / `bfs` / `ugrep` 都必须在 ZCode 自有预编译产物源里覆盖完整支持平台矩阵：`darwin-arm64`, `darwin-x64`, `linux-arm64`, `linux-x64`, `win32-arm64`, `win32-x64`。
+2. `rg` / `bfs` / `ugrep` 都必须在 RaspberryCode 自有预编译产物源里覆盖完整支持平台矩阵：`darwin-arm64`, `darwin-x64`, `linux-arm64`, `linux-x64`, `win32-arm64`, `win32-x64`。
 3. Windows arm64 是 v1 必达平台，因为当前 desktop build/release 流程已经覆盖 Windows arm64。内部源没有 `bfs.exe` / `ugrep.exe` / `rg.exe` 时，对应 prepare/package job 必须失败。
 4. 运行时 resolver 仍保留“env 缺失或不可执行不启用 `argv0-dispatch`”的防御测试，但这只用于损坏安装、开发态或手工执行，不是 release 允许降级的语义。
 5. SEA v1 不把 `bfs` / `ugrep` 直接嵌进单文件二进制；SEA 产物必须能通过外置 runtime asset/env 注入消费同一套 search binaries。SEA smoke test 要验证注入成功路径；缺资产时可以防御性 fallback，但不能作为正式评测/发布配置。

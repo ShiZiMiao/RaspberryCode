@@ -2,7 +2,7 @@
 
 ## 目标
 
-桌面 E2E 运行结束后，将整次运行的 `summary.json` 与 `summary.md` 上传到 ZCode E2E 报告平台；失败 case 的窗口视频在报告创建成功后按用例标题逐个补传。GitLab CI 继续保存二进制 artifact，报告平台保存结构化汇总和可按需下载的视频。
+桌面 E2E 运行结束后，将整次运行的 `summary.json` 与 `summary.md` 上传到 RaspberryCode E2E 报告平台；失败 case 的窗口视频在报告创建成功后按用例标题逐个补传。GitLab CI 继续保存二进制 artifact，报告平台保存结构化汇总和可按需下载的视频。
 
 此功能通过 `ZCODE_E2E_FAILURE_ARTIFACTS=1` 显式开启失败 case 日志和视频采集；默认 `pnpm test:e2e` 不产生逐 case 视频或日志，避免日常回归增加磁盘与 CPU 开销。仓库内负责上传报告的 GitLab macOS、Windows job 必须在 job `variables` 中显式将该值设为 `"1"`，不能依赖项目级外部变量。
 

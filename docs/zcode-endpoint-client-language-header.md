@@ -1,8 +1,8 @@
-# ZCode Endpoint Client Language Header
+# RaspberryCode Endpoint Client Language Header
 
 ## 背景
 
-ZCode endpoint 请求的 `X-Client-Language` 以前取进程的 `Intl.DateTimeFormat().resolvedOptions().locale`。
+RaspberryCode endpoint 请求的 `X-Client-Language` 以前取进程的 `Intl.DateTimeFormat().resolvedOptions().locale`。
 App 从 Finder/Dock 启动时进程没有 `LANG`，Node ICU 回退为 `en-US`；即使有 `LANG`，它也只代表系统语言，
 不跟随界面语言设置。结果是 `billing/balance`、`client/configs` 等请求在中文界面下仍发送 `en-US`。
 

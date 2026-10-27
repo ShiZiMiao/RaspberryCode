@@ -6,7 +6,7 @@
 
 - 支持 marketplace plugin entry 指向 CDN 托管的 `.zip` 插件包，并复用现有安装闭环：
   `installMarketplacePlugin` -> `cacheMarketplacePlugin` -> `resolvePluginSourceRoot` -> 拷贝到
-  `~/.zcode/cli/plugins/cache/{marketplace}/{plugin}/{version}/` -> 写入
+  `~/.raspberrycode/cli/plugins/cache/{marketplace}/{plugin}/{version}/` -> 写入
   `installed_plugins.json`。
 - 在 plugin entry 现有 `{ "source": "url" }` 上新增显式 artifact type：
   `{ "source": "url", "type": "zip", ... }`。无 `type` 的 `{ "source": "url" }`
@@ -120,7 +120,7 @@
 ```json
 {
   "name": "zcode-plugins-official",
-  "description": "Official ZCode plugins marketplace",
+  "description": "Official RaspberryCode plugins marketplace",
   "plugins": [
     {
       "name": "example-plugin",
@@ -186,7 +186,7 @@ Phase 1 zip 安装步骤：
 10. `cacheMarketplacePlugin()` 继续按现有逻辑复制 plain directory 到：
 
 ```text
-~/.zcode/cli/plugins/cache/{marketplace}/{plugin}/{version}/
+~/.raspberrycode/cli/plugins/cache/{marketplace}/{plugin}/{version}/
 ```
 
 11. cache 复制成功后的 source cleanup 是 best-effort；cleanup failure 不得阻断安装记录构造和
@@ -214,7 +214,7 @@ Phase 1 zip 安装步骤：
 - ZIP 下载必须使用 adapters 的 web-fetch 网络出口语义：显式 `ZCODE_HTTP_PROXY` / `ZCODE_NO_PROXY`
   优先，并回退读取 `ZCODE_TOOL_ENV_PASSTHROUGH_JSON` 中封存的用户 `HTTP_PROXY` / `HTTPS_PROXY` /
   `NO_PROXY`。
-- 不能直接使用只识别显式 ZCode proxy 的默认 HTTP resolver；否则 agent 清理标准代理变量后，git source
+- 不能直接使用只识别显式 RaspberryCode proxy 的默认 HTTP resolver；否则 agent 清理标准代理变量后，git source
   可以安装而 ZIP source 会尝试直连。
 - CA、timeout、下载大小限制和 AbortSignal 继续由共享 HTTP adapter 处理，不在 plugin 层重复实现。
 
@@ -428,8 +428,8 @@ cache/{marketplace}/{plugin}/{version}/
 - pending manual-review spec：
   `packages/desktop/test/e2e/plugins/manual-review/pending/plugin-cdn-zip-marketplace-install.test.ts`。
 - WDIO `beforeSession` 在 Electron 启动前启动 loopback zip fixture server，并把 zip marketplace seed 到
-  `<E2E_HOME>/.zcode/cli/plugins/known_marketplaces.json` 与
-  `<E2E_HOME>/.zcode/cli/plugins/marketplaces/{marketplace}/marketplace.json`。
+  `<E2E_HOME>/.raspberrycode/cli/plugins/known_marketplaces.json` 与
+  `<E2E_HOME>/.raspberrycode/cli/plugins/marketplaces/{marketplace}/marketplace.json`。
 - spec 通过 renderer `window.__testActions` 调用真实 `zcodeAgentService.installPlugin()`，覆盖
   desktop renderer -> services -> agent protocol -> bootstrap -> adapters 的安装链路。
 - 断言范围：

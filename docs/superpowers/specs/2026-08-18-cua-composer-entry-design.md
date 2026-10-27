@@ -2,7 +2,7 @@
 
 - 日期：2026-08-18
 - 状态：设计已确认，待实现
-- 上游 PRD：《ZCode CUA 输入框常驻按钮&免费体验 PRD v0.2》（飞书 wiki EEE7wZ06Ti7Gx5kGWU8cthX9nOg）
+- 上游 PRD：《RaspberryCode CUA 输入框常驻按钮&免费体验 PRD v0.2》（飞书 wiki EEE7wZ06Ti7Gx5kGWU8cthX9nOg）
 - 分支：`feat/cua-composer-entry`
 - 后续变更：见文末「2026-09-11 变更：电脑控制默认关闭」——该变更删掉了本文多处描述的
   「未启用」（`plugin-disabled`）UI 态，读下文的状态表与 ASCII 图时请一并参照。
@@ -257,11 +257,11 @@ busy），只有纯函数才能把这个矩阵完整测出来，而不必为每�
 | message id                                       | 中文                                                                 | English                                                                                                  |
 | ------------------------------------------------ | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | `chat.toolbar.computerUse.label`                 | 电脑操作                                                             | Computer Use                                                                                             |
-| ~~`…tooltip.disabled`~~                          | ~~体验电脑操作 · 让 ZCode 直接操作你的电脑~~（2026-09-11 删除）      | ~~Try Computer Use — let ZCode operate your computer~~                                                   |
+| ~~`…tooltip.disabled`~~                          | ~~体验电脑操作 · 让 RaspberryCode 直接操作你的电脑~~（2026-09-11 删除）      | ~~Try Computer Use — let RaspberryCode operate your computer~~                                                   |
 | `…tooltip.starting`                              | 正在启用电脑操作插件…                                                | Enabling Computer Use plugin…                                                                            |
-| `…tooltip.ready`                                 | 电脑操作已就绪 · 直接描述你想让 ZCode 做的事                         | Computer Use ready — just describe what you want ZCode to do                                             |
+| `…tooltip.ready`                                 | 电脑操作已就绪 · 直接描述你想让 RaspberryCode 做的事                         | Computer Use ready — just describe what you want RaspberryCode to do                                             |
 | `…tooltip.permissionRequired`                    | 缺少 macOS 权限，点击完成授权                                        | Missing macOS permissions — click to grant                                                               |
-| `…tooltip.error`                                 | 电脑操作启用失败 · 重启 ZCode 应用后重试，或让 ZCode 排查日志        | Computer Use enablement failed. Please restart ZCode app and retry, or ask ZCode to investigate the logs |
+| `…tooltip.error`                                 | 电脑操作启用失败 · 重启 RaspberryCode 应用后重试，或让 RaspberryCode 排查日志        | Computer Use enablement failed. Please restart RaspberryCode app and retry, or ask RaspberryCode to investigate the logs |
 | `…tooltip.sessionBusy`                           | 会话进行中，暂不能切换电脑操作；任务结束后可再试                     | A conversation is running. Computer Use can't be toggled right now — try again after it finishes.        |
 | `settings.computerUse.composerEntry.label`       | 在输入框显示电脑操作按钮                                             | Show Computer Use button in the composer                                                                 |
 | `settings.computerUse.composerEntry.description` | 关闭后输入框不再显示电脑操作按钮，也不会自动恢复；可随时在此重新开启 | When off, the composer button is hidden and stays hidden until you turn this back on.                    |

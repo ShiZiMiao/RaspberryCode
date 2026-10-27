@@ -734,7 +734,7 @@ describe("config adapters", () => {
                 url: "https://example.com/sse",
                 oauth: {
                   type: "authorization_code",
-                  clientName: "ZCode",
+                  clientName: "RaspberryCode",
                   redirectPath: "/oauth/callback/mcp/figma",
                   scope: "mcp:connect",
                 },
@@ -769,7 +769,7 @@ describe("config adapters", () => {
         type: "sse",
         oauth: {
           type: "authorization_code",
-          clientName: "ZCode",
+          clientName: "RaspberryCode",
           redirectPath: "/oauth/callback/mcp/figma",
           scope: "mcp:connect",
         },

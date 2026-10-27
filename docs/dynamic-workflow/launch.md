@@ -714,7 +714,7 @@ timeline").
 ### The fill file
 
 Every inline `script` fill is written, byte for byte, to
-`<cwd>/.zcode/workflow-drafts/<slug>.<hole-slug>.dwf.ts` before the compile result is read,
+`<cwd>/.raspberrycode/workflow-drafts/<slug>.<hole-slug>.dwf.ts` before the compile result is read,
 exactly as an inline script is written to a draft. `<slug>` is the run's draft slug and
 `<hole-slug>` the hole's name under the same slug rules; `-2`, `-3`, … is appended while the
 name is taken, so an inline resubmission mints a new file and never overwrites one behind the
@@ -1178,8 +1178,8 @@ path-traversal defense.
 
 | Scope | Directory | Visible from |
 |---|---|---|
-| `project` | `<cwd>/.zcode/workflows/` | this project |
-| `global` | `~/.zcode/workflows/` (the agent process's home directory) | every project on this machine |
+| `project` | `<cwd>/.raspberrycode/workflows/` | this project |
+| `global` | `~/.raspberrycode/workflows/` (the agent process's home directory) | every project on this machine |
 
 Lookups run over the roots in that order and the first hit wins: a project workflow hides
 a global one of the same name. A lookup or listing may instead be directed at one scope;
@@ -1358,7 +1358,7 @@ The two directions are different operations, because a project workflow usually 
 its repository and a global one by definition does not.
 
 - **Global to project** is a file move: `workflows/move` (see "Data path") renames
-  `~/.zcode/workflows/<name>.dwf.ts` into the project's directory, falling back to copy and
+  `~/.raspberrycode/workflows/<name>.dwf.ts` into the project's directory, falling back to copy and
   unlink across devices, byte for byte. It never overwrites; an existing target is rejected
   with `target_exists`. Overwriting is something only `SaveWorkflow` does, through its
   window.
@@ -1381,8 +1381,8 @@ regenerates the whole body instead of editing a line.
 
 ### The drafts directory
 
-`<cwd>/.zcode/workflow-drafts/`, a sibling of `.zcode/workflows/` (the definitions the user
-keeps) and `.zcode/workflow-runs/` (the compiled entry of every run). It is created on first
+`<cwd>/.raspberrycode/workflow-drafts/`, a sibling of `.raspberrycode/workflows/` (the definitions the user
+keeps) and `.raspberrycode/workflow-runs/` (the compiled entry of every run). It is created on first
 use with its own `.gitignore` containing `*`, written once and never rewritten, so drafts
 never appear in the project's git status and the project's own `.gitignore` is not touched.
 Nothing deletes a draft.
@@ -1407,7 +1407,7 @@ model's back.
 | `path` | nothing; the file is already the working copy | — |
 
 The write is best effort. A project directory that cannot be written (a read-only checkout,
-`.zcode` being a plain file) does not fail the call: the tool proceeds without a file, the
+`.raspberrycode` being a plain file) does not fail the call: the tool proceeds without a file, the
 response carries no path, and the old instruction, fix the script and resubmit inline, is
 what the model reads. There is no fallback to a temporary directory, because a draft the
 user cannot find in the project is not worth a path.
@@ -1491,7 +1491,7 @@ transcript shows the body. Without a file (a draft the tool could not write) the
 
 ### Editing a draft needs no approval
 
-An `Edit` or `Write` whose target resolves under `<cwd>/.zcode/workflow-drafts/` is allowed
+An `Edit` or `Write` whose target resolves under `<cwd>/.raspberrycode/workflow-drafts/` is allowed
 without a window (`PermissionService`, rule `tool.workflowDraft.preapproved`), at the same
 point in the decision order as the preapproved `WebFetch` URLs: after the project's deny and
 ask rules, after plan mode (which still blocks every write), before the mode defaults. The
@@ -1505,7 +1505,7 @@ Nothing new. The confirmation window, the tool row, the run card and the run pan
 show the path: those surfaces are already dense, and the path is the model's handle, not
 the user's. A `path` submission has no drafting pen, since nothing streams
 (`docs/dynamic-workflow/presentation.md`, "The draft and the pen"); the model's edits appear
-as ordinary `Edit` rows on a file under `.zcode/`.
+as ordinary `Edit` rows on a file under `.raspberrycode/`.
 
 ## The hub page
 
@@ -1591,9 +1591,9 @@ own project, never the active one.
 | Header | the name, beside it a small outlined label with the project's label (「全局」 for a global workflow), the description, a primary 「运行」 button and a ⋯ menu (revise, copy path, the scope item, delete). The label is plain text, not a control; a long project label is cut with an ellipsis. |
 | 「最近产物」 (latest artifacts) | the artifact chips of the newest completed run that published any, clickable into that run's session |
 | Tabs | 「定义」 (definition) and 「运行历史」 (run history, with the count); the file path with a copy button on the right |
-| Definition: 「基本信息」 | 「说明」 (description, required), 「使用时机」 (when to use, with the help 「给 ZCode 的路由提示：什么场景该选这个工作流。」), and a 「参数」 table (name, type, required, default, description) with add and remove. Row errors: 「参数需要名字」, 「参数名重复」, 「默认值与类型不符」. |
+| Definition: 「基本信息」 | 「说明」 (description, required), 「使用时机」 (when to use, with the help 「给 RaspberryCode 的路由提示：什么场景该选这个工作流。」), and a 「参数」 table (name, type, required, default, description) with add and remove. Row errors: 「参数需要名字」, 「参数名重复」, 「默认值与类型不符」. |
 | Save bar | appears only when the form differs from the file: 「放弃更改」 and 「保存元数据」. Saving rewrites the metadata block and leaves the script byte for byte (the note says so: 「只改写文件顶部的元数据，脚本正文保持原样。」). |
-| Definition: 「脚本」 | the script, read-only, with a copy button and the note 「脚本只读。要改脚本，在对话里让 ZCode 修订后另存一版。」 |
+| Definition: 「脚本」 | the script, read-only, with a copy button and the note 「脚本只读。要改脚本，在对话里让 RaspberryCode 修订后另存一版。」 |
 | Run history | one row per run of this name: status word, start time, a project column for global workflows, `duration · tokens`, `key=value` argument chips, artifact chips, and 「查看实例」 (open run) |
 
 「查看实例」 needs the run's parent session id and tool call id, and for a global workflow
@@ -1702,7 +1702,7 @@ directly".
 picks the first reusable local active runtime, else the plugin-management workspace's
 runtime; never a remote one, so `~` is this machine's home directory.
 
-**Freshness.** Each project group watches `<project>/.zcode/workflows` and the global group
+**Freshness.** Each project group watches `<project>/.raspberrycode/workflows` and the global group
 watches the `dir` it was told, non-recursively, and reloads 300 ms after a change; a save
 from a conversation therefore shows up on its own. Run records are not files: the hub
 re-reads them on load and refresh, and shows no live progress; the conversation and the
@@ -2159,7 +2159,7 @@ run is recorded as `stopped` (`interrupted`) and can be resumed.
 A single-executable build cannot spawn `node --eval`, so the CLI has a hidden subcommand
 `__zcode-dwf-child <entry path>` dispatched before argument parsing, and the sandbox is
 started by re-executing the CLI itself with that subcommand. The child script is written
-to an entry file, `<cwd>/.zcode/workflow-runs/<runId>.mjs` (with a temp-directory fallback
+to an entry file, `<cwd>/.raspberrycode/workflow-runs/<runId>.mjs` (with a temp-directory fallback
 and a `.gitignore`), and the command line carries only its path, so a long script never
 exceeds the Windows command-line limit. The sandbox itself is the engine's:
 `apps/zcode-cli/packages/dynamic-workflow/docs/execution-engine.md`.

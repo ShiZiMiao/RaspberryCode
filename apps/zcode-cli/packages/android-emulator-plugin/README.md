@@ -1,6 +1,6 @@
 # Android Emulator Plugin
 
-ZCode plugin for model-driven Android app development.
+RaspberryCode plugin for model-driven Android app development.
 
 The package root is the plugin root:
 
@@ -8,22 +8,22 @@ The package root is the plugin root:
 zcode --plugin-dir /absolute/path/to/android-emulator-plugin
 ```
 
-When enabled, ZCode loads:
+When enabled, RaspberryCode loads:
 
 - `.zcode-plugin/plugin.json` for plugin metadata and skill/command paths.
 - `.mcp.json` for the stdio MCP server.
 - `skills/android-dev/SKILL.md` for the model workflow.
 - `commands/android-dev.md` as a convenience slash command.
 
-## ZCode CLI Usage
+## RaspberryCode CLI Usage
 
-ZCode bundles this package as the official
+RaspberryCode bundles this package as the official
 `android-emulator@zcode-plugins-official` plugin. Enable the plugin to project
 its skill, slash command, and MCP server into the session.
-At startup ZCode copies the packaged plugin files into
+At startup RaspberryCode copies the packaged plugin files into
 `~/.zcode/cli/plugins/cache/zcode-plugins-official/android-emulator/0.1.0/`
 and runs the MCP server from that cache directory. SEA builds rewrite the
-official plugin's ZCode manifest to launch the cached MCP server through ZCode's
+official plugin's RaspberryCode manifest to launch the cached MCP server through RaspberryCode's
 internal plugin host, so the server uses the embedded Node.js runtime.
 Third-party plugins are not rewritten automatically and keep their own declared
 `command`.
@@ -46,10 +46,10 @@ Example `~/.zcode/cli/config.json` entry:
 }
 ```
 
-The plugin MCP server name is `android-emulator`. ZCode normalizes that name for
+The plugin MCP server name is `android-emulator`. RaspberryCode normalizes that name for
 model-visible MCP tools, so the model sees `mcp__android_emulator__<tool>`, for
 example `mcp__android_emulator__android_preflight`. The MCP server still
-implements the raw MCP tool names such as `android_preflight`; ZCode maps
+implements the raw MCP tool names such as `android_preflight`; RaspberryCode maps
 between the model-visible name and the server tool name.
 
 Use stdio for the normal local workflow. HTTP is only useful if you later wrap
@@ -122,7 +122,7 @@ pnpm --filter @zcode/android-emulator-plugin test
 pnpm --filter @zcode/android-emulator-plugin build
 ```
 
-The Claude-compatible `.mcp.json` and the ZCode manifest both execute
+The Claude-compatible `.mcp.json` and the RaspberryCode manifest both execute
 `dist/mcp/server.js` with Node.js. Run the package build after changing
 TypeScript sources.
 

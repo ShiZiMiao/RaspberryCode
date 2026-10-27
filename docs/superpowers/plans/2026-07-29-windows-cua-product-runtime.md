@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship the completed Windows CUA source runtime inside ZCode Windows x64/arm64 packages and start it without a local source checkout.
+**Goal:** Ship the completed Windows CUA source runtime inside RaspberryCode Windows x64/arm64 packages and start it without a local source checkout.
 
 **Architecture:** Stage the pinned `@zcode/zcode-cua` Windows entry, native addon, and minimal external dependencies into `bundled-tools/<triplet>/cua-helper`, then package it at `resources/tools/cua-helper`. A single asynchronous resolver admits either an explicit development root or the verified packaged manifest, while the existing named-pipe Helper host remains the only lifecycle implementation.
 
@@ -86,7 +86,7 @@
 
   Commit: `feat(windows): publish CUA helper runtime artifacts`
 
-  Push `codex/windows-cua-pointer-foundation` so ZCode can pin the resulting exact commit.
+  Push `codex/windows-cua-pointer-foundation` so RaspberryCode can pin the resulting exact commit.
 
 ### Task 2: Deterministic Windows Helper staging
 
@@ -295,7 +295,7 @@
 - [ ] **Step 4: Run unattended product acceptance**
 
   Point the integration test at the unpacked `resources` directory and use the
-  unpacked ZCode executable as `process.execPath` injection. Then run the existing
+  unpacked RaspberryCode executable as `process.execPath` injection. Then run the existing
   Windows screen-capture, pointer, clipboard and 30-tool live smokes from
   `C:/Users/dev/zcode-cua`.
 

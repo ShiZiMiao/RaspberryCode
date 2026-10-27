@@ -4,7 +4,7 @@
 
 Share 落地页单独构建并发布为 nginx 静态镜像，不和手机远控 `/remote` 镜像或
 Deployment 共用。Jenkins Job 通过 `ZCODE_ENV=test|production` 选择构建时注入的
-ZCode API/OAuth endpoint；页面入口为 `/cn/share`（中文）或 `/share`（英文）。
+RaspberryCode API/OAuth endpoint；页面入口为 `/cn/share`（中文）或 `/share`（英文）。
 
 ## 发布链路
 

@@ -206,7 +206,7 @@ Pro 隔离副本核对 Built-in/Facade hash 后同步 Registry 与 I13 spec，�
 - schema、构造/overlay/toJSON、CLI Model合同及设置提交删除冗余字段。Builtin仅删除104处OptionSpec type，内容revision从13到14；不改任何map字符串、值域、上限或请求字段。Provider API/Access及外层规则type未动。
 - 用TypeScript AST定向删除对象中的enum/limit属性（73文件237处，主要是已有测试当前配置fixture），未改已发布迁移输入或字符串内容；两个mjs E2E/helper同样更新。新拒绝用例仍保留旧type作为负例，不新增兼容路径。
 - 32文件500条配置/节点/设置/服务回归初跑499通过，唯一失败是旧硬编码revision13；更新期望14后Built-in14条及设置/节点4文件94条复跑通过。CLI请求/compact/memory/恢复等8文件205测试通过。root及CLI四包类型检查通过，E2E类型检查通过；CLI初次类型检查受contracts旧dist声明影响，重新执行正式contracts build后通过，没有放宽源码类型。
-- Pro从本工作树同步源码和新Builtin，WDIO正常重建desktop与Agent；隔离运行 `desktop-e2e-20260910-023030-912`，SC90-01 / F98-03 两条通过（14.3s），含手动保存/失败保留/重开/转智能、Map原文、1200/390宽度。测试自行清理隔离app数据，没有操作用户真实.zcode。Pro目录无.git，所以build-meta commit=unknown；来源由同步路径和源码校验确认，不冒充commit版本打包发布验收。
+- Pro从本工作树同步源码和新Builtin，WDIO正常重建desktop与Agent；隔离运行 `desktop-e2e-20260910-023030-912`，SC90-01 / F98-03 两条通过（14.3s），含手动保存/失败保留/重开/转智能、Map原文、1200/390宽度。测试自行清理隔离app数据，没有操作用户真实.raspberrycode。Pro目录无.git，所以build-meta commit=unknown；来源由同步路径和源码校验确认，不冒充commit版本打包发布验收。
 - settings域fixture checker返回不支持该目录，与102既有记录一致；none-provider manifest仍保留，不扩修checker、不自动转正。WDIO出现已有Browser.getWindowForTarget滚动降级警告，两个行为用例实际通过。
 - 日志：`/tmp/todo104-b2c-{red,all-tests,builtin-final,final-focused,cli-tests,typecheck,cli-typecheck-final,e2e-types,fixture,pro-e2e,lint,architecture}.log`。其他B2字段/分组、B3/B4/B5仍未完成；Pro本批通过不代表最终全量Schema验收。
 - 提交前扩大到本批全部非CLI/非E2E修改用例：39文件853测试通过；JSDOM有已有canvas未实现提示，不影响断言。CLI changed-file lint通过，仅有既有未使用变量/参数warning；root lint仍43warning/0error，架构0违规。
@@ -238,7 +238,7 @@ Pro 隔离副本核对 Built-in/Facade hash 后同步 Registry 与 I13 spec，�
 - Pro新建构建首次在Agent打包失败：B2d-合同漏了esbuild两个精确shared子路径alias，通用alias误拼index.ts/model-config。补测试先红再修当前build入口，10条Node构建测试通过。旧bundle内容测试只证明本地现有包，其新代码实构建证据取后面的Pro运行；没有以本地旧bundle通过掩盖新Agent打包失败。
 - 同时审查裁剪构建：v4已携带纯表达式库，Share及三个旧remote模板缺新增shared依赖的manifest/源码；仅补这两条COPY，不修旧模板其他既有缺项。新增5项闭包检查4红/1绿，修复后和Share边界共7测试通过，实际Share静态构建成功。不声称Docker镜像已实构建，也不部署Web。Share没有消费新的@shared子路径，未擅改其alias。
 - Pro以冻结锁文件离线安装配套依赖，重新构建Desktop和Agent；隔离运行 `desktop-e2e-20260910-030213-463` 的SC90-01/F98-03两条通过（14.7s）。SC90新增真实图片/视频/PDF切换，确认最终字段落盘及重开状态，原取消、失败草稿、固定转智能、禁用保持断言不减。Map和1200/390布局用例继续通过。既有WebDriver Browser.getWindowForTarget滚动降级仍有日志，行为断言实际通过。
-- Pro只同步隔离工作目录；两份已被共享合同替代的旧schema副本加.todo104-retired后缀，避免被tsc收集，可恢复，不涉及用户.zcode。新增shared依赖给Docker/Agent带来的漏接在本批修掉，不转交102绕过。
+- Pro只同步隔离工作目录；两份已被共享合同替代的旧schema副本加.todo104-retired后缀，避免被tsc收集，可恢复，不涉及用户.raspberrycode。新增shared依赖给Docker/Agent带来的漏接在本批修掉，不转交102绕过。
 - 日志：`/tmp/todo104-b2d-format-{red,builtin-equivalence,tests,changed-tests,cli-tests,typecheck-final,cli-typecheck,lint-final,cli-lint,build-alias-red,build-alias-tests,docker-red,docker-tests,share-build,pro-e2e,pro-e2e-final}.log`。
 - 复审：七项改名的所有生产代码引用已收口，旧拼写只剩明确负例/历史说明；UI字段来源与高亮keys同步；工具媒体过滤仍读取同一执行Model，不重新选择Provider或改写历史。Prompt trajectory现有fixture工厂另有models/enabled/不完整OptionSpec等旧接口问题，未借改名扩修，不作为本批通过证据。B2剩余、B3/B4/B5继续推进，不合回recovery，不推送。
 

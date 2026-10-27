@@ -1,7 +1,8 @@
-# ZCode
+# RaspberryCode
+> **出处说明**：RaspberryCode 是基于 [zai-org/ZCode](https://github.com/zai-org/ZCode)（Apache-2.0）二次开发的分支，原文档中的部分生态链接与服务说明沿用上游。
 
 <div align="center">
-  <img src="public/logo/icons/1024x1024.png" alt="ZCode" width="128" height="128" />
+  <img src="public/logo/icons/1024x1024.png" alt="RaspberryCode" width="128" height="128" />
 </div>
 <p align="center">
   <a href="https://applink.feishu.cn/client/chat/chatter/add_by_link?link_token=47ag983c-8fcb-4d6d-814b-5395193a712c&amp;qr_code=true">飞书社群</a> ·
@@ -11,14 +12,14 @@
   简体中文 | <a href="README.en.md">English</a>
 </p>
 
-ZCode 是 AI 编程工作台，提供桌面应用、浏览器界面和终端 Agent。本仓库包含客户端、后端服务、共享 UI，以及 Agent CLI 与运行时源码。
+RaspberryCode 是 AI 编程工作台，提供桌面应用、浏览器界面和终端 Agent。本仓库包含客户端、后端服务、共享 UI，以及 Agent CLI 与运行时源码。
 
 ## 更新
 
-- **2026-10-19**：更新至 ZCode v3.16.2 版本。
-- **2026-10-16**：更新至 ZCode v3.16.1 版本。
-- 2026-10-10：更新至 ZCode v3.15.1 版本。
-- 2026-9-23：更新至 ZCode v3.14.3 版本。
+- **2026-10-19**：更新至 RaspberryCode v3.16.2 版本。
+- **2026-10-16**：更新至 RaspberryCode v3.16.1 版本。
+- 2026-10-10：更新至 RaspberryCode v3.15.1 版本。
+- 2026-9-23：更新至 RaspberryCode v3.14.3 版本。
 
 ## 初始化
 
@@ -80,9 +81,9 @@ ZCODE_SERVER_WORKSPACE=/path/to/project pnpm dev:web
 
 该命令同时启动 Web 开发服务器（默认 `http://localhost:5173`）和后端（默认 `http://localhost:3030`）；浏览器访问前者。`/ws` 和一般 `/api` 请求代理到本地后端，`/api/v1/oauth/token` 单独代理到当前配置的产品服务。
 
-Agent 源码修改后，执行 `pnpm --filter @zcode/cli... build` 并重启服务。需要验证完整发行包时，按下方“ZCode 命令行版”打包章节解压运行。
+Agent 源码修改后，执行 `pnpm --filter @zcode/cli... build` 并重启服务。需要验证完整发行包时，按下方“RaspberryCode 命令行版”打包章节解压运行。
 
-### ZCode 命令行版
+### RaspberryCode 命令行版
 
 命令行发行包包含 TUI、Web 和 Agent，统一使用 `zcode` 启动：无参数进入 TUI；第一个参数为 `--web` 时启动 Web；其他参数交给现有 Agent CLI 处理。两种模式都在本机运行，无需 Electron。
 
@@ -136,7 +137,7 @@ node apps/zcode-cli/packages/cli/dist/zcode.cjs --help
 
 | 配置                                 | 用途                                             |
 | ------------------------------------ | ------------------------------------------------ |
-| `ZCODE_DATA_BASE_DIR`                | 应用数据基目录，数据写入其下的 `.zcode/`         |
+| `ZCODE_DATA_BASE_DIR`                | 应用数据基目录，数据写入其下的 `.raspberrycode/`         |
 | `ZCODE_SERVER_WORKSPACE`             | Web 后端的工作区路径                             |
 | `ZCODE_BUILTIN_PROVIDER_CONFIG_FILE` | 本地 Provider 配置文件路径；未设置时使用内置配置 |
 | `ZCODE_DIST_BASE_URL`                | 命令行安装脚本使用的下载根地址                   |
@@ -160,13 +161,13 @@ pnpm bundle:desktop -- --help
 
 默认目标为 macOS arm64，默认输出目录为 `packages/desktop/dist/`。`--os` 支持 `mac`、`win`、`linux`，`--arch` 支持 `x64`、`arm64`；实际打包与签名需要目标平台对应的工具和配置。
 
-安装：双击打开产物 DMG，将 ZCode 拖入"应用程序"。本地构建未签名，首次打开若被 macOS 拦截，执行：
+安装：双击打开产物 DMG，将 RaspberryCode 拖入"应用程序"。本地构建未签名，首次打开若被 macOS 拦截，执行：
 
 ```bash
-sudo xattr -rd com.apple.quarantine /Applications/ZCode.app
+sudo xattr -rd com.apple.quarantine /Applications/RaspberryCode.app
 ```
 
-### ZCode 命令行版
+### RaspberryCode 命令行版
 
 构建入口为 `pnpm build:zcode`。脚本会依次构建 CLI/TUI、后端和 Web，收集 TUI 的原生库、worker 与运行时依赖，再组装发行包；运行发行包仍需要 Node.js，版本以 `mise.toml` 为准。
 
@@ -191,7 +192,7 @@ pnpm build:zcode --help
 - `releases/<version>/sha256.txt`：校验摘要。
 - `latest.json`、`install.sh`：版本索引和安装脚本。
 
-完整目录可上传到配置的下载根地址。安装脚本从该地址下载运行包，默认安装到 `~/.zcode/runtime`，并在 `~/.local/bin` 创建 `zcode` 命令。安装目录可通过 `ZCODE_DIST_HOME` 修改，命令目录可通过 `ZCODE_DIST_BIN_DIR` 修改。
+完整目录可上传到配置的下载根地址。安装脚本从该地址下载运行包，默认安装到 `~/.raspberrycode/runtime`，并在 `~/.local/bin` 创建 `zcode` 命令。安装目录可通过 `ZCODE_DIST_HOME` 修改，命令目录可通过 `ZCODE_DIST_BIN_DIR` 修改。
 
 旧 Lite 用户需要改用上述构建命令、环境变量和新的安装脚本。新安装不会删除旧 Lite 目录，也不会迁移或删除已有会话数据。
 

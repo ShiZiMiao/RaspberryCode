@@ -444,7 +444,7 @@ export function ConversationShareLandingPage({
                   className="shrink-0 text-ui-lg font-semibold text-foreground"
                   aria-label="RaspberryCode"
                 >
-                  ZCode
+                  RaspberryCode
                 </div>
                 <h1
                   ref={titleRef}

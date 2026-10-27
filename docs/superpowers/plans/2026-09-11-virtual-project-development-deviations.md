@@ -660,7 +660,7 @@ VP18 测试设施说明：runtime lifecycle 在公共接口上是可选能力，
 
 migrateGroups 在 hosts.length === 0 时显式创建空项目，与“无 session 不迁移”相反。首次迁移只处理未删除成员；本机容器按备份核对来源，不按 Group 名称删除手建空项目。SQL/checksum 不变。
 
-D93 本机修复：原备份中 19 个手建 Group 与 19 个覆盖名称的迁移项目按同一顺序逐项对应，其中 11 个零成员、零 root。核对当前行未变且无任务/调度/Bot/远端入口引用后，先备份再在事务内移除这 11 个误生成容器。备份：`~/.zcode/backup/empty-group-repair-20260911-gq2grh`。4101 条任务保留、其余 15 表哈希未变；41 个有用项目保留，quick_check 和外键检查通过。
+D93 本机修复：原备份中 19 个手建 Group 与 19 个覆盖名称的迁移项目按同一顺序逐项对应，其中 11 个零成员、零 root。核对当前行未变且无任务/调度/Bot/远端入口引用后，先备份再在事务内移除这 11 个误生成容器。备份：`~/.raspberrycode/backup/empty-group-repair-20260911-gq2grh`。4101 条任务保留、其余 15 表哈希未变；41 个有用项目保留，quick_check 和外键检查通过。
 
 ### D94 纠偏回归的测试问题与连接生命周期
 
@@ -692,7 +692,7 @@ D95 架构收口：project 公共服务增加 1 个目录查询意图后，发�
 
 用户指出 `v3_projects` 把 schema 代号混入了 migration ID。CLI 使用四位补零序号加语义名，task-index 此前没有版本化账本，故第一条应为 `0001_projects`，两个库各自递增。仅更名声明和启动/升级测试中的预期；SQL 文本（包括 checksum 输入中的 v3 注释）保持原样，并新增固定 checksum 断言。不为开发期临时名称给公共 runner 添加别名或第二套迁移逻辑。
 
-本机先备份、在副本中更名并调用当前 projectStorage.migrate，确认 applied=[]、所有业务表哈希不变后，在真实库事务中仅更新 schema_migration.id。checksum、app_version 和 applied_at 未变；4102 条任务、41 个项目和全部 15 张业务表内容不变，quick_check/外键检查通过。备份与报告：`~/.zcode/backup/migration-id-20260911-cppLK7/`。第一次副本断言因 Node SQLite 返回的 null-prototype row 与普通对象原型不同而失败，发生在真实库修改前；比较时统一行对象后通过，未放宽字段断言。
+本机先备份、在副本中更名并调用当前 projectStorage.migrate，确认 applied=[]、所有业务表哈希不变后，在真实库事务中仅更新 schema_migration.id。checksum、app_version 和 applied_at 未变；4102 条任务、41 个项目和全部 15 张业务表内容不变，quick_check/外键检查通过。备份与报告：`~/.raspberrycode/backup/migration-id-20260911-cppLK7/`。第一次副本断言因 Node SQLite 返回的 null-prototype row 与普通对象原型不同而失败，发生在真实库修改前；比较时统一行对象后通过，未放宽字段断言。
 
 D98 验证：5 文件 / 34 项单测通过（含首次升级、重复启动、downgrade 和公共 runner）；root typecheck 通过，lint 为 48 warnings / 0 errors，architecture baseline/new/violations 均为 0，格式与 diff 检查通过。第 63 轮 `desktop-e2e-20260911044122173-p94329-bf236dca664095c7` 重新构建后 9/9 桌面 E2E 通过，首窗确认 app `0001_projects` 与 CLI `0020_session_soft_delete_outcome` 已完成。影响模块为 project-storage 的迁移声明；schema_migration 仍由公共 runner 独占，启动顺序与桌面/手机时序不变。代码含测试新增 15 行、删除 8 行，净增 7 行。
 
@@ -756,11 +756,11 @@ D101 最终验证：第二轮 `desktop-e2e-20260911051449253-p26668-5ffc16408305
 
 只读审计确认：本机 position 仍是旧迁移结果，前几项为 default、DEMO、ZCodeProject；保留的 9 月 10 日历史设置中 test-2、z-m、ios-demo、zcode-v4-ios 在当前库分别排第 22、29、18、30。当前 setting.json 已从错误顺序反向派生，不能当作升级前输入。用户明确要求不手改排序，并接受回退部分近期数据，改为恢复旧备份后自行启动验收。
 
-可用完整快照为 `~/.zcode/backup/session-projects-20260909-141705/`：旧任务索引有 4078 行，无 projects 表、无 schema_migration；旧设置的前五个项目为 z-m、ios-demo、test-2、zcode-v4-ios、ios-demo-2。回撤前索引有 4111 行（新增 33、旧行无缺失），共同任务中 1 个标题、1518 个归档标记、17 个未读值不同。原始副本完整性和外键检查通过。现存两个 tasks_index 自动表级备份均为零行，不能用于本机恢复。
+可用完整快照为 `~/.raspberrycode/backup/session-projects-20260909-141705/`：旧任务索引有 4078 行，无 projects 表、无 schema_migration；旧设置的前五个项目为 z-m、ios-demo、test-2、zcode-v4-ios、ios-demo-2。回撤前索引有 4111 行（新增 33、旧行无缺失），共同任务中 1 个标题、1518 个归档标记、17 个未读值不同。原始副本完整性和外键检查通过。现存两个 tasks_index 自动表级备份均为零行，不能用于本机恢复。
 
 CLI 旧快照额外发现 `0019_dwf_journal` checksum 与当前库不同，并含另一分支的 `0020_dwf_run_result`；此次只重测 app 项目迁移，因此保留当前 CLI 正文库，不回退其 schema、不修改 checksum。当前 CLI 有 5076 个 session，旧快照 5054 个；本次没有覆盖正文。
 
-执行前确认应用/数据库无持有进程，保存当前 SQLite 一致快照与设置，再以旧备份的完整文件替换任务索引和 setting.json；原文件及 WAL/SHM 同时保留，未手改 position、project_id 或 migration ledger。备份及审计：`~/.zcode/backup/project-migration-retest-20260911-Siq1ag/manifest.json`。还原文件 SHA-256 与旧备份逐字一致，quick_check/外键检查通过，当前库 4078 行、projects/ledger 均不存在；CLI 主文件及 WAL 哈希前后不变。
+执行前确认应用/数据库无持有进程，保存当前 SQLite 一致快照与设置，再以旧备份的完整文件替换任务索引和 setting.json；原文件及 WAL/SHM 同时保留，未手改 position、project_id 或 migration ledger。备份及审计：`~/.raspberrycode/backup/project-migration-retest-20260911-Siq1ag/manifest.json`。还原文件 SHA-256 与旧备份逐字一致，quick_check/外键检查通过，当前库 4078 行、projects/ledger 均不存在；CLI 主文件及 WAL 哈希前后不变。
 
 状态：已回撤，等待用户用当前代码启动；未提前执行 migration，不能把恢复检查当作这次人工升级验收通过。9 月 9 日快照比保留的 9 月 10 日设置更早，项目原顺序应按此次成套恢复的 9 月 9 日 setting.json 验收。只有本机数据操作与文档更新，没有生产代码改动。
 
@@ -821,13 +821,13 @@ CLI 旧快照额外发现 `0019_dwf_journal` checksum 与当前库不同，并�
 
 ### 用户追加要求恢复 CLI 原始库（2026-09-11）
 
-用户在再次恢复 app 索引/设置后明确要求 cli/db/db.sqlite 也恢复到同一份 9 月 9 日 14:17 备份。已确认没有使用数据库的应用进程，先保存一致快照，再离线替换完整 CLI 文件；原文件与 WAL/SHM 留存，未逐表删除正文、未修改 migration ID/checksum。备份和审计：`~/.zcode/backup/cli-migration-retest-20260911-EQXKVM/`。还原前 session/message/part 为 5076/71350/239427，还原后为 5054/71269/239180；恢复文件 SHA-256 与旧备份一致，quick_check 与 foreign_key_check 通过。app 任务索引及设置哈希前后不变。
+用户在再次恢复 app 索引/设置后明确要求 cli/db/db.sqlite 也恢复到同一份 9 月 9 日 14:17 备份。已确认没有使用数据库的应用进程，先保存一致快照，再离线替换完整 CLI 文件；原文件与 WAL/SHM 留存，未逐表删除正文、未修改 migration ID/checksum。备份和审计：`~/.raspberrycode/backup/cli-migration-retest-20260911-EQXKVM/`。还原前 session/message/part 为 5076/71350/239427，还原后为 5054/71269/239180；恢复文件 SHA-256 与旧备份一致，quick_check 与 foreign_key_check 通过。app 任务索引及设置哈希前后不变。
 
 旧库与还原前库的共同 migration 中仍有 `0019_dwf_journal` checksum 差异，旧库还含另一分支的 `0020_dwf_run_result`；按用户要求保留真实旧输入，没有修改账本规避校验。未启动应用或执行 migration，等待用户手动测试；还原成功不代表此次旧 CLI 版本的升级验证通过。
 
 ### 再次成套还原任务索引与 CLI（2026-09-11）
 
-用户再次要求恢复两库，沿用 `session-projects-20260909-141705` 完整快照，同时恢复配套旧 setting.json。离线备份后，tasks-index.sqlite 从 4092 行恢复至 4078 行且无 projects 表；CLI 恢复至 5054 个 session、71269 个 message、239180 个 part（与本次还原前计数相同）。两库恢复文件与来源 SHA-256 一致，quick_check/外键检查通过；CLI 阶段确认刚恢复的 app 文件未变。当前快照、原文件及附属文件分别保存在 `~/.zcode/backup/project-migration-retest-20260911-ZeaZCj/` 和 `~/.zcode/backup/cli-migration-retest-20260911-PBjmXq/`，README 与 manifest 记录本次审计。没有修改 migration 账本或手工调整顺序，未启动应用或执行 migration，留给用户测试。
+用户再次要求恢复两库，沿用 `session-projects-20260909-141705` 完整快照，同时恢复配套旧 setting.json。离线备份后，tasks-index.sqlite 从 4092 行恢复至 4078 行且无 projects 表；CLI 恢复至 5054 个 session、71269 个 message、239180 个 part（与本次还原前计数相同）。两库恢复文件与来源 SHA-256 一致，quick_check/外键检查通过；CLI 阶段确认刚恢复的 app 文件未变。当前快照、原文件及附属文件分别保存在 `~/.raspberrycode/backup/project-migration-retest-20260911-ZeaZCj/` 和 `~/.raspberrycode/backup/cli-migration-retest-20260911-PBjmXq/`，README 与 manifest 记录本次审计。没有修改 migration 账本或手工调整顺序，未启动应用或执行 migration，留给用户测试。
 
 ### 自动归档触发点脱离项目树查询（2026-09-14）
 

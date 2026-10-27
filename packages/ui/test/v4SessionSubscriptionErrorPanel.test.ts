@@ -31,7 +31,7 @@ function renderPanel() {
         createElement(SessionSubscriptionErrorPanel, {
           error: "EPERM: operation not permitted",
           sessionId: "session-1",
-          workspacePath: "F:\\ZCode_data",
+          workspacePath: "F:\\RaspberryCode_data",
           onReconnect: vi.fn(),
         }),
       ),
@@ -83,7 +83,7 @@ describe("SessionSubscriptionErrorPanel", () => {
     );
     expect(useFeedbackStore.getState().submitDraft?.description).toContain("任务 ID: session-1");
     expect(useFeedbackStore.getState().submitDraft?.description).toContain(
-      "工作区: F:\\ZCode_data",
+      "工作区: F:\\RaspberryCode_data",
     );
   });
 });

@@ -2,13 +2,13 @@
 
 ## 目标
 
-模型 provider 的 HTTP(S) 请求必须支持 ZCode 显式代理配置，便于桌面端、debug app 或用户通过受控入口观察请求 URL、host、状态和流式响应。
+模型 provider 的 HTTP(S) 请求必须支持 RaspberryCode 显式代理配置，便于桌面端、debug app 或用户通过受控入口观察请求 URL、host、状态和流式响应。
 
 同一套代理解析规则也必须复用于 `HttpClientPort`，这样 `WebFetch` 等非 provider HTTP I/O 不会和模型请求出现“一个走代理、一个直连”的漂移行为。`WebSearch` handler 发起的内部 provider-native `web_search` side request 仍走 provider transport，因此继续跟随模型请求代理策略。
 
-同一套网络出口策略还必须进入子进程与扩展边界。ZCode 自己启动的 `Bash`、后台终端、stdio MCP server 等子进程如果可能发起网络请求，应先隔离 app/provider 运行时，再在 tool 边界恢复用户 shell 里的 `HTTP_PROXY` / `http_proxy` / `NODE_EXTRA_CA_CERTS` 等网络变量，避免这些变量意外污染模型请求，同时保留用户命令自己的网络环境。
+同一套网络出口策略还必须进入子进程与扩展边界。RaspberryCode 自己启动的 `Bash`、后台终端、stdio MCP server 等子进程如果可能发起网络请求，应先隔离 app/provider 运行时，再在 tool 边界恢复用户 shell 里的 `HTTP_PROXY` / `http_proxy` / `NODE_EXTRA_CA_CERTS` 等网络变量，避免这些变量意外污染模型请求，同时保留用户命令自己的网络环境。
 
-桌面端 renderer 里的 `fetch`、XHR、页面资源和内嵌浏览器 WebView 同样属于 ZCode 自身出口。它们必须从设置页的显式 HTTP 代理读取策略，通过 Electron `session.setProxy` 分别应用到 `defaultSession` 与 `persist:zcode-embedded-browser`；不得依赖用户 shell 环境变量，即不继承 `HTTP_PROXY` / `HTTPS_PROXY` / `NODE_EXTRA_CA_CERTS`。设置页留空时两个 Session 的兜底行为不同：`defaultSession` 直连，把 ZCode 自身的后端与模型流量收敛到显式配置；`persist:zcode-embedded-browser` 跟随本机系统代理，因为它承载的是用户自己的浏览行为，必须与用户本机浏览器可达的站点保持一致。系统代理读取的是 OS 网络设置而非 shell 环境变量，因此不与上面的「不继承 shell 环境变量」冲突。
+桌面端 renderer 里的 `fetch`、XHR、页面资源和内嵌浏览器 WebView 同样属于 RaspberryCode 自身出口。它们必须从设置页的显式 HTTP 代理读取策略，通过 Electron `session.setProxy` 分别应用到 `defaultSession` 与 `persist:zcode-embedded-browser`；不得依赖用户 shell 环境变量，即不继承 `HTTP_PROXY` / `HTTPS_PROXY` / `NODE_EXTRA_CA_CERTS`。设置页留空时两个 Session 的兜底行为不同：`defaultSession` 直连，把 RaspberryCode 自身的后端与模型流量收敛到显式配置；`persist:zcode-embedded-browser` 跟随本机系统代理，因为它承载的是用户自己的浏览行为，必须与用户本机浏览器可达的站点保持一致。系统代理读取的是 OS 网络设置而非 shell 环境变量，因此不与上面的「不继承 shell 环境变量」冲突。
 
 Desktop Window Host 在 SSH/WSL/Docker 部署期间发起的远程资源 manifest、组件归档和进度 `HEAD` 请求也属于 app-managed 出口。它们必须通过 Host 生命周期内冻结的 request-scoped transport 消费同一份设置页代理、No Proxy 和自定义 CA；禁止依赖裸 `globalThis.fetch` 或进程全局 dispatcher。`remote-download` 的组件归档仍由远端 `curl`/`wget` 下载，不继承桌面代理。
 
@@ -37,7 +37,7 @@ No Proxy 对以上代理来源都生效，支持 `*`、精确 host、host:port�
 2. 桌面端 `AppSettings.httpProxyCaCertPath`，由设置页显式填写。
 3. `ZCODE_AGENT_CA_CERT` 环境变量，适用于 app/debug server/CLI runtime 显式注入。
 
-运行时继承环境会过滤 `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY` / `NO_PROXY`、`NODE_EXTRA_CA_CERTS` / `SSL_CERT_FILE` / `REQUESTS_CA_BUNDLE` / `CURL_CA_BUNDLE` / `GIT_SSL_CAINFO` 以及包管理器代理/CA 变量。过滤前会把这些用户 shell 网络变量封存到 ZCode 内部 `ZCODE_TOOL_ENV_PASSTHROUGH_JSON`；该变量不参与 app/provider/通用 `HttpClientPort` 的代理解析，只作为 `WebFetch` 专用 fallback，或在 tool 子进程环境构造时恢复。
+运行时继承环境会过滤 `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY` / `NO_PROXY`、`NODE_EXTRA_CA_CERTS` / `SSL_CERT_FILE` / `REQUESTS_CA_BUNDLE` / `CURL_CA_BUNDLE` / `GIT_SSL_CAINFO` 以及包管理器代理/CA 变量。过滤前会把这些用户 shell 网络变量封存到 RaspberryCode 内部 `ZCODE_TOOL_ENV_PASSTHROUGH_JSON`；该变量不参与 app/provider/通用 `HttpClientPort` 的代理解析，只作为 `WebFetch` 专用 fallback，或在 tool 子进程环境构造时恢复。
 
 子进程代理与证书环境先恢复用户 shell 网络变量，再由显式网络策略覆盖同类目标。如果命中 `network.httpProxy`、`AppSettings.httpProxy` 或 `ZCODE_HTTP_PROXY`，adapter 会补齐 `HTTP_PROXY`、`HTTPS_PROXY`、`ALL_PROXY` 及小写形式；如果命中 `network.noProxy`、`AppSettings.httpProxyNoProxy` 或 `ZCODE_NO_PROXY`，adapter 会补齐 `NO_PROXY` 与 `no_proxy`；如果命中 `network.caCertFile`、`AppSettings.httpProxyCaCertPath` 或 `ZCODE_AGENT_CA_CERT`，adapter 会补齐 `NODE_EXTRA_CA_CERTS`、`SSL_CERT_FILE`、`REQUESTS_CA_BUNDLE`、`CURL_CA_BUNDLE` 和 `GIT_SSL_CAINFO`，提升 Node、OpenSSL/curl、Python requests 和 git 的一致性。`env.base: "empty"` 的命令不恢复用户 shell passthrough，只保留显式网络配置和命令级 overlay。
 

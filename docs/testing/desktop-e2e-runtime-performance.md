@@ -60,7 +60,7 @@ shard 内不能直接提高 WDIO `maxInstances`，否则多个 worker 会重置�
 
 ### 进程身份与回收
 
-macOS 上 Electron main 的命令行可能只剩 `ZCode E2E`，不再保留 run id 和 HOME 参数。
+macOS 上 Electron main 的命令行可能只剩 `RaspberryCode E2E`，不再保留 run id 和 HOME 参数。
 运行时采样确认：Chromium 子进程仍带有当前 run 的 `--user-data-dir`，但该目录位于
 run cache 而非 HOME。仅按 HOME 和 run id 扫描会漏掉 main，只命中独立的 crashpad 等
 进程，导致退出屏障失败并阻塞后续 worker。

@@ -116,8 +116,8 @@ Mobile replayable -------+                 +-> 独立 mobile gap/snapshot
 
 隔离要求：
 
-1. 当前桌面 SSH adapter 固定远端用户 `~/.zcode/server`。CLI 虽支持 `--server-root`，该能力未贯穿桌面入口；不得把本地 `ZCODE_DATA_BASE_DIR` 或两个项目目录当作远端环境隔离。
-2. 专用本地 E2E profile + 专用远端用户/容器；真实模型只将选定代表配置通过产品写入口导入隔离 profile，再由正式 Provisioning 下发。不得盲拷用户完整 `.zcode`。App数据/Chromium/CLI/Helper目录必须分别检查：旧版Helper还需要独立 `ZCODE_HOME`，仅设置 `ZCODE_DATA_BASE_DIR` 与 `ZCODE_DESKTOP_HOME_DIR` 不足以隔离它。
+1. 当前桌面 SSH adapter 固定远端用户 `~/.raspberrycode/server`。CLI 虽支持 `--server-root`，该能力未贯穿桌面入口；不得把本地 `ZCODE_DATA_BASE_DIR` 或两个项目目录当作远端环境隔离。
+2. 专用本地 E2E profile + 专用远端用户/容器；真实模型只将选定代表配置通过产品写入口导入隔离 profile，再由正式 Provisioning 下发。不得盲拷用户完整 `.raspberrycode`。App数据/Chromium/CLI/Helper目录必须分别检查：旧版Helper还需要独立 `ZCODE_HOME`，仅设置 `ZCODE_DATA_BASE_DIR` 与 `ZCODE_DESKTOP_HOME_DIR` 不足以隔离它。
 3. 项目 fixture 位于各自实际 workspace 的 `.zcode-e2e/<run>/<case>`；两个 Source 使用相同 POSIX path 验证身份隔离；同时保留一个本地 workspace 作为反向污染哨兵。
 4. 专属环境串行执行 `ZCODE_E2E_MAX_INSTANCES=1`；独立环境可由未来 runner 做有界并行，不能共享默认安装根、provider store、端口或录像输出。
 5. systemd 容器不得因使用 private cgroup namespace 就视为完全隔离。启动前必须持久 mask `systemd-binfmt.service`，核对 Docker VM 的 binfmt 注册前后不变，并复验已有 x64 目标。未验证这些前置条件的 privileged fixture 禁止复用；不得通过手工重写共享 binfmt 来绕过失败。
@@ -184,7 +184,7 @@ Git HEAD + 工作树变更摘要 + Node/pnpm/构建配置
 
 旧材料分为：
 
-- 本轮用户指定旧端：`/Applications/ZCode.app`，实际版本 `3.11.2`、包内 build commit `89817f5b`；保留原安装，仅用隔离 profile 启动。新端当前源码声明 `3.11.1`，验证基线为 `e31f76568f`。这是旧代码/新代码角色，不是按版本号大小排序；不得为了满足“同版本”假设修改版本元数据。先前 Downloads 3.10.0 探针保留为历史，不再作为默认旧端。精确同版本异 SHA 分支仍需单独证明，不能把这个实际版本不相等的组合计为通过。
+- 本轮用户指定旧端：`/Applications/RaspberryCode.app`，实际版本 `3.11.2`、包内 build commit `89817f5b`；保留原安装，仅用隔离 profile 启动。新端当前源码声明 `3.11.1`，验证基线为 `e31f76568f`。这是旧代码/新代码角色，不是按版本号大小排序；不得为了满足“同版本”假设修改版本元数据。先前 Downloads 3.10.0 探针保留为历史，不再作为默认旧端。精确同版本异 SHA 分支仍需单独证明，不能把这个实际版本不相等的组合计为通过。
 - 合并前 R3：固定 `8009d8cd08`，可在隔离 checkout 重建旧 Desktop/Server；版本相同不代表提交相同。
 - 支持的旧版本：选用经过来源、SHA、平台/包内 manifest 及实际启动验证的 App/Server 组合。现有旧包首先是候选，不把“文件存在/校验匹配”写成可运行或正式发行认证。
 - 旧数据：由对应旧程序在专属环境创建项目、对话、选中模型、账号窄状态，再备份并在当前版迁移；数据库异常分支可用有明确 schema 来源的合成 fixture，报告标注 synthetic。

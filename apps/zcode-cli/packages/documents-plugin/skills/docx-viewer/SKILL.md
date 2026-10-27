@@ -38,4 +38,4 @@ When the user clicks or selects something and chooses **Add to chat**, the next 
 - Paths are relative to the workspace; files outside it cannot be opened. Only .docx opens; convert a legacy .doc with the `docx` skill first.
 - The panel renders the document close to, but not exactly like, Microsoft Word. Use `capture_view` before you comment on fine layout.
 - Do not paste whole documents into the chat; quote briefly and point with `show_in_viewer`.
-- The panel only works in ZCode Desktop local workspaces. Elsewhere, the read and search tools still work; tell the user the visual viewer is unavailable.
+- The panel only works in RaspberryCode Desktop local workspaces. Elsewhere, the read and search tools still work; tell the user the visual viewer is unavailable.

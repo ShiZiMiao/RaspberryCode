@@ -2,7 +2,7 @@
 
 ## 目标
 
-Z.AI 与 BigModel Desktop 登录不再把 `zcode://oauth/callback` 作为唯一完成路径。App 使用 ZCode
+Z.AI 与 BigModel Desktop 登录不再把 `zcode://oauth/callback` 作为唯一完成路径。App 使用 RaspberryCode
 后端已有的短期 OAuth flow，在浏览器完成授权后轮询 flow 状态；deep link 仍保留为兼容路径。
 轮询接口的 `provider` 使用 `zai` 或 `bigmodel`，两者共享 flow 生命周期，但 `ready` 凭据字段按 provider 区分。
 BigModel 创建 flow 后，App 把授权地址中的回调改为官网旧中转页
@@ -12,7 +12,7 @@ BigModel 创建 flow 后，App 把授权地址中的回调改为官网旧中转�
 ## 时序
 
 ```text
-Desktop App                 ZCode Backend                 Browser / Z.AI
+Desktop App                 RaspberryCode Backend                 Browser / Z.AI
     | POST /oauth/cli/init        |                              |
     |---------------------------->|                              |
     | flow_id + authorize_url     |                              |
@@ -32,7 +32,7 @@ BigModel 双路径：
 BigModel Browser
     | authCode/state
     v
-ZCode Website /app/oauth/login -----> zcode://oauth/callback -----> Desktop deep link
+RaspberryCode Website /app/oauth/login -----> zcode://oauth/callback -----> Desktop deep link
                                                                     |
 Desktop Host ---------------- GET /oauth/cli/poll/:id --------------+
 ```

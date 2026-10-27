@@ -382,7 +382,7 @@ const CODING_PLAN_MODEL_SSE_BODY =
 const E2E_AUTH_PROVIDER_ID = "zai";
 const E2E_AUTH_TOKEN = "e2e-oauth-token";
 const E2E_USER_PROFILE = {
-  displayName: "ZCode E2E",
+  displayName: "RaspberryCode E2E",
   id: "zcode-e2e-user",
   username: "zcode-e2e-user",
 };
@@ -601,13 +601,13 @@ process.env.USERPROFILE = E2E_HOME_DIR;
 process.env.ZCODE_E2E_HOME_DIR = E2E_HOME_DIR;
 process.env.ZCODE_E2E_RUN_ID = E2E_RUN_ID;
 process.env.ZCODE_DATA_BASE_DIR = E2E_HOME_DIR;
-process.env.ZCODE_DESKTOP_APPLICATION_NAME = "ZCode E2E";
+process.env.ZCODE_DESKTOP_APPLICATION_NAME = "RaspberryCode E2E";
 process.env.ZCODE_DESKTOP_HOME_DIR = E2E_HOME_DIR;
 process.env.ZCODE_DESKTOP_USE_ELECTRON_DEFAULT_USER_DATA = "1";
 // Bugfix: renderer E2E store bridge 只能由 WDIO 进程显式打开，避免 ZCODE_ENV=test 的产品测试环境暴露全局可变 store。
 process.env.VITE_ZCODE_E2E_STORE_BRIDGE = "1";
 // Bugfix: e2e session 由 Chromedriver 管理调试端口；禁用主进程开发态固定的 9229，
-// 避免和本机已打开的 ZCode Dev 冲突后出现空白窗口并卡在 session 创建阶段。
+// 避免和本机已打开的 RaspberryCode Dev 冲突后出现空白窗口并卡在 session 创建阶段。
 process.env.ZCODE_DISABLE_FIXED_REMOTE_DEBUGGING_PORT = "1";
 
 let upstreamCaptureProxy: E2ENetworkCaptureProxy | null = null;
@@ -1059,7 +1059,7 @@ function prepareZCodeAgentServer() {
     // 会并发覆盖同一 dist 目录。跳过时仍校验入口，避免旧或缺失产物静默启动。
     console.log("[e2e] ZCODE_E2E_SKIP_AGENT_BUILD=1, skipping agent build");
     if (!existsSync(ZCODE_CLI_ENTRYPOINT)) {
-      throw new Error(`ZCode CLI entrypoint not found: ${ZCODE_CLI_ENTRYPOINT}`);
+      throw new Error(`RaspberryCode CLI entrypoint not found: ${ZCODE_CLI_ENTRYPOINT}`);
     }
     configureZCodeAgentServerEnv();
     return;
@@ -1067,7 +1067,7 @@ function prepareZCodeAgentServer() {
 
   // Bugfix: e2e 还在找仓库外的旧原生 zcode-agent binary，并调用已经删除的
   // `build:agent-exe`。当前桌面端统一通过 zcode-cli 的 app-server JS bundle
-  // 暴露 ZCode Protocol，这里复用正式开发入口的构建脚本，之后由 bundled resolver
+  // 暴露 RaspberryCode Protocol，这里复用正式开发入口的构建脚本，之后由 bundled resolver
   // 选择已校验的 bundle，保留存储准备能力和正式桌面启动契约。
   execFileSync(process.execPath, [BUILD_DESKTOP_AGENT_SCRIPT], {
     cwd: REPO_ROOT,
@@ -1076,7 +1076,7 @@ function prepareZCodeAgentServer() {
   });
 
   if (!existsSync(ZCODE_CLI_ENTRYPOINT)) {
-    throw new Error(`ZCode CLI entrypoint not found: ${ZCODE_CLI_ENTRYPOINT}`);
+    throw new Error(`RaspberryCode CLI entrypoint not found: ${ZCODE_CLI_ENTRYPOINT}`);
   }
 
   configureZCodeAgentServerEnv();
@@ -1552,7 +1552,7 @@ async function startCodingPlanTeamMockIfNeeded(specs: string[] = []) {
           plans: [
             {
               plan_id: "zcode-v3-start-plan",
-              name: "ZCode V3 Start Plan",
+              name: "RaspberryCode V3 Start Plan",
               status: "active",
             },
           ],
@@ -2548,7 +2548,7 @@ async function materializeOffPeakMockZCodeBuiltinProviderConfig(
       (rule) => rule.providerId === providerId,
     )?.config;
     if (!offPeakProvider?.api) {
-      throw new Error(`ZCode Built-in Config 缺少 ${providerId}.api`);
+      throw new Error(`RaspberryCode Built-in Config 缺少 ${providerId}.api`);
     }
     offPeakProvider.api.baseUrl = `http://127.0.0.1:${port}/api/v1/off-peak/anthropic`;
     // 原闲时 fixture 的单模型白名单应迁到当前 Built-in 输入，不能继续依赖已退役的
@@ -2695,7 +2695,7 @@ async function armCurrentElectronAppQuit(stage: string) {
     const result = (await browser.electron.execute((electron) => {
       const currentAppPid = process.pid;
       const appName = electron.app.getName();
-      if (appName !== "ZCode E2E") {
+      if (appName !== "RaspberryCode E2E") {
         return {
           appName,
           appPid: currentAppPid,
@@ -3351,7 +3351,7 @@ function seedE2EGitCommitDialogWorkspace(specs: string[] = []) {
   writeFileSync(resolve(workspacePath, "README.md"), "Git commit dialog E2E workspace\n", "utf-8");
   runGitE2ECommand(workspacePath, ["init"]);
   runGitE2ECommand(workspacePath, ["checkout", "-B", "main"]);
-  runGitE2ECommand(workspacePath, ["config", "user.name", "ZCode E2E"]);
+  runGitE2ECommand(workspacePath, ["config", "user.name", "RaspberryCode E2E"]);
   runGitE2ECommand(workspacePath, ["config", "user.email", "zcode-e2e@example.com"]);
   runGitE2ECommand(workspacePath, ["add", "README.md"]);
   runGitE2ECommand(workspacePath, ["commit", "-m", "chore: seed git commit dialog e2e"]);
@@ -3493,7 +3493,7 @@ function seedE2EStartupState(specs: string[] = []) {
       providerReadinessColdStartFixture ||
         workerSpecsContain(specs, "oauth-login-failure-cancel.test.ts")
         ? {}
-        : // Bug 根因：I20 不验证账号登录，却播种假 ZCode JWT；带账号身份的旁路请求
+        : // Bug 根因：I20 不验证账号登录，却播种假 RaspberryCode JWT；带账号身份的旁路请求
           // 会把它发往真实控制面，401 随后弹出登录过期对话框并遮挡目标交互。
           // 该 case 只保留本地 Provider 回放，不注入无关账号身份。
           builtInSubagentModelOverridesSpec
@@ -4641,7 +4641,7 @@ export const config: WebdriverIO.Config = {
     ZCODE_DATA_BASE_DIR: E2E_HOME_DIR,
     ZCODE_BUILTIN_PROVIDER_CONFIG_FILE:
       INITIAL_ZCODE_BUILTIN_PROVIDER_CONFIG_FILE ?? E2E_DEFAULT_ZCODE_BUILTIN_PROVIDER_CONFIG_FILE,
-    ZCODE_DESKTOP_APPLICATION_NAME: "ZCode E2E",
+    ZCODE_DESKTOP_APPLICATION_NAME: "RaspberryCode E2E",
     ZCODE_DESKTOP_HOME_DIR: E2E_HOME_DIR,
     ZCODE_DESKTOP_USE_ELECTRON_DEFAULT_USER_DATA: "1",
     ZCODE_DISABLE_FIXED_REMOTE_DEBUGGING_PORT: "1",
@@ -4809,7 +4809,7 @@ export const config: WebdriverIO.Config = {
         await cleanupE2EDirectory("onPrepare", E2E_CHROMIUM_USER_DATA_ROOT_DIR, true);
         // Bug 根因：beforeSession 发生在 WDIO worker 内，而 Electron/ChromeDriver
         // 启动链继承的是 launcher 派生 worker 时的环境。reset mock 若到 worker 才启动，
-        // Main -> Host 会继续请求真实 ZCode 域名；因此与 upgrade mock 一样在派发 worker
+        // Main -> Host 会继续请求真实 RaspberryCode 域名；因此与 upgrade mock 一样在派发 worker
         // 前启动，并通过环境把同一个动态端口传给 Electron 和测试控制端。
         await startCodingPlanTeamMockIfNeeded(configuredE2ESpecs);
         if (codingPlanTeamMockBaseUrl) {

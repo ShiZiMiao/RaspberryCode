@@ -38,7 +38,7 @@
 09:57:43.914  bind workspace context (/home/demo)
 09:57:43.937  getProviderRegistrySnapshot OK
 09:57:44.03   updateProviderRegistry 发出 ──► 远端已收到并开始处理
-                （[remote pid 561744] "为只读会话控制面启动 ZCode agent"、
+                （[remote pid 561744] "为只读会话控制面启动 RaspberryCode agent"、
                  "开始请求 workspace/updateProviderRegistry"、agent started）
 09:57:44.499  ✗ 连接关闭（stream.onClose 路径 = 远端 zcode-server 进程退出，
               无 backend-disconnect 详情）──► 回包永不可达
@@ -74,7 +74,7 @@
 
 ### 2.4 未知（客户端侧无法闭合）
 
-远端 zcode-server 在启动后 ~1 秒退出的原因（历史记录同型："远程连接已断开 exitCode=0"）。需要远端机器 `~/.zcode/server` 日志或系统日志定性；这是触发器，不是根因。
+远端 zcode-server 在启动后 ~1 秒退出的原因（历史记录同型："远程连接已断开 exitCode=0"）。需要远端机器 `~/.raspberrycode/server` 日志或系统日志定性；这是触发器，不是根因。
 
 ## 3. 根因分层
 

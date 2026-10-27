@@ -497,7 +497,7 @@ Root 组件启动时：
 
 ### 存储
 
-使用现有 `credentialService`（`~/.zcode/v2/credentials.json`）：
+使用现有 `credentialService`（`~/.raspberrycode/v2/credentials.json`）：
 
 | Key | 用途 |
 |---|---|

@@ -59,7 +59,7 @@ OSS_CONFIG_FILE=/etc/ossutil/new
 
 ```text
 oss://<bucket>/<pathPrefix>/<version>/
-  ZCode-...
+  RaspberryCode-...
   latest.yml
   manifest-*.json
 

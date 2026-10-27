@@ -173,7 +173,7 @@ export function createCustomAboutDialogHtml(input: CustomAboutDialogHtmlInput): 
       <section class="about-card" role="dialog" aria-modal="true" aria-labelledby="about-title">
         <div class="content">
           <div class="app-icon" aria-hidden="true">
-            <!-- Modified for RaspberryCode: 品牌标记替换为 RaspberryCode 资产（原 ZCode Z 形内联 SVG） -->
+            <!-- Modified for RaspberryCode: 品牌标记替换为 RaspberryCode 资产（原 RaspberryCode Z 形内联 SVG） -->
             ${input.brandMarkDataUri
               ? `<img class="app-logo" src="${input.brandMarkDataUri}" alt="" />`
               : ""}

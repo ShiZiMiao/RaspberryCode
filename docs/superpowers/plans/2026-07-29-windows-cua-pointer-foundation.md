@@ -1255,7 +1255,7 @@ pnpm build
 
 Expected: every command exits `0`.
 
-- [ ] **Step 5: Run focused ZCode CUA gates**
+- [ ] **Step 5: Run focused RaspberryCode CUA gates**
 
 Run:
 

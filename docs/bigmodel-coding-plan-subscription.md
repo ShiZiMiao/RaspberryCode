@@ -12,7 +12,7 @@ Z.AI Coding Plan 复用同一组 `/api/biz` 业务接口协议，host 切换到 
 
 ## 套餐配置
 
-套餐配置按 provider 分组，由服务层 `codingPlanSubscriptionService.getStaticProducts()` 从 ZCode client config 拉取，前端只做一天内存缓存、Start 免费 SKU 合并和 `batch-preview` 实时状态合并，不在本地写死 Lite / Pro / Max 描述：
+套餐配置按 provider 分组，由服务层 `codingPlanSubscriptionService.getStaticProducts()` 从 RaspberryCode client config 拉取，前端只做一天内存缓存、Start 免费 SKU 合并和 `batch-preview` 实时状态合并，不在本地写死 Lite / Pro / Max 描述：
 
 - `productId`：后端商品 ID，用于和 `batch-preview`、`preview`、购买接口对齐。
 - `productName`：套餐名称，用于 Lite / Pro / Max 分组和卡片标题。

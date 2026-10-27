@@ -2,7 +2,7 @@
 
 ## 目标
 
-ZCode Desktop 从统一 OAuth 回调接收官网营销归因，并在所有发往
+RaspberryCode Desktop 从统一 OAuth 回调接收官网营销归因，并在所有发往
 `/api/v1/event/report` 的 App 业务埋点中固定携带顶层字符串字段
 `marketing_params`。
 

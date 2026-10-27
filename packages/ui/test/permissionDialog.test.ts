@@ -371,7 +371,7 @@ describe("PermissionDialog", () => {
     expect(html).not.toContain("ExitPlanMode changes session mode");
   });
 
-  it("prefers custom ZCode Agent option names over generic kind labels", () => {
+  it("prefers custom RaspberryCode Agent option names over generic kind labels", () => {
     const html = renderPermissionDialog({
       type: "permission_request",
       taskId: "task-1",
@@ -499,7 +499,7 @@ describe("PermissionDialog", () => {
     expect(html).not.toContain("/Users/dev/ZCodeProject/demo/");
   });
 
-  it("renders ZCode protocol Write input as an existing file preview", () => {
+  it("renders RaspberryCode protocol Write input as an existing file preview", () => {
     const html = renderPermissionDialog({
       type: "permission_request",
       taskId: "task-1",
@@ -532,7 +532,7 @@ describe("PermissionDialog", () => {
     expect(html).not.toContain("file_path");
   });
 
-  it("renders ZCode protocol Edit input as an existing file preview", () => {
+  it("renders RaspberryCode protocol Edit input as an existing file preview", () => {
     const html = renderPermissionDialog({
       type: "permission_request",
       taskId: "task-1",

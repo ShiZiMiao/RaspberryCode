@@ -1,4 +1,4 @@
-# ZCode CLI 架构设计 v2
+# RaspberryCode CLI 架构设计 v2
 
 ## 文档定位
 
@@ -28,7 +28,7 @@
 
 ## 一、总体架构
 
-ZCode CLI 按四层组织：
+RaspberryCode CLI 按四层组织：
 
 - `app/bootstrap`
 - `application/core`
@@ -41,7 +41,7 @@ ZCode CLI 按四层组织：
 
 `core/` 是业务状态机和调度层。它负责 session、turn、agent loop、tool lifecycle、permission、compact、rewind、subagent、mailbox、memory、hooks、mode 等领域逻辑。core 只表达意图，不直接触碰外部世界。
 
-`adapters/` 是外部 I/O 实现层。它负责文件系统、子进程、网络、SQLite、artifact、provider、MCP、ZCode app-server、config loader、logger、metrics、sandbox 等具体副作用。所有 adapter 都必须通过 contracts 暴露能力。
+`adapters/` 是外部 I/O 实现层。它负责文件系统、子进程、网络、SQLite、artifact、provider、MCP、RaspberryCode app-server、config loader、logger、metrics、sandbox 等具体副作用。所有 adapter 都必须通过 contracts 暴露能力。
 
 `bootstrap/` 是组合层和入口层。它负责 CLI、TUI、server、SDK 等入口的启动、依赖装配、渲染、退出码和进程边界。它是唯一允许把 core 和 adapter 组装到一起的地方。
 
@@ -751,7 +751,7 @@ artifact 用于承载大体积结果、附件、下载文件、模型流片段�
 
 ## 八、多 Session 并行执行
 
-ZCode CLI 需要把 session、message、tool call、permission、checkpoint、队列和 pending 状态视为一等对象。
+RaspberryCode CLI 需要把 session、message、tool call、permission、checkpoint、队列和 pending 状态视为一等对象。
 
 ### 8.1 Session 隔离
 
@@ -903,7 +903,7 @@ watcher 只提供上下文提示。真正的并发安全由 file write adapter �
 
 - hooks。
 - skills。
-- MCP / ZCode app-server。
+- MCP / RaspberryCode app-server。
 - plugin capability。
 - metrics 和 telemetry。
 - memory pipeline。
@@ -966,7 +966,7 @@ v2 故意不把字段和方法写死。接口应由实现反馈、失败路径�
 - Memory Pipeline
 - Config schema and subscription
 - Transport / RPC Protocol
-- MCP / ZCode app-server integration
+- MCP / RaspberryCode app-server integration
 - Metrics / Observability
 
 每个详细设计都必须包含：

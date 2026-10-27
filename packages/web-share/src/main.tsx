@@ -58,7 +58,7 @@ function renderCallback(): void {
 async function renderShare(): Promise<void> {
   const locale = resolveConversationShareRouteLocale(window.location.pathname);
   document.documentElement.lang = locale;
-  document.title = locale === "zh-CN" ? "ZCode 会话分享" : "ZCode Conversation Share";
+  document.title = locale === "zh-CN" ? "RaspberryCode 会话分享" : "RaspberryCode Conversation Share";
 
   const shareCode = resolveConversationShareCodeFromPath(window.location.pathname);
   if (!shareCode) {

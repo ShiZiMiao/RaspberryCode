@@ -1,6 +1,6 @@
 # Android 远程控制壳
 
-`packages/android` 当前是 ZCode 手机远控的 Android 壳。第一版不重写 ZCode Agent、relay 或
+`packages/android` 当前是 RaspberryCode 手机远控的 Android 壳。第一版不重写 RaspberryCode Agent、relay 或
 RPC 协议，而是用原生入口承载现有 `/remote` 手机 Web 远控页面。
 
 ## 入口

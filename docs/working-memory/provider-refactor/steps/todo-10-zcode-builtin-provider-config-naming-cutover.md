@@ -1,4 +1,4 @@
-# 10 ZCode Built-in Provider Config 命名切换
+# 10 RaspberryCode Built-in Provider Config 命名切换
 
 > 状态：已完成
 >
@@ -10,9 +10,9 @@
 
 ## 1. 任务目标
 
-把 Provider Refactor 中仍使用 `official` 表达 ZCode 内置配置的领域、实现和物理命名，一次性切换为
-`zcodeBuiltin` / `zcode-builtin`。切换完成后，ZCode 自带的 Provider/Model 配置只有一个准确名称：
-**ZCode Built-in Provider/Model Config**。
+把 Provider Refactor 中仍使用 `official` 表达 RaspberryCode 内置配置的领域、实现和物理命名，一次性切换为
+`zcodeBuiltin` / `zcode-builtin`。切换完成后，RaspberryCode 自带的 Provider/Model 配置只有一个准确名称：
+**RaspberryCode Built-in Provider/Model Config**。
 
 当前分支的 Provider Refactor 尚未上线，不存在需要继续读取的已发布 Provider Config 协议、环境变量或物理文件。
 因此本 Todo 是原子重命名，不是兼容迁移：不保留 alias、deprecated export、双字段、双读写、旧环境变量
@@ -59,7 +59,7 @@ ProviderConfigService / Resolver / Facade
 ### 2.1 领域术语
 
 ```text
-ZCode Built-in Provider Config
+RaspberryCode Built-in Provider Config
         |
         v
 overlay Account Built-in Provider Config
@@ -73,7 +73,7 @@ overlay Personal Provider Config
         v
 Effective Provider Config
 
-ZCode Built-in Model Config Rules
+RaspberryCode Built-in Model Config Rules
         +
 Personal Model Config Rules
         |
@@ -105,7 +105,7 @@ Effective Model Config Rules
 | 生成文件 `official-<hash>.json`            | 生成文件 `zcode-builtin-<hash>.json`            |
 
 实现时若发现同一事实链上的其他 `official*` 符号，按同一规则直接重命名。`zcodeBuiltin` 用于明确表达
-ZCode 产品下发的 Built-in 层；不能简化成会与 Account Built-in 混淆的无来源 `builtin`。
+RaspberryCode 产品下发的 Built-in 层；不能简化成会与 Account Built-in 混淆的无来源 `builtin`。
 
 ### 2.3 零兼容
 
@@ -188,7 +188,7 @@ Personal Repository、Account Source、Registry Overlay 和 Active Model 不改�
 
 | 状态/事实                     | 权威 owner                           | 本 Todo 结果                        |
 | ----------------------------- | ------------------------------------ | ----------------------------------- |
-| ZCode Built-in 发布内容       | `config/provider/zcode-builtin.json` | 内容不变，只改物理名称              |
+| RaspberryCode Built-in 发布内容       | `config/provider/zcode-builtin.json` | 内容不变，只改物理名称              |
 | Node Source snapshot/revision | `ZCodeBuiltinProviderConfigSource`   | watch/reload 行为不变               |
 | Desktop Host 启动参数         | Shared strict schema                 | 原子改为新字段，不双读              |
 | CLI 显式路径                  | `ZCODE_BUILTIN_PROVIDER_CONFIG_FILE` | 只认新变量                          |
@@ -224,7 +224,7 @@ Personal Repository、Account Source、Registry Overlay 和 Active Model 不改�
 1. 重命名 `ProviderConfigSnapshot`、Resolver input、Service dependency/field/event reason 和 Facade input；
 2. 将 Model 规则字段明确命名为 `zcodeBuiltinModelRules`，避免 `Models` 同时表达成员与 Rule；
 3. 重命名 Node Source、watcher、materializer、runtime dependency、文件名和所有 exports/imports；
-4. 错误信息和测试标题统一使用 `ZCode Built-in Provider Config`。
+4. 错误信息和测试标题统一使用 `RaspberryCode Built-in Provider Config`。
 
 ### C. Services、Shared Protocol 与 Desktop
 

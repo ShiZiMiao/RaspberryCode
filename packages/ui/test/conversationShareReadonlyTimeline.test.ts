@@ -192,7 +192,7 @@ describe("ConversationShareReadonlyTimeline", () => {
           "",
           "| 项目 | 内容 |",
           "| --- | --- |",
-          "| 公司 | **ZCode** |",
+          "| 公司 | **RaspberryCode** |",
           "",
           "```ts",
           "const answer = 42;",

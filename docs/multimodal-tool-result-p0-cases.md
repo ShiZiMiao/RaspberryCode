@@ -2,7 +2,7 @@
 
 ## 目标
 
-验证 ZCode 将 MCP/内置工具结果转换为 Anthropic `tool_result.content[]` 时，
+验证 RaspberryCode 将 MCP/内置工具结果转换为 Anthropic `tool_result.content[]` 时，
 多块文本、图片和状态文本不会在 BigModel Anthropic 兼容接口中静默丢失。
 
 本组用例同时覆盖两条边界：
@@ -10,7 +10,7 @@
 ```text
 工具/MCP CallToolResult
         ↓
-ZCode model-content projection
+RaspberryCode model-content projection
         ↓
 Anthropic tool_result.content[]
         ↓
@@ -48,7 +48,7 @@ node scripts/multimodal-tool-result-p0.mjs
 - `FAIL`：HTTP 200 但缺少任意 marker，或者顺序错误。
 - `BLOCKED`：模型服务返回 403、429、529 等服务状态，不能把它判为链路通过或失败。
 
-`scripts/multimodal-tool-result-p0.mjs` 只验证兼容接口语义；ZCode 真链路需要另行确认 ZCode 发出的原始
+`scripts/multimodal-tool-result-p0.mjs` 只验证兼容接口语义；RaspberryCode 真链路需要另行确认 RaspberryCode 发出的原始
 `content[]` 与工具产出一致。
 
 捕获结果只作为链路证据，不把 API key 或图片 base64 写入测试 fixture。

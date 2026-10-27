@@ -2,7 +2,7 @@
 
 ## Goal
 
-ZCode agent extensions must merge user-level and current-workspace definitions instead of choosing only one source. When the same extension identity appears in both places, the user-level definition wins.
+RaspberryCode agent extensions must merge user-level and current-workspace definitions instead of choosing only one source. When the same extension identity appears in both places, the user-level definition wins.
 
 This applies to local discovery for:
 

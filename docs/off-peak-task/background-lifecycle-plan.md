@@ -26,7 +26,7 @@
 
 | 概念                         | 唯一职责                                         | owner / 存储                                                                                                       |
 | ---------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| Configured Default           | 新 CLI 会话的用户选型初始化偏好                  | Personal Provider 配置的 `config.defaultModelSelection`；默认 `~/.zcode/v2/provider_config.json`，允许现有路径覆盖 |
+| Configured Default           | 新 CLI 会话的用户选型初始化偏好                  | Personal Provider 配置的 `config.defaultModelSelection`；默认 `~/.raspberrycode/v2/provider_config.json`，允许现有路径覆盖 |
 | `cliDefaultSelection`        | 当前 CLI/TUI 会话中，未显式选型的用户输入默认值  | bootstrap 会话层内存；复用每会话普通用户选择记录恢复                                                               |
 | App Composer Selection       | 下一条 App 用户消息的选择                        | 现有 renderer 草稿与 localStorage；不新增 CLI 状态副本                                                             |
 | `sessionModelSelection`      | 会话后续执行、后台唤起及 Goal 自动续轮使用的选择 | CLI Runtime；闲时选择只在本次运行生命周期内生效                                                                    |

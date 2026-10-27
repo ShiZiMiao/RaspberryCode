@@ -133,7 +133,7 @@ async function assertAboutWindow() {
           );
           return (
             typeof title === "string" &&
-            title.includes("ZCode") &&
+            title.includes("RaspberryCode") &&
             title.includes(electron.app.getVersion())
           );
         }),

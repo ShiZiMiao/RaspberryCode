@@ -196,7 +196,7 @@ function getWorkspaceKey(workspacePath: string, workspaceIdentity?: string): str
   return workspaceIdentity?.trim() || workspacePath;
 }
 
-/** 与 ZCode session 持久化一致：使用 workspaceKey 的 SHA-256 前 12 位 */
+/** 与 RaspberryCode session 持久化一致：使用 workspaceKey 的 SHA-256 前 12 位 */
 export function getWorkspaceHash(workspacePath: string, workspaceIdentity?: string): string {
   return createHash("sha256")
     .update(getWorkspaceKey(workspacePath, workspaceIdentity))

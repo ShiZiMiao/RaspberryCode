@@ -30,7 +30,7 @@ Electron 用例不声称覆盖这些微观竞态。AUTH-06 保持 pending，Pro 
 ## 默认启动凭据合同
 
 普通、本地 Personal Provider、远程回放以及未知 spec 默认向隔离 HOME 的
-`~/.zcode/v2/credentials.json` 写入空对象。未提供 spec、空列表或套件 glob 也不能
+`~/.raspberrycode/v2/credentials.json` 写入空对象。未提供 spec、空列表或套件 glob 也不能
 隐式恢复假 OAuth / JWT；新增普通用例不需要再登记“无账号例外”。
 
 ```text
@@ -74,7 +74,7 @@ JWT 仍按现有明确专项保留，不因为存在账号 mock 就默认注入�
 ### 操作步骤
 
 1. WDIO `beforeSession` 清理隔离 HOME。
-2. `wdio.conf.ts` 识别 `oauth-credential-recovery.test.ts` 后，在 `~/.zcode/v2/credentials.json` 写入损坏 OAuth seed。
+2. `wdio.conf.ts` 识别 `oauth-credential-recovery.test.ts` 后，在 `~/.raspberrycode/v2/credentials.json` 写入损坏 OAuth seed。
 3. 启动桌面端本地默认窗口。
 4. 等待登录入口渲染。
 5. 检查 Z.ai 与 BigModel 登录渠道均可见。
@@ -93,7 +93,7 @@ JWT 仍按现有明确专项保留，不因为存在账号 mock 就默认注入�
 ### Fixture 合同
 
 - 本 case 不触发 provider 请求，manifest 使用 `providerRequestPolicy: "none"` 和空 `requests`。
-- 本 case 的输入 fixture 是 WDIO 冷启动 seed：`~/.zcode/v2/credentials.json`。
+- 本 case 的输入 fixture 是 WDIO 冷启动 seed：`~/.raspberrycode/v2/credentials.json`。
 - 需要清理的 key 包含 `oauth:active_provider`、Z.ai/BigModel access token、refresh token、user info，以及旧 `zcodejwttoken`。
 
 ### 转正说明
@@ -172,7 +172,7 @@ desktop local 使用隔离 HOME 冷启动；CLI session DB 与 App tasks-index �
 
 Docker 准入不执行：该 auth/config case 不依赖 provider replay，也不属于 conversation Docker preset。
 
-## AUTH-03: ZCode JWT 过期后重新认证
+## AUTH-03: RaspberryCode JWT 过期后重新认证
 
 2026-10-12 隔离 Electron 自动复测：1 case passed；artifact：`packages/desktop/.e2e-artifacts/desktop-e2e-20261012-113824-131/summary.md`。确认本轮运行时恢复入口变更没有破坏冷启动过期清理和登录入口；仍保留 pending。
 
@@ -227,7 +227,7 @@ Welcome 展示 Z.ai + BigModel 登录入口
 ### Fixture 合同
 
 - manifest 使用 `providerRequestPolicy: "none"`、`noProviderRequests: true` 和空 `requests`。
-- 输入 fixture 是 WDIO 在 App 启动前写入隔离 HOME 的 `~/.zcode/v2/credentials.json`。
+- 输入 fixture 是 WDIO 在 App 启动前写入隔离 HOME 的 `~/.raspberrycode/v2/credentials.json`。
 - JWT 只包含测试用 header/payload/signature；payload 的 `exp` 固定在过去，不依赖签名有效性。
 - 需要清理的 key 包含 `oauth:active_provider`、Z.ai access token、refresh token、user info 和 `zcodejwttoken`。
 - 当前位于 `manual-review/pending`；人工确认可视交互后才能移动到正式路径并更新本节状态。
@@ -246,7 +246,7 @@ Welcome 展示 Z.ai + BigModel 登录入口
 
 <!-- 固定 staging 的 JWT 场景原编号 AUTH-05，与上方登录取消编号冲突；此处命名为 AUTH-JWT-401，历史证据不算本轮通过。 -->
 
-## AUTH-JWT-401: 运行中 ZCode JWT 401 退出并重启
+## AUTH-JWT-401: 运行中 RaspberryCode JWT 401 退出并重启
 
 ### 2026-10-12 当前行为
 
@@ -266,7 +266,7 @@ Welcome 展示 Z.ai + BigModel 登录入口
 ### 测试场景
 
 desktop local 使用隔离 HOME 冷启动并恢复一份有效 OAuth 会话。进入工作区后，测试通过 Electron 网络 mock
-让后续 ZCode 控制面请求返回普通 HTTP 401；请求携带的 Authorization 与本地 `zcodejwttoken` 相同，
+让后续 RaspberryCode 控制面请求返回普通 HTTP 401；请求携带的 Authorization 与本地 `zcodejwttoken` 相同，
 因此必须触发 Host 的统一 logout，而不是展示普通网络错误。测试断言凭据在提示确认前已清理，用户确认后
 调用现有 `RelaunchApp`，避免真实退出测试进程。
 
@@ -279,7 +279,7 @@ Agent 模型 transport、Official MCP、remote workspace 或手机 `/remote`。
 有效 OAuth 会话 + zcodejwttoken
              |
              v
-打开模型供应商设置，触发 ZCode 请求
+打开模型供应商设置，触发 RaspberryCode 请求
              |
              v
 Electron net.fetch mock 返回 401
@@ -303,7 +303,7 @@ Renderer 显示“登录已过期”
 | AUTH-JWT-401-A | 运行中 401 能显示登录过期提示  | 证明请求出口观察和 Host 广播链路实际工作              |
 | AUTH-JWT-401-B | 确认前 OAuth/JWT 凭据已清理    | 证明提示框不会阻塞认证事实清理                        |
 | AUTH-JWT-401-C | 确认后调用 `RelaunchApp`       | 证明提示动作复用现有重启流程                          |
-| AUTH-JWT-401-D | 普通 401 mock 不依赖专用响应头 | 证明兼容当前没有 `X-ZCode-JWT-Invalid` 响应头的服务端 |
+| AUTH-JWT-401-D | 普通 401 mock 不依赖专用响应头 | 证明兼容当前没有 `X-RaspberryCode-JWT-Invalid` 响应头的服务端 |
 
 ### Fixture 合同
 
@@ -420,7 +420,7 @@ CR-01 本地隔离 Electron 回归（2026-10-12），以下三组各 1 case pass
 
 - 候选 spec：`packages/desktop/test/e2e/manual-review/pending/access-token-401-auto-logout.test.ts`。
 - manifest：`packages/desktop/test/e2e/fixtures/cases/auth-config/access-token-401-auto-logout.json`。
-- 输入：隔离 HOME 的 BigModel 旧版用户资料缓存、不同值的业务 access token 与未被判定过期的 ZCode JWT，以及一个独立 Bot 凭据。
+- 输入：隔离 HOME 的 BigModel 旧版用户资料缓存、不同值的业务 access token 与未被判定过期的 RaspberryCode JWT，以及一个独立 Bot 凭据。
 - 动作：启动资料迁移真实发出 userinfo 请求；本地 HTTP fixture 暂停响应，待 UI 可用后返回 HTTP 401，或通过 `ZCODE_E2E_AUTH_EXPIRY_HTTP_STATUS=200` 返回 HTTP 200 + `{"code":401,"msg":"登录状态已过期","success":false}`。用例确认 fixture 实际启用的状态码；其它控制面请求返回正常 200，避免 JWT 401 掩盖新增判断。
 - 断言：fixture 确认请求用的是业务 token；原过期弹窗出现；确认前 active/token/profile/JWT 已清除且 Bot 凭据保留；确认后经 preload 发出原 RelaunchApp 命令。测试在主进程 IPC 边界截断命令，不实际执行退出/重启，避免 Host 关闭屏障干扰 WebDriver 收尾。
 - HTTP fixture 不记录凭据原文；不访问真实平台，不需要模型请求。支付、API key、旧请求与多平台判定由服务层单测覆盖。

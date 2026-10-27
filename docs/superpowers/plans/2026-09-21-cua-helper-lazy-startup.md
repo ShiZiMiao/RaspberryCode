@@ -228,7 +228,7 @@ import {
 const { __testing } = await import("../src/tools/computer-use-runtime.js");
 
 const RECIPE = {
-  command: "C:\\app\\ZCode.exe",
+  command: "C:\\app\\RaspberryCode.exe",
   entryPath: "C:\\app\\resources\\tools\\cua-helper\\entry.cjs",
   root: "C:\\app\\resources\\tools\\cua-helper",
   addonPath: "C:\\app\\resources\\tools\\cua-helper\\addon.node",
@@ -866,7 +866,7 @@ ZCODE_CUA_DEV_MODE=1 pnpm run dev:desktop
 ```
 
 按 [本地跑 CUA Helper](../../docs/cua-permission-broker/local-dev-helper-runbook.md) 验证：
-1. app 启动后 Activity Monitor 无 "ZCode Computer Use" 进程（懒启动未被触发）。
+1. app 启动后 Activity Monitor 无 "RaspberryCode Computer Use" 进程（懒启动未被触发）。
 2. 新开对话让模型调 computer-use → Helper 进程出现、调用成功（MC-2）。
 3. 在设置页完成一次权限授权流后再 spawn 新 agent → 新 agent env 里 `ZCODE_CUA_BROKER_SOCKET` 为稳定路径而非随机（MC-3；可用 dev 日志核对）。
 

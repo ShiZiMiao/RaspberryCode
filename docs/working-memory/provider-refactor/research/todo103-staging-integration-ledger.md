@@ -310,7 +310,7 @@ JSON 中状态只有在相应来源片段全部有明确去向时才能改为完
 
 ## 16. G04 收口：官方商店刷新、插件覆盖冷启动及来源复审
 
-- `dbb3ec0ce802826aa6a807a4a33e1e441234ada3` 剩余商店行为按来源保留：进入页面只自动刷新 ZCode 官方目录，距成功刷新或最近尝试不足十分钟时跳过；模块内先占位，避免重挂载和失败后的重复请求。手动刷新仍刷新全部市场，不受自动窗口限制；不自动刷新 Claude 市场，不新增轮询。
+- `dbb3ec0ce802826aa6a807a4a33e1e441234ada3` 剩余商店行为按来源保留：进入页面只自动刷新 RaspberryCode 官方目录，距成功刷新或最近尝试不足十分钟时跳过；模块内先占位，避免重挂载和失败后的重复请求。手动刷新仍刷新全部市场，不受自动窗口限制；不自动刷新 Claude 市场，不新增轮询。
 - 保留当前 Host 用户 inventory、configScope 和 workspaceIdentity 接线；没有恢复旧 Provider/Family 数据源或插件 Markdown 写入。CONTEXT、商店 spec、生命周期目录和覆盖矩阵同步更新。
 - 来源 29 个路径逐项对应：存储／RPC／加载由 B1 接入结构化 Selection；默认官方缓存发现、Commands／Skills 和设置页／双语由 B2/B3 完成；商店 helper／页面及 WDIO fixture 在本批保留；文档和功能图同步本批及前两批结果。24 个仅属于 G04 的路径已核验，5 个跨组路径只记录 G04 片段完成，仍保留其他组 pending，不提前结清整文件。
 - 新增 PLM-LC-020 pending 冷启动请求用例，复用 SE-04 已证明的保存格式。完整重启 Desktop／Host／CLI 后，真实捕获插件 judge 的子请求为 alternate model/high，父 continuation 仍为原 model/max；按最新 user block 类型区分 child 和 tool_result，避免只匹配包含子提示词的父请求产生假阳性。执行结束、队列为空、持久覆盖未改写均有断言。
@@ -339,7 +339,7 @@ JSON 中状态只有在相应来源片段全部有明确去向时才能改为完
 
 ### 来源裁决与实现
 
-- Windows 八条来源 `049b2a539b`、`36368ef523`、`acb87a9a18`、`4b9f3844cf`、`a698fede1c`、`22d92c5dac`、`43839fd9a1`、`dd0b06f91c` 按固定 staging 最终行为整体保留：ownership manifest 限定 managed 更新清理；HKCU／SHELL_CONTEXT 清理诊断；静默错误框默认退出；安装详情阶段及逐文件清理日志；按旧卸载器 manifest 能力决定是否进行 `.zcode` 保护扫描；生产／Preview AUMID 与打包 appId 一致。
+- Windows 八条来源 `049b2a539b`、`36368ef523`、`acb87a9a18`、`4b9f3844cf`、`a698fede1c`、`22d92c5dac`、`43839fd9a1`、`dd0b06f91c` 按固定 staging 最终行为整体保留：ownership manifest 限定 managed 更新清理；HKCU／SHELL_CONTEXT 清理诊断；静默错误框默认退出；安装详情阶段及逐文件清理日志；按旧卸载器 manifest 能力决定是否进行 `.raspberrycode` 保护扫描；生产／Preview AUMID 与打包 appId 一致。
 - 不扩入旧版本备份／回滚、重做 NSIS 原生重试或 junction 扫描。普通卸载仍沿来源全量清理，隔离 fixture 不接触真实安装／用户数据。原 spec 的“原子落盘”没有实现证据，改为准确的随包落盘描述，不宣称额外事务保证。
 - `50a9c63c12` + `bbcc946c38`：保留 Helper signIgnore，避免 electron-builder 重签已签名／公证的嵌套 Helper；doctor 的必需 Helper gate 增加本地 staple 校验，并在文件存在、codesign/spctl 通过后才检查 xcrun，避免前置工具错误掩盖真实 Helper 错误。可选 Helper 的既有边界不变，不运行签名、公证或发布操作。
 - `7beb6487b2`：保留 Linux manifest 中 pacman/rpm/deb 过滤及过滤后为空的明确失败；macOS/Windows 不过滤。新增直接调用正式 resolveFiles 的验证，证明过滤接入实际解析入口、保留 AppImage 地址/校验值，而不只是 helper 单测通过。

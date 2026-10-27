@@ -1,7 +1,8 @@
-# ZCode
+# RaspberryCode
+> **Provenance**: RaspberryCode is a fork of [zai-org/ZCode](https://github.com/zai-org/ZCode) (Apache-2.0). Some ecosystem links and service notes in this document are inherited from upstream.
 
 <div align="center">
-  <img src="public/logo/icons/1024x1024.png" alt="ZCode" width="128" height="128" />
+  <img src="public/logo/icons/1024x1024.png" alt="RaspberryCode" width="128" height="128" />
 </div>
 <p align="center">
   <a href="https://applink.feishu.cn/client/chat/chatter/add_by_link?link_token=47ag983c-8fcb-4d6d-814b-5395193a712c&amp;qr_code=true">Feishu community</a> ·
@@ -11,14 +12,14 @@
   <a href="README.md">简体中文</a> | English
 </p>
 
-ZCode is an AI coding workspace with desktop, browser, and terminal interfaces. This repository contains the clients, backend services, shared UI, and Agent CLI and runtime source code.
+RaspberryCode is an AI coding workspace with desktop, browser, and terminal interfaces. This repository contains the clients, backend services, shared UI, and Agent CLI and runtime source code.
 
 ## Updates
 
-- **2026-10-19**: Updated to ZCode v3.16.2.
-- **2026-10-16**: Updated to ZCode v3.16.1.
-- 2026-10-10: Updated to ZCode v3.15.1.
-- 2026-9-23: Updated to ZCode v3.14.3.
+- **2026-10-19**: Updated to RaspberryCode v3.16.2.
+- **2026-10-16**: Updated to RaspberryCode v3.16.1.
+- 2026-10-10: Updated to RaspberryCode v3.15.1.
+- 2026-9-23: Updated to RaspberryCode v3.14.3.
 
 ## Setup
 
@@ -76,9 +77,9 @@ ZCODE_SERVER_WORKSPACE=/path/to/project pnpm dev:web
 
 This starts both the Web development server (default: `http://localhost:5173`) and the backend (default: `http://localhost:3030`). Open the Web development server in your browser. `/ws` and general `/api` requests are proxied to the local backend; `/api/v1/oauth/token` is proxied separately to the configured product service.
 
-After changing Agent source code, run `pnpm --filter @zcode/cli... build` and restart the service. To validate the complete distribution, extract and run it as described under Packaging → ZCode CLI distribution below.
+After changing Agent source code, run `pnpm --filter @zcode/cli... build` and restart the service. To validate the complete distribution, extract and run it as described under Packaging → RaspberryCode CLI distribution below.
 
-### ZCode CLI distribution
+### RaspberryCode CLI distribution
 
 The command-line distribution includes the TUI, Web client, and Agent behind one `zcode` command. With no arguments it starts the TUI; a leading `--web` starts Web mode; all other arguments go to the existing Agent CLI. Both modes run locally without Electron.
 
@@ -132,7 +133,7 @@ The root [.env.example](.env.example) provides sample service URLs and build con
 
 | Setting                              | Purpose                                                                                 |
 | ------------------------------------ | --------------------------------------------------------------------------------------- |
-| `ZCODE_DATA_BASE_DIR`                | Base directory for application data, stored under its `.zcode/` subdirectory            |
+| `ZCODE_DATA_BASE_DIR`                | Base directory for application data, stored under its `.raspberrycode/` subdirectory            |
 | `ZCODE_SERVER_WORKSPACE`             | Workspace path for the Web backend                                                      |
 | `ZCODE_BUILTIN_PROVIDER_CONFIG_FILE` | Path to a local provider configuration file; uses the built-in configuration when unset |
 | `ZCODE_DIST_BASE_URL`                | Download base URL used by the CLI distribution installer                                |
@@ -156,7 +157,7 @@ pnpm bundle:desktop -- --help
 
 The default target is macOS arm64, and the default output directory is `packages/desktop/dist/`. `--os` accepts `mac`, `win`, or `linux`; `--arch` accepts `x64` or `arm64`. Packaging and signing require the tools and configuration for the target platform.
 
-### ZCode CLI distribution
+### RaspberryCode CLI distribution
 
 Run `pnpm build:zcode` to build the CLI/TUI, backend, and Web client, collect the TUI native libraries, workers, and runtime dependencies, then assemble the distribution. Running the distribution still requires Node.js; use the version specified in `mise.toml`.
 
@@ -181,7 +182,7 @@ The version defaults to the root `package.json` version. Output is written to `d
 - `releases/<version>/sha256.txt`: checksum file.
 - `latest.json` and `install.sh`: version index and installer.
 
-Upload the entire directory to the configured download base URL. The installer downloads the runtime package from that URL, installs it to `~/.zcode/runtime` by default, and creates the `zcode` command in `~/.local/bin`. Override these directories with `ZCODE_DIST_HOME` and `ZCODE_DIST_BIN_DIR`, respectively.
+Upload the entire directory to the configured download base URL. The installer downloads the runtime package from that URL, installs it to `~/.raspberrycode/runtime` by default, and creates the `zcode` command in `~/.local/bin`. Override these directories with `ZCODE_DIST_HOME` and `ZCODE_DIST_BIN_DIR`, respectively.
 
 Existing Lite users should switch to the new build command, environment variables, and installer. Installation does not remove old Lite directories or migrate/delete session data.
 

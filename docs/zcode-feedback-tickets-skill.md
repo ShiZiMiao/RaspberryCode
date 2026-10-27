@@ -1,12 +1,12 @@
-# ZCode Feedback Tickets Skill Spec
+# RaspberryCode Feedback Tickets Skill Spec
 
 ## 目标
 
-新增工作区 skill `zcode-feedback-tickets`，用于让 Agent 通过 ZCode 反馈工单 Agent 接口安全地查询、读取、更新和闭环反馈工单。
+新增工作区 skill `zcode-feedback-tickets`，用于让 Agent 通过 RaspberryCode 反馈工单 Agent 接口安全地查询、读取、更新和闭环反馈工单。
 
 ## 来源
 
-接口契约来自飞书文档《ZCode 反馈工单 Agent 接口 Skill》，文档地址：
+接口契约来自飞书文档《RaspberryCode 反馈工单 Agent 接口 Skill》，文档地址：
 
 `https://internal-docs.example.invalid/redacted`
 
@@ -16,11 +16,11 @@
 
 `/.agents/skills/zcode-feedback-tickets`
 
-选择项目级目录而不是全局目录，是因为该 skill 绑定 ZCode 反馈工单域名、状态流转和项目处理流程，应该随 z-code 工作区加载。
+选择项目级目录而不是全局目录，是因为该 skill 绑定 RaspberryCode 反馈工单域名、状态流转和项目处理流程，应该随 z-code 工作区加载。
 
 ## 触发范围
 
-当用户要求处理 ZCode 反馈工单、反馈平台、工单号 `ZCT-...`、读取工单上下文、下载资料包、更新工单进度、解决工单、转单、批量归档/评论/拒绝/关闭时触发。
+当用户要求处理 RaspberryCode 反馈工单、反馈平台、工单号 `ZCT-...`、读取工单上下文、下载资料包、更新工单进度、解决工单、转单、批量归档/评论/拒绝/关闭时触发。
 
 ## 关键约束
 

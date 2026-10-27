@@ -8,7 +8,7 @@ hex colors through components. The first version ships two built-in themes,
 terminal color scheme when OpenTUI can detect it.
 
 This is a presentation feature. Theme state changes must not alter session
-history, model-visible context, tool execution, permissions, storage, ZCode app-server, or
+history, model-visible context, tool execution, permissions, storage, RaspberryCode app-server, or
 provider behavior.
 
 ## Token Shape
@@ -20,7 +20,7 @@ The theme layer is built on semantic tokens:
 - theme values can be selected by dark/light mode;
 - OpenTUI's renderer exposes terminal theme mode and emits theme-mode changes.
 
-ZCode adopts the semantic token contract and OpenTUI integration pattern, not a
+RaspberryCode adopts the semantic token contract and OpenTUI integration pattern, not a
 full custom theme loader. Custom theme files, plugin themes, generated
 terminal-palette themes, and a theme picker are later extensions.
 
@@ -43,7 +43,7 @@ terminal-palette themes, and a theme picker are later extensions.
 - No `/theme` command or theme picker in P0.
 - No plugin-provided themes in P0.
 - No `ZCODE_` environment variable for theme selection.
-- No model, runtime, tool, MCP, ZCode app-server, or session-store schema changes.
+- No model, runtime, tool, MCP, RaspberryCode app-server, or session-store schema changes.
 - No direct terminal escape handling outside the OpenTUI renderer.
 
 ## Config Contract
@@ -217,7 +217,7 @@ move from the legacy palette file by file.
 
 Theme detection relies on OpenTUI's renderer abstraction and must work the same
 on Windows, macOS, and Linux where the terminal supports color-scheme reporting.
-ZCode should not manually write OSC sequences, parse terminal input, or assume a
+RaspberryCode should not manually write OSC sequences, parse terminal input, or assume a
 specific terminal emulator.
 
 Terminals without theme reporting still get a stable dark default.

@@ -2,19 +2,19 @@
 
 ## Goal
 
-ZCode should load a bounded subset of Claude Code format plugins while keeping
-ZCode's runtime boundaries. The plugin ecosystem remains file-compatible with
-Claude Code where possible, but ZCode P0 only projects plugin-provided skills,
-custom commands, MCP servers and trusted official hooks into existing ZCode
+RaspberryCode should load a bounded subset of Claude Code format plugins while keeping
+RaspberryCode's runtime boundaries. The plugin ecosystem remains file-compatible with
+Claude Code where possible, but RaspberryCode P0 only projects plugin-provided skills,
+custom commands, MCP servers and trusted official hooks into existing RaspberryCode
 capability domains. Hook files from non-official third-party Marketplaces can be
-parsed for diagnostics, but are not injected into the runtime until ZCode has an
+parsed for diagnostics, but are not injected into the runtime until RaspberryCode has an
 explicit trust and permission gate.
 
 This feature started as first-party packaged capabilities such as the iOS
 Simulator and Android Emulator plugins. Claude Code Marketplace compatibility
 extends the installation and discovery model, but it is still not a new arbitrary
 extension runtime. High-risk Claude plugin features are recognized and diagnosed
-before ZCode grows a matching runtime.
+before RaspberryCode grows a matching runtime.
 
 See also `docs/claude-code-marketplace-plugin-compat.md` for the Marketplace
 implementation plan and phased V1a/V1b/V1c scope.
@@ -25,7 +25,7 @@ Official plugins are built as workspace packages, including
 `packages/document-skills-plugin`, `packages/skill-creator-plugin`,
 `packages/zcode-guide-plugin`, and `packages/restore-legacy-sessions-plugin`,
 but runtime plugin loading does not execute from those workspace paths and does
-not import plugin code into the ZCode app bundle. ZCode seeds first-party plugin
+not import plugin code into the RaspberryCode app bundle. RaspberryCode seeds first-party plugin
 files into the official plugin cache under
 `~/.zcode/cli/plugins/cache/zcode-plugins-official/...` and executes plugin MCP
 servers from that cache. Users only enable or disable each capability.
@@ -48,7 +48,7 @@ Android SDK `adb` and UI Automator commands.
 ## Marketplace classification
 
 The catalog's optional `publisherType` (`official` or `community`) describes who
-maintains a plugin within the ZCode marketplace. It does not grant trust or
+maintains a plugin within the RaspberryCode marketplace. It does not grant trust or
 change installation identity, paths, or user/workspace configuration. Personal
 marketplaces remain personal regardless of their self-declared publisher type.
 
@@ -60,7 +60,7 @@ spec in the root `docs/plugins/` directory for presentation and scope semantics.
 
 ## Storage Layout
 
-ZCode stores plugin state under the CLI storage root:
+RaspberryCode stores plugin state under the CLI storage root:
 
 ```text
 ~/.zcode/cli/plugins/
@@ -118,13 +118,13 @@ only when the final installation is removed.
 
 Uninstalling a plugin is a thorough teardown so that a later reinstall starts
 clean. Removing a plugin by id (`<name>@<marketplace>`) tears down every piece of
-durable state ZCode created for it:
+durable state RaspberryCode created for it:
 
 1. The plugin record in `installed_plugins.json`.
 2. The version-scoped cache directory at the record's `installPath`
    (`cache/<marketplace>/<name>/<version>/`).
 3. The persistent per-plugin data directory `data/<sanitized-plugin-id>/`,
-   including any `generated-commands/` ZCode materialized for the plugin. This is
+   including any `generated-commands/` RaspberryCode materialized for the plugin. This is
    the "final installation is removed" case from the storage layout: data is kept
    across cache replacement on update, but uninstall deletes it.
 4. The plugin's user config entries `plugins.enabledPlugins[id]` and
@@ -147,7 +147,7 @@ that reports nothing was removed, rather than an error.
 The built-in marketplace name is `zcode-plugins-official`.
 
 External Claude Marketplace sources use `.claude-plugin/marketplace.json` as
-their canonical manifest location. ZCode may normalize the fetched marketplace
+their canonical manifest location. RaspberryCode may normalize the fetched marketplace
 manifest into `~/.zcode/cli/plugins/marketplaces/{marketplace}/marketplace.json`
 for local bookkeeping, but add/update must read `.claude-plugin/marketplace.json`
 first and only use a root `marketplace.json` fallback for local legacy data.
@@ -179,11 +179,11 @@ partition, and cannot be disabled or uninstalled.
 SEA releases embed the same files as SEA assets and extract them to the same
 official cache path on first startup or when the embedded plugin hash changes.
 The MCP command must point at the seeded cache directory, not the source
-workspace and not a module compiled into the ZCode SEA main bundle.
+workspace and not a module compiled into the RaspberryCode SEA main bundle.
 
-For bundled official plugins only, ZCode rewrites the seeded
+For bundled official plugins only, RaspberryCode rewrites the seeded
 `.zcode-plugin/plugin.json` MCP server command at seed time. The rewritten
-command launches the current ZCode executable through the hidden
+command launches the current RaspberryCode executable through the hidden
 `__zcode-plugin-host` entrypoint and asks it to import the cached MCP server file
 and call its exported `main()` function. In a SEA build this means the official
 plugin MCP servers run on the SEA-embedded Node.js runtime, but each server
@@ -257,7 +257,7 @@ default to disabled unless `enabledPlugins[id]` is `true`.
 
 ## Manifest Discovery
 
-For a plugin root, ZCode reads the first manifest that exists:
+For a plugin root, RaspberryCode reads the first manifest that exists:
 
 1. `.zcode-plugin/plugin.json`
 2. `.claude-plugin/plugin.json`
@@ -277,12 +277,12 @@ Code. P0 supports these fields:
 
 The selected manifest may contain MCP configuration directly in `mcpServers`.
 This is the preferred override point when `.zcode-plugin/plugin.json` needs
-ZCode-specific runtime wiring while `.claude-plugin/plugin.json` and `.mcp.json`
+RaspberryCode-specific runtime wiring while `.claude-plugin/plugin.json` and `.mcp.json`
 remain Claude-compatible.
 
 Compatibility levels:
 
-- `run`: projected into an existing ZCode runtime capability.
+- `run`: projected into an existing RaspberryCode runtime capability.
 - `install-time only`: used while installing or resolving plugin state, not as a
   runtime component.
 - `diagnostic only`: recognized and reported, but not executed.
@@ -350,7 +350,7 @@ resolve inside the plugin root and become `CustomCommandRoot` entries with
 `source: "plugin"`.
 
 Claude command filenames may include `_`, `-`, `:` and nested directory
-segments. ZCode keeps those names stable, for example
+segments. RaspberryCode keeps those names stable, for example
 `commands/clean_gone.md` becomes `/clean_gone`.
 
 P0 also supports a `skills` frontmatter field in markdown commands. When a
@@ -359,14 +359,14 @@ expansion tells the model to load that skill before performing the command.
 
 ### Agents
 
-ZCode 会枚举插件根目录约定位置 `agents/*.md`，并把已启用插件中的 profile 以
+RaspberryCode 会枚举插件根目录约定位置 `agents/*.md`，并把已启用插件中的 profile 以
 `<plugin-name>:<agent-name>` 加载到子代理运行时；名称无冲突时同时提供裸名别名。这个约定目录
 能力与 manifest 的 `agents` 字段不同：P0 仍只诊断 manifest 中声明的自定义 agents 路径，
 不会把任意外部路径投影为运行时组件。
 
 ### MCP
 
-ZCode loads MCP server config from both:
+RaspberryCode loads MCP server config from both:
 
 1. plugin `.mcp.json`
 2. `manifest.mcpServers`
@@ -388,7 +388,7 @@ MCP config file. It is valid inside `.zcode-plugin/plugin.json`, for example:
 ```
 
 Manifest `mcpServers` wins on server-name collisions. That means a plugin can
-keep a Claude-compatible `.mcp.json` for Claude Code and put a ZCode-specific
+keep a Claude-compatible `.mcp.json` for Claude Code and put a RaspberryCode-specific
 MCP command in `.zcode-plugin/plugin.json`.
 
 A `.mcp.json` file may use Claude's wrapper shape:
@@ -404,7 +404,7 @@ A `.mcp.json` file may use Claude's wrapper shape:
 }
 ```
 
-If a server has `command` but no `type`, ZCode infers `type: "stdio"`.
+If a server has `command` but no `type`, RaspberryCode infers `type: "stdio"`.
 Server names are normalized for model-visible tool names by replacing
 non-identifier characters with underscores. A server named `ios-simulator`
 therefore exposes tools such as `mcp__ios_simulator__ios_preflight`; a server
@@ -428,7 +428,7 @@ ${TOKEN_PLAN_API_TOKEN}
 ${ZCODE_SOME_ENV}
 ```
 
-Claude and ZCode variable names are synonyms. MCP secret sinks (`stdio.env`,
+Claude and RaspberryCode variable names are synonyms. MCP secret sinks (`stdio.env`,
 HTTP/SSE `headers`, and OAuth `clientSecret`) expand conventional process
 environment variable names such as `GITHUB_TOKEN` and `TOKEN_PLAN_API_TOKEN`.
 Missing referenced values disable only the affected MCP server and produce a
@@ -454,10 +454,10 @@ P0 policy:
 - Explicit local plugin dirs are trusted for the current configuration.
 - Official cache plugins are loaded only when enabled in config.
 - Only bundled official cache plugins are automatically rewritten to the
-  internal ZCode/SEA plugin host.
+  internal RaspberryCode/SEA plugin host.
 - Project-discovered plugin dirs are out of scope.
 - Hook files from non-official third-party Marketplace cache plugins are
-  diagnostic-only in P0. ZCode official cache plugins, Claude official
+  diagnostic-only in P0. RaspberryCode official cache plugins, Claude official
   Marketplace cache plugins and explicit inline plugin dirs keep the existing
   trusted hook behavior.
 
@@ -542,7 +542,7 @@ Minimum P0 coverage:
 - Prefers `.zcode-plugin/plugin.json` over `.claude-plugin/plugin.json`.
 - Loads local plugin `skills`, `commands`, and `.mcp.json`.
 - Infers stdio MCP type when `command` is present.
-- Expands Claude and ZCode plugin variables.
+- Expands Claude and RaspberryCode plugin variables.
 - Expands arbitrary process environment variables only in MCP secret sinks.
 - Keeps arbitrary process environment placeholders unresolved in command,
   argument, working-directory, URL, and non-secret OAuth fields.
@@ -554,7 +554,7 @@ Minimum P0 coverage:
   plugin host command only after each id is enabled.
 - Seeds default-enabled official plugins into CLI SEA, Electron desktop bundle, and remote agent resource layouts.
   Browser Use is runtime-backed and must include and validate `dist/mcp/server.js`,
-  `scripts/browser-client.mjs`, `docs/`, and both `skills/`; Document Skills, Skill Creator, and ZCode Guide
+  `scripts/browser-client.mjs`, `docs/`, and both `skills/`; Document Skills, Skill Creator, and RaspberryCode Guide
   remain content-only.
 - CLI list/enable/disable preserves unrelated config.
 - CLI uninstall removes the installed record, cache directory, per-plugin data

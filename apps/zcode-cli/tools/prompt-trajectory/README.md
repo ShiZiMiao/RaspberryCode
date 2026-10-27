@@ -91,7 +91,7 @@ shape.
 
 ## Model-IO Converter
 
-`model-io` reads a real ZCode `model-io-*.jsonl` file and turns the main
+`model-io` reads a real RaspberryCode `model-io-*.jsonl` file and turns the main
 conversation into a reusable Anthropic trajectory:
 
 ```text

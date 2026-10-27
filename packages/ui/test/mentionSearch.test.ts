@@ -157,7 +157,7 @@ describe("parseMentionMarkdown", () => {
 });
 
 describe("collectSessionMentionItems", () => {
-  it("merges all known task sources and dedupes by ZCode Agent session id", () => {
+  it("merges all known task sources and dedupes by RaspberryCode Agent session id", () => {
     const workspacePath = "/local/workspace";
     const items = collectSessionMentionItems(
       [

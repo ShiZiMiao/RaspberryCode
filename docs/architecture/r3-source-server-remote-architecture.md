@@ -6,16 +6,16 @@
 - 修订：2026-09-07 合并 Provider 重构 M2（Provider 重构 M1~M4 + Remote Provider Provisioning）后，§1/§2/§3.1/§6.2/§7.1/§8/§10/§11 中的模型配置语义改为「设置页绑定本地 + Provisioning 自动单向下发」；Provider 侧以 [Remote Provider Provisioning](../remote/provider-provisioning.md) 与 [SSH 远端 Workspace 状态权威边界](../ssh-remote-app-global-state-authority.md) 为事实文档，合并过程与决策见 [r3-provider-refactor-merge.md（已归档）](../archive/remote-r3/r3-provider-refactor-merge.md)
 - 阶段：统一多端远程架构 R3 / D5—D11
 - 发布方式：SSH、WSL、Docker 在同一 App 版本统一切换新主链；不按连接方式分版本或灰度；R3 App 内不保留可运行的旧远程主链
-- 核心目标：引入 Source Server、`sourceServerId`、Connection Profile、Transport Adapter、Source 权威、身份迁移与版本兼容，让三种连接方式在「窗口级 Local Host（R1）↔ 常驻 ZCode Server daemon（R2）」的新主链上完成产品闭环
+- 核心目标：引入 Source Server、`sourceServerId`、Connection Profile、Transport Adapter、Source 权威、身份迁移与版本兼容，让三种连接方式在「窗口级 Local Host（R1）↔ 常驻 RaspberryCode Server daemon（R2）」的新主链上完成产品闭环
 
 本文基于：
 
-- [ZCode 统一多端远程连接架构与产品方案（评审稿）](https://internal-docs.example.invalid/redacted)（D5—D11 定义）
+- [RaspberryCode 统一多端远程连接架构与产品方案（评审稿）](https://internal-docs.example.invalid/redacted)（D5—D11 定义）
 - [R1 窗口级单 Host 进程重构规格](./r1-single-window-host-refactor.md)（已实施，当前架构事实）
 - [R2 独立 Server CLI 与 daemon 规格](./r2-server-cli-and-daemon.md)（已实施；`verify-remote-ssh.mjs` 为 R3 SSH Transport 的最小形态预演）
 - [R3 Source Server 发布测试方案（历史，已归档）](../archive/remote-r3/r3-source-server-release-test-plan.md)：REMOTE-01—15 稳定编号现由 [conversation-session-case-catalog.md](../conversation-session-case-catalog.md) 承载，当前执行方案见 [r3-remote-automation-plan.md](../testing/r3-remote-automation-plan.md)
 - [远程工作区投影与持久化兼容](./remote-domain-simplification-and-conversation-workspace-spec.md)（统一 projection、open set、strict schema 与 R4 剩余事项）
-- [ZCode Lite / Server 统一多端架构实施计划](./unified-zcode-lite-server-multi-server-plan.md)（目标架构背景）
+- [RaspberryCode Lite / Server 统一多端架构实施计划](./unified-zcode-lite-server-multi-server-plan.md)（目标架构背景）
 - [Remote Target 抽象](./remote-target-abstraction.md)（现有旧主链的 target/backend 事实）
 
 R3 交付：
@@ -56,7 +56,7 @@ R3 不交付：
 | 服务集合         | 三种连接方式统一采用「全转发」模式（与现有 server transport 的 `createServerRemoteWorkspaceServiceCollection` 一致）；`LegacyRemoteWorkspaceRpcContract` 更名为版本化的 `RemoteWorkspaceRpcContract` 并作为握手校验的一部分                                                                                                                                                                                                                                                                                                                                                             |
 | 连接记录模型     | `lastWorkspaceSession` 的「连接与 workspace 合一实体」拆分为三实体：`SourceServerRecord`（握手后建立）、`ConnectionProfile`（线路+凭据引用）、workspace 打开历史（引用前两者）。凭据 key 从 `remote-workspace:<workspaceKey>:*` 迁到 `connection-profile:<profileId>:*`                                                                                                                                                                                                                                                                                                                 |
 | 远端数据迁移     | **R3 不做破坏性 key 重写**。Server Core 维护 path → canonical key 的 alias 解析层，按 workspace 打开惰性执行；单线路历史零数据改动（新旧版本读写同一批行，回退与混连天然兼容）；仅多线路变体历史做一次性合并到 canonical（备份 + ledger），失败按 workspace 粒度阻止打开、不阻塞连接。R4 才执行 server-local 清洁化                                                                                                                                                                                                                                                                     |
-| 目录共存         | 旧主链资产（`~/.zcode/server` 下 `node`、`zcode-server.cjs`、`agents/`、`tools/`、`build/` 散文件）与 R2 release 布局同目录共存。R3 安装不清理旧散文件（保护未升级 Desktop 的回滚路径），清理留待 R4                                                                                                                                                                                                                                                                                                                                                                                    |
+| 目录共存         | 旧主链资产（`~/.raspberrycode/server` 下 `node`、`zcode-server.cjs`、`agents/`、`tools/`、`build/` 散文件）与 R2 release 布局同目录共存。R3 安装不清理旧散文件（保护未升级 Desktop 的回滚路径），清理留待 R4                                                                                                                                                                                                                                                                                                                                                                                    |
 | 自动重连         | 启动按最近在线排序尝试全部保存连接，不按 7 天过滤（并发和单次预算见[当前恢复合同](../remote/desktop-remote-session-renderer-reattach.md)，各尝试一次）；在线断连按 2/4/8s 重试 3 次；离线每 2 分钟静默探测。仅对「凭据可静默获得」的 Profile 生效；需要交互（密码未存、版本不兼容、迁移失败）时停在离线态等待用户                                                                                                                                                                                                                                                                       |
 | 窗口模型         | 沿用 R1 窗口级隔离；一期按单窗口（主窗口）设计与验收，启动自动重连由主窗口 Host 执行，多窗口行为不做产品承诺                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | 远端 automation  | 一期不支持。cron 调度与 run 生命周期当前在窗口 Host 进程内（`cronAutomationRepo`/`cronRunLifecycle`），迁往 Core 涉及调度器移植、错过补跑语义（方案已列为后续能力）与管理 UI 多 Source 化，改动独立且不小；daemon 常驻已为后续实现铺路，R3 架构不设障碍                                                                                                                                                                                                                                                                                                                                 |
@@ -154,7 +154,7 @@ App 不触发身份换代，不归档原 Profile、不新增设备或项目，�
 
 ### 3.2 workspace 身份的三层结构
 
-现状问题：旧 identity `remote:ssh:<host>:<port>:<user>:<path>` 把线路编进身份（`packages/shared/src/remote-workspace-identity.ts`），换 IP/别名即形成新 key 丢历史；同一目录经多条线路连接会在远端两套数据库（`~/.zcode/v2/tasks-index.sqlite`、`~/.zcode/cli/db/db.sqlite`）留下多套并行历史。
+现状问题：旧 identity `remote:ssh:<host>:<port>:<user>:<path>` 把线路编进身份（`packages/shared/src/remote-workspace-identity.ts`），换 IP/别名即形成新 key 丢历史；同一目录经多条线路连接会在远端两套数据库（`~/.raspberrycode/v2/tasks-index.sqlite`、`~/.raspberrycode/cli/db/db.sqlite`）留下多套并行历史。
 
 R3 的身份分三层。核心取舍：**控制端身份彻底 route 无关；远端存储 key 在迁移窗口期保持旧格式（canonical key），保证旧版本 Desktop 回退/混连时读写同一批数据**；存储 key 的 server-local 清洁化推迟到 R4（旧版本退出支持窗口后）。
 
@@ -257,7 +257,7 @@ Window Host（R3）
    │  └─ @zcode/rpc 服务集合（全转发）+ 多 logical remote session（remoteSessionId）
    │                         │
    │                         ▼
-   │              远端 ZCode Server daemon（R2）
+   │              远端 RaspberryCode Server daemon（R2）
    │              OS service / detached ── Supervisor ── Server Core ── Workspace Agent CLI
    │              Desktop 断开只释放 attachment；daemon 与任务继续运行
    └─ ControllerProjection（source 维度 = sourceServerId）
@@ -351,7 +351,7 @@ serve --daemon
 - 探测成功后的真实注册错误仍直接返回；不得把权限、服务文件或启动错误统一吞掉。daemon 启动 owner 仍由 Server CLI 在 OS service 与 detached Supervisor 之间选择，不新增重试、状态缓存或并行启动路径。
 - `serve --daemon --json` 非零退出时，Adapter 必须优先解析 stdout 的结构化 `{ error, code?, retryable? }`，再把 stderr 作为补充诊断。Node warning、登录 banner 或 shell 噪音不得覆盖真实 CLI 错误。
 - Server CLI `--json` 的结果（成功或失败）是 stdout 中最后一个单行 JSON 对象；Adapter 读取结果时跳过其前后的纯文本行。部分 SSH 堡垒机会把远端 stderr 合并进 stdout，并在 stdout 结束后才投递，Node warning 因此可能排在结果行之后，不能把最后一个非空行当作结果。
-- Source Server bootstrap 可执行文件放在最终可执行根（`~/.zcode/server`）的临时 staging 内，不从常见 `noexec` 的 `/tmp` 执行；archive 临时文件仍须在成功、失败和取消后清理。
+- Source Server bootstrap 可执行文件放在最终可执行根（`~/.raspberrycode/server`）的临时 staging 内，不从常见 `noexec` 的 `/tmp` 执行；archive 临时文件仍须在成功、失败和取消后清理。
 - 远端直下只把 curl/wget、tar 和 SHA-256 工具作为必需能力；awk/wc/date 等仅用于增强进度，缺失时降级为无速度进度而不是阻断下载。Desktop 下载后上传同样必须在上传前探测 tar，避免传完大 archive 才失败。
 - archive 内置官方 Node 22 Linux 构建，动态链接要求 glibc 2.28 及以上。probe 在同一次只读 round-trip 中读取 `getconf GNU_LIBC_VERSION`；Linux 远端（含 WSL、Docker）低于 2.28 时（如 CentOS 7、RHEL 7、Ubuntu 18.04），probe 以预检失败拒绝，不进入安装确认、上传或远端直下，消息写明实测版本和所需版本。读不到 glibc 版本（musl、缺 getconf、输出无法识别）时不拦截，沿用原安装链。
 - macOS 构建 POSIX archive 时必须显式禁用 bsdtar xattr/PAX metadata；仅设置 `COPYFILE_DISABLE=1` 不足以移除 `LIBARCHIVE.xattr.*`，否则 Linux 解压会按条目刷出数千行 unknown extended header 并掩盖真实错误。
@@ -376,13 +376,13 @@ probe ──已安装且 daemon ready──────────────�
 - 判定为需要更新之后，两种策略的更新逻辑必须完全一致：连接流程只把 Profile 置为 `needs-upgrade + updateAvailability: required` 并以 `source-server-upgrade-required` 拒绝连接，不得在连接流程内直接执行 archive update；更新本身统一由 §6.3 的 `updateSource → Manager.updateServer` 执行（`updating` 状态、操作日志、`force:false` 先行、running-task guard 后由用户显式确认再 `force:true`）。因此连接向导内的自动更新、启动重连/断线恢复的「立即更新」入口和强制更新确认对开发态同样生效。（R3A-B-06 修正：此前开发态在连接流程内直接 `installOrUpdate`，guard 只能表现为普通连接失败，UI 没有强制更新入口。）
 - 开发态内容刷新只接受本轮本地 staging 的 descriptor/archive，并统一走 Desktop 上传；即使 SSH Profile 保存的是 `remote-download` 也不得改从 CDN 获取同版本产物。若本地产物缺失、校验失败或更新被 running-task guard 阻断，连接必须 fail-closed，禁止回退 CDN 或继续运行旧 release。
 - 开发态 `bootstrap:with-remote` 必须调用与 CI 相同的 Source Server staging 入口并刷新 descriptor/archive；普通 `bootstrap` 继续跳过远端资源。成功返回表示所有仓库源码派生的 runtime、插件与 archive 都在本轮构建，只有固定版本且经校验的外部二进制允许复用缓存。staging 开始先使旧 descriptor 失效，四个平台 archive 全部原子落盘并校验后再原子发布新 descriptor；失败不得留下可被开发连接消费的旧 generation。Linux 开发专用入口 `prepare:remote-assets:linux` 复用同一路径，只构建并发布 `linux-x64` / `linux-arm64`，descriptor 只列本轮目标，不混入历史 macOS 条目；环境与使用约定见 [Bootstrap 命令](../bootstrap.md)。
-- 远端 `~/.zcode/server` 内旧主链散文件（`node`、`zcode-server.cjs`、`agents/`、`build/`、`tools/`）与 R2 布局共目录：R3 安装**不删除**这些旧文件——未升级的旧版本 Desktop 仍依赖它们运行旧主链；清理属于 R4。R2 的 uninstall allowlist 需扩展列出这批旧路径，保证 R3 之后的 `zcode uninstall` 能一并清理并写入 `preservedPaths` 对账。
+- 远端 `~/.raspberrycode/server` 内旧主链散文件（`node`、`zcode-server.cjs`、`agents/`、`build/`、`tools/`）与 R2 布局共目录：R3 安装**不删除**这些旧文件——未升级的旧版本 Desktop 仍依赖它们运行旧主链；清理属于 R4。R2 的 uninstall allowlist 需扩展列出这批旧路径，保证 R3 之后的 `zcode uninstall` 能一并清理并写入 `preservedPaths` 对账。
 
 ## 6. 握手、鉴权与版本兼容
 
 ### 6.1 ingress 鉴权（补 R2 遗留的安全边界）
 
-R2 的 loopback-only 是网络位置边界：多用户服务器上任何本地进程都能访问 `/ws` 与 capability 签发端点。R3 隧道把这个端口暴露给「任何能连到该机器的 ZCode 用户」，必须先收口：
+R2 的 loopback-only 是网络位置边界：多用户服务器上任何本地进程都能访问 `/ws` 与 capability 签发端点。R3 隧道把这个端口暴露给「任何能连到该机器的 RaspberryCode 用户」，必须先收口：
 
 - daemon 启动时在 `<serverRoot>/run/ingress-token` 写入随机 token（0600，每次 daemon 启动轮换）；
 - Core ingress 对 `/api/*`、`/ws`、`/ws/host` 全部要求 `authorization: Bearer <token>`（或 `?token=`，复用现有 server transport 客户端已实现的携带方式）；`/api/server-info` 允许匿名返回**仅版本与兼容字段**的降级形态，供升级提示使用；
@@ -785,7 +785,7 @@ EnvironmentCoordinator               (registered by                             
     -> attachRendererPort(win, route, "source-server-reconnected")
 ```
 
-- 屏障只作用于 `environment-online` 触发的首连；同一 Environment 的第二个 Workspace join 已有 lane，不产生第二次首次同步（E2E `SSH-P0-TASK-01` 断言远端 `~/.zcode/v2/provider-provisioning-state.json` 的 `records[]` 在第二个 Workspace 连接后不增加）。
+- 屏障只作用于 `environment-online` 触发的首连；同一 Environment 的第二个 Workspace join 已有 lane，不产生第二次首次同步（E2E `SSH-P0-TASK-01` 断言远端 `~/.raspberrycode/v2/provider-provisioning-state.json` 的 `records[]` 在第二个 Workspace 连接后不增加）。
 - 重连必须重新 register：lane 以 `remoteSessionId` 登记、execute 闭包也绑定旧 sessionId，Source 换代后若不重注册，后续下发会命中 Host 已失效的旧 session，远端再也收不到配置。重新 register 触发一次 `environment-online` 整份重下发，补齐离线期间的本机配置变更；单测 `desktopRemoteSessions.test.ts` 覆盖「重连后以新 sessionId 重新登记并重新下发」与「重连触发的失败只 warn」。
 - Environment key 由 `buildRemoteEnvironmentKey(target)` 按 transport 派生（`ssh:<hostKey>` / `wsl:<distro>` / `docker:<container>` / `server:<serverId|url>`），不是 `sourceServerId`；同一 Source 经不同线路连接会形成不同 lane（各自首连同步，结果幂等）。收敛到 `sourceServerId` 是后续可选项，见 [r3-provider-refactor-merge.md（已归档）](../archive/remote-r3/r3-provider-refactor-merge.md)。
 
@@ -831,11 +831,11 @@ Core 启动（server-core/core.ts runServerCore）
   layout = resolveServerLayout(ZCODE_SERVER_ROOT)
   ├─ ZCODE_BUILTIN_PROVIDER_CONFIG_FILE 显式指定 ──► 直接使用该文件
   ├─ 否则 materializeZCodeBuiltinProviderConfig({ runtimeRoot: layout.serverRoot, content })
-  │     └─► ~/.zcode/server/config/provider/zcode-builtin-<sha256(content)>.json（tmp + rename；同 hash 幂等，内容不一致则失败）
+  │     └─► ~/.raspberrycode/server/config/provider/zcode-builtin-<sha256(content)>.json（tmp + rename；同 hash 幂等，内容不一致则失败）
   └─ 两者皆无 ──► 启动失败（fail-closed）
 ```
 
-- 物化目录是 `serverRoot`（`~/.zcode/server`），**不是** release 自带的 `runtime/`：release 目录不可变，同一 releaseId 重装时 `assertExistingReleaseMatches` 会重算整棵树的内容哈希，多出的物化文件会让校验失败；文件名含内容 hash，跨 release 共用安全。`config/` 目前不在 `zcode uninstall` allowlist 内，卸载后会作为 `preservedPaths` 保留（见 [r2-server-cli-and-daemon.md](./r2-server-cli-and-daemon.md)）。
+- 物化目录是 `serverRoot`（`~/.raspberrycode/server`），**不是** release 自带的 `runtime/`：release 目录不可变，同一 releaseId 重装时 `assertExistingReleaseMatches` 会重算整棵树的内容哈希，多出的物化文件会让校验失败；文件名含内容 hash，跨 release 共用安全。`config/` 目前不在 `zcode uninstall` allowlist 内，卸载后会作为 `preservedPaths` 保留（见 [r2-server-cli-and-daemon.md](./r2-server-cli-and-daemon.md)）。
 - 远端 Built-in Release 不随 Provisioning 复制：本机 Personal Layer 引用远端 Built-in 不存在的 Provider/Model 时，目标返回结构化错误并回滚本次配置写入。
 
 ### 8.4 设备管理合同（2026-09-13 自 `docs/archive/remote-r3/r3-remote-ui-prototype-gap-audit.md` §8 并入，原文已归档）
@@ -879,7 +879,7 @@ Repo 不再独立建表/补列。旧 schema、未完成计划与回退兼容规�
 
 ### 9.1 控制端迁移（App 升级后首次启动）
 
-输入：`~/.zcode/v2/setting.json#lastWorkspaceSession[kind="remote"]`（连接与 workspace 合一，≤20 条）+ `credentials.json` 中 `remote-workspace:<workspaceKey>:{password,private-key-passphrase,server-token}`。
+输入：`~/.raspberrycode/v2/setting.json#lastWorkspaceSession[kind="remote"]`（连接与 workspace 合一，≤20 条）+ `credentials.json` 中 `remote-workspace:<workspaceKey>:{password,private-key-passphrase,server-token}`。
 
 ```text
 每条 remote entry
@@ -956,8 +956,8 @@ Core workspace 定位层收到 { workspacePath, legacyRouteHint? }
   | `task_group_view_node_orders`                            | 只改 `node_type='task'` 且 `node_key=[workspaceKey,taskId]` 的结构化 key；canonical 已有同 key 时保留 canonical 顺序                                                                                                                                                                                                                                                                                                                                                                                                                        |
   | `automations` / `automation_runs`                        | `workspace_key` 全量 rekey；存在 `workspace_identity` 时同步改为 canonical；对象 id、task/session 引用与运行状态不改写                                                                                                                                                                                                                                                                                                                                                                                                                      |
   | `off_peak_tasks`                                         | 按 §9.1 的闲时绑定冲突裁决保留 canonical 活跃行、取消 source 冲突行后全量 rekey；保留全部历史及对象引用，非冲突行运行状态不变                                                                                                                                                                                                                                                                                                                                                                                                               |
-  | `~/.zcode/cli/db/db.sqlite#session`                      | 只把同 path 变体的 `workspace_id` 改为 canonical；messages/parts 正文不改写                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-  | `~/.zcode/v2/sessions/<hash>`                            | 递归合并 source hash 目录：目标不存在则移动；同相对路径且字节相同则去重；类型不同或字节不同则在任何备份/搬运前整 workspace fail-closed                                                                                                                                                                                                                                                                                                                                                                                                      |
+  | `~/.raspberrycode/cli/db/db.sqlite#session`                      | 只把同 path 变体的 `workspace_id` 改为 canonical；messages/parts 正文不改写                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+  | `~/.raspberrycode/v2/sessions/<hash>`                            | 递归合并 source hash 目录：目标不存在则移动；同相对路径且字节相同则去重；类型不同或字节不同则在任何备份/搬运前整 workspace fail-closed                                                                                                                                                                                                                                                                                                                                                                                                      |
 
 - 重复 task 的 meta 合并仍按字段进行：较新记录缺少某字段时保留较旧记录的值，不能用较新行的
   NULL 投影覆盖该值。旧 meta 未携带字段时，保留双方索引中较新行优先的非空投影，兼容历史
@@ -1124,7 +1124,7 @@ R3 保留源码但已从生产入口不可达、R4 再物理删除：
 - `buildRemoteWorkspaceIdentity` 的 SSH/WSL/Docker 构造。Host 仍在没有历史精确值时用它生成 `legacyRouteHint`，它不是正式 stable identity；随 R4 删除 hint 时一并删除；
 - 旧连接记录（`lastWorkspaceSession` remote entry、`remote-workspace:*` credential key）的读取与解析；
 - `parseRemoteWorkspaceIdentity` 对 `remote:ssh/wsl/docker:*` 的解析（远端迁移扫描用）；
-- 远端 `~/.zcode/server` 旧散文件（未升级 Desktop 的回滚依赖）；
+- 远端 `~/.raspberrycode/server` 旧散文件（未升级 Desktop 的回滚依赖）；
 - 迁移 ledger/报告的兼容读取。
 
 长期保留：`IRemoteBackend` 三实现的 exec/upload/detect 原语（Adapter 底座）、`kind:"server"` dev 直连、手机 attachment 全链路。

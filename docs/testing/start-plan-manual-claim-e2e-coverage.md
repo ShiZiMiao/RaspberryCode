@@ -103,7 +103,7 @@ Desktop E2E 虽使用 production bundle，但必须因 `ZCODE_ENV=test` 命中 3
 ```text
 WDIO startup credential seed
   -> preserve fake zcodejwttoken for start-plan-manual-claim-experience
-  -> Electron reload restores authenticated ZCode session
+  -> Electron reload restores authenticated RaspberryCode session
   -> deterministic verification success
   -> claimManualPlan reads JWT
   -> POST local /api/v1/zcode-plan/billing/claim

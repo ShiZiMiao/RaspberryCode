@@ -44,7 +44,7 @@
     "id": "D01-session-history-enospc",
     "code": "ENOSPC",
     "operations": ["writeFile", "rename"],
-    "pathIncludes": "/.zcode/",
+    "pathIncludes": "/.raspberrycode/",
     "maxMatches": 1,
     "message": "Injected ENOSPC while persisting session history"
   }
@@ -79,7 +79,7 @@
 {
   code: "ENOSPC",
   syscall: "writeFile",
-  path: "/tmp/workspace/.zcode/session.json",
+  path: "/tmp/workspace/.raspberrycode/session.json",
   zcodeFsFaultId: "D01-session-history-enospc"
 }
 ```

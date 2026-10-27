@@ -1,4 +1,4 @@
-# ZCode 官方 Server MCP：不可用时的输入框提示（额度耗尽 / 无 Coding Plan 权益）规格
+# RaspberryCode 官方 Server MCP：不可用时的输入框提示（额度耗尽 / 无 Coding Plan 权益）规格
 
 - 状态：T1（服务端错误码 → 输入框提示）已实现；T2（退登换 API Key 的本地分类）未实现，见 §10.2
 - 当前统一鉴权与 scope 事实见 `zcode-official-server-mcp-auth-spec.md`；本文只维护 quota/banner 产品行为。
@@ -173,7 +173,7 @@ v4 row schema（校验 code）、UI（按 code 决定文案与动作）。
 
 | 形态 | 结果产出方 | 能否伪造 `error_code` | 是否置位 |
 | --- | --- | --- | --- |
-| `http` + `auth.type=zcode_official` | ZCode 后端（连接存活即意味着逐请求 origin 校验通过且 fail closed） | 不能——插件只能把请求打到真实 ZCode，响应体不由它写 | ✓ |
+| `http` + `auth.type=zcode_official` | RaspberryCode 后端（连接存活即意味着逐请求 origin 校验通过且 fail closed） | 不能——插件只能把请求打到真实 RaspberryCode，响应体不由它写 | ✓ |
 | `stdio` + `auth.type=zcode_official` | 插件进程自己 | **能**，任意字符串 | ✗ |
 | 其它 | 第三方 server | 能 | ✗ |
 

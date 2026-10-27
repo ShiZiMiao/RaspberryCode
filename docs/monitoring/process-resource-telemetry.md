@@ -80,7 +80,7 @@ CLI 真实读数时间 ──> 分组新读数 ──> 有界窗口；交付不�
 
 ## Problem Statement
 
-产品与开发团队现在无法用一句话回答"ZCode 的哪个进程、在哪个版本、在哪类机器上占了多少 CPU 与内存，
+产品与开发团队现在无法用一句话回答"RaspberryCode 的哪个进程、在哪个版本、在哪类机器上占了多少 CPU 与内存，
 有没有变差"。现有 ARMS 资源埋点分散在三个事件（`perf_resource_window`、`perf_resource_agent`、
 `perf_mcp_memory`）里，三种 schema、三条链路，且存在以下缺陷：
 
@@ -117,7 +117,7 @@ main 进程零外部进程，全链路禁止 PowerShell。
 3. 作为性能负责人，我希望多进程角色同时带总量与最大单进程，以便区分"用户开了很多 workspace"和"某个进程泄漏"。
 4. 作为性能负责人，我希望事件带进程运行时长，以便在平台上按运行时长分桶发现内存随时间增长，而不需要客户端做泄漏判断。
 5. 作为性能负责人，我希望 Node 进程带 JS 堆用量，以便区分 JS 堆泄漏与 native / ArrayBuffer / 子进程侧的增长。
-6. 作为性能负责人，我希望有设备级的整机 CPU、剩余内存与应用总量事件，以便判断问题是 ZCode 造成的还是用户机器本身压力大。
+6. 作为性能负责人，我希望有设备级的整机 CPU、剩余内存与应用总量事件，以便判断问题是 RaspberryCode 造成的还是用户机器本身压力大。
 7. 作为性能负责人，我希望旧事件停发、新事件一次性替换，以便看板口径不混杂、过渡期不双倍上报。
 8. 作为值班工程师，我希望 spec 给出可直接落地的告警规则清单，含指标、分组、阈值与含义，以便在自建平台上配置而不依赖 ARMS 告警能力。
 9. 作为值班工程师，我希望告警规则按群体占比和版本对比定义，以便不被单台设备的正常波动打扰。
@@ -286,9 +286,9 @@ chromium_other 18 个。
 | 状态 | `background_ratio`、`app_uptime_minutes`         | `background_ratio` 与角色事件同源；uptime 取 main 进程运行时长     |
 | 整机 | `system_cpu_percent_p95`                         | `os.cpus()` 差分                                                   |
 | 整机 | `system_free_memory_kb_min`                      | 窗口内 `os.freemem()` 最小值                                       |
-| 应用 | `app_cpu_percent_p95`                            | 全部本机 ZCode 进程合计                                            |
+| 应用 | `app_cpu_percent_p95`                            | 全部本机 RaspberryCode 进程合计                                            |
 | 应用 | `app_rss_kb_total_mean`、`app_rss_kb_total_peak` | Chromium 体系每 10 秒精确合计，加 CLI 与 MCP 最近一次已知样本      |
-| 应用 | `process_count_total_peak`                       | 全部本机 ZCode 进程数峰值                                          |
+| 应用 | `process_count_total_peak`                       | 全部本机 RaspberryCode 进程数峰值                                          |
 | 质量 | `sample_count`                                   | 首个 tick 无 CPU 基线不产生样本，5 分钟窗口预期 29                 |
 | 质量 | `telemetry_self_ms`                              | 窗口内 main 侧采样与聚合代码累计墙钟毫秒数，`performance.now()` 计 |
 
@@ -381,7 +381,7 @@ E2E 跑的是打包构建（`app.isPackaged === true`），因此 1 分钟窗口
 | A2 闲置 CPU 回归 | `background_ratio ≥ 0.9` 的窗口中 `cpu_percent_p95` 的 p95 | process_role × app_version | 大于基线 1.5 倍，或绝对值大于 5% | 后台仍在烧 CPU，通常是定时器或轮询泄漏 |
 | A3 前台 CPU 回归 | `background_ratio ≤ 0.1` 的窗口中 `cpu_percent_p95` 的 p95 | process_role × app_version | 大于基线 1.3 倍                  | 交互时更卡                             |
 | A4 进程数回归    | `process_count_peak` 均值                                  | process_role × app_version | 大于基线 1.5 倍                  | 进程回收失效                           |
-| A5 应用总量回归  | `perf_system_window.app_rss_kb_total_mean` 的 p95          | app_version                | 大于基线 1.2 倍                  | 用户直观感受到的 ZCode 占内存          |
+| A5 应用总量回归  | `perf_system_window.app_rss_kb_total_mean` 的 p95          | app_version                | 大于基线 1.2 倍                  | 用户直观感受到的 RaspberryCode 占内存          |
 
 **B 类：绝对水位**（滚动 1 小时，P2）。统计"近 1 小时内出现过超阈值窗口的设备占全部活跃设备的比例"，
 触发条件统一为"占比大于基线 2 倍且大于 3%"。
@@ -427,7 +427,7 @@ E2E 跑的是打包构建（`app.isPackaged === true`），因此 1 分钟窗口
 | D2 前台持续高 CPU | `background_ratio ≤ 0.1` 且 `cpu_percent_p95 > 50%` 的设备占比 | renderer_main | 大于 5%  | UI 卡顿风险          |
 | D3 GPU 进程高 CPU | `cpu_percent_p95 > 30%` 的设备占比                             | gpu           | 大于 3%  | 渲染层问题           |
 | D4 MCP 闲置耗 CPU | 同 D1                                                          | mcp × mcp_id  | 大于 5%  | 某插件后台轮询       |
-| D5 整机 CPU 饱和  | `system_cpu_percent_p95 > 90%` 且 app 占比超一半的设备占比     | app_version   | 大于 3%  | ZCode 是整机卡顿主因 |
+| D5 整机 CPU 饱和  | `system_cpu_percent_p95 > 90%` 且 app 占比超一半的设备占比     | app_version   | 大于 3%  | RaspberryCode 是整机卡顿主因 |
 
 cli_chat 不设 CPU 告警，Agent 工作时 CPU 高是正常的。
 

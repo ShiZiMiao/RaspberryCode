@@ -104,7 +104,7 @@ Standalone 安装 ID 保存于：
 
 ```text
 $ZCODE_HOME/v2/telemetry-state.json
-或 ~/.zcode/v2/telemetry-state.json
+或 ~/.raspberrycode/v2/telemetry-state.json
 ```
 
 创建使用异步文件 I/O、临时文件原子 Rename、跨进程锁和 5 分钟 Stale Lock 回收。另一个活跃

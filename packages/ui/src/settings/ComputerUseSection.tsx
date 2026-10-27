@@ -317,8 +317,8 @@ export function ComputerUseSection({
     [onRestart],
   );
 
-  // 兜底:重启 Helper 后仍持续 stale 时,用户可一键重启 ZCode(复用 OAuth 登出同款 RelaunchApp)。
-  // 新 ZCode 进程会干净地重新拉起 Helper,绕过当前进程里可能卡住的重启机制(孤儿/socket/状态污染)。
+  // 兜底:重启 Helper 后仍持续 stale 时,用户可一键重启 RaspberryCode(复用 OAuth 登出同款 RelaunchApp)。
+  // 新 RaspberryCode 进程会干净地重新拉起 Helper,绕过当前进程里可能卡住的重启机制(孤儿/socket/状态污染)。
   const onRelaunchApp = useCallback(async () => {
     if (typeof platform.executeDesktopCommand !== "function") return;
     await platform.executeDesktopCommand(DesktopCommandIds.RelaunchApp);
@@ -576,7 +576,7 @@ export function ComputerUseSection({
   };
 
   // 旧 Helper 的 stale 可能来自进程缓存，也可能来自旧 ad-hoc CDHash；先重启并验证，仍失败时同时
-  // 保留重新授权入口与“重启 ZCode”兜底，避免把不可由单次 Helper 重启修复的状态误导成已解决。
+  // 保留重新授权入口与“重启 RaspberryCode”兜底，避免把不可由单次 Helper 重启修复的状态误导成已解决。
   const renderRestartDetail = (): ReactNode => (
     <div className="flex flex-col items-start gap-2">
       <Button

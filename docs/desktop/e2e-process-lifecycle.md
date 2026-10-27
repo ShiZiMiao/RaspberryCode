@@ -19,7 +19,7 @@ host 或 crash handler 的命令行仍会携带当前 run 的 HOME/profile 路�
 精确命中的后代向上补齐连续的 Electron main 与 ChromeDriver 父链，再从得到的根节点
 向下回收整棵树；遇到 WDIO controller、shell、terminal 或其他非 Electron/ChromeDriver
 父进程必须停止。反向追溯必须由当前 runId/HOME 的精确命中触发；不能仅凭
-`ZCode E2E`、共享 build 路径或进程名称直接选择清理根。
+`RaspberryCode E2E`、共享 build 路径或进程名称直接选择清理根。
 
 `beforeSession` 的进程退出屏障、fixture/mock 初始化和 HOME reset 是一个 fail-closed
 前置事务。WDIO config hook 会吞掉普通 rejection，因此事务失败时必须保存原始错误，并由
@@ -28,7 +28,7 @@ root-hook failure，不能带着缺失的 replay/capture、日志目录或旧 HO
 
 Shared markers are intentionally not cleanup identities:
 
-- `ZCode E2E`
+- `RaspberryCode E2E`
 - `APP_ENTRY_POINT`
 - `out/main`
 

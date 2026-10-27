@@ -4,7 +4,7 @@
 
 app-server 模式默认开启模型流式输出。Vercel AI SDK 的 `streamText().fullStream` 可能把 provider 429、5xx 或网络失败作为 `error` chunk 产出，而不是直接从 async iterator 抛出异常。
 
-历史实现把 `error` chunk 立即转成 `ModelStreamEvent.error` 交给 core。core 收到后会终止 turn，导致 adapter 的自定义重试循环没有机会发布 `model_retry_scheduled`，ZCode app-server 侧也就无法通过 `_meta.zcode.apiRetry` 通知 z-code-2。
+历史实现把 `error` chunk 立即转成 `ModelStreamEvent.error` 交给 core。core 收到后会终止 turn，导致 adapter 的自定义重试循环没有机会发布 `model_retry_scheduled`，RaspberryCode app-server 侧也就无法通过 `_meta.zcode.apiRetry` 通知 z-code-2。
 
 ## 契约
 
@@ -51,8 +51,8 @@ provider completion -> adapter 检查终止原因
   规则决定是否重试。
 
 - 如果流式请求在首个已提交模型事件前收到可重试 `error` chunk 或 iterator 抛出可重试网络错误，应按 adapter 的统一重试策略处理。
-- 重试前必须发布 `model_request_failed` 和 `model_retry_scheduled`，让 core/ZCode app-server 可以继续转发 retry 状态。
-- runtime status event 继续使用 `attempt` / `maxAttempts` 统计总尝试次数；TUI 和 ZCode app-server 私有 UI 元数据必须在投影层换算成用户可见的重试次数，首次重试显示 `1/N`。
+- 重试前必须发布 `model_request_failed` 和 `model_retry_scheduled`，让 core/RaspberryCode app-server 可以继续转发 retry 状态。
+- runtime status event 继续使用 `attempt` / `maxAttempts` 统计总尝试次数；TUI 和 RaspberryCode app-server 私有 UI 元数据必须在投影层换算成用户可见的重试次数，首次重试显示 `1/N`。
 - 重试期间不应向 core 产出 `ModelStreamEvent.error`，因为该事件代表本次 turn 已不可恢复。
 - adapter 可以暂存并丢弃无副作用的流式前奏事件，当前包括 `start`、`text_start`、`text_end`、`reasoning_start`、`reasoning_end`、`tool_input_start`、`tool_input_delta` 和 `tool_input_end`。这些事件不会立刻写入 session store 的 assistant 内容，也不会执行 tool；如果本次尝试随后失败，应直接丢弃并从下一次尝试重新开始。
 - 普通主请求中，文本长度为零的 `reasoning_delta` / `text_delta` 也属于 retry-safe 前奏。Anthropic 的 `signature_delta` 会被 AI SDK 转成携带签名 metadata 的空 `reasoning_delta`；它必须随前奏暂存，不能触发已输出边界。成功时按原顺序释放完整事件和签名；可重试失败时丢弃当前 attempt 的前奏。这里按 `text.length === 0` 判断，不 trim，不丢弃签名，也不对具体 provider 错误码增加特判。
@@ -80,7 +80,7 @@ provider completion -> adapter 检查终止原因
 
 ## 已收到 SSE Event 后的恢复语义
 
-SSE stream 中断后不做连接级 resume，也不依赖 `Last-Event-ID` 拼接模型输出。模型生成流不是普通订阅流，连接断开时 provider 端可能已经继续生成、执行 provider-native 工具或丢弃内部状态；客户端无法证明“下一段 event”可以无缝接在本地已收到的 token 后面。因此 ZCode 的恢复对象是模型语义状态，而不是 SSE 连接本身。
+SSE stream 中断后不做连接级 resume，也不依赖 `Last-Event-ID` 拼接模型输出。模型生成流不是普通订阅流，连接断开时 provider 端可能已经继续生成、执行 provider-native 工具或丢弃内部状态；客户端无法证明“下一段 event”可以无缝接在本地已收到的 token 后面。因此 RaspberryCode 的恢复对象是模型语义状态，而不是 SSE 连接本身。
 
 恢复流程：
 
@@ -110,7 +110,7 @@ core recovery 的可观测性要求：
 - `stream_recovery_tail_discarded` 必须记录被丢弃的 assistant message、正文/思考字节数和工具调用 ID。
 - `stream_recovery_retry_started` 必须记录所选 `anchorId` 和 `failedRequestId`。
 - 紧随其后的 `model_request_started` 必须带上 `streamRecovery.recoveredFromRequestId`，使用户无需靠时间戳猜测是否真的重新发了请求。
-- ZCode app/server/UI 投影层必须把 `model_request_started.streamRecovery.retryNumber/maxRetries` 转成现有 `apiRetry` 运行态，让当前运行 turn 底部的重试提示显示 core recovery 的 `1/10`、`2/10`，而不是因为 adapter `attempt=1` 误清空状态。
+- RaspberryCode app/server/UI 投影层必须把 `model_request_started.streamRecovery.retryNumber/maxRetries` 转成现有 `apiRetry` 运行态，让当前运行 turn 底部的重试提示显示 core recovery 的 `1/10`、`2/10`，而不是因为 adapter `attempt=1` 误清空状态。
 - 普通 adapter retry 的 `model_request_started attempt>1` 只表示“开始下一次请求”，不代表恢复成功，不能立刻清空 `apiRetry`；否则网络抖动时当前运行 turn 底部的提示会在“重试中”和空状态之间闪烁。
 - `apiRetry` 的恢复成功边界是 retry attempt 首次产生有效模型进展（`text_delta` / `reasoning_delta` / tool input / tool call）或请求成功完成；最终失败、取消和 turn 终态也必须清空该运行态。
 - core recovery 的请求级 SSE idle timeout retry number 必须和 `streamRecovery.retryNumber` 一致；默认 base timeout 为 600000ms，所以第 1 次 recovery 使用 630000ms，第 2 次使用 660000ms，后续每次增加 30000ms。
@@ -131,7 +131,7 @@ core recovery 的可观测性要求：
 - 该值只控制首请求的 base timeout；adapter retry 和 core stream recovery 仍按每次重试增加 30000ms。
 - 该值不是普通 HTTP 总请求超时。只要 stream event 持续到达，单次模型请求总耗时可以超过该值。
 - 该值在模型 adapter 构造时读取；修改 `config.json` 后，需要新建 agent/runtime 才能保证生效，不承诺对已构造的 adapter 热更新。
-- 不应把该值放入 `provider.options.timeout` / `chunkTimeout`。provider 配置描述供应商连接参数，`modelStream.idleTimeoutMs` 描述 ZCode 自己对 SSE 事件静默的恢复边界。
+- 不应把该值放入 `provider.options.timeout` / `chunkTimeout`。provider 配置描述供应商连接参数，`modelStream.idleTimeoutMs` 描述 RaspberryCode 自己对 SSE 事件静默的恢复边界。
 
 ## 环境变量覆盖
 
@@ -168,7 +168,7 @@ core recovery 的可观测性要求：
 - compact `preserveProviderStreamBoundaries=true` 的空 completion 不得因普通主请求
   规则增加额外重试。
 - 重试后的第二次 stream 成功时，最终只向 core 产出成功事件。
-- `model_retry_scheduled` 事件应保留 `reason=rate_limited`、`statusCode=429`、`nextAttempt` 和 `delayMs`，供 ZCode app-server 转换为 `_meta.zcode.apiRetry`。
+- `model_retry_scheduled` 事件应保留 `reason=rate_limited`、`statusCode=429`、`nextAttempt` 和 `delayMs`，供 RaspberryCode app-server 转换为 `_meta.zcode.apiRetry`。
 - 普通 adapter retry 的 `model_request_started attempt>1` 不应清空 `apiRetry`；下一次模型进展或成功完成才清空，避免重试状态闪烁。
 - provider SSE `event: error` 中携带非零业务 code 时，应归一为 `ProviderBusinessError`，最终用户看到 provider message，而不是空输出或 `finishReason: other`。
 - provider business error 可映射为 `HTTP 5xx` 或明确表示 provider 网络失败时，在首个已提交输出前应走统一 retry budget；达到上限后再发布最终失败。
@@ -182,7 +182,7 @@ core recovery 的可观测性要求：
 - SSE 总耗时超过 `modelStream.idleTimeoutMs` 但每个事件间隔都小于 idle timeout 时，应继续正常完成，不应触发普通 HTTP 总超时。
 - `modelStream.idleTimeoutMs` 配置应从 `~/.zcode/cli/config.json` 进入 runtime config，并传入 `AiSdkModelAdapter`。
 - iterator 在已经产出 `text_delta` 或 `tool_call` 后发生可重试网络错误时，不应自动重试。
-- core recovery 的 `model_request_started` 即使 adapter `attempt=1`，只要携带 `streamRecovery.retryNumber/maxRetries`，ZCode UI、service runtime snapshot 和 protocol `_meta.zcode.apiRetry` 都应展示对应的重试次数。
+- core recovery 的 `model_request_started` 即使 adapter `attempt=1`，只要携带 `streamRecovery.retryNumber/maxRetries`，RaspberryCode UI、service runtime snapshot 和 protocol `_meta.zcode.apiRetry` 都应展示对应的重试次数。
 - `ZCODE_MODEL_RETRY_MAX_RETRIES` 覆盖默认 retry budget，且 `maxAttempts` 仍按“首次请求 + 重试次数”上报。
 - `modelRetryBudget = single-attempt` 时，429 等瞬态失败不得发布 `model_retry_scheduled`，首次失败即抛出 adapter error，状态事件 `maxAttempts` 为 1；流式与非流式同样适用。
 - `ZCODE_MODEL_RETRY_BASE_DELAY_MS`、`ZCODE_MODEL_RETRY_BACKOFF_FACTOR`、`ZCODE_MODEL_RETRY_MAX_DELAY_MS` 覆盖指数退避默认值。

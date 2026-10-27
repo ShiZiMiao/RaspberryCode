@@ -28,7 +28,7 @@ Message rendering stays part-based:
 - code block visibility is treated as TUI-local presentation state, not runtime
   session state.
 
-ZCode does not gate markdown behind an experimental flag. The default is
+RaspberryCode does not gate markdown behind an experimental flag. The default is
 automatic capability detection:
 
 1. Prefer OpenTUI's native `markdown` renderable when available and stable.
@@ -39,7 +39,7 @@ Implementation note: the first OpenTUI-backed slice temporarily used a small
 TUI-local markdown projection because older renderer behavior could expose raw
 markers such as `###`, `**`, and inline backticks in normal assistant prose.
 OpenTUI 0.2.15 provides a native `MarkdownRenderable` with concealment and
-streaming support, so ZCode should prefer the native `<markdown>` renderable and
+streaming support, so RaspberryCode should prefer the native `<markdown>` renderable and
 avoid maintaining a parallel parser in the TUI.
 
 ## Scope
@@ -51,7 +51,7 @@ avoid maintaining a parallel parser in the TUI.
 - Preserve copy/select behavior: selected rendered text should copy human text,
   not ANSI escape sequences or internal styling metadata.
 - Keep markdown rendering inside `@zcode/tui`; no runtime, provider, tool,
-  session store, ZCode app-server, or CLI protocol changes are required for the first slice.
+  session store, RaspberryCode app-server, or CLI protocol changes are required for the first slice.
 
 ## Non-Goals
 

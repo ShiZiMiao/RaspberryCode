@@ -242,7 +242,7 @@ describe("commandsService", () => {
     mkdirSync(join(workspacePath, ".claude", "commands"), { recursive: true });
     writeFileSync(
       join(home, ".raspberrycode", "commands", "review.md"),
-      "ZCode review",
+      "RaspberryCode review",
       "utf-8",
     );
     writeFileSync(
@@ -272,7 +272,7 @@ describe("commandsService", () => {
     );
     writeFileSync(
       join(workspacePath, ".raspberrycode", "commands", "project.md"),
-      "ZCode project",
+      "RaspberryCode project",
       "utf-8",
     );
 

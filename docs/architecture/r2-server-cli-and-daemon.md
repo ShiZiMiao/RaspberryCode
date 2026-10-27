@@ -4,16 +4,16 @@
 
 - 状态：P0/P1 已实现；本次 hardening 已补齐 Core 父进程断连、更新指针清理和稳定 Server identity；Linux x64 已完成 SSH 实机验证
 - 阶段：统一多端远程架构 R2 / D4
-- 本阶段目标：交付可独立安装、可后台运行、与 UI 生命周期解耦的 ZCode Server CLI
+- 本阶段目标：交付可独立安装、可后台运行、与 UI 生命周期解耦的 RaspberryCode Server CLI
 - 本文定位：R2 的实现规格和边界；可执行测试补充见 [R2 lifecycle test plan](./r2-server-cli-and-daemon-test-plan.md)
 - R2 不切换 Desktop 的生产远程连接主链
 
 本文基于：
 
-- [ZCode 统一多端远程连接架构与产品方案（评审稿）](https://internal-docs.example.invalid/redacted)
+- [RaspberryCode 统一多端远程连接架构与产品方案（评审稿）](https://internal-docs.example.invalid/redacted)
 - [R1 窗口级单 Host 进程重构规格](./r1-single-window-host-refactor.md)
 - [Agent Electron/Node runtime 事实](../runtime-tools/agent-electron-node-runtime.md)
-- [ZCode Lite / Server 统一多端架构实施计划](./unified-zcode-lite-server-multi-server-plan.md)
+- [RaspberryCode Lite / Server 统一多端架构实施计划](./unified-zcode-lite-server-multi-server-plan.md)
 
 R2 交付：
 
@@ -51,7 +51,7 @@ R2 不交付：
 | 崩溃策略             | 5 次/5 分钟预算，退避 1、2、4、8、16 秒；超出后进入 `crash-loop-stopped`                                                                                                                                                                                                                                           |
 | Task 恢复            | Core 崩溃或更新后，运行中的 Task 中断，不自动恢复或重放输入                                                                                                                                                                                                                                                        |
 | stop                 | 停止当前实例，但保留自启动注册                                                                                                                                                                                                                                                                                     |
-| uninstall            | 停止实例、移除服务注册、删除 ZCode 自有数据；Workspace/Repo/用户文件不删除                                                                                                                                                                                                                                         |
+| uninstall            | 停止实例、移除服务注册、删除 RaspberryCode 自有数据；Workspace/Repo/用户文件不删除                                                                                                                                                                                                                                         |
 | update               | 默认从配置的 release catalog 在线下载并校验；无网络时可应用本地 pending；使用原子切换和失败回滚                                                                                                                                                                                                                    |
 | 组件更新             | 以 Node、server、agent、official-plugins、native-search-tools 五个粗粒度组件做内容寻址缓存；完整 release 仍是原子运行单元                                                                                                                                                                                          |
 | 平台服务注册         | 先探测当前用户的 launchctl / systemctl --user / schtasks 能力；Linux 非交互会话可从 `/run/user/<uid>/bus` 恢复 user bus 环境。服务管理器不可访问时自动由 detached Supervisor 启动；能力探测成功后的真实注册失败仍返回可诊断错误，不做伪装 fallback。OS service 或 detached Supervisor 二选一成为 daemon 启动 owner |
@@ -355,7 +355,7 @@ Agent 接线约定：发行包内 Core 不在 monorepo、也没有 Electron runt
 安装后的程序和数据分离：
 
 ```text
-~/.zcode/server/
+~/.raspberrycode/server/
 ├── releases/<version>-<target>-<sha12>/
 │   ├── runtime/
 │   ├── bin/
@@ -365,7 +365,7 @@ Agent 接线约定：发行包内 Core 不在 monorepo、也没有 Electron runt
 ├── bin/zcode                       # Windows 为 zcode.cmd；OS service 稳定入口
 ├── service/<root-hash>.<platform>  # 运行时按 canonical root 生成，显式携带 --server-root
 ├── cache/components/<target>/<component>/<sha256>/
-├── config/provider/zcode-builtin-<sha256>.json   # Core 启动时按内容 hash 物化的 ZCode Built-in Provider Config（2026-09-07 起）
+├── config/provider/zcode-builtin-<sha256>.json   # Core 启动时按内容 hash 物化的 RaspberryCode Built-in Provider Config（2026-09-07 起）
 └── run/
     ├── server.lock
     ├── update.lock                  # 跨 Supervisor handoff 的 CLI update/uninstall 单 owner
@@ -383,8 +383,8 @@ allowlist 不含 `config/`，卸载后该目录会保留并列入 `uninstalled.j
 
 descriptor 不随 release archive 打包，而是在 `serve --daemon` 注册时由
 `platform/serviceManager.ts` 动态写入 `service/`。显式传入非标准 `--server-root` 时，Server CLI
-将该目录同时作为 `dataBaseDir`，因此 Agent/SQLite 等本地状态位于该 root 的 `.zcode/` 隔离目录；
-卸载仍只删除 ZCode allowlist，未知文件会保留并列入 `uninstalled.json.preservedPaths`。
+将该目录同时作为 `dataBaseDir`，因此 Agent/SQLite 等本地状态位于该 root 的 `.raspberrycode/` 隔离目录；
+卸载仍只删除 RaspberryCode allowlist，未知文件会保留并列入 `uninstalled.json.preservedPaths`。
 
 `current.json` 和 `pending.json` 只通过临时文件加 rename 更新。release 目录按 archive SHA 内容寻址
 且不可变：安装器只能把完整临时目录原子 promote 到尚不存在的 `releases/<releaseId>`；目标已存在
@@ -465,9 +465,9 @@ endpoint、status、release、service descriptor 和 uninstall 均从该参数�
 status、lock、Core 或 SQLite。
 
 POSIX 稳定入口 `bin/zcode` 读取 `current.json.releaseDir`，只执行 `<root>/releases/` 下的 release；
-越界时输出 `Invalid current ZCode Server release` 并以 1 退出。该边界必须和写入方比较同一种路径：
+越界时输出 `Invalid current RaspberryCode Server release` 并以 1 退出。该边界必须和写入方比较同一种路径：
 生命周期命令写 `current.json` 前已把 server root 收敛为 canonical（`realpath`）路径，launcher 也必须
-用物理路径（`cd -P` + `pwd -P`）计算 root。远端以 `"$HOME/.zcode/server/bin/zcode"` 调用入口，
+用物理路径（`cd -P` + `pwd -P`）计算 root。远端以 `"$HOME/.raspberrycode/server/bin/zcode"` 调用入口，
 `$HOME` 可能经过符号链接（例如 NAS 的 `/var/services/homes -> /volume1/homes`、`/home -> /var/home`），
 这种别名不得让合法 release 被判为越界。
 
@@ -503,14 +503,14 @@ zcode uninstall
 | `restart`        | 有界停止并重新启动；不自动恢复中断 Task                                                                                                                                                                                                                                                                                                                                             |
 | `update`         | 获取 catalog 中当前 target 的新 release（或使用已有 pending），校验并安装后应用；在线 daemon 必须完成 Supervisor/Core/Agent 的整棵进程树换代与 runtime identity 校验后才返回成功；catalog 与 current archive 相同返回成功的 `up-to-date`，不得继续请求 apply；未配置 catalog 且没有 pending 时返回明确的 release source 错误；有运行 Task 时默认返回可操作的 guard 错误，不中断任务 |
 | `update --force` | 明确允许中断运行 Task 后应用 release                                                                                                                                                                                                                                                                                                                                                |
-| `uninstall`      | 检查运行 Task（有运行 Task 时拒绝并保持原状态），要求两次输入 `DELETE`，停止并移除服务，删除允许列表内的 ZCode 数据                                                                                                                                                                                                                                                                 |
+| `uninstall`      | 检查运行 Task（有运行 Task 时拒绝并保持原状态），要求两次输入 `DELETE`，停止并移除服务，删除允许列表内的 RaspberryCode 数据                                                                                                                                                                                                                                                                 |
 
 `uninstall` 允许删除：
 
 - R2 程序 release；
 - Supervisor/Core 运行记录；
-- ZCode 配置、缓存、runtime 记录；
-- ZCode 自有状态数据库和日志。
+- RaspberryCode 配置、缓存、runtime 记录；
+- RaspberryCode 自有状态数据库和日志。
 
 `uninstall` 禁止删除：
 

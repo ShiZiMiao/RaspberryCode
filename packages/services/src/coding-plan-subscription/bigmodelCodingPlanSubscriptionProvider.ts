@@ -288,7 +288,7 @@ export class BigModelCodingPlanSubscriptionProvider {
         timeoutMs: REQUEST_TIMEOUT_MS,
       },
     );
-    // 新 ZCode billing 接口沿用平台 envelope（code=0 成功），不能复用
+    // 新 RaspberryCode billing 接口沿用平台 envelope（code=0 成功），不能复用
     // BigModel 支付接口的 code=200 解包器，否则合法 preview 会被误判失败。
     if (payload.code !== undefined && payload.code !== 0) {
       throw new Error(payload.msg?.trim() || "manual_claim_preview_failed");
@@ -806,7 +806,7 @@ export class BigModelCodingPlanSubscriptionProvider {
       return await this.clientConfigRequest;
     }
 
-    // client/configs 和其他 ZCode 平台接口必须共享运行时 endpoint；
+    // client/configs 和其他 RaspberryCode 平台接口必须共享运行时 endpoint；
     // E2E/测试环境会通过 ZCODE_BASE_URL 指向本地 mock，硬编码线上域名会让套餐状态不可控。
     const url = resolveCodingPlanClientConfigUrl(process.env);
     url.searchParams.set("app_version", ZCODE_VERSION);
@@ -1540,7 +1540,7 @@ function dropUndefined(value: Record<string, unknown>): Record<string, unknown> 
 
 /**
  * 闲时任务灰度判据（纯函数供单测）：远端只提供曝光开关，模型成员和事实
- * 来自 ZCode Built-in Provider / Model Config。
+ * 来自 RaspberryCode Built-in Provider / Model Config。
  * mock 模式（ZCODE_OFFPEAK_MOCK=1）只替代产品曝光与套餐状态；模型候选仍来自 Registry。
  */
 export function resolveOffPeakClientConfig(

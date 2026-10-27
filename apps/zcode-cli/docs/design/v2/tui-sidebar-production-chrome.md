@@ -26,9 +26,9 @@ still leaving rich runtime diagnostics available for development builds.
 - Developer sidebar additionally shows the OpenTUI shell subtitle, the Run
   section, the Context section, and the API diagnostics section.
 - The first sidebar row displays the product name and current CLI version as
-  `ZCode <version>`. The `ZCode` segment uses the sidebar accent blue; the
+  `RaspberryCode <version>`. The `RaspberryCode` segment uses the sidebar accent blue; the
   version segment uses muted text.
-- If no version is supplied, the product row falls back to `ZCode 0.0.0` so
+- If no version is supplied, the product row falls back to `RaspberryCode 0.0.0` so
   embedded tests and local harnesses have deterministic output.
 - The footer never shows stale keyboard hints. It displays the workspace path.
   If a Git branch is available, it appends the branch after a colon, for example

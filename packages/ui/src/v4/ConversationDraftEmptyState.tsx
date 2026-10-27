@@ -1,5 +1,5 @@
 /**
- * 草稿态空态问候：时间问候语 + ZCode Logo。
+ * 草稿态空态问候：时间问候语 + RaspberryCode Logo。
  * 自旧版 ChatView/ChatViewEmptyState.tsx 恢复（该组件随旧 ChatView 删除，
  * i18n key `chat.empty.greeting.*` 一直保留）；边界时刻自动换档逻辑保真。
  * 手机远控复用同一组件，但继续保留 20px 紧凑标题；桌面草稿首页才按标题自身宽度适配。
@@ -243,7 +243,7 @@ export function ConversationDraftEmptyState({
 }
 
 function ZCodeEmptyStateLogo({ className }: { className?: string }) {
-  // Modified for RaspberryCode: 水印图形替换为 RaspberryCode 单色标记（原 ZCode Z 形线框
+  // Modified for RaspberryCode: 水印图形替换为 RaspberryCode 单色标记（原 RaspberryCode Z 形线框
   // 与夜间渐变资源），深浅主题各用一套单色资产，渐隐遮罩两套共用。
   const fadeMask = cn(
     "[-webkit-mask-image:linear-gradient(to_bottom,black_0%,transparent_70%,transparent_100%)]",

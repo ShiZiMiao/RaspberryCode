@@ -312,7 +312,7 @@ function buildZCodeEndpointPromptHtml(currentValue: string): string {
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>ZCode Endpoint</title>
+    <title>RaspberryCode Endpoint</title>
     <style>
       :root { color-scheme: light dark; }
       body { margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
@@ -325,7 +325,7 @@ function buildZCodeEndpointPromptHtml(currentValue: string): string {
   </head>
   <body>
     <form id="form">
-      <label for="endpoint">ZCode endpoint origin</label>
+      <label for="endpoint">RaspberryCode endpoint origin</label>
       <input id="endpoint" value="${value}" placeholder="https://zcode.z.ai" spellcheck="false" />
       <div class="hint">Use an http or https origin, for example https://zcode.z.ai.</div>
       <div class="actions">

@@ -522,7 +522,7 @@ it("awaits native clipboard read/write and advertises the complete pair", async 
     },
     brokerInfo: {
       bundle_id: "dev.zcode.cua.helper",
-      display_name: "ZCode Computer Use",
+      display_name: "RaspberryCode Computer Use",
       permission_mode: "product",
       version: "0.0.0-test",
       platform: "win32",
@@ -566,7 +566,7 @@ Replace the handlers with:
 read_clipboard: async () => {
   if (!supportsClipboard) {
     throw notAuthorized(
-      "read_clipboard is unavailable in this ZCode Computer Use build.",
+      "read_clipboard is unavailable in this RaspberryCode Computer Use build.",
     );
   }
   return await adapter.readClipboardText();
@@ -574,7 +574,7 @@ read_clipboard: async () => {
 write_clipboard: async (params) => {
   if (!supportsClipboard) {
     throw notAuthorized(
-      "write_clipboard is unavailable in this ZCode Computer Use build.",
+      "write_clipboard is unavailable in this RaspberryCode Computer Use build.",
     );
   }
   const text = typeof params.text === "string" ? params.text : "";
@@ -1406,7 +1406,7 @@ pnpm test
 
 Expected: exit 0. Record exact passed、skipped 和待处理数量 from this run instead of copying old counts.
 
-- [ ] **Step 3: Verify the source ZCode integration without remote paths**
+- [ ] **Step 3: Verify the source RaspberryCode integration without remote paths**
 
 ```powershell
 cd C:\Users\dev\z-code
@@ -1421,7 +1421,7 @@ pnpm lint
 
 Expected: Helper integration, CUA focused suite, official plugin, typecheck and lint exit 0. Confirm no SSH/WSL/Docker/remote/mobile process was started.
 
-- [ ] **Step 4: Execute and classify the full ZCode affected-unit baseline**
+- [ ] **Step 4: Execute and classify the full RaspberryCode affected-unit baseline**
 
 ```powershell
 cd C:\Users\dev\z-code
@@ -1474,7 +1474,7 @@ Expected: both worktrees clean. Final report must distinguish:
 
 - source unit/build gates;
 - real clipboard live round-trip and restoration;
-- ZCode source Helper integration;
+- RaspberryCode source Helper integration;
 - known non-CUA full-suite baseline;
 - still-pending WGC, UIA worker isolation, product packaging/signing;
 - still-pending pointer live acceptance if the foreground remains `LockApp`.

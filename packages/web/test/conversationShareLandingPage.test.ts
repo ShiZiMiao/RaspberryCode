@@ -232,7 +232,7 @@ describe("ConversationShareLandingPage", () => {
       }),
     );
     expect(html).not.toContain("zcode://share/import");
-    expect(html).not.toContain("Open in ZCode");
+    expect(html).not.toContain("Open in RaspberryCode");
     expect(html).not.toContain("去 RaspberryCode 继续");
     expect(html).toContain('data-share-theme-toggle="true"');
     expect(html).not.toContain('data-share-continue-footer="true"');

@@ -31,7 +31,7 @@ turnRuntimeModel: {
 Provider 重构删除了 `zcodeModelRuntimeConfigSchema` / `zcodeModelRefSchema` /
 `zcodeModelProviderInputSchema` 整族契约，取而代之的规则是**静态/动态分离**：
 
-- 端点、API 形态、模型能力等**静态事实**只能来自 ZCode Built-in Provider Config；
+- 端点、API 形态、模型能力等**静态事实**只能来自 RaspberryCode Built-in Provider Config；
 - 只有**单次执行的动态鉴权材料**（`apiKey` / `headers`）随发送下发。
 
 同时官方版本请求安全校验的豁免判定从「endpoint 路径白名单」收敛到共享 Adapter 按

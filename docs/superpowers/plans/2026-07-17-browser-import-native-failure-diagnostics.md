@@ -169,7 +169,7 @@ git commit -m "fix(desktop): retain browser helper failure reason"
 
 **Files:**
 - Read: `%LOCALAPPDATA%\Google\Chrome\User Data\Local State`
-- Execute: `C:\Program Files\ZCode\resources\browser-import\zcode-browser-import-helper.exe`
+- Execute: `C:\Program Files\RaspberryCode\resources\browser-import\zcode-browser-import-helper.exe`
 - Inspect: Windows service list for `ZCodeBrowserImport_*`
 
 **Interfaces:**
@@ -182,7 +182,7 @@ Run the following outside the filesystem sandbox after approval. The user accept
 
 ```powershell
 $protocol = 'ZCODE_BROWSER_IMPORT_V1'
-$helperPath = 'C:\Program Files\ZCode\resources\browser-import\zcode-browser-import-helper.exe'
+$helperPath = 'C:\Program Files\RaspberryCode\resources\browser-import\zcode-browser-import-helper.exe'
 $chromePath = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
 $localStatePath = Join-Path $env:LOCALAPPDATA 'Google\Chrome\User Data\Local State'
 $allowed = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)

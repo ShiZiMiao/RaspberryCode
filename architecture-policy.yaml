@@ -906,3 +906,17 @@ exceptions:
       - packages/shared/src/onboardingRecord.ts
       - packages/ui/src/components/workflow-timeline/workflowRunSave.ts
     reason: "Modified for RaspberryCode: admitted upstream files edited only to rename the app data directory (.zcode -> .raspberrycode) for full storage independence from ZCode; adopting the surrounding unmanaged directories needs a separate module boundary refactor."
+  - id: raspberrycode-text-sweep-pass2-unmanaged-edit
+    rule: unmanaged-new-file
+    paths:
+      - apps/zcode-cli/packages/bootstrap/src/zcode-protocol-v4/mcp-elicitation.ts
+      - apps/zcode-cli/packages/bootstrap/src/zcode-protocol/runtime-cleanup.ts
+      - apps/zcode-cli/packages/bootstrap/src/zcode-protocol/runtime-resources.ts
+      - apps/zcode-cli/packages/cli/src/tui-prompt-handler-runtime.ts
+      - apps/zcode-cli/packages/core/src/runtime/helpers/conversation-quotes.ts
+      - packages/desktop/src/main/armsEventRedaction.ts
+      - packages/desktop/src/main/processResourceSystemWindowAggregator.ts
+      - packages/shared/src/telemetryRedaction.ts
+      - packages/ui/src/components/workflow-timeline/WorkflowSavePopover.tsx
+      - packages/ui/src/store/workflowRunSavedStore.ts
+    reason: "Modified for RaspberryCode: admitted upstream files edited only to rebrand user-visible product strings and comments in the final text sweep; adopting the surrounding unmanaged directories needs a separate module boundary refactor."

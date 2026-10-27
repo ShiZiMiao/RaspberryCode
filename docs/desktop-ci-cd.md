@@ -129,20 +129,20 @@ glab ci list --ref "${CI_BRANCH}" --sha "$(git rev-parse HEAD)"
 
 `build:macos:<arch>` 通过 `needs`（`optional`）依赖同架构的 `build:cua-helper:<arch>` artifact。strict
 release 的产物验收（`scripts/notarize-macos.sh` → `doctor-macos-release-app.sh`，`ZCODE_CUA_REQUIRE_HELPER=1`）
-会定位最终 `ZCode.app/Contents/Resources/cua-helper/ZCode Computer Use.app` 并设
+会定位最终 `RaspberryCode.app/Contents/Resources/cua-helper/RaspberryCode Computer Use.app` 并设
 `ZCODE_CUA_HELPER_APP_PATH`，因此校验的是实际随 DMG 交付的内嵌副本，而不是中间 artifact 或 runner 上
-`${ZCODE_HOME:-$HOME/.zcode}` 的残留状态。包内 Helper 缺失会 fail-closed。
+`${ZCODE_HOME:-$HOME/.raspberrycode}` 的残留状态。包内 Helper 缺失会 fail-closed。
 
 成功后固定下载入口如下，其中 `<slug>` 是 GitLab 的 `$CI_COMMIT_REF_SLUG`：
 
 ```text
-http://intranet.example.invalid:12345/zcode/@electron/ci/<slug>/macos-arm64/ZCode-<version>-mac-arm64.dmg
-http://intranet.example.invalid:12345/zcode/@electron/ci/<slug>/macos-arm64/ZCode-<version>-mac-arm64.zip
-http://intranet.example.invalid:12345/zcode/@electron/ci/<slug>/macos-x64/ZCode-<version>-mac-x64.dmg
-http://intranet.example.invalid:12345/zcode/@electron/ci/<slug>/macos-x64/ZCode-<version>-mac-x64.zip
+http://intranet.example.invalid:12345/zcode/@electron/ci/<slug>/macos-arm64/RaspberryCode-<version>-mac-arm64.dmg
+http://intranet.example.invalid:12345/zcode/@electron/ci/<slug>/macos-arm64/RaspberryCode-<version>-mac-arm64.zip
+http://intranet.example.invalid:12345/zcode/@electron/ci/<slug>/macos-x64/RaspberryCode-<version>-mac-x64.dmg
+http://intranet.example.invalid:12345/zcode/@electron/ci/<slug>/macos-x64/RaspberryCode-<version>-mac-x64.zip
 
-http://intranet.example.invalid:12345/zcode/@electron/ci/<slug>/pipeline-<pipeline-id>/cua-helper-macos-arm64/ZCode-CUA-Helper-<version>-mac-arm64.zip
-http://intranet.example.invalid:12345/zcode/@electron/ci/<slug>/pipeline-<pipeline-id>/cua-helper-macos-x64/ZCode-CUA-Helper-<version>-mac-x64.zip
+http://intranet.example.invalid:12345/zcode/@electron/ci/<slug>/pipeline-<pipeline-id>/cua-helper-macos-arm64/RaspberryCode-CUA-Helper-<version>-mac-arm64.zip
+http://intranet.example.invalid:12345/zcode/@electron/ci/<slug>/pipeline-<pipeline-id>/cua-helper-macos-x64/RaspberryCode-CUA-Helper-<version>-mac-x64.zip
 
 （`pipeline-<pipeline-id>` 是候选 Helper 的隔离目录；Helper plist 的
 `ZCODECUAHelperBuildId` 形如 `pipeline-<pipeline-id>-<short-sha>`，按 build id
@@ -152,15 +152,15 @@ http://intranet.example.invalid:12345/zcode/@electron/ci/<slug>/pipeline-<pipeli
 The Helper jobs also sync the resolver-friendly default dependency URL:
 
 ```text
-http://intranet.example.invalid:12345/zcode/deps/zcode-cua-helper-<version>/ZCode-CUA-Helper-<version>-mac-arm64.zip
-http://intranet.example.invalid:12345/zcode/deps/zcode-cua-helper-<version>/ZCode-CUA-Helper-<version>-mac-x64.zip
+http://intranet.example.invalid:12345/zcode/deps/zcode-cua-helper-<version>/RaspberryCode-CUA-Helper-<version>-mac-arm64.zip
+http://intranet.example.invalid:12345/zcode/deps/zcode-cua-helper-<version>/RaspberryCode-CUA-Helper-<version>-mac-x64.zip
 ```
 
 Record SHA-256 for every package that will be handed to testers:
 
 ```bash
-shasum -a 256 ZCode-<version>-mac-arm64.zip \
-  ZCode-CUA-Helper-<version>-mac-arm64.zip
+shasum -a 256 RaspberryCode-<version>-mac-arm64.zip \
+  RaspberryCode-CUA-Helper-<version>-mac-arm64.zip
 ```
 
 Minimum producer evidence before sending the package:
@@ -174,8 +174,8 @@ glab api 'projects/:fullpath/jobs/<helper-job-id>/trace' \
 ```
 
 For release-quality CUA validation, do not stop at package production. Install the
-standalone Helper under `${ZCODE_HOME:-$HOME/.zcode}/computer-use/ZCode Computer Use.app`,
-launch the matching ZCode.app, and run the zcode-cua consumer gates. Product broker
+standalone Helper under `${ZCODE_HOME:-$HOME/.raspberrycode}/computer-use/RaspberryCode Computer Use.app`,
+launch the matching RaspberryCode.app, and run the zcode-cua consumer gates. Product broker
 sockets are minted as random `broker-<hex>.sock` files; do not hard-code
 `broker.sock` in new validation scripts.
 
@@ -283,5 +283,5 @@ rpm Requires 在 electron-builder 默认集（gtk3、nss、libnotify、libXScrnS
 - 如果 `build:remote:assets` 失败，优先检查 `packages/desktop/mock-cdn/releases/<version>/` 下是否存在 `node/<platform-arch>`，以及 runner 对上游二进制下载源的网络访问
 - 如果 macOS 公证失败，先确认 `APPLE_*` 三个变量是否完整，以及 runner 上是否能执行 `xcrun notarytool`
 - 如果 upload 阶段报错缺少更新元数据，优先检查共享目录里是否存在对应平台目录下的 `latest.yml`
-- 如果某个平台没有产物，优先检查 `packages/desktop/dist` 下文件名是否仍符合 `ZCode-{version}-{os}-{arch}` 约定
+- 如果某个平台没有产物，优先检查 `packages/desktop/dist` 下文件名是否仍符合 `RaspberryCode-{version}-{os}-{arch}` 约定
 - 如果共享目录里缺少文件，先确认 build job 的 `CI_ARTIFACT_OUTPUT_DIR` 是否指向 runner 实际挂载的共享路径

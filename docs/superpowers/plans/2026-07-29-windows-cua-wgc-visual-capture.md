@@ -30,8 +30,8 @@
 - macOS/Linux 现有截图路径保持兼容；Windows SystemSurface 继续是无截图 fallback。
 - 默认测试不得启动 GUI 或读取屏幕；live smoke 必须显式 opt-in，且在启动 Helper/fixture 前验证普通已解锁桌面。
 - live smoke 只能控制自己启动的 fixture 进程，`finally` 恢复/关闭所有资源；输出不得包含截图、marker、窗口标题、路径、token 或 pipe。
-- 必须执行 zcode-cua focused/full tests、native rebuild、build、typecheck、lint；ZCode 执行 source Helper integration、CUA focused tests、official plugin test、typecheck、lint。
-- ZCode 当前 `pnpm test:unit:affected` 的非 CUA baseline 仍要重跑并逐项记录，不能把非零结果称为通过。
+- 必须执行 zcode-cua focused/full tests、native rebuild、build、typecheck、lint；RaspberryCode 执行 source Helper integration、CUA focused tests、official plugin test、typecheck、lint。
+- RaspberryCode 当前 `pnpm test:unit:affected` 的非 CUA baseline 仍要重跑并逐项记录，不能把非零结果称为通过。
 
 ---
 
@@ -891,7 +891,7 @@ pnpm test
 
 Expected: exit 0; platform/live skips are explicit.
 
-- [x] **Step 3: Run ZCode integration gates**
+- [x] **Step 3: Run RaspberryCode integration gates**
 
 Use the existing source-helper environment and execute:
 
@@ -1061,7 +1061,7 @@ repository gates.
   minimized-window fail-closed, cursor restoration and clean child exit;
 - pointer, text-only clipboard and 30-tool surface acceptances all exited `0`;
   clipboard text and cursor were restored, and no owned Helper/fixture remained;
-- ZCode focused integration was 4 files / 175 passed / 1 skipped; the official
+- RaspberryCode focused integration was 4 files / 175 passed / 1 skipped; the official
   plugin package's 6 tests, root typecheck and lint all exited `0`;
 - `pnpm test:unit:affected` remained a documented non-CUA repository baseline:
   13 failed files / 20 failed tests, 940 passed files / 8132 passed tests.

@@ -383,7 +383,7 @@ describe("NodePluginAdapter", () => {
     }
   });
 
-  it("injects explicit ZCode proxy env into marketplace Git commands", () => {
+  it("injects explicit RaspberryCode proxy env into marketplace Git commands", () => {
     const env = buildMarketplaceGitEnv({
       [ZCODE_AGENT_CA_CERT_ENV_KEY]: "/tmp/root-ca.pem",
       [ZCODE_HTTP_PROXY_ENV_KEY]: "127.0.0.1:7890",
@@ -660,7 +660,7 @@ describe("NodePluginAdapter", () => {
 
       const known = ensureDefaultPluginMarketplaces(storageRoot);
 
-      // 默认市场现在有两个：claude-plugins-official（已有记录不被覆盖）+ 唯一 ZCode
+      // 默认市场现在有两个：claude-plugins-official（已有记录不被覆盖）+ 唯一 RaspberryCode
       // 官方市场 zcode-plugins-official（缺失时补种）。
       expect(known).toHaveLength(2);
       const claude = known.find((record) => record.id === "claude-plugins-official");
@@ -1385,7 +1385,7 @@ describe("NodePluginAdapter", () => {
         "git",
         [
           "-c",
-          "user.name=ZCode Test",
+          "user.name=RaspberryCode Test",
           "-c",
           "user.email=zcode-test@example.com",
           "commit",
@@ -1409,7 +1409,7 @@ describe("NodePluginAdapter", () => {
         "git",
         [
           "-c",
-          "user.name=ZCode Test",
+          "user.name=RaspberryCode Test",
           "-c",
           "user.email=zcode-test@example.com",
           "commit",
@@ -1434,7 +1434,7 @@ describe("NodePluginAdapter", () => {
         "git",
         [
           "-c",
-          "user.name=ZCode Test",
+          "user.name=RaspberryCode Test",
           "-c",
           "user.email=zcode-test@example.com",
           "commit",
@@ -1528,7 +1528,7 @@ describe("NodePluginAdapter", () => {
         "git",
         [
           "-c",
-          "user.name=ZCode Test",
+          "user.name=RaspberryCode Test",
           "-c",
           "user.email=zcode-test@example.com",
           "commit",
@@ -3937,7 +3937,7 @@ describe("NodePluginAdapter", () => {
     }
   });
 
-  it("prefers Claude manifest over Codex manifest when no ZCode manifest exists", async () => {
+  it("prefers Claude manifest over Codex manifest when no RaspberryCode manifest exists", async () => {
     const dir = await mkdtemp(join(tmpdir(), "zcode-codex-plugin-"));
     const pluginRoot = join(dir, "multi-manifest");
 
@@ -4040,7 +4040,7 @@ describe("NodePluginAdapter", () => {
   });
 
   // Bugfix 回归（差一层目录）：Claude 插件规范里 manifest skills 数组项指向「技能目录本身」
-  // （项内直接是 SKILL.md），此前 ZCode 把每项当作技能根去项下找子目录，扫描恒为空。
+  // （项内直接是 SKILL.md），此前 RaspberryCode 把每项当作技能根去项下找子目录，扫描恒为空。
   it("discovers skills for plugin manifest skills array entries pointing at skill directories", async () => {
     const dir = await mkdtemp(join(tmpdir(), "zcode-plugin-array-skills-"));
     const pluginRoot = join(dir, "mattpocock");

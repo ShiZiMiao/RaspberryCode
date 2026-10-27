@@ -182,7 +182,7 @@ zai token 用 `Bearer` header（区别于 bigmodel 裸 token）。
 
 ### 注入流程运行时验证（dev:desktop:test）
 
-5 环节对称化在 zai 已端到端打通，证据来自 app 日志 + `~/.zcode-dev` 凭证手动调用 `api.z.ai`：
+5 环节对称化在 zai 已端到端打通，证据来自 app 日志 + `~/.raspberrycode-dev` 凭证手动调用 `api.z.ai`：
 
 1. **routing 正确**：`getEnterprisePricing` 由 `ZaiCodingPlanSubscriptionProvider` 处理，prewarm 日志带
    `family: "builtin:zai-coding-plan"`，请求落在测试环境 zai biz 域名 `api.z.ai`

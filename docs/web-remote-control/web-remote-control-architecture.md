@@ -147,7 +147,7 @@ Desktop 和 mobile 收到 relay `data.payload` 后必须先走 `parseWebRemoteCo
 `workspace-list-updated` 只用于 desktop renderer 已经通过 `syncWebRemoteControlTasks` /
 `syncWebRemoteControlWorkspaces` 同步新快照后，把同一份 `WebRemoteControlWorkspaceListResult`
 推给已连接的手机端。它不改变 relay 和 desktop main 的职责：relay 仍只透传 `data.payload`，desktop main
-仍只组合并转发 renderer 已同步的 workspace/task 索引，不持有 ZCode task、stream、queue 或 snapshot 业务状态。
+仍只组合并转发 renderer 已同步的 workspace/task 索引，不持有 RaspberryCode task、stream、queue 或 snapshot 业务状态。
 
 `bridge-degraded` 不属于普通可丢 app response。Desktop main 为当前 bridge generation 保留一个不含业务
 snapshot 的 invalidation latch：Source logical session 换代或 raw transport fault 后立即释放旧手机
@@ -169,7 +169,7 @@ bridge 显示为 active，也不能由 relay/main 保存业务状态来掩盖恢
 4. 为当前 mobile bridge 创建新的 `MessagePort` attachment
 5. 用 shared acknowledged adapter 把 host `MessagePortProtocol` 的 RPC message 编码成有界
    `rpc-frame` fragments，并消费 cumulative ACK
-6. 不解析 ZCode task 业务语义，不参与 task stream、permission 或 workspace task list 的同步逻辑
+6. 不解析 RaspberryCode task 业务语义，不参与 task stream、permission 或 workspace task list 的同步逻辑
 
 ### 桌面应用重启后的启用状态恢复
 
@@ -209,7 +209,7 @@ shared host；桌面 renderer 仍保持 `desktop-continuous`，不得把 replaya
 手机远控页面不拥有独立 host process，也不会启动独立 Agent runtime。desktop main 在收到
 `workspace-bridge-open` 后，为手机 bridge 创建一个新的 `MessagePort` attachment，
 并把该 attachment 挂到目标桌面窗口唯一 Window Host 的 local/remote workspace scope。
-relay 只透传 `rpc-frame`，不解析 ZCode task、stream 或 workspace 业务语义。
+relay 只透传 `rpc-frame`，不解析 RaspberryCode task、stream 或 workspace 业务语义。
 
 Desktop renderer 和 mobile Web remote control 通过不同 RPC client 连接同一个 host/service/runtime。每个 attachment 由 host 分配独立 `connectionId` 和可信 `clientMode`：本地及 SSH/WSL/Docker 桌面窗口都是 `desktop-continuous`，手机 `/remote` 是 `web-remote-replayable`。host 为每个 attachment 建立 owned-subscription registry；下行帧只能写给拥有该 `subscriptionId` 的 MessagePort，禁止 workspace 广播后让手机丢弃桌面帧。
 

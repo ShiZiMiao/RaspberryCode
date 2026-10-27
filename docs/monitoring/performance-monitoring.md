@@ -95,7 +95,7 @@ app_start_count`。
 | 主业务窗口 `render-process-gone`             | `main_window_renderer`      | `oom` / `process_crashed` / `abnormal_exit` / … | `electron_callback`   |
 | Resource Manager / 更新 / About 等辅助窗口   | `auxiliary_window_renderer` | 同上                                            | `electron_callback`   |
 | 内置浏览器 `<webview>` `render-process-gone` | `embedded_webview`          | 同上                                            | `electron_callback`   |
-| ZCode Host `child-process-gone`              | `host`                      | `process_crashed` / `abnormal_exit` / …         | `electron_callback`   |
+| RaspberryCode Host `child-process-gone`              | `host`                      | `process_crashed` / `abnormal_exit` / …         | `electron_callback`   |
 | ARMS crash dump，且明确标记为主进程          | `app_native_process`        | `native_crash`                                  | `crash_reporter_dump` |
 | ARMS crash dump，仅能确认来自产品二进制      | `native_dump_unattributed`  | `native_crash`                                  | `crash_reporter_dump` |
 | `reason=killed` / `clean-exit`               | —                           | 不计 crash，走 `perf_process_exit`              | —                     |
@@ -109,7 +109,7 @@ Electron 的 `reason=memory-eviction` 与 `reason=oom` 统一归类为
 事故重复上报。
 
 ARMS `crashReporter` 会扫描共享 crash dump 目录。上报前先校验
-`binary_images` 中存在当前 ZCode 产品可执行文件；`hdc`、`plugin-container`、
+`binary_images` 中存在当前 RaspberryCode 产品可执行文件；`hdc`、`plugin-container`、
 `chrome-headless-shell` 等外部程序 dump 直接丢弃。该过滤只遍历 crash 批次的已有
 元数据，不增加采样、文件或子进程开销。可信名称集合必须包含产品应用名和
 `basename(process.execPath)`，覆盖开发态 `Electron` 与 Linux Preview
@@ -196,7 +196,7 @@ Crash-Free；Native Crash 与 Renderer Crash 必须使用各自的分源比率�
 
 全进程 CPU / 内存采样、三个资源事件、性能红线与 PRT-023 / PRT-024 验收统一见
 [全进程 CPU / 内存监控埋点](./process-resource-telemetry.md)。独立的数据目录体积事件仍见
-[ZCode 数据目录占用 ARMS 上报](./zcode-data-size-arms-telemetry.md)。
+[RaspberryCode 数据目录占用 ARMS 上报](./zcode-data-size-arms-telemetry.md)。
 
 ---
 

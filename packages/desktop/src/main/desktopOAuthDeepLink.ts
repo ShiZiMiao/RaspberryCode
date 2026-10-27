@@ -279,7 +279,7 @@ export function handleDeepLink(
       ? options.resolveApplicationWindow()
       : (BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0] ?? null);
     // zcode://workspace/open 来自浏览器/IM 等外部应用，不能等同于用户在
-    // ZCode 内部选择目录；确认必须发生在 statSync 之前，避免项目配置被静默信任。
+    // RaspberryCode 内部选择目录；确认必须发生在 statSync 之前，避免项目配置被静默信任。
     if (
       !confirmExternalWorkspaceOpen(workspacePath, logger, targetWindow, options.confirmationCopy)
     ) {

@@ -79,7 +79,7 @@ const ENTRY: ZCodeSavedWorkflowEntry = {
   name: "pr-review",
   description: "分层评审",
   scope: "project",
-  path: "/repo/.zcode/workflows/pr-review.dwf.ts",
+  path: "/repo/.raspberrycode/workflows/pr-review.dwf.ts",
 };
 
 function withIntl(node: ReactNode, locale: "en-US" | "zh-CN" = "en-US") {
@@ -136,7 +136,7 @@ describe("WorkflowSavePopover", () => {
     expect(name.value).toBe("pr-review");
     expect(document.activeElement).toBe(name);
     expect(screen.getByTestId("workflow-save-consequence").textContent).toContain(
-      ".zcode/workflows/pr-review.dwf.ts",
+      ".raspberrycode/workflows/pr-review.dwf.ts",
     );
     expect(screen.getByTestId("workflow-save-submit").textContent).toBe("直接保存");
   });
@@ -229,7 +229,7 @@ describe("WorkflowSavePopover", () => {
     expect(onOpenChange).not.toHaveBeenCalledWith(false);
   });
 
-  it("老 agent 没有 workflows/save：只留 ZCode 那条路，提示里说清楚", () => {
+  it("老 agent 没有 workflows/save：只留 RaspberryCode 那条路，提示里说清楚", () => {
     renderPopover(popoverHost({ directSaveUnsupported: true }));
     expect(screen.getByTestId("workflow-save-lead")).toBeTruthy();
     expect(screen.queryByTestId("workflow-save-name")).toBeNull();
@@ -237,7 +237,7 @@ describe("WorkflowSavePopover", () => {
     expect(screen.getByText(/This agent cannot save directly\./u)).toBeTruthy();
   });
 
-  it("宿主没有发送路径：没有 ZCode 那一枚、也没有分隔线，只剩字段", () => {
+  it("宿主没有发送路径：没有 RaspberryCode 那一枚、也没有分隔线，只剩字段", () => {
     const host = popoverHost();
     delete host.sendLead;
     renderPopover(host);

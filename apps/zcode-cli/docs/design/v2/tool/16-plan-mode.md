@@ -4,7 +4,7 @@
 
 提供 plan mode provider tools，让模型能主动请求进入计划模式、完成只读探索后向用户提交计划，并在用户批准后退出计划模式开始实现。
 
-ZCode 第一版不引入 plan file、auto mode gate、teammate mailbox、专用 plan model 等当前运行时没有的一体化功能。计划正文通过 `ExitPlanMode.plan` 直接传入，后续如要引入 plan artifact/file，需要单独扩展本 spec。
+RaspberryCode 第一版不引入 plan file、auto mode gate、teammate mailbox、专用 plan model 等当前运行时没有的一体化功能。计划正文通过 `ExitPlanMode.plan` 直接传入，后续如要引入 plan artifact/file，需要单独扩展本 spec。
 
 ## 工具
 
@@ -87,9 +87,9 @@ If this plan is relevant to the current work and not already complete, continue 
 - `enterPlanMode({ toolCallId, traceContext })`
 - `exitPlanMode({ toolCallId, traceContext })`
 
-runtime 实现负责保存 `prePlanMode`、更新 `config.mode`、写入 `SessionModeChanged` event，并在退出后设置一次性 `plan_mode_exit` reminder。事件 reducer 必须用该事件更新 `SessionProjection.mode`，使 snapshot、resume、debug 和 ZCode app-server 看到同一事实。
+runtime 实现负责保存 `prePlanMode`、更新 `config.mode`、写入 `SessionModeChanged` event，并在退出后设置一次性 `plan_mode_exit` reminder。事件 reducer 必须用该事件更新 `SessionProjection.mode`，使 snapshot、resume、debug 和 RaspberryCode app-server 看到同一事实。
 
-## UI / ZCode app-server
+## UI / RaspberryCode app-server
 
 - permission request 仍复用现有 `PermissionRequested` / `PermissionResolved` 协议。
 - `ExitPlanMode` 的 `plan` 留在 tool input / result payload 中，现有 plan mode tool panel 可解析展示。

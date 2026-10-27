@@ -1,5 +1,5 @@
 Unicode true
-Name "ZCode preserve-files smoke"
+Name "RaspberryCode preserve-files smoke"
 OutFile "${OUTPUT_FILE}"
 InstallDir "$TEMP\zcode-preserve-files-smoke"
 RequestExecutionLevel user
@@ -10,7 +10,7 @@ SilentInstall silent
 !addplugindir /x86-unicode "${NSIS_PLUGIN_DIR}"
 !include "LogicLib.nsh"
 
-!define APP_FILENAME "ZCode"
+!define APP_FILENAME "RaspberryCode"
 !define APP_ID "dev.zcode.preserve-files-smoke"
 !define UNINSTALL_FILENAME "uninstaller.exe"
 !define isUpdated `1 == 1`
@@ -25,8 +25,8 @@ Var appExe
 
 Section
   SetOutPath "$INSTDIR"
-  File /oname=ZCode.exe "${FIXTURE_EXE}"
-  StrCpy $appExe "$INSTDIR\ZCode.exe"
+  File /oname=RaspberryCode.exe "${FIXTURE_EXE}"
+  StrCpy $appExe "$INSTDIR\RaspberryCode.exe"
   !ifndef OMIT_MANIFEST
     FileOpen $0 "$INSTDIR\.zcode-install-manifest" w
     FileWrite $0 "owned-by-zcode.txt$\r$\n"

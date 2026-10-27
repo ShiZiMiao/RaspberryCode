@@ -6,7 +6,7 @@
 
 模拟 BigModel 账号已登录但没有个人 Coding Plan 权益时，用户从设置页或 sidebar 头像菜单的升级入口进入
 `Upgrade Coding Plan` 购买页。个人套餐数据来自本地 E2E fixture server，
-不访问真实 BigModel / ZCode 后端。
+不访问真实 BigModel / RaspberryCode 后端。
 
 账号夹具提供可解析的个人项目和项目凭据；订阅列表为空，权益接口明确返回无套餐。
 不能以空项目列表模拟无权益，否则账号状态会变成查询失败，而不是已登录、未开通。

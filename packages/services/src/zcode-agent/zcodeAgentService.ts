@@ -29,7 +29,7 @@ import {
   sessionDebugSnapshotSchema,
   type LocalTtftFacts,
 } from "@zcode/shared";
-/* oxlint-disable eslint(max-lines) -- ZCode Protocol transport、通知 wiring 和 app-facing session 方法必须共享同一个 client/emitter 上下文。 */
+/* oxlint-disable eslint(max-lines) -- RaspberryCode Protocol transport、通知 wiring 和 app-facing session 方法必须共享同一个 client/emitter 上下文。 */
 import { ensureIndependentPlanSupport } from "./independentPlanSupport.js";
 import { createHash, randomUUID } from "node:crypto";
 import { createTopicResourceBridge } from "./topicResourceBridge.js";
@@ -554,7 +554,7 @@ function ensurePluginManagementWorkspacePath(): string {
   return workspacePath;
 }
 
-// NOTE: this counts ONLY the per-session MCP servers passed through the ZCode Protocol
+// NOTE: this counts ONLY the per-session MCP servers passed through the RaspberryCode Protocol
 // session/create params (the app→protocol channel). It is deliberately independent of the
 // CLI/bootstrap MCP servers configured in ~/.raspberrycode/cli/config.json (mcp.servers), which the agent
 // runtime connects separately and reports via the `mcp.server.connected`/toolCount events. So a
@@ -5235,7 +5235,7 @@ export function createZCodeAgentService(
 
     async generateWorkspaceText(params: ZCodeAgentGenerateWorkspaceTextParams) {
       const client = await getClient(params);
-      // Worker 自己读取 ZCode Built-in / Personal Config；Host 只在执行前确保账号状态形成的
+      // Worker 自己读取 RaspberryCode Built-in / Personal Config；Host 只在执行前确保账号状态形成的
       // Account Config Overlay 已同步，避免新进程先按旧套餐状态创建 Model。
       await ensureAccountProviderConfigSynced({
         client,
@@ -5990,7 +5990,7 @@ export function createZCodeAgentService(
           : undefined;
       // conversation 冷订阅会在 CLI 内部直接恢复历史 Session 并立即发布首帧。
       // 若 Account Config 尚未到达，首帧会先按缺少 Account Overlay 的 Registry 解析；这里只建立
-      // Account Config 顺序屏障，不提升模型执行权限。ZCode Built-in / Personal 仍由 Worker 维护。
+      // Account Config 顺序屏障，不提升模型执行权限。RaspberryCode Built-in / Personal 仍由 Worker 维护。
       const providerRegistryStartedAt = performance.now();
       await ensureAccountProviderConfigSynced({
         client,

@@ -264,7 +264,7 @@ Bootstrap 全量测试还暴露了与本轮无关的既有债务：Session Persi
 0 behind。
 
 裸 App Factory 收口后，Bootstrap Registry、Runtime Config、Session、MCP、Hook、Workflow、
-Telemetry 与 Overlay 针对性回归 12 个文件、160 条通过；ZCode Protocol 专项 109 条通过。根目录
+Telemetry 与 Overlay 针对性回归 12 个文件、160 条通过；RaspberryCode Protocol 专项 109 条通过。根目录
 typecheck、Bootstrap 独立 typecheck、Prompt Trajectory typecheck 与根 lint 通过，lint 仍为
 0 error、36 条基线 warning。Compact E2E dry-run 与 Memory evidence 测试通过；当前 Node 22 无法
 直接加载最新 staging 中引用根 `@zcode/shared` 源码的 Bootstrap build，实际 Compact fake suite
@@ -290,7 +290,7 @@ Personal Config；历史物理格式只由一次性迁移器及其专门测试�
 
 最终分支验证再次通过根 `pnpm typecheck` 与 `pnpm lint`；Lint 为 0 error、33 条当前 `staging` 基线
 warning。Provider、Provider Node 与 M2 结构门禁 19 个文件、96 条测试通过；Shared Protocol 与旧物理迁移
-边界 3 个文件、53 条测试通过。旧 Store Schema 与迁移函数同时退出 ZCode Protocol 再导出，只保留在
+边界 3 个文件、53 条测试通过。旧 Store Schema 与迁移函数同时退出 RaspberryCode Protocol 再导出，只保留在
 Shared Provider 迁移类型和 Services 一次性 Reader 中。分支相对最新 `origin/staging` 为 0 behind。
 
 旧 Provider Store 最终收敛为纯读取适配器，并改名为 `legacyModelProviderStoreReader`。生产调用只剩
@@ -319,7 +319,7 @@ Mapper、Core Invocation Context 和 Adapter Request Auth 只保留实际生效�
 最后的 Entry 覆盖审计把 `@zcode/provider`、`@zcode/provider-node`、Prompt CLI 与 TUI 也纳入同一结构
 门禁。扩展扫描确认这些入口没有旧 Provider Snapshot、Workspace Catalog 或 Runtime Overlay 回退。
 Workspace 交互状态的实现术语统一为 Model Preferences；一个零调用者的 legacy reasoning 迁移函数也已
-删除。M2 门禁、Runtime Model Metadata 与 ZCode Protocol 定向回归共 151 条通过，Bootstrap 独立
+删除。M2 门禁、Runtime Model Metadata 与 RaspberryCode Protocol 定向回归共 151 条通过，Bootstrap 独立
 typecheck 与根 typecheck 通过。
 
 设置页排序的最后一份 Builtin Provider ID 硬编码也已删除。Provider 的初始与最终顺序只来自有序

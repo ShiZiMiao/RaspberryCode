@@ -2,7 +2,7 @@
 
 ## 背景
 
-旧版桌面端直接让 `electron-updater` 读取 CDN 上的 `latest*.yml`。这种方式适合静态全量发布，但不适合按设备灰度、区分 stable / preview 或在服务端把 preview 提升为 stable。新版客户端改为先请求 ZCode 服务端 manifest 接口，再把服务端返回的 `latest.yml` 同格式内容交给 `electron-updater` 执行下载、校验和安装。
+旧版桌面端直接让 `electron-updater` 读取 CDN 上的 `latest*.yml`。这种方式适合静态全量发布，但不适合按设备灰度、区分 stable / preview 或在服务端把 preview 提升为 stable。新版客户端改为先请求 RaspberryCode 服务端 manifest 接口，再把服务端返回的 `latest.yml` 同格式内容交给 `electron-updater` 执行下载、校验和安装。
 
 CDN 仍保存安装包、blockmap 和更新清单文件，但这些文件只进入版本化目录，不再由 CI 覆盖全局 stable feed。服务端 manifest 根据 release API 中的 stable / preview 状态选择版本，并下发指向版本化平台目录的绝对 CDN URL。
 
@@ -27,10 +27,10 @@ GET /api/v1/releases/electron/manifest
 ```yaml
 version: 3.4.0
 files:
-  - url: https://cdn.example.com/zcode/electron/releases/3.4.0/macos-arm64/ZCode-3.4.0-mac-arm64.zip
+  - url: https://cdn.example.com/zcode/electron/releases/3.4.0/macos-arm64/RaspberryCode-3.4.0-mac-arm64.zip
     sha512: ...
     size: 123456
-path: https://cdn.example.com/zcode/electron/releases/3.4.0/macos-arm64/ZCode-3.4.0-mac-arm64.zip
+path: https://cdn.example.com/zcode/electron/releases/3.4.0/macos-arm64/RaspberryCode-3.4.0-mac-arm64.zip
 sha512: ...
 releaseDate: "2026-07-09T00:00:00.000Z"
 ```

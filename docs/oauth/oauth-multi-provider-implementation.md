@@ -124,7 +124,7 @@ ZAI OAuth 登录不再由桌面端直接请求三方 ZAI token 接口。桌面�
 
 行为说明：
 
-1. `credentialService.save` 自动加密后写入 `~/.zcode/v2/credentials.json`
+1. `credentialService.save` 自动加密后写入 `~/.raspberrycode/v2/credentials.json`
 2. `credentialService.load` 自动解密并返回明文给上层业务
 3. 历史明文值（无 `enc:v1:` 前缀）保持兼容读取，避免升级后登录态失效
 

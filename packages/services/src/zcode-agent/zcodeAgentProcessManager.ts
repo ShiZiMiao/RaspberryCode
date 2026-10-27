@@ -1022,7 +1022,7 @@ export class ZCodeAgentProcessManager {
       throw new Error("RaspberryCode agent process start was cancelled.");
     }
     // app 以本地开发方式启动时，让 agent 子进程也带上 ZCODE_RUNTIME_ENV=development；
-    // 不再传 NODE_ENV，避免用户 shell/runtime 变量影响 ZCode 运行模式或泄漏到 Bash 工具。
+    // 不再传 NODE_ENV，避免用户 shell/runtime 变量影响 RaspberryCode 运行模式或泄漏到 Bash 工具。
     const runtimeEnv = resolveZCodeRuntimeEnv(process.env);
     log("RaspberryCode agent spawn preflight", {
       workspaceKey,

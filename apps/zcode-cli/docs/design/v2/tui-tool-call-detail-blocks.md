@@ -25,7 +25,7 @@ patterns, URLs, or subagent tasks without scrolling into hidden debug state.
   session is resumed, the TUI reads `part.state.metadata.display` from persisted
   `message + part` data and renders the same preview.
 - The display payload must not be reinterpreted as model-visible tool output. It
-  is a bounded UI projection shared by live events, ZCode app-server replay, and session resume.
+  is a bounded UI projection shared by live events, RaspberryCode app-server replay, and session resume.
 - The first implementation changes persisted tool part metadata but does not
   change tool input schemas, core scheduling, permission behavior, provider
   adapters, or model-visible tool results.
@@ -52,7 +52,7 @@ TUI falls back to the current tool-name-only line.
 
 Tool events should update one visible transcript part per `toolCallId` instead
 of appending separate pending/running/completed rows. This follows a
-message-part model while keeping ZCode's `SessionEvent` as the only input:
+message-part model while keeping RaspberryCode's `SessionEvent` as the only input:
 
 - `tool_call_scheduled` creates or updates a tool part and stores bounded input
   details.

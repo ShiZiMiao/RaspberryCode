@@ -6,7 +6,7 @@
 
 提供一个**随包内置、默认启用**的官方插件 `zcode-guide`，其技能集让 **agent 和用户**能够：
 
-1. 正确配置 ZCode 的五类扩展资源：MCP、commands、skills、hooks、plugins。
+1. 正确配置 RaspberryCode 的五类扩展资源：MCP、commands、skills、hooks、plugins。
 2. 当配置出问题时，**逐类**定位（localization）并**自修复**（self-repair）。
 
 最终目标：**仅凭该插件的技能，agent 就能自己诊断并修复配置问题**——不依赖外部文档，全部动作落到可执行的 `zcode` 子命令与明确的配置文件编辑上。

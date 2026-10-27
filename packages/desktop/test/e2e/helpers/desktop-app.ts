@@ -50,7 +50,7 @@ const AGENTS_STATE_FILE = join(E2E_APP_DATA_DIR, "agents-state.json");
 const REMOVE_APP_DATA_RETRY_DELAYS_MS = [200, 500, 1000, 2000, 3000];
 const REMOVE_APP_DATA_MAX_ATTEMPTS = REMOVE_APP_DATA_RETRY_DELAYS_MS.length;
 const E2E_USER_PROFILE = {
-  displayName: "ZCode E2E",
+  displayName: "RaspberryCode E2E",
   id: "zcode-e2e-user",
   username: "zcode-e2e-user",
 };
@@ -543,7 +543,7 @@ export async function clearAppData() {
 export async function quitElectronAppGracefully() {
   try {
     const result = (await browser.electron.execute((electron) => {
-      if (electron.app.getName() !== "ZCode E2E") {
+      if (electron.app.getName() !== "RaspberryCode E2E") {
         return { quit: false, pid: process.pid };
       }
       // 修复原因：clearAppData 常在 spec after 中运行；如果把 app.quit 延迟

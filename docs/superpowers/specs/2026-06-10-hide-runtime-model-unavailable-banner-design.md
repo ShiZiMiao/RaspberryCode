@@ -2,7 +2,7 @@
 
 ## Background
 
-Historical ZCode tasks can carry a persisted model reference whose provider or model is no longer available in the current provider registry. The service layer reports this as `ZCODE_RUNTIME_MODEL_UNAVAILABLE` and keeps the guard in place so desktop continuous sessions do not silently resume with a different runtime model.
+Historical RaspberryCode tasks can carry a persisted model reference whose provider or model is no longer available in the current provider registry. The service layer reports this as `ZCODE_RUNTIME_MODEL_UNAVAILABLE` and keeps the guard in place so desktop continuous sessions do not silently resume with a different runtime model.
 
 The current UI shows that guard as a chat error banner with the message:
 

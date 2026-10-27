@@ -5,7 +5,7 @@ import { spawn } from "node:child_process";
 import type { Locale } from "@zcode/shared";
 
 const WORKFLOW_NAME = "Open in RaspberryCode.workflow";
-const WORKFLOW_BUNDLE_ID = "dev.zcode.app.finder-open-workflow";
+const WORKFLOW_BUNDLE_ID = "dev.raspberrycode.app.finder-open-workflow";
 const WORKFLOW_VERSION = "5";
 const SERVICES_MENU_LABELS: Record<Locale, string> = {
   "zh-CN": "在RaspberryCode中打开",

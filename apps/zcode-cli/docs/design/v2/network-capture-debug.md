@@ -1,6 +1,6 @@
 # Debug Network Capture
 
-`debug` 提供开发期本地网络抓包能力，用于把 Jcode/ZCode CLI 的 provider、MCP、plugin 和其他外部 HTTP(S) 请求与 `traceId` 串联起来。该能力只属于 debug app，不进入生产 CLI 默认执行路径。
+`debug` 提供开发期本地网络抓包能力，用于把 Jcode/RaspberryCode CLI 的 provider、MCP、plugin 和其他外部 HTTP(S) 请求与 `traceId` 串联起来。该能力只属于 debug app，不进入生产 CLI 默认执行路径。
 
 ## 目标
 
@@ -9,7 +9,7 @@
 - 在仓库内提供本地证书容器目录，保存本机生成的 CA 证书和私钥，但生成物默认不提交。
 - UI 实时展示最近网络请求，包含 method、URL、状态码、耗时、请求/响应字节数、错误和可归因的 trace。
 - UI 在独立网络请求页展示请求列表，并把可归因请求转换为甘特图的 `network` lane span。
-- API 和 UI 给出可直接用于启动 Jcode/ZCode 的显式环境变量：`ZCODE_HTTP_PROXY`、`ZCODE_AGENT_CA_CERT`，并在 UI 中提供一键复制的 shell 片段。
+- API 和 UI 给出可直接用于启动 Jcode/RaspberryCode 的显式环境变量：`ZCODE_HTTP_PROXY`、`ZCODE_AGENT_CA_CERT`，并在 UI 中提供一键复制的 shell 片段。
 
 ## 非目标
 
@@ -28,7 +28,7 @@ packages/debug/certs/network-ca/
 
 `http-mitm-proxy` 在该目录下维护：
 
-- `certs/ca.pem`：需要导入本机信任链或通过 `ZCODE_AGENT_CA_CERT` 显式暴露给 ZCode runtime 的本地 CA 证书。
+- `certs/ca.pem`：需要导入本机信任链或通过 `ZCODE_AGENT_CA_CERT` 显式暴露给 RaspberryCode runtime 的本地 CA 证书。
 - `keys/ca.private.key`：本地 CA 私钥，仅用于当前开发机生成站点证书，必须被 `.gitignore` 排除。
 - `keys/ca.public.key`：本地 CA 公钥，同样不需要提交。
 
@@ -50,7 +50,7 @@ debug server 默认启用网络代理，默认监听：
 - `ZCODE_DEBUG_NETWORK_CA_DIR`：证书容器目录，默认 `packages/debug/certs/network-ca/`。
 - `ZCODE_DEBUG_NETWORK_MAX_ENTRIES`：内存中保留的最近请求数，默认 `300`。
 
-启动 Jcode/ZCode 时使用 API 返回的显式环境变量，例如：
+启动 Jcode/RaspberryCode 时使用 API 返回的显式环境变量，例如：
 
 ```sh
 ZCODE_HTTP_PROXY=http://127.0.0.1:4184 \
@@ -58,7 +58,7 @@ ZCODE_AGENT_CA_CERT=/absolute/path/to/packages/debug/certs/network-ca/certs/ca.p
 pnpm --filter @zcode/cli dev
 ```
 
-ZCode runtime 会过滤用户 shell 里的标准代理/证书变量；debug app 只提供 `ZCODE_HTTP_PROXY` 和 `ZCODE_AGENT_CA_CERT` 作为模型/provider 抓包的显式入口。普通 `http_proxy` 等用户变量会被封存后只恢复给 Bash/tool/MCP stdio 子进程，因此开发期如果要抓模型流量应使用这里的 `ZCODE_*` 变量，如果只想让用户命令/curl/git 走本机代理则可以继续使用标准代理变量。
+RaspberryCode runtime 会过滤用户 shell 里的标准代理/证书变量；debug app 只提供 `ZCODE_HTTP_PROXY` 和 `ZCODE_AGENT_CA_CERT` 作为模型/provider 抓包的显式入口。普通 `http_proxy` 等用户变量会被封存后只恢复给 Bash/tool/MCP stdio 子进程，因此开发期如果要抓模型流量应使用这里的 `ZCODE_*` 变量，如果只想让用户命令/curl/git 走本机代理则可以继续使用标准代理变量。
 
 UI 必须在网络请求页把这些变量渲染成可复制的启动环境片段，并至少支持：
 

@@ -1,13 +1,13 @@
-# ZCode Endpoint Switching
+# RaspberryCode Endpoint Switching
 
-ZCode runtime endpoints are derived from a single origin. Production uses
+RaspberryCode runtime endpoints are derived from a single origin. Production uses
 `https://zcode.z.ai`; local development uses `https://zcode.z.ai`
 through `.env.development`.
 
 The shared resolver exposes these derived URLs:
 
 - API base: `/api/v1`
-- ZCode Plan OpenAI base: `/api/v1/zcode-plan`
+- RaspberryCode Plan OpenAI base: `/api/v1/zcode-plan`
 - mobile remote entry: `/remote`
 - web remote OAuth callback: `/web-remote/callback`
 - relay WebSocket: `/ws`, with `https -> wss` and `http -> ws`
@@ -17,7 +17,7 @@ settings overrides; the resolver uses `ZCODE_BASE_URL` when present, otherwise f
 `https://zcode.z.ai`. This prevents a stale local setting from moving release builds to a test or
 custom endpoint, while keeping release/test deploy targets explicit in env files.
 
-In non-production desktop builds, the Help menu contains `ZCode Endpoint` with these actions:
+In non-production desktop builds, the Help menu contains `RaspberryCode Endpoint` with these actions:
 
 - `Production (default)` stores the production origin explicitly.
 - `Test` stores `https://zcode.z.ai`.

@@ -1,8 +1,8 @@
-# ZCode CLI Compact 实施规划 v2
+# RaspberryCode CLI Compact 实施规划 v2
 
 ## 文档定位
 
-本文是 `docs/design/v2/compact/README.md` 的实施规划。compact 语义以 README 为准，实施形态遵循 ZCode 的分层、事件存储和跨平台约束。
+本文是 `docs/design/v2/compact/README.md` 的实施规划。compact 语义以 README 为准，实施形态遵循 RaspberryCode 的分层、事件存储和跨平台约束。
 
 相关文档：
 
@@ -15,7 +15,7 @@
 
 ### 固定顺序
 
-ZCode 第一版采用固定的 post-compact 顺序：
+RaspberryCode 第一版采用固定的 post-compact 顺序：
 
 ```text
 compact boundary
@@ -57,9 +57,9 @@ Compact 成功的唯一可信标志是写入 boundary，而不是“拿到了 su
 
 如果 boundary 或 preserved segment relink 损坏，恢复时宁可保守加载完整历史并打告警，也不要静默丢历史。
 
-## 和 ZCode 分层的映射
+## 和 RaspberryCode 分层的映射
 
-| 职责 | ZCode 位置 | 说明 |
+| 职责 | RaspberryCode 位置 | 说明 |
 | --- | --- | --- |
 | `/compact` 命令入口 | `packages/cli` / `packages/tui` | `/compact [instructions]` 命令入口，只解析用户意图。 |
 | compact 状态机 | `packages/core/src/compact` | compact 状态机和业务编排。 |
@@ -344,11 +344,11 @@ active context 的裁剪、summary 生成、boundary 持久化和 resume/replay 
 
 持久化轨迹：
 
-- compact lifecycle 必须额外写入一条 synthetic timeline message。它不是 provider-visible summary，也不是 tool call；它只服务 transcript、TUI、ZCode app-server replay 和恢复诊断。
+- compact lifecycle 必须额外写入一条 synthetic timeline message。它不是 provider-visible summary，也不是 tool call；它只服务 transcript、TUI、RaspberryCode app-server replay 和恢复诊断。
 - timeline message 使用 `compaction` part，但 `timelineStatus` 表示 `started` / `completed` / `failed` / `interrupted`，只有带 `compactBoundary` 的 compaction part 才能作为 active-chain 截断边界。
 - compact 开始先写 timeline message + `compact_started` event；summary 和 boundary 写成功后，再把同一条 timeline message 更新为 `completed` 并写 `compact_completed` event。
 - 进程在 summary 请求中被中断时，下一次 `resumeFromStore()` 扫描到没有 terminal 状态的 timeline part，应把它标记为 `interrupted`。如果已经存在同 operation 的 boundary，则恢复成 `completed`。
-- ZCode app-server 不新增主路径通知。bootstrap 把 compact lifecycle 投影成 `agent_message_chunk + messageId + _meta["zcode.timeline"]`，client 识别 meta 后渲染为 separator；泛 ZCode protocol client 显示 fallback 文本。
+- RaspberryCode app-server 不新增主路径通知。bootstrap 把 compact lifecycle 投影成 `agent_message_chunk + messageId + _meta["zcode.timeline"]`，client 识别 meta 后渲染为 separator；泛 RaspberryCode protocol client 显示 fallback 文本。
 
 指标：
 

@@ -1,8 +1,8 @@
-# ZCode Desktop Context
+# RaspberryCode Desktop Context
 
 ## 状态
 
-- 本文是 ZCode Desktop 输出呈现约束进入 Agent system prompt 的当前功能规范。
+- 本文是 RaspberryCode Desktop 输出呈现约束进入 Agent system prompt 的当前功能规范。
 - Desktop context 继续负责要求 Agent 输出 `::code-comment{...}`；Renderer 的解析、卡片和 Review 跳转由
   [Assistant Code Comment Cards](../ui/assistant-code-comment-cards.md) 独立规范，并受默认关闭的灰度能力控制。
 - Identity 中关于 terminal 展示的既有文案本阶段保持不变。
@@ -12,7 +12,7 @@
 | 字段     | 结论                                                                                    |
 | -------- | --------------------------------------------------------------------------------------- |
 | 改动层级 | presentation、runtime config                                                            |
-| 用户入口 | ZCode Desktop 本地 workspace、Desktop-attached SSH/WSL/Docker workspace                 |
+| 用户入口 | RaspberryCode Desktop 本地 workspace、Desktop-attached SSH/WSL/Docker workspace                 |
 | 评估入口 | `zcode --surface desktop --prompt <text>`                                               |
 | 权威状态 | Services 根据可信宿主事实推导、并在 Agent 启动时冻结的 `presentationSurface`            |
 | 默认值   | `terminal`                                                                              |
@@ -23,7 +23,7 @@
 Desktop surface 使用独立的 `buildDesktopContextSection()`，并遵守以下元数据：
 
 ```text
-name: ZCode Desktop Context
+name: RaspberryCode Desktop Context
 source: desktop_context
 injectionTarget: system
 cacheHint: stable
@@ -32,7 +32,7 @@ cacheHint: stable
 正文固定为：
 
 ```text
-# ZCode Desktop Context
+# RaspberryCode Desktop Context
 
 ### Files & URLs
 - Return local web URLs as Markdown links (e.g., [label](http://127.0.0.1:8080)).
@@ -54,14 +54,14 @@ cacheHint: stable
 ```text
 CLI Prefix
 Agent Identity
-ZCode Desktop Context       <- stable，仅 zcode_desktop
+RaspberryCode Desktop Context       <- stable，仅 zcode_desktop
 Dynamic Behavior            <- dynamic
 Session Guidance
 Environment
 ...
 ```
 
-`ZCode Desktop Context` 与 Identity 进入同一个稳定 system message，不新增 system message 数量。
+`RaspberryCode Desktop Context` 与 Identity 进入同一个稳定 system message，不新增 system message 数量。
 `customSystemPrompt` 会替换默认 system prompt 体系，因此不注入 Desktop context。Subagent 使用独立
 context builder，也不注入 Desktop context。
 
@@ -128,7 +128,7 @@ bridge Root 都显式开启灰度能力，Renderer 从同一原始 row text 确�
 普通 Web Server 入口保持默认关闭并继续显示原始 directive。该 UI 投影不改变 continuous/replayable
 交付边界，也不向 session snapshot 增加字段。
 
-该配置不进入 ZCode Protocol request，也不参与 workspace identity。远程 workspace 仍使用
+该配置不进入 RaspberryCode Protocol request，也不参与 workspace identity。远程 workspace 仍使用
 `workspaceIdentity?.trim() || workspacePath` 做隔离，`workspacePath` 只用于 Agent cwd。
 
 ## Desktop SP 服务端灰度

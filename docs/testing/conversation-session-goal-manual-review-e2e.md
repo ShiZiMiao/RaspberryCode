@@ -96,7 +96,7 @@ prompt 同时明确禁止 `Edit`、`Write`、删除、移动、安装、提交�
 可选日志观察：
 
 ```bash
-tail -f ~/.zcode/cli/log/zcode-$(date +%F).jsonl | rg "target\\.continuation|target\\.completion_verification|turn\\.started|turn\\.completed"
+tail -f ~/.raspberrycode/cli/log/zcode-$(date +%F).jsonl | rg "target\\.continuation|target\\.completion_verification|turn\\.started|turn\\.completed"
 ```
 
 人工观察点：

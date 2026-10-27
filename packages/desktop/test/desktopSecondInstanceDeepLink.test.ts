@@ -82,10 +82,10 @@ describe("desktop second-instance workspace deep link routing", () => {
     targetWindow.webContents.send.mockClear();
     const handled = handleSecondInstanceWorkspaceRequest({
       additionalData: createDeepLinkSingleInstanceData([
-        "ZCode",
+        "RaspberryCode",
         buildWorkspaceOpenUrl(workspacePath),
       ]),
-      argv: ["ZCode"],
+      argv: ["RaspberryCode"],
       focusForceUpdateGateWindow: vi.fn(),
       forceUpdateBlocked: false,
       handleDeepLink: (url, options) =>
@@ -124,11 +124,11 @@ describe("desktop second-instance workspace deep link routing", () => {
 
     const handled = handleSecondInstanceWorkspaceRequest({
       additionalData: createDeepLinkSingleInstanceData([
-        "ZCode",
+        "RaspberryCode",
         "--open-workspace",
         workspacePath,
       ]),
-      argv: ["ZCode"],
+      argv: ["RaspberryCode"],
       focusForceUpdateGateWindow: vi.fn(),
       forceUpdateBlocked: false,
       handleDeepLink: vi.fn(() => false),
@@ -160,10 +160,10 @@ describe("desktop second-instance workspace deep link routing", () => {
 
     const handled = handleSecondInstanceWorkspaceRequest({
       additionalData: createDeepLinkSingleInstanceData([
-        "ZCode",
+        "RaspberryCode",
         buildWorkspaceOpenUrl(workspacePath),
       ]),
-      argv: ["ZCode"],
+      argv: ["RaspberryCode"],
       focusForceUpdateGateWindow: vi.fn(),
       forceUpdateBlocked: false,
       handleDeepLink: (url, options) =>
@@ -201,10 +201,10 @@ describe("desktop second-instance workspace deep link routing", () => {
 
     const handled = handleSecondInstanceWorkspaceRequest({
       additionalData: createDeepLinkSingleInstanceData([
-        "ZCode",
+        "RaspberryCode",
         buildWorkspaceOpenUrl("\\\\attacker\\share"),
       ]),
-      argv: ["ZCode"],
+      argv: ["RaspberryCode"],
       focusForceUpdateGateWindow: vi.fn(),
       forceUpdateBlocked: false,
       handleDeepLink: (url, options) =>

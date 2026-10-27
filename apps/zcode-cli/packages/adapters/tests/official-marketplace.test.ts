@@ -10,7 +10,7 @@ import {
   updateMarketplace,
 } from "../src/plugins/index.js";
 
-describe("ZCode official marketplace partitions", () => {
+describe("RaspberryCode official marketplace partitions", () => {
   const cleanups: string[] = [];
 
   afterEach(async () => {

@@ -1,6 +1,6 @@
 # Compact E2E
 
-This harness runs real ZCode compact paths through the provider adapter, runtime, session events, and Docker-local request capture.
+This harness runs real RaspberryCode compact paths through the provider adapter, runtime, session events, and Docker-local request capture.
 
 Default cases:
 
@@ -104,7 +104,7 @@ This writes:
 - `capture.json`: index of per-case provider capture files.
 - `events.json`: index of per-case runtime event files.
 - `cases/<case>/capture.json`: OpenAI-compatible request/response capture.
-- `cases/<case>/events.json`: ZCode runtime/session events.
+- `cases/<case>/events.json`: RaspberryCode runtime/session events.
 - `cases/<case>/result.json`: focused case result.
 
 The Dockerfile defaults to `node:24.14-alpine`. To use a local mirror or already cached Node image:

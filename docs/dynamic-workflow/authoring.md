@@ -607,7 +607,7 @@ How the pack reaches each runtime:
   CLI entry, through the same candidate-directory walk official plugins use, and read it in
   place; nothing is copied. `packages/desktop/scripts/prepare-agent-node-bundle.mjs` stages
   it beside `resources/glm/zcode.cjs`.
-- ZCode Server releases (headless Server and SSH / WSL / Docker Source Server) use
+- RaspberryCode Server releases (headless Server and SSH / WSL / Docker Source Server) use
   `stageRelease` to stage the pack's `README.md` and `skills/` from `bundledSkillsDir` at
   `runtime/packages/bundled-skills`, beside `runtime/zcode.cjs`. Other top-level files are
   excluded. The pack belongs only to the `agent-runtime` component, including its content
@@ -619,7 +619,7 @@ How the pack reaches each runtime:
   not depend on an old plugin cache or on the server's working directory.
 - SEA binaries embed `skills/**` under the `zcode-bundled-skills/` asset prefix
   (`cli/scripts/sea-bundled-skill-assets.mjs`) with a manifest whose hash covers every file.
-  On start the CLI extracts the pack once into `~/.zcode/cli/bundled-skills/<hash>/`; the
+  On start the CLI extracts the pack once into `~/.raspberrycode/cli/bundled-skills/<hash>/`; the
   directory name is the content identity, so restarts are idempotent and concurrent starts
   have exactly one winner. A hash mismatch refuses the pack and falls back to the newest
   complete extraction.
@@ -839,7 +839,7 @@ size budget per description; `core/tests/workflow-skill-gate.test.ts` and
 A workflow subagent does not get the interactive agent's identity. The context builder
 takes a third path when the runtime config carries `workflowActor` (mutually exclusive
 with a custom system prompt; both present is a wiring error). The CLI prefix ("You are
-ZCode, an interactive coding agent") is skipped, and the identity section is replaced by a
+RaspberryCode, an interactive coding agent") is skipped, and the identity section is replaced by a
 **Workflow Actor Identity** section, which is the first line of the system prompt:
 
 1. An opening sentence: "You are a subagent inside a dynamic workflow run, named
@@ -1178,7 +1178,7 @@ In brief, because the rendering belongs to `docs/dynamic-workflow/presentation.m
   source the tab can reach, and "copy path". The header therefore carries one file control,
   not two; where the split button is absent, "show in workspace" stands in the header on
   its own. The file is a **copy the desktop writes** from the bytes the tab
-  already read, at `~/.zcode/tmp/workflow-artifacts/<runId>-<digest>/<artifactId>-<digest>/v<N>/<name>`;
+  already read, at `~/.raspberrycode/tmp/workflow-artifacts/<runId>-<digest>/<artifactId>-<digest>/v<N>/<name>`;
   the name is the base name of `sourcePath` for `file` (its extension picks the app) and
   `<artifactId>.md` for `markdown`. Each `<digest>` is the first 8 hex digits of the SHA-256 of
   the id before it, as the CLI sent it. It keeps two ids the engine tells apart in two directories

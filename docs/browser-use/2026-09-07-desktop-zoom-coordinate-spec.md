@@ -78,7 +78,7 @@ manager 回归覆盖 fallback 安装后直接替换、destroyed 回调及再次 
 
 ### 普通前台自然 viewport 截图（2026-09-08 macOS 复现）
 
-在 `4b9c4d51a0` 的真实 ZCode dev / macOS 上，退出自由尺寸并将应用缩小两档（zoom≈0.826446），通过产品 Node REPL 的 `tab.screenshot()` 复现：截图前 viewport 为 508×855，prepare 期间变成 614×1034，release 后恢复 508×855。页面 media query 因此把按钮中心从 (100,200) 移到 (200,200)；截图后的 trusted click (200,200) 未命中，而 (100,200) 命中。
+在 `4b9c4d51a0` 的真实 RaspberryCode dev / macOS 上，退出自由尺寸并将应用缩小两档（zoom≈0.826446），通过产品 Node REPL 的 `tab.screenshot()` 复现：截图前 viewport 为 508×855，prepare 期间变成 614×1034，release 后恢复 508×855。页面 media query 因此把按钮中心从 (100,200) 移到 (200,200)；截图后的 trusted click (200,200) 未命中，而 (100,200) 命中。
 
 根因：自然 viewport 没有 CDP metrics 固定逻辑尺寸，却复用了仿真 viewport 的 `1 / desktopZoom` guest 布局扩张。ready 再除以 layout scale 后看似匹配，页面实际已经发生 reflow。
 

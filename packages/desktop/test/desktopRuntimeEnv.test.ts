@@ -38,7 +38,7 @@ vi.mock("@zcode/shared", () => ({
     spawnArgs: ["app-server", "--stdio"],
     nativeConfigDir: ".zcode/cli",
     nativeConfigFileName: "config.json",
-    missingBinaryMessage: "[ZCode Agent] missing test binary",
+    missingBinaryMessage: "[RaspberryCode Agent] missing test binary",
     resolveEntrySegments: (platform: string) => [
       platform === "win32" ? "zcode-agent.exe" : "zcode-agent",
     ],
@@ -543,9 +543,9 @@ describe("desktopRuntimeEnv buildHostProcessEnv", () => {
       resolveWindowsAppInstallDirForDataBaseDirGuard({
         platform: "win32",
         isPackaged: true,
-        resourcesPath: "C:\\Users\\tester\\AppData\\Local\\Programs\\ZCode\\resources",
+        resourcesPath: "C:\\Users\\tester\\AppData\\Local\\Programs\\RaspberryCode\\resources",
       }),
-    ).toBe("C:\\Users\\tester\\AppData\\Local\\Programs\\ZCode");
+    ).toBe("C:\\Users\\tester\\AppData\\Local\\Programs\\RaspberryCode");
   });
 
   it("非 Windows 或开发态不会注入安装目录保护路径", async () => {
@@ -556,7 +556,7 @@ describe("desktopRuntimeEnv buildHostProcessEnv", () => {
       resolveWindowsAppInstallDirForDataBaseDirGuard({
         platform: "darwin",
         isPackaged: true,
-        resourcesPath: "/Applications/ZCode.app/Contents/Resources",
+        resourcesPath: "/Applications/RaspberryCode.app/Contents/Resources",
       }),
     ).toBeUndefined();
     expect(
@@ -593,7 +593,7 @@ describe("desktopRuntimeEnv buildHostProcessEnv", () => {
       });
 
       expect(env.ZCODE_CUA_BUNDLED_HELPER_APP_PATH).toBe(
-        join("/tmp/zcode-cua-dev-home", "computer-use", "dev", "ZCode Computer Use Dev.app"),
+        join("/tmp/zcode-cua-dev-home", "computer-use", "dev", "RaspberryCode Computer Use Dev.app"),
       );
     },
   );
@@ -607,11 +607,11 @@ describe("desktopRuntimeEnv buildHostProcessEnv", () => {
         ZCODE_HOME: "/tmp/zcode-cua-dev-home",
         ZCODE_CUA_PRODUCT_HELPER: "1",
         ZCODE_CUA_HELPER_ALLOW_UNSIGNED_LOCAL: "1",
-        ZCODE_CUA_BUNDLED_HELPER_APP_PATH: "/tmp/new-helper/ZCode Computer Use Dev.app",
+        ZCODE_CUA_BUNDLED_HELPER_APP_PATH: "/tmp/new-helper/RaspberryCode Computer Use Dev.app",
       });
 
       expect(env.ZCODE_CUA_BUNDLED_HELPER_APP_PATH).toBe(
-        "/tmp/new-helper/ZCode Computer Use Dev.app",
+        "/tmp/new-helper/RaspberryCode Computer Use Dev.app",
       );
     },
   );
@@ -629,7 +629,7 @@ describe("desktopRuntimeEnv buildHostProcessEnv", () => {
       });
 
       expect(env.ZCODE_CUA_BUNDLED_HELPER_APP_PATH).toBe(
-        join("/tmp/zcode-cua-dev-home", "computer-use", "dev", "ZCode Computer Use Dev.app"),
+        join("/tmp/zcode-cua-dev-home", "computer-use", "dev", "RaspberryCode Computer Use Dev.app"),
       );
     },
   );
@@ -698,7 +698,7 @@ describe("desktopRuntimeEnv buildHostProcessEnv", () => {
       });
 
       expect(env.ZCODE_CUA_BUNDLED_HELPER_APP_PATH).toBe(
-        join("/mock/resources", "cua-helper", "ZCode Computer Use.app"),
+        join("/mock/resources", "cua-helper", "RaspberryCode Computer Use.app"),
       );
     },
   );
@@ -956,7 +956,7 @@ describe("desktopRuntimeEnv runtime identity", () => {
   });
 
   it("e2e 可通过环境变量隔离应用名和 Electron 数据目录", async () => {
-    process.env["ZCODE_DESKTOP_APPLICATION_NAME"] = "ZCode E2E";
+    process.env["ZCODE_DESKTOP_APPLICATION_NAME"] = "RaspberryCode E2E";
     process.env["ZCODE_DESKTOP_HOME_DIR"] = "/tmp/zcode-e2e/home";
     process.env["ZCODE_DESKTOP_USER_DATA_DIR"] = "/tmp/zcode-e2e/user-data";
     process.env["ZCODE_DESKTOP_SESSION_DATA_DIR"] = "/tmp/zcode-e2e/session-data";
@@ -964,7 +964,7 @@ describe("desktopRuntimeEnv runtime identity", () => {
     const { runtimeApplicationName, runtimeHomePath, runtimeSessionDataPath, runtimeUserDataPath } =
       await import("../src/main/desktopRuntimeEnv.js");
 
-    expect(runtimeApplicationName).toBe("ZCode E2E");
+    expect(runtimeApplicationName).toBe("RaspberryCode E2E");
     expect(runtimeHomePath).toBe("/tmp/zcode-e2e/home");
     expect(runtimeUserDataPath).toBe("/tmp/zcode-e2e/user-data");
     expect(runtimeSessionDataPath).toBe("/tmp/zcode-e2e/session-data");
@@ -983,7 +983,7 @@ describe("desktopRuntimeEnv runtime identity", () => {
     expect(isPreviewPackagedRuntime).toBe(true);
     expect(runtimeApplicationName).toBe("RaspberryCode Preview");
     // Bugfix：这两条路径由实现用宿主 path.join 从 app.getPath("appData") 拼出，
-    // Windows 上是 `\mock\appData\ZCode Preview`，写死 POSIX 字面量必然失败。
+    // Windows 上是 `\mock\appData\RaspberryCode Preview`，写死 POSIX 字面量必然失败。
     // 用例要断言的是「Preview 单独占一个 Electron 数据目录」的目录结构，与分隔符无关，
     // 所以用同样的 join 表达；在 POSIX 上是恒等变换。
     expect(runtimeUserDataPath).toBe(join("/mock/appData", "RaspberryCode Preview"));

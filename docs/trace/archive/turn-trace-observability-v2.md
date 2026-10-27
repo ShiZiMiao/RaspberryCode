@@ -187,7 +187,7 @@ Detached Operation（标题、Goal 校验、Workspace Generate）
 | ---------------- | ------------------------------------- | ------------------------------------------ |
 | Repo Wiki        | `packages/services` 直接请求 Provider | P1 迁入 CLI ModelPort 或同一 Port          |
 | 模型连通性测试   | Host 发出真实小请求                   | 独立 `admin.model_probe`，不进入 Agent SLO |
-| `stream-animate` | 独立实验包                            | 不属于 ZCode Agent 生产 Trace              |
+| `stream-animate` | 独立实验包                            | 不属于 RaspberryCode Agent 生产 Trace              |
 
 P0 的完成口径是“CLI Agent 全部 LLM 流量”，不是“整个产品全部 LLM 流量”。
 
@@ -398,7 +398,7 @@ Resource 由 Backend 作为 OTel Resource 注入，不要求业务每次构造�
 
 业务用途和标准 OTel 用途分开：
 
-- `zcode.operation.name`：`context.compaction` 等 ZCode 业务用途。
+- `zcode.operation.name`：`context.compaction` 等 RaspberryCode 业务用途。
 - `gen_ai.operation.name`：`invoke_agent`、`execute_tool`、`chat`。
 - `zcode.execution.kind`：`turn|step|tool|sidecar|standalone_blocking|standalone`。
 - `zcode.actor.kind`：`main_agent|subagent|workflow_child|system|tool`。
@@ -509,7 +509,7 @@ Child Error 不自动污染 Turn；Turn 只以权威 Turn terminal 为准。
 
 ```ts
 interface SanitizedTelemetryError<TPhase extends string = string> {
-  code?: string; // ZCode 稳定低基数码
+  code?: string; // RaspberryCode 稳定低基数码
   type: string; // Exception/归一类型
   message?: string; // 脱敏、截断后的运维信息
   phase?: TPhase;
@@ -661,7 +661,7 @@ gen_ai.usage.reasoning.output_tokens
 server.address
 error.type / error.message
 
-ZCode 扩展：
+RaspberryCode 扩展：
 zcode.telemetry.schema_version
 zcode.span.type
 zcode.operation.name

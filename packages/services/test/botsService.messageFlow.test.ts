@@ -811,7 +811,7 @@ describe("botsService messageFlow", () => {
     service.disposeAll();
   });
 
-  it("syncs active task model, mode, and cli changes through ZCode Agent and broadcasts UI updates", async () => {
+  it("syncs active task model, mode, and cli changes through RaspberryCode Agent and broadcasts UI updates", async () => {
     const repo = f.createMemoryRepo(f.weixinConfig, {
       version: 3,
       bots: {
@@ -838,13 +838,13 @@ describe("botsService messageFlow", () => {
             value: "gpt-5.3",
             name: "GPT-5.3",
             modelProviderId: "glm",
-            modelProviderName: "ZCode Agent",
+            modelProviderName: "RaspberryCode Agent",
           },
           {
             value: "gpt-5.4",
             name: "GPT-5.4",
             modelProviderId: "glm",
-            modelProviderName: "ZCode Agent",
+            modelProviderName: "RaspberryCode Agent",
           },
         ],
       },
@@ -1311,7 +1311,7 @@ describe("botsService messageFlow", () => {
               value: "gpt-5.4",
               name: "GPT-5.4",
               modelProviderId: "glm",
-              modelProviderName: "ZCode Agent",
+              modelProviderName: "RaspberryCode Agent",
             },
           ],
         },
@@ -1574,7 +1574,7 @@ describe("botsService messageFlow", () => {
     service.disposeAll();
   });
 
-  it("creates an ZCode Agent task from a bound private message", async () => {
+  it("creates an RaspberryCode Agent task from a bound private message", async () => {
     const repo = f.createMemoryRepo(f.baseConfig);
     const legacyTaskService = f.createLegacyTaskService();
     const broadcastService = f.createBroadcastService();
@@ -4958,7 +4958,7 @@ describe("botsService messageFlow", () => {
     service.disposeAll();
   });
 
-  it("skips stale unsupported draft mode when creating a ZCode Agent task", async () => {
+  it("skips stale unsupported draft mode when creating a RaspberryCode Agent task", async () => {
     const repo = f.createMemoryRepo(f.weixinConfig, {
       version: 3,
       bots: {

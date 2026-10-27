@@ -149,7 +149,7 @@ snapshot、queue、owner/lease 和 `workspaceIdentity` 边界不变。
 - `providerOrder`；
 - `model-selection.json` 中的 Configured Default。
 
-不复制 ZCode Built-in Provider/Model Release。远端继续使用自己的 Built-in Release；两端
+不复制 RaspberryCode Built-in Provider/Model Release。远端继续使用自己的 Built-in Release；两端
 候选集差异可能使默认偏好不可用，按上面的 Host 推荐规则处理，不把它当成配置复制失败。
 
 ### 账号连接状态
@@ -281,8 +281,8 @@ Host execution admission
   （“Provider Provisioning 仅支持受信 Desktop Host”），Window Host 的手机 allowlist 也不含该 channel。
   旧版 daemon（无 target）不会在 R3 主链上收到 Envelope：`ZCODE_MIN_COMPATIBLE_VERSION` 默认等于
   产品版本，R3 兼容门在握手阶段就判定“需升级”并先执行远端更新，更新后的 Core 才进入首连 Provisioning。
-  Core 使用的 ZCode Built-in Provider Config 由构建期 define 按内容 hash 物化到
-  `~/.zcode/server/config/provider/zcode-builtin-<sha256>.json`（不写进不可变 release 目录）。
+  Core 使用的 RaspberryCode Built-in Provider Config 由构建期 define 按内容 hash 物化到
+  `~/.raspberrycode/server/config/provider/zcode-builtin-<sha256>.json`（不写进不可变 release 目录）。
   R3 侧接线见 [r3-source-server-remote-architecture.md §8.3](../architecture/r3-source-server-remote-architecture.md)。
 
   ```text

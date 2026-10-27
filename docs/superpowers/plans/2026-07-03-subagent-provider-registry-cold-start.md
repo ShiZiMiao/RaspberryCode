@@ -6,7 +6,7 @@
 
 **Architecture:** 修复语义是“任何会执行 subagent 的 agent runtime，在 turn 前必须拥有完整 app provider registry”。实现上分两条链路：local desktop 由 `zcodeAgentService` 在 service 内部把 `providerRegistrySource` 的完整 registry 注入当前 CLI workspace；remote workspace 保持现有 `remoteWorkspaceProviderSync` 专用链路，不把 local 行为混进 remote replayable 语义。subagent 不负责 provider 注入，继续复用父 runtime 的 `modelAdapter`。
 
-**Tech Stack:** TypeScript, `@zcode/protocol`, ZCode Services, React/UI remote sync guard tests, Vitest, ZCode Desktop WDIO E2E.
+**Tech Stack:** TypeScript, `@zcode/protocol`, RaspberryCode Services, React/UI remote sync guard tests, Vitest, RaspberryCode Desktop WDIO E2E.
 
 ## Global Constraints
 
@@ -851,7 +851,7 @@ Run:
 
 ```bash
 rg "workspace/updateProviderRegistry|provider_not_found|e2e-deepseek-alt|deepseek-v4-pro" \
-  packages/desktop/.e2e-home/.zcode/cli/log \
+  packages/desktop/.e2e-home/.raspberrycode/cli/log \
   packages/desktop/.e2e-artifacts
 ```
 

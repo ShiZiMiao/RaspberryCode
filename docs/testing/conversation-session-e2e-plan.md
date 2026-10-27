@@ -107,7 +107,7 @@ conversation-session 目录，并在覆盖矩阵里更新为正式路径。
 - stop 后存在 queue 时，queue 进入 held 状态，默认不自动消费；只有队列项“立即发送/继续队列”会显式请求 stop 后 drain。
 - stop 后 runtime 已完成且清掉 `activeInputId` 时，允许用户发 `/compact`；不能被 stale composer `streaming` 状态误判为仍在 running。
 - 手动 compact 如果历史不足，terminal marker 可以是 `skipped`；成功路径 E2E 需要先构造至少两轮已完成历史，再断言 `started -> completed`。
-- fork 入口对 ZCode agent provider 开放，但只允许稳定 `completed(success)` assistant message；被 stop 的 interrupted partial 不提供可用 fork 入口。fork 后切换到派生 session，父 session queue 不复制。
+- fork 入口对 RaspberryCode agent provider 开放，但只允许稳定 `completed(success)` assistant message；被 stop 的 interrupted partial 不提供可用 fork 入口。fork 后切换到派生 session，父 session queue 不复制。
 - user query edit 是显式重跑动作；stop 后 held queue 存在时仍应立即重跑，queue 保留且不自动 drain；assistant/tool 不暴露 edit 入口。
 - tool call 预期渲染为 assistant message 内部的 `TID_CHAT_TOOL_CALL_BLOCK`，不是独立 message；tool 负向能力断言只检查 tool block 内没有 edit/fork 入口，assistant message 自身的 fork 入口按 assistant 规则另行判断。
 - edit 重跑 running 中，后续普通文本和 `/goal` 都只能进入 queue，不能抢占当前重跑 turn。

@@ -1,6 +1,6 @@
 ---
 name: e2e-case-lifecycle
-description: Plan, maintain, replay, and promote ZCode desktop E2E cases and their fixtures, coverage matrices, and CI admission evidence.
+description: Plan, maintain, replay, and promote RaspberryCode desktop E2E cases and their fixtures, coverage matrices, and CI admission evidence.
 disable-model-invocation: true
 ---
 

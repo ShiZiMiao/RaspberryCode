@@ -30,7 +30,7 @@ official request_access success (macOS only)
 read-only text result + namespaced typed permission metadata
         |
         v
-trusted ZCode Host may ask the user whether to open onboarding
+trusted RaspberryCode Host may ask the user whether to open onboarding
 ```
 
 - 不存在 producer 级 macOS 权限翻译分支。

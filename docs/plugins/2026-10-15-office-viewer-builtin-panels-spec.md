@@ -56,12 +56,12 @@ office-runtime/scripts/build.mjs（插件名取自 .zcode-plugin/plugin.json）
 - office-runtime：`typecheck`、`lint`、单测（解析器、锚点、文本、i18n、对齐、契约）。
 - 四个插件：`build` 后 `smoke`（真实 stdio MCP：打开、读取、搜索、定位、越界路径拒绝）与 `test:e2e`（Chrome 中按 MCP Apps 沙箱 CSP 加载面板，覆盖选区引用、Agent 定位、查找、抽屉、截图、深色中文内联卡片）。
 - 版本与资产一致性：bootstrap `plugins.test.ts`、`build-sea.test.mjs`、desktop `runtime-asset-scripts.test.ts`、server `remoteDeploy.test.ts`。
-- 待补：在 ZCode 桌面端（含远程工作区）实际打开四种面板；e2e 不覆盖 Electron 沙箱本身。
+- 待补：在 RaspberryCode 桌面端（含远程工作区）实际打开四种面板；e2e 不覆盖 Electron 沙箱本身。
 
 ## 5. 本地文件与窗口恢复（2026-10-16）
 
 - 空状态为标题、描述、打开文件按钮与格式说明。按钮调用系统文件选择器，支持工作区外文件；取消不改变页面。
-- 文件按 4 MiB 分块导入 `.zcode/document-imports/<uuid>/<filename>`，沿用 100 MiB 上限。预览与 Agent 引用副本，不修改原文件，不开放任意路径读取。同名文件独立保存。
+- 文件按 4 MiB 分块导入 `.raspberrycode/document-imports/<uuid>/<filename>`，沿用 100 MiB 上限。预览与 Agent 引用副本，不修改原文件，不开放任意路径读取。同名文件独立保存。
 - 手动新建文档窗口生成 instanceId，随标签页持久化。普通插件与工具驱动 surface 保持原路由。
 - 完整 workspace/session/plugin/server/resource/surface instance 的 SHA-256 构成不透明 stateKey，面板 localStorage 保存该窗口最后成功加载的路径，不从服务器全局最后文档恢复。存储不可用时仍能预览，但不能保证恢复。
 

@@ -286,7 +286,7 @@ visible desktop) with:
 - the **iCloud TextEdit "Untitled N" backlog cleared** — TextEdit restores those
   autosaved docs on launch and they shadow the front document (preflight reports
   the count; the harness never deletes them);
-- the **GLM-5V-Turbo** credentials in `~/.zcode/v2/config.json` (billed calls).
+- the **GLM-5V-Turbo** credentials in `~/.raspberrycode/v2/config.json` (billed calls).
 
 Per-scenario **window isolation** (TextEdit/Finder): before each scenario the
 harness runs a hermetic reset that reaps ONLY the documents/windows the suite

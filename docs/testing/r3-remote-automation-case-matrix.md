@@ -94,7 +94,7 @@ Provisioning GUI 用例的 PRV-12 验收必须实际撤销隔离 Source 配置�
 
 DEV-06 当前回归入口：远端项目激活时选择普通 User，
 新建后本机 `agents/<name>.md` 存在、远端 user/project 同名文件不存在；按完整
-workspace identity 选择远端项目后，新建只落各自 `.zcode/agents`。
+workspace identity 选择远端项目后，新建只落各自 `.raspberrycode/agents`。
 DEV-07 的显式 Source User 必须独立验收，不得用菜单中最后一个 `default` workspace
 冒充远端 User；该入口缺失时记录未覆盖，不改变 DEV-06 的本机 User 断言。
 | R3A-DEV-08 | P1 | MCP/Skill/Plugin/Hook代表各有运行marker | 远端调用工具/执行一回合后切Source | 实际能力来自目标scope，输出/文件/执行日志正确；非Provider配置不被自动同步覆盖 | E/UPRNF |

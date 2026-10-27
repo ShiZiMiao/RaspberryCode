@@ -87,7 +87,7 @@ function assistantMessage(
   };
 }
 
-describe("ZCode session visible content", () => {
+describe("RaspberryCode session visible content", () => {
   it("only advances failed verifier iteration counts for active goals", () => {
     const failedTimeline = [
       {

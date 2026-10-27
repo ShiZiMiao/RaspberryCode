@@ -2,7 +2,7 @@
 
 > 状态：产品边界已确认，可按本文执行。本文只处理模型输出预算与标准请求字段，不改变模型返回结果的完成态、错误态或重试语义。
 
-**Goal:** 统一模型输出预算计算与已验证的 provider 兼容逻辑，同时保持 ZCode 当前默认请求上限为 64,000：用户 provider config 中的 `limit.output` 表示模型能力上限并优先于 catalog；正常模型请求按独立的全局请求上限裁剪，并通过 AI SDK 向 OpenAI Compatible、OpenAI Responses 和 Anthropic 发送各自的标准字段；对已验证组合省略请求上限，并在 Snowflake Cortex 最终请求边界改写字段名。
+**Goal:** 统一模型输出预算计算与已验证的 provider 兼容逻辑，同时保持 RaspberryCode 当前默认请求上限为 64,000：用户 provider config 中的 `limit.output` 表示模型能力上限并优先于 catalog；正常模型请求按独立的全局请求上限裁剪，并通过 AI SDK 向 OpenAI Compatible、OpenAI Responses 和 Anthropic 发送各自的标准字段；对已验证组合省略请求上限，并在 Snowflake Cortex 最终请求边界改写字段名。
 
 **Architecture:** App 侧 `modelProviderService` 负责保证用户配置优先、catalog 只补缺失；core 用内部 `maxOutputTokensSource` 区分正常模型能力预算与 Compact 的内部派生预算；adapter 集中计算正常请求的有效输出预算，并在 AI SDK 序列化前应用小范围 provider 兼容规则；AI SDK 负责把保留下来的通用 `maxOutputTokens` 映射为不同协议的最终字段。
 
@@ -13,7 +13,7 @@
 当前实现同时存在两个问题：
 
 1. core 和 adapter 都会把模型输出能力预先截断到 64,000；OpenAI Compatible 的 `runtime-default` 又会在 adapter 中被省略，因此自定义网关可能回退到供应商的小默认值。
-2. App 读取 `~/.zcode/v2/config.json` 时，catalog 的 `maxOutputTokens` 可以覆盖用户已经配置的 `model.limit.output`，与已确认的配置优先级相反。
+2. App 读取 `~/.raspberrycode/v2/config.json` 时，catalog 的 `maxOutputTokens` 可以覆盖用户已经配置的 `model.limit.output`，与已确认的配置优先级相反。
 
 请求预算逻辑是：
 
@@ -24,7 +24,7 @@ effectiveMaxOutputTokens = Math.min(
 );
 ```
 
-ZCode 为减少行为变化，继续使用现有 64K 作为默认值，并提供独立环境变量覆盖。
+RaspberryCode 为减少行为变化，继续使用现有 64K 作为默认值，并提供独立环境变量覆盖。
 
 ## 已确认边界
 
@@ -38,7 +38,7 @@ ZCode 为减少行为变化，继续使用现有 64K 作为默认值，并提供
 - OpenAI Compatible 默认发送 `max_tokens`；仅对 provider id 包含 `github-copilot` 的 GPT 模型，在 adapter 请求参数边界省略。
 - provider id 精确为 `openai` 时，在 AI SDK 序列化前省略 `maxOutputTokens`；其他使用 Responses 协议的自定义 provider 保持发送标准 `max_output_tokens`。
 - `snowflake-cortex` 在最终 JSON request body 边界把 `max_tokens` 改名为 `max_completion_tokens`；字段不存在时不重写 body。
-- Anthropic fixed thinking 继续沿用现有“先从可见输出预算扣除 thinking budget，再由 SDK 形成协议请求”的换算，这是 ZCode 保留的协议适配差异。
+- Anthropic fixed thinking 继续沿用现有“先从可见输出预算扣除 thinking budget，再由 SDK 形成协议请求”的换算，这是 RaspberryCode 保留的协议适配差异。
 
 ### 不纳入本次修复
 
@@ -148,7 +148,7 @@ pnpm exec vitest run packages/services/test/modelProviderService.test.ts
   - 模型 131,072 + 环境变量 131,072 → 131,072；
   - 模型未配置 + 默认全局 64,000 → 64,000；
   - 环境变量为 `0`、负数、非数字或非整数时 → 回退 64,000。
-- [x] 扩展内部来源类型为 `"runtime-default" | "model-capability"`，同步 TypeScript 类型和 JSON schema；该字段仍只属于 core→adapter 内部模型请求，不修改外部 ZCode Protocol。
+- [x] 扩展内部来源类型为 `"runtime-default" | "model-capability"`，同步 TypeScript 类型和 JSON schema；该字段仍只属于 core→adapter 内部模型请求，不修改外部 RaspberryCode Protocol。
 - [x] 主轮次设置 `maxOutputTokensSource: "model-capability"`。
 - [x] Target Completion Verification 改为传递原始模型能力值并设置 `maxOutputTokensSource: "model-capability"`，不再在 core 预先截断到 64K。
 - [x] `model.ts` 对 `model-capability` 不再调用 core 的固定 64K precap，让 adapter 统一计算；其他未标记调用保持现状。

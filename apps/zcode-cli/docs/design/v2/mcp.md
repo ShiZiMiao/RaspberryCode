@@ -61,7 +61,7 @@ Plugin-provided MCP servers are specified by
 `mcp.servers` config shape before runtime startup. Manual user/project MCP
 servers win on server-name collisions. Plugin server configs may use Claude
 Code's `.mcp.json` wrapper shape and may omit `type` when a `command` is
-present; ZCode infers `stdio` in that case.
+present; RaspberryCode infers `stdio` in that case.
 
 `features.mcp` defaults to `true`, but no server is connected unless `mcp.servers` is configured. Individual servers may set `enabled: false`.
 
@@ -84,11 +84,11 @@ MCP 协议版本协商必须服从 server 的连接预算：
 - 本地 MCP 用 command array，不通过 shell 字符串；远程 MCP 用 URL / headers / OAuth。
 - MCP 工具最终以 server name 为前缀进入 tool pool，并可通过 tool allow/deny pattern 控制。
 
-ZCode 采用“config 先合并，MCP 后连接”的大方向，但 project MCP 有额外安全边界：project config 可能是仓库内容，不能让进入目录本身就静默启动本地进程或发起网络连接。
+RaspberryCode 采用“config 先合并，MCP 后连接”的大方向，但 project MCP 有额外安全边界：project config 可能是仓库内容，不能让进入目录本身就静默启动本地进程或发起网络连接。
 
 ### Desired Behavior
 
-ZCode CLI/TUI/headless prompt 应自动读取 project-level config，使仓库可以声明自己的 MCP servers。典型形态：
+RaspberryCode CLI/TUI/headless prompt 应自动读取 project-level config，使仓库可以声明自己的 MCP servers。典型形态：
 
 ```json
 {
@@ -129,7 +129,7 @@ Candidate project files, per directory, in increasing precedence:
 1. `<dir>/zcode.json`
 2. `<dir>/.zcode/config.json`
 
-JSONC support is desirable because users expect comments in config files, but ZCode's current config adapter is JSON-only. Treat `zcode.jsonc` / `.zcode/config.jsonc` as Phase 2 unless the same implementation slice adds a JSONC parser and schema diagnostics.
+JSONC support is desirable because users expect comments in config files, but RaspberryCode's current config adapter is JSON-only. Treat `zcode.jsonc` / `.zcode/config.jsonc` as Phase 2 unless the same implementation slice adds a JSONC parser and schema diagnostics.
 
 ### Merge Precedence
 
@@ -166,15 +166,15 @@ P0 policy:
 
 This trust gate is separate from normal MCP tool-call permission. Tool calls still go through `mcp` permission even after a server is connected.
 
-### ZCode App-Server Boundary
+### RaspberryCode App-Server Boundary
 
-ZCode app-server sessions are protocol-controlled and already accept `mcpServers` during session setup. Keep the current ZCode app-server rule:
+RaspberryCode app-server sessions are protocol-controlled and already accept `mcpServers` during session setup. Keep the current RaspberryCode app-server rule:
 
-- ZCode app-server `mcpServers` is the complete server set for that ZCode app-server session.
-- ZCode app-server should not implicitly merge local user/project MCP config unless a future ZCode app-server option explicitly requests it.
-- Empty ZCode app-server `mcpServers` means no MCP servers for that session.
+- RaspberryCode app-server `mcpServers` is the complete server set for that RaspberryCode app-server session.
+- RaspberryCode app-server should not implicitly merge local user/project MCP config unless a future RaspberryCode app-server option explicitly requests it.
+- Empty RaspberryCode app-server `mcpServers` means no MCP servers for that session.
 
-This prevents a generic ZCode protocol client from accidentally enabling repository-local MCP servers.
+This prevents a generic RaspberryCode protocol client from accidentally enabling repository-local MCP servers.
 
 ### Implementation Plan
 
@@ -198,10 +198,10 @@ This prevents a generic ZCode protocol client from accidentally enabling reposit
    - Keep untrusted project servers out of model tool schemas.
    - Log skipped project MCP servers with trace/project/source metadata.
 
-5. CLI/TUI/ZCode app-server surfaces
+5. CLI/TUI/RaspberryCode app-server surfaces
    - TUI permission prompt for project MCP trust.
    - Headless output should explain why project MCP servers were skipped.
-   - ZCode app-server keeps session-supplied MCP behavior unchanged.
+   - RaspberryCode app-server keeps session-supplied MCP behavior unchanged.
 
 ### Tests
 
@@ -214,7 +214,7 @@ Minimum coverage for the first implementation slice:
 - Env/CLI/session `features.mcp: false` prevents project config from enabling MCP.
 - Untrusted project MCP servers are listed but not connected or exposed to the model.
 - Later trust slice: trusted project MCP servers connect and register tools normally.
-- ZCode app-server session `mcpServers` remains a complete override and does not merge project config.
+- RaspberryCode app-server session `mcpServers` remains a complete override and does not merge project config.
 - Later diagnostics slice: invalid project config reports diagnostics with source path and does not silently drop unrelated config.
 
 ## Tool Contract

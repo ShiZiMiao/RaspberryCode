@@ -1,6 +1,6 @@
 import { ingestToolExecResource } from "./desktopResourceTelemetry.js";
 import { ingestMcpResourceSamples } from "./processResourceMcpTelemetrySource.js";
-/* eslint-disable max-lines -- host process 统一处理 main↔host 生命周期、日志、ZCode Agent，拆分前先保持跨进程消息收口。 */
+/* eslint-disable max-lines -- host process 统一处理 main↔host 生命周期、日志、RaspberryCode Agent，拆分前先保持跨进程消息收口。 */
 import {
   type HostAgentProcessErrorResponse,
   type HostAgentProcessExceptionResponse,
@@ -88,7 +88,7 @@ export interface HostInitMessage {
   }>;
   agentSpawnFallbackCwd?: string;
   remoteAssets?: RemoteAssetDirs;
-  /** Main 解析后的 ZCode Built-in Provider Config 路径；Host/Services 不感知 Electron 安装布局。 */
+  /** Main 解析后的 RaspberryCode Built-in Provider Config 路径；Host/Services 不感知 Electron 安装布局。 */
   zcodeBuiltinProviderConfigFilePath: string;
   /** Main 提前异步采集并过滤的本机 runtime 环境；只允许传给 InitLocal。 */
   runtimeProcessEnvPatch?: Record<string, string>;
@@ -256,8 +256,8 @@ export function spawnHostProcess(
       ...buildHostE2ECoverageEnv(),
       ZCODE_PROCESS_LABEL: label,
       // macOS-only: the Computer Use Helper launcher runs inside this forked host utilityProcess, whose
-      // code-signing identity is a nested Electron helper (NOT dev.zcode.app). Publish THIS (main
-      // Electron) process's pid — which IS dev.zcode.app — so helperLauncher passes it as
+      // code-signing identity is a nested Electron helper (NOT dev.raspberrycode.app). Publish THIS (main
+      // Electron) process's pid — which IS dev.raspberrycode.app — so helperLauncher passes it as
       // `--launcher-pid` and the Helper's signature/peer verification succeeds instead of
       // health-timing out. Env-name mirror of services' LAUNCHER_PID_ENV. Not set on
       // Windows/Linux (CUA is macOS-only; nothing reads it there) to keep the host env pristine.

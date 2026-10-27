@@ -1,6 +1,6 @@
-# ZCode CLI
+# RaspberryCode CLI
 
-ZCode's Agent CLI provides an interactive terminal and non-interactive task execution. It is part of this pnpm workspace; build it from the repository root with the Node and pnpm versions in [mise.toml](../../mise.toml).
+RaspberryCode's Agent CLI provides an interactive terminal and non-interactive task execution. It is part of this pnpm workspace; build it from the repository root with the Node and pnpm versions in [mise.toml](../../mise.toml).
 
 ```sh
 pnpm install --frozen-lockfile

@@ -9,7 +9,7 @@
 ```text
 Desktop renderer (desktop-continuous)
   -> window-scoped Local Host
-    -> ZCode CLI runtime
+    -> RaspberryCode CLI runtime
       -> provider adapter
         -> local replay HTTP/SSE server
 

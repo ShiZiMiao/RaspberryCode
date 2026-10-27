@@ -16,7 +16,7 @@
 
 CDD01 已迁入 formal 路径，但单 spec Docker `replay-isolated` 运行
 `packages/desktop/.e2e-artifacts/desktop-e2e-20260810-122428-44907/summary.md` 为 `0/1 failed`：
-复制 `.zcode/v2` 时与 `setting.json` 原子写入发生竞态，瞬时消失的 `setting.json.lock` 导致
+复制 `.raspberrycode/v2` 时与 `setting.json` 原子写入发生竞态，瞬时消失的 `setting.json.lock` 导致
 `ENOENT`。该失败已进入 WDIO，不是基础设施阻断，也不是绿色 admission 证据，因此不能登记为 verified。
 
 2026-08-11 修复复制过滤后重新执行同一单 spec，

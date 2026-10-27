@@ -269,7 +269,7 @@ Service 模块，对应桌面端 `OAuthService` 在 Web runtime 的等价物，�
 
 ### `packages/web/src/auth/WebLoginPage.tsx`
 
-全屏登录 UI 组件，显示 ZCode logo 和“用 ZAI 登录”按钮。
+全屏登录 UI 组件，显示 RaspberryCode logo 和“用 ZAI 登录”按钮。
 
 UI 约束：
 

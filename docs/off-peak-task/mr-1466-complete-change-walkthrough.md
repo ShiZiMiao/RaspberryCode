@@ -27,7 +27,7 @@
 
 ### 1.2 一句话结果
 
-这个 MR 新增了一套桌面本地的“一次性闲时任务”产品：用户先向服务端取号，客户端持久化任务并轮询票据，服务端放行后由独立 scheduler 派发到承载目标 workspaceKey 的窗口 Local Host，Host 创建或复用一个普通 ZCode session，并仅对自动执行的那一轮临时注入内置 `builtin:offpeak-idle-plan` provider；遇到容量型 `429/3105` 时遵从 `Retry-After` 无限等待而不消耗普通重试预算，票据 `3102` 失效时换票并在同一 session 续跑，任务结束后异步核销票据。
+这个 MR 新增了一套桌面本地的“一次性闲时任务”产品：用户先向服务端取号，客户端持久化任务并轮询票据，服务端放行后由独立 scheduler 派发到承载目标 workspaceKey 的窗口 Local Host，Host 创建或复用一个普通 RaspberryCode session，并仅对自动执行的那一轮临时注入内置 `builtin:offpeak-idle-plan` provider；遇到容量型 `429/3105` 时遵从 `Retry-After` 无限等待而不消耗普通重试预算，票据 `3102` 失效时换票并在同一 session 续跑，任务结束后异步核销票据。
 
 ### 1.3 本 MR 的实际范围
 
@@ -44,7 +44,7 @@
 同时夹带两个非核心但确实属于 MR 的改动：
 
 - GitLab CI 允许 API source 触发部分手动测试/构建链路。
-- `mise run dev` 使用独立 `~/.zcode-dev-home`，隔离生产数据目录。
+- `mise run dev` 使用独立 `~/.raspberrycode-dev-home`，隔离生产数据目录。
 
 ## 2. 最终产品语义
 
@@ -210,7 +210,7 @@ POST /ticket
 
 - `offPeakTaskId`：本地主键，同时作为服务端稳定 `task_id`；跨多张 ticket 不变。
 - `serverTicketId`：当前服务端票据；每次重取号覆盖。
-- `conversationId`：宿主 ZCode task id；首次派发后回填。
+- `conversationId`：宿主 RaspberryCode task id；首次派发后回填。
 - `sessionId`：Agent session id；首次执行后回填，续跑复用。
 - `workspaceKey = workspaceIdentity?.trim() || workspacePath`：身份隔离 key。
 - `workspacePath`：文件、cwd、展示等真实路径语义。
@@ -225,7 +225,7 @@ POST /ticket
 | `off_peak_task_id` | 稳定任务主键/服务端 task_id |
 | `server_ticket_id` | 当前 ticket id |
 | `title` | 用户标题 |
-| `conversation_id` | ZCode task id |
+| `conversation_id` | RaspberryCode task id |
 | `session_id` | 可复用 Agent session id |
 | `prompt` | Instructions |
 | `permission_mode` | build/edit/plan/yolo 等现有 task mode |
@@ -438,7 +438,7 @@ desktop/scheduler restart
 
 ### 7.2 鉴权
 
-- ticket JSON 接口统一带 `Authorization: Bearer <ZCode JWT>` 和 `x-coding-plan-api-key`。
+- ticket JSON 接口统一带 `Authorization: Bearer <RaspberryCode JWT>` 和 `x-coding-plan-api-key`。
 - messages 端点还带 `X-Off-Peak-Ticket-ID`。
 - JWT 从 credential key `zcodejwttoken` 读取。
 - Coding Plan key 按当前 provider family 与 selected connection 解析：ZAI/BigModel 个人套餐读取所选
@@ -745,7 +745,7 @@ AppSettings.keepAwakeWhileRunning
 ### 16.2 mise 开发目录隔离
 
 - `mise run dev` 增加 `ZCODE_DATA_BASE_DIR={{env.HOME}}/.zcode-dev-home`。
-- 开发态桌面数据与默认 `~/.zcode` 生产数据隔离。
+- 开发态桌面数据与默认 `~/.raspberrycode` 生产数据隔离。
 - 文档和 root build script test 同步。
 - `pnpm dev:desktop:test` 的既有语义未被改成相同入口。
 - OAuth 自定义 scheme `zcode://` 仍可能与已安装正式版竞争，这是隔离 data dir 无法解决的系统注册边界。
@@ -927,7 +927,7 @@ ADR supersession 规则；批准切 provider 仍被标为未实现能力，而�
 | 30 | M | +327/-128 | `docs/off-peak-task/tech-design.md` | 原 MR Head 扩充设计但混有规划期语义；2026-07-22 follow-up 已对齐最终接口、额度、Provider 和 permission 边界。 |
 | 31 | M | +23/-0 | `docs/testing/conversation-session-e2e-coverage-matrix.md` | 增加 Off-Peak case 覆盖矩阵，区分已覆盖、planned 与 pending execution。 |
 | 32 | M | +9/-4 | `docs/ui/scheduled-tasks-main-view.md` | 明确 Scheduled 与 Idle-time task 在 Automations 主视图中的并存和边界。 |
-| 33 | M | +2/-1 | `mise.toml` | 为 mise dev 注入 ZCODE_DATA_BASE_DIR=~/.zcode-dev-home，隔离正式数据。 |
+| 33 | M | +2/-1 | `mise.toml` | 为 mise dev 注入 ZCODE_DATA_BASE_DIR=~/.raspberrycode-dev-home，隔离正式数据。 |
 | 34 | M | +5/-0 | `packages/client/src/remoteServiceAccess.ts` | remote service accessor 暴露 IOffPeakTaskService 合同；不等于 mobile remote 开启产品。 |
 | 35 | M | +381/-0 | `packages/desktop/src/host/index.ts` | 实现 host 侧 Off-Peak runtime 装配、双凭证、用户模型解析、首次 session 创建、续跑派发、终态订阅与 3102 闭环。 |
 | 36 | M | +62/-0 | `packages/desktop/src/main/desktopCronScheduler.ts` | 在 main 调度桥中转 OffPeakRun/Result、scheduler wake 和 active count 消息。 |

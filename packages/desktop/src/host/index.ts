@@ -1520,7 +1520,7 @@ function createReportingRemoteZCodeTaskService<T extends object>(
     return true;
   }
 
-  // remote workspace 的 ZCode Agent manager 跑在远端 server，desktop main 不能直接看到
+  // remote workspace 的 RaspberryCode Agent manager 跑在远端 server，desktop main 不能直接看到
   // `handles` 状态。sendPrompt Promise 只是远端 ACK，必须等待 task ready 才能允许回收 workspace。
   return new Proxy(service, {
     get(target, property, receiver) {
@@ -1737,7 +1737,7 @@ let databaseStartup: ReturnType<typeof createHostDatabaseStartup> | undefined;
 const pendingStartupAttachments = new Map<string, () => void>();
 let activeServices: ServiceCollection | null = null;
 /**
- * Main 推送的实时界面语言，供 ZCode endpoint 请求的 X-Client-Language。
+ * Main 推送的实时界面语言，供 RaspberryCode endpoint 请求的 X-Client-Language。
  * 过去 Host 用进程 Intl locale（Dock 启动无 LANG 会回退 en-US）；setting.json 写入可能滞后或失败，
  * 也不能代表当前界面，所以只认 Main 的 InitLocal 初值与 application-locale-changed 变更。
  */

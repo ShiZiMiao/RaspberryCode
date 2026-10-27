@@ -4,7 +4,7 @@
 
 **Goal:** 在 Windows 本地桌面 Host 中按需启动 `C:\Users\dev\zcode-cua` 源码构建出的独立 Node Helper，让官方 `zcode-cua` plugin 获得随机 named pipe、token 和 authority，并在记事本完成 UIA 观察、点击和输入闭环。
 
-**Architecture:** 保留 macOS 现有 `Host -> Helper -> broker -> MCP plugin` 分层。Windows 新增源码开发专用 Helper 入口和 Host lifecycle adapter；Helper 使用 `process.execPath + ELECTRON_RUN_AS_NODE=1` 运行，自动加载源码树的 `build/Release/ax_native.node`。ZCode Host 只负责源码根校验、子进程生命周期、健康检查和凭据注入；UIA、输入与 Windows system surface 仍归 `zcode-cua`。本计划不增加 tool、不修改 tool schema、不接入 SSH/WSL/Docker，也不做 WGC、完整指针或产品打包。
+**Architecture:** 保留 macOS 现有 `Host -> Helper -> broker -> MCP plugin` 分层。Windows 新增源码开发专用 Helper 入口和 Host lifecycle adapter；Helper 使用 `process.execPath + ELECTRON_RUN_AS_NODE=1` 运行，自动加载源码树的 `build/Release/ax_native.node`。RaspberryCode Host 只负责源码根校验、子进程生命周期、健康检查和凭据注入；UIA、输入与 Windows system surface 仍归 `zcode-cua`。本计划不增加 tool、不修改 tool schema、不接入 SSH/WSL/Docker，也不做 WGC、完整指针或产品打包。
 
 **Tech Stack:** TypeScript 5/6、Node.js 24、Electron utility process、Vitest 4、Node `child_process.fork`、Windows named pipe、N-API/node-addon-api、C++/UI Automation、pnpm 10。
 
@@ -119,7 +119,7 @@ Expected: native rebuild exits `0`; the final command prints `True`.
 
 **Step 3: Repair the lint dependency**
 
-Add `oxlint` to `devDependencies` at the version used by ZCode (`^1.57.0`), run `pnpm install`, and verify:
+Add `oxlint` to `devDependencies` at the version used by RaspberryCode (`^1.57.0`), run `pnpm install`, and verify:
 
 ```powershell
 pnpm lint
@@ -392,7 +392,7 @@ git commit -m "feat(windows): add source Computer Use Helper entry"
 
 ---
 
-### Task 4: Resolve and validate the ZCode Windows development runtime
+### Task 4: Resolve and validate the RaspberryCode Windows development runtime
 
 **Files:**
 
@@ -512,7 +512,7 @@ Expected: fail because the host does not exist.
 
 **Step 2: Define the minimal common Host contract**
 
-Use the existing `CuaProductHelperHost` resolver contract and add the two lifecycle capabilities ZCode owns:
+Use the existing `CuaProductHelperHost` resolver contract and add the two lifecycle capabilities RaspberryCode owns:
 
 ```ts
 export type ManagedCuaProductHelperHost = CuaProductHelperHost & {
@@ -559,7 +559,7 @@ git commit -m "feat(cua): manage Windows development Helper"
 
 ---
 
-### Task 6: Wire Windows admission and broker credentials into ZCode
+### Task 6: Wire Windows admission and broker credentials into RaspberryCode
 
 **Files:**
 
@@ -709,7 +709,7 @@ pnpm dev:desktop:prod
 Also document:
 
 - official `zcode-cua` plugin must be enabled;
-- source changes require rebuilding `zcode-cua`, while ZCode product packaging is not required;
+- source changes require rebuilding `zcode-cua`, while RaspberryCode product packaging is not required;
 - expected process tree and named-pipe shape;
 - log locations and token-redaction rule;
 - Windows lock screen/Session 0 fail-closed behavior;
@@ -763,7 +763,7 @@ pnpm exec vitest run packages/services/test/windowsCuaDevRuntime.test.ts package
 
 Expected: every command exits `0`.
 
-**Step 2: Start ZCode source development**
+**Step 2: Start RaspberryCode source development**
 
 ```powershell
 $env:ZCODE_CUA_DEV_MODE='1'
@@ -780,14 +780,14 @@ Confirm before invoking a CUA task:
 
 **Step 3: Execute the Notepad scenario**
 
-Use one ZCode task to:
+Use one RaspberryCode task to:
 
 1. call `list_apps`;
 2. open `notepad.exe` without shell;
 3. obtain the Notepad app/window and UIA state;
 4. select the editor by element target;
 5. click the editor;
-6. type `ZCode Windows CUA Phase 1`;
+6. type `RaspberryCode Windows CUA Phase 1`;
 7. re-observe and verify the text through UIA;
 8. press `Ctrl+A`, type replacement text, and verify again.
 
@@ -800,12 +800,12 @@ Acceptance:
 
 **Step 4: Exercise recovery and teardown**
 
-While ZCode remains open:
+While RaspberryCode remains open:
 
 1. end the Helper process;
 2. wait for liveness recovery;
 3. verify the next official CUA admission receives a new pipe/token and the same Host authority;
-4. close ZCode;
+4. close RaspberryCode;
 5. confirm no Windows Helper child remains and the old pipe cannot be connected.
 
 Expected: no orphan Helper and no stale credential reuse.
@@ -862,13 +862,13 @@ Do not tag, publish, push a release, build a signed package or close Phase 2/3 i
 ## Completion Criteria
 
 - `zcode-cua` builds `dist/windows-helper.js` and `build/Release/ax_native.node` on Windows.
-- ZCode local Host starts exactly one on-demand Windows Helper using `process.execPath`.
+- RaspberryCode local Host starts exactly one on-demand Windows Helper using `process.execPath`.
 - Helper receives token only through controlled env and publishes credentials only after health passes.
 - Official plugin obtains pipe/token/authority; attacker-authored or unbrokered CUA configs remain fail-closed.
 - Notepad UIA observe/click/type/re-observe succeeds without screenshots.
 - Helper restart rotates pipe/token; Host authority stays stable.
-- ZCode exit leaves no Helper child.
+- RaspberryCode exit leaves no Helper child.
 - macOS and Linux focused regression suites pass.
-- ZCode `pnpm typecheck` and `pnpm lint` pass.
+- RaspberryCode `pnpm typecheck` and `pnpm lint` pass.
 - `zcode-cua` typecheck, lint, full test and build pass on Windows.
 - WGC, scroll/drag/move/down/up, UIA worker isolation and product packaging remain explicitly deferred to separate Phase 2/3 plans.

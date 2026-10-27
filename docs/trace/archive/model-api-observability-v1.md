@@ -33,7 +33,7 @@ CLI 是模型调用事实的权威生产者。App 只负责在启动 CLI 时注�
 - 区分一次模型调用与它下面的物理 Provider 请求、Adapter Retry、流式恢复和 Transport Fallback。
 - 统计调用量、物理请求放大率、成功率、取消率、Retry 恢复率、耗时、TTFT、Token 和 Prompt Cache。
 - 记录实际 Provider、清洗后的 Endpoint、Model、请求与最终生效的 Thought Level。
-- 失败时记录 ZCode 错误码、Provider 错误码、HTTP 状态码、脱敏错误信息、错误阶段、是否可重试和 Provider Request ID。
+- 失败时记录 RaspberryCode 错误码、Provider 错误码、HTTP 状态码、脱敏错误信息、错误阶段、是否可重试和 Provider Request ID。
 - 所有记录携带 UID、设备、Session、Turn、Trace、Logical Call 和 Request 等关联 ID。
 - App-launched 和 Standalone CLI 共享同一 Schema 和 Exporter 逻辑。
 - Telemetry 失败、拥塞或未配置时不得阻塞或改变 Agent 行为。
@@ -179,7 +179,7 @@ Model Operation
 Agent Session 可能持续很久，并包含不受限的 Step、Tool 和 Compaction。把整个 Session 做成一个长 Trace 会造成 Span 数量、内存、采样和查询边界不稳定。
 
 Phase 1 已实现为每个 `ModelApiCallRecord` 对应一个短 Trace/Root Span，Physical Attempt 是
-Child Span；通过 ZCode 自己的 `session_id`、`turn_id`、`operation_id` 和
+Child Span；通过 RaspberryCode 自己的 `session_id`、`turn_id`、`operation_id` 和
 `logical_call_id` 跨 Trace 关联。
 
 目标结构不是 Session Trace，也不继续停留在孤立 Model Trace，而是：
@@ -281,7 +281,7 @@ runtime_surface
 - `provider_request_id`：Provider 响应 Header/Body 中的请求 ID，存在时记录。
 - OAuth/账号原始 UID 不进入 Record、OTLP Resource 或 Agent 子进程公共环境；App Host 只注入 SHA-256。
 - `user_id_hash` 用于 ARMS 用户关联；Exporter 同时映射为既有查询约定的 `uid`；`identity_state=authenticated|anonymous|unavailable`。
-- Standalone 无 ZCode 账号身份时，UID 留空，不使用字符串 `unknown` 冒充用户。
+- Standalone 无 RaspberryCode 账号身份时，UID 留空，不使用字符串 `unknown` 冒充用户。
 - Exporter 映射 `uid/rid/sid = user_id_hash/request_id/session_id`；领域 Schema 仍使用完整名称。
 
 上述 ID 只用于 Trace/SLS 详情查询，不作为 Metrics Label。
@@ -467,9 +467,9 @@ error_phase = prepare | connect | response | stream | parse | postprocess
 
 约束：
 
-- `error_code` 使用 ZCode `ModelErrorCode`。
+- `error_code` 使用 RaspberryCode `ModelErrorCode`。
 - `provider_error_code` 保存 Provider 业务码，不能覆盖统一错误码。
-- `error_message` 是 ZCode 归一化安全消息。
+- `error_message` 是 RaspberryCode 归一化安全消息。
 - `provider_error_message` 必须脱敏和截断，最大 1024 字符。
 - 错误消息和 Stack 不得成为 Metrics Label。
 - 成功调用不采集 Stack；错误 Stack 仅在明确开启且通过脱敏时进入详细 Trace。
@@ -948,7 +948,7 @@ model.generateText({
 
 公共事实由 Adapter 统一补齐，调用点不重复处理 Provider、Endpoint、Thought、Token、Cache 和错误。
 
-`modelCall` 是 ZCode 内部字段，Adapter 在构造 AI SDK 请求时必须剥离，不能发送给 Provider。
+`modelCall` 是 RaspberryCode 内部字段，Adapter 在构造 AI SDK 请求时必须剥离，不能发送给 Provider。
 
 ### 14.3 Phase 1 结构问题处理结果
 

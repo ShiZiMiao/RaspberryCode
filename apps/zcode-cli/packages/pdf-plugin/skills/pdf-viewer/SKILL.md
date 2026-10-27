@@ -32,4 +32,4 @@ When the user selects text or clicks a page and chooses **Add to chat**, the nex
 
 - Paths are relative to the workspace; files outside it cannot be opened. Encrypted PDFs cannot be opened.
 - Do not paste whole documents into the chat; quote briefly and point with `show_in_viewer`.
-- The panel only works in ZCode Desktop local workspaces. Elsewhere, the read and search tools still work; tell the user the visual viewer is unavailable.
+- The panel only works in RaspberryCode Desktop local workspaces. Elsewhere, the read and search tools still work; tell the user the visual viewer is unavailable.

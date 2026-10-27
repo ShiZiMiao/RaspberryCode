@@ -95,7 +95,7 @@ Preview not_found → 现有 Loader
 和 `/cn/share/mock-not-found` fixture。两者都只启动 Vite，
 不启动 Desktop、relay 或独立 Agent。跨版本兼容另有两个 fixture：
 `/cn/share/mock-partial-unsupported`（认不出的行被跳过，顶部出软提示）和
-`/cn/share/mock-outdated-client`（载荷版本高于本 build，显示「需要更新 ZCode」而不是「格式无效」）。
+`/cn/share/mock-outdated-client`（载荷版本高于本 build，显示「需要更新 RaspberryCode」而不是「格式无效」）。
 
 目标 Environment 的分享运行时始终使用真实 Share API，API 地址由 `ZCODE_ENV` 解析；不再提供运行时
 Mock 开关。`ConversationShareMockApiClient` 仅用于服务单测和协议 fixture，不能生成可跨进程访问的分享链接。
@@ -113,12 +113,12 @@ Share 自己承接页面级纵向滚动，不改变全局 `body/#root { overflow
 滚动之间保持独立。`MessageResponse` 的公开模式由一次性的 `TooltipProvider`、只读外链 handler 和
 citation 清理组成：本地 citation 不泄漏路径，无法匹配公开 artifact 时不渲染协议 directive。
 
-公开分享页顶部固定栏始终保持单行 64px 高度。`ZCode` 品牌、分享标题和继续 CTA 使用同一条连续
+公开分享页顶部固定栏始终保持单行 64px 高度。`RaspberryCode` 品牌、分享标题和继续 CTA 使用同一条连续
 几何轨道；完整 CTA 无法为标题保留最小可见宽度时，切换为保留可访问名称的图标 CTA，再让标题
 通过 CSS ellipsis 收缩。完整标题仍保留在可访问名称/`title` 中。`public_readonly` 始终不显示
 CTA；该响应式策略只影响 Web landing page 的展示，不改变 Deep Link、权限或 Desktop/remote 行为。
 
-当分享可继续导入时，正文时间线末尾还显示一个与顶部 CTA 样式和行为一致的“去 ZCode 继续”按钮，
+当分享可继续导入时，正文时间线末尾还显示一个与顶部 CTA 样式和行为一致的“去 RaspberryCode 继续”按钮，
 按钮在正文内容栏内水平居中并复用同一个 `zcode://share/import` deep link。点击顶部或底部任一入口
 都进入相同的自动打开提示流程；`public_readonly` 仍不显示任何继续入口。底部按钮属于正文流，
 不能遮挡最后一条分享内容，也不改变分享内容的只读语义。
@@ -160,11 +160,11 @@ Assistant 结果物卡片。`preview.artifacts` 是结果物和 `userInput.attac
 3. **rows 只能 additive。** 新字段必须 `optional`；**永不删字段、永不收窄 enum、永不改字段
    语义**——删字段和收窄枚举同样会让对端丢内容，方向只是反过来。
 4. **新增 row kind 或 enum 取值 = 老客户端会跳过该行**（`decodeConversationShareRows` 逐行降级，
-   UI 出「部分内容需要更新 ZCode 查看」软提示）。加之前先问：这行被跳过后，分享是否仍然自洽？
+   UI 出「部分内容需要更新 RaspberryCode 查看」软提示）。加之前先问：这行被跳过后，分享是否仍然自洽？
    需要「不可跳过」的语义变化，才谈得上第 5 条。
 5. **`schema_version` 只在 rows 出现不可跳过的破坏性变化时才 bump**，且 bump 前先确认存量
    客户端与已部署落地页镜像的版本占比——bump 一次就等于让它们同时看不了新分享。版本高于
-   本端认知时走 `unsupported_schema_version`（「请升级 ZCode」），不得混进 `invalid_contract`
+   本端认知时走 `unsupported_schema_version`（「请升级 RaspberryCode」），不得混进 `invalid_contract`
    （「分享格式无效」）。
 6. **`projectRow`（`conversationSharePublicProjection.ts`）的穷尽 switch 是故意的编译期闸门，
    不要给它加 `default`。** 新增 row kind 必须让构建失败，强制开发者按第 4 条做决定，而不是
@@ -359,7 +359,7 @@ PDF、Office、Markdown/HTML、视频和音频都可以成为预览候选，但 
 
 `userInput.attachments` 通过当前 Agent connection scope 按 `rowId + entityId + attachmentIndex`
 授权读取，不允许 Renderer 直接把附件路径作为读取目标。长文本粘贴保持现有
-`~/.zcode/tmp/paste-attachments/<date>/<uuid>.txt` 路径处理，不在发送时重新内联正文；分享时
+`~/.raspberrycode/tmp/paste-attachments/<date>/<uuid>.txt` 路径处理，不在发送时重新内联正文；分享时
 复用同一读取链路。文件已被清理、读取失败或字节发生变化时，只跳过该附件并在发布成功态展示
 `input_attachment_unavailable` warning，不把失效路径写入公开 projection。可用附件统一改写为
 `zcode-artifact://share/<artifact_id>`，不额外插入 `artifact` Row，直接通过 manifest 闭合。
@@ -516,7 +516,7 @@ HTTP 错误分类以故障源为先：网关/负载均衡返回的 5xx 非 JSON 
 3217 提示安全检查服务暂不可用、稍后重试；通用 5xx 提示分享服务暂不可用。原始数字 code 必须保留，
 包括未知业务码。401/429 空响应分别提示登录和稍后重试，HTML 错误页也按 HTTP 状态判断。
 3211/3212 在发布阶段提示重新生成链接，并清除旧 attempt 以生成新请求 ID；导入的 3211/3212/3214 和不支持的版本不提供原样重试，
-分别提示检查链接或账号、让分享者重新生成、只读分享无法导入、更新 ZCode。3210 不断言文件丢失，
+分别提示检查链接或账号、让分享者重新生成、只读分享无法导入、更新 RaspberryCode。3210 不断言文件丢失，
 统一提示上传未完成或分享状态已变化。3215 保持现有有界串行轮询，优先使用合法 Retry-After-Ms。
 
 服务端校验失败的 data 只接收有界的 rule/path/field/row_index/row_kind 结构字段，忽略原始内容与
@@ -556,7 +556,7 @@ request-id。错误按钮与错误文案保持同一内容列，使用 24px 点�
 
 成功 HTTP 响应解析失败时，HTTP 客户端记录 `responseFormat`（`invalid_json` 或 `schema_mismatch`）、
 响应字节数、接口路径、请求 ID，以及最多 10 条校验问题的安全字段路径和类型；不记录原始响应、
-字段值或校验器原始错误消息。未知动态字段名以占位符隐藏。界面说明 ZCode 无法读取分享服务的返回结果，
+字段值或校验器原始错误消息。未知动态字段名以占位符隐藏。界面说明 RaspberryCode 无法读取分享服务的返回结果，
 引导稍后重试，并在持续失败时通过错误详情复制请求 ID 联系支持；不把 HTTP 200 描述为发布成功。
 
 ## 导入与继续工作

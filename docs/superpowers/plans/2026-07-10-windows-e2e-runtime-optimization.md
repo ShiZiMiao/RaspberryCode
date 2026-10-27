@@ -210,7 +210,7 @@
 - `worker teardown P50 <= 8 s`
 - 串行完整 Windows E2E `<= 42 min`
 - `model-switch-queue` 第二个 case `<= 30 s`
-- 运行结束无残留 `ZCode E2E`、host、agent 和 Chromedriver 进程
+- 运行结束无残留 `RaspberryCode E2E`、host、agent 和 Chromedriver 进程
 
 第二阶段完成标准：
 

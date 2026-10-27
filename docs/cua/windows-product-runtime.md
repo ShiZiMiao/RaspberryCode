@@ -3,7 +3,7 @@
 ## 目标
 
 在不依赖本地 `zcode-cua` 源码目录、不控制 SSH/WSL/Docker/远程工作区的前提下，让
-Windows x64/arm64 的 ZCode 安装包能够按需启动本机 Computer Use Helper，并复用现有
+Windows x64/arm64 的 RaspberryCode 安装包能够按需启动本机 Computer Use Helper，并复用现有
 `@zcode/protocol`、CUA broker、官方 `zcode-cua` 插件和桌面本地 host 生命周期。
 
 源码开发仍允许使用 `ZCODE_CUA_DEV_ROOT` 覆盖产品资源；产品安装包默认只读取自身
@@ -121,7 +121,7 @@ manifest schema 版本为 `1`，字段固定为：
 
 上例路径和版本只用于展示。staging 必须把当前生产者的契约路径原样写入 `entry`/`addon`，
 把当前 package version 原样写入 `packageVersion` 作为来源追踪；运行时只要求它是非空字符串，
-不与 ZCode 内的版本常量比较。真正的发布版本选择仍由 lockfile 的精确 commit 管理。
+不与 RaspberryCode 内的版本常量比较。真正的发布版本选择仍由 lockfile 的精确 commit 管理。
 
 `arch` 允许 `x64` 或 `arm64`。构建期必须检查 `.node` 的 PE machine：
 `0x8664` 对应 x64，`0xaa64` 对应 arm64。目标不匹配时构建立即失败，禁止把宿主
@@ -222,7 +222,7 @@ Electron 官方 `checksums.json` 验证的 `electron-v41.0.3-win32-x64.zip`；zi
 `93346b31dfcd779c4c4cdfdfb2e3f9642e7a9888e388a8971ff3e95dbf948887`。
 
 本地命令执行器的 20 分钟上限恰好在 `rcedit` 修改 branded
-`ZCode Preview.exe` 时中断，遗留 exe 的版本仍是 Electron `41.0.3`，hash 也不同于
+`RaspberryCode Preview.exe` 时中断，遗留 exe 的版本仍是 Electron `41.0.3`，hash 也不同于
 cache 原始 `electron.exe`；Windows Application Control 因而拒绝启动它。该次命令没有
 可采信的最终 exit code，不能记为 branded unpacked build 成功。独立运行与 afterPack
 相同的 `verifyPackagedWindowsCuaHelper` 已验证最终 resources 中的 manifest、entry/addon
