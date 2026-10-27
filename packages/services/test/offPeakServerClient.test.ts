@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 断言随产品名同步
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createServer, type Server } from "node:http";
 import {
@@ -332,7 +333,7 @@ describe("offPeakServerClient × offPeakMockGateway 契约联测", () => {
       expect(request.headers.get("bigmodel-organization")).toBe("org-team");
       expect(request.headers.get("bigmodel-project")).toBe("project-team");
       expect(request.headers.get("x-request-id")).toBeTruthy();
-      expect(request.headers.get("user-agent")).toMatch(/^ZCode\//);
+      expect(request.headers.get("user-agent")).toMatch(/^RaspberryCode\//);
       expect(request.headers.get("http-referer")).toBeTruthy();
     }
     const serializedWarnings = JSON.stringify(warnings);

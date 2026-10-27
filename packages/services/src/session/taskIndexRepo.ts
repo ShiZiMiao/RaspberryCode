@@ -578,7 +578,7 @@ export class TaskIndexRepo {
       }
       db.exec("COMMIT");
       if (migrated > 0) {
-        logger.info(undefined, `已迁移 legacy ACP task_id 到 ZCode session id 数量=${migrated}`);
+        logger.info(undefined, `已迁移 legacy ACP task_id 到 RaspberryCode session id 数量=${migrated}`);
       }
     } catch (error) {
       db.exec("ROLLBACK");

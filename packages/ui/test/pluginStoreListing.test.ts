@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 断言随产品名同步
 import { describe, expect, it } from "vitest";
 import type {
   ZCodeAvailablePluginSummary,
@@ -445,7 +446,7 @@ describe("pluginStoreListing", () => {
     });
     expect(item).toBeDefined();
     expect(resolveItemDisplayName(item!, "en-US")).toBe("Cloudbase Skills");
-    expect(formatCanonicalPluginName("zcode-guide", "en-US")).toBe("ZCode Guide");
+    expect(formatCanonicalPluginName("zcode-guide", "en-US")).toBe("RaspberryCode Guide");
     expect(formatCanonicalPluginName("aws-mcp-server", "en-US")).toBe("AWS MCP Server");
     expect(formatCanonicalPluginName("AWS_mCp_tools", "en-US")).toBe("AWS MCP Tools");
   });

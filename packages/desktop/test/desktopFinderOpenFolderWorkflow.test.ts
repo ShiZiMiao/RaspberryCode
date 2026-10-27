@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 断言随产品名同步
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -26,8 +27,8 @@ describe("desktopFinderOpenFolderWorkflow", () => {
     });
 
     const infoPlist = readInfoPlist(homeDir);
-    expect(infoPlist).toContain("<string>在ZCode中打开</string>");
-    expect(infoPlist).not.toContain("<string>Open in ZCode</string>");
+    expect(infoPlist).toContain("<string>在RaspberryCode中打开</string>");
+    expect(infoPlist).not.toContain("<string>Open in RaspberryCode</string>");
     expect(refreshServicesIndex).toHaveBeenCalledTimes(1);
   });
 
@@ -44,8 +45,8 @@ describe("desktopFinderOpenFolderWorkflow", () => {
     });
 
     const infoPlist = readInfoPlist(homeDir);
-    expect(infoPlist).toContain("<string>Open in ZCode</string>");
-    expect(infoPlist).not.toContain("<string>在ZCode中打开</string>");
+    expect(infoPlist).toContain("<string>Open in RaspberryCode</string>");
+    expect(infoPlist).not.toContain("<string>在RaspberryCode中打开</string>");
     expect(infoPlist).toContain("<string>5</string>");
     expect(refreshServicesIndex).toHaveBeenCalledTimes(1);
   });
@@ -74,7 +75,7 @@ function createTempHome(): string {
 
 function readInfoPlist(homeDir: string): string {
   return readFileSync(
-    join(homeDir, "Library", "Services", "Open in ZCode.workflow", "Contents", "Info.plist"),
+    join(homeDir, "Library", "Services", "Open in RaspberryCode.workflow", "Contents", "Info.plist"),
     "utf8",
   );
 }

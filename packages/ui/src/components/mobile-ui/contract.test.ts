@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: logo 钩子值随产品名同步
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -18,7 +19,7 @@ describe("mobile presentation package boundary", () => {
     },
   );
   it("retains logo and accessible dialog trigger exports", () => {
-    expect(renderToStaticMarkup(createElement(ZCodeAppLogo))).toContain('data-app-logo="zcode"');
+    expect(renderToStaticMarkup(createElement(ZCodeAppLogo))).toContain('data-app-logo="raspberrycode"');
     expect(
       renderToStaticMarkup(
         createElement(BottomSheet, {}, createElement(BottomSheetTrigger, {}, "Choose")),

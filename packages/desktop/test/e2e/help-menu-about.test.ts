@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 关于菜单断言随产品名同步
 import { readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -192,13 +193,13 @@ describe(`问号菜单应用入口（${expectedFlavor}）`, () => {
       "Export logs",
       "Resource manager",
       ...(production ? ["Check for updates"] : []),
-      "About ZCode",
+      "About RaspberryCode",
     ]);
     expect(await $$('[role="menu"] [role="separator"]')).toHaveLength(1);
     await browser.saveScreenshot(join(tmpdir(), "zcode-help-export-en-light.png"));
     await assertLogExport("Export logs", "Exporting logs...");
     await openMenu();
-    await $('[role="menuitem"]*=About ZCode').click();
+    await $('[role="menuitem"]*=About RaspberryCode').click();
     await assertAboutWindow();
   });
 
@@ -302,13 +303,13 @@ describe(`问号菜单应用入口（${expectedFlavor}）`, () => {
       "导出日志",
       "资源管理器",
       ...(production ? ["检查更新"] : []),
-      "关于 ZCode",
+      "关于 RaspberryCode",
     ]);
     expect(await $$('[role="menu"] [role="separator"]')).toHaveLength(1);
     await browser.saveScreenshot(join(tmpdir(), "zcode-help-export-zh-dark.png"));
     await assertLogExport("导出日志", "正在导出日志中");
     await openMenu();
-    await $('[role="menuitem"]*=关于 ZCode').click();
+    await $('[role="menuitem"]*=关于 RaspberryCode').click();
     await assertAboutWindow();
   });
 });

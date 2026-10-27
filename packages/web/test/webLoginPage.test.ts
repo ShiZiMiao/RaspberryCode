@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 断言随产品名同步
 // @vitest-environment jsdom
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -8,7 +9,7 @@ describe("手机远控登录页", () => {
   it.each(["zh-CN", "en-US"] as const)("%s 页头显示品牌与本地化登录标题", (lang) => {
     document.documentElement.lang = lang;
     const html = renderToStaticMarkup(createElement(WebLoginPage, { onLogin: () => {} }));
-    expect(html).toContain("ZCode");
+    expect(html).toContain("RaspberryCode");
     expect(html).toContain(
       lang === "zh-CN" ? "登录后继续使用 Web 远程控制" : "Sign In To Continue",
     );

@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 断言随产品名同步
 import { Buffer } from "node:buffer";
 import { describe, expect, it, vi } from "vitest";
 import { encodeCustomModelValue, type BotsStateFile, type ZCodeStreamEvent } from "@zcode/shared";
@@ -4151,7 +4152,7 @@ describe("botsService messageFlow", () => {
       actor,
     });
 
-    expect(helpReplies[0]?.text).toContain("ZCode 机器人命令");
+    expect(helpReplies[0]?.text).toContain("RaspberryCode 机器人命令");
     expect(statusReplies[0]?.text).toContain("状态: 远端未连接");
     expect(statusReplies[0]?.text).toContain("**/重连**");
     expect(legacyTaskService.listTasks).not.toHaveBeenCalled();

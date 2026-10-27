@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 断言随产品名同步
 import {
   chmodSync,
   existsSync,
@@ -287,7 +288,7 @@ describe("desktop Linux deep link registration helpers", () => {
         [
           "[Desktop Entry]",
           "Name=ZCode",
-          "Comment=ZCode Desktop App",
+          "Comment=RaspberryCode Desktop App",
           'Exec="/home/alice/Downloads/ZCode-2.8.0-linux-x64.AppImage" %U',
           "MimeType=x-scheme-handler/zcode;",
           "",
@@ -565,7 +566,7 @@ describe("desktop Linux deep link registration helpers", () => {
         [
           "[Desktop Entry]",
           "Name=ZCode",
-          "Comment=ZCode Desktop App",
+          "Comment=RaspberryCode Desktop App",
           'Exec="/home/alice/Downloads/ZCode.AppImage" %U',
           "MimeType=x-scheme-handler/zcode;",
           "",
@@ -622,7 +623,7 @@ describe("desktop Linux deep link registration helpers", () => {
         mkdirSync(applicationsDir, { recursive: true });
         writeFileSync(
           desktopFilePath,
-          '[Desktop Entry]\nComment=ZCode Desktop App\nExec="/old/ZCode.AppImage" %U\n',
+          '[Desktop Entry]\nComment=RaspberryCode Desktop App\nExec="/old/ZCode.AppImage" %U\n',
           "utf8",
         );
         // 目录去掉写权限后 rmSync 失败（EPERM）：删除失败必须只降级，不得抛出或阻断注册。

@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 断言随产品名同步
 import { X509Certificate } from "node:crypto";
 import { mkdtempSync, readFileSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -17,7 +18,7 @@ describe("ensureAppCaCert", () => {
     const { keyPath } = getAppCaCertPaths();
 
     const cert = new X509Certificate(readFileSync(certPath));
-    expect(cert.subject).toContain("ZCode Network CA");
+    expect(cert.subject).toContain("RaspberryCode Network CA");
     // 自签：issuer == subject
     expect(cert.issuer).toBe(cert.subject);
     expect(cert.ca).toBe(true);

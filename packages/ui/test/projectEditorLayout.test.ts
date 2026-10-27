@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 断言随产品名同步
 // @vitest-environment jsdom
 import { createElement } from "react";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
@@ -129,5 +130,5 @@ it("uses the choose-folder empty state for an online device", () => {
   editor("remote:online");
   const browse = screen.getByTestId("virtual-project-browse");
   expect(browse.getAttribute("aria-label")).toBe("选择文件夹");
-  expect(browse.textContent).toContain("ZCode 可读取和编辑这些文件夹");
+  expect(browse.textContent).toContain("RaspberryCode 可读取和编辑这些文件夹");
 });

@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 断言随产品名同步
 // @vitest-environment jsdom
 
 // 完成卡「保存 / 再次运行」的真实 DOM（docs/dynamic-workflow/transcript-and-notifications.md「Saving the
@@ -125,11 +126,11 @@ function renderPopover(host: WorkflowSavePopoverHost, locale: "en-US" | "zh-CN" 
 }
 
 describe("WorkflowSavePopover", () => {
-  it("zh：先是整条宽的 ZCode 主路，细线之下才是三个字段；名字按 run 名预填、名字框拿到焦点", () => {
+  it("zh：先是整条宽的 RaspberryCode 主路，细线之下才是三个字段；名字按 run 名预填、名字框拿到焦点", () => {
     renderPopover(popoverHost(), "zh-CN");
     expect(screen.getByText("保存工作流")).toBeTruthy();
-    expect(screen.getByTestId("workflow-save-lead").textContent).toBe("让 ZCode 帮我提炼保存");
-    expect(screen.getByText("ZCode 会帮你提炼出可复用的工作流，再交你确认。")).toBeTruthy();
+    expect(screen.getByTestId("workflow-save-lead").textContent).toBe("让 RaspberryCode 帮我提炼保存");
+    expect(screen.getByText("RaspberryCode 会帮你提炼出可复用的工作流，再交你确认。")).toBeTruthy();
     expect(screen.getByText("或按原样直接保存")).toBeTruthy();
     const name = screen.getByTestId<HTMLInputElement>("workflow-save-name");
     expect(name.value).toBe("pr-review");
@@ -140,7 +141,7 @@ describe("WorkflowSavePopover", () => {
     expect(screen.getByTestId("workflow-save-submit").textContent).toBe("直接保存");
   });
 
-  it("ZCode 主路：把填好的字段交出去，然后关掉", async () => {
+  it("RaspberryCode 主路：把填好的字段交出去，然后关掉", async () => {
     const host = popoverHost();
     const { onOpenChange } = renderPopover(host);
     fireEvent.change(screen.getByTestId("workflow-save-description"), {
@@ -155,7 +156,7 @@ describe("WorkflowSavePopover", () => {
     });
   });
 
-  it("⌘↩ 从任何字段触发 ZCode 主路", async () => {
+  it("⌘↩ 从任何字段触发 RaspberryCode 主路", async () => {
     const host = popoverHost();
     renderPopover(host);
     fireEvent.keyDown(screen.getByTestId("workflow-save-name"), { key: "Enter", metaKey: true });

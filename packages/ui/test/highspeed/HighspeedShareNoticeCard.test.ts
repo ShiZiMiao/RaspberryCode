@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 断言随产品名同步
 // @vitest-environment jsdom
 import { createElement } from "react";
 import { cleanup, fireEvent, render } from "@testing-library/react";
@@ -47,7 +48,7 @@ describe("HighspeedShareNoticeCard", () => {
     expect(container.querySelector('[data-global-notice-type="highspeed-share"]')).not.toBeNull();
     fireEvent.click(getByRole("button", { name: "View" }));
     expect(getByRole("button", { name: "Copy image" })).toBeTruthy();
-    expect(document.body.textContent).toContain("I used the ZCode Highspeed card and saved 480s.");
+    expect(document.body.textContent).toContain("I used the RaspberryCode Highspeed card and saved 480s.");
     expect(document.body.textContent).toContain("https://zcode.z.ai");
     expect(document.querySelector('[data-highspeed-share-dialog-card="true"]')).not.toBeNull();
   });
