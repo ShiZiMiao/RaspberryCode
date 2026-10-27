@@ -886,3 +886,12 @@ exceptions:
       - packages/ui/src/settings/DynamicWorkflowModeSetting.tsx
       - packages/ui/src/store/dynamicWorkflowAvailabilityStore.ts
     reason: Admitted upstream files edited only to let the user's dynamic workflow mode choice always win and keep the settings row visible; adopting packages/shared/src and packages/ui/src needs a separate module boundary refactor.
+  - id: raspberrycode-brand-string-sweep-unmanaged-edit
+    rule: unmanaged-new-file
+    paths:
+      - packages/desktop/src/main/windowsCuaOperationIndicatorContent.ts
+      - packages/services/src/feedback/feedbackLogArchive.ts
+      - packages/services/src/file/workspaceFileIgnore.ts
+      - packages/services/src/marketing-touch/marketingTouchService.ts
+      - packages/ui/src/v4/officeSuggestedPrompts.ts
+    reason: "Modified for RaspberryCode: admitted upstream files edited only to rebrand user-visible product strings; adopting the surrounding unmanaged directories needs a separate module boundary refactor."
