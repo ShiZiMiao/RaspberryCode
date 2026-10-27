@@ -25,8 +25,6 @@ dev:runtime
           `--> 等待 main/host/preload marker 后启动 Electron
 ```
 
-dev 会话结束时的退出码契约（`--success first`）见 [dev-session-exit-code](./dev-session-exit-code.md)。
-
 ## 黑名单
 
 以下路径相对于 `packages/desktop`，只用于本地开发 watcher 排除，不改变构建、打包或运行时
