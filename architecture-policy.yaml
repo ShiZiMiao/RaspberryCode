@@ -895,3 +895,14 @@ exceptions:
       - packages/services/src/marketing-touch/marketingTouchService.ts
       - packages/ui/src/v4/officeSuggestedPrompts.ts
     reason: "Modified for RaspberryCode: admitted upstream files edited only to rebrand user-visible product strings; adopting the surrounding unmanaged directories needs a separate module boundary refactor."
+  - id: raspberrycode-data-dir-independence-unmanaged-edit
+    rule: unmanaged-new-file
+    paths:
+      - apps/zcode-cli/packages/bootstrap/src/zcode-protocol/saved-workflows-run.ts
+      - apps/zcode-cli/packages/core/src/permission/workflow-draft-path.ts
+      - apps/zcode-cli/packages/core/src/tool/handlers/workflow-drafts.ts
+      - packages/desktop/src/main/workflowArtifactFile.ts
+      - packages/services/src/subagents/subagentRuntimeConfig.ts
+      - packages/shared/src/onboardingRecord.ts
+      - packages/ui/src/components/workflow-timeline/workflowRunSave.ts
+    reason: "Modified for RaspberryCode: admitted upstream files edited only to rename the app data directory (.zcode -> .raspberrycode) for full storage independence from ZCode; adopting the surrounding unmanaged directories needs a separate module boundary refactor."
