@@ -37,8 +37,8 @@ interface DirectoryMcpDescriptor {
 const ZCODE_MCP_DESCRIPTOR: DirectoryMcpDescriptor = {
   source: "zcodeagentmcp",
   directorySource: "zcode",
-  userConfigDirSegments: [".zcode", "cli"],
-  workspaceConfigDirSegments: [".zcode"],
+  userConfigDirSegments: [".raspberrycode", "cli"],
+  workspaceConfigDirSegments: [".raspberrycode"],
   fileName: "config.json",
   format: "json",
   configKeyName: "mcp.servers",
@@ -329,7 +329,7 @@ async function readDirectoryServersFromPreferredSources(
   workspacePath?: string,
 ): Promise<NativeMcpServerRecord[]> {
   const zcodeServers = await readDirectoryServersFromFile(ZCODE_MCP_DESCRIPTOR, scope, workspacePath);
-  // `.zcode` 是强优先级来源；只要读到 MCP server，同 scope 的 `.agents` 就不再参与。
+  // `.raspberrycode` 是强优先级来源；只要读到 MCP server，同 scope 的 `.agents` 就不再参与。
   if (zcodeServers.length > 0) {
     return zcodeServers;
   }

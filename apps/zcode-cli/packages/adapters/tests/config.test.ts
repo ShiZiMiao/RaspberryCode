@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 数据目录断言随 .raspberrycode 独立改名
 import { describe, expect, it } from "vitest";
 import { createConfig, updateUiLocaleInFileConfig } from "../src/config/index.js";
 import { parseEnvConfig } from "../src/config/env-config.adapter.js";
@@ -163,10 +164,10 @@ describe("config adapters", () => {
   it("deep merges Workspace Plugin enablement and options over User config", async () => {
     const dir = await mkdtemp(join(tmpdir(), "zcode-config-workspace-plugins-"));
     const userPath = join(dir, "user.json");
-    const workspacePath = join(dir, ".zcode", "config.json");
+    const workspacePath = join(dir, ".raspberrycode", "config.json");
 
     try {
-      await mkdir(join(dir, ".zcode"), { recursive: true });
+      await mkdir(join(dir, ".raspberrycode"), { recursive: true });
       await writeFile(
         userPath,
         JSON.stringify({
@@ -1278,7 +1279,7 @@ describe("config adapters", () => {
   it("merges project configs from root to cwd with nearest config winning", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-project-config-"));
     const cwd = join(root, "packages", "app");
-    const cwdConfigDir = join(cwd, ".zcode");
+    const cwdConfigDir = join(cwd, ".raspberrycode");
 
     try {
       await mkdir(join(root, ".git"));
@@ -1523,7 +1524,7 @@ describe("config adapters", () => {
 
     try {
       await mkdir(join(root, ".git"));
-      await mkdir(join(root, ".zcode"), { recursive: true });
+      await mkdir(join(root, ".raspberrycode"), { recursive: true });
       await writeFile(
         join(root, "zcode.json"),
         JSON.stringify({
@@ -1541,7 +1542,7 @@ describe("config adapters", () => {
         }),
       );
       await writeFile(
-        join(root, ".zcode", "config.json"),
+        join(root, ".raspberrycode", "config.json"),
         JSON.stringify({
           hooks: {
             enabled: true,
@@ -1569,7 +1570,7 @@ describe("config adapters", () => {
           (diagnostic) => diagnostic.code === "config_project_hooks_pending_trust",
         ),
       ).toHaveLength(2);
-      for (const configPath of [join(root, "zcode.json"), join(root, ".zcode", "config.json")]) {
+      for (const configPath of [join(root, "zcode.json"), join(root, ".raspberrycode", "config.json")]) {
         expect(result.sources.project.diagnostics).toContainEqual(
           expect.objectContaining({
             code: "config_project_hooks_pending_trust",
@@ -1593,7 +1594,7 @@ describe("config adapters", () => {
 
     try {
       await mkdir(join(root, ".git"));
-      await mkdir(join(root, ".zcode"), { recursive: true });
+      await mkdir(join(root, ".raspberrycode"), { recursive: true });
       await writeFile(
         userConfigPath,
         JSON.stringify({
@@ -1611,7 +1612,7 @@ describe("config adapters", () => {
         }),
       );
       await writeFile(
-        join(root, ".zcode", "config.json"),
+        join(root, ".raspberrycode", "config.json"),
         JSON.stringify({
           hooks: {
             enabled: true,

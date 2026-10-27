@@ -113,7 +113,7 @@ export function getRecentRemoteWorkspaceHistory(
   remoteConversationWorkspaceBySourceServerId?: AppSettingsConversationWorkspaceMap,
 ): SourceServerWorkspaceHistoryEntry[] {
   // Bug 原因：Directory 记录按追加顺序保存，直接 slice(0, 3) 会把最旧目录当成最近目录；
-  // 且未过滤隐藏目录，`.zcode` 之类内部路径会挤占「最近目录」位（原型 L996-999 只展示常规工作区）。
+  // 且未过滤隐藏目录，`.raspberrycode` 之类内部路径会挤占「最近目录」位（原型 L996-999 只展示常规工作区）。
   return [...history]
     .filter(
       (entry) =>

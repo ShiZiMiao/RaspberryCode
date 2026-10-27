@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 数据目录断言随 .raspberrycode 独立改名
 import { execFile as execFileCallback } from "node:child_process";
 import { EventEmitter } from "node:events";
 import {
@@ -896,7 +897,7 @@ describe("Node file and context adapters", () => {
     }
   });
 
-  it("falls back to ~/.zcode/AGENTS.md when workspace AGENTS.md is absent", async () => {
+  it("falls back to ~/.raspberrycode/AGENTS.md when workspace AGENTS.md is absent", async () => {
     const home = await mkdtemp(join(tmpdir(), "zcode-context-home-"));
     const workspace = join(home, "workspace");
     const nestedCwd = join(workspace, "packages", "app");
@@ -907,8 +908,8 @@ describe("Node file and context adapters", () => {
     try {
       await mkdir(nestedCwd, { recursive: true });
       await mkdir(join(workspace, ".git"));
-      await mkdir(join(home, ".zcode"), { recursive: true });
-      await writeFile(join(home, ".zcode", "AGENTS.md"), "default user instructions");
+      await mkdir(join(home, ".raspberrycode"), { recursive: true });
+      await writeFile(join(home, ".raspberrycode", "AGENTS.md"), "default user instructions");
 
       const fallbackSnapshot = await adapter.resolveContextSources({
         workingDirectory: nestedCwd,
@@ -917,12 +918,12 @@ describe("Node file and context adapters", () => {
         },
       });
 
-      expect(fallbackSnapshot.userInstructions?.filePath).toBe(join(home, ".zcode", "AGENTS.md"));
+      expect(fallbackSnapshot.userInstructions?.filePath).toBe(join(home, ".raspberrycode", "AGENTS.md"));
       expect(fallbackSnapshot.userInstructions?.content).toBe("default user instructions");
       expect(fallbackSnapshot.userInstructions?.sources).toEqual([
         expect.objectContaining({
           scope: "user",
-          filePath: join(home, ".zcode", "AGENTS.md"),
+          filePath: join(home, ".raspberrycode", "AGENTS.md"),
           content: "default user instructions",
         }),
       ]);
@@ -942,7 +943,7 @@ describe("Node file and context adapters", () => {
       expect(projectSnapshot.userInstructions?.sources).toEqual([
         expect.objectContaining({
           scope: "user",
-          filePath: join(home, ".zcode", "AGENTS.md"),
+          filePath: join(home, ".raspberrycode", "AGENTS.md"),
           content: "default user instructions",
         }),
         expect.objectContaining({
@@ -966,8 +967,8 @@ describe("Node file and context adapters", () => {
     try {
       await mkdir(workspace, { recursive: true });
       await mkdir(join(workspace, ".git"));
-      await mkdir(join(home, ".zcode"), { recursive: true });
-      await writeFile(join(home, ".zcode", "AGENTS.md"), "userprofile instructions");
+      await mkdir(join(home, ".raspberrycode"), { recursive: true });
+      await writeFile(join(home, ".raspberrycode", "AGENTS.md"), "userprofile instructions");
 
       const snapshot = await adapter.resolveContextSources({
         workingDirectory: workspace,
@@ -976,7 +977,7 @@ describe("Node file and context adapters", () => {
         },
       });
 
-      expect(snapshot.userInstructions?.filePath).toBe(join(home, ".zcode", "AGENTS.md"));
+      expect(snapshot.userInstructions?.filePath).toBe(join(home, ".raspberrycode", "AGENTS.md"));
       expect(snapshot.userInstructions?.content).toBe("userprofile instructions");
     } finally {
       await rm(home, { force: true, recursive: true });
@@ -993,8 +994,8 @@ describe("Node file and context adapters", () => {
     try {
       await mkdir(workspace, { recursive: true });
       await mkdir(join(workspace, ".git"));
-      await mkdir(join(home, ".zcode"), { recursive: true });
-      await writeFile(join(home, ".zcode", "AGENTS.md"), "default user instructions");
+      await mkdir(join(home, ".raspberrycode"), { recursive: true });
+      await writeFile(join(home, ".raspberrycode", "AGENTS.md"), "default user instructions");
 
       const snapshot = await adapter.resolveContextSources({
         workingDirectory: workspace,

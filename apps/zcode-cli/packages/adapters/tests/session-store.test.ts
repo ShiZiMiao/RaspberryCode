@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 数据目录断言随 .raspberrycode 独立改名
 import { createHash } from "node:crypto";
 import { SQLITE_MIGRATIONS } from "../src/storage/session-store/migrations.js";
 import { fork } from "node:child_process";
@@ -501,7 +502,7 @@ describe("SQLite session store", () => {
   });
 
   it("defaults the session database under the db directory", () => {
-    expect(getDefaultSessionDbPath()).toBe(join(homedir(), ".zcode", "cli", "db", "db.sqlite"));
+    expect(getDefaultSessionDbPath()).toBe(join(homedir(), ".raspberrycode", "cli", "db", "db.sqlite"));
   });
 
   it("can inject sqlite open failures for startup/recovery cases", async () => {
@@ -1000,7 +1001,7 @@ describe("SQLite session store", () => {
         name: "test-workflow",
         scope: "project",
         scriptHash: "hash-script",
-        scriptPath: join(tempRoot, ".zcode", "workflows", "test.workflow.js"),
+        scriptPath: join(tempRoot, ".raspberrycode", "workflows", "test.workflow.js"),
         source: "user",
       });
       expect(definition.scope).toBe("project");

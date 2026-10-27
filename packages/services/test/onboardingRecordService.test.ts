@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 数据目录断言随 .raspberrycode 独立改名
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -12,7 +13,7 @@ const originalDataBaseDir = process.env.ZCODE_DATA_BASE_DIR;
 const tempHomes: string[] = [];
 
 function recordFilePath(home: string): string {
-  return join(home, ".zcode", "v2", "onboarding-record.json");
+  return join(home, ".raspberrycode", "v2", "onboarding-record.json");
 }
 
 async function createServiceInHome(
@@ -94,7 +95,7 @@ describe("onboardingRecordService", () => {
   it("v1 文件按空 decisions 读取，发生写入后自然升级 v2", async () => {
     const home = mkdtempSync(join(tmpdir(), "zcode-onboarding-home-"));
     tempHomes.push(home);
-    mkdirSync(join(home, ".zcode", "v2"), { recursive: true });
+    mkdirSync(join(home, ".raspberrycode", "v2"), { recursive: true });
     writeFileSync(
       recordFilePath(home),
       JSON.stringify({ version: 1, deviceMid: "device-a", entries: [] }),
@@ -193,7 +194,7 @@ describe("onboardingRecordService", () => {
   it("损坏的记录文件触发重新引导，append 会重建合法文件", async () => {
     const home = mkdtempSync(join(tmpdir(), "zcode-onboarding-home-"));
     tempHomes.push(home);
-    mkdirSync(join(home, ".zcode", "v2"), { recursive: true });
+    mkdirSync(join(home, ".raspberrycode", "v2"), { recursive: true });
     writeFileSync(recordFilePath(home), "{not-json", { flag: "wx" });
 
     const service = await createServiceInHome(home, "u1");
@@ -229,7 +230,7 @@ describe("onboardingRecordService", () => {
     });
     await service.appendRecord("device-a", makeEntry());
 
-    const expected = join(dataBaseDir, ".zcode", "v2", "onboarding-record.json");
+    const expected = join(dataBaseDir, ".raspberrycode", "v2", "onboarding-record.json");
     expect(existsSync(expected)).toBe(true);
     expect(existsSync(recordFilePath(home))).toBe(false);
   });

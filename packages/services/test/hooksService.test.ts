@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 数据目录断言随 .raspberrycode 独立改名
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -36,15 +37,15 @@ describe("hooksService", () => {
     const home = makeTempRoot();
     const workspacePath = join(makeTempRoot(), "workspace");
 
-    mkdirSync(join(home, ".zcode", "cli"), { recursive: true });
+    mkdirSync(join(home, ".raspberrycode", "cli"), { recursive: true });
     mkdirSync(join(home, ".agents"), { recursive: true });
     mkdirSync(join(home, ".claude"), { recursive: true });
-    mkdirSync(join(workspacePath, ".zcode"), { recursive: true });
+    mkdirSync(join(workspacePath, ".raspberrycode"), { recursive: true });
     mkdirSync(join(workspacePath, ".agents"), { recursive: true });
     mkdirSync(join(workspacePath, ".claude"), { recursive: true });
 
     writeFileSync(
-      join(home, ".zcode", "cli", "config.json"),
+      join(home, ".raspberrycode", "cli", "config.json"),
       JSON.stringify({
         hooks: {
           enabled: true,
@@ -63,7 +64,7 @@ describe("hooksService", () => {
       "utf-8",
     );
     writeFileSync(
-      join(workspacePath, ".zcode", "config.json"),
+      join(workspacePath, ".raspberrycode", "config.json"),
       JSON.stringify({
         hooks: {
           enabled: true,
@@ -120,7 +121,7 @@ describe("hooksService", () => {
       "agents:user:echo agents",
     ]);
     expect(result.hooks[0]).toEqual(expect.objectContaining({ timeout: 5 }));
-    expect(result.hooks[0]?.location?.directoryPath).toBe(join(workspacePath, ".zcode"));
+    expect(result.hooks[0]?.location?.directoryPath).toBe(join(workspacePath, ".raspberrycode"));
     expect(result.hooks[2]).toEqual(
       expect.objectContaining({ args: ["user-zcode.mjs"], custom: { customFlag: true } }),
     );
@@ -137,11 +138,11 @@ describe("hooksService", () => {
         },
       },
     };
-    mkdirSync(join(home, ".zcode", "cli"), { recursive: true });
-    mkdirSync(join(workspacePath, ".zcode"), { recursive: true });
-    writeFileSync(join(home, ".zcode", "cli", "config.json"), JSON.stringify(hookConfig), "utf-8");
+    mkdirSync(join(home, ".raspberrycode", "cli"), { recursive: true });
+    mkdirSync(join(workspacePath, ".raspberrycode"), { recursive: true });
+    writeFileSync(join(home, ".raspberrycode", "cli", "config.json"), JSON.stringify(hookConfig), "utf-8");
     writeFileSync(
-      join(workspacePath, ".zcode", "config.json"),
+      join(workspacePath, ".raspberrycode", "config.json"),
       JSON.stringify(hookConfig),
       "utf-8",
     );
@@ -156,9 +157,9 @@ describe("hooksService", () => {
   it("saves zcode hooks to user and workspace config files", async () => {
     const home = makeTempRoot();
     const workspacePath = join(makeTempRoot(), "workspace");
-    mkdirSync(join(home, ".zcode", "cli"), { recursive: true });
+    mkdirSync(join(home, ".raspberrycode", "cli"), { recursive: true });
     writeFileSync(
-      join(home, ".zcode", "cli", "config.json"),
+      join(home, ".raspberrycode", "cli", "config.json"),
       JSON.stringify({ features: { mcp: true } }),
       "utf-8",
     );
@@ -178,7 +179,7 @@ describe("hooksService", () => {
           location: {
             source: "zcode",
             scope: "user",
-            directoryPath: join(home, ".zcode", "cli"),
+            directoryPath: join(home, ".raspberrycode", "cli"),
           },
         },
         {
@@ -190,7 +191,7 @@ describe("hooksService", () => {
           location: {
             source: "zcode",
             scope: "project",
-            directoryPath: join(workspacePath, ".zcode"),
+            directoryPath: join(workspacePath, ".raspberrycode"),
             projectPath: workspacePath,
           },
         },
@@ -209,7 +210,7 @@ describe("hooksService", () => {
       ],
     });
 
-    const saved = JSON.parse(readFileSync(join(home, ".zcode", "cli", "config.json"), "utf-8"));
+    const saved = JSON.parse(readFileSync(join(home, ".raspberrycode", "cli", "config.json"), "utf-8"));
     expect(saved.features).toEqual({ mcp: true });
     expect(saved.hooks.events.Stop).toEqual([
       {
@@ -221,7 +222,7 @@ describe("hooksService", () => {
     expect(saved.hooks.events.PreToolUse).toBeUndefined();
 
     const projectSaved = JSON.parse(
-      readFileSync(join(workspacePath, ".zcode", "config.json"), "utf-8"),
+      readFileSync(join(workspacePath, ".raspberrycode", "config.json"), "utf-8"),
     );
     expect(projectSaved.hooks.events.PreToolUse).toEqual([
       {
@@ -233,9 +234,9 @@ describe("hooksService", () => {
   it("Source user scope does not read or write the anchor workspace config", async () => {
     const home = makeTempRoot();
     const anchorPath = join(makeTempRoot(), "source-user-anchor");
-    mkdirSync(join(anchorPath, ".zcode"), { recursive: true });
+    mkdirSync(join(anchorPath, ".raspberrycode"), { recursive: true });
     writeFileSync(
-      join(anchorPath, ".zcode", "config.json"),
+      join(anchorPath, ".raspberrycode", "config.json"),
       JSON.stringify({
         hooks: {
           events: { Stop: [{ hooks: [{ type: "command", command: "echo project" }] }] },
@@ -245,7 +246,7 @@ describe("hooksService", () => {
     );
 
     const service = await createHooksServiceInEnv(home);
-    const before = readFileSync(join(anchorPath, ".zcode", "config.json"), "utf-8");
+    const before = readFileSync(join(anchorPath, ".raspberrycode", "config.json"), "utf-8");
     await service.saveHooks({
       workspacePath: anchorPath,
       scope: "user",
@@ -262,8 +263,8 @@ describe("hooksService", () => {
     });
     const loaded = await service.loadHooks({ workspacePath: anchorPath, scope: "user" });
 
-    expect(readFileSync(join(anchorPath, ".zcode", "config.json"), "utf-8")).toBe(before);
-    expect(existsSync(join(home, ".zcode", "cli", "config.json"))).toBe(true);
+    expect(readFileSync(join(anchorPath, ".raspberrycode", "config.json"), "utf-8")).toBe(before);
+    expect(existsSync(join(home, ".raspberrycode", "cli", "config.json"))).toBe(true);
     expect(loaded.hooks.map((hook) => hook.command)).toEqual(["echo user"]);
   });
 
@@ -289,7 +290,7 @@ describe("hooksService", () => {
           location: {
             source: "zcode",
             scope: "project",
-            directoryPath: join(workspacePath, ".zcode"),
+            directoryPath: join(workspacePath, ".raspberrycode"),
             projectPath: workspacePath,
           },
         },
@@ -310,9 +311,9 @@ describe("hooksService", () => {
   it("persists a disabled hook in the runtime-readable project config", async () => {
     const home = makeTempRoot();
     const workspacePath = join(makeTempRoot(), "workspace");
-    mkdirSync(join(workspacePath, ".zcode"), { recursive: true });
+    mkdirSync(join(workspacePath, ".raspberrycode"), { recursive: true });
     writeFileSync(
-      join(workspacePath, ".zcode", "config.json"),
+      join(workspacePath, ".raspberrycode", "config.json"),
       JSON.stringify({
         hooks: {
           enabled: true,
@@ -341,7 +342,7 @@ describe("hooksService", () => {
       ),
     });
 
-    const saved = JSON.parse(readFileSync(join(workspacePath, ".zcode", "config.json"), "utf-8"));
+    const saved = JSON.parse(readFileSync(join(workspacePath, ".raspberrycode", "config.json"), "utf-8"));
     expect(saved.hooks.events.PreToolUse[0].hooks[0]).toMatchObject({
       type: "process",
       command: "node",
@@ -357,16 +358,16 @@ describe("hooksService", () => {
   it("trust store 不可读时使用可注入 service logger 并保持 fail closed", async () => {
     const home = makeTempRoot();
     const workspacePath = join(makeTempRoot(), "workspace");
-    mkdirSync(join(workspacePath, ".zcode"), { recursive: true });
+    mkdirSync(join(workspacePath, ".raspberrycode"), { recursive: true });
     // 修复原因：CR-01 后非法 JSON（如 "{broken"）统一走 schema 解析分支（文案"结构不符合
     // schema"，已由 workspaceHookTrustCorrupt.test.ts 覆盖）；本用例验证的是 IO 不可读分支，
     // 因此用目录占位 trust store 路径——readFile 对目录稳定返回 EISDIR/EPERM（非 ENOENT），
     // 在 macOS/Linux/Windows 上都能触发"不可读"日志分支。
-    mkdirSync(join(home, ".zcode", "security", "workspace-hook-trust-v1.json"), {
+    mkdirSync(join(home, ".raspberrycode", "security", "workspace-hook-trust-v1.json"), {
       recursive: true,
     });
     writeFileSync(
-      join(workspacePath, ".zcode", "config.json"),
+      join(workspacePath, ".raspberrycode", "config.json"),
       JSON.stringify({
         hooks: {
           enabled: true,

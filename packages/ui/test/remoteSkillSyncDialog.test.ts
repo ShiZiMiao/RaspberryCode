@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 数据目录断言随 .raspberrycode 独立改名
 // @vitest-environment jsdom
 
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
@@ -153,7 +154,7 @@ function createSkillSyncServiceStub(): ISkillSyncService {
     })),
     checkRemoteUserSkillWriteAccess: vi.fn(async () => ({
       ok: true,
-      path: "/home/dev/.zcode/skills",
+      path: "/home/dev/.raspberrycode/skills",
     })),
     importSkillsArchive: vi.fn(async () => ({ results: [] })),
   };
@@ -210,7 +211,7 @@ describe("RemoteSkillSyncDialog helpers", () => {
           name: "review",
           directoryName: "review",
           description: "Review code",
-          path: "/Users/me/.zcode/skills/review/SKILL.md",
+          path: "/Users/me/.raspberrycode/skills/review/SKILL.md",
           sizeBytes: 128,
         },
         {
@@ -218,7 +219,7 @@ describe("RemoteSkillSyncDialog helpers", () => {
           name: "docs",
           directoryName: "docs",
           description: "Write docs",
-          path: "/Users/me/.zcode/skills/docs/SKILL.md",
+          path: "/Users/me/.raspberrycode/skills/docs/SKILL.md",
           sizeBytes: 64,
         },
       ],
@@ -303,7 +304,7 @@ describe("RemoteSkillSyncDialog helpers", () => {
           name: "review",
           directoryName: "review",
           description: "Review code",
-          path: "/Users/me/.zcode/skills/review/SKILL.md",
+          path: "/Users/me/.raspberrycode/skills/review/SKILL.md",
           sizeBytes: 128,
         },
         {
@@ -311,7 +312,7 @@ describe("RemoteSkillSyncDialog helpers", () => {
           name: "docs",
           directoryName: "docs",
           description: "Write docs",
-          path: "/Users/me/.zcode/skills/docs/SKILL.md",
+          path: "/Users/me/.raspberrycode/skills/docs/SKILL.md",
           sizeBytes: 64,
         },
       ],

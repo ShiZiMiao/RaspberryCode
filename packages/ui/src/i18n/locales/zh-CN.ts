@@ -2416,7 +2416,7 @@ const zhCN: Record<string, string> = {
   "remote.connectingConfirmTitle": "要中止当前连接吗？",
   "remote.sourceServerInstallTitle": "需要安装 RaspberryCode Server",
   "remote.sourceServerInstallDescription":
-    "RaspberryCode 将上传匹配的发行包，安装到 ~/.zcode/server 并启动后台 daemon；现有旧远程文件会保留。",
+    "RaspberryCode 将上传匹配的发行包，安装到 ~/.raspberrycode/server 并启动后台 daemon；现有旧远程文件会保留。",
   "remote.sourceServerInstallConfirm": "安装并继续",
   "remote.installTarget": "目标账号",
   "remote.installVersion": "安装版本",
@@ -3084,7 +3084,7 @@ const zhCN: Record<string, string> = {
   "settings.taskAutoArchiveDays.option.30": "30 天后归档",
   "settings.dataBaseDir": "数据存储路径",
   "settings.dataBaseDirDescription":
-    "应用数据的根目录（默认为用户主目录），修改后会将现有数据复制到新位置。路径后缀 .zcode/v2 不可更改。",
+    "应用数据的根目录（默认为用户主目录），修改后会将现有数据复制到新位置。路径后缀 .raspberrycode/v2 不可更改。",
   "settings.dataBaseDirPlaceholder": "默认：用户主目录",
   "settings.dataBaseDirBrowse": "选择文件夹",
   "settings.dataBaseDirSave": "保存",
@@ -6320,7 +6320,7 @@ const zhCN: Record<string, string> = {
   "chat.toolCall.workflow.run.artifacts.nextVersion": "下一版",
   "chat.toolCall.workflow.run.artifacts.open": "打开产物",
   // 动作。「下载」（存到用户挑的位置）仍缺席；「作为文件打开」
-  // 落的是宿主 ~/.zcode/tmp 下的副本，不是用户挑的位置。
+  // 落的是宿主 ~/.raspberrycode/tmp 下的副本，不是用户挑的位置。
   "chat.toolCall.workflow.run.artifacts.reveal": "在工作区显示",
   "chat.toolCall.workflow.run.artifacts.copy": "复制",
   "chat.toolCall.workflow.run.artifacts.copied": "已复制",

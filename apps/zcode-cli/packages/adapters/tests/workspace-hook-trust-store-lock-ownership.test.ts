@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 数据目录断言随 .raspberrycode 独立改名
 import { spawn } from "node:child_process";
 import { mkdtemp, readFile, rm, stat, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -43,7 +44,7 @@ function record(workspaceIdentity: string, digest: string): WorkspaceHookTrustRe
     grantedAt: "2026-08-06T00:00:00.000Z",
     eventAtGrant: "SessionStart",
     displayCommandAtGrant: "echo trusted",
-    sourcePathAtGrant: ".zcode/config.json",
+    sourcePathAtGrant: ".raspberrycode/config.json",
     sourceDiscoveryOrderAtGrant: 0,
     matcherAtGrant: "startup",
     matcherIndexAtGrant: 0,

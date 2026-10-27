@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 数据目录断言随 .raspberrycode 独立改名
 import { chmod, mkdir, mkdtemp, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -31,7 +32,7 @@ function record(
     grantedAt,
     eventAtGrant: "SessionStart",
     displayCommandAtGrant: "echo trusted",
-    sourcePathAtGrant: ".zcode/config.json",
+    sourcePathAtGrant: ".raspberrycode/config.json",
     sourceDiscoveryOrderAtGrant: 0,
     matcherAtGrant: "startup",
     matcherIndexAtGrant: 0,
@@ -47,9 +48,9 @@ describe("FileWorkspaceHookTrustStore", () => {
   it("只使用 user config storage.dir，不接受 project/env storage 覆盖", async () => {
     const home = await root();
     const custom = join(home, "trusted-user-storage");
-    await mkdir(join(home, ".zcode", "cli"), { recursive: true });
+    await mkdir(join(home, ".raspberrycode", "cli"), { recursive: true });
     await writeFile(
-      join(home, ".zcode", "cli", "config.json"),
+      join(home, ".raspberrycode", "cli", "config.json"),
       JSON.stringify({ storage: { dir: custom } }),
       "utf8",
     );

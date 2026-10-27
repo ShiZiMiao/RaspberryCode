@@ -1,3 +1,4 @@
+// Modified for RaspberryCode: 数据目录断言随 .raspberrycode 独立改名
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -12,9 +13,9 @@ import {
 
 describe("Node workflow store", () => {
   it("defaults to the CLI workflows directory", () => {
-    expect(getDefaultWorkflowRoot()).toContain(join(".zcode", "cli", "workflows"));
+    expect(getDefaultWorkflowRoot()).toContain(join(".raspberrycode", "cli", "workflows"));
     expect(getDefaultWorkflowDefinitionsRoot()).toContain(
-      join(".zcode", "cli", "workflows", "definitions"),
+      join(".raspberrycode", "cli", "workflows", "definitions"),
     );
   });
 
