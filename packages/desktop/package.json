@@ -1,6 +1,7 @@
 {
   "name": "@zcode/desktop",
   "private": true,
+  "version": "0.1.0",
   "description": "RaspberryCode Desktop App",
   "author": "RaspberryCode",
   "type": "module",

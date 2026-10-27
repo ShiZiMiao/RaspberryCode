@@ -740,6 +740,11 @@ export default {
       from: "build/icon.png",
       to: "icon.png",
     },
+    {
+      // Modified for RaspberryCode: 品牌标记资产，About 弹窗按 resourcesPath 加载转 data URI。
+      from: "build/brand-mark-white.svg",
+      to: "brand-mark-white.svg",
+    },
     ...(targetPlatform.os === "linux"
       ? [
           {

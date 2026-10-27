@@ -235,6 +235,14 @@ function resolveAboutIconPath(isPackaged: boolean): string {
     : join(import.meta.dirname, "../../build/icon.png");
 }
 
+// Modified for RaspberryCode: 品牌标记与 icon.png 同源解析（dev 走 build/，打包走 resources），
+// 供自绘 About 弹窗以 data URI 渲染（弹窗 CSP 只允许 data: 图片）。
+function resolveAboutBrandMarkPath(isPackaged: boolean): string {
+  return isPackaged
+    ? join(process.resourcesPath, "brand-mark-white.svg")
+    : join(import.meta.dirname, "../../build/brand-mark-white.svg");
+}
+
 export async function showAboutDialog(
   parentWindow?: BrowserWindow,
   locale: Locale = DEFAULT_LOCALE,
@@ -249,6 +257,10 @@ export async function showAboutDialog(
   // 问题原因：各平台原生消息框的排版、图标和按钮样式差异很大，无法复用 macOS 参考样式。
   // 这里统一使用自绘 modal，保证 About 的品牌展示和多语言文案在三端一致。
   const iconPath = resolveAboutIconPath(app.isPackaged);
+  const brandMarkPath = resolveAboutBrandMarkPath(app.isPackaged);
+  const brandMarkDataUri = existsSync(brandMarkPath)
+    ? `data:image/svg+xml;base64,${readFileSync(brandMarkPath).toString("base64")}`
+    : "";
   const aboutWindow = new BrowserWindow({
     width: ABOUT_WINDOW_WIDTH,
     height: ABOUT_WINDOW_HEIGHT,
@@ -281,6 +293,7 @@ export async function showAboutDialog(
         copyright: formatAboutCopyright(undefined, locale),
         optimizationLine: formatAboutOptimizationLine(snapshot, locale),
         versionLabel: aboutMessages.versionLabel,
+        brandMarkDataUri,
         okButtonLabel: aboutMessages.okButtonLabel,
       }),
     )}`,
