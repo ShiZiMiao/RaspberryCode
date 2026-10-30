@@ -7,7 +7,8 @@ import {
   ProviderConfigMap,
   ProviderConfigResolver,
   ProviderConfig,
-  ZhipuAccountAccessConfig,
+  ApiKeyAccessConfig,
+  ProviderApiConfig,
   createRegistryModelConfig,
   createRegistryProviderConfig,
   type ModelSelection,
@@ -35,32 +36,36 @@ function view(
   personalModels = ModelConfigRules.empty(),
   modelRules = builtin.models,
 ) {
+  // 账号/套餐 Provider 已随登录体系从 Built-in 移除；迁移语义与 Provider 载体无关，
+  // 夹具改用合成 Personal Provider（自带完整 api/access）承载模型规则解析。
+  const providerId = "personal:reasoning-migration-fixture";
   const config = {
     revision: "c",
     zcodeBuiltinRevision: "b",
     personalRevision: "p",
     zcodeBuiltinProviders: builtin.providers,
     zcodeBuiltinProviderTemplates: builtin.templates,
-    personalProviders: ProviderConfigMap.empty(),
+    personalProviders: new ProviderConfigMap([
+      [
+        providerId,
+        new ProviderConfig({
+          group: "standard-personal",
+          access: new ApiKeyAccessConfig({ apiKey: "fixture-key" }),
+          api: new ProviderApiConfig({
+            type: "anthropic-messages",
+            baseUrl: "https://fixture.invalid/v1",
+          }),
+        }),
+      ],
+    ]),
     zcodeBuiltinModelRules: modelRules,
     personalModels,
   };
   const account = {
     revision: "a",
     basedOnZCodeBuiltinRevision: "b",
-    providers: new ProviderConfigMap([
-      [
-        "account:bigmodel-individual-coding-plan",
-        new ProviderConfig({ access: new ZhipuAccountAccessConfig({ entitled: true }) }),
-      ],
-    ]),
-    states: {
-      "account:bigmodel-individual-coding-plan": {
-        availability: "available" as const,
-        entitled: true,
-        current: true,
-      },
-    },
+    providers: ProviderConfigMap.empty(),
+    states: {},
   };
   // 真实 Built-in 规则和 Resolver；补入模型成员用于独立覆盖 GLM 的不同代际。
   const resolution = new ProviderConfigResolver().resolve({
@@ -68,7 +73,6 @@ function view(
     accountProviders: account.providers,
     accountStates: account.states,
   });
-  const providerId = "account:bigmodel-individual-coding-plan";
   const providerConfig = resolution.effectiveProviders.get(providerId)!;
   const modelConfig = ModelConfigRules.composeEffective(modelRules, personalModels).resolve({
     providerId,
@@ -191,7 +195,7 @@ describe("Todo95C 来源限定的只读关闭档位改名", () => {
       new ModelConfigRules([
         {
           type: "provider-model",
-          providerId: "account:bigmodel-individual-coding-plan",
+          providerId: "personal:reasoning-migration-fixture",
           modelId: "GLM-5.2",
           config: new ModelConfig({
             optionSpecs: new ModelOptionSpecsConfig({ reasoningLevel: { values } }),

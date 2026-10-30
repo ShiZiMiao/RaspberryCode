@@ -40,7 +40,9 @@ export class ApiKeyAccessConfig extends ConfigOverlay<ApiKeyAccessConfig> {
 
   constructor(input: ApiKeyAccessConfigInput = {}) {
     super();
-    this.type = input.type ?? "api-key";
+    // 存量旧值 zhipu-coding-plan-api-key 读入即归一为 metered-api-key（自愈式改名）。
+    this.type =
+      input.type === "zhipu-coding-plan-api-key" ? "metered-api-key" : (input.type ?? "api-key");
     this.apiKey = input.apiKey;
     this.apiKeyManagementUrl = input.apiKeyManagementUrl;
     Object.freeze(this);
@@ -119,7 +121,12 @@ export type ProviderAccessConfigObject = Readonly<z.infer<typeof providerAccessD
 export function isApiKeyAccess<T extends { readonly type: string }>(
   access: T | null | undefined,
 ): access is Extract<T, { readonly type: ApiKeyAccessConfigObject["type"] }> {
-  return access?.type === "api-key" || access?.type === "zhipu-coding-plan-api-key";
+  return (
+    access?.type === "api-key" ||
+    access?.type === "metered-api-key" ||
+    // 旧值读兼容（构造归一前的原始 JSON）。
+    access?.type === "zhipu-coding-plan-api-key"
+  );
 }
 
 export type ProviderVisibility = z.infer<typeof providerVisibilityDataSchema>;
@@ -501,10 +508,26 @@ function overlayProviderAccess(
   if (current.type !== next.type) return next;
   switch (current.type) {
     case "api-key":
+    case "metered-api-key":
     case "zhipu-coding-plan-api-key":
       return current.overlay(next as ApiKeyAccessConfig);
     case "zhipu-account":
       return current.overlay(next as ZhipuAccountAccessConfig);
+  }
+}
+
+/**
+ * 账号型 access（zhipu-account）已随登录/账号体系退役：存量数据只读兼容（schema 仍可解析），
+ * 但公共写入边界一律拒绝，防止隐藏 UI 或旧调用方把退役类型写回磁盘。
+ */
+export function assertWritableProviderAccess(
+  access: { readonly type: string } | null | undefined,
+  context: string,
+): void {
+  if (access?.type === "zhipu-account") {
+    throw new Error(
+      `zhipu-account access 已退役，不允许写入（仅存量数据读兼容）: ${context}`,
+    );
   }
 }
 

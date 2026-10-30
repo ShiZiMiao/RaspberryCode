@@ -10,6 +10,7 @@ import type {
 } from "./config/index.js";
 import {
   ApiKeyAccessConfig,
+  assertWritableProviderAccess,
   ModelConfig,
   ProviderConfigMap,
   ProviderConfig as ProviderConfigValue,
@@ -137,6 +138,10 @@ export class ProviderConfigService implements ProviderSource<ProviderConfigSnaps
   /** 仅供版本迁移或事实源 cutover 原子替换完整 Personal Overlay。 */
   replacePersonalConfig(config: ProviderConfigLayerUpdate): Promise<ProviderConfigLayerSnapshot> {
     this.#assertNotDisposed();
+    // 账号型 access 已退役：导入/分发落地磁盘同样属于写入，只读兼容旧数据、不接受新写入。
+    for (const [providerId, providerConfig] of config.providers.entries()) {
+      assertWritableProviderAccess(providerConfig.access, `replacePersonalConfig:${providerId}`);
+    }
     // 全量导入/分发与字段编辑不同；新信封未带默认选择时必须清除，不能继承接收端旧值。
     return this.#personalRepository.update(() => config);
   }
@@ -148,6 +153,8 @@ export class ProviderConfigService implements ProviderSource<ProviderConfigSnaps
     metadata?: Pick<ProviderConfigRule, "providerName" | "templateId" | "enabled">,
   ): Promise<ProviderConfigLayerSnapshot> {
     assertNonEmptyId("providerId", providerId);
+    // 账号型 access 已退役（读兼容存量、禁写新值）；通用保存入口一并拦截。
+    assertWritableProviderAccess(config.access, `savePersonalProviderOverlay:${providerId}`);
     const zcodeBuiltin = await this.#zcodeBuiltinSource.read();
     return this.#updatePersonal((current) => {
       assertMembershipCurrent(membership, providerId, current);
@@ -233,6 +240,7 @@ export class ProviderConfigService implements ProviderSource<ProviderConfigSnaps
     if (input.initialConfig?.builtinModelIds !== undefined) {
       throw new Error("initialConfig 不能包含 builtinModelIds");
     }
+    assertWritableProviderAccess(input.initialConfig?.access, "createPersonalProvider");
     let createdProviderId: ProviderId | undefined;
     await this.#updatePersonal((current) => {
       const occupied = new Set([...zcodeBuiltin.providers.keys(), ...current.providers.keys()]);

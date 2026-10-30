@@ -79,7 +79,9 @@ describe("Todo104 最终文件外壳", () => {
     expect(raw.revision).toBeGreaterThanOrEqual(18);
     const parsed = decodeZCodeBuiltinRelease(raw);
     expect(encodeZCodeBuiltinRelease(parsed)).toEqual(raw);
-    expect(parsed.config.providers.keys().length).toBeGreaterThan(0);
+    // 账号/套餐 Provider 已随登录体系移除，Builtin 现在只承载模板与模型规则；
+    // 本用例只约束「最终包装完整往返 + 内容非空」。
+    expect(parsed.config.providerTemplates.keys().length).toBeGreaterThan(0);
     expect(parsed.config.providerTemplates.keys().length).toBeGreaterThan(0);
     for (const rule of parsed.config.providers.toJSON()) {
       expect(rule.config).not.toHaveProperty("templateId");

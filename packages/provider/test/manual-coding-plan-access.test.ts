@@ -39,7 +39,15 @@ describe("Manual Coding Plan access", () => {
     ).toEqual({ type: "api-key", apiKey: "ordinary" });
   });
 
-  it.each(["api-key", "zhipu-coding-plan-api-key"])(
+  it("旧值 zhipu-coding-plan-api-key 读入即归一为 metered-api-key（存量读兼容）", () => {
+    expect(
+      parseProviderConfig({
+        access: { type: "zhipu-coding-plan-api-key", apiKey: "id.secret" },
+      }).toJSON().access,
+    ).toEqual({ type: "metered-api-key", apiKey: "id.secret" });
+  });
+
+  it.each(["api-key", "metered-api-key"])(
     "%s 只允许单一管理入口，不接受已撤销的团队字段",
     (type) => {
       expect(() =>

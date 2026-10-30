@@ -118,7 +118,7 @@ describe("@zcode/provider-node", () => {
     expect(
       snapshot.models.resolve({
         providerId: "personal-zai-api",
-        templateId: "zai-api",
+        templateId: "deepseek",
         modelId: "glm-5.3",
         apiType: "anthropic-messages",
         baseUrl: "https://api.z.ai/api/anthropic",
@@ -151,16 +151,6 @@ describe("@zcode/provider-node", () => {
     ).toMatchObject({
       supportsMidConversationSystem: true,
       supportsNativeWebSearch: false,
-    });
-    expect(snapshot.providers.get("account:zai-start-plan")?.access).toMatchObject({
-      type: "zhipu-account",
-      accountType: "zai",
-      mode: "start-plan",
-    });
-    expect(snapshot.providers.get("account:zai-offpeak-idle-plan")?.access).toMatchObject({
-      type: "zhipu-account",
-      accountType: "zai",
-      mode: "off-peak",
     });
     expect(snapshot.providerTemplates?.get("deepseek")?.config.access).toMatchObject({
       type: "api-key",

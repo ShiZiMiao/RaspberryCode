@@ -31,7 +31,9 @@ const nonBlankRequiredString = z.string().refine((value) => value.trim().length 
 
 export const apiKeyAccessDataSchema = z
   .object({
-    type: z.enum(["api-key", "zhipu-coding-plan-api-key"]),
+    // metered-api-key：按量计费 API Key（原 zhipu-coding-plan-api-key，产品中立化改名）。
+    // 旧值只作存量数据读兼容；写入侧在 ApiKeyAccessConfig 构造时归一为 metered-api-key。
+    type: z.enum(["api-key", "metered-api-key", "zhipu-coding-plan-api-key"]),
     apiKey: z.string().nullable().optional(),
     apiKeyManagementUrl: z.string().url().nullable().optional(),
   })

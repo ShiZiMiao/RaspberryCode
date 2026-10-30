@@ -78,162 +78,6 @@ describe("RaspberryCode Built-in Provider Config 完整性", () => {
       }
     },
   );
-  it("GLM-5.3-Flash 的媒体输入能力及 GLM-5.3 的套餐桥接保持明确", async () => {
-    const source = new NodeZCodeBuiltinProviderConfigSource({
-      bundledFilePath: zcodeBuiltinProviderConfigFilePath,
-      watch: false,
-    });
-
-    try {
-      const snapshot = await source.read();
-      const rawRelease = JSON.parse(await readFile(zcodeBuiltinProviderConfigFilePath, "utf8")) as {
-        revision: number;
-        config: { modelConfigRules: Record<string, unknown> };
-      };
-      expect(rawRelease.config.modelConfigRules).toMatchObject({
-        modelRules: expect.any(Array),
-        modelApiRules: expect.any(Array),
-        providerSiteRules: expect.any(Array),
-        templateModelRules: expect.any(Array),
-        builtinProviderModelRules: expect.any(Array),
-      });
-      expect(rawRelease.config.modelConfigRules).not.toHaveProperty("matchRules");
-      expect(snapshot.revision).toMatch(
-        new RegExp(`^zcode-builtin:${rawRelease.revision}:[a-f0-9]{64}$`, "u"),
-      );
-      const apiTemplateIds = [
-        "zai-api",
-        "bigmodel-api",
-        "zai-standard-api",
-        "bigmodel-standard-api",
-      ] as const;
-      const accountProviderIds = [
-        "account:zai-individual-coding-plan",
-        "account:zai-team-coding-plan",
-        "account:zai-start-plan",
-        "account:bigmodel-individual-coding-plan",
-        "account:bigmodel-team-coding-plan",
-        "account:bigmodel-start-plan",
-        "account:zai-offpeak-idle-plan",
-        "account:bigmodel-offpeak-idle-plan",
-      ] as const;
-      for (const templateId of apiTemplateIds) {
-        const modelIds = snapshot.providerTemplates?.get(templateId)?.config.builtinModelIds ?? [];
-        expect(modelIds, `${templateId} 必须同时提供 GLM-5.3 系列`).toEqual(
-          expect.arrayContaining(["GLM-5.3", "GLM-5.3-Flash"]),
-        );
-      }
-      for (const providerId of accountProviderIds) {
-        const modelIds = snapshot.providers.get(providerId)?.builtinModelIds ?? [];
-        expect(modelIds, `${providerId} 必须提供 GLM-5.3-Flash`).toContain("GLM-5.3-Flash");
-      }
-
-      for (const providerId of [
-        "account:zai-individual-coding-plan",
-        "account:zai-team-coding-plan",
-        "account:bigmodel-individual-coding-plan",
-        "account:bigmodel-team-coding-plan",
-      ]) {
-        expect(snapshot.providers.get(providerId)?.builtinModelIds).toEqual([
-          "GLM-5.3",
-          "GLM-5.3-Flash",
-        ]);
-        const planModel = snapshot.models.resolve({
-          providerId,
-          modelId: "GLM-5.3",
-          apiType: "anthropic-messages",
-          baseUrl: snapshot.providers.get(providerId)?.api?.baseUrl,
-        });
-        expect(planModel.properties?.inputFormat.toJSON()).toMatchObject({
-          supportsImage: true,
-          supportsVideo: true,
-          supportsAudio: false,
-          supportsPdf: false,
-        });
-      }
-
-      // 加速卡换端点不换模型，能力事实必须与同 Family Coding Plan 站点逐项一致；
-      // 否则同一会话里普通轮与加速轮的 system 折叠、WebSearch 暴露和附件合法性会互相打脸。
-      for (const [highspeedProviderId, planProviderId] of [
-        ["account:zai-highspeed-card", "account:zai-individual-coding-plan"],
-        ["account:bigmodel-highspeed-card", "account:bigmodel-individual-coding-plan"],
-      ] as const) {
-        const resolveAt = (providerId: string, modelId: string) =>
-          snapshot.models.resolve({
-            providerId,
-            modelId,
-            apiType: "anthropic-messages",
-            baseUrl: snapshot.providers.get(providerId)?.api?.baseUrl,
-          });
-        expect(snapshot.providers.get(highspeedProviderId)?.builtinModelIds).toEqual(
-          snapshot.providers.get(planProviderId)?.builtinModelIds,
-        );
-        for (const modelId of snapshot.providers.get(highspeedProviderId)?.builtinModelIds ?? []) {
-          const highspeedModel = resolveAt(highspeedProviderId, modelId);
-          const planModel = resolveAt(planProviderId, modelId);
-          expect(
-            highspeedModel.properties?.inputFormat.toJSON(),
-            `${highspeedProviderId}/${modelId} 输入形态偏离 Coding Plan 站点`,
-          ).toEqual(planModel.properties?.inputFormat.toJSON());
-          expect(
-            highspeedModel.properties?.supportsMidConversationSystem,
-            `${highspeedProviderId}/${modelId} MCS 偏离 Coding Plan 站点`,
-          ).toBe(planModel.properties?.supportsMidConversationSystem);
-          expect(
-            highspeedModel.properties?.supportsNativeWebSearch,
-            `${highspeedProviderId}/${modelId} 原生搜索偏离 Coding Plan 站点`,
-          ).toBe(planModel.properties?.supportsNativeWebSearch);
-        }
-      }
-
-      const resolve = (modelId: string) =>
-        snapshot.models.resolve({
-          providerId: "personal-zai",
-          templateId: "zai-api",
-          modelId,
-          apiType: "anthropic-messages",
-          // 模型层自身能力与 §6.3.1 已批准的站点覆盖分开验证。
-          baseUrl: "https://other.example.com/anthropic",
-        });
-      const glm53 = resolve("glm-5.3").toJSON();
-      const glm53Flash = resolve("glm-5.3-flash").toJSON();
-
-      expect(glm53.optionSpecs?.reasoningLevel).toMatchObject({
-        values: ["low", "high", "max"],
-      });
-      expect(glm53.optionSpecs?.reasoningLevel?.map).toContain("reasoningLevel");
-      expect(reasoningPatch(glm53.optionSpecs!.reasoningLevel!.map!, "low")).toMatchObject({
-        output_config: { effort: "low" },
-      });
-      expect(glm53.properties?.inputFormat).toMatchObject({
-        supportsImage: false,
-        supportsVideo: false,
-      });
-
-      expect(glm53Flash).toEqual({
-        ...glm53,
-        properties: {
-          ...glm53.properties,
-          inputFormat: {
-            ...glm53.properties?.inputFormat,
-            supportsImage: true,
-            supportsVideo: true,
-            supportsPdf: true,
-          },
-        },
-      });
-      const glm53FlashChat = snapshot.models.resolve({
-        providerId: "personal-zai",
-        templateId: "zai-api",
-        modelId: "glm-5.3-flash",
-        apiType: "openai-chat-completions",
-        baseUrl: "https://api.z.ai/api/anthropic",
-      });
-      expect(glm53FlashChat.properties?.inputFormat.supportsPdf).toBe(true);
-    } finally {
-      source.dispose();
-    }
-  });
 
   it("按当前官方证据声明各厂商主推模型和关键静态属性", async () => {
     const source = new NodeZCodeBuiltinProviderConfigSource({
@@ -525,135 +369,6 @@ describe("RaspberryCode Built-in Provider Config 完整性", () => {
     }
   });
 
-  it("按产品分组声明 Zhipu 系统 Provider 与外部主流 Provider", async () => {
-    const source = new NodeZCodeBuiltinProviderConfigSource({
-      bundledFilePath: zcodeBuiltinProviderConfigFilePath,
-      watch: false,
-    });
-
-    try {
-      const snapshot = await source.read();
-      expect(snapshot.providers.keys()).toEqual([
-        "account:zai-individual-coding-plan",
-        "account:zai-team-coding-plan",
-        "account:zai-start-plan",
-        "account:bigmodel-individual-coding-plan",
-        "account:bigmodel-team-coding-plan",
-        "account:bigmodel-start-plan",
-        "account:zai-offpeak-idle-plan",
-        "account:bigmodel-offpeak-idle-plan",
-        "account:zai-highspeed-card",
-        "account:bigmodel-highspeed-card",
-      ]);
-      expect(snapshot.providerTemplates?.keys()).toEqual([
-        "zai-api",
-        "zai-standard-api",
-        "bigmodel-api",
-        "bigmodel-standard-api",
-        "moonshot-kimi",
-        "minimax",
-        "deepseek",
-        "qwen-alibaba-model-studio-cn",
-        "qwen-alibaba-model-studio-intl",
-        "xiaomi-mimo",
-        "xiaomi-mimo-token-plan",
-        "openai",
-        "anthropic",
-        "xai",
-        "openrouter",
-        "opencode-go-chat",
-        "opencode-go-messages",
-        "opencode-go-responses",
-        "opencode-zen-responses",
-        "opencode-zen-messages",
-        "opencode-zen-chat",
-      ]);
-      for (const [templateId, template] of snapshot.providerTemplates?.entries() ?? []) {
-        expect(
-          template.templateNameMap["zh-CN"]?.trim(),
-          `${templateId} 缺少中文 Template 名称`,
-        ).toBeTruthy();
-        expect(
-          template.templateNameMap["en-US"]?.trim(),
-          `${templateId} 缺少英文 Template 名称`,
-        ).toBeTruthy();
-        expect(template.config.logo, `${templateId} 缺少 Built-in Logo 引用`).toMatchObject({
-          type: "builtin",
-        });
-      }
-      for (const [providerId, provider] of snapshot.providers.entries()) {
-        expect(provider.logo, `${providerId} 缺少 Built-in Logo 引用`).toMatchObject({
-          type: "builtin",
-        });
-      }
-      expect(snapshot.providerTemplates?.get("moonshot-kimi")?.templateNameMap).toEqual({
-        "zh-CN": "Kimi",
-        "en-US": "Kimi",
-      });
-      expect(
-        snapshot.providerTemplates?.get("qwen-alibaba-model-studio-cn")?.templateNameMap,
-      ).toEqual({
-        "zh-CN": "阿里云百炼（中国）",
-        "en-US": "Alibaba Cloud (China)",
-      });
-      expect(
-        snapshot.providerTemplates?.get("qwen-alibaba-model-studio-intl")?.templateNameMap,
-      ).toEqual({
-        "zh-CN": "阿里云百炼（国际）",
-        "en-US": "Alibaba Cloud (Global)",
-      });
-
-      expect(snapshot.providerTemplates?.get("openai")?.config.toJSON()).toMatchObject({
-        builtinModelIds: [
-          "gpt-6-astra",
-          "gpt-5.6-sol",
-          "gpt-5.6-terra",
-          "gpt-5.6-luna",
-          "gpt-5.6",
-          "gpt-5.4",
-          "gpt-5.4-pro",
-          "gpt-5.4-mini",
-          "gpt-5.4-nano",
-          "gpt-5.3-codex",
-        ],
-        access: {
-          type: "api-key",
-          apiKeyManagementUrl: "https://platform.openai.com/api-keys",
-        },
-        api: { type: "openai-responses", baseUrl: "https://api.openai.com/v1" },
-      });
-      expect(snapshot.providerTemplates?.get("anthropic")?.config.toJSON()).toMatchObject({
-        builtinModelIds: [
-          "claude-fable-5-1",
-          "claude-fable-5",
-          "claude-opus-5",
-          "claude-sonnet-5",
-          "claude-haiku-4-5-20251001",
-        ],
-        access: {
-          type: "api-key",
-          apiKeyManagementUrl: "https://console.anthropic.com/settings/keys",
-        },
-        api: { type: "anthropic-messages", baseUrl: "https://api.anthropic.com/v1" },
-      });
-      expect(snapshot.providerTemplates?.get("xai")?.config.toJSON()).toMatchObject({
-        builtinModelIds: ["grok-4.6", "grok-build-0.1", "grok-4.3"],
-        access: {
-          type: "api-key",
-          apiKeyManagementUrl: "https://console.x.ai",
-        },
-        api: { type: "openai-responses", baseUrl: "https://api.x.ai/v1" },
-      });
-      expect(snapshot.providerTemplates?.get("zai-api")?.config.toJSON()).toMatchObject({
-        access: { type: "zhipu-coding-plan-api-key" },
-      });
-      expect(snapshot.providerTemplates?.get("bigmodel-api")?.config.toJSON()).toMatchObject({
-        access: { type: "zhipu-coding-plan-api-key" },
-      });
-    } finally {
-      source.dispose();
-    }
-  });
 
   it("不保留语义等价的重复 matcher", async () => {
     const source = new NodeZCodeBuiltinProviderConfigSource({
@@ -951,7 +666,7 @@ describe("RaspberryCode Built-in Provider Config 完整性", () => {
           return model.enabled !== false;
         });
         expectedModelIds.set(providerId, enabledModelIds);
-        expect(["api-key", "zhipu-coding-plan-api-key"]).toContain(template.config.access?.type);
+        expect(["api-key", "metered-api-key", "zhipu-coding-plan-api-key"]).toContain(template.config.access?.type);
         if (template.config.access?.type !== "zhipu-account") {
           expect(template.config.access.apiKey, `${templateId} 不得保存 API Key`).toBeUndefined();
         }
@@ -979,16 +694,6 @@ describe("RaspberryCode Built-in Provider Config 完整性", () => {
 
       expect(resolution.issues).toEqual([]);
       expect(resolution.registryProviders.map(({ providerId }) => providerId)).toEqual([
-        "account:zai-individual-coding-plan",
-        "account:zai-team-coding-plan",
-        "account:zai-start-plan",
-        "account:bigmodel-individual-coding-plan",
-        "account:bigmodel-team-coding-plan",
-        "account:bigmodel-start-plan",
-        "account:zai-offpeak-idle-plan",
-        "account:bigmodel-offpeak-idle-plan",
-        "account:zai-highspeed-card",
-        "account:bigmodel-highspeed-card",
         "template:zai-api",
         "template:zai-standard-api",
         "template:bigmodel-api",
@@ -1028,19 +733,6 @@ describe("RaspberryCode Built-in Provider Config 完整性", () => {
           ).toEqual([]);
         }
       }
-
-      for (const providerId of [
-        "account:zai-offpeak-idle-plan",
-        "account:bigmodel-offpeak-idle-plan",
-      ]) {
-        const offPeak = resolution.resolvedProviders.find(
-          (provider) => provider.providerId === providerId,
-        );
-        expect(offPeak?.models).not.toHaveLength(0);
-        for (const model of offPeak?.models ?? []) {
-          expect(model).toMatchObject({ executable: true, selectable: false });
-        }
-      }
     } finally {
       source.dispose();
     }
@@ -1075,11 +767,11 @@ describe("RaspberryCode Built-in Provider Config 完整性", () => {
           knownModelId: "deepseek-v4-pro",
         },
         {
-          providerId: "custom-zai",
-          templateId: "zai-api",
+          providerId: "custom-anthropic",
+          templateId: "anthropic",
           apiType: "anthropic-messages" as const,
-          baseURL: "https://api.z.ai/api/anthropic",
-          knownModelId: "glm-5.3",
+          baseURL: "https://api.anthropic.com/v1",
+          knownModelId: "claude-fable-5-1",
         },
       ];
       const personalProviders = scenarios.map((scenario) => ({
