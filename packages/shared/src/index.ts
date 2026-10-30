@@ -69,7 +69,6 @@ export {
   RUNTIME_ZCODE_DEBUG,
   ZCODE_ARMS_RUM_ENDPOINT,
   ZCODE_TELEMETRY_REPORT_ENDPOINT,
-  ZCODE_AUTO_UPDATE_ENABLED,
   mapZCodeEnvToArmsRumEnv,
   normalizeZCodeEnv,
   normalizeZCodeProductFlavor,

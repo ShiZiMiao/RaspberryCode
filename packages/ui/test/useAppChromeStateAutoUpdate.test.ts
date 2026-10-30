@@ -1,11 +1,7 @@
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type {
-  DesktopWindowChromeState,
-  IPlatformService,
-  UpdateStatePayload,
-} from "@zcode/shared";
+import type { DesktopWindowChromeState, IPlatformService } from "@zcode/shared";
 
 vi.mock("@/i18n/IntlProvider.js", () => ({
   useZCodeIntl: () => ({
