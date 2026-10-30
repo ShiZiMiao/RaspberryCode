@@ -197,7 +197,6 @@ const enUS: Record<string, string> = {
   "remote.error.hostUnreachable.docker.reason": "Make sure the container exists and is running.",
   "remote.action.credentials": "Enter password",
   "settings.source.removeSourceServerTitle": "Remove this device?",
-  "conversationShare.issue.requestId": "Server request ID: {requestId}",
   "settings.usage.entitlementResetTime": "Next reset",
   "bots.enabled.description": "Turn this bot on or off and clear its runtime state.",
   "bots.feishuRegistrationScanHint": "Scan with Feishu/Lark and confirm app creation.",
@@ -226,8 +225,6 @@ const enUS: Record<string, string> = {
   "chat.followup.guideCurrent": "Steer current run",
   "settings.usage.entitlementPromptCap": "5-hour prompt pool",
   "bots.provider": "Channel",
-  "conversationShare.disclosure.scope.tools":
-    "Tool inputs and outputs: commands, parameters, and results",
   "bots.bindSuccess": "Bound successfully",
   "startup.database.ready": "History is ready",
   "bots.botTokenDescription.lark": "Scan to get app credentials.",
@@ -277,12 +274,9 @@ const enUS: Record<string, string> = {
     "RaspberryCode Computer Use is still preparing — its tools aren't loaded yet. Grant the permissions below; tools appear once the helper is ready.",
   "settings.plugins.marketplaces.official": "Official",
   "bots.providerSettings.lark": "Scan to get app credentials.",
-  "conversationShare.partial.preflightUnavailable":
-    "Unable to check this share. Follow the instructions below.",
   "chat.mention.category.files.description": "Search workspace files and insert a reference",
   "bots.newBot.providerDescription.feishu": "Scan to create an app, then bind by message.",
   "settings.source.defaultProfileMenuItem": "Default connection",
-  "conversationShare.import.complete": "Share import complete",
   "remote.error.installFailed.reason": "Installation did not complete. View details and retry.",
   "settings.subagents.table.enabled": "Enabled",
   "settings.usage.entitlementNoPlan": "No active Coding Plan",
@@ -343,7 +337,6 @@ const enUS: Record<string, string> = {
     "Saved records from older versions or not yet successfully connected. Device details update after a successful connection.",
   "settings.source.updateAvailable": "A remote component update is available.",
   "settings.source.online": "Connected",
-  "webRemoteControl.botChannel.weixin.description": "Open this workspace from Weixin chat.",
   "settings.plugins.detail.components": "Components",
   "settings.memory.viewer.tree": "Memory files",
   "bots.setup.guide.telegram.bind.2":
@@ -380,7 +373,6 @@ const enUS: Record<string, string> = {
   "chat.target.clear": "Clear goal",
   "chat.mention.category.empty": "No mention categories available",
   "bots.setup.bindRegenerating": "Bind code expired. Creating a new one...",
-  "webRemoteControl.botChannel.feishu.description": "Open this workspace from Feishu.",
   "remote.error.bindSessionMissing.reason": "View details, follow the instructions, and retry.",
   "chat.toolCall.cua.clickTargetFailed": "Failed to click {target}",
   "settings.previewBadge.dark": "Dark",
@@ -525,7 +517,6 @@ const enUS: Record<string, string> = {
   "automations.form.maxRuns.placeholder": "e.g. 5",
   "remote.errorRetry": "Retry",
   "bots.newBot.providerDescription.telegram": "Create a bot, then bind by message.",
-  "webRemoteControl.botChannel.lark.description": "Open this workspace from Lark.",
   "chat.message.fork.unsupported": "The current agent does not support forking yet",
   "settings.usage.quotaTitle": "Quota remaining",
   "remote.phaseSub.handshakeDone": "systemd --user · port {port}",
@@ -552,7 +543,6 @@ const enUS: Record<string, string> = {
   "settings.usage.healthProMaxDecode": "Max&Pro peak average decode speed",
   "settings.mcp.failure.tool_list_failed":
     "Connected to the MCP server, but failed to retrieve its tool list.",
-  "webRemoteControl.botChannel.telegram.description": "Open this workspace from Telegram.",
   "settings.migration.workspaceEmpty":
     "No active workspace on this page. You can still scan all records.",
   "chat.toolCall.kind.todo": "Todos",
@@ -1135,8 +1125,6 @@ const enUS: Record<string, string> = {
   "quickPick.section.recommended": "Recommended",
   "quickPick.find.empty.conversation": "Type to search messages",
   "quickPick.find.noResults.conversation": "No messages found",
-  "conversationShare.disclosure.scope.generated":
-    "Generated content: code, files, and preview content",
   "bots.group.paused": "Group sync paused",
   "bots.topic.correction": "Submit corrections as a new request. Original records are retained.",
   "bots.topic.historyOff":
@@ -1622,293 +1610,6 @@ const enUS: Record<string, string> = {
   "common.saveChanges": "Save changes",
   "common.saving": "Saving...",
   "common.delete": "Delete",
-  "conversationShare.popover.title": "Share conversation",
-  "conversationShare.range.label": "Shared content",
-  "conversationShare.range.all": "All completed turns · {count}",
-  "conversationShare.range.selected": "{count} selected",
-  "conversationShare.range.exceeded": "{count} rows over limit",
-  "conversationShare.range.locate": "Locate conversation",
-  "conversationShare.range.adjust": "Adjust",
-  "conversationShare.range.confirm": "Confirm",
-  "conversationShare.trigger": "Share",
-  "conversationShare.artifact.notIncluded": "This artifact was not included",
-  "conversationShare.artifact.sourceUnavailable": "Source unavailable",
-  "conversationShare.artifact.unsupported": "Unsupported by this share",
-  "conversationShare.artifact.limitExceeded": "Share size limit exceeded",
-  "conversationShare.artifact.dashboardUnavailable": "Dashboard unavailable",
-  "conversationShare.artifact.dashboardInvalid": "Unable to display dashboard",
-  "conversationShare.artifact.openDownload": "Open / download",
-  "conversationShare.artifact.openFile": "Open file",
-  "conversationShare.artifact.resourceUnavailable": "Resource unavailable",
-  "conversationShare.artifact.previewFailed": "Preview failed; try opening the file",
-  "conversationShare.artifact.loading": "Loading…",
-  "conversationShare.workflowUnavailable": "Workflow snapshot unavailable",
-  "conversationShare.workflowPartial": "Some workflow data is unavailable in this snapshot",
-  "conversationShare.capturedSnapshot": "Snapshot at sharing",
-  "conversationShare.readonly.history": "Reasoning",
-  "conversationShare.readonly.computerUse": "Computer use",
-  "conversationShare.readonly.explore": "Explore",
-  "conversationShare.readonly.execute": "Execute",
-  "conversationShare.readonly.changes": "Changes",
-  "conversationShare.readonly.artifactPreview": "Download file",
-  "conversationShare.readonly.markerCompact": "Context compacted",
-  "conversationShare.readonly.markerModelChange": "Model switched",
-  "conversationShare.readonly.unsupportedRows": "Some content requires a newer version of RaspberryCode",
-  "conversationShare.workflowSnapshot": "Snapshot at tool execution; does not update live",
-  "conversationShare.shareTitle": "Share title",
-  "conversationShare.permissionLabel": "Access",
-  "conversationShare.permission.private": "Only me",
-  "conversationShare.permission.linkViewer": "Link: view only",
-  "conversationShare.permission.linkViewerSummary": "Link: view only",
-  "conversationShare.permission.linkEditor": "Link: import & continue",
-  "conversationShare.permission.linkEditorSummary": "Link: import & continue",
-  "conversationShare.permission.privateSummary": "Only me",
-  "conversationShare.openLink": "Open share page",
-  "conversationShare.result.title": "Share created",
-  "conversationShare.result.openInBrowser": "View in browser",
-  "conversationShare.result.dismiss": "Close share result",
-  "conversationShare.generatingLink": "Generating share link",
-  "conversationShare.copyLink": "Copy link",
-  "conversationShare.copySucceeded": "Share link copied",
-  "conversationShare.publishSucceeded": "Share link created",
-  "conversationShare.publishSucceededWithSkips": "Share link created; {count} file(s) were skipped",
-  "conversationShare.copyFailed": "Could not copy share link",
-  "conversationShare.error.serviceUnavailable":
-    "The sharing service is temporarily unavailable. Try again later.",
-  "conversationShare.error.safetyCheckRejected":
-    "Content did not pass the safety check. Adjust the selected conversation or files.",
-  "conversationShare.error.safetyCheckUnavailable":
-    "The safety check service is unavailable. Try again later.",
-  "conversationShare.error.preparationNotFound":
-    "Share preparation is no longer available. Generate a new link.",
-  "conversationShare.error.preparationExpired": "Share preparation expired. Generate a new link.",
-  "conversationShare.import.notAllowed":
-    "This share is view-only. Ask the author to enable importing.",
-  "conversationShare.import.unsupportedVersion": "This share format is unsupported. Update RaspberryCode.",
-  "conversationShare.issue.ruleLabel": "Validation rule",
-  "conversationShare.issue.pathLabel": "Field path",
-  "conversationShare.issue.fieldLabel": "Field",
-  "conversationShare.issue.rowLabel": "Content row (starting at 1)",
-  "conversationShare.issue.rowKindLabel": "Content type",
-  "conversationShare.publishFailed": "Could not generate the share link. Try again.",
-  "conversationShare.error.authenticationRequired":
-    "Sign in to RaspberryCode before sharing. If you're already signed in, sign in again and retry.",
-  "conversationShare.error.featureDisabled": "Sharing is currently unavailable. Try again later.",
-  "conversationShare.error.artifactNotAllowed":
-    "A previewed file type is not supported for sharing. Deselect that conversation and retry.",
-  "conversationShare.error.limitExceeded":
-    "The selected conversation or its files exceed the sharing limit. Select fewer conversations.",
-  "conversationShare.error.rateLimited": "Too many share attempts. Wait a moment, then try again.",
-  "conversationShare.error.invalidContractHttp":
-    "The share service returned HTTP {status}. Retry, and provide the error details if the problem persists.",
-  "conversationShare.error.invalidContract":
-    "RaspberryCode could not read the share service’s response, so sharing could not finish. Try again later. If it still fails, copy the request ID from Error details and contact support.",
-  "conversationShare.issue.clientRequestIdLabel": "Client request ID",
-  "conversationShare.issue.codeLabel": "Error code",
-  "conversationShare.error.network":
-    "The share connection was interrupted or timed out. Check your network and retry.",
-  "conversationShare.error.safetyCheckTimeout":
-    "The share safety check took too long. Try again later.",
-  "conversationShare.error.invalidSelection":
-    "The selected conversation changed. Reopen the share panel and select it again.",
-  "conversationShare.error.invalidConversation":
-    "The selected conversation cannot be published. Review the specific issues and retry.",
-  "conversationShare.error.runningTurn":
-    "A selected turn is still running. Deselect it and wait for it to finish before sharing.",
-  "conversationShare.error.streamingRow":
-    "A selected response is still streaming. Wait for the turn to finish before sharing.",
-  "conversationShare.error.activeToolCall":
-    "A selected tool call is still active. Wait for it to finish before sharing.",
-  "conversationShare.error.activeSubagent":
-    "A selected subtask is still running. Wait for it to finish before sharing.",
-  "conversationShare.error.inputAttachment":
-    "A user-input attachment could not be shared. Check that it still exists and try again.",
-  "conversationShare.error.inlineToolImage":
-    "A selected turn contains an unsupported inline tool image. Deselect that turn and retry.",
-  "conversationShare.error.unsupportedTimeline":
-    "A selected turn contains an unsupported branch or restore record. Deselect that turn and retry.",
-  "conversationShare.error.unsafeUrl":
-    "The selected content contains a local or inline file URL. Remove it before sharing.",
-  "conversationShare.error.missingProductTurn":
-    "The selected conversation is incomplete. Reopen the share panel and select the turn again.",
-  "conversationShare.error.artifactTypeNotAllowed":
-    "A previewed file type is not allowed for sharing. Deselect its turn and retry.",
-  "conversationShare.error.artifactExtensionMissing":
-    "A previewed file has no valid extension. Check the file and retry.",
-  "conversationShare.error.artifactOutsideWorkspace":
-    "A previewed file is outside the current workspace. Regenerate or move it, then retry.",
-  "conversationShare.error.artifactChanged":
-    "A previewed file changed before sharing. Regenerate the preview file and retry.",
-  "conversationShare.error.artifactReadFailed":
-    "A previewed file could not be read. Check that it still exists and is accessible, then retry.",
-  "conversationShare.error.artifactSizeLimit":
-    "A file exceeds the per-file size limit. Deselect that turn or use a smaller file, then retry.",
-  "conversationShare.error.artifactManifest":
-    "The preview file manifest is incomplete. Regenerate the file and refresh the share panel.",
-  "conversationShare.error.payloadLimit":
-    "The selected conversation or files exceed the sharing limit. Select less and retry.",
-  "conversationShare.error.disclosureRequired":
-    "Review and confirm the shared content before creating the link.",
-  "conversationShare.error.uploadFailed":
-    "Upload is incomplete or the share state changed. Try again.",
-  "conversationShare.error.connectionUnavailable":
-    "Desktop connection is not ready. Reopen the share panel and try again.",
-  "conversationShare.error.noShareableContent":
-    "The current selection has no shareable content. Select different turns.",
-  "conversationShare.error.summary":
-    "Share failed: {count} issue(s) found. See the share panel for details.",
-  "conversationShare.issue.artifactTypeNotAllowed":
-    "Turn {turnOrdinal}: {artifactDisplayName} ({artifactType}) cannot be shared and will be skipped. Supported types: {allowedFormats}.",
-  "conversationShare.issue.artifactExtensionMissing":
-    "Turn {turnOrdinal}: the preview file has no valid extension. Check the file name and try again.",
-  "conversationShare.issue.artifactOutsideWorkspace":
-    "Turn {turnOrdinal}: the preview file is outside the current workspace. Move or regenerate it and try again.",
-  "conversationShare.issue.artifactChanged":
-    "Turn {turnOrdinal}: {artifactDisplayName} changed while it was being read. Regenerate the file and try again.",
-  "conversationShare.issue.contentUnavailable":
-    "Some workflow content is shared as a summary. See the availability notes in the share.",
-  "conversationShare.issue.artifactReadFailed":
-    "Turn {turnOrdinal}: {artifactDisplayName} could not be read. Check that it still exists and is accessible.",
-  "conversationShare.issue.inputAttachment":
-    "Turn {turnOrdinal} contains a user-input attachment, which is not supported in this version. Deselect this turn.",
-  "conversationShare.issue.inputAttachmentUnavailable":
-    "Turn {turnOrdinal} contains a user-input attachment that no longer exists or cannot be read.",
-  "conversationShare.issue.inlineToolImage":
-    "Turn {turnOrdinal} contains an inline tool image that cannot be included in a public share.",
-  "conversationShare.issue.runningTurn":
-    "Turn {turnOrdinal} is still running. Wait for it to finish or deselect it.",
-  "conversationShare.issue.streamingRow":
-    "Turn {turnOrdinal} is still generating. Wait for it to finish or deselect it.",
-  "conversationShare.issue.activeToolCall":
-    "Turn {turnOrdinal} has an unfinished tool call. Deselect this turn.",
-  "conversationShare.issue.activeSubagent":
-    "Turn {turnOrdinal} has a running subtask. Wait for it to finish or deselect it.",
-  "conversationShare.issue.unsupportedTimeline":
-    "Turn {turnOrdinal} contains a timeline record that cannot be included in a public share.",
-  "conversationShare.issue.noShareableContent":
-    "The current selection has no shareable content. Select different turns.",
-  "conversationShare.issue.unsafeUrl":
-    "Turn {turnOrdinal} contains a local or inline file address, which is not supported. Remove it and try again.",
-  "conversationShare.issue.missingProductTurn":
-    "The selection is missing a complete turn identity. Re-select the conversation.",
-  "conversationShare.issue.invalidSelection":
-    "The selected turns changed. Return to selection and choose them again.",
-  "conversationShare.issue.invalidConversation":
-    "The selected conversation is incomplete. Deselect the affected turn(s) and try again.",
-  "conversationShare.issue.staleConversation":
-    "The conversation changed while the share was prepared. Return to selection and try again.",
-  "conversationShare.issue.rowsLimit":
-    "The conversation has {actual} rows, above the limit of {limit}. Reduce the selected turns.",
-  "conversationShare.issue.artifactCountLimit":
-    "The conversation has {actual} artifacts, above the limit of {limit}. Reduce the selected turns.",
-  "conversationShare.issue.artifactSizeLimit":
-    "{artifactDisplayName} is {actual}, above the per-file limit of {limit}. Deselect the turn or regenerate a smaller file.",
-  "conversationShare.issue.artifactTotalSizeLimit":
-    "Artifacts total {actual}, above the limit of {limit}. Reduce artifacts or deselect the affected turn(s).",
-  "conversationShare.issue.payloadSizeLimit":
-    "The share request is {actual}, above the limit of {limit}. Reduce the selected turns or artifacts.",
-  "conversationShare.issue.artifactManifest":
-    "The preview artifact manifest is duplicated or incomplete. Regenerate files and refresh the share panel.",
-  "conversationShare.issue.uploadIncomplete":
-    "The upload acknowledgement for {artifactDisplayName} does not match the file. Ensure it did not change and try again.",
-  "conversationShare.issue.invalidServiceResponse":
-    "The share service returned an unreadable response. Try again later.",
-  "conversationShare.issue.unknown":
-    "Sharing failed; the cause could not be determined. Retry, and provide the error details if it persists.",
-  "conversationShare.issue.details": "Error details",
-  "conversationShare.issue.requestIdLabel": "Server request ID",
-  "conversationShare.issue.requestIdMissing": "No server request ID was received.",
-  "conversationShare.issue.copyRequestId": "Copy request ID",
-  "conversationShare.issue.deselectTurn": "Deselect this turn",
-  "conversationShare.issue.retryPreflight": "Check again",
-  "conversationShare.issue.more": "{count} more issue(s) not shown.",
-  "conversationShare.warning.summary":
-    "Shared successfully. {count} file(s) were skipped and are not included in the link.",
-  "conversationShare.warning.artifactSkipped":
-    "Turn {turnOrdinal}: {artifactDisplayName} could not be read, so it was skipped. If it should have been shared, regenerate the file and share again.",
-  "conversationShare.warning.inputAttachmentSkipped":
-    "Turn {turnOrdinal}: the input attachment is not included in the share; the turn's text is still shared.",
-  "conversationShare.warning.inputAttachmentUnavailable":
-    "Turn {turnOrdinal}: {artifactDisplayName} no longer exists or cannot be read and was skipped.",
-  "conversationShare.warning.artifactTypeSkipped":
-    "Turn {turnOrdinal}: {artifactDisplayName} ({artifactType}) is not supported and was skipped. Supported types: {allowedFormats}.",
-  "conversationShare.warning.artifactChangedSkipped":
-    "Turn {turnOrdinal}: {artifactDisplayName} changed before sharing and was skipped.",
-  "conversationShare.partial.panelLabel": "Select conversations to share",
-  "conversationShare.partial.empty": "There are no completed conversations to share",
-  "conversationShare.preflight.reviewIssues": "Review share issues",
-  "conversationShare.preflight.reviewSkipped": "Files will be skipped · Details",
-  "conversationShare.preflight.reviewDeferred": "Some files need checking · Details",
-  "conversationShare.partial.preflightChecking": "Checking share content…",
-  "conversationShare.partial.preflightBlocked":
-    "Some content cannot be shared. Fix the issues below first.",
-  "conversationShare.partial.preflightSkipped":
-    "{count} file(s) will not be included in the share. They will be skipped if you continue.",
-  "conversationShare.partial.preflightDeferred":
-    "Some files cannot be checked yet. They will be verified again when publishing.",
-  "conversationShare.publish.failedTitle": "Share publication failed",
-  "conversationShare.publish.failedDescription":
-    "Review the failure reason and error details below.",
-  "conversationShare.publish.retry": "Retry generation",
-  "conversationShare.publish.footerMeta": "Share {selected} conversation turn(s), {access}",
-  "conversationShare.publish.failedFooter":
-    "Your selection is preserved. Review the error and retry.",
-  "conversationShare.partial.selectAll": "Select all",
-  "conversationShare.partial.selectionCount": "{selected}/{total}",
-  "conversationShare.partial.cancel": "Cancel",
-  "conversationShare.partial.confirm": "Create share link",
-  "conversationShare.partial.publishing": "Generating…",
-  "conversationShare.progress.collecting": "Collecting conversation and artifacts…",
-  "conversationShare.progress.uploading": "Uploading artifacts…",
-  "conversationShare.progress.checking": "Confirming publication…",
-  "conversationShare.progress.collectingFailed": "Collecting conversation and artifacts failed",
-  "conversationShare.progress.uploadingFailed": "Uploading artifacts failed",
-  "conversationShare.progress.checkingFailed": "Publication confirmation failed",
-  "conversationShare.phase.collecting": "Prepare content",
-  "conversationShare.phase.uploading": "Upload artifacts",
-  "conversationShare.phase.checking": "Confirm publication",
-  "conversationShare.phase.collectingComplete": "Conversation and artifacts ready",
-  "conversationShare.phase.uploadingComplete": "Artifacts uploaded",
-  "conversationShare.phase.uploadingActive": "Uploading {completed} / {total}",
-  "conversationShare.phase.collectingPending": "Waiting to start",
-  "conversationShare.phase.uploadingPending": "Waiting for preparation",
-  "conversationShare.phase.checkingPending": "Waiting for upload",
-  "conversationShare.phase.failed": "Failed",
-  "conversationShare.disclosure.description": "No automatic checks.",
-  "conversationShare.disclosure.checkbox": "I've checked: no sensitive info.",
-  "conversationShare.disclosure.scope.trigger": "What to check",
-  "conversationShare.disclosure.scope.title": "Review scope",
-  "conversationShare.disclosure.scope.reviewLabel": "Review these areas",
-  "conversationShare.disclosure.scope.conversation":
-    "Conversation content: user messages, assistant replies, and task titles",
-  "conversationShare.disclosure.scope.sensitiveLabel": "Check carefully",
-  "conversationShare.disclosure.scope.sensitive":
-    "Credentials, tokens, passwords, private keys, internal addresses, and personal information",
-  "conversationShare.disclosure.scope.note":
-    "The system does not scan or redact this content automatically. Review each item before sharing.",
-  "conversationShare.import.source": "Imported from share: {title}",
-  "conversationShare.import.dividerLabel": "Imported from share",
-  "conversationShare.import.fallbackRemoteWorkspace":
-    "Imported from share: {title}. The current workspace is remote, which import does not support yet, so the session was created in the local workspace {workspacePath}.",
-  "conversationShare.import.fallbackDefaultWorkspace":
-    "Imported from share: {title}. No target workspace was available, so the session was created in the default workspace {workspacePath}.",
-  "conversationShare.import.downloading": "Downloading shared files: {completed}/{total}",
-  "conversationShare.import.installing": "Installing shared files",
-  "conversationShare.import.committing": "Creating the shared conversation",
-  "conversationShare.import.loginRequired":
-    "This share cannot be imported anonymously. Sign in to RaspberryCode and try again",
-  "conversationShare.import.notFound":
-    "Share not found or access denied. Check the link and your account.",
-  "conversationShare.import.expired": "The share expired. Ask the author to create a new one",
-  "conversationShare.import.integrityFailed":
-    "Share verification failed. Ask the author to create a new link.",
-  "conversationShare.import.failed":
-    "Share import failed. Try again later; if this persists, contact support.",
-  "conversationShare.import.integrityFailedWithArtifact":
-    "Verification failed for shared file {artifactDisplayName}; import stopped. Ask the author to create a new link.",
-  "conversationShare.import.failedWithArtifact":
-    "Downloading shared file {artifactDisplayName} failed. Check your network and retry.",
-  "conversationShare.import.retry": "Retry",
   "settings.resourceGroup.item.one": "{count} item",
   "settings.resourceGroup.item.other": "{count} items",
   "pluginCreator.add": "Add",
@@ -2733,7 +2434,6 @@ const enUS: Record<string, string> = {
   "titleBar.menu.view.zoomIn": "Zoom in",
   "titleBar.menu.view.zoomOut": "Zoom out",
   "titleBar.menu.help.about": "About RaspberryCode",
-  "titleBar.menu.help.checkForUpdates": "Check for updates",
   "titleBar.menu.help.feedback": "Feedback",
   "sidebar.menu.community": "Community",
   "titleBar.menu.help.exportLogs": "Export logs",
@@ -2985,89 +2685,6 @@ const enUS: Record<string, string> = {
   "remote.phaseSub.installed": "Installed; starting the connection",
   "remote.phaseSub.uploadFailed": "Installation failed: {reason}",
   "remote.phaseSub.readyOnline": "Device online; workspace history ready",
-  "webRemoteControl.trigger": "Mobile remote control",
-  "webRemoteControl.triggerStatus.idle": "Remote control is off",
-  "webRemoteControl.triggerStatus.starting": "Remote control is starting",
-  "webRemoteControl.triggerStatus.waiting": "Waiting for phone",
-  "webRemoteControl.triggerStatus.connecting": "Connecting phone",
-  "webRemoteControl.triggerStatus.connected": "Phone connected",
-  "webRemoteControl.triggerStatus.error": "Remote control failed",
-  "webRemoteControl.authRequired.title": "Sign in required",
-  "webRemoteControl.authRequired.description":
-    "Sign in to control this computer from your phone. Use the same account on both devices.",
-  "webRemoteControl.authRequired.login": "Sign in",
-  "webRemoteControl.title": "Mobile remote control",
-  "webRemoteControl.description":
-    "Scan the QR code or open the link on your phone to control this workspace.",
-  "webRemoteControl.status.idle": "Idle",
-  "webRemoteControl.status.starting": "Starting",
-  "webRemoteControl.status.running": "Waiting for phone",
-  "webRemoteControl.status.connecting": "Connecting phone",
-  "webRemoteControl.status.active": "Phone connected",
-  "webRemoteControl.status.error": "Connection failed",
-  "webRemoteControl.themeMenu.trigger": "Choose theme",
-  "webRemoteControl.statusDetail.idle": "Ready to connect.",
-  "webRemoteControl.statusDetail.starting": "Starting remote control...",
-  "webRemoteControl.statusDetail.running": "Scan the QR code or open the link on your phone.",
-  "webRemoteControl.statusDetail.connecting": "Phone is connecting...",
-  "webRemoteControl.statusDetail.active": "Your phone can control this workspace.",
-  "webRemoteControl.statusDetail.error": "Could not start mobile remote control.",
-  "webRemoteControl.generating": "Preparing QR code...",
-  "webRemoteControl.qrAlt": "Web remote control QR code",
-  "webRemoteControl.mobileQr.title": "Scan from phone",
-  "webRemoteControl.mobileQr.description": "Use your phone camera to open this workspace remotely.",
-  "webRemoteControl.statusTag.phone": "Phone",
-  "webRemoteControl.statusTag.ready": "Ready",
-  "webRemoteControl.botChannel.title": "Use a bot channel",
-  "webRemoteControl.botChannel.description": "Connect a chat bot for longer-running mobile access.",
-  "webRemoteControl.botChannel.weixin.title": "Weixin",
-  "webRemoteControl.botChannel.feishu.title": "Feishu",
-  "webRemoteControl.botChannel.lark.title": "Lark",
-  "webRemoteControl.botChannel.telegram.title": "Telegram",
-  "webRemoteControl.botChannel.configure": "Configure in bot channels",
-  "webRemoteControl.botChannel.manageBots": "Manage bots",
-  "webRemoteControl.copyLink.description": "Can't scan? Open the link on your phone.",
-  "webRemoteControl.failure.sessionNotFound":
-    "This Web remote control link is no longer valid. Start it again from desktop.",
-  "webRemoteControl.failure.sessionExpired":
-    "This Web remote control session has already ended. Generate a new link from desktop to continue.",
-  "webRemoteControl.failure.sessionConflict":
-    "This link is already being used by another page. Close the other page and scan again.",
-  "webRemoteControl.failure.kicked":
-    "The relay kicked this pairing. Close the other page and generate a new QR code from desktop.",
-  "webRemoteControl.failure.workspaceClosed":
-    "The shared desktop window has been closed. Go back to desktop and start Web remote control again.",
-  "webRemoteControl.failure.desktopDisconnected":
-    "The desktop side disconnected, so this Web remote control session can no longer continue.",
-  "webRemoteControl.failure.invalidMobileConnection":
-    "The current mobile connection is no longer valid. Reload the page and reconnect.",
-  "webRemoteControl.failure.desktopBootstrapTimeout":
-    "The desktop window did not respond in time. Make sure it is still running, then reload.",
-  "webRemoteControl.failure.connectionRecoveryTimeout":
-    "The mobile connection did not recover in time, so Web remote control cannot keep syncing yet.",
-  "webRemoteControl.failure.relayUnavailable":
-    "The external relay connection is unavailable. Make sure desktop is online, then try again.",
-  "webRemoteControl.failure.unsupportedAction":
-    "Web remote control mode can only open workspaces that are already open in the current desktop window.",
-  "webRemoteControl.failure.unexpectedError":
-    "Could not start mobile remote control. Try again from desktop.",
-  "webRemoteControl.copyLink": "Copy link",
-  "webRemoteControl.copyLink.copied": "Remote control link copied",
-  "webRemoteControl.copyLinkFailed": "Could not copy remote control link: {error}",
-  "webRemoteControl.refreshQr": "Refresh QR",
-  "webRemoteControl.stop": "Stop",
-  "webRemoteControl.expandNavigation": "Expand tasks and workspaces",
-  "webRemoteControl.collapseNavigation": "Collapse tasks and workspaces",
-  "webRemoteControl.homeOnlyWorkspaces": "Workspaces",
-  "webRemoteControl.noSwitchableWorkspaces": "No switchable workspaces",
-  "webRemoteControl.switchDevice": "Switch device",
-  "webRemoteControl.unnamedDevice": "Unnamed device",
-  "webRemoteControl.mobileShell.backHome": "Back to task home",
-  "webRemoteControl.mobileShell.chatTitle": "Task chat",
-  "webRemoteControl.mobileShell.reconnecting": "Reconnecting automatically...",
-  "webRemoteControl.stopSuccess": "Web remote control stopped",
-  "webRemoteControl.startFailed": "Failed to start Web remote control: {error}",
-  "webRemoteControl.stopFailed": "Failed to stop Web remote control: {error}",
   "remote.selectDirectoryTitle": "Choose directory",
   "remote.selectDirectoryDescription": "Choose a directory on {method} as the workspace.",
   "remote.backToConnection": "Back to configuration",
@@ -6548,8 +6165,7 @@ const enUS: Record<string, string> = {
   "automations.breadcrumbLabel": "Automation path",
   "settings.automations.betaBadge": "Beta",
   "automations.noWorkspace": "Open a workspace to manage its scheduled tasks.",
-  "automations.description":
-    "Schedule recurring tasks or queue background work that runs during idle time.",
+  "automations.description": "Create tasks that run on a schedule or on demand.",
   "automations.description.populated": "Run tasks on a schedule or whenever you need them.",
   "automations.refresh": "Refresh",
   "automations.keepAwakeBanner": "Keep your computer awake while RaspberryCode is running a chat.",
