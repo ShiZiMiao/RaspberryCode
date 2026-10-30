@@ -132,7 +132,6 @@ modules:
       - shared
       - ui
       - conversation-workspace-target
-      - web-remote-control-ui
       - remote-connection-flow
     publicEntrypoints:
       - packages/ui/src/project-sidebar/index.tsx
@@ -410,49 +409,6 @@ modules:
     layers:
       app: .
     owner: conversation
-  # web-remote-relay：由 architecture:adopt 登记
-  - id: web-remote-relay
-    roots:
-      - packages/shared/src/web-remote-relay
-    managed: true
-    requires: []
-    publicEntrypoints:
-      - packages/shared/src/web-remote-relay/index.ts
-      - packages/shared/src/web-remote-relay/contract.ts
-    layers:
-      contract: contract.ts
-      domain: domain
-      adapters: .
-    owner: remote
-    layerOrder:
-      - contract
-      - domain
-      - app
-      - adapters
-      - ui
-  # desktop-web-remote-relay：由 architecture:adopt 登记
-  - id: desktop-web-remote-relay
-    roots:
-      - packages/desktop/src/main/web-remote-relay
-    managed: true
-    requires:
-      - client
-      - desktop
-      - shared
-      - web-remote-relay
-    publicEntrypoints:
-      - packages/desktop/src/main/web-remote-relay/index.ts
-      - packages/desktop/src/main/web-remote-relay/contract.ts
-    layers:
-      contract: contract.ts
-      adapters: .
-    owner: remote
-    layerOrder:
-      - contract
-      - domain
-      - app
-      - adapters
-      - ui
   # mobile-ui：由 architecture:adopt 登记
   - id: mobile-ui
     roots:
@@ -476,64 +432,6 @@ modules:
       - app
       - adapters
       - ui
-  # web-remote-control-ui：由 architecture:adopt 登记
-  - id: web-remote-control-ui
-    roots:
-      - packages/ui/src/web-remote-control
-    managed: true
-    requires:
-      - mobile-ui
-      - services
-      - shared
-      - ui
-    publicEntrypoints:
-      - packages/ui/src/web-remote-control/index.ts
-      - packages/ui/src/web-remote-control/contract.ts
-      - packages/ui/src/web-remote-control/WebRemoteControlDeviceHeader.tsx
-      - packages/ui/src/web-remote-control/app/useWebRemoteControlAuthSync.ts
-    layers:
-      contract: contract.ts
-      domain: domain
-      app: app
-      ui: .
-    owner: remote
-    layerOrder:
-      - contract
-      - domain
-      - app
-      - adapters
-      - ui
-  # web-remote-control：由 architecture:adopt 登记
-  - id: web-remote-control
-    roots:
-      - packages/web/src/web-remote-control
-    managed: true
-    requires:
-      - client
-      - mobile-ui
-      - shared
-      - ui
-      - web
-      - web-remote-relay
-    publicEntrypoints:
-      - packages/web/src/web-remote-control/index.ts
-      - packages/web/src/web-remote-control/contract.ts
-      - packages/web/src/web-remote-control/views.ts
-      - packages/web/src/web-remote-control/adapters/webRemoteControlThemeSeed.ts
-    layers:
-      contract: contracts
-      domain: domain
-      app: app
-      adapters: adapters
-      ui: ui
-    owner: remote
-    layerOrder:
-      - contract
-      - domain
-      - app
-      - adapters
-      - ui
-
   # 保留既有源码位置；精确登记源文件，不扩大到整个 CLI 或 handlers 目录。
   - id: cli-arguments
     roots:
@@ -637,28 +535,6 @@ modules:
     layers:
       adapters: .
     owner: conversation
-  # conversation-share-interaction：由 architecture:adopt 登记
-  - id: conversation-share-interaction
-    roots:
-      - packages/ui/src/conversation-share-interaction
-    managed: true
-    requires:
-      - services
-      - shared
-      - ui
-    publicEntrypoints:
-      - packages/ui/src/conversation-share-interaction/index.ts
-      - packages/ui/src/conversation-share-interaction/contract.ts
-      - packages/ui/src/conversation-share-interaction/ConversationSharePopover.tsx
-      - packages/ui/src/conversation-share-interaction/ConversationSharePreflightStatus.tsx
-      - packages/ui/src/conversation-share-interaction/conversationSharePopoverActions.ts
-      - packages/ui/src/conversation-share-interaction/conversationSharePreflightRequest.ts
-      - packages/ui/src/conversation-share-interaction/conversationSharePreflightResponse.ts
-    layers:
-      contract: contract.ts
-      ui: .
-    owner: conversation
-
   # workspace-plugin-preview：由 architecture:adopt 登记
   - id: workspace-plugin-preview
     roots:
@@ -903,3 +779,19 @@ exceptions:
       - packages/ui/src/components/workflow-timeline/WorkflowSavePopover.tsx
       - packages/ui/src/store/workflowRunSavedStore.ts
     reason: "Modified for RaspberryCode: admitted upstream files edited only to rebrand user-visible product strings and comments in the final text sweep; adopting the surrounding unmanaged directories needs a separate module boundary refactor."
+  - id: raspberrycode-standalone-transformation-unmanaged-edit
+    rule: unmanaged-new-file
+    paths:
+      - apps/zcode-cli/packages/adapters/src/model/tool-search.ts
+      - apps/zcode-cli/packages/adapters/src/model/workflow-model-failure-policy.ts
+      - apps/zcode-cli/packages/bootstrap/src/app/cli-default-selection.ts
+      - apps/zcode-cli/packages/bootstrap/src/zcode-protocol/fork-model-selection.ts
+      - apps/zcode-cli/packages/bootstrap/src/zcode-protocol/provider-registry-refresh.ts
+      - apps/zcode-cli/packages/cli/src/tui-prompt-handler-queries.ts
+      - apps/zcode-cli/packages/core/src/runtime/methods/sample-model.ts
+      - apps/zcode-cli/packages/core/src/runtime/methods/turn-tool-visibility.ts
+      - packages/desktop/src/main/resourceManagerNetwork.ts
+      - packages/ui/src/settings/EndpointOriginSetting.tsx
+      - packages/ui/src/sidebar-activity/SidebarBottomActivity.tsx
+      - packages/ui/src/v4/conversationTurnRenderUnitTypes.ts
+    reason: "Modified for RaspberryCode: admitted unmanaged files created or reworked by the standalone CodingAgent transformation (endpoint setting row, account-chain removal, model selection rework); adopting the surrounding unmanaged directories needs a separate module boundary refactor."
