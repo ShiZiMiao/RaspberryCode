@@ -31,15 +31,7 @@ import type {
   ApplicationIconInfo,
   ApplicationIconRequest,
   Locale,
-  WebRemoteControlContext,
-  WebRemoteControlReconnectWorkspaceRequest,
-  WebRemoteControlReconnectWorkspaceResult,
-  WebRemoteControlStartOperationResult,
-  WebRemoteControlStatus,
-  WebRemoteControlWorkspaceTarget,
   OAuthStateRegistration,
-  WebRemoteControlAuthStateChange,
-  PostUpdateReleaseNotesPayload,
   RemoteConnectionRuntimeLog,
   RemoteSessionClosedEvent,
   RemoteTarget,
@@ -53,8 +45,6 @@ import type {
   WindowScreenshotResult,
   EmbeddedBrowserDataClearResult,
   WSLDistro,
-  UpdateCheckResultPayload,
-  UpdateStatePayload,
   OpenInEditorOptions,
 } from "@zcode/shared";
 
@@ -95,18 +85,6 @@ declare global {
         workspacePath: string;
         workspaceIdentity?: string;
       }): Promise<import("@zcode/shared").BindRemoteWorkspaceSessionContextResult>;
-      /** 为当前 workspace 开启 Web 远程控制 */
-      startWebRemoteControl(
-        context: WebRemoteControlContext,
-      ): Promise<WebRemoteControlStartOperationResult>;
-      /** 关闭当前窗口的 Web 远程控制 */
-      stopWebRemoteControl(): Promise<void>;
-      /** 查询当前窗口 Web 远程控制状态 */
-      getWebRemoteControlStatus(): Promise<WebRemoteControlStatus>;
-      /** 订阅当前窗口 Web 远程控制状态变化 */
-      onWebRemoteControlStatusChanged?(
-        handler: (status: WebRemoteControlStatus) => void,
-      ): () => void;
       /** 释放当前窗口里的远程 session */
       disposeRemoteSession(sessionId: string): Promise<void>;
       /** 检查本机 Docker daemon 是否可用 */
@@ -147,15 +125,6 @@ declare global {
       activateOrSetWorkspace?(path: string): Promise<{ activated: boolean }>;
       /** 同步当前窗口所有 tab 的 workspace 路径到 main 进程 */
       syncWindowTabs(paths: string[]): void;
-      /** 同步当前窗口里 Web 远程控制允许切换的 workspace */
-      syncWebRemoteControlWorkspaces?(workspaces: WebRemoteControlWorkspaceTarget[]): void;
-      /** 同步当前窗口里 Web 远程控制可展示的 task 快照 */
-      /** 注册手机端 Web 远控请求重连 workspace 的回调 */
-      onWebRemoteControlReconnectWorkspace?(
-        handler: (
-          request: WebRemoteControlReconnectWorkspaceRequest,
-        ) => Promise<WebRemoteControlReconnectWorkspaceResult>,
-      ): () => void;
       /** 同步当前窗口的未读 task 数到 main 进程 */
       syncWindowUnreadCount(count: number): void;
       syncActiveTaskSession(sessionId: string | null): void;
@@ -270,7 +239,6 @@ declare global {
       startCuaHelperPermissionDrag?(): void;
       /** 上报 OAuth state 用于 deep link 路由 */
       registerOAuthState(payload: OAuthStateRegistration): void;
-      notifyWebRemoteControlAuthStateChanged(change: WebRemoteControlAuthStateChange): void;
       /** 注册 OAuth deep link 回调，返回 disposer */
       onOAuthCallback(cb: (url: string) => void): () => void;
       /** 注册支付 deep link 回调，返回 disposer */
@@ -330,28 +298,6 @@ declare global {
       ): Promise<ChromeBrowserDataImportResult>;
       /** 清理内置浏览器缓存或全部站点数据。 */
       clearEmbeddedBrowserData?(mode: "cache" | "all"): Promise<EmbeddedBrowserDataClearResult>;
-      /** 注册新版本已下载完毕的回调，返回 disposer */
-      onUpdateReady(callback: (version: string) => void): () => void;
-      /** 注册"手动检查更新"结果的回调，返回 disposer */
-      onUpdateCheckResult(callback: (payload: UpdateCheckResultPayload) => void): () => void;
-      /** 注册自动更新持续状态变化，返回 disposer */
-      onUpdateStateChanged?(callback: (payload: UpdateStatePayload) => void): () => void;
-      /** 主动读取当前自动更新状态 */
-      getUpdateState?(): Promise<UpdateStatePayload>;
-      /** 开始下载当前已发现的更新 */
-      downloadUpdate?(): Promise<void>;
-      /** 取消当前正在下载的更新 */
-      cancelUpdateDownload?(): Promise<void>;
-      /** 打开或聚焦独立更新窗口 */
-      openUpdateStatusWindow?(): Promise<void>;
-      /** 读取自动更新偏好 */
-      getAutoUpdatePreferences?(): Promise<{
-        autoDownloadAndInstallUpdates: boolean;
-      }>;
-      /** 写入“自动下载并安装更新”偏好 */
-      setAutoDownloadAndInstallUpdates?(enabled: boolean): Promise<void>;
-      /** 跳过当前已发现的更新版本 */
-      skipUpdateVersion?(version: string): Promise<void>;
       /** 注册应用语言变化，返回 disposer */
       onApplicationLocaleChanged?(callback: (locale: Locale) => void): () => void;
       /** 订阅 main 进程修改 settings 后的通知 */
@@ -360,14 +306,6 @@ declare global {
       getDesktopSessionActivity?(): Promise<{
         runningAgentSessionCount: number;
       }>;
-      /** 注册更新安装后的版本说明，返回 disposer */
-      onPostUpdateReleaseNotes(
-        callback: (payload: PostUpdateReleaseNotesPayload) => void,
-      ): () => void;
-      /** 标记当前版本说明已读 */
-      acknowledgePostUpdateReleaseNotes(version: string): Promise<void>;
-      /** 用户确认重启安装更新 */
-      quitAndInstallUpdate(): Promise<void>;
       /** 获取已安装的编辑器/终端列表（含图标） */
       getInstalledEditors(filePath?: string): Promise<EditorInfo[]>;
       /** 按兼容 bundle id 或结构化 locator 获取系统应用图标 */
