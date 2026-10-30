@@ -7,7 +7,6 @@ export interface ProviderEndpointRoutingDecision {
 }
 
 export interface ProviderEndpointRoutingResolveOptions {
-  apiKeyId?: string;
   signal?: AbortSignal;
   trace?: TraceContext;
 }

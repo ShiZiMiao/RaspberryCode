@@ -65,7 +65,7 @@ const PROVIDER_BUSINESS_CODE_MAPPINGS = new Map<string, ProviderBusinessCodeMapp
     {
       code: ModelErrorCode.ProviderNotConfigured,
       reason: ModelFailureReasonValue.AuthFailed,
-      retryReason: ModelRetryReasonValue.AuthRefresh,
+      retryReason: ModelRetryReasonValue.NetworkError,
       retryable: false,
     },
   ],
@@ -101,7 +101,7 @@ const PROVIDER_BUSINESS_CODE_MAPPINGS = new Map<string, ProviderBusinessCodeMapp
     {
       code: ModelErrorCode.InvalidModelRequest,
       reason: ModelFailureReasonValue.AuthFailed,
-      retryReason: ModelRetryReasonValue.AuthRefresh,
+      retryReason: ModelRetryReasonValue.NetworkError,
       retryable: false,
     },
   ],

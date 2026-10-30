@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- 超长单文件：预存规模，本次拆除仅减行未增行。 */
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type {
@@ -55,9 +56,7 @@ import type {
 
 export {
   addMarketplace,
-  applyClaudePluginIcons,
   describeMarketplacePlugin,
-  enrichCachedClaudeMarketplaceIcons,
   ensureDefaultPluginMarketplaces,
   ensureMarketplaceManifestAvailable,
   getPluginDataDir,
@@ -67,7 +66,6 @@ export {
   loadMarketplaceManifestSync,
   normalizeAuthorValue,
   parseEntryStoreListing,
-  parsePluginIconSources,
   parseMarketplaceSourceInput,
   readPluginSourceIdentityPin,
   readPluginSourceSha,

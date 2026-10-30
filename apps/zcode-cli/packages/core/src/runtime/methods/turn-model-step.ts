@@ -1,6 +1,5 @@
 import type { ToolSearchExecutionContext } from "@zcode/contracts";
 import { getTurnTools } from "./turn-tool-visibility.js";
-import { isOffPeakUserTakeover, refreshOffPeakTurnAfterTakeover } from "../off-peak/turn.js";
 
 import { beginLocalTurnPreparation } from "@zcode/contracts";
 import {
@@ -328,30 +327,6 @@ async function runModelBackedTurnStepImpl(
       if (state.toolCallCount > toolCallCountBeforeStreamRecovery) {
         completeOutputTokenRecovery(state.turnRequestState);
       }
-      return "continue";
-    }
-    if (
-      !state.turnAbortSignal.aborted &&
-      isOffPeakUserTakeover(error) &&
-      refreshOffPeakTurnAfterTakeover(this, state)
-    ) {
-      await streamingToolCoordinator.abandon("model_failed");
-      await this.persistAssistantMessage(
-        assistantMessageId,
-        state.userMessageId,
-        assistantCreatedAt,
-        {
-          completed: Date.now(),
-          finish: "off_peak_request_replaced",
-        },
-        modelTraceContext,
-        model,
-      );
-      state.modelResponse = "";
-      state.modelStepCount += 1;
-      recordModelHistoryRound(state);
-      state.turnMachine = new TurnMachineImpl(state.turnMachine.receiveModelResponse(""));
-      state.turnMachine = new TurnMachineImpl(state.turnMachine.aggregateResults());
       return "continue";
     }
     const admissionRetryDelayMs = getStartPlanBusyAdmissionRetryDelayMs({

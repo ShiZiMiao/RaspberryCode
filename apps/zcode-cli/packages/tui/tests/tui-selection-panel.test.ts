@@ -26,8 +26,8 @@ test("renders non-filterable selections without a filter prompt", () => {
 
   assert.equal(textNodes.some((node) => node.text.includes("filter:")), false);
   assert.ok(textNodes.some((node) => node.text === baseSelection.help));
-  assert.ok(textNodes.some((node) => node.text === "Z.AI Coding Plan"));
-  const detailNode = textNodes.find((node) => node.text.includes("Open browser login"));
+  assert.ok(textNodes.some((node) => node.text === "Provider One"));
+  const detailNode = textNodes.find((node) => node.text.includes("Connect a hosted provider account"));
   assert.equal(detailNode?.style.fg, palette.muted);
   assert.equal(detailNode?.style.flexShrink, 0);
 });
@@ -98,11 +98,11 @@ test("pending selections replace options and keep escape as cancel", () => {
     ...baseSelection,
     filter: "",
     pending: {
-      cancelStatus: "Login cancelled. Choose a setup method.",
-      command: "/login zai-coding-plan",
+      cancelStatus: "Operation cancelled. Choose a setup method.",
+      command: "/setup provider-one",
       help: "Esc cancels and returns to setup choices.",
-      itemId: "zai-coding-plan",
-      primary: "Waiting for Z.AI authorization",
+      itemId: "provider-one",
+      primary: "Waiting for provider authorization",
       secondary: "Complete sign-in in your browser.",
       status: "Waiting for browser authorization...",
     },
@@ -111,8 +111,8 @@ test("pending selections replace options and keep escape as cancel", () => {
   const panel = SelectionPanel({ contentWidth: 72, copy: EN_COPY, selection });
   const textNodes = collectTextNodes(panel);
 
-  assert.ok(textNodes.some((node) => node.text === "Waiting for Z.AI authorization"));
-  assert.equal(textNodes.some((node) => node.text === "Z.AI Coding Plan"), false);
+  assert.ok(textNodes.some((node) => node.text === "Waiting for provider authorization"));
+  assert.equal(textNodes.some((node) => node.text === "Provider One"), false);
 });
 
 test("pending selection escape aborts and restores setup choices", () => {
@@ -121,11 +121,11 @@ test("pending selection escape aborts and restores setup choices", () => {
     ...baseSelection,
     filter: "",
     pending: {
-      cancelStatus: "Login cancelled. Choose a setup method.",
-      command: "/login zai-coding-plan",
+      cancelStatus: "Operation cancelled. Choose a setup method.",
+      command: "/setup provider-one",
       help: "Esc cancels and returns to setup choices.",
-      itemId: "zai-coding-plan",
-      primary: "Waiting for Z.AI authorization",
+      itemId: "provider-one",
+      primary: "Waiting for provider authorization",
       status: "Waiting for browser authorization...",
     },
     selectedIndex: 0,
@@ -147,7 +147,7 @@ test("pending selection escape aborts and restores setup choices", () => {
 
   assert.equal(cancelled, true);
   assert.equal(selection.pending, undefined);
-  assert.deepEqual(statuses, ["Login cancelled. Choose a setup method."]);
+  assert.deepEqual(statuses, ["Operation cancelled. Choose a setup method."]);
 });
 
 test("pending row submission preserves the selection panel while it waits", () => {
@@ -171,15 +171,15 @@ test("pending row submission preserves the selection panel while it waits", () =
     },
   );
 
-  assert.equal(selection.pending?.itemId, "zai-coding-plan");
+  assert.equal(selection.pending?.itemId, "provider-one");
   assert.equal(statuses.at(-1), "Waiting for browser authorization...");
   assert.deepEqual(submissions, [
     {
       options: {
-        abortStatus: "Login cancelled. Choose a setup method.",
+        abortStatus: "Operation cancelled. Choose a setup method.",
         preserveSelection: true,
       },
-      value: "/login zai-coding-plan",
+      value: "/setup provider-one",
     },
   ]);
 });
@@ -191,13 +191,13 @@ test("input selections replace options with an inline hidden input", () => {
     input: {
       cancelStatus: "API key entry cancelled. Choose a setup method.",
       clearStatus: "API key input cleared.",
-      command: "/login zai-coding-plan-api-key",
+      command: "/setup api-key",
       emptyStatus: "API key is required.",
       help: "Enter saves the key. Esc returns to setup choices.",
-      itemId: "zai-coding-plan-api-key",
+      itemId: "api-key",
       mask: true,
       placeholder: "Paste API key",
-      primary: "Enter Z.AI Coding Plan API Key",
+      primary: "Enter Manual API Key",
       secondary: "Paste the key here. It is hidden while typing.",
       status: "Enter the API key, then press Enter.",
       submitStatus: "Saving API key...",
@@ -209,9 +209,9 @@ test("input selections replace options with an inline hidden input", () => {
   const panel = SelectionPanel({ contentWidth: 72, copy: EN_COPY, selection });
   const textNodes = collectTextNodes(panel);
 
-  assert.ok(textNodes.some((node) => node.text === "Enter Z.AI Coding Plan API Key"));
+  assert.ok(textNodes.some((node) => node.text === "Enter Manual API Key"));
   assert.ok(textNodes.some((node) => node.text === "> **********"));
-  assert.equal(textNodes.some((node) => node.text === "BigModel Coding Plan"), false);
+  assert.equal(textNodes.some((node) => node.text === "Provider Two"), false);
 });
 
 test("input row submission stays in the setup panel before saving the key", () => {
@@ -236,7 +236,7 @@ test("input row submission stays in the setup panel before saving the key", () =
     },
   );
 
-  assert.equal(selection?.input?.itemId, "zai-coding-plan-api-key");
+  assert.equal(selection?.input?.itemId, "api-key");
   assert.equal(statuses.at(-1), "Enter the API key, then press Enter.");
   assert.deepEqual(submissions, []);
 
@@ -269,7 +269,7 @@ test("input row submission stays in the setup panel before saving the key", () =
   );
 
   assert.equal(selection, undefined);
-  assert.deepEqual(submissions, ["/login zai-coding-plan-api-key manual-key"]);
+  assert.deepEqual(submissions, ["/setup api-key manual-key"]);
 });
 
 test("input selection escape restores setup choices", () => {
@@ -279,12 +279,12 @@ test("input selection escape restores setup choices", () => {
     input: {
       cancelStatus: "API key entry cancelled. Choose a setup method.",
       clearStatus: "API key input cleared.",
-      command: "/login zai-coding-plan-api-key",
+      command: "/setup api-key",
       emptyStatus: "API key is required.",
-      itemId: "zai-coding-plan-api-key",
+      itemId: "api-key",
       mask: true,
       placeholder: "Paste API key",
-      primary: "Enter Z.AI Coding Plan API Key",
+      primary: "Enter Manual API Key",
       status: "Enter the API key, then press Enter.",
       value: "manual-key",
     },
@@ -308,32 +308,32 @@ test("input selection escape restores setup choices", () => {
 });
 
 const baseSelection: SelectionState = {
-  emptyMessage: "No login options are available.",
+  emptyMessage: "No setup options are available.",
   filter: "",
   help: "Use Up/Down to choose, Enter to select.",
   items: [
     {
-      command: "/login zai-coding-plan",
-      id: "zai-coding-plan",
+      command: "/setup provider-one",
+      id: "provider-one",
       pending: {
-        cancelStatus: "Login cancelled. Choose a setup method.",
+        cancelStatus: "Operation cancelled. Choose a setup method.",
         help: "Esc cancels and returns to setup choices.",
-        primary: "Waiting for Z.AI authorization",
+        primary: "Waiting for provider authorization",
         secondary: "Complete sign-in in your browser.",
         status: "Waiting for browser authorization...",
       },
-      primary: "Z.AI Coding Plan",
-      secondary: "Open browser login and create a Coding Plan API key.",
+      primary: "Provider One",
+      secondary: "Connect a hosted provider account.",
     },
     {
-      command: "/login bigmodel-coding-plan",
-      id: "bigmodel-coding-plan",
-      primary: "BigModel Coding Plan",
-      secondary: "Open browser login with a localhost callback.",
+      command: "/setup provider-two",
+      id: "provider-two",
+      primary: "Provider Two",
+      secondary: "Connect a cloud provider account.",
     },
     {
-      command: "/login zai-coding-plan-api-key",
-      id: "zai-coding-plan-api-key",
+      command: "/setup api-key",
+      id: "api-key",
       input: {
         cancelStatus: "API key entry cancelled. Choose a setup method.",
         clearStatus: "API key input cleared.",
@@ -341,18 +341,18 @@ const baseSelection: SelectionState = {
         help: "Enter saves the key. Esc returns to setup choices.",
         mask: true,
         placeholder: "Paste API key",
-        primary: "Enter Z.AI Coding Plan API Key",
+        primary: "Enter Manual API Key",
         secondary: "Paste the key here. It is hidden while typing.",
         status: "Enter the API key, then press Enter.",
         submitStatus: "Saving API key...",
       },
-      primary: "Z.AI Coding Plan API Key",
-      secondary: "Paste a Coding Plan API key manually.",
+      primary: "Manual API Key",
+      secondary: "Paste a provider API key manually.",
     },
   ],
-  prompt: "Choose a login or API key setup method.",
+  prompt: "Choose a setup method.",
   selectedIndex: 0,
-  title: "Set Up Coding Plan",
+  title: "Provider Setup",
 };
 
 function key(name: string, overrides: Partial<KeyEvent> = {}): KeyEvent {

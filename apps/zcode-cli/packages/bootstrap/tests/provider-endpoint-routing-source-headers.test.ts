@@ -18,7 +18,7 @@ describe("createProviderEndpointRoutingSourceHeaders", () => {
       join(tmpdir(), "zcode-routing-source-headers-"),
     );
     tempDirs.push(dataBaseDir);
-    const stateDir = join(dataBaseDir, ".zcode", "v2");
+    const stateDir = join(dataBaseDir, ".raspberrycode", "v2");
     await mkdir(stateDir, { recursive: true });
     await writeFile(
       join(stateDir, "telemetry-state.json"),
@@ -46,7 +46,7 @@ describe("createProviderEndpointRoutingSourceHeaders", () => {
       "X-Os-Version": readOsRelease(),
       "X-Platform": `${process.platform}-${readOsArch()}`,
       "X-Release-Channel": "test",
-      "X-Title": "Z Code@electron",
+      "X-Title": "RaspberryCode@electron",
       "X-RaspberryCode-App-Version": "1.2.3",
     });
     expect(headers).not.toHaveProperty("Authorization");
@@ -67,10 +67,10 @@ describe("createProviderEndpointRoutingSourceHeaders", () => {
     });
 
     expect(headers).toMatchObject({
-      "HTTP-Referer": "https://zcode.z.ai",
+      "HTTP-Referer": "https://your-server.example",
       "User-Agent": "RaspberryCode/2.0.0",
       "X-Release-Channel": "production",
-      "X-Title": "Z Code@cli",
+      "X-Title": "RaspberryCode@cli",
     });
     expect(headers).not.toHaveProperty("X-Device-Mid");
   });

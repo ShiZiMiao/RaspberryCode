@@ -113,7 +113,6 @@ test("native first paint precedes initialization and theme detection; ready opti
         initialThoughtLevel: "high",
         initialMode: "plan",
         theme: "dark",
-        loginRequired: false,
         slashCommands: [
           { name: "startup-command", summary: "Loaded command", usage: "/startup-command" },
         ],
@@ -141,7 +140,7 @@ test("ready app owns Ctrl+C after the startup screen unmounts", async () => {
   const terminal = await terminalFixture({ loadStartupOptions: () => startup.promise });
   try {
     await terminal.action(() => terminal.renderOnce());
-    await terminal.action(() => startup.resolve({ loginRequired: false }));
+    await terminal.action(() => startup.resolve({}));
     assert.doesNotMatch(terminal.captureCharFrame(), /Starting RaspberryCode/);
     await terminal.action(() => terminal.mockInput.pressCtrlC());
     assert.equal(terminal.renderer.isDestroyed, false);

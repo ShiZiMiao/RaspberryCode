@@ -12,7 +12,6 @@ import type { ReadFileStateMap } from "../../tool/types.js";
 import type { AgentRuntimeInternal } from "../internal.js";
 import { getSessionShellSelectionFromConfig } from "../methods/session-shell-environment.js";
 import { prepareRuntimeProviderRequest } from "./runtime-provider-request-messages.js";
-import { createRefreshRuntimeHeadersBeforeModelAttempt } from "../methods/model-runtime-headers.js";
 import { createRuntimeModel, withModelInvocationContext } from "../methods/runtime-model.js";
 
 export interface ProjectMemoryAgentContext {
@@ -53,11 +52,6 @@ export function captureProjectMemoryAgentContext(
       skipTranscript: true,
     },
     modelCall: { operation: input.operation },
-    refreshRuntimeHeadersBeforeAttempt: createRefreshRuntimeHeadersBeforeModelAttempt(runtime, {
-      abortSignal: request.abortSignal,
-      model,
-      traceContext: input.traceContext,
-    }),
     traceContext: input.traceContext,
   }));
   return {

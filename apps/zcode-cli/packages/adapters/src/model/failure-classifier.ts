@@ -209,7 +209,7 @@ export function classifyModelFailure(
       code: ModelErrorCode.ProviderNotConfigured,
       message: "Provider authentication failed.",
       reason: ModelFailureReasonValue.AuthFailed,
-      retryReason: ModelRetryReasonValue.AuthRefresh,
+      retryReason: ModelRetryReasonValue.NetworkError,
       retryable: false,
       statusCode,
     };
@@ -393,7 +393,7 @@ function classifyProviderBusinessFailure(
       code: ModelErrorCode.ProviderNotConfigured,
       message,
       reason: ModelFailureReasonValue.AuthFailed,
-      retryReason: ModelRetryReasonValue.AuthRefresh,
+      retryReason: ModelRetryReasonValue.NetworkError,
       retryable: false,
       retryAfterMs,
       statusCode: effectiveStatusCode,

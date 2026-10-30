@@ -11,40 +11,21 @@ import type {
   SessionEvent,
   TraceContext,
 } from "../deps.js";
-import type { AgentTelemetryCausation, ModelRequestDependencies } from "@zcode/contracts";
+import type { AgentTelemetryCausation } from "@zcode/contracts";
 import type { AgentRuntimeInternal } from "../internal.js";
-import { createRefreshRuntimeHeadersBeforeModelAttempt } from "./model-runtime-headers.js";
 import { recordModelUsageFact } from "./usage-observability.js";
 import { createRuntimeModel } from "./runtime-model.js";
 import { cloneModelSelection } from "../model-selection.js";
 import { auxiliaryModelOptions } from "../../model/auxiliary-model-options.js";
-import { getOffPeakExecution } from "../off-peak/runtime.js";
 
 export interface TitleModelContext {
   selection: ModelSelection | undefined;
-  requestDependencies?: ModelRequestDependencies;
   release(): void;
 }
 
-export function retainTitleModelContext(
-  runtime: AgentRuntimeInternal,
-  offPeakExecutionId?: string,
-): TitleModelContext {
+export function retainTitleModelContext(runtime: AgentRuntimeInternal): TitleModelContext {
   const explicitSelection = runtime.config.titleGeneration?.modelSelection;
-  const execution = getOffPeakExecution(runtime);
-  const idle = execution && !execution.lifecycle.terminal && !execution.lifecycle.ownedByUser;
-  // 标题先异步读库，主轮可能在此期间结束；必须在入队时冻结选择并独立保留票据。
-  if (!explicitSelection && idle && execution.executionId === offPeakExecutionId) {
-    const binding = execution.authority.createBinding();
-    return {
-      selection: cloneModelSelection(execution.selection),
-      requestDependencies: binding.requestDependencies,
-      release: () => binding.release(),
-    };
-  }
-  // 独立标题遵循自己的配置；未归属闲时执行的调用不能借用临时 Session 闲时模型。
-  const selection =
-    explicitSelection ?? (idle ? execution.ordinarySelection : runtime.getSessionModelSelection());
+  const selection = explicitSelection ?? runtime.getSessionModelSelection();
   return { selection: selection && cloneModelSelection(selection), release() {} };
 }
 
@@ -129,7 +110,6 @@ async function generateTitleCandidateImpl(
   if (!requestedModelSelection) return null;
   const baseModel = createRuntimeModel(this, {
     selection: requestedModelSelection,
-    requestDependencies: context.requestDependencies,
   });
   const model = baseModel.bind(auxiliaryModelOptions(baseModel));
   const modelSelection = cloneModelSelection(requestedModelSelection);
@@ -171,11 +151,6 @@ async function generateTitleCandidateImpl(
     },
     statusSink: this.createModelStatusSink(modelTraceContext, events),
     traceContext: modelTraceContext,
-    refreshRuntimeHeadersBeforeAttempt: createRefreshRuntimeHeadersBeforeModelAttempt(this, {
-      abortSignal: titleAbortSignal,
-      model,
-      traceContext: modelTraceContext,
-    }),
   };
 
   const resultPromise = runWithModelInvocationContext(invocationContext, () =>

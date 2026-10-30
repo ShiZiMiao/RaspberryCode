@@ -7,12 +7,12 @@ import {
 } from "../src/runtime/methods/turn-execution-fallback.js";
 import { resolveExecutionModelRetryBudget } from "../src/runtime/methods/turn-model.js";
 
-// docs/highspeed/highspeed-card-spec.md §2.2：加速请求任何失败都退回会话模型；卡过期按 3402 单独给原因。
-const HIGHSPEED_PROVIDER_ID = "account:zai-highspeed-card";
+// 执行作用域请求任何失败都退回会话模型；卡过期按 3402 单独给原因。
+const FALLBACK_PROVIDER_ID = "account:legacy-fallback-card";
 const SESSION_PROVIDER_ID = "builtin:zai-coding-plan";
 const CARD_EXPIRED_CODE = "3402";
 const declaration = {
-  providerId: HIGHSPEED_PROVIDER_ID,
+  providerId: FALLBACK_PROVIDER_ID,
   rules: [
     { reason: "highspeed_card_expired" as const, providerErrorCode: CARD_EXPIRED_CODE },
     { reason: "highspeed_request_failed" as const },
@@ -28,7 +28,7 @@ function adapterError(
   return Object.assign(new Error(message), {
     code,
     context: {
-      providerId: HIGHSPEED_PROVIDER_ID,
+      providerId: FALLBACK_PROVIDER_ID,
       modelId: "GLM-5.3",
       source: "provider",
       ...context,
@@ -43,7 +43,7 @@ function match(
 ) {
   return matchExecutionSelectionFallback({
     error,
-    executionProviderId: HIGHSPEED_PROVIDER_ID,
+    executionProviderId: FALLBACK_PROVIDER_ID,
     selectionFallback: declaration,
     turnAborted: false,
     ...overrides,
@@ -51,7 +51,7 @@ function match(
 }
 
 describe("matchExecutionSelectionFallback", () => {
-  it("卡过期错误码命中首条规则，原因为 highspeed_card_expired 并带回归因", () => {
+  it("卡过期错误码命中首条规则，原因为卡过期原因并带回归因", () => {
     expect(match(adapterError({ providerCode: CARD_EXPIRED_CODE, statusCode: 400 }))).toEqual({
       reason: "highspeed_card_expired",
       providerErrorCode: CARD_EXPIRED_CODE,
@@ -103,7 +103,7 @@ describe("matchExecutionSelectionFallback", () => {
   });
 
   it("只声明错误码规则时，其他失败不退回；规则按声明顺序首个命中", () => {
-    const expiredOnly = { providerId: HIGHSPEED_PROVIDER_ID, rules: [declaration.rules[0]!] };
+    const expiredOnly = { providerId: FALLBACK_PROVIDER_ID, rules: [declaration.rules[0]!] };
     expect(
       match(adapterError({ statusCode: 500 }), { selectionFallback: expiredOnly }),
     ).toBeUndefined();
@@ -113,7 +113,7 @@ describe("matchExecutionSelectionFallback", () => {
     ).toBe("highspeed_card_expired");
     // 兜底规则排在前面会遮蔽后面的错误码规则：声明顺序就是优先级。
     const catchAllFirst = {
-      providerId: HIGHSPEED_PROVIDER_ID,
+      providerId: FALLBACK_PROVIDER_ID,
       rules: [declaration.rules[1]!, declaration.rules[0]!],
     };
     expect(
@@ -131,7 +131,7 @@ describe("matchExecutionSelectionCreationFallback", () => {
       expect(
         matchExecutionSelectionCreationFallback({
           error,
-          selection: { providerId: HIGHSPEED_PROVIDER_ID, modelId: "GLM-5.3" },
+          selection: { providerId: FALLBACK_PROVIDER_ID, modelId: "GLM-5.3" },
           selectionFallback: declaration,
           selectionScope: "execution",
         }),
@@ -148,7 +148,7 @@ describe("matchExecutionSelectionCreationFallback", () => {
   );
 
   it("普通 Selection 与其他创建错误不退回", () => {
-    const selection = { providerId: HIGHSPEED_PROVIDER_ID, modelId: "GLM-5.3" };
+    const selection = { providerId: FALLBACK_PROVIDER_ID, modelId: "GLM-5.3" };
     expect(
       matchExecutionSelectionCreationFallback({
         error: new ModelProtocolError(ModelErrorCode.ProviderNotFound, "missing"),
@@ -181,7 +181,7 @@ describe("resolveExecutionFallbackCandidates", () => {
     expect(
       resolveExecutionFallbackCandidates({
         declaredTarget: target,
-        executionProviderId: HIGHSPEED_PROVIDER_ID,
+        executionProviderId: FALLBACK_PROVIDER_ID,
         sessionSelection: resident,
       }),
     ).toEqual([
@@ -194,14 +194,14 @@ describe("resolveExecutionFallbackCandidates", () => {
     expect(
       resolveExecutionFallbackCandidates({
         declaredTarget: undefined,
-        executionProviderId: HIGHSPEED_PROVIDER_ID,
+        executionProviderId: FALLBACK_PROVIDER_ID,
         sessionSelection: resident,
       }),
     ).toEqual([{ source: "session_selection", selection: resident }]);
     expect(
       resolveExecutionFallbackCandidates({
         declaredTarget: undefined,
-        executionProviderId: HIGHSPEED_PROVIDER_ID,
+        executionProviderId: FALLBACK_PROVIDER_ID,
         sessionSelection: undefined,
       }),
     ).toEqual([]);
@@ -211,15 +211,15 @@ describe("resolveExecutionFallbackCandidates", () => {
     // 退回同一个失败端点只会再失败一次；误声明成加速 provider 的 target 直接忽略。
     expect(
       resolveExecutionFallbackCandidates({
-        declaredTarget: { providerId: HIGHSPEED_PROVIDER_ID, modelId: "GLM-5.3" },
-        executionProviderId: HIGHSPEED_PROVIDER_ID,
+        declaredTarget: { providerId: FALLBACK_PROVIDER_ID, modelId: "GLM-5.3" },
+        executionProviderId: FALLBACK_PROVIDER_ID,
         sessionSelection: target,
       }),
     ).toEqual([{ source: "session_selection", selection: target }]);
     expect(
       resolveExecutionFallbackCandidates({
         declaredTarget: target,
-        executionProviderId: HIGHSPEED_PROVIDER_ID,
+        executionProviderId: FALLBACK_PROVIDER_ID,
         sessionSelection: { ...target, options: { ...target.options } },
       }),
     ).toEqual([{ source: "declared_target", selection: target }]);
@@ -230,7 +230,7 @@ describe("resolveExecutionModelRetryBudget", () => {
   it("带退回声明且 Selection 指向声明 provider 的执行句柄 0 次重试", () => {
     expect(
       resolveExecutionModelRetryBudget({
-        selection: { providerId: HIGHSPEED_PROVIDER_ID, modelId: "GLM-5.3" },
+        selection: { providerId: FALLBACK_PROVIDER_ID, modelId: "GLM-5.3" },
         selectionFallback: declaration,
       }),
     ).toBe(ModelRetryBudget.SingleAttempt);
@@ -239,7 +239,7 @@ describe("resolveExecutionModelRetryBudget", () => {
   it("无声明、无 Selection 或 Selection 不是声明 provider 时沿用默认预算", () => {
     expect(
       resolveExecutionModelRetryBudget({
-        selection: { providerId: HIGHSPEED_PROVIDER_ID, modelId: "GLM-5.3" },
+        selection: { providerId: FALLBACK_PROVIDER_ID, modelId: "GLM-5.3" },
         selectionFallback: undefined,
       }),
     ).toBeUndefined();

@@ -35,7 +35,6 @@ function fixture(embeddedSearchEnabled = false) {
     includeEscalate: true,
     includeWorkflow: true,
     includeAutomation: true,
-    includeOffPeak: true,
     includeDynamicWorkflow: true,
     includeNodeRepl: true,
     includeBrowserUse: true,

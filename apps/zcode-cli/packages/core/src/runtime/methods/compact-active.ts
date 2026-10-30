@@ -65,7 +65,6 @@ import {
 } from "./compact-active-helpers.js";
 import { runCompactSummaryModelRequest } from "./compact-summary-model-request.js";
 import { resolveNormalRequestMaxOutputTokens } from "./model-token-limits.js";
-import { createRefreshRuntimeHeadersBeforeModelAttempt } from "./model-runtime-headers.js";
 import { recordModelUsageFact } from "./usage-observability.js";
 import { resetProjectMemoryRecall } from "../helpers/project-memory-recall.js";
 import { createRuntimeModel } from "./runtime-model.js";
@@ -436,11 +435,6 @@ async function compactActiveConversationImpl(
           traceContext: modelTraceContext,
           tools: prepared.request.tools,
           toolSearchEnabled: prepared.request.toolSearchEnabled,
-          refreshRuntimeHeadersBeforeAttempt: createRefreshRuntimeHeadersBeforeModelAttempt(this, {
-            abortSignal: options.abortSignal,
-            model: compactModel,
-            traceContext: modelTraceContext,
-          }),
         };
 
         try {

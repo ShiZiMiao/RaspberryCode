@@ -9,10 +9,8 @@ import {
 import { getCurrentModelInvocationContext } from "../deps.js";
 import type { AgentRuntimeInternal } from "../internal.js";
 import { cloneModelSelection } from "../model-selection.js";
-import { createRefreshRuntimeHeadersBeforeModelAttempt } from "./model-runtime-headers.js";
 import { createRuntimeModel, withModelInvocationContext } from "./runtime-model.js";
 import { applyRuntimeExecutionState } from "../execution-state.js";
-import { acceptOffPeakUserTakeover, selectionForPersistence } from "../off-peak/runtime.js";
 
 const selectionAdmissions = new WeakMap<
   AgentRuntimeInternal,
@@ -24,18 +22,6 @@ const selectionAdmissions = new WeakMap<
 >();
 // 只用于 ModelSelected 的前后展示边界，不参与选模、续跑或持久化。
 const publishedSelections = new WeakMap<AgentRuntimeInternal, ModelSelection | undefined>();
-
-/** 先固定旧会话候选，再接纳用户选择；声明目标失效时仍能退回原会话模型。 */
-export function captureHighspeedFallbackSelection(
-  runtime: AgentRuntimeInternal,
-  execution: import("../types.js").ModelExecutionContext | undefined,
-): import("../types.js").ModelExecutionContext | undefined {
-  if (!execution?.selectionFallback) return execution;
-  return {
-    ...execution,
-    highspeedFallbackSelection: structuredClone(runtime.getSessionModelSelection()),
-  };
-}
 
 export function recordPublishedModelSelection(
   runtime: AgentRuntimeInternal,
@@ -52,13 +38,11 @@ export function acceptSubmissionModelSelection(
   modelExecution?: Pick<
     import("../types.js").ModelExecutionContext,
     "selectionScope" | "selectionFallback"
-  > & {
-    highspeedFallbackSelection?: ModelSelection;
-  },
+  >,
 ): Promise<void> {
   const selection =
     modelExecution?.selectionScope === "execution"
-      ? (modelExecution.selectionFallback?.target ?? modelExecution.highspeedFallbackSelection)
+      ? modelExecution.selectionFallback?.target
       : intent?.modelSelection;
   if (!selection || !intent) return Promise.resolve();
   const previous = selectionAdmissions.get(runtime);
@@ -73,7 +57,6 @@ export function acceptSubmissionModelSelection(
   if (!publishedSelections.has(runtime)) publishedSelections.set(runtime, previousSelection);
   const appliedSelection = cloneModelSelection(selection);
   runtime.setSessionModelSelection(appliedSelection);
-  acceptOffPeakUserTakeover(runtime);
   // 保存串行化，防止旧异步写入在新选择之后落库；不引入另一份输入队列。
   const persisted = (previous?.persisted ?? Promise.resolve()).then(async () => {
     // 新 Session 的 entry 由 ensureSessionPersisted 创建时统一写入，避免先写外键失败。
@@ -109,22 +92,15 @@ export function createTurnModel(
   runtime: AgentRuntimeInternal,
   options: {
     selection?: ModelSelection;
-    requestDependencies?: import("@zcode/contracts").ModelRequestDependencies;
     retryBudget?: ModelRetryBudget;
   } = {},
 ): Model {
   const selection = options.selection ?? runtime.getSessionModelSelection();
   const model = createRuntimeModel(runtime, {
     selection,
-    requestDependencies: options.requestDependencies,
     retryBudget: options.retryBudget,
   });
   return withModelInvocationContext(model, (request) => ({
-    refreshRuntimeHeadersBeforeAttempt: createRefreshRuntimeHeadersBeforeModelAttempt(runtime, {
-      abortSignal: request.abortSignal,
-      model,
-      traceContext: getCurrentModelInvocationContext()?.traceContext ?? runtime.rootTraceContext,
-    }),
   }));
 }
 
@@ -145,7 +121,6 @@ export async function applySubmissionExecutionState(
   if (selection) {
     model ??= createTurnModel(runtime, {
       selection,
-      requestDependencies: modelExecution?.requestDependencies,
       retryBudget: resolveExecutionModelRetryBudget({
         selection,
         selectionFallback: modelExecution?.selectionFallback,
@@ -192,7 +167,7 @@ export async function persistRuntimeModelSelection(
   selection: ModelSelection,
 ): Promise<void> {
   if (!runtime.sessionStore?.saveSessionEntry) return;
-  const persistentSelection = selectionForPersistence(runtime, selection);
+  const persistentSelection = selection;
   if (!persistentSelection) return;
   const timestamp = Date.now();
   try {

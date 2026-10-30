@@ -173,7 +173,6 @@ function rowTargetActionForCommand(
     case "retryTurn":
     case "applyFileRewind":
     case "setAssistantFeedback":
-    case "setHighspeedMetrics":
       return type;
     default:
       return null;

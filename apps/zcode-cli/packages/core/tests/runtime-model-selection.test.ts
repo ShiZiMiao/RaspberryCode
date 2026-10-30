@@ -30,7 +30,7 @@ function createWarnCapturingLogger(warn: ReturnType<typeof vi.fn>): Logger {
 
 /** 加速 provider 上的请求按卡过期（3402）失败，其他 provider 正常完成。 */
 function createCardExpiryModelFactory(
-  highspeedProviderId: string,
+  fallbackProviderId: string,
   requests: Array<{ modelId: string; providerId: string }>,
 ) {
   return createTestModelFactory({
@@ -39,12 +39,12 @@ function createCardExpiryModelFactory(
         modelId: String(observation.model.modelId),
         providerId: String(observation.model.providerId),
       });
-      if (String(observation.model.providerId) === highspeedProviderId) {
-        throw Object.assign(new Error("highspeed card is invalid"), {
+      if (String(observation.model.providerId) === fallbackProviderId) {
+        throw Object.assign(new Error("card is invalid"), {
           code: "invalid_model_request",
           context: {
             providerCode: "3402",
-            providerId: highspeedProviderId,
+            providerId: fallbackProviderId,
             modelId: "GLM-5.3",
             source: "provider",
             statusCode: 400,
@@ -190,7 +190,7 @@ describe("AgentRuntime model selection event", () => {
       intent: {
         kind: "sendText",
         modelSelection: {
-          providerId: "account:zai-offpeak-idle-plan",
+          providerId: "account:idle-plan-provider",
           modelId: "GLM-5.2",
           options: { reasoningLevel: "high" },
         },
@@ -202,10 +202,10 @@ describe("AgentRuntime model selection event", () => {
 
     expect(requests).toHaveLength(1);
     expect(requests[0]).toMatchObject({
-      providerId: "account:zai-offpeak-idle-plan",
+      providerId: "account:idle-plan-provider",
       modelId: "GLM-5.2",
     });
-    expect(requests[0]?.text).toContain("account:zai-offpeak-idle-plan/GLM-5.2");
+    expect(requests[0]?.text).toContain("account:idle-plan-provider/GLM-5.2");
     expect(requests[0]?.text).not.toContain("provider-a/model-a");
     expect(runtime.getSessionModelSelection()).toEqual(sessionSelection);
   });
@@ -398,7 +398,7 @@ describe("AgentRuntime model selection event", () => {
         eventStore,
         modelFactory: createTestModelFactory({
           maxOutputTokens: (input) =>
-            input.selection.providerId === "account:zai-offpeak-idle-plan" ? 16_000 : 32_000,
+            input.selection.providerId === "account:idle-plan-provider" ? 16_000 : 32_000,
           async generateText(request, observation) {
             const metadata = observation.invocationContext?.metadata as
               | { querySource?: string; turnNumber?: number }
@@ -483,7 +483,7 @@ describe("AgentRuntime model selection event", () => {
         kind: "sendText",
         requestedDelivery: "start-now",
         modelSelection: {
-          providerId: "account:zai-offpeak-idle-plan",
+          providerId: "account:idle-plan-provider",
           modelId: "GLM-5.2",
           options: { reasoningLevel: "high" },
         },
@@ -498,11 +498,11 @@ describe("AgentRuntime model selection event", () => {
     expect(childExecutions).toHaveLength(3);
     expect(childExecutions.slice(0, 2).map((execution) => execution.model)).toEqual([
       expect.objectContaining({
-        providerId: "account:zai-offpeak-idle-plan",
+        providerId: "account:idle-plan-provider",
         modelId: "GLM-5.2",
       }),
       expect.objectContaining({
-        providerId: "account:zai-offpeak-idle-plan",
+        providerId: "account:idle-plan-provider",
         modelId: "GLM-5.2",
       }),
     ]);
@@ -589,7 +589,7 @@ describe("AgentRuntime model selection event", () => {
             kind: "sendText",
             requestedDelivery: "start-now",
             modelSelection: {
-              providerId: "account:zai-offpeak-idle-plan",
+              providerId: "account:idle-plan-provider",
               modelId: "GLM-5.2",
             },
           },
@@ -606,7 +606,7 @@ describe("AgentRuntime model selection event", () => {
       expect(requests).toHaveLength(2);
       expect(requests[0]?.model).toEqual(
         expect.objectContaining({
-          providerId: "account:zai-offpeak-idle-plan",
+          providerId: "account:idle-plan-provider",
           modelId: "GLM-5.2",
         }),
       );
@@ -621,7 +621,7 @@ describe("AgentRuntime model selection event", () => {
     async (code) => {
       const sessionId = createSessionId(`runtime-execution-selection-creation-${code}`);
       const eventStore = createTestSessionEventStore();
-      const highspeedProviderId = "account:bigmodel-highspeed-card";
+      const fallbackProviderId = "account:legacy-fallback-card";
       const created: Array<{ providerId: string; modelId: string }> = [];
       const runtime = createTestAgentRuntime(
         sessionId,
@@ -635,8 +635,8 @@ describe("AgentRuntime model selection event", () => {
           modelFactory: createTestModelFactory({
             onCreate(input) {
               created.push(input.selection);
-              if (input.selection.providerId === highspeedProviderId) {
-                throw new ModelProtocolError(code, "Highspeed selection is unavailable");
+              if (input.selection.providerId === fallbackProviderId) {
+                throw new ModelProtocolError(code, "Fallback selection is unavailable");
               }
             },
             async generateText(_request, observation) {
@@ -657,12 +657,12 @@ describe("AgentRuntime model selection event", () => {
           sourceCommandId: `command-creation-${code}`,
           kind: "sendText",
           requestedDelivery: "start-now",
-          modelSelection: { providerId: highspeedProviderId, modelId: "GLM-5.3" },
+          modelSelection: { providerId: fallbackProviderId, modelId: "GLM-5.3" },
         },
         modelExecution: {
           selectionScope: "execution",
           selectionFallback: {
-            providerId: highspeedProviderId,
+            providerId: fallbackProviderId,
             rules: cardExpiryFallbackRules,
             target: { providerId: "user-provider", modelId: "user-model" },
           },
@@ -671,7 +671,7 @@ describe("AgentRuntime model selection event", () => {
 
       expect(result.response).toBe("continued with the original model");
       expect(created).toEqual([
-        { providerId: highspeedProviderId, modelId: "GLM-5.3" },
+        { providerId: fallbackProviderId, modelId: "GLM-5.3" },
         { providerId: "user-provider", modelId: "user-model" },
       ]);
       const fallbackEvents = (await eventStore.getEvents(sessionId)).filter(
@@ -681,17 +681,17 @@ describe("AgentRuntime model selection event", () => {
       expect(fallbackEvents[0]?.payload).toMatchObject({
         inputId: `command-creation-${code}`,
         reason: "highspeed_selection_unavailable",
-        fromModelSelection: { providerId: highspeedProviderId, modelId: "GLM-5.3" },
+        fromModelSelection: { providerId: fallbackProviderId, modelId: "GLM-5.3" },
         toModelSelection: { providerId: "user-provider", modelId: "user-model" },
       });
     },
   );
 
-  it("reports the ordinary model creation error when Highspeed creation and fallback both fail", async () => {
+  it("reports the ordinary model creation error when execution creation and fallback both fail", async () => {
     const sessionId = createSessionId("runtime-execution-selection-creation-fallback-fails");
     const eventStore = createTestSessionEventStore();
     const sessionStore = createRecordingSubagentSessionStore();
-    const highspeedProviderId = "account:bigmodel-highspeed-card";
+    const fallbackProviderId = "account:legacy-fallback-card";
     const runtime = createTestAgentRuntime(
       sessionId,
       {
@@ -704,10 +704,10 @@ describe("AgentRuntime model selection event", () => {
         sessionStore,
         modelFactory: createTestModelFactory({
           onCreate(input) {
-            if (input.selection.providerId === highspeedProviderId) {
+            if (input.selection.providerId === fallbackProviderId) {
               throw new ModelProtocolError(
                 ModelErrorCode.ProviderNotFound,
-                "Highspeed selection is unavailable",
+                "Fallback selection is unavailable",
               );
             }
             throw new ModelProtocolError(
@@ -726,21 +726,12 @@ describe("AgentRuntime model selection event", () => {
           queueItemId: "input-creation-fallback-fails",
           kind: "sendText",
           requestedDelivery: "start-now",
-          modelSelection: { providerId: highspeedProviderId, modelId: "GLM-5.3" },
-          highspeed: {
-            schemaVersion: 1,
-            cardId: "card-creation-fallback-fails",
-            taskId: String(sessionId),
-            provider: "builtin:zai-coding-plan",
-            model: "GLM-5.3",
-            issuedAt: 1_700_000_000_000,
-            expiresAt: 1_700_000_060_000,
-          },
+          modelSelection: { providerId: fallbackProviderId, modelId: "GLM-5.3" },
         },
         modelExecution: {
           selectionScope: "execution",
           selectionFallback: {
-            providerId: highspeedProviderId,
+            providerId: fallbackProviderId,
             rules: cardExpiryFallbackRules,
             target: { providerId: "user-provider", modelId: "user-model" },
           },
@@ -796,7 +787,7 @@ describe("AgentRuntime model selection event", () => {
   it("falls back to the Session Selection inside the same turn when the declared provider error hits", async () => {
     const sessionId = createSessionId("runtime-execution-selection-fallback");
     const eventStore = createTestSessionEventStore();
-    const highspeedProviderId = "account:zai-highspeed-card";
+    const fallbackProviderId = "account:legacy-card-provider";
     const requests: Array<{ modelId: string; providerId: string }> = [];
     const runtime = createTestAgentRuntime(
       sessionId,
@@ -813,12 +804,12 @@ describe("AgentRuntime model selection event", () => {
               modelId: String(observation.model.modelId),
               providerId: String(observation.model.providerId),
             });
-            if (String(observation.model.providerId) === highspeedProviderId) {
-              throw Object.assign(new Error("highspeed card is invalid"), {
+            if (String(observation.model.providerId) === fallbackProviderId) {
+              throw Object.assign(new Error("card is invalid"), {
                 code: "invalid_model_request",
                 context: {
                   providerCode: "3402",
-                  providerId: highspeedProviderId,
+                  providerId: fallbackProviderId,
                   modelId: "GLM-5.3",
                   source: "provider",
                 },
@@ -837,17 +828,17 @@ describe("AgentRuntime model selection event", () => {
     );
 
     const result = await runtime.executeTurn("continue after expiry", undefined, {
-      inputId: "command-highspeed-expired",
+      inputId: "command-card-expired",
       intent: {
-        sourceCommandId: "command-highspeed-expired",
+        sourceCommandId: "command-card-expired",
         kind: "sendText",
         requestedDelivery: "start-now",
-        modelSelection: { providerId: highspeedProviderId, modelId: "GLM-5.3" },
+        modelSelection: { providerId: fallbackProviderId, modelId: "GLM-5.3" },
       },
       modelExecution: {
         selectionScope: "execution",
         selectionFallback: {
-          providerId: highspeedProviderId,
+          providerId: fallbackProviderId,
           rules: [
             { reason: "highspeed_card_expired", providerErrorCode: "3402" },
             { reason: "highspeed_request_failed" },
@@ -858,16 +849,16 @@ describe("AgentRuntime model selection event", () => {
 
     expect(result.response).toBe("continued with the session model");
     expect(requests).toEqual([
-      { providerId: highspeedProviderId, modelId: "GLM-5.3" },
+      { providerId: fallbackProviderId, modelId: "GLM-5.3" },
       { providerId: "user-provider", modelId: "user-model" },
     ]);
     const fallbackEvent = (await eventStore.getEvents(sessionId)).find(
       (event) => event.type === SessionEventType.TurnExecutionModelFallback,
     );
     expect(fallbackEvent?.payload).toMatchObject({
-      inputId: "command-highspeed-expired",
+      inputId: "command-card-expired",
       reason: "highspeed_card_expired",
-      fromModelSelection: { providerId: highspeedProviderId, modelId: "GLM-5.3" },
+      fromModelSelection: { providerId: fallbackProviderId, modelId: "GLM-5.3" },
       toModelSelection: { providerId: "user-provider", modelId: "user-model" },
     });
     // execution 作用域从不改写 Session Selection：退回目标就是它自己。
@@ -878,11 +869,11 @@ describe("AgentRuntime model selection event", () => {
   });
 
   it("falls back to the Session Selection on any execution provider failure with a single-attempt budget", async () => {
-    // docs/highspeed/highspeed-card-spec.md §2.2：加速请求任何失败（这里是网关 401，没有业务码）都退回；
+    // 执行作用域请求任何失败（这里是网关 401，没有业务码）都退回声明目标；
     // 加速句柄 0 次重试（single-attempt），退回后的会话模型恢复默认预算。
     const sessionId = createSessionId("runtime-execution-selection-any-failure-fallback");
     const eventStore = createTestSessionEventStore();
-    const highspeedProviderId = "account:zai-highspeed-card";
+    const fallbackProviderId = "account:legacy-card-provider";
     const requests: Array<{ modelId: string; providerId: string; retryBudget: unknown }> = [];
     const runtime = createTestAgentRuntime(
       sessionId,
@@ -900,11 +891,11 @@ describe("AgentRuntime model selection event", () => {
               providerId: String(observation.model.providerId),
               retryBudget: observation.invocationContext?.modelRetryBudget,
             });
-            if (String(observation.model.providerId) === highspeedProviderId) {
+            if (String(observation.model.providerId) === fallbackProviderId) {
               throw Object.assign(new Error("Provider authentication failed."), {
                 code: "provider_not_configured",
                 context: {
-                  providerId: highspeedProviderId,
+                  providerId: fallbackProviderId,
                   modelId: "GLM-5.3",
                   reason: "auth_failed",
                   retryable: false,
@@ -926,17 +917,17 @@ describe("AgentRuntime model selection event", () => {
     );
 
     const result = await runtime.executeTurn("continue after gateway failure", undefined, {
-      inputId: "command-highspeed-401",
+      inputId: "command-card-401",
       intent: {
-        sourceCommandId: "command-highspeed-401",
+        sourceCommandId: "command-card-401",
         kind: "sendText",
         requestedDelivery: "start-now",
-        modelSelection: { providerId: highspeedProviderId, modelId: "GLM-5.3" },
+        modelSelection: { providerId: fallbackProviderId, modelId: "GLM-5.3" },
       },
       modelExecution: {
         selectionScope: "execution",
         selectionFallback: {
-          providerId: highspeedProviderId,
+          providerId: fallbackProviderId,
           rules: [
             { reason: "highspeed_card_expired", providerErrorCode: "3402" },
             { reason: "highspeed_request_failed" },
@@ -948,7 +939,7 @@ describe("AgentRuntime model selection event", () => {
     expect(result.response).toBe("continued with the session model");
     expect(requests).toEqual([
       {
-        providerId: highspeedProviderId,
+        providerId: fallbackProviderId,
         modelId: "GLM-5.3",
         retryBudget: ModelRetryBudget.SingleAttempt,
       },
@@ -958,20 +949,20 @@ describe("AgentRuntime model selection event", () => {
       (event) => event.type === SessionEventType.TurnExecutionModelFallback,
     );
     expect(fallbackEvent?.payload).toMatchObject({
-      inputId: "command-highspeed-401",
+      inputId: "command-card-401",
       reason: "highspeed_request_failed",
-      fromModelSelection: { providerId: highspeedProviderId, modelId: "GLM-5.3" },
+      fromModelSelection: { providerId: fallbackProviderId, modelId: "GLM-5.3" },
       toModelSelection: { providerId: "user-provider", modelId: "user-model" },
     });
   });
 
   it("falls back to the declared target when the runtime has no resident Session Selection", async () => {
     // 回归（2026-10-09 日志复盘）：冷恢复落在 Registry 刚就绪、账号权益未解析的窗口时，持久化的会话选择
-    // 校验失败不绑定；之后只发加速轮不会再绑定，3402 时退回目标为空，整轮按 "highspeed card is invalid"
+    // 校验失败不绑定；之后只发加速轮不会再绑定，3402 时退回目标为空，整轮按 "card is invalid"
     // 失败弹错。发起方抽卡时知道原模型，现在随 selectionFallback.target 下发，退回不再依赖 runtime 常驻选择。
     const sessionId = createSessionId("runtime-execution-selection-fallback-declared-target");
     const eventStore = createTestSessionEventStore();
-    const highspeedProviderId = "account:bigmodel-highspeed-card";
+    const fallbackProviderId = "account:legacy-fallback-card";
     const target = { providerId: "account:bigmodel-team-coding-plan", modelId: "GLM-5.3" };
     const requests: Array<{ modelId: string; providerId: string }> = [];
     const warn = vi.fn();
@@ -985,24 +976,24 @@ describe("AgentRuntime model selection event", () => {
       {
         eventStore,
         logger: createWarnCapturingLogger(warn),
-        modelFactory: createCardExpiryModelFactory(highspeedProviderId, requests),
+        modelFactory: createCardExpiryModelFactory(fallbackProviderId, requests),
       },
     );
     // 复现恢复竞态之后的 runtime：没有常驻选择。
     runtime.setSessionModelSelection(undefined);
 
     const result = await runtime.executeTurn("continue after expiry", undefined, {
-      inputId: "command-highspeed-expired-unbound",
+      inputId: "command-card-expired-unbound",
       intent: {
-        sourceCommandId: "command-highspeed-expired-unbound",
+        sourceCommandId: "command-card-expired-unbound",
         kind: "sendText",
         requestedDelivery: "start-now",
-        modelSelection: { providerId: highspeedProviderId, modelId: "GLM-5.3" },
+        modelSelection: { providerId: fallbackProviderId, modelId: "GLM-5.3" },
       },
       modelExecution: {
         selectionScope: "execution",
         selectionFallback: {
-          providerId: highspeedProviderId,
+          providerId: fallbackProviderId,
           rules: cardExpiryFallbackRules,
           target,
         },
@@ -1010,14 +1001,14 @@ describe("AgentRuntime model selection event", () => {
     });
 
     expect(result.response).toBe("continued with the original model");
-    expect(requests).toEqual([{ providerId: highspeedProviderId, modelId: "GLM-5.3" }, target]);
+    expect(requests).toEqual([{ providerId: fallbackProviderId, modelId: "GLM-5.3" }, target]);
     const fallbackEvent = (await eventStore.getEvents(sessionId)).find(
       (event) => event.type === SessionEventType.TurnExecutionModelFallback,
     );
     expect(fallbackEvent?.payload).toMatchObject({
-      inputId: "command-highspeed-expired-unbound",
+      inputId: "command-card-expired-unbound",
       reason: "highspeed_card_expired",
-      fromModelSelection: { providerId: highspeedProviderId, modelId: "GLM-5.3" },
+      fromModelSelection: { providerId: fallbackProviderId, modelId: "GLM-5.3" },
       toModelSelection: target,
     });
     // 接纳用户消息时保存其普通选择；执行和回退不会把加速端点写入 Session。
@@ -1038,7 +1029,7 @@ describe("AgentRuntime model selection event", () => {
     // 正常情况下两者相同，不同则以发起方为准。
     const sessionId = createSessionId("runtime-execution-selection-fallback-target-first");
     const eventStore = createTestSessionEventStore();
-    const highspeedProviderId = "account:bigmodel-highspeed-card";
+    const fallbackProviderId = "account:legacy-fallback-card";
     const target = { providerId: "account:bigmodel-team-coding-plan", modelId: "GLM-5.3" };
     const requests: Array<{ modelId: string; providerId: string }> = [];
     const runtime = createTestAgentRuntime(
@@ -1048,37 +1039,37 @@ describe("AgentRuntime model selection event", () => {
         titleGeneration: { enabled: false },
         workingDirectory: "/workspace/project",
       },
-      { eventStore, modelFactory: createCardExpiryModelFactory(highspeedProviderId, requests) },
+      { eventStore, modelFactory: createCardExpiryModelFactory(fallbackProviderId, requests) },
     );
 
     await runtime.executeTurn("continue after expiry", undefined, {
       intent: {
-        sourceCommandId: "command-highspeed-expired-target-first",
+        sourceCommandId: "command-card-expired-target-first",
         kind: "sendText",
         requestedDelivery: "start-now",
-        modelSelection: { providerId: highspeedProviderId, modelId: "GLM-5.3" },
+        modelSelection: { providerId: fallbackProviderId, modelId: "GLM-5.3" },
       },
       modelExecution: {
         selectionScope: "execution",
         selectionFallback: {
-          providerId: highspeedProviderId,
+          providerId: fallbackProviderId,
           rules: cardExpiryFallbackRules,
           target,
         },
       },
     });
 
-    expect(requests).toEqual([{ providerId: highspeedProviderId, modelId: "GLM-5.3" }, target]);
+    expect(requests).toEqual([{ providerId: fallbackProviderId, modelId: "GLM-5.3" }, target]);
     expect(runtime.getSessionModelSelection()).toEqual(target);
   });
 
   it("skips a declared target the model factory cannot resolve and falls back to the Session Selection", async () => {
     const sessionId = createSessionId("runtime-execution-selection-fallback-target-unresolvable");
     const eventStore = createTestSessionEventStore();
-    const highspeedProviderId = "account:bigmodel-highspeed-card";
+    const fallbackProviderId = "account:legacy-fallback-card";
     const requests: Array<{ modelId: string; providerId: string }> = [];
     const warn = vi.fn();
-    const baseFactory = createCardExpiryModelFactory(highspeedProviderId, requests);
+    const baseFactory = createCardExpiryModelFactory(fallbackProviderId, requests);
     const runtime = createTestAgentRuntime(
       sessionId,
       {
@@ -1101,15 +1092,15 @@ describe("AgentRuntime model selection event", () => {
 
     const result = await runtime.executeTurn("continue after expiry", undefined, {
       intent: {
-        sourceCommandId: "command-highspeed-expired-ghost-target",
+        sourceCommandId: "command-card-expired-ghost-target",
         kind: "sendText",
         requestedDelivery: "start-now",
-        modelSelection: { providerId: highspeedProviderId, modelId: "GLM-5.3" },
+        modelSelection: { providerId: fallbackProviderId, modelId: "GLM-5.3" },
       },
       modelExecution: {
         selectionScope: "execution",
         selectionFallback: {
-          providerId: highspeedProviderId,
+          providerId: fallbackProviderId,
           rules: cardExpiryFallbackRules,
           target: { providerId: "ghost-provider", modelId: "GLM-5.3" },
         },
@@ -1118,7 +1109,7 @@ describe("AgentRuntime model selection event", () => {
 
     expect(result.response).toBe("continued with the original model");
     expect(requests).toEqual([
-      { providerId: highspeedProviderId, modelId: "GLM-5.3" },
+      { providerId: fallbackProviderId, modelId: "GLM-5.3" },
       { providerId: "user-provider", modelId: "user-model" },
     ]);
     expect(warn).toHaveBeenCalledWith(
@@ -1137,7 +1128,7 @@ describe("AgentRuntime model selection event", () => {
     // 无处可退时不能用建模错误或泛化文案掩埋根因，但必须留痕：过去这个分支完全静默。
     const sessionId = createSessionId("runtime-execution-selection-fallback-unavailable");
     const eventStore = createTestSessionEventStore();
-    const highspeedProviderId = "account:bigmodel-highspeed-card";
+    const fallbackProviderId = "account:legacy-fallback-card";
     const requests: Array<{ modelId: string; providerId: string }> = [];
     const warn = vi.fn();
     const runtime = createTestAgentRuntime(
@@ -1150,7 +1141,7 @@ describe("AgentRuntime model selection event", () => {
       {
         eventStore,
         logger: createWarnCapturingLogger(warn),
-        modelFactory: createCardExpiryModelFactory(highspeedProviderId, requests),
+        modelFactory: createCardExpiryModelFactory(fallbackProviderId, requests),
       },
     );
     runtime.setSessionModelSelection(undefined);
@@ -1158,23 +1149,14 @@ describe("AgentRuntime model selection event", () => {
     const failure = (await runtime
       .executeTurn("continue after expiry", undefined, {
         intent: {
-          sourceCommandId: "command-highspeed-expired-nowhere",
+          sourceCommandId: "command-card-expired-nowhere",
           kind: "sendText",
           requestedDelivery: "start-now",
-          modelSelection: { providerId: highspeedProviderId, modelId: "GLM-5.3" },
-          highspeed: {
-            schemaVersion: 1,
-            cardId: "card-request-fallback-unavailable",
-            taskId: String(sessionId),
-            provider: "builtin:bigmodel-coding-plan",
-            model: "GLM-5.3",
-            issuedAt: 1_700_000_000_000,
-            expiresAt: 1_700_000_060_000,
-          },
+          modelSelection: { providerId: fallbackProviderId, modelId: "GLM-5.3" },
         },
         modelExecution: {
           selectionScope: "execution",
-          selectionFallback: { providerId: highspeedProviderId, rules: cardExpiryFallbackRules },
+          selectionFallback: { providerId: fallbackProviderId, rules: cardExpiryFallbackRules },
         },
       })
       .then(
@@ -1184,8 +1166,8 @@ describe("AgentRuntime model selection event", () => {
 
     expect(failure).toBeInstanceOf(Error);
     const causeMessage = failure?.cause instanceof Error ? failure.cause.message : undefined;
-    expect([failure?.message, causeMessage]).toContain("highspeed card is invalid");
-    expect(requests).toEqual([{ providerId: highspeedProviderId, modelId: "GLM-5.3" }]);
+    expect([failure?.message, causeMessage]).toContain("card is invalid");
+    expect(requests).toEqual([{ providerId: fallbackProviderId, modelId: "GLM-5.3" }]);
     const events = await eventStore.getEvents(sessionId);
     const fallbackEvents = events.filter(
       (event) => event.type === SessionEventType.TurnExecutionModelFallback,
@@ -1228,7 +1210,7 @@ describe("AgentRuntime model selection event", () => {
       }
       return appendEvent(event);
     });
-    const highspeedProviderId = "account:zai-highspeed-card";
+    const fallbackProviderId = "account:legacy-card-provider";
     const streamedProviders: string[] = [];
     const runtime = createTestAgentRuntime(
       sessionId,
@@ -1258,17 +1240,17 @@ describe("AgentRuntime model selection event", () => {
 
     const failure = (await runtime
       .executeTurn("persist this stream", undefined, {
-        inputId: "command-highspeed-local-persistence-failure",
+        inputId: "command-card-local-persistence-failure",
         intent: {
-          sourceCommandId: "command-highspeed-local-persistence-failure",
+          sourceCommandId: "command-card-local-persistence-failure",
           kind: "sendText",
           requestedDelivery: "start-now",
-          modelSelection: { providerId: highspeedProviderId, modelId: "GLM-5.3" },
+          modelSelection: { providerId: fallbackProviderId, modelId: "GLM-5.3" },
         },
         modelExecution: {
           selectionScope: "execution",
           selectionFallback: {
-            providerId: highspeedProviderId,
+            providerId: fallbackProviderId,
             rules: [{ reason: "highspeed_request_failed" }],
           },
         },
@@ -1281,7 +1263,7 @@ describe("AgentRuntime model selection event", () => {
     expect(failure).toBeInstanceOf(Error);
     const causeMessage = failure?.cause instanceof Error ? failure.cause.message : undefined;
     expect([failure?.message, causeMessage]).toContain("event store append failed");
-    expect(streamedProviders).toEqual([highspeedProviderId]);
+    expect(streamedProviders).toEqual([fallbackProviderId]);
     const fallbackEvents = (await eventStore.getEvents(sessionId)).filter(
       (event) => event.type === SessionEventType.TurnExecutionModelFallback,
     );
@@ -1292,7 +1274,7 @@ describe("AgentRuntime model selection event", () => {
     // 无处可退已是终止边界；若继续进入通用 stream recovery，会在同一个失败加速端点重复请求。
     const sessionId = createSessionId("runtime-execution-selection-stream-fallback-unavailable");
     const eventStore = createTestSessionEventStore();
-    const highspeedProviderId = "account:zai-highspeed-card";
+    const fallbackProviderId = "account:legacy-card-provider";
     const streamedProviders: string[] = [];
     const runtime = createTestAgentRuntime(
       sessionId,
@@ -1329,17 +1311,17 @@ describe("AgentRuntime model selection event", () => {
 
     const failure = (await runtime
       .executeTurn("stream without fallback target", undefined, {
-        inputId: "command-highspeed-stream-no-target",
+        inputId: "command-card-stream-no-target",
         intent: {
-          sourceCommandId: "command-highspeed-stream-no-target",
+          sourceCommandId: "command-card-stream-no-target",
           kind: "sendText",
           requestedDelivery: "start-now",
-          modelSelection: { providerId: highspeedProviderId, modelId: "GLM-5.3" },
+          modelSelection: { providerId: fallbackProviderId, modelId: "GLM-5.3" },
         },
         modelExecution: {
           selectionScope: "execution",
           selectionFallback: {
-            providerId: highspeedProviderId,
+            providerId: fallbackProviderId,
             rules: [{ reason: "highspeed_request_failed" }],
           },
         },
@@ -1352,7 +1334,7 @@ describe("AgentRuntime model selection event", () => {
     expect(failure).toBeInstanceOf(Error);
     const causeMessage = failure?.cause instanceof Error ? failure.cause.message : undefined;
     expect([failure?.message, causeMessage]).toContain("accelerated stream failed");
-    expect(streamedProviders).toEqual([highspeedProviderId]);
+    expect(streamedProviders).toEqual([fallbackProviderId]);
     const fallbackEvents = (await eventStore.getEvents(sessionId)).filter(
       (event) => event.type === SessionEventType.TurnExecutionModelFallback,
     );
@@ -1362,7 +1344,7 @@ describe("AgentRuntime model selection event", () => {
   it("falls back only once: a session model failure after the fallback fails the turn", async () => {
     const sessionId = createSessionId("runtime-execution-selection-fallback-once");
     const eventStore = createTestSessionEventStore();
-    const highspeedProviderId = "account:zai-highspeed-card";
+    const fallbackProviderId = "account:legacy-card-provider";
     const providers: string[] = [];
     const runtime = createTestAgentRuntime(
       sessionId,
@@ -1396,17 +1378,17 @@ describe("AgentRuntime model selection event", () => {
 
     await expect(
       runtime.executeTurn("both models fail", undefined, {
-        inputId: "command-highspeed-503",
+        inputId: "command-card-503",
         intent: {
-          sourceCommandId: "command-highspeed-503",
+          sourceCommandId: "command-card-503",
           kind: "sendText",
           requestedDelivery: "start-now",
-          modelSelection: { providerId: highspeedProviderId, modelId: "GLM-5.3" },
+          modelSelection: { providerId: fallbackProviderId, modelId: "GLM-5.3" },
         },
         modelExecution: {
           selectionScope: "execution",
           selectionFallback: {
-            providerId: highspeedProviderId,
+            providerId: fallbackProviderId,
             rules: [{ reason: "highspeed_request_failed" }],
           },
         },
@@ -1414,7 +1396,7 @@ describe("AgentRuntime model selection event", () => {
     ).rejects.toThrow();
 
     // 加速模型失败一次即退回；退回后的会话模型再失败按真实错误整轮失败，不再二次降级。
-    expect(providers).toEqual([highspeedProviderId, "user-provider"]);
+    expect(providers).toEqual([fallbackProviderId, "user-provider"]);
     const events = await eventStore.getEvents(sessionId);
     const fallbackEvents = events.filter(
       (event) => event.type === SessionEventType.TurnExecutionModelFallback,
@@ -1434,7 +1416,7 @@ describe("AgentRuntime model selection event", () => {
     // 退回必须先于 stream recovery：否则可见输出后的瞬态失败会先在加速模型上重试到预算耗尽。
     const sessionId = createSessionId("runtime-execution-selection-stream-fallback");
     const eventStore = createTestSessionEventStore();
-    const highspeedProviderId = "account:zai-highspeed-card";
+    const fallbackProviderId = "account:legacy-card-provider";
     const streamedProviders: string[] = [];
     const runtime = createTestAgentRuntime(
       sessionId,
@@ -1454,7 +1436,7 @@ describe("AgentRuntime model selection event", () => {
             const providerId = String(observation.model.providerId);
             streamedProviders.push(providerId);
             yield { id: "text-1", type: "text_start" };
-            if (providerId === highspeedProviderId) {
+            if (providerId === fallbackProviderId) {
               yield { id: "text-1", text: "partial accelerated output", type: "text_delta" };
               throw Object.assign(
                 new Error("Network connection failed for the provider request."),
@@ -1484,17 +1466,17 @@ describe("AgentRuntime model selection event", () => {
     );
 
     const result = await runtime.executeTurn("stream fails mid-way", undefined, {
-      inputId: "command-highspeed-stream",
+      inputId: "command-card-stream",
       intent: {
-        sourceCommandId: "command-highspeed-stream",
+        sourceCommandId: "command-card-stream",
         kind: "sendText",
         requestedDelivery: "start-now",
-        modelSelection: { providerId: highspeedProviderId, modelId: "GLM-5.3" },
+        modelSelection: { providerId: fallbackProviderId, modelId: "GLM-5.3" },
       },
       modelExecution: {
         selectionScope: "execution",
         selectionFallback: {
-          providerId: highspeedProviderId,
+          providerId: fallbackProviderId,
           rules: [{ reason: "highspeed_request_failed" }],
         },
       },
@@ -1502,7 +1484,7 @@ describe("AgentRuntime model selection event", () => {
 
     expect(result.response).toBe("continued with the session model");
     // 加速模型只开流一次，没有同模型重试；随后直接由会话模型接管。
-    expect(streamedProviders).toEqual([highspeedProviderId, "user-provider"]);
+    expect(streamedProviders).toEqual([fallbackProviderId, "user-provider"]);
     const events = await eventStore.getEvents(sessionId);
     expect(
       events.filter((event) => event.type === SessionEventType.TurnExecutionModelFallback),
@@ -1535,11 +1517,11 @@ describe("AgentRuntime model selection event", () => {
     });
   });
   it.each([false, true])(
-    "keeps the highspeed fallback fixed when Session changes (explicit=%s)",
+    "keeps the execution fallback fixed when Session changes (explicit=%s)",
     async (explicit) => {
       const sessionId = createSessionId("runtime-execution-selection-fallback");
       const eventStore = createTestSessionEventStore();
-      const highspeedProviderId = "account:zai-highspeed-card";
+      const fallbackProviderId = "account:legacy-card-provider";
       const requests: Array<{ modelId: string; providerId: string }> = [];
       const runtime = createTestAgentRuntime(
         sessionId,
@@ -1558,16 +1540,16 @@ describe("AgentRuntime model selection event", () => {
                 modelId: String(observation.model.modelId),
                 providerId: String(observation.model.providerId),
               });
-              if (String(observation.model.providerId) === highspeedProviderId) {
+              if (String(observation.model.providerId) === fallbackProviderId) {
                 // 模拟较新的用户输入已经接管续跑选择；旧加速轮不能跟随这个选择回退。
                 runtime.setSessionModelSelection(
                   createTestModelSelection("new-provider/new-model"),
                 );
-                throw Object.assign(new Error("highspeed card is invalid"), {
+                throw Object.assign(new Error("card is invalid"), {
                   code: "invalid_model_request",
                   context: {
                     providerCode: "3402",
-                    providerId: highspeedProviderId,
+                    providerId: fallbackProviderId,
                     modelId: "GLM-5.3",
                     source: "provider",
                   },
@@ -1586,17 +1568,17 @@ describe("AgentRuntime model selection event", () => {
       );
 
       const result = await runtime.executeTurn("continue after expiry", undefined, {
-        inputId: "command-highspeed-expired",
+        inputId: "command-card-expired",
         intent: {
-          sourceCommandId: "command-highspeed-expired",
+          sourceCommandId: "command-card-expired",
           kind: "sendText",
           requestedDelivery: "start-now",
-          modelSelection: { providerId: highspeedProviderId, modelId: "GLM-5.3" },
+          modelSelection: { providerId: fallbackProviderId, modelId: "GLM-5.3" },
         },
         modelExecution: {
           selectionScope: "execution",
           selectionFallback: {
-            providerId: highspeedProviderId,
+            providerId: fallbackProviderId,
             ...(explicit ? { target: createTestModelSelection("user-provider/user-model") } : {}),
             rules: [{ reason: "highspeed_card_expired", providerErrorCode: "3402" }],
           },
@@ -1605,16 +1587,16 @@ describe("AgentRuntime model selection event", () => {
 
       expect(result.response).toBe("continued with the session model");
       expect(requests).toEqual([
-        { providerId: highspeedProviderId, modelId: "GLM-5.3" },
+        { providerId: fallbackProviderId, modelId: "GLM-5.3" },
         { providerId: "user-provider", modelId: "user-model" },
       ]);
       const fallbackEvent = (await eventStore.getEvents(sessionId)).find(
         (event) => event.type === SessionEventType.TurnExecutionModelFallback,
       );
       expect(fallbackEvent?.payload).toMatchObject({
-        inputId: "command-highspeed-expired",
+        inputId: "command-card-expired",
         reason: "highspeed_card_expired",
-        fromModelSelection: { providerId: highspeedProviderId, modelId: "GLM-5.3" },
+        fromModelSelection: { providerId: fallbackProviderId, modelId: "GLM-5.3" },
         toModelSelection: { providerId: "user-provider", modelId: "user-model" },
       });
       // 回退只影响当前轮，不能把较新的用户选择覆盖回去。

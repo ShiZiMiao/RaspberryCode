@@ -72,7 +72,6 @@ test("mouse clicks outside the prompt return focus to the prompt input", async (
         inputCursorToEndVersion: 0,
         lastEvent: "idle",
         liveModelText: "",
-        loginRequired: false,
         messages: [{ content: "clickable transcript line", role: "agent" }],
         mode: "build",
         model: "openai/gpt-test",

@@ -1,9 +1,16 @@
 import type { ProviderEndpointRoutingPort } from "@zcode/contracts";
 import type { ProviderEndpointRoutingFactoryOptions } from "../provider-endpoint-routing-options.js";
-import { createStaticProviderEndpointRoutingPort } from "../official-coding-plan-gateway.js";
 
+/**
+ * Compliance (RaspberryCode)：官方 Coding Plan 网关自动转发已移除（不得把厂商 API 请求
+ * 改道到订阅网关）。端点路由保留为扩展点，但默认对所有请求直通。
+ */
 export function createProviderEndpointRoutingPort(
-  options: ProviderEndpointRoutingFactoryOptions,
+  _options: ProviderEndpointRoutingFactoryOptions,
 ): ProviderEndpointRoutingPort {
-  return createStaticProviderEndpointRoutingPort(options.endpointOrigin);
+  return {
+    async resolve(requestUrl) {
+      return { routed: false, url: requestUrl };
+    },
+  };
 }

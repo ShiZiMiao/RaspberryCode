@@ -112,7 +112,6 @@ export const SessionEventType = {
   UserMessage: "user_message",
   AssistantMessage: "assistant_message",
   AssistantFeedbackUpdated: "assistant_feedback_updated",
-  HighspeedMetricsUpdated: "highspeed_metrics_updated",
   // （2026-09-12）：原 ToolWidgetStateUpdated / SessionPluginUiStateUpdated 已删除，
   // 插件 UI widgetState 回退 renderer 内存，不再经 CLI 事件流。
   SystemMessage: "system_message",
@@ -347,20 +346,9 @@ export interface BackgroundResultOriginMeta {
  */
 export type TurnExecutionKind = "agent" | "controlOnly";
 
-export type OffPeakRunType = "init" | "resume";
-
 export type TurnBackgroundAttribution =
-  | { automationId: string; offPeakTaskId?: never; offPeakRunType?: never }
-  | {
-      offPeakTaskId: string;
-      offPeakRunType?: OffPeakRunType;
-      automationId?: never;
-    }
-  | {
-      automationId?: undefined;
-      offPeakTaskId?: undefined;
-      offPeakRunType?: never;
-    };
+  | { automationId: string }
+  | { automationId?: undefined };
 
 /**
  * 中枢直接启动已保存工作流的启动轮元数据。同一份同时写进 user message 的 `metadata`（冷恢复来源）与 `TurnStarted`
@@ -669,11 +657,6 @@ export interface AssistantMessagePayload {
 export interface AssistantFeedbackUpdatedPayload {
   entityId: string;
   feedback: "like" | "dislike" | null;
-}
-
-export interface HighspeedMetricsUpdatedPayload {
-  entityId: string;
-  highspeed: HighspeedMessageMetadata;
 }
 
 export interface SystemMessagePayload {

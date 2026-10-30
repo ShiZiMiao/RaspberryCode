@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- 超长单文件：预存规模，本次拆除仅减行未增行。 */
 import type { TextStreamPart, ToolSet } from "ai";
 import type { Logger, ModelStatusSink, ModelStreamEvent } from "@zcode/contracts";
 import {
@@ -21,7 +22,6 @@ import {
   getResponseHeaders,
   unwrapRetryError,
 } from "./failure-inspection.js";
-import { offPeakTicketExpiredMessage, resolveOffPeakFailureDecision } from "./offpeak-retry.js";
 import { isRetrySafePreludeStreamEvent } from "./stream-retry-boundary.js";
 import {
   createLinkedAbortController,
@@ -81,8 +81,6 @@ import type {
   ResolvedAiSdkModel,
 } from "./runner-runtime.js";
 import { isRequestVerificationRejection } from "./request-security-edition/recovery.js";
-import { AccountRequestRetry } from "./account-request-retry.js";
-import { resolveModelForAttempt, RuntimeHeadersRefreshError } from "./runner-runtime-headers.js";
 import { retryAllowedByFailurePolicy } from "./workflow-model-failure-policy.js";
 import {
   modelFailureStatusFields,
@@ -123,7 +121,6 @@ export async function* runStreamText(input: {
   const isDev = isDevelopmentModelIOEnv(input.env);
   let requestMessages = input.request.messages;
   let signatureRepairAttempted = false;
-  const authRetry = new AccountRequestRetry(input.request, input.resolved, input.logger);
   let emptyCompletionRetryCount = 0;
 
   for (
@@ -131,11 +128,11 @@ export async function* runStreamText(input: {
     retryAttemptLoopContinues(
       retryBudget,
       attempt,
-      input.retry.maxAttempts + Number(signatureRepairAttempted) + authRetry.extraAttempts,
+      input.retry.maxAttempts + Number(signatureRepairAttempted),
     );
     attempt += 1
   ) {
-    const retryBudgetAttempt = attempt - Number(signatureRepairAttempted) - authRetry.extraAttempts;
+    const retryBudgetAttempt = attempt - Number(signatureRepairAttempted);
     const startedAt = Date.now();
     // SSE idle timeout 后的重试如果仍固定首请求窗口，容易被同一段 provider 静默窗口反复打断；
     // core recovery 和 adapter 内部 retry 都统一按重试次数每次增加 30s。
@@ -147,7 +144,6 @@ export async function* runStreamText(input: {
     let emittedRetryBoundaryEvent = false;
     let emittedError = false;
     let retryScheduledFromStreamChunk = false;
-    let offPeakQueueHoldFromStreamChunk = false;
     const pendingRetrySafeEvents: ModelStreamEvent[] = [];
     const diagnostics = createStreamDiagnostics();
     const attemptAbortController = createLinkedAbortController(input.request.abortSignal);
@@ -159,7 +155,7 @@ export async function* runStreamText(input: {
     let statusContext = createAttemptStatusContext(
       {
         ...baseStatusContext,
-        maxAttempts: statusMaxAttempts(Number(signatureRepairAttempted) + authRetry.extraAttempts),
+        maxAttempts: statusMaxAttempts(Number(signatureRepairAttempted)),
       },
       attempt,
     );
@@ -199,7 +195,7 @@ export async function* runStreamText(input: {
       input.logger?.warn("Retrying model stream after thinking signature rejection", {
         attempt,
         event: "model.reasoning_signature_repair.retry",
-        maxAttempts: input.retry.maxAttempts + 1 + authRetry.extraAttempts,
+        maxAttempts: input.retry.maxAttempts + 1,
         nextAttempt: attempt + 1,
         requestId: statusContext.requestId,
         status: "waiting",
@@ -279,12 +275,7 @@ export async function* runStreamText(input: {
     }
 
     try {
-      resolved = await resolveModelForAttempt({
-        attempt,
-        reason: authRetry.takeReason(),
-        request: authRetry.prepareRequest(attemptRequest),
-        resolveModel: input.resolveModel,
-      });
+      resolved = input.resolveModel();
       const anthropicMetadataUserId = await resolveAnthropicRequestMetadataUserId({
         env: input.env,
         providerKind: resolved.providerKind,
@@ -369,7 +360,6 @@ export async function* runStreamText(input: {
             requestHeaderCount,
             requestHeaders,
             repairThinkingSignatureRejection,
-            canRecoverProjectToken: (error) => authRetry.canRecoverProjectToken(error),
             retryBudgetAttempt,
             startedAt,
             statusContext,
@@ -437,7 +427,6 @@ export async function* runStreamText(input: {
           attemptFailed = true;
           awaitIteratorClose = true;
           retryScheduledFromStreamChunk = true;
-          offPeakQueueHoldFromStreamChunk = event.offPeakQueueHold;
           break;
         }
         if (event.terminalError) {
@@ -454,10 +443,6 @@ export async function* runStreamText(input: {
       }
 
       if (retryScheduledFromStreamChunk) {
-        if (offPeakQueueHoldFromStreamChunk) {
-          // 排队等待不消耗重试预算：回退计数让 for 自增后原地重试。
-          attempt -= 1;
-        }
         continue;
       }
 
@@ -531,8 +516,7 @@ export async function* runStreamText(input: {
               source: diagnostics.lastErrorChunk ?? diagnostics.lastFinishChunk,
             }) ??
             createRequestVerificationEmptyStreamError({
-              accountMode: resolved.accountAccess?.mode,
-              headers: resolved.headers,
+                headers: resolved.headers,
               providerId: String(statusContext.providerId),
               providerKind: resolved.providerKind,
             });
@@ -685,14 +669,6 @@ export async function* runStreamText(input: {
         awaitIteratorClose = true;
         throw error.adapterError;
       }
-      if (
-        error instanceof ModelProtocolError &&
-        error.code === ModelErrorCode.ModelRequestAuthMissing
-      ) {
-        // stream 在 attempt try 内解析请求鉴权，过去会把网络前的类型化
-        // 鉴权缺失错误重新归一化为通用请求失败；generate 则直接保留原始协议错误。
-        throw error;
-      }
 
       const completedAt = Date.now();
       const retryWithRepairedHistory =
@@ -700,34 +676,11 @@ export async function* runStreamText(input: {
       if (retryWithRepairedHistory) {
         statusContext = {
           ...statusContext,
-          maxAttempts: statusMaxAttempts(1 + authRetry.extraAttempts),
+          maxAttempts: statusMaxAttempts(1),
         };
       }
       const classified = classifyModelFailure(error, input.request.abortSignal);
-      if (error instanceof RuntimeHeadersRefreshError) {
-        classified.message = error.message;
-        classified.retryable = false;
-      }
-      // off-peak 特判（仅 idle plan provider）：排队 429 豁免预算无限探测；3102 标记落败触发续跑。
-      const offPeak = resolveOffPeakFailureDecision({
-        offPeak: resolved.accountAccess?.mode === "off-peak",
-        failure: classified,
-        error: unwrapRetryError(error),
-      });
-      const failure: ClassifiedModelFailure =
-        offPeak?.kind === "ticketExpired"
-          ? {
-              ...classified,
-              retryable: false,
-              message: offPeakTicketExpiredMessage(classified.message),
-            }
-          : offPeak?.kind === "queued"
-            ? {
-                ...classified,
-                retryable: true,
-                retryReason: ModelRetryReason.OffpeakQueued,
-              }
-            : classified;
+      const failure: ClassifiedModelFailure = classified;
       const errorPhase =
         readModelFailureErrorPhase(error) ?? (streamIterator === undefined ? "prepare" : "stream");
       awaitIteratorClose = failure.reason !== ModelFailureReasonValue.Cancelled;
@@ -748,27 +701,6 @@ export async function* runStreamText(input: {
           diagnostics.lastErrorChunk || diagnostics.lastFinishChunk,
         ),
       });
-      const retryWithAuth = authRetry.claim(
-        error,
-        options === undefined ||
-          emittedRetryBoundaryEvent ||
-          streamOutputCommitted ||
-          (input.request.preserveProviderStreamBoundaries === true &&
-            failureDecision.context?.streamFailurePhase === "response_body"),
-      );
-      if (retryWithAuth) {
-        failureDecision.canRetry = true;
-        statusContext = {
-          ...statusContext,
-          maxAttempts: statusMaxAttempts(
-            Number(signatureRepairAttempted) + authRetry.extraAttempts,
-          ),
-        };
-      }
-      // off-peak 排队 429 豁免预算：不消耗 maxAttempts，SSE 可见输出边界仍适用。
-      if (offPeak?.kind === "queued" && !emittedRetryBoundaryEvent) {
-        failureDecision.canRetry = true;
-      }
       if (retryWithRepairedHistory) {
         failureDecision.canRetry = true;
       }
@@ -812,18 +744,6 @@ export async function* runStreamText(input: {
       );
       terminalStatusPublished = true;
 
-      if (retryWithAuth) {
-        await publishRetryScheduledStatus(
-          input,
-          statusContext,
-          attempt,
-          0,
-          { ...failure, retryReason: ModelRetryReason.AuthRefresh },
-          requestHeaders,
-          responseHeaders,
-        );
-        continue;
-      }
       if (retryWithRepairedHistory) {
         await publishRetryScheduledStatus(
           input,
@@ -856,10 +776,7 @@ export async function* runStreamText(input: {
         });
       }
 
-      const delayMs =
-        offPeak?.kind === "queued"
-          ? offPeak.delayMs
-          : calculateRetryDelay(input.retry, retryBudgetAttempt, failure.retryAfterMs);
+      const delayMs = calculateRetryDelay(input.retry, retryBudgetAttempt, failure.retryAfterMs);
       logRetryDelayDecision({
         attempt,
         canRetry: failureDecision.canRetry,
@@ -912,10 +829,6 @@ export async function* runStreamText(input: {
         throw toAdapterError(sleepError, sleepFailure, statusContext, attempt, {
           errorPhase: "connect",
         });
-      }
-      if (offPeak?.kind === "queued") {
-        // 排队等待不消耗重试预算：回退计数让 for 自增后原地重试，无限探测。
-        attempt -= 1;
       }
     } finally {
       if (
@@ -1062,7 +975,6 @@ async function handleStreamChunk(input: {
   };
   pendingRetrySafeEvents: ModelStreamEvent[];
   repairThinkingSignatureRejection: (error: unknown) => boolean;
-  canRecoverProjectToken: (error: unknown) => boolean;
   retryBudgetAttempt: number;
   requestHeaderCount: number;
   requestHeaders: Record<string, string>;
@@ -1074,8 +986,6 @@ async function handleStreamChunk(input: {
   emittedEvent: boolean;
   emittedRetryBoundaryEvent: boolean;
   retryScheduled: boolean;
-  /** off-peak 排队重试：外层 for 冻结 attempt 预算。 */
-  offPeakQueueHold: boolean;
   terminalError?: TerminalStreamChunkError;
   visibleEvents: ModelStreamEvent[];
 }> {
@@ -1256,7 +1166,7 @@ async function handleStreamErrorEvent(
   input: Parameters<typeof handleStreamChunk>[0],
   error: unknown,
 ): Promise<Awaited<ReturnType<typeof handleStreamChunk>>> {
-  if (isRequestVerificationRejection(error) || input.canRecoverProjectToken(error)) throw error;
+  if (isRequestVerificationRejection(error)) throw error;
   const retryWithRepairedHistory =
     !input.emittedRetryBoundaryEvent && input.repairThinkingSignatureRejection(error);
   const statusContext = retryWithRepairedHistory
@@ -1269,26 +1179,7 @@ async function handleStreamErrorEvent(
       }
     : input.statusContext;
   const classified = classifyModelFailure(error, input.input.request.abortSignal);
-  // off-peak 特判：SSE 首块即错（尚无可见输出）时的排队 429 同样豁免预算重试。
-  const offPeak = resolveOffPeakFailureDecision({
-    offPeak: input.input.resolved.accountAccess?.mode === "off-peak",
-    failure: classified,
-    error: unwrapRetryError(error),
-  });
-  const failure: ClassifiedModelFailure =
-    offPeak?.kind === "ticketExpired"
-      ? {
-          ...classified,
-          retryable: false,
-          message: offPeakTicketExpiredMessage(classified.message),
-        }
-      : offPeak?.kind === "queued"
-        ? {
-            ...classified,
-            retryable: true,
-            retryReason: ModelRetryReason.OffpeakQueued,
-          }
-        : classified;
+  const failure: ClassifiedModelFailure = classified;
   const responseHeaders = sanitizeModelNetworkHeaders(getResponseHeaders(unwrapRetryError(error)));
   const failureDecision = resolveStreamFailureDecision({
     attempt: input.retryBudgetAttempt,
@@ -1301,10 +1192,6 @@ async function handleStreamErrorEvent(
     retryBudget: input.input.request.modelRetryBudget,
     streamErrorChunkObserved: true,
   });
-  // off-peak 排队 429 豁免预算：不消耗 maxAttempts，SSE 可见输出边界仍适用。
-  if (offPeak?.kind === "queued" && !input.emittedRetryBoundaryEvent) {
-    failureDecision.canRetry = true;
-  }
   if (retryWithRepairedHistory) {
     failureDecision.canRetry = true;
   }
@@ -1372,10 +1259,7 @@ async function handleStreamErrorEvent(
     });
   }
 
-  const delayMs =
-    offPeak?.kind === "queued"
-      ? offPeak.delayMs
-      : calculateRetryDelay(input.input.retry, input.retryBudgetAttempt, failure.retryAfterMs);
+  const delayMs = calculateRetryDelay(input.input.retry, input.retryBudgetAttempt, failure.retryAfterMs);
   logRetryDelayDecision({
     attempt: input.attempt,
     canRetry: failureDecision.canRetry,
@@ -1413,7 +1297,6 @@ async function handleStreamErrorEvent(
   return streamChunkResult({
     emittedError: true,
     retryScheduled: true,
-    offPeakQueueHold: offPeak?.kind === "queued",
   });
 }
 
@@ -1602,8 +1485,6 @@ function streamChunkResult(
     emittedEvent: boolean;
     emittedRetryBoundaryEvent: boolean;
     retryScheduled: boolean;
-    /** off-peak 排队重试：外层 for 冻结 attempt 预算。 */
-    offPeakQueueHold: boolean;
     terminalError?: TerminalStreamChunkError;
     visibleEvents: ModelStreamEvent[];
   }> = {},
@@ -1613,7 +1494,6 @@ function streamChunkResult(
     emittedEvent: false,
     emittedRetryBoundaryEvent: false,
     retryScheduled: false,
-    offPeakQueueHold: false,
     visibleEvents: [],
     ...overrides,
   };

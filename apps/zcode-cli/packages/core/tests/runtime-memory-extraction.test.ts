@@ -88,7 +88,7 @@ describe("AgentRuntime background Memory extraction", () => {
         clientId: "memory-test-client",
         kind: "sendText",
         modelSelection: {
-          providerId: "account:zai-offpeak-idle-plan",
+          providerId: "account:idle-plan-provider",
           modelId: "GLM-5.3-Flash",
         },
         queueItemId: "memory-test-input",
@@ -99,7 +99,7 @@ describe("AgentRuntime background Memory extraction", () => {
     });
     await runtime.drainMemoryExtractions();
 
-    expect(createdSelections).toEqual(["account:zai-offpeak-idle-plan/GLM-5.3-Flash"]);
+    expect(createdSelections).toEqual(["account:idle-plan-provider/GLM-5.3-Flash"]);
   });
 
   it("projects unsupported historical video before an Extraction request", async () => {

@@ -809,11 +809,9 @@ describe("订阅与帧调度", () => {
         {
           turnNumber: 1,
           input: "闲时任务 prompt 不能进入 fact",
-          inputId: "message-offpeak-run-1",
-          offPeakTaskId: "offpeak-stable-1",
-          offPeakRunType: "init",
+          inputId: "message-idle-run-1",
         },
-        { turnId: "turn-offpeak" },
+        { turnId: "turn-idle" },
       ),
     );
 
@@ -821,9 +819,7 @@ describe("订阅与帧调度", () => {
       expect.arrayContaining([
         expect.objectContaining({
           kind: "turn.started",
-          sourceCommandId: "message-offpeak-run-1",
-          offPeakTaskId: "offpeak-stable-1",
-          offPeakRunType: "init",
+          sourceCommandId: "message-idle-run-1",
         }),
       ]),
     );

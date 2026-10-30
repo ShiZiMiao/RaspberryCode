@@ -34,15 +34,11 @@ export function maybeStartSessionTitleGeneration(
   messageID: MessageId,
   traceContext: TraceContext,
   options?: {
-    deferIfProviderRuntimeHeadersRefresh?: boolean;
     goalSummaryTargetID?: string;
-    offPeakExecutionId?: string;
   },
 ): boolean {
   return maybeStartSessionTitleGenerationFromSeed.call(this, input, {
-    deferIfProviderRuntimeHeadersRefresh: options?.deferIfProviderRuntimeHeadersRefresh,
     goalSummaryTargetID: options?.goalSummaryTargetID,
-    offPeakExecutionId: options?.offPeakExecutionId,
     messageID,
     traceContext,
   });
@@ -53,12 +49,10 @@ export function maybeStartDeferredSessionTitleGeneration(
   input: string,
   messageID: MessageId,
   traceContext: TraceContext,
-  offPeakExecutionId?: string,
 ): boolean {
   return maybeStartSessionTitleGenerationFromSeed.call(this, input, {
     messageID,
     traceContext,
-    offPeakExecutionId,
   });
 }
 
@@ -80,12 +74,10 @@ function maybeStartSessionTitleGenerationFromSeed(
   this: AgentRuntimeInternal,
   input: string,
   options: {
-    deferIfProviderRuntimeHeadersRefresh?: boolean;
     goalSummaryTargetID?: string;
     messageID?: MessageId;
     traceContext: TraceContext;
     bypassShortInputGuard?: boolean;
-    offPeakExecutionId?: string;
   },
 ): boolean {
   if (
@@ -95,19 +87,11 @@ function maybeStartSessionTitleGenerationFromSeed(
   ) {
     return false;
   }
-  if (
-    options.deferIfProviderRuntimeHeadersRefresh &&
-    shouldDeferSessionTitleForRuntimeHeaders(this)
-  ) {
-    // 首条消息的 title generation 和主消息会共享同一个 runtimeModel。
-    // 需要刷新 runtime headers 的 provider 先让主 turn 发出去，再异步补标题。
-    return false;
-  }
   this.sessionTitleGenerationAttempted = true;
   // 标题任务会越过当前 Turn 的生命周期。入队时冻结 causation，避免后续 await、
   // 调度器或实现重构使后台 Trace 静默丢失指向触发 Span 的 Link。
   const causation = this.agentTelemetry.captureCausation();
-  const modelContext = retainTitleModelContext(this, options.offPeakExecutionId);
+  const modelContext = retainTitleModelContext(this);
 
   const generation = generateAndPersistSessionTitle
     .call(this, input, options.messageID, options.traceContext, {
@@ -164,20 +148,6 @@ function shouldAttemptSessionTitleGeneration(
   return (
     options.bypassShortInputGuard ||
     Array.from(normalizedInput).length >= MIN_GENERATED_TITLE_INPUT_CHARS
-  );
-}
-
-function shouldDeferSessionTitleForRuntimeHeaders(runtime: AgentRuntimeInternal): boolean {
-  const runtimeHeadersPort = runtime.providerRuntimeHeadersPort;
-  if (!runtimeHeadersPort) return false;
-  const selection =
-    runtime.config.titleGeneration?.modelSelection ?? runtime.getSessionModelSelection();
-  if (!selection) return true;
-  return (
-    runtimeHeadersPort.shouldRefreshBeforeModelRequest?.({
-      providerId: selection.providerId,
-      modelId: selection.modelId,
-    }) ?? true
   );
 }
 

@@ -5,10 +5,11 @@ export function resolveToolSearchCapability(
   access: { type: string; mode?: string },
 ): ToolSearchCapability {
   const protocolSupported = apiType === "anthropic-messages";
+  // 只认 api-key/metered-api-key；旧值 zhipu-coding-plan-api-key 保留兼容判定（历史配置）。
   const codingPlan =
-    access.type === "zhipu-coding-plan-api-key" ||
-    (access.type === "zhipu-account" &&
-      (access.mode === "individual-coding-plan" || access.mode === "team-coding-plan"));
+    access.type === "api-key" ||
+    access.type === "metered-api-key" ||
+    access.type === "zhipu-coding-plan-api-key";
   return Object.freeze({ protocolSupported, defaultEnabled: protocolSupported && codingPlan });
 }
 

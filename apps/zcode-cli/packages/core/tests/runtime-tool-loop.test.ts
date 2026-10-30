@@ -10024,7 +10024,7 @@ describe("AgentRuntime tool loop", () => {
       const registry = createToolRegistry();
       const toolStarted = deferred();
       const toolCompleted = deferred();
-      const highspeedProviderId = "account:zai-highspeed-card";
+      const fallbackProviderId = "account:legacy-card-provider";
       let toolHandlerCallCount = 0;
       let fallbackRequest: any;
 
@@ -10069,7 +10069,7 @@ describe("AgentRuntime tool loop", () => {
             },
             async *streamText(request: any, observation) {
               const providerId = String(observation.model.providerId);
-              if (providerId !== highspeedProviderId) {
+              if (providerId !== fallbackProviderId) {
                 fallbackRequest = request;
                 yield { type: "text_delta", text: "fallback completed" };
                 yield {
@@ -10087,7 +10087,7 @@ describe("AgentRuntime tool loop", () => {
               await toolStarted.promise;
               if (executionState === "completed") await toolCompleted.promise;
               yield { type: "text_delta", text: "discarded accelerated tail" };
-              throw Object.assign(new Error("highspeed stream disconnected"), {
+              throw Object.assign(new Error("stream disconnected"), {
                 code: "model_request_failed",
                 context: {
                   providerId,
@@ -10109,13 +10109,13 @@ describe("AgentRuntime tool loop", () => {
           sourceCommandId: `command-fallback-tool-${executionState}`,
           kind: "sendText",
           requestedDelivery: "start-now",
-          modelSelection: { providerId: highspeedProviderId, modelId: "GLM-5.3" },
+          modelSelection: { providerId: fallbackProviderId, modelId: "GLM-5.3" },
         },
         modelExecution: {
           selectionScope: "execution",
           selectionFallback: {
-            providerId: highspeedProviderId,
-            rules: [{ reason: "highspeed_request_failed" }],
+            providerId: fallbackProviderId,
+            rules: [{ reason: "fallback_request_failed" }],
           },
         },
       });
@@ -10126,7 +10126,7 @@ describe("AgentRuntime tool loop", () => {
         (message: any) => message.role === "assistant" && message.toolCalls?.length > 0,
       );
       expect(fallbackAssistant).toMatchObject({
-        providerId: highspeedProviderId,
+        providerId: fallbackProviderId,
         modelId: "GLM-5.3",
         toolCalls: [{ id: "fallback-read", name: "FallbackRead", input: {} }],
       });
@@ -10156,7 +10156,7 @@ describe("AgentRuntime tool loop", () => {
         ?.find(
           (message) =>
             message.role === "assistant" &&
-            message.providerId === highspeedProviderId &&
+            message.providerId === fallbackProviderId &&
             message.error?.name === STREAM_RECOVERY_DISCARDED_ERROR_NAME,
         );
       expect(discardedAssistant).toMatchObject({
@@ -10211,7 +10211,7 @@ describe("AgentRuntime tool loop", () => {
       const registry = createToolRegistry();
       const toolStarted = deferred();
       const toolCompleted = deferred();
-      const highspeedProviderId = "account:zai-highspeed-card";
+      const fallbackProviderId = "account:legacy-card-provider";
       const unavailableFallbackProviderId = "ghost-provider";
       const streamedProviders: string[] = [];
       let toolHandlerCallCount = 0;
@@ -10238,7 +10238,7 @@ describe("AgentRuntime tool loop", () => {
         },
       });
 
-      const highspeedModelFactory = createTestModelFactory({
+      const fallbackModelFactory = createTestModelFactory({
         async generateText() {
           throw new Error("streaming runtime must not call generateText");
         },
@@ -10255,7 +10255,7 @@ describe("AgentRuntime tool loop", () => {
           };
           await toolStarted.promise;
           if (executionState === "completed") await toolCompleted.promise;
-          throw Object.assign(new Error("highspeed unavailable-target stream failed"), {
+          throw Object.assign(new Error("unavailable-target stream failed"), {
             code: "model_request_failed",
             context: {
               providerId,
@@ -10284,7 +10284,7 @@ describe("AgentRuntime tool loop", () => {
             if (factoryInput.selection.providerId === unavailableFallbackProviderId) {
               throw new Error("fallback provider is unavailable");
             }
-            return highspeedModelFactory(factoryInput);
+            return fallbackModelFactory(factoryInput);
           },
         },
       );
@@ -10297,13 +10297,13 @@ describe("AgentRuntime tool loop", () => {
             sourceCommandId: `command-unavailable-fallback-tool-${executionState}`,
             kind: "sendText",
             requestedDelivery: "start-now",
-            modelSelection: { providerId: highspeedProviderId, modelId: "GLM-5.3" },
+            modelSelection: { providerId: fallbackProviderId, modelId: "GLM-5.3" },
           },
           modelExecution: {
             selectionScope: "execution",
             selectionFallback: {
-              providerId: highspeedProviderId,
-              rules: [{ reason: "highspeed_request_failed" }],
+              providerId: fallbackProviderId,
+              rules: [{ reason: "fallback_request_failed" }],
               target: { providerId: unavailableFallbackProviderId, modelId: "ghost-model" },
             },
           },
@@ -10316,9 +10316,9 @@ describe("AgentRuntime tool loop", () => {
       expect(failure).toBeInstanceOf(Error);
       const causeMessage = failure?.cause instanceof Error ? failure.cause.message : undefined;
       expect([failure?.message, causeMessage]).toContain(
-        "highspeed unavailable-target stream failed",
+        "unavailable-target stream failed",
       );
-      expect(streamedProviders).toEqual([highspeedProviderId]);
+      expect(streamedProviders).toEqual([fallbackProviderId]);
       expect(toolHandlerCallCount).toBe(1);
 
       const persistedToolParts = (sessionStore.partsBySession.get(sessionId) ?? []).filter(
@@ -10393,8 +10393,8 @@ describe("AgentRuntime tool loop", () => {
     const eventStore = createTestSessionEventStore();
     const registry = createToolRegistry();
     const toolCompleted = deferred();
-    const highspeedProviderId = "account:zai-highspeed-card";
-    let highspeedCallCount = 0;
+    const fallbackProviderId = "account:legacy-card-provider";
+    let fallbackCallCount = 0;
     let fallbackCallCount = 0;
     let toolHandlerCallCount = 0;
 
@@ -10433,10 +10433,10 @@ describe("AgentRuntime tool loop", () => {
           },
           async *streamText(_request: any, observation) {
             const providerId = String(observation.model.providerId);
-            if (providerId === highspeedProviderId) {
-              highspeedCallCount++;
-              if (highspeedCallCount <= 3) {
-                yield { type: "text_delta", text: `accelerated part ${highspeedCallCount}` };
+            if (providerId === fallbackProviderId) {
+              fallbackCallCount++;
+              if (fallbackCallCount <= 3) {
+                yield { type: "text_delta", text: `accelerated part ${fallbackCallCount}` };
                 yield { type: "finish", finishReason: "length", usage: {} };
                 return;
               }
@@ -10449,7 +10449,7 @@ describe("AgentRuntime tool loop", () => {
                 },
               };
               await toolCompleted.promise;
-              throw Object.assign(new Error("highspeed failed after continuation tool"), {
+              throw Object.assign(new Error("fallback failed after continuation tool"), {
                 code: "model_request_failed",
                 context: {
                   providerId,
@@ -10485,19 +10485,19 @@ describe("AgentRuntime tool loop", () => {
         sourceCommandId: "command-fallback-tool-continuation-reset",
         kind: "sendText",
         requestedDelivery: "start-now",
-        modelSelection: { providerId: highspeedProviderId, modelId: "GLM-5.3" },
+        modelSelection: { providerId: fallbackProviderId, modelId: "GLM-5.3" },
       },
       modelExecution: {
         selectionScope: "execution",
         selectionFallback: {
-          providerId: highspeedProviderId,
-          rules: [{ reason: "highspeed_request_failed" }],
+          providerId: fallbackProviderId,
+          rules: [{ reason: "fallback_request_failed" }],
         },
       },
     });
 
     expect(result.response).toBe("fallback completed");
-    expect(highspeedCallCount).toBe(4);
+    expect(fallbackCallCount).toBe(4);
     expect(fallbackCallCount).toBe(2);
     expect(toolHandlerCallCount).toBe(1);
   });

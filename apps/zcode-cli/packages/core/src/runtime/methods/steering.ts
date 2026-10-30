@@ -155,10 +155,7 @@ export async function steerTurn(
     intent,
     activeTurn.traceContext,
     request.modelSelectionScope
-      ? {
-          selectionScope: request.modelSelectionScope,
-          highspeedFallbackSelection: request.highspeedFallbackSelection,
-        }
+      ? { selectionScope: request.modelSelectionScope }
       : undefined,
   );
   activeTurn.pendingInputs.push(pendingInput);
@@ -297,10 +294,7 @@ export async function enqueueDeferredInput(
     intent,
     traceContext,
     request.modelSelectionScope
-      ? {
-          selectionScope: request.modelSelectionScope,
-          highspeedFallbackSelection: request.highspeedFallbackSelection,
-        }
+      ? { selectionScope: request.modelSelectionScope }
       : undefined,
   );
   this.logger?.debug("Deferred input queued", {

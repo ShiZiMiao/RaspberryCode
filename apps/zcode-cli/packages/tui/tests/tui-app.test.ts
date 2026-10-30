@@ -4,7 +4,6 @@ import React, { act } from "react";
 import { testRender } from "@mbears/opentui-react/test-utils";
 import { getZCodeCopy } from "@zcode/i18n";
 import { TuiApp } from "../src/app.js";
-import { LoginRequiredPanel } from "../src/app-components.js";
 import { ZCODE_LOGO_LINES } from "../src/app-empty-transcript.js";
 import { InputPane } from "../src/app-input-pane.js";
 import { InputActiveStatus } from "../src/app-input-status.js";
@@ -64,35 +63,6 @@ test("starts without a runtime readiness system message", async () => {
   }
 });
 
-test("places the login notice before the prompt input in the composer area", () => {
-  const children = reactElementChildren(
-    ComposerInputArea({
-      busy: false,
-      contentWidth: 80,
-      contextUsage: {},
-      copy: getZCodeCopy("en-US").tui,
-      draft: "",
-      editorRef: { current: null },
-      inputCursorToEndVersion: 0,
-      loginRequired: true,
-      mode: "build",
-      model: "default-deepseek/deepseek-v4-pro",
-      queuedInputs: [],
-      setDraftValue: () => undefined,
-      slashCommands: [],
-      submitValue: () => undefined,
-      thoughtLevel: "max",
-    }),
-  );
-
-  assert.equal(children[0]?.type, LoginRequiredPanel);
-  assert.equal(children.at(-2)?.type, InputPane);
-  assert.equal(children.at(-2)?.props?.model, "default-deepseek/deepseek-v4-pro");
-  assert.equal(children.at(-2)?.props?.thoughtLevel, "max");
-  assert.equal(children.at(-1)?.type, InputActiveStatus);
-  assert.equal(children.at(-1)?.props?.active, false);
-});
-
 test("places composer selections above the prompt input", () => {
   const children = reactElementChildren(
     ComposerInputArea({
@@ -103,7 +73,6 @@ test("places composer selections above the prompt input", () => {
       draft: "",
       editorRef: { current: null },
       inputCursorToEndVersion: 0,
-      loginRequired: false,
       mode: "build",
       model: "default-deepseek/deepseek-v4-pro",
       queuedInputs: [],
@@ -144,7 +113,6 @@ test("passes the busy active status outside the prompt input", () => {
       draft: "",
       editorRef: { current: null },
       inputCursorToEndVersion: 0,
-      loginRequired: false,
       mode: "build",
       model: "default-deepseek/deepseek-v4-pro",
       queuedInputs: [],
@@ -177,7 +145,6 @@ test("places queued input panel immediately above the prompt input", () => {
       draft: "",
       editorRef: { current: null },
       inputCursorToEndVersion: 0,
-      loginRequired: false,
       mode: "build",
       model: "default-deepseek/deepseek-v4-pro",
       queuedInputs: [{ id: "pending-1", text: "hello queue" }],

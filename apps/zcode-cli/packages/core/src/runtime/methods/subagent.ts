@@ -61,8 +61,6 @@ import {
 } from "../../subagent/computer-use-policy.js";
 import { computeOfficialCuaServerNames } from "./mcp.js";
 import { persistRuntimeModelSelection, sameModelSelection } from "./turn-model.js";
-import { getOffPeakExecution, markTemporaryRuntimeSelection } from "../off-peak/runtime.js";
-import { getOffPeakModelBinding } from "../off-peak/model-binding.js";
 
 export function createDefaultSubagentPort(
   this: AgentRuntimeInternal,
@@ -99,22 +97,6 @@ export function createDefaultSubagentPort(
       });
     },
     runExploreAgent: async (request, options) => {
-      const offPeak = getOffPeakExecution(this);
-      const childBinding = offPeak?.createChildBinding();
-      if (offPeak && !offPeak.lifecycle.terminal) {
-        const selection = offPeak.lifecycle.ownedByUser
-          ? this.getSessionModelSelection()
-          : offPeak.selection;
-        if (selection)
-          options = {
-            ...options,
-            modelOverride: {
-              selection,
-              requestDependencies: childBinding?.requestDependencies,
-              background: "allow",
-            },
-          };
-      }
       try {
         request.reportActivity?.();
         const builtInExplore = isBuiltInExploreAgentProfile(request.profile);
@@ -233,9 +215,6 @@ export function createDefaultSubagentPort(
         const childClientPorts = deriveChildClientPorts(
           {
             permissionBroker: this.permissionBroker,
-            ...(this.providerRuntimeHeadersPort === undefined
-              ? {}
-              : { providerRuntimeHeadersPort: this.providerRuntimeHeadersPort }),
           },
           {
             agentId: request.agentId,
@@ -412,11 +391,6 @@ export function createDefaultSubagentPort(
         );
 
         const resumesExistingChild = request.resumeFromStore === true;
-        if (childBinding)
-          markTemporaryRuntimeSelection(
-            childRuntime as unknown as AgentRuntimeInternal,
-            offPeak?.ordinarySelection,
-          );
         let previousSelection: ModelSelection | undefined;
         if (resumesExistingChild) {
           const persistedMessages = await this.sessionStore?.messages({
@@ -477,15 +451,6 @@ export function createDefaultSubagentPort(
         request.registerMessageSink?.(createSubagentMessageSink(childRuntime, request));
         try {
           return await childRuntime.executeTurn(request.prompt, undefined, {
-            ...(childBinding
-              ? {
-                  offPeakTaskId: offPeak!.offPeakTaskId,
-                  modelExecution: {
-                    selectionScope: "execution" as const,
-                    memoryExtraction: "skip" as const,
-                  },
-                }
-              : { offPeakTaskId: undefined }),
             abortSignal: options?.signal,
             // 子 Runtime 的首轮输入来自父 Agent，而不是真实用户直接输入；保留源事实，避免
             // Subagent Turn 在 Trace 和成功率报表里被误归类为 user。
@@ -515,7 +480,7 @@ export function createDefaultSubagentPort(
             });
         }
       } finally {
-        childBinding?.release();
+        // child runtime 生命周期由各自调用点收口。
       }
     },
   });
@@ -565,9 +530,8 @@ function createSubagentOverrideModelFactory(
     const model = fallbackFactory({
       ...target,
       selection: override.selection,
-      requestDependencies: override.requestDependencies,
     });
-    return getOffPeakModelBinding(override.requestDependencies)?.wrap(model) ?? model;
+    return model;
   };
 }
 

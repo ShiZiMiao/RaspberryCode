@@ -2,7 +2,7 @@
   "name": "android-emulator",
   "version": "0.1.0",
   "description": "Provides Android development workflows and emulator automation for RaspberryCode.",
-  "author": { "name": "Z.ai" },
+  "author": { "name": "RaspberryCode" },
   "license": "MIT",
   "skills": "skills",
   "commands": "commands",

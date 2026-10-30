@@ -36,7 +36,7 @@ describe("createRuntimeAiSdkModelExecutionConfig", () => {
       defaultHeaders: {
         "User-Agent": "RaspberryCode/3.9.0",
         "X-RaspberryCode-App-Version": "3.9.0",
-        "X-Title": "Z Code@electron",
+        "X-Title": "RaspberryCode@electron",
       },
       endpointRoutingPort,
       network: {
@@ -63,7 +63,7 @@ describe("buildCliZCodeSourceHeaders", () => {
       ),
     ).toMatchObject({
       "User-Agent": "RaspberryCode/3.9.0",
-      "X-Title": "Z Code@cli",
+      "X-Title": "RaspberryCode@cli",
       "X-RaspberryCode-App-Version": "3.9.0",
     });
   });

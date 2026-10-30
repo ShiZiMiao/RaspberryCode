@@ -7,7 +7,6 @@ export type ProviderEndpointRoutingFetch = typeof globalThis.fetch;
 export function createProviderEndpointRoutingFetch(options: {
   fetch: ProviderEndpointRoutingFetch;
   routingPort: ProviderEndpointRoutingPort;
-  apiKeyId?: string;
 }): ProviderEndpointRoutingFetch {
   return async (input, init) => {
     const requestUrl = readRequestUrl(input);
@@ -16,10 +15,7 @@ export function createProviderEndpointRoutingFetch(options: {
     }
 
     const signal = init?.signal ?? (input instanceof Request ? input.signal : undefined);
-    // 配置接口只接受账号 owner 返回的 ID，禁止从模型 PAT 或手工 Key 推导。
-    const apiKeyId = options.apiKeyId;
     const decision = await options.routingPort.resolve(requestUrl, {
-      ...(apiKeyId ? { apiKeyId } : {}),
       signal: signal ?? undefined,
       trace: readTraceContext(input, init),
     });

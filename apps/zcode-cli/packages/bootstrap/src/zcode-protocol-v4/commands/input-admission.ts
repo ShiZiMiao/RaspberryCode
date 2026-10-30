@@ -5,7 +5,6 @@
 // 而不是寄居在某一个 handler 文件里。
 import type { SubmissionMode } from "@zcode/shared/zcode-protocol-v4";
 import {
-  isHighspeedProviderId,
   resolveExecutionState,
   type ModelSelection,
 } from "@zcode/shared";
@@ -181,15 +180,5 @@ export function resolveOrdinaryQueueModelSelection(
   record: V4SessionRecordView,
   candidate?: ModelSelection,
 ): ModelSelection {
-  const selection =
-    candidate && !isHighspeedProviderId(candidate.providerId)
-      ? candidate
-      : resolveSessionFallbackModelSelection(record);
-  if (isHighspeedProviderId(selection.providerId)) {
-    throw new V4InputAdmissionRejectedError(
-      "fault.command.inputRejected",
-      "ordinary queue model selection is unavailable",
-    );
-  }
-  return selection;
+  return candidate ?? resolveSessionFallbackModelSelection(record);
 }

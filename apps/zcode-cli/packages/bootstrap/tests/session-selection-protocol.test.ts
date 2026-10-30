@@ -62,7 +62,7 @@ describe("Session 原选择与输入协议", () => {
       workspace: { workspacePath: "/fixture", workspaceKey: "/fixture" },
     });
     const selection = {
-      providerId: "account:offpeak",
+      providerId: "account:provider-x",
       modelId: "fixture-model",
       options: { reasoningLevel: "high" },
     };

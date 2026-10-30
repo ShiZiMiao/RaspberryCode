@@ -2,7 +2,6 @@ import { beginLocalTurnPreparation, type LocalTtftDetail } from "@zcode/contract
 import { runtimeInputMetadata } from "../../agent/runtime-input-presentation.js";
 import { withConversationQuotes } from "../helpers/conversation-quotes.js";
 import { ensureGroupTaskPermissionScope } from "./input-intent-persistence.js";
-import { prepareOffPeakTurn } from "../off-peak/runtime.js";
 import {
   CoreErrorType,
   HookEventName,
@@ -74,7 +73,6 @@ import { appendBrowserTurnScreenshot } from "./browser-turn-screenshot.js";
 import { clearBrowserTurnState } from "../../repl/browser-turn-state.js";
 import {
   acceptSubmissionModelSelection,
-  captureHighspeedFallbackSelection,
   applySubmissionExecutionState,
   createTurnModel,
   resolveExecutionModelRetryBudget,
@@ -96,12 +94,6 @@ export async function executeTurn(
   attachments?: TurnState["attachments"],
   options?: ExecuteTurnOptions,
 ): Promise<TurnResult> {
-  if (options?.modelExecution) {
-    options = {
-      ...options,
-      modelExecution: captureHighspeedFallbackSelection(this, options.modelExecution),
-    };
-  }
   return await enqueueCancellableRuntimeCommand<TurnResult, PromptRuntimeCommand>(this, {
     abortSignal: options?.abortSignal,
     onCommandAccepted: () => {
@@ -140,20 +132,13 @@ export async function executeTurnCommand(
   // 普通 Turn 过去在异步初始化完成后才读取 Session Selection/输出样式，
   // 初始化期间发生的切模会越过 admission 边界，错误影响已经开始的 Turn。
   // 这里在任何 await 之前冻结本轮事实；后续配置变化只作用于下一轮。
-  const offPeakTurn = prepareOffPeakTurn(this, options);
-  options = offPeakTurn.options;
   const admittedModelSelection =
     options?.intent?.modelSelection ??
     (options && "executionSelection" in options
       ? options.executionSelection
       : this.getSessionModelSelection());
-  // 加速轮期间新输入可以更新 Session 续跑选择；卡过期必须回到本轮启动时的普通模型。
-  const highspeedFallbackSelection = options?.modelExecution?.selectionFallback
-    ? structuredClone(
-        "highspeedFallbackSelection" in options.modelExecution
-          ? options.modelExecution.highspeedFallbackSelection
-          : this.getSessionModelSelection(),
-      )
+  const executionFallbackSessionSelection = options?.modelExecution?.selectionFallback
+    ? structuredClone(this.getSessionModelSelection())
     : undefined;
   const admittedOutputStyle = this.config.outputStyle;
   const compactInstructions = parseCompactCommand(input);
@@ -241,7 +226,6 @@ export async function executeTurnCommand(
       throwIfTurnAborted(turnAbortSignal);
       let admittedModel: Model | undefined;
       let effectiveExecutionSelection = admittedModelSelection;
-      let effectiveRequestDependencies = options?.modelExecution?.requestDependencies;
       let creationFallback:
         | {
             reason: "highspeed_selection_unavailable";
@@ -257,7 +241,6 @@ export async function executeTurnCommand(
         admittedModel =
           rewindCommand === null
             ? createTurnModel(this, {
-                requestDependencies: options?.modelExecution?.requestDependencies,
                 selection: admittedModelSelection,
                 // 带退回声明的执行句柄 0 次重试：失败立刻交给 turn step 退回会话模型。
                 retryBudget: resolveExecutionModelRetryBudget({
@@ -285,13 +268,12 @@ export async function executeTurnCommand(
           const candidates = resolveExecutionFallbackCandidates({
             declaredTarget: selectionFallback.target,
             executionProviderId: admittedModelSelection.providerId,
-            sessionSelection: highspeedFallbackSelection,
+            sessionSelection: executionFallbackSessionSelection,
           });
           for (const candidate of candidates) {
             try {
               admittedModel = createTurnModel(this, { selection: candidate.selection });
               effectiveExecutionSelection = candidate.selection;
-              effectiveRequestDependencies = undefined;
               creationFallback = {
                 reason: creationFallbackMatch.reason,
                 fromModelSelection: admittedModelSelection,
@@ -497,14 +479,7 @@ export async function executeTurnCommand(
           input: displayInput,
           messageId: userMessageId,
           inputId: options?.inputId,
-          ...(options?.automationId
-            ? { automationId: options.automationId }
-            : options?.offPeakTaskId
-              ? {
-                  offPeakTaskId: options.offPeakTaskId,
-                  ...(options.offPeakRunType ? { offPeakRunType: options.offPeakRunType } : {}),
-                }
-              : {}),
+          ...(options?.automationId ? { automationId: options.automationId } : {}),
           foregroundExecutionId: this.activeForegroundExecution?.foregroundExecutionId,
           queryId,
           inputSource: options?.inputSource,
@@ -760,10 +735,6 @@ export async function executeTurnCommand(
             displayInput,
             userMessageId,
             turnTraceContext,
-            {
-              deferIfProviderRuntimeHeadersRefresh: true,
-              offPeakExecutionId: options?.offPeakExecutionId,
-            },
           );
           shouldRetryTitleGenerationAfterTurn = !titleGenerationStarted;
         }
@@ -797,11 +768,6 @@ export async function executeTurnCommand(
         loopState = {
           activeTurn,
           ...(options?.automationId ? { automationId: options.automationId } : {}),
-          // 闲时派发轮的身份进入 loop state，供工具执行边界 deny OffPeakCreate。
-          ...(options?.offPeakTaskId ? { offPeakTaskId: options.offPeakTaskId } : {}),
-          ...(options?.offPeakExecutionId
-            ? { offPeakExecutionId: options.offPeakExecutionId }
-            : {}),
           anomalyWarningsInjected: 0,
           backgroundSubagentResultConsumed: options?.backgroundSubagentResultConsumed === true,
           workflowResultConsumed: options?.workflowResultConsumed === true,
@@ -819,14 +785,12 @@ export async function executeTurnCommand(
           ...(!creationFallback && options?.modelExecution?.selectionFallback
             ? {
                 selectionFallback: options.modelExecution.selectionFallback,
-                highspeedFallbackSelection,
               }
             : {}),
           ...(options?.modelExecution?.subagents && effectiveExecutionSelection
             ? {
                 subagentModelOverride: {
                   selection: effectiveExecutionSelection,
-                  requestDependencies: effectiveRequestDependencies,
                   background: options.modelExecution.subagents.background,
                 },
               }
@@ -925,13 +889,7 @@ export async function executeTurnCommand(
         if (shouldRetryTitleGenerationAfterTurn && userMessageId) {
           // 需要请求前刷新 provider runtime headers 的模型
           // 若在主 turn 前生成标题，会先占用鉴权刷新窗口，导致真正的用户消息失败。
-          maybeStartDeferredSessionTitleGeneration.call(
-            this,
-            displayInput,
-            userMessageId,
-            turnTraceContext,
-            options?.offPeakExecutionId,
-          );
+          maybeStartDeferredSessionTitleGeneration.call(this, displayInput, userMessageId, turnTraceContext);
         }
         this.turnNumber++;
 
@@ -1103,13 +1061,6 @@ export async function executeTurnCommand(
     this.releaseTurnStart(turnId);
     clearBrowserTurnState(this.sessionId, turnId);
     this.finishActiveTurn(activeTurn);
-    offPeakTurn.release(
-      turnAbortSignal.aborted
-        ? "stopped"
-        : events.some((event) => event.type === SessionEventType.TurnError)
-          ? "failed"
-          : "succeeded",
-    );
     turnAbortScope.dispose();
     try {
       await this.browserControlPort?.turnEnded?.({

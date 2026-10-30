@@ -14,7 +14,6 @@ import {
   resolveModelRequestSessionTypeFromTaskType,
   resolveModelRetryBudgetFromTaskType,
 } from "./model-request-session-type.js";
-import { getOffPeakModelBinding } from "../off-peak/model-binding.js";
 
 export function createRuntimeModel(
   runtime: AgentRuntimeInternal,
@@ -43,7 +42,7 @@ export function createRuntimeModel(
       : resolveModelRequestSessionTypeFromTaskType(runtime.config.taskType),
     retryBudget,
   );
-  return getOffPeakModelBinding(input.requestDependencies)?.wrap(model) ?? model;
+  return model;
 }
 
 /**

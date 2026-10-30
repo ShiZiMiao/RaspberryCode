@@ -186,10 +186,10 @@ describe("模型请求默认 Header：Bootstrap → Adapter → 真实 SDK", () 
         expect(requests).toHaveLength(1);
         const headers = requests[0]!.headers;
         expect(headers.get("user-agent")).toContain(`RaspberryCode/${CLIENT_VERSION}`);
-        expect(headers.get("x-zcode-app-version")).toBe(CLIENT_VERSION);
-        expect(headers.get("x-title")).toBe("Z Code@electron");
-        expect(headers.get("http-referer")).toBe("https://zcode.z.ai");
-        expect(headers.get("x-zcode-agent")).toBe("glm");
+        expect(headers.get("x-raspberrycode-app-version")).toBe(CLIENT_VERSION);
+        expect(headers.get("x-title")).toBe("RaspberryCode@electron");
+        expect(headers.get("http-referer")).toBe("https://your-server.example");
+        expect(headers.get("x-raspberrycode-agent")).toBe("glm");
         expect(headers.get("x-release-channel")).toBe("production");
         for (const key of [
           "x-client-language",
@@ -259,8 +259,8 @@ describe("模型请求默认 Header：Bootstrap → Adapter → 真实 SDK", () 
     expect(requests[0]!.headers.get("user-agent")).toContain(
       `RaspberryCode/${options.expected ?? "unknown"}`,
     );
-    expect(requests[0]!.headers.get("x-zcode-app-version")).toBe(options.expected ?? null);
-    expect(requests[0]!.headers.get("x-title")).toBe(`Z Code@${options.sourceTitle}`);
+    expect(requests[0]!.headers.get("x-raspberrycode-app-version")).toBe(options.expected ?? null);
+    expect(requests[0]!.headers.get("x-title")).toBe(`RaspberryCode@${options.sourceTitle}`);
   });
 
   it("真实 Runtime 标题 sidecar 沿公共工厂携带版本、宿主类型和会话追踪", async () => {
@@ -301,7 +301,7 @@ describe("模型请求默认 Header：Bootstrap → Adapter → 真实 SDK", () 
       ),
     );
     expect(requests).toHaveLength(1);
-    expect(requests[0]!.headers.get("x-zcode-app-version")).toBe(CLIENT_VERSION);
+    expect(requests[0]!.headers.get("x-raspberrycode-app-version")).toBe(CLIENT_VERSION);
     // 标题用途不改变宿主会话分类；两个 Header 分别表达归属和用途。
     expect(requests[0]!.headers.get("x-zcode-session-type")).toBe("main");
     expect(requests[0]!.headers.get("x-zcode-query-source")).toBe("session_title");

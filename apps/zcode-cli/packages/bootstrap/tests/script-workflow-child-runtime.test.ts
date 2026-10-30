@@ -430,7 +430,7 @@ describe("script workflow child runtime — 与父会话共享 model factory", (
     const parentRuntime = createTestAgentRuntime(
       parentSessionId,
       {
-        modelSelection: { providerId: "glm", modelId: "GLM-5.3-Highspeed" },
+        modelSelection: { providerId: "glm", modelId: "GLM-5.3-Fast" },
         workingDirectory: tempRoot,
       },
       {
@@ -452,7 +452,7 @@ describe("script workflow child runtime — 与父会话共享 model factory", (
     });
     expect(actorRuntime.getSessionModelSelection()).toEqual({
       providerId: "glm",
-      modelId: "GLM-5.3-Highspeed",
+      modelId: "GLM-5.3-Fast",
     });
     await actorRuntime.ensureSessionPersistedForExternalActivity("workflow actor a#1@1");
     await actorRuntime.executeTurn("go");
@@ -460,7 +460,7 @@ describe("script workflow child runtime — 与父会话共享 model factory", (
     expect(
       parentModelFactory.mock.calls.some(
         ([target]) =>
-          target.selection.providerId === "glm" && target.selection.modelId === "GLM-5.3-Highspeed",
+          target.selection.providerId === "glm" && target.selection.modelId === "GLM-5.3-Fast",
       ),
     ).toBe(true);
   });
@@ -469,7 +469,7 @@ describe("script workflow child runtime — 与父会话共享 model factory", (
     const parentRuntime = createTestAgentRuntime(
       parentSessionId,
       {
-        modelSelection: { providerId: "glm", modelId: "GLM-5.3-Highspeed" },
+        modelSelection: { providerId: "glm", modelId: "GLM-5.3-Fast" },
         workingDirectory: tempRoot,
       },
       {
@@ -487,7 +487,7 @@ describe("script workflow child runtime — 与父会话共享 model factory", (
       createScriptWorkflowAgentRuntime({
         childSessionId: createSessionId("dwf-actor-model-bare"),
         deps,
-        request: { opts: { model: "GLM-5.3-Highspeed" } } as never,
+        request: { opts: { model: "GLM-5.3-Fast" } } as never,
         traceContext: createRootTraceContext({ sessionId: parentSessionId }),
       }),
     ).toThrow(/provider-qualified/);
@@ -588,15 +588,6 @@ describe("script workflow child runtime — 对外交互端口由父 runtime 铸
       traceContext: createRootTraceContext({ sessionId: parentSessionId }),
     });
   }
-
-  it("actor 的 provider runtime headers 刷新以父会话为路由身份", async () => {
-    const actorRuntime = await makeActorRuntime();
-    await actorRuntime.executeTurn("go");
-
-    expect(refreshes.length).toBeGreaterThan(0);
-    // 端口入参里的 sessionId 必须是父会话：桌面只订阅父 task 的会话，带子会话去问没人应答。
-    expect(refreshes.every((entry) => entry.routedSessionId === parentSessionId)).toBe(true);
-  });
 
   it("父 runtime 铸造的 permission broker 带父会话身份与子代理 origin", async () => {
     // 这正是 createScriptWorkflowAgentRuntime 装进 actor deps 的那一份（见实现里的

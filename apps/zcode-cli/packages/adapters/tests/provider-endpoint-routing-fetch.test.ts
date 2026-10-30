@@ -3,8 +3,8 @@ import type { ProviderEndpointRoutingPort } from "@zcode/contracts";
 import { createProviderEndpointRoutingFetch } from "../src/model/provider-endpoint-routing-fetch.js";
 import { createProviderBusinessErrorFetch } from "../src/model/model-execution.js";
 
-const SOURCE_ZAI = "https://api.z.ai/api/anthropic/v1/messages";
-const TARGET = "https://zcode.z.ai/api/v1/proxy/anthropic/v1/messages";
+const SOURCE_ZAI = "https://api.example.test/api/anthropic/v1/messages";
+const TARGET = "https://relay.example.test/api/v1/proxy/anthropic/v1/messages";
 
 describe("provider endpoint routing fetch", () => {
   it("preserves request semantics and the streaming response while recalculating Host", async () => {
@@ -31,7 +31,7 @@ describe("provider endpoint routing fetch", () => {
       body: JSON.stringify({ stream: true }),
       headers: {
         Authorization: "Bearer secret",
-        Host: "api.z.ai",
+        Host: "api.example.test",
         "x-api-key": "provider-key",
         "X-RaspberryCode-Trace-Id": "trace-1",
       },

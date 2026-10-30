@@ -23,7 +23,7 @@ function intent(sequence: number, model: string): TurnInputIntentMetadata {
 describe("Session selection admission", () => {
   it("加速卡接纳保存本次普通选择，既不保存加速端点也不保留临时闲时选择", async () => {
     const runtime = createTestAgentRuntime(
-      createSessionId("highspeed-takeover"),
+      createSessionId("fallback-takeover"),
       {
         modelSelection: createTestModelSelection("idle/idle"),
       },

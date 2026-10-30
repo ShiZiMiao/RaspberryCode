@@ -268,7 +268,7 @@ describe("Todo113 第二轮真实 SDK 序列化，不请求付费模型", () => 
     async (api) => {
       expect(
         await capture(
-          "kimi-k2.7-code-highspeed",
+          "kimi-k2.7-code-fast",
           api,
           api === "anthropic-messages"
             ? "https://api.moonshot.cn/anthropic"

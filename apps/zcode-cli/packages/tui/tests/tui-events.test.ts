@@ -4,7 +4,6 @@ import { SessionEventType, type SessionEvent } from "@zcode/contracts";
 import { applySessionEventToState } from "../src/app-events.js";
 import {
   appendAgentResult,
-  redactSensitivePromptForTranscript,
   submitDuringActiveTurn,
   submitIdleTurn,
 } from "../src/app-submit.js";
@@ -134,13 +133,13 @@ test("renders local assistant messages into the transcript", () => {
 
   state.apply(
     sessionEvent(SessionEventType.AssistantMessage, {
-      content: "Open this URL:\nhttps://chat.z.ai/oauth/authorize",
+      content: "Open this URL:\nhttps://auth.example.test/oauth/authorize",
     }),
   );
 
   assert.deepEqual(state.messages, [
     {
-      content: "Open this URL:\nhttps://chat.z.ai/oauth/authorize",
+      content: "Open this URL:\nhttps://auth.example.test/oauth/authorize",
       role: "agent",
     },
   ]);
@@ -444,21 +443,6 @@ test("submitting compact slash command creates timeline row without a user row",
   assert.equal(state.messages[0]?.role, "timeline");
   assert.equal(state.messages[0]?.timeline?.status, "started");
   assert.equal(state.messages[0]?.timeline?.command, "/compact keep failures");
-});
-
-test("redacts manual coding plan api keys from local transcript rows", () => {
-  assert.equal(
-    redactSensitivePromptForTranscript("/login zai-coding-plan-api-key zai-secret-key"),
-    "/login zai-coding-plan-api-key <redacted>",
-  );
-  assert.equal(
-    redactSensitivePromptForTranscript("/login bigmodel-coding-plan-api-key bm-secret-key"),
-    "/login bigmodel-coding-plan-api-key <redacted>",
-  );
-  assert.equal(
-    redactSensitivePromptForTranscript("/login zai-coding-plan-api-key"),
-    "/login zai-coding-plan-api-key",
-  );
 });
 
 test("updates the model projection from model selected events", () => {

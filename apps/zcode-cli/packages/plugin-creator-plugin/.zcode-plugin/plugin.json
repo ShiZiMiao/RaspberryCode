@@ -3,7 +3,7 @@
   "version": "0.1.1",
   "description": "Develop and validate RaspberryCode plugins through a local dev marketplace, installation, trials and updates.",
   "author": {
-    "name": "Z.ai"
+    "name": "RaspberryCode"
   },
   "license": "MIT",
   "skills": "skills"

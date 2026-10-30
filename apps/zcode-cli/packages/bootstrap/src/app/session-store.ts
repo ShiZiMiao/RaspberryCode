@@ -12,7 +12,6 @@ import {
   type ProjectId,
 } from "@zcode/contracts";
 import type { ModelSelection } from "@zcode/provider";
-import { isHighspeedProviderId } from "@zcode/shared";
 import { StartupTimer } from "../startup-logging.js";
 
 export function isClosableSessionStore(
@@ -80,7 +79,7 @@ export async function readSessionModelSelection(
  */
 function residentModelSelection(selection: ModelSelection | undefined): ModelSelection | undefined {
   if (!selection) return undefined;
-  return isHighspeedProviderId(selection.providerId) ? undefined : selection;
+  return selection;
 }
 
 export function closeSessionStore(store: SqliteSessionStore): void {

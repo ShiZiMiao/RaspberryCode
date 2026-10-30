@@ -22,12 +22,11 @@ export class CliDefaultSelection {
       inputId?: string;
       intent?: TurnInputIntentMetadata;
       modelExecution?: unknown;
-      offPeakTaskId?: string;
       automationId?: string;
     },
   >(options?: T): T & { intent?: TurnInputIntentMetadata } {
     // 只补普通 CLI 用户输入；临时执行和自动续跑有自己的选择与鉴权。
-    if (options?.modelExecution || options?.offPeakTaskId || options?.automationId) {
+    if (options?.modelExecution || options?.automationId) {
       return { ...options } as T;
     }
     const selection = options?.intent?.modelSelection ?? this.get();

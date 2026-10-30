@@ -20,7 +20,6 @@ import { prepareRuntimeProviderRequest, throwIfTurnAborted } from "../helpers/in
 import { projectMessagesForModelMediaPolicy } from "../helpers/media-budget.js";
 import type { AgentRuntimeInternal } from "../internal.js";
 import { isRuntimeAttachmentEntry, type RuntimeMessageEntry } from "../../agent/message-history.js";
-import { createRefreshRuntimeHeadersBeforeModelAttempt } from "./model-runtime-headers.js";
 import { createRuntimeModel } from "./runtime-model.js";
 import { isStartPlanBusyStreamRecoveryFailure } from "./streaming-recovery.js";
 import { recordModelUsageFact } from "./usage-observability.js";
@@ -321,11 +320,6 @@ async function generateTargetCompletionVerificationText(
         },
         statusSink: this.createModelStatusSink(input.traceContext, input.events),
         traceContext: input.traceContext,
-        refreshRuntimeHeadersBeforeAttempt: createRefreshRuntimeHeadersBeforeModelAttempt(this, {
-          abortSignal: input.abortSignal,
-          model: input.model,
-          traceContext: input.traceContext,
-        }),
       };
       return await runWithModelInvocationContext(invocationContext, () =>
         input.model.generateText({

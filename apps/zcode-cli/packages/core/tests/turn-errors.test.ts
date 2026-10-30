@@ -108,11 +108,11 @@ describe("turn abort outcome", () => {
     });
   });
 
-  it("只在显式传入时把 Highspeed 无处可退事实写进 TurnError 归因", async () => {
+  it("只在显式传入时把执行卡无处可退事实写进 TurnError 归因", async () => {
     // Renderer 退卡只看该事实；普通失败不得带上它，否则不相关的错误会误作废卡。
     const abort = new AbortController();
     const coreError = createTurnFailureError(
-      Object.assign(new Error("highspeed card is invalid"), {
+      Object.assign(new Error("fallback card is invalid"), {
         code: "invalid_model_request",
         context: { providerCode: "3402", source: "provider", statusCode: 400 },
       }),
@@ -131,7 +131,7 @@ describe("turn abort outcome", () => {
       coreError,
       durationMs: 1,
       turnPhase: "model",
-      traceContext: { traceId: "trace-highspeed-unavailable" } as never,
+      traceContext: { traceId: "trace-fallback-unavailable" } as never,
       fallbackMessage: "Turn execution failed",
       logEvent: "turn.failed",
       logLabel: "Turn",

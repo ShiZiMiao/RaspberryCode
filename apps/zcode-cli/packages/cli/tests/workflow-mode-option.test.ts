@@ -175,7 +175,7 @@ test("an unknown --workflow-mode value fails before any app is created", async (
 
 // ── DWG-15：作用域 ──────────────────────────────────────────────────────────
 
-for (const argv of [["app-server"], ["agent-server"], ["login"], ["skills"]] as const) {
+for (const argv of [["app-server"], ["agent-server"], ["skills"]] as const) {
   test(`--workflow-mode is rejected with ${argv[0]}`, async () => {
     const { deps, seen } = createRecordingDeps();
     const ctx = createContext([...argv, "--workflow-mode", "alwaysOn"]);

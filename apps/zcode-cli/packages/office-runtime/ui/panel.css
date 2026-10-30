@@ -1,6 +1,6 @@
 /*
  * Document viewer panel. Colours come from the host's style variables (ZCode passes its theme
- * tokens); the fallbacks are ZCode's own zai-light / zai-dark values. Popover, menu and input
+ * tokens); the fallbacks are ZCode's own light / dark values. Popover, menu and input
  * fills have no host variable, so they are set per theme here.
  */
 :root {

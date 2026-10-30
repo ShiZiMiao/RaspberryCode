@@ -23,7 +23,6 @@ import {
 } from "../../tool/read-file-state.js";
 import type { ProjectMemoryRetrievalBranch } from "../../memory/project-memory-retrieval-branch.js";
 import type { AgentRuntimeInternal } from "../internal.js";
-import { createRefreshRuntimeHeadersBeforeModelAttempt } from "../methods/model-runtime-headers.js";
 import { withModelInvocationContext } from "../methods/runtime-model.js";
 import {
   systemReminderAttachmentEntry,
@@ -263,11 +262,6 @@ function selectorModel(
   return withModelInvocationContext(model, (request) => ({
     metadata: { querySource: "project_memory_recall" },
     modelCall: { operation: "project_memory_recall" },
-    refreshRuntimeHeadersBeforeAttempt: createRefreshRuntimeHeadersBeforeModelAttempt(runtime, {
-      abortSignal: request.abortSignal,
-      model,
-      traceContext,
-    }),
     traceContext,
   }));
 }

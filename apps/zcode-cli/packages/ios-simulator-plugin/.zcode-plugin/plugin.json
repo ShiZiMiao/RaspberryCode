@@ -2,7 +2,7 @@
   "name": "ios-simulator",
   "version": "0.1.0",
   "description": "Provides iOS development workflows and simulator automation for RaspberryCode.",
-  "author": { "name": "Z.ai" },
+  "author": { "name": "RaspberryCode" },
   "license": "MIT",
   "skills": "skills",
   "commands": "commands",

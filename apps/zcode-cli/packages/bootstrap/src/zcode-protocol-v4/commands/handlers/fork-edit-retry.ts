@@ -9,7 +9,6 @@ import type {
   CommandPayloadMap,
   CommandResult,
 } from "@zcode/shared/zcode-protocol-v4";
-import { isHighspeedProviderId } from "@zcode/shared";
 import {
   RewindStrategy,
   traceContextToLogContext,
@@ -143,22 +142,6 @@ async function editUserQuery(
   }
   // 附件映射在 rewind 前完成：引用失效要在截断历史之前暴露，避免半程失败。
   const attachments = await mapAttachmentRefsToTurnAttachments(record.app, attachmentRefs);
-  // 编辑重发按新的主动发送处理：只认本次重新 prepare 的卡（本会话 taskId、未过期），
-  // 且 Selection 必须真的指向加速 Provider，避免拿旧凭据或跨会话卡加速。
-  const highspeedEdit =
-    editTarget.intent.kind === "sendText" &&
-    payload.highspeedMeta !== undefined &&
-    payload.highspeedMeta.taskId === record.app.sessionId &&
-    payload.highspeedMeta.expiresAt > Date.now() &&
-    payload.modelSelection !== undefined &&
-    payload.modelExecution !== undefined &&
-    isHighspeedProviderId(payload.modelSelection.providerId)
-      ? {
-          card: payload.highspeedMeta,
-          modelSelection: payload.modelSelection,
-          execution: payload.modelExecution,
-        }
-      : undefined;
   // Bug 根因：模型检查曾位于 branch cut 之后；modelUnavailable 会留下已持久化的历史截断，
   // workspaceMode=rewind 还会先改文件。必须用本次真正重发的 canonical intent 在所有破坏性操作前预检。
   await preflightCanonicalIntent(
@@ -169,7 +152,6 @@ async function editUserQuery(
     payload.newText,
     attachmentRefs,
     attachments,
-    highspeedEdit,
   );
   const runtimeHasActiveTurn =
     record.app.runtime?.getActiveTurnInfo?.() !== undefined ||
@@ -252,7 +234,6 @@ async function editUserQuery(
       payload.newText,
       attachmentRefs,
       attachments,
-      highspeedEdit,
     );
   } catch (error) {
     if (
@@ -276,7 +257,6 @@ async function editUserQuery(
         payload.newText,
         attachmentRefs,
         attachments,
-        highspeedEdit,
         { requireQueue: true },
       );
     } else {

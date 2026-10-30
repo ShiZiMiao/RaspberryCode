@@ -1720,7 +1720,7 @@ describe("subagent background notifications", () => {
         {
           signal: new AbortController().signal,
           modelOverride: {
-            selection: { providerId: "account:zai-offpeak-idle-plan", modelId: "GLM-5.2" },
+            selection: { providerId: "account:idle-plan-provider", modelId: "GLM-5.2" },
             background: "deny",
           },
         },
@@ -1758,7 +1758,7 @@ describe("subagent background notifications", () => {
         },
         {
           modelOverride: {
-            selection: { providerId: "account:zai-offpeak-idle-plan", modelId: "GLM-5.2" },
+            selection: { providerId: "account:idle-plan-provider", modelId: "GLM-5.2" },
             background: "deny",
           },
         },

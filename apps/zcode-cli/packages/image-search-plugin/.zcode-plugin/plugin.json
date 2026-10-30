@@ -7,7 +7,7 @@
     "zh-CN": "RaspberryCode 官方搜图 MCP 服务，用于查找插图与参考配图。"
   },
   "author": {
-    "name": "Z.ai"
+    "name": "RaspberryCode"
   },
   "license": "Apache-2.0",
   "mcpServers": {

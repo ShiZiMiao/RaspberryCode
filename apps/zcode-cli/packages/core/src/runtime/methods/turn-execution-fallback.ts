@@ -158,8 +158,7 @@ export async function applyExecutionSelectionFallback(
   };
   const executionProviderId = String(executionModelSelection.providerId);
   const declaredTarget = state.selectionFallback?.target;
-  // 后续输入可能已更新 Session；旧加速轮只能读取启动时固定的普通选择。
-  const sessionSelection = state.highspeedFallbackSelection;
+  const sessionSelection = undefined;
   // 退回请求走用户自己的常规鉴权，因此不再携带本次执行的 requestDependencies，重试预算也回到默认档。
   const candidates = resolveExecutionFallbackCandidates({
     declaredTarget,

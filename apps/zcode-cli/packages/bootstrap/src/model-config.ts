@@ -59,7 +59,7 @@ export function buildCliZCodeSourceHeaders(
     "HTTP-Referer": resolveRuntimeZCodeEndpointOrigin(env),
     "User-Agent": `RaspberryCode/${appVersion ?? "unknown"}`,
     ...(appVersion ? { "X-RaspberryCode-App-Version": appVersion } : {}),
-    "X-Title": `Z Code@${sourceTitle}`,
+    "X-Title": `RaspberryCode@${sourceTitle}`,
     "X-Release-Channel": resolveRuntimeZCodeEnv(env),
     "X-Client-Language": locale ?? "unknown",
     "X-Client-Timezone": timezone ?? "unknown",
