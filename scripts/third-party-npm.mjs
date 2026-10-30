@@ -155,15 +155,32 @@ export function assertProductionGraphs(lockedProjects, installedProjects, isInst
   return locked;
 }
 
+// 修复原因：Windows 上 `pnpm -r ls --depth Infinity` 全仓并发解析依赖树时，并发打开
+// manifest 超过 CRT 句柄上限直接报 EMFILE（Node/pnpm 版本无关；单项目 `pnpm ls` 实测正常）。
+// 这里改为先浅层枚举 workspace 项目，再逐项目 `pnpm ls` 后拼接结果数组：`-r` 的输出
+// 本身就是逐项目结果的数组，形状与语义完全一致，仅把并发摊平为串行以避开句柄峰值。
 export async function readWorkspaceProductionGraph(root) {
   root = await realpath(root);
+  const runOptions = { cwd: root, ...resolveSpawnRuntimeOptions("pnpm") };
+  const { stdout: projectsJson } = await exec(
+    "pnpm",
+    ["-r", "ls", "--depth", "-1", "--json"],
+    { ...runOptions, maxBuffer: 64 * 1024 * 1024 },
+  );
+  const workspaceProjects = JSON.parse(projectsJson);
   // 修复：pnpm ls 默认读取安装快照，不能把旧图与当前锁文件哈希拼成有效声明。
-  const [locked, actual] = await Promise.all(
-    [true, false].map(async (lockfileOnly) => {
+  const results = { locked: [], actual: [] };
+  for (const project of workspaceProjects) {
+    const filter = `./${relative(root, project.path).replaceAll("\\", "/")}`;
+    for (const [key, lockfileOnly] of [
+      ["locked", true],
+      ["actual", false],
+    ]) {
       const { stdout } = await exec(
         "pnpm",
         [
-          "-r",
+          "--filter",
+          filter,
           "ls",
           "--prod",
           "--json",
@@ -171,21 +188,17 @@ export async function readWorkspaceProductionGraph(root) {
           "Infinity",
           ...(lockfileOnly ? ["--lockfile-only"] : []),
         ],
-        {
-          cwd: root,
-          maxBuffer: 256 * 1024 * 1024,
-          ...resolveSpawnRuntimeOptions("pnpm"),
-        },
+        { ...runOptions, maxBuffer: 256 * 1024 * 1024 },
       );
-      return JSON.parse(stdout);
-    }),
-  );
+      results[key].push(...JSON.parse(stdout));
+    }
+  }
   const isInstallable = createInstallablePackageFilter(
     readLockfilePlatformConstraints(await readFile(join(root, "pnpm-lock.yaml"), "utf8")),
     await readInstallTargets(root),
   );
-  const required = assertProductionGraphs(locked, actual, isInstallable);
-  return { required, projects: actual };
+  const required = assertProductionGraphs(results.locked, results.actual, isInstallable);
+  return { required, projects: results.actual };
 }
 
 export async function scanInstalledPackages(root, projects) {
