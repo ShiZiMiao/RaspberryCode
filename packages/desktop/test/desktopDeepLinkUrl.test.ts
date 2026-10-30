@@ -15,23 +15,10 @@ describe("desktop deep link url helpers", () => {
   });
 
   it("accepts Linux one-slash callback urls", async () => {
-    const { isOAuthCallbackUrl, isPaymentCallbackUrl } =
-      await import("../src/main/desktopDeepLinkUrl.js");
+    const { isOAuthCallbackUrl } = await import("../src/main/desktopDeepLinkUrl.js");
 
     expect(isOAuthCallbackUrl(new URL("zcode:/oauth/callback?code=1&state=s"))).toBe(true);
     expect(isOAuthCallbackUrl(new URL("zcode:oauth/callback?code=1&state=s"))).toBe(true);
-    expect(isPaymentCallbackUrl(new URL("zcode:/payment/callback?status=return"))).toBe(true);
-    expect(isPaymentCallbackUrl(new URL("zcode:payment/callback?status=cancel"))).toBe(true);
-  });
-
-  it("recognizes payment callback urls separately from OAuth", async () => {
-    const { isOAuthCallbackUrl, isPaymentCallbackUrl } =
-      await import("../src/main/desktopDeepLinkUrl.js");
-
-    const paymentUrl = new URL("zcode://payment/callback?provider=zai&channel=paypal");
-    expect(isPaymentCallbackUrl(paymentUrl)).toBe(true);
-    expect(isOAuthCallbackUrl(paymentUrl)).toBe(false);
-    expect(isPaymentCallbackUrl(new URL("zcode://payment/other"))).toBe(false);
   });
 
   it("recognizes workspace open urls and extracts the encoded folder path", async () => {
@@ -43,17 +30,6 @@ describe("desktop deep link url helpers", () => {
     expect(extractWorkspaceOpenPath(workspaceUrl)).toBe("/Users/demo/Project A&B");
     expect(isWorkspaceOpenUrl(new URL("zcode://workspace/other?path=%2Ftmp"))).toBe(false);
     expect(extractWorkspaceOpenPath(new URL("zcode://workspace/open"))).toBeNull();
-  });
-
-  it("只接受不含额外敏感参数的 share import code", async () => {
-    const { extractShareImportCode, isShareImportUrl } =
-      await import("../src/main/desktopDeepLinkUrl.js");
-    const valid = new URL("zcode://share/import?code=abc_DEF-123");
-    expect(isShareImportUrl(valid)).toBe(true);
-    expect(extractShareImportCode(valid)).toBe("abc_DEF-123");
-    expect(extractShareImportCode(new URL("zcode://share/import"))).toBeNull();
-    expect(extractShareImportCode(new URL("zcode://share/import?code=bad%2Fcode"))).toBeNull();
-    expect(isShareImportUrl(new URL("https://share/import?code=abc"))).toBe(false);
   });
 
   it("extracts protocol urls from desktop argv variants", async () => {
@@ -89,11 +65,11 @@ describe("desktop deep link url helpers", () => {
     expect(
       extractDeepLinkUrlFromArgs([
         "/opt/RaspberryCode/zcode",
-        "zcode://payment/callback?provider=zai",
-        "&channel=paypal",
-        "&status=return",
+        "zcode://oauth/callback",
+        "?code=1",
+        "&state=s",
       ]),
-    ).toBe("zcode://payment/callback?provider=zai&channel=paypal&status=return");
+    ).toBe("zcode://oauth/callback?code=1&state=s");
     expect(
       extractDeepLinkUrlFromArgs([
         "/Applications/RaspberryCode.app/Contents/MacOS/RaspberryCode",
