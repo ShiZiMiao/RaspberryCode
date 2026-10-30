@@ -4,7 +4,6 @@ import { join } from "node:path";
 import { z } from "zod";
 import {
   BUILTIN_MODEL_PROVIDER_IDS,
-  resolveBigModelApiOrigin,
   resolveRuntimeZCodeEnv,
 } from "@zcode/shared";
 import {
@@ -67,10 +66,8 @@ function normalizeBigModelCodingPlanAnthropicBaseUrlForEnv(
   baseUrl: string | undefined,
   env: Record<string, string | undefined> = process.env,
 ): string {
-  const fallbackBaseUrl =
-    resolveRuntimeZCodeEnv(env) === "production"
-      ? BIGMODEL_CODING_PLAN_ANTHROPIC_BASE_URL
-      : `${resolveBigModelApiOrigin(env)}/api/anthropic`;
+  // 厂商事实地址（open.bigmodel.cn）；测试环境无独立套餐网关，统一回落。
+  const fallbackBaseUrl = BIGMODEL_CODING_PLAN_ANTHROPIC_BASE_URL;
   const normalizedBaseUrl = normalizeModelProviderBaseUrlForKind(
     baseUrl ?? fallbackBaseUrl,
     "anthropic",

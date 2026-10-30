@@ -1,6 +1,4 @@
 import type { OAuthProviderId } from "@zcode/shared";
-import { createBigModelProviderRuntimeConfig } from "./providers/bigmodelProviderConfig.js";
-import { createZaiProviderRuntimeConfig } from "./providers/zaiProviderConfig.js";
 
 /** Provider 运行时配置（仅 host process 可见） */
 export interface OAuthProviderRuntimeConfig {
@@ -27,8 +25,7 @@ export interface OAuthRuntimeConfig {
  *
  * 注意：这里只能在 host process 使用，避免把敏感配置暴露给 renderer。
  */
-export function createOAuthRuntimeConfig(env: NodeJS.ProcessEnv = process.env): OAuthRuntimeConfig {
-  return {
-    providers: [createBigModelProviderRuntimeConfig(env), createZaiProviderRuntimeConfig(env)],
-  };
+export function createOAuthRuntimeConfig(_env: NodeJS.ProcessEnv = process.env): OAuthRuntimeConfig {
+  // 智谱/Z.ai 登录 provider 已随登录体系移除；无 provider = 无可用登录入口。
+  return { providers: [] };
 }

@@ -17,7 +17,6 @@ import {
 import type { ICredentialService } from "../credential/credential.js";
 import type { ISettingService } from "../setting/setting.js";
 import type { ProviderRuntime } from "./providerRuntime.js";
-import type { AccountProviderService } from "@zcode/provider";
 import type { IProviderProvisioningTargetService } from "./providerProvisioning.js";
 import {
   PROVIDER_PROVISIONING_OAUTH_CREDENTIAL_KEYS,
@@ -31,7 +30,6 @@ const OAUTH_CREDENTIAL_KEYS = new Set<string>(PROVIDER_PROVISIONING_OAUTH_CREDEN
 export interface ProviderProvisioningTargetOptions {
   readonly providerRuntime: ProviderRuntime;
   readonly personalRepository: PersonalProviderConfigRepository;
-  readonly accountProviderSource: AccountProviderService;
   readonly credentialService: ICredentialService;
   readonly settingService: ISettingService;
   readonly personalConfigFilePath: string;
@@ -80,10 +78,7 @@ export function createProviderProvisioningTarget(
         const applied: AppliedProvisioningState = {
           settings: false,
           settingsExpected: envelope.accountSettings,
-          settingsVersion: Math.max(
-            Date.now(),
-            (before.settings.providerFamilyDomainUpdatedAt ?? 0) + 1,
-          ),
+          settingsVersion: Date.now(),
           credentials: [],
           personalConfig: false,
           personalConfigExpected: personalUpdate,
@@ -93,21 +88,10 @@ export function createProviderProvisioningTarget(
         try {
           // 先登记再写入：底层原子写即使在替换完成后才抛错，也必须进入回滚集合。
           applied.settings = true;
-          await options.settingService.update(
-            {
-              providerFamilyDomainUpdatedAt: applied.settingsVersion,
-              providerFamilyDomain: envelope.accountSettings.providerFamilyDomain ?? undefined,
-              providerFamilyConnectionSelections:
-                envelope.accountSettings.providerFamilyConnectionSelections,
-            },
-            {
-              // 原因：Host 同步也与本地连接选择竞争，提交必须比较捕获的完整快照和版本。
-              providerFamilyDomain: before.settings.providerFamilyDomain,
-              providerFamilyConnectionSelections:
-                before.settings.providerFamilyConnectionSelections,
-              providerFamilyDomainUpdatedAt: before.settings.providerFamilyDomainUpdatedAt ?? 0,
-            },
-          );
+          await options.settingService.update({
+            providerFamilyConnectionSelections:
+              envelope.accountSettings.providerFamilyConnectionSelections,
+          });
 
           const incomingCredentials = new Map(
             oauthCredentials.map((credential) => [credential.key, credential.value]),
@@ -129,7 +113,6 @@ export function createProviderProvisioningTarget(
           });
 
           errorCode = "target-refresh-failed";
-          await options.accountProviderSource.refresh("provider-provisioning");
           const snapshot =
             await options.providerRuntime.registryService.refresh("provider-provisioning");
           // 失效默认只是新会话偏好；把它当同步硬条件会让正常 SSH 被旧模型/档位阻断。
@@ -269,24 +252,12 @@ async function rollback(
       const previousSettings = toProvisioningAccountSettings(before.settings);
       if (sameAccountSettings(current, previousSettings)) {
         // 写入失败发生在落盘前，目标已经处于回滚前的状态。
-      } else if (
-        !sameAccountSettings(current, applied.settingsExpected) ||
-        (current.providerFamilyDomainUpdatedAt ?? 0) !== applied.settingsVersion
-      ) {
+      } else if (!sameAccountSettings(current, applied.settingsExpected)) {
         errors.push(new Error("Account Settings 在同步期间被其它操作修改，跳过回滚"));
       } else {
-        await options.settingService.update(
-          {
-            providerFamilyDomain: before.settings.providerFamilyDomain,
-            providerFamilyConnectionSelections: before.settings.providerFamilyConnectionSelections,
-          },
-          {
-            // 原因：归属检查与写入间仍有竞态，回滚也必须在锁内比较本次提交版本。
-            providerFamilyDomain: current.providerFamilyDomain,
-            providerFamilyConnectionSelections: current.providerFamilyConnectionSelections,
-            providerFamilyDomainUpdatedAt: applied.settingsVersion,
-          },
-        );
+        await options.settingService.update({
+          providerFamilyConnectionSelections: before.settings.providerFamilyConnectionSelections,
+        });
       }
     } catch (error) {
       errors.push(error);
@@ -296,7 +267,6 @@ async function rollback(
     return new Error(errors.map(formatError).join("；"));
   }
   try {
-    await options.accountProviderSource.refresh("provider-provisioning-rollback");
     await options.providerRuntime.registryService.refresh("provider-provisioning-rollback");
   } catch (error) {
     return error instanceof Error ? error : new Error(String(error));
@@ -318,7 +288,6 @@ function toProvisioningAccountSettings(
   settings: Awaited<ReturnType<ISettingService["get"]>>,
 ): ProviderProvisioningEnvelope["accountSettings"] {
   return {
-    providerFamilyDomain: settings.providerFamilyDomain ?? null,
     providerFamilyConnectionSelections: settings.providerFamilyConnectionSelections ?? {},
   };
 }

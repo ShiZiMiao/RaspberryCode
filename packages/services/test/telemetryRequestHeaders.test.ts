@@ -36,6 +36,8 @@ it("adds every public header and re-reads authorization on retry and logout", as
     releaseChannel: "test",
     randomUUID: () => "device-1",
     resolveZCodeEndpointOrigin: () => "https://zcode.z.ai",
+    // 构建期上报端点默认为空（遥测默认关闭）；显式注入后 rewrite 到配置端点再出网。
+    reportEndpoint: "https://your-server.example/api/v1/event/report",
     sleep: async () => {
       token = "Bearer second";
     },
@@ -46,7 +48,7 @@ it("adds every public header and re-reads authorization on retry and logout", as
     "Content-Type": "application/json",
     "User-Agent": "RaspberryCode/1.2.3",
     "HTTP-Referer": "https://zcode.z.ai",
-    "X-Title": "Z Code@electron",
+    "X-Title": "RaspberryCode@electron",
     "X-RaspberryCode-App-Version": "1.2.3",
     "X-Platform": "darwin-arm64",
     "X-Release-Channel": "test",

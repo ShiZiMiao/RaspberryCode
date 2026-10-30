@@ -9,7 +9,6 @@ import {
   sanitizeTelemetryEventDetail,
   type TelemetryEventPayload,
   type TelemetryRendererContext,
-  type OAuthLoginAttribution,
 } from "@zcode/shared";
 import { mkdir, open, readFile, stat, unlink, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
@@ -17,8 +16,6 @@ import { version } from "node:os";
 import { dirname, join } from "node:path";
 import { createServiceLogger } from "#src/logger/serviceLogger.js";
 import { getAppConfigDir } from "../paths.js";
-
-const REPORT_ENDPOINT = ZCODE_TELEMETRY_REPORT_ENDPOINT;
 
 function sessionCreateEventId(userId: string, sessionId: string): string {
   const bytes = createHash("sha256")
@@ -44,7 +41,6 @@ interface TelemetryCoreDependencies {
   fetchImpl?: typeof fetch;
   loadUserId?: () => Promise<string>;
   loadAuthorization?: (userId: string) => Promise<string | null>;
-  loadMarketingParams?: () => Promise<OAuthLoginAttribution | null>;
   randomUUID?: () => string;
   now?: () => number;
   appVersion?: string;
@@ -54,6 +50,8 @@ interface TelemetryCoreDependencies {
   osVersion?: string;
   homeDir?: string;
   resolveZCodeEndpointOrigin?: () => Promise<string> | string;
+  /** 事件上报端点；缺省取构建期常量（构建期未配置时遥测整体关闭）。 */
+  reportEndpoint?: string;
   requestTimeoutMs?: number;
   sleep?: (ms: number) => Promise<void>;
   warn?: (message: string) => void;
@@ -336,10 +334,8 @@ export function ensureTelemetryDeviceMid(
 export function createTelemetryCore(dependencies: TelemetryCoreDependencies = {}) {
   const fetchImpl = dependencies.fetchImpl ?? fetch;
   const loadUserId = dependencies.loadUserId ?? (async () => "");
-  const loadMarketingParams = dependencies.loadMarketingParams ?? (async () => null);
   const telemetryLogger = createServiceLogger("telemetry-core");
   const warn = dependencies.warn ?? ((message: string) => telemetryLogger.warn(undefined, message));
-  let didWarnMarketingParamsLoadFailure = false;
   const randomUUID = dependencies.randomUUID ?? (() => createUuid());
   const now = dependencies.now ?? Date.now;
   const appVersion = dependencies.appVersion ?? ZCODE_VERSION;
@@ -347,6 +343,7 @@ export function createTelemetryCore(dependencies: TelemetryCoreDependencies = {}
   const osVersion = dependencies.osVersion ?? version();
   const requestTimeoutMs = dependencies.requestTimeoutMs ?? REPORT_REQUEST_TIMEOUT_MS;
   const retrySleep = dependencies.sleep ?? sleep;
+  const reportEndpoint = dependencies.reportEndpoint ?? ZCODE_TELEMETRY_REPORT_ENDPOINT;
   const pendingReports = new Set<Promise<void>>();
   const deviceMidOptions: EnsureTelemetryDeviceMidOptions = {
     homeDir: dependencies.homeDir,
@@ -416,19 +413,7 @@ export function createTelemetryCore(dependencies: TelemetryCoreDependencies = {}
     deviceMid: string,
   ): Promise<void> {
     // 构建期未配置事件上报端点时不上报（见 docs/desktop/build-time-optional-capabilities.md）
-    if (!REPORT_ENDPOINT) return;
-    let marketingParams: OAuthLoginAttribution | null = null;
-    try {
-      marketingParams = await loadMarketingParams();
-    } catch {
-      // 修复原因：营销归因只是 telemetry 的附加上下文，凭据损坏或暂时不可读
-      // 不应阻断原事件；同一 core 只告警一次，避免高频埋点持续刷屏。
-      if (!didWarnMarketingParamsLoadFailure) {
-        didWarnMarketingParamsLoadFailure = true;
-        // 凭据后端异常可能带本机路径或堆栈；生产日志只保留固定、脱敏的降级事件。
-        warn("Telemetry marketing attribution load failed; continuing without attribution");
-      }
-    }
+    if (!reportEndpoint) return;
     const requestBody = JSON.stringify({
       event_id: eventId,
       client_timezone: context.clientTimezone,
@@ -449,15 +434,16 @@ export function createTelemetryCore(dependencies: TelemetryCoreDependencies = {}
       device_os_version: osVersion,
       device_mid: deviceMid,
       mac_id: "",
-      marketing_params: JSON.stringify(marketingParams ?? {}),
+      // 无登录启动后渠道归因整体移除，保留空对象兼容服务端事件 schema。
+      marketing_params: "{}",
       ...(payload.talkId ? { talk_id: payload.talkId } : {}),
       ...(payload.messageId ? { message_id: payload.messageId } : {}),
     });
 
     const endpoint = String(
       rewriteZCodeEndpointUrl(
-        REPORT_ENDPOINT,
-        (await dependencies.resolveZCodeEndpointOrigin?.()) ?? REPORT_ENDPOINT,
+        reportEndpoint,
+        (await dependencies.resolveZCodeEndpointOrigin?.()) ?? reportEndpoint,
       ),
     );
 

@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
 import {
   CRON_DEFAULT_GROUP_ID,
-  OFF_PEAK_DEFAULT_GROUP_ID,
   resolveWorkspaceKey,
 } from "@zcode/shared";
 import type {
@@ -284,7 +283,7 @@ export class TaskGroupRepository {
               .run(key, order, now, now);
           }
         }
-        const systemKind = task.cronAutomationId ? "cron" : task.offPeakTaskId ? "off-peak" : null;
+        const systemKind = task.cronAutomationId ? "cron" : null;
         if (systemKind && admission.system_kind === null) {
           this.db
             .prepare(
@@ -293,7 +292,7 @@ export class TaskGroupRepository {
             .run(systemKind, workspaceKey, task.taskId);
           // 首次类型确认才入组；不能把读列表变成重复覆盖用户整理的“自愈”。
           if (!admission.user_organized && !task.archived && !this.parent(task)) {
-            const id = systemKind === "cron" ? CRON_DEFAULT_GROUP_ID : OFF_PEAK_DEFAULT_GROUP_ID;
+            const id = CRON_DEFAULT_GROUP_ID;
             if (!this.hasGroup(id)) {
               const now = this.now();
               this.db

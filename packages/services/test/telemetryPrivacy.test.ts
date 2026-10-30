@@ -30,6 +30,8 @@ describe("TelemetryCore final HTTP privacy boundary", () => {
       const core = createTelemetryCore({
         homeDir,
         resolveZCodeEndpointOrigin: () => `http://127.0.0.1:${address.port}`,
+        // 构建期上报端点默认为空（遥测默认关闭）；测试显式注入占位端点，rewrite 到本机接收器。
+        reportEndpoint: "https://your-server.example/api/v1/event/report",
       });
       const context = { clientTimezone: "UTC", clientLanguage: "en-US", screenResolution: "1x1" };
       await core.reportEvent({
@@ -118,6 +120,8 @@ describe("TelemetryCore final HTTP privacy boundary", () => {
         fetchImpl,
         sleep: async () => {},
         loadAuthorization: async () => "Bearer FAKE_AUTH_HEADER",
+        // 测试显式注入上报端点（构建期常量默认为空=遥测关闭）。
+        reportEndpoint: "https://your-server.example/api/v1/event/report",
       });
       await core.reportEvent({
         context: { clientTimezone: "UTC", clientLanguage: "en-US", screenResolution: "1x1" },
@@ -151,7 +155,12 @@ describe("TelemetryCore final HTTP privacy boundary", () => {
     const homeDir = await mkdtemp(join(tmpdir(), "telemetry-privacy-"));
     homes.push(homeDir);
     const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 204 }));
-    const core = createTelemetryCore({ homeDir, fetchImpl });
+    const core = createTelemetryCore({
+      homeDir,
+      fetchImpl,
+      // 测试显式注入上报端点（构建期常量默认为空=遥测关闭）。
+      reportEndpoint: "https://your-server.example/api/v1/event/report",
+    });
     await core.reportEvent({
       context: { clientTimezone: "UTC", clientLanguage: "en-US", screenResolution: "1x1" },
       elementName: "app_login_ck",

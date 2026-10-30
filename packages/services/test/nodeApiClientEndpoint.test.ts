@@ -123,7 +123,7 @@ describe("NodeApiClient endpoint rewriting", () => {
       uiLocale = "en-US";
       await client.request(`${DEFAULT_ZCODE_ENDPOINT_ORIGIN}/api/v1/client/configs`);
       uiLocale = "zh-CN";
-      await client.request(`${DEFAULT_ZCODE_ENDPOINT_ORIGIN}/api/v1/marketing/touch`, {
+      await client.request(`${DEFAULT_ZCODE_ENDPOINT_ORIGIN}/api/v1/client/scenes`, {
         headers: { "X-Client-Language": "en-US" },
       });
     } finally {

@@ -613,6 +613,8 @@ android-body`,
       plugins: {
         enabledPlugins: {
           "ios-simulator@zcode-plugins-official": true,
+          // zcode-guide 已移出默认启用（产品中立化），这里显式开启以验证启用插件的技能读取。
+          "zcode-guide@zcode-plugins-official": true,
         },
       },
     });

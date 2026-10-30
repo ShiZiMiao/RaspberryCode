@@ -216,18 +216,13 @@ describe("telemetryCore", () => {
     });
   });
 
-  it("attaches marketing_params to every report payload", async () => {
+  it("恒附带空 marketing_params 保持事件 schema 兼容（渠道归因已随登录移除）", async () => {
     const home = makeTempHome();
     const { createTelemetryCore } = await import("../src/telemetry/telemetryCore.js");
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 204 }));
     const service = createTelemetryCore({
       homeDir: home,
       fetchImpl: fetchMock,
-      loadMarketingParams: async () => ({
-        channel_id: "douyin",
-        utm_source: "wechat",
-        utm_campaign: "summer_sale_2026",
-      }),
       randomUUID: () => "marketing-event-id",
     });
     const context = {
@@ -246,48 +241,6 @@ describe("telemetryCore", () => {
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    for (const [, init] of fetchMock.mock.calls) {
-      expect(JSON.parse(String((init as RequestInit).body))).toMatchObject({
-        marketing_params:
-          '{"channel_id":"douyin","utm_source":"wechat","utm_campaign":"summer_sale_2026"}',
-      });
-    }
-  });
-
-  it("continues reporting without attribution and warns once when attribution loading fails", async () => {
-    const home = makeTempHome();
-    const { createTelemetryCore } = await import("../src/telemetry/telemetryCore.js");
-    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 204 }));
-    const warn = vi.fn();
-    const service = createTelemetryCore({
-      homeDir: home,
-      fetchImpl: fetchMock,
-      loadMarketingParams: async () => {
-        throw new Error("credential unavailable");
-      },
-      warn,
-      randomUUID: () => "marketing-load-failure-event-id",
-    });
-    const context = {
-      clientTimezone: "Asia/Shanghai",
-      clientLanguage: "zh-CN",
-      screenResolution: "3024x1964",
-    };
-
-    await service.reportAppLaunch(context);
-    await service.reportEvent({
-      context,
-      elementName: "button_click",
-      eventRegion: "app",
-      eventType: "click",
-      eventExtraDetail: {},
-    });
-
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn).toHaveBeenCalledWith(
-      "Telemetry marketing attribution load failed; continuing without attribution",
-    );
     for (const [, init] of fetchMock.mock.calls) {
       expect(JSON.parse(String((init as RequestInit).body))).toMatchObject({
         marketing_params: "{}",

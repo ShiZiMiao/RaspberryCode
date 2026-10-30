@@ -2,29 +2,18 @@ import { BUILTIN_MODEL_PROVIDER_IDS, type ApiClient } from "@zcode/shared";
 import { describe, expect, it, vi } from "vitest";
 import { createUsageStatsService } from "../src/usage-stats/usageStatsService.js";
 
+/**
+ * 账号态已移除：不再有 Account Request Auth 动态凭据解析（resolveCurrent/assertCurrent/
+ * resolveAccessCurrent）。Coding Plan 权益/用量在无注入鉴权来源时按未配置处理，
+ * 且 accountAccess 只作为 shared 契约字段透传到 context，不做动态解析。
+ */
 describe("UsageStats account access", () => {
-  it("按当前 Account 连接获取 Coding Plan 鉴权，不读取旧 Provider Service", async () => {
-    const resolve = vi.fn(async () => ({ apiKey: "account-a-plan-key" }));
-    const request = vi.fn(async (_input: URL | RequestInfo, init?: RequestInit) => {
-      if (String(_input).includes("subscription/list")) {
-        expect(init?.headers).toMatchObject({ Authorization: "account-a-plan-key" });
-        return new Response(JSON.stringify({ code: 200, data: [] }));
-      }
-      expect(init?.headers).toMatchObject({
-        authorization: "account-a-plan-key",
-      });
-      return new Response(JSON.stringify({ code: 200, data: { level: "pro", limits: [] } }), {
-        status: 200,
-        headers: { "content-type": "application/json" },
-      });
+  it("无注入鉴权来源时 Coding Plan 权益快照按未配置处理，不发起远端请求", async () => {
+    const request = vi.fn(async () => {
+      throw new Error("账号态移除后不应发起任何权益请求");
     });
     const service = createUsageStatsService({
       apiClient: { request } as ApiClient,
-      accountRequestAuthService: {
-        resolveAccessCurrent: vi.fn(async () => null),
-        resolveCurrent: resolve,
-        assertCurrent: vi.fn(async () => undefined),
-      },
       credentialService: { load: vi.fn(async () => null) },
       zcodeAgentService: {
         getAppUsageStats: vi.fn(),
@@ -33,7 +22,6 @@ describe("UsageStats account access", () => {
 
     await expect(
       service.getEntitlementSnapshot({
-        includeSubscription: false,
         preferredProviderId: BUILTIN_MODEL_PROVIDER_IDS.zaiIndividualCodingPlan,
         accountAccess: {
           type: "zhipu-account",
@@ -43,85 +31,45 @@ describe("UsageStats account access", () => {
         requirePreferredProvider: true,
         allowEnvApiKey: false,
       }),
-    ).resolves.toMatchObject({ authenticated: true, quota: { level: "pro" } });
-    expect(resolve).toHaveBeenCalledWith({
-      providerId: BUILTIN_MODEL_PROVIDER_IDS.zaiIndividualCodingPlan,
-      accountAccess: {
-        type: "zhipu-account",
-        family: "zai",
-        planKind: "individual-coding-plan",
-      },
-      reason: "usage",
+    ).resolves.toMatchObject({
+      authenticated: true,
+      unavailableReason: "not_configured",
+      provider: null,
+      mcpQuota: null,
     });
+    expect(request).not.toHaveBeenCalled();
   });
 
-  it("把 Registry 静态 mode 交给账号服务解析后再读取权益", async () => {
-    const dynamicAccess = {
-      type: "zhipu-account" as const,
-      family: "bigmodel" as const,
-      planKind: "team-coding-plan" as const,
-      productId: "product-1",
-      organizationId: "org-1",
-      projectId: "project-1",
-    };
-    const resolveAccessCurrent = vi.fn(async () => dynamicAccess);
-    const resolveCurrent = vi.fn(async () => ({ apiKey: "team-plan-key" }));
-    const request = vi.fn(async (_input: URL | RequestInfo, init?: RequestInit) => {
-      if (String(_input).includes("querySubscribeDetail")) {
-        expect(init?.headers).toMatchObject({
-          Authorization: "team-business-token",
-          "bigmodel-organization": "org-1",
-          "bigmodel-project": "project-1",
-        });
-        return new Response(JSON.stringify({ code: 200, data: { hasSubscription: false } }));
-      }
-      expect(init?.headers).toMatchObject({ authorization: "team-plan-key" });
-      return new Response(JSON.stringify({ code: 200, data: { level: "team", limits: [] } }), {
-        status: 200,
-        headers: { "content-type": "application/json" },
-      });
+  it("请求里的 accountAccess 只透传到 context 显示，不做动态解析", async () => {
+    const request = vi.fn(async () => {
+      throw new Error("账号态移除后不应发起任何权益请求");
     });
     const service = createUsageStatsService({
       apiClient: { request } as ApiClient,
-      accountRequestAuthService: {
-        resolveAccessCurrent,
-        resolveCurrent,
-        assertCurrent: vi.fn(async () => undefined),
+      credentialService: { load: vi.fn(async () => null) },
+      zcodeAgentService: {
+        getAppUsageStats: vi.fn(),
       },
-      credentialService: {
-        load: vi.fn(async (key) =>
-          key === "oauth:bigmodel:access_token" ? "team-business-token" : null,
-        ),
-      },
-      zcodeAgentService: { getAppUsageStats: vi.fn() },
     });
 
     await expect(
       service.getEntitlementSnapshot({
-        includeSubscription: false,
-        preferredProviderId: BUILTIN_MODEL_PROVIDER_IDS.bigmodelTeamCodingPlan,
+        preferredProviderId: BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
         accountAccess: {
           type: "zhipu-account",
           family: "bigmodel",
-          mode: "team-coding-plan",
+          planKind: "team-coding-plan",
+          productId: "product-1",
+          organizationId: "org-1",
+          projectId: "project-1",
         },
         requirePreferredProvider: true,
         allowEnvApiKey: false,
       }),
     ).resolves.toMatchObject({
-      authenticated: true,
       context: { scope: "team", organizationId: "org-1", projectId: "project-1" },
-      quota: { level: "team" },
+      mcpQuota: null,
     });
-    expect(resolveAccessCurrent).toHaveBeenCalledWith({
-      type: "zhipu-account",
-      family: "bigmodel",
-      mode: "team-coding-plan",
-    });
-    expect(resolveCurrent).toHaveBeenCalledWith({
-      providerId: BUILTIN_MODEL_PROVIDER_IDS.bigmodelTeamCodingPlan,
-      accountAccess: dynamicAccess,
-      reason: "usage",
-    });
+    expect(request).not.toHaveBeenCalled();
   });
 });

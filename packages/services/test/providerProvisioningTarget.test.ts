@@ -36,7 +36,6 @@ function createEnvelope(overrides: Record<string, unknown> = {}) {
       defaultModelSelection: { providerId: "custom", modelId: "model-a" },
     },
     accountSettings: {
-      providerFamilyDomain: "zai",
       providerFamilyConnectionSelections: { zai: { kind: "individual-coding-plan" } },
     },
     credentials: [{ scope: "oauth-session", key: "oauth:zai:access_token", value: "new-token" }],
@@ -91,6 +90,8 @@ async function createTarget(
     }),
   };
   const target = (overrides.legacy ? createLegacyTarget : createProviderProvisioningTarget)({
+    // 冻结的 v1 协议 fixture 仍按旧契约刷新账号源（新 Target 已无此选项，运行时忽略多余属性）。
+    accountProviderSource: { refresh: vi.fn(async () => undefined) } as never,
     providerRuntime: {
       start: vi.fn(async () => undefined),
       registryService: {
@@ -102,7 +103,6 @@ async function createTarget(
       },
     } as never,
     personalRepository: personal,
-    accountProviderSource: { refresh: vi.fn(async () => undefined) } as never,
     credentialService,
     listProvisioningCredentialKeys: async () => [...credentialValues.keys()],
     settingService: { get: vi.fn(async () => currentSettings), update: settingUpdate } as never,
@@ -168,7 +168,15 @@ describe("Provider Provisioning Target", () => {
   it("旧 Target fixture 保留基线的缺失 Key 删除行为，防止假阳性", async () => {
     const key = "account-provider:zai:api-key";
     const f = await createTarget({ legacy: true, initialCredentials: { [key]: "old-key" } });
-    await expect(f.target.apply(createEnvelope())).resolves.toMatchObject({ status: "applied" });
+    // v1 冻结契约（fixtures/provisioning-v1/schema.ts）要求 accountSettings.providerFamilyDomain；
+    // 新 envelope 契约已不含该键，向 v1 Target 发请求时按 v1 形态补（null=未设域）。
+    await expect(
+      f.target.apply(
+        createEnvelope({
+          accountSettings: { providerFamilyDomain: null, providerFamilyConnectionSelections: {} },
+        }),
+      ),
+    ).resolves.toMatchObject({ status: "applied" });
     expect(f.credentialDelete).toHaveBeenCalledWith(key);
   });
 
@@ -369,28 +377,3 @@ describe("Provider Provisioning Target", () => {
   });
 });
 
-it("Host Provisioning 提交和回滚均使用完整 CAS，不能回滚同身份的新操作", async () => {
-  let f: Awaited<ReturnType<typeof createTarget>>;
-  f = await createTarget({
-    refresh: async () => {
-      const current = f.getSettings();
-      await f.settingUpdate({
-        ...current,
-        providerFamilyDomainUpdatedAt: (current as any).providerFamilyDomainUpdatedAt + 1,
-      });
-      throw new Error("refresh failed");
-    },
-  });
-  await f.target.apply(createEnvelope() as never);
-  expect(f.settingUpdate).toHaveBeenNthCalledWith(
-    1,
-    expect.anything(),
-    expect.objectContaining({
-      providerFamilyDomainUpdatedAt: 0,
-      providerFamilyDomain: "bigmodel",
-      providerFamilyConnectionSelections: {},
-    }),
-  );
-  expect(f.getSettings().providerFamilyDomain).toBe("zai");
-  expect(f.settingUpdate).toHaveBeenCalledTimes(2);
-});

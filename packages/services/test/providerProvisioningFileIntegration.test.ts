@@ -42,7 +42,7 @@ function config(name: string, withDefault = true): ProviderConfigLayerUpdate {
     ...(withDefault ? { defaultModelSelection: selection } : {}),
   };
 }
-const accountSettings = { providerFamilyDomain: null, providerFamilyConnectionSelections: {} };
+const accountSettings = { providerFamilyConnectionSelections: {} };
 async function setup() {
   const directory = await mkdtemp(join(tmpdir(), "todo104-provision-file-"));
   const filePath = join(directory, "provider_config.json");
@@ -66,7 +66,6 @@ async function setup() {
   const target = createProviderProvisioningTarget({
     personalRepository: personal,
     providerRuntime: { start: async () => undefined, registryService: registry } as never,
-    accountProviderSource: account as never,
     settingService: settings as never,
     credentialService: {
       load: async () => null,
@@ -217,9 +216,9 @@ describe("Todo104 分发同文件原子边界", () => {
   });
 
   it("后续刷新失败时整份恢复 Provider 和默认选择", async () => {
-    const { personal, account, target, envelope } = await setup();
+    const { personal, registry, target, envelope } = await setup();
     const before = encodeProviderConfigFile(await personal.read());
-    account.refresh.mockRejectedValueOnce(new Error("refresh failed"));
+    registry.refresh.mockRejectedValueOnce(new Error("refresh failed"));
     expect(await target.apply(envelope(false))).toMatchObject({
       status: "failed",
       rolledBack: true,
@@ -231,8 +230,8 @@ describe("Todo104 分发同文件原子边界", () => {
   it.each(["provider", "default"])(
     "刷新失败前另一个写入修改 %s，不能用旧回滚覆盖",
     async (field) => {
-      const { personal, account, target, envelope } = await setup();
-      account.refresh.mockImplementationOnce(async () => {
+      const { personal, registry, target, envelope } = await setup();
+      registry.refresh.mockImplementationOnce(async () => {
         await personal.update((current) =>
           field === "provider"
             ? {

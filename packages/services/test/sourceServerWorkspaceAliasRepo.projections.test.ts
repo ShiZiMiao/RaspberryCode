@@ -138,8 +138,10 @@ describe("Source Server duplicate task projections", () => {
         db.close();
       }
       // 项目化索引从 cli_* 列投影标题、时间与状态；只合并旧列会让较新的 CLI 事实丢失。
+      // offPeakTaskId 是磁盘列事实（meta 契约已随闲时下线移除），meta 侧不参与匹配。
+      const { offPeakTaskId: _legacyOffPeakMeta, ...metaExpected } = expectedMeta;
       await expect(index.getTaskMeta(task(canonicalKey))).resolves.toMatchObject({
-        ...expectedMeta,
+        ...metaExpected,
         title: sourceWins ? "Source title" : "Shared task",
         createdAt: 5,
         updatedAt: order === "canonical-newer" ? 600 : order === "same-time" ? 100 : 500,
@@ -243,13 +245,17 @@ describe("Source Server duplicate task projections", () => {
 
     await aliases.resolveCanonicalWorkspaceKey({ workspacePath });
 
+    // off-peak 已下线：列事实保留（磁盘兼容），但不再投影进 meta 契约。
     await expect(index.getTaskMeta(task(canonicalKey))).resolves.toMatchObject({
       cronAutomationId: "legacy-auto",
-      offPeakTaskId: "legacy-off-peak",
     });
+    const legacyColumns = new DatabaseSync(taskDbPath)
+      .prepare("SELECT off_peak_task_id FROM tasks WHERE workspace_key = ?")
+      .get(canonicalKey) as { off_peak_task_id: string | null };
+    expect(legacyColumns.off_peak_task_id).toBe("legacy-off-peak");
   });
 
-  it.each(["cron_automation_id", "off_peak_task_id", "forked_from_task_id"] as const)(
+  it.each(["cron_automation_id", "forked_from_task_id"] as const)(
     "rejects incompatible legacy %s markers before deleting either row",
     async (column) => {
       await seed(task(canonicalKey));

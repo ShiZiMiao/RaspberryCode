@@ -23,7 +23,6 @@ import type { ICredentialService } from "../credential/credential.js";
 import { createServiceLogger } from "../logger/serviceLogger.js";
 import { readApiJson } from "../providers/api/apiJson.js";
 import type { IOAuthService } from "./oauth.js";
-import { isCurrentOAuthCredentialRequest } from "#src/oauth/oauthUnauthorizedRequest.js";
 import { hasOAuthAuthorizationCode, parseOAuthLoginAttribution } from "./callbackAttribution.js";
 import {
   refreshLegacyBigModelCachedProfile,
@@ -1040,18 +1039,6 @@ export class OAuthService implements IOAuthService {
         return;
       await this.repo.saveActiveTokenSet(refreshed);
     });
-  }
-
-  /** Host 本地 401 提交入口，不扩展 IOAuthService 的跨端契约。 */
-  logoutIfCurrentCredentialRequest(input: string | URL, headers: Headers): Promise<boolean> {
-    return this.logoutActiveSession(() =>
-      isCurrentOAuthCredentialRequest({
-        input,
-        headers,
-        credentialService: this.credentialService,
-        env: this.env,
-      }),
-    );
   }
 
   private async logoutActiveSession(isCurrent?: () => Promise<boolean>): Promise<boolean> {

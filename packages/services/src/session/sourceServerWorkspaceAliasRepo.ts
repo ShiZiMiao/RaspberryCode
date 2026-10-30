@@ -1,5 +1,4 @@
 import { runTasksDatabaseMigrations } from "#src/session/tasksDatabase/migrations.js";
-import { cancelConflictingOffPeakBindings } from "#src/session/offPeakWorkspaceIdentityMigration.js";
 import { runSessionDatabaseIdentityMigration } from "@zcode/shared/sqlite-migrations";
 /* eslint-disable max-lines -- R3 canonical alias、双库备份、ledger 与幂等合并属于同一迁移事务边界。 */
 import { createHash, randomUUID } from "node:crypto";
@@ -192,7 +191,6 @@ function rollbackQuietly(db: Database): void {
 
 const TASK_IDENTITY_META_FIELDS = [
   ["cronAutomationId", "cron_automation_id"],
-  ["offPeakTaskId", "off_peak_task_id"],
   ["forkedFromTaskId", "forked_from_task_id"],
 ] as const;
 
@@ -1967,6 +1965,7 @@ export class SourceServerWorkspaceAliasRepo {
             project("migrationSource", newer.migration_source ?? older.migration_source),
             project("forkedFromTaskId", newer.forked_from_task_id ?? older.forked_from_task_id),
             project("cronAutomationId", newer.cron_automation_id ?? older.cron_automation_id),
+            // legacy meta 仍可能带 offPeakTaskId（磁盘兼容）；列值兜底合并，不进身份判定。
             project("offPeakTaskId", newer.off_peak_task_id ?? older.off_peak_task_id),
             metaMerge.metaJson,
             canonicalKey,
@@ -2031,7 +2030,6 @@ export class SourceServerWorkspaceAliasRepo {
         this.migrateTaskNodeOrders(db, sourceKey, canonicalKey);
         this.updateWorkspaceIdentityColumns(db, "automations", sourceKey, canonicalKey);
         this.updateWorkspaceIdentityColumns(db, "automation_runs", sourceKey, canonicalKey);
-        cancelConflictingOffPeakBindings(db, sourceKey, canonicalKey, this.now());
         this.updateWorkspaceIdentityColumns(db, "off_peak_tasks", sourceKey, canonicalKey);
       }
       db.exec("COMMIT");

@@ -153,7 +153,6 @@ function readPresentation(row: TaskIndexRow): ZCodeTaskMeta {
         // 历史行 meta_json 里可能还没有该字段，回退读列，下次写入会自动回填进 meta_json。
         cronAutomationId: parsed.data.cronAutomationId ?? row.cron_automation_id ?? undefined,
         // off-peak 身份同款策略：meta_json 为准、列兜底——存量迁移只写列即可生效。
-        offPeakTaskId: parsed.data.offPeakTaskId ?? row.off_peak_task_id ?? undefined,
         titleOverridden: row.title_overridden === 1,
       };
     }
@@ -184,7 +183,6 @@ function readPresentation(row: TaskIndexRow): ZCodeTaskMeta {
     migrationSource: (row.migration_source as ZCodeTaskMeta["migrationSource"]) ?? undefined,
     forkedFromTaskId: row.forked_from_task_id ?? undefined,
     cronAutomationId: row.cron_automation_id ?? undefined,
-    offPeakTaskId: row.off_peak_task_id ?? undefined,
     unreadAt: row.unread_at ?? undefined,
   };
 }
@@ -400,7 +398,6 @@ export class TaskIndexRepo {
       warn: (message, details) => createServiceLogger("project-migration").warn(message, details),
     });
     this.migrationBackupSkipped = taskMigration.backupSkipped || migration.backupSkipped;
-    this.backfillOffPeakTaskMarkers();
     // Bugfix: z-code-2 早期列表 task_id 是 wrapper id，真实 RaspberryCode session id 在旧列
     // acp_session_id。直接运行时映射会让 read/send/subscribe 到处变成双 ID 兜底；
     // 初始化时把索引行迁到真实 session id，后续统一走新协议正常路径。
@@ -414,34 +411,6 @@ export class TaskIndexRepo {
     return columns.some((item) => item.name === column);
   }
 
-  /**
-   * 存量回填（幂等，每次 bootstrap 自愈）：打点上线前产生的 off-peak 会话行没有
-   * offPeakTaskId。off_peak_tasks 与 tasks 同库（tasks-index.sqlite），按 session 绑定
-   * join 只补投影列——rowToMeta 以列兜底即可生效，下次展示更新会回填 meta_json。
-   * 全新安装时 off_peak_tasks 可能尚未由 OffPeakTaskRepo 建表，需 guard。
-   */
-  private backfillOffPeakTaskMarkers(): void {
-    const database = this.getDatabase();
-    const hasOffPeakTable = database
-      .prepare(`SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'off_peak_tasks'`)
-      .get();
-    if (!hasOffPeakTable) {
-      return;
-    }
-    database
-      .prepare(
-        `UPDATE tasks SET off_peak_task_id = (
-          SELECT o.off_peak_task_id FROM off_peak_tasks o
-          WHERE o.session_id = tasks.task_id AND o.workspace_key = tasks.workspace_key
-        )
-        WHERE off_peak_task_id IS NULL
-          AND EXISTS (
-            SELECT 1 FROM off_peak_tasks o
-            WHERE o.session_id = tasks.task_id AND o.workspace_key = tasks.workspace_key
-          )`,
-      )
-      .run();
-  }
 
   private migrateLegacyAcpTaskIds(): void {
     if (!this.hasColumn("tasks", "acp_session_id")) {
@@ -853,8 +822,6 @@ export class TaskIndexRepo {
           forked_from_task_id: record.meta.forkedFromTaskId ?? null,
           // cron automation 身份从 meta 投影到索引列（meta_json 里也保留一份，见 serializeMetaJson）。
           cron_automation_id: record.meta.cronAutomationId ?? null,
-          // off-peak 身份（D48）同款投影。
-          off_peak_task_id: record.meta.offPeakTaskId ?? null,
           created_at: record.meta.createdAt,
           updated_at: record.meta.updatedAt,
           unread_at: record.meta.unreadAt ?? null,
@@ -1148,7 +1115,6 @@ export class TaskIndexRepo {
         | "target"
         | "migrationSource"
         | "cronAutomationId"
-        | "offPeakTaskId"
       >
     >;
     searchableText?: string;
@@ -1166,14 +1132,13 @@ export class TaskIndexRepo {
         const meta = { ...rowToMeta(row), ...params.presentation };
         this.getDatabase()
           .prepare(
-            `UPDATE tasks SET mode=?,model=?,migration_source=?,cron_automation_id=?,off_peak_task_id=?,meta_json=?,searchable_text=coalesce(?,searchable_text) WHERE workspace_key=? AND task_id=?`,
+            `UPDATE tasks SET mode=?,model=?,migration_source=?,cron_automation_id=?,meta_json=?,searchable_text=coalesce(?,searchable_text) WHERE workspace_key=? AND task_id=?`,
           )
           .run(
             meta.mode,
             meta.model ?? null,
             meta.migrationSource ?? null,
             meta.cronAutomationId ?? null,
-            meta.offPeakTaskId ?? null,
             serializeMetaJson(meta),
             params.searchableText ?? null,
             workspaceKey(params),

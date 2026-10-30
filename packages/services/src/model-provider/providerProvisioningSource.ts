@@ -55,7 +55,6 @@ export function createProviderProvisioningSource(
       // 默认与规则来自同一份持锁读取，不能把两次读取的值拼成不存在的配置版本。
       const personalConfig = encodeProviderConfigFile(personal).config;
       const accountSettings = {
-        providerFamilyDomain: settings.providerFamilyDomain ?? null,
         providerFamilyConnectionSelections: settings.providerFamilyConnectionSelections ?? {},
       };
       return providerProvisioningEnvelopeSchema.parse({

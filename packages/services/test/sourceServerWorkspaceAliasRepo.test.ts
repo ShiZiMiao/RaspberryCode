@@ -1744,7 +1744,7 @@ describe("Source Server workspace canonical alias", () => {
       "Second",
       2,
       30,
-      JSON.stringify({ taskId: "second-conflict", offPeakTaskId: "off-peak-a" }),
+      JSON.stringify({ taskId: "second-conflict", forkedFromTaskId: "fork-a" }),
     );
     insertEvolved.run(
       sourceKey,
@@ -1754,7 +1754,7 @@ describe("Source Server workspace canonical alias", () => {
       "Second",
       2,
       25,
-      JSON.stringify({ taskId: "second-conflict", offPeakTaskId: "off-peak-b" }),
+      JSON.stringify({ taskId: "second-conflict", forkedFromTaskId: "fork-b" }),
     );
     evolved.close();
     await expect(
@@ -1916,7 +1916,6 @@ describe("Source Server workspace canonical alias", () => {
   // 且每次打开都会重新建账、备份两库。
   it.each([
     ["cronAutomationId", "canonical-missing-task"],
-    ["offPeakTaskId", "canonical-missing-task"],
     ["forkedFromTaskId", "canonical-missing-task"],
     ["cronAutomationId", "canonical-task-without-identity"],
   ] as const)(

@@ -5,12 +5,6 @@ import type {
   CodingPlanUsageRequest,
   CodingPlanUsageSnapshot,
   CodingPlanRegularTpsRequest,
-  CodingPlanResetOpportunityRequest,
-  CodingPlanResetOpportunityResult,
-  CodingPlanResetScopeRequest,
-  CodingPlanResetStatusSnapshot,
-  CodingPlanResetUseRequest,
-  CodingPlanResetUseResult,
   UsageEntitlementRequest,
   UsageEntitlementSnapshot,
   UsageStatsRequest,
@@ -18,7 +12,6 @@ import type {
 } from "@zcode/shared";
 import { isCodingPlanModelProviderId } from "@zcode/shared";
 import type { ICredentialService } from "../credential/credential.js";
-import type { IAccountRequestAuthService } from "../model-provider/accountRequestAuthService.js";
 import type { IZCodeAgentService } from "../zcode-agent/zcodeAgent.js";
 import type { IUsageStatsService } from "./usageStats.js";
 import {
@@ -26,14 +19,9 @@ import {
   type UsageApiAuthorizationRequest,
   type UsageApiAuthorization,
 } from "./providers/bigmodelUsageQuotaProvider.js";
-import type { OfficialMcpCredentialSource } from "./providers/zcodeMcpQuotaProvider.js";
 
 interface UsageStatsServiceDependencies {
   apiClient: ApiClient;
-  accountRequestAuthService: Pick<
-    IAccountRequestAuthService,
-    "resolveAccessCurrent" | "resolveCurrent" | "assertCurrent"
-  >;
   resolveApiAuthorization?: (
     request: UsageApiAuthorizationRequest,
   ) => Promise<UsageApiAuthorization | null>;
@@ -41,11 +29,6 @@ interface UsageStatsServiceDependencies {
   env?: NodeJS.ProcessEnv;
   /** App Usage 经 RaspberryCode Protocol 读取 agent 数据库真实统计。 */
   zcodeAgentService: Pick<IZCodeAgentService, "getAppUsageStats">;
-  /**
-   * 官方 Server MCP 额度的凭证来源（与 server MCP 调用同一套 5 个身份头）。
-   * 缺省时 entitlement 快照不含 MCP 额度。
-   */
-  officialMcpCredentialSource?: OfficialMcpCredentialSource;
 }
 
 const CODING_PLAN_REGULAR_TPS_CACHE_MS = 5 * 60_000;
@@ -59,13 +42,9 @@ export function createUsageStatsService(
 ): IUsageStatsService {
   const quotaProvider = new BigModelUsageQuotaProvider({
     apiClient: dependencies.apiClient,
-    accountRequestAuthService: dependencies.accountRequestAuthService,
     resolveApiAuthorization: dependencies.resolveApiAuthorization,
     credentialService: dependencies.credentialService,
     env: dependencies.env,
-    ...(dependencies.officialMcpCredentialSource
-      ? { officialMcpCredentialSource: dependencies.officialMcpCredentialSource }
-      : {}),
   });
   const regularTpsCache = new Map<
     string,
@@ -128,36 +107,6 @@ export function createUsageStatsService(
         });
       regularTpsInFlight.set(key, requestPromise);
       return requestPromise;
-    },
-    async getCodingPlanResetStatus(
-      request: CodingPlanResetScopeRequest,
-    ): Promise<CodingPlanResetStatusSnapshot> {
-      if (!isCodingPlanProviderId(request.preferredProviderId)) {
-        throw new Error("no_bigmodel_api_key");
-      }
-      return quotaProvider.getCodingPlanResetStatus(request);
-    },
-    async requestCodingPlanResetOpportunity(
-      request: CodingPlanResetOpportunityRequest,
-    ): Promise<CodingPlanResetOpportunityResult> {
-      if (!isCodingPlanProviderId(request.preferredProviderId)) {
-        throw new Error("no_bigmodel_api_key");
-      }
-      return quotaProvider.requestCodingPlanResetOpportunity(request);
-    },
-    async useCodingPlanReset(
-      request: CodingPlanResetUseRequest,
-    ): Promise<CodingPlanResetUseResult> {
-      if (!isCodingPlanProviderId(request.preferredProviderId)) {
-        throw new Error("no_bigmodel_api_key");
-      }
-      return quotaProvider.useCodingPlanReset(request);
-    },
-    async markCodingPlanResetHistoryRead(request: CodingPlanResetScopeRequest): Promise<void> {
-      if (!isCodingPlanProviderId(request.preferredProviderId)) {
-        throw new Error("no_bigmodel_api_key");
-      }
-      await quotaProvider.markCodingPlanResetHistoryRead(request);
     },
     async getSnapshot(request: UsageStatsRequest): Promise<UsageStatsSnapshot> {
       // App Usage 已迁移到 getAppUsageSnapshot（agent 数据库）。getSnapshot 仅服务 Coding Plan monitor 链路。

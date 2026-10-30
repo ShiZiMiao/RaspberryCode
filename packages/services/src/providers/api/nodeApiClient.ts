@@ -153,7 +153,13 @@ function withZCodeEndpointHeaders(
     });
   }
 
-  if (next.get("HTTP-Referer") === DEFAULT_ZCODE_ENDPOINT_ORIGIN) {
+  // HTTP-Referer 仅在用户配置了服务端点时发送：占位域不发（不泄漏默认域），
+  // 调用方显式带的 referer 优先，占位域哨兵仍按配置端点替换。
+  const referer = next.get("HTTP-Referer");
+  if (
+    (!referer || referer === DEFAULT_ZCODE_ENDPOINT_ORIGIN) &&
+    endpointOrigin !== DEFAULT_ZCODE_ENDPOINT_ORIGIN
+  ) {
     next.set("HTTP-Referer", endpointOrigin);
   }
   return next;

@@ -1,5 +1,11 @@
 import type { ModelSelectionView } from "@zcode/provider";
-import { OFF_PEAK_PROVIDER_IDS } from "@zcode/shared";
+
+// 闲时/加速卡下线后 OFF_PEAK_PROVIDER_IDS 已移除；夹具改用合成账号 provider id，
+// 保留「两个域同时存在，工具只能选择当前账号域」的语义。
+const FAMILY_TEST_PROVIDER_IDS: Record<"bigmodel" | "zai", string> = {
+  bigmodel: "account:bigmodel-test-plan",
+  zai: "account:zai-test-plan",
+};
 
 /** 两个域同时存在，用于锁定工具只能选择当前账号域，不能按 Provider 顺序猜。 */
 export function offPeakSelectionView(
@@ -8,7 +14,7 @@ export function offPeakSelectionView(
   return {
     revision: 1,
     providers: (["bigmodel", "zai"] as const).map((family) => ({
-      providerId: OFF_PEAK_PROVIDER_IDS[family],
+      providerId: FAMILY_TEST_PROVIDER_IDS[family],
       config: { visibility: "hidden" },
       models: [family === "zai" ? "ZAI-only" : "BigModel-only", "GLM-5.2"].map((modelId) => ({
         modelId,

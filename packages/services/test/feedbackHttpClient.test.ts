@@ -899,6 +899,8 @@ describe("createFeedbackService", () => {
     // 会压过 ZCODE_ENV=test 的默认域推断，把「默认 base」用例变成环境敏感；置空恢复封闭性。
     vi.stubEnv("ZCODE_BASE_URL", "");
     vi.stubEnv("ZCODE_ENDPOINT_ORIGIN", "");
+    // 显式锚定 scoped 端点：测 test/production 基址分流逻辑，不锚定默认占位域。
+    vi.stubEnv("ZCODE_TEST_BASE_URL", "https://zcode.z.ai");
     const fetchMock = vi.fn(async (url: string | URL | Request) => {
       // Bugfix: feedback 默认 base 已收敛到统一 RaspberryCode endpoint resolver；
       // ZCODE_ENV=test 不能继续断言生产域，否则会掩盖测试环境请求边界。
@@ -928,6 +930,8 @@ describe("createFeedbackService", () => {
     // 同上：屏蔽开发机 ambient 覆盖，保持「默认 base」语义封闭
     vi.stubEnv("ZCODE_BASE_URL", "");
     vi.stubEnv("ZCODE_ENDPOINT_ORIGIN", "");
+    // 显式锚定 scoped 端点：测 test/production 基址分流逻辑，不锚定默认占位域。
+    vi.stubEnv("ZCODE_PRODUCTION_BASE_URL", "https://zcode.z.ai");
     const fetchMock = vi.fn(async (url: string | URL | Request) => {
       expect(String(url)).toBe("https://zcode.z.ai/api/v1/feedback/ticket");
       return new Response(JSON.stringify({ code: 0, msg: "ok", data: { items: [] } }), {

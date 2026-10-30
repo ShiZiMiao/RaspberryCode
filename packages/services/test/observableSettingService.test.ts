@@ -18,15 +18,13 @@ describe("Observable Setting Service", () => {
     service.onDidUpdate((event) => events.push([...event.keys]));
 
     await service.update({
-      providerFamilyDomain: "zai",
-      modelProviderFamilyModes: { zai: "oauth" },
+      locale: "zh-CN",
+      messageStreamShowTodos: true,
     });
-    expect(events).toEqual([["providerFamilyDomain", "modelProviderFamilyModes"]]);
+    expect(events).toEqual([["locale", "messageStreamShowTodos"]]);
 
     update.mockRejectedValueOnce(new Error("write failed"));
-    await expect(service.update({ providerFamilyDomain: "bigmodel" })).rejects.toThrow(
-      "write failed",
-    );
+    await expect(service.update({ locale: "en-US" })).rejects.toThrow("write failed");
     expect(events).toHaveLength(1);
   });
 });
