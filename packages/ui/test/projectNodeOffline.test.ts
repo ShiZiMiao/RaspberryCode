@@ -15,14 +15,12 @@ vi.mock("@/project-sidebar/ProjectTaskRows.js", () => ({
 }));
 afterEach(cleanup);
 describe("offline remote project", () => {
-  it.each([false, true])(
-    "remote control=%s keeps expansion but gates project sorting",
-    (isWebRemoteControl) => {
-      const { container } = render(
-        createElement(
-          ProjectTaskListContext.Provider,
-          { value: { isWebRemoteControl } },
-          createElement(ProjectNode, {
+  it("keeps expansion but gates project sorting", () => {
+    const { container } = render(
+      createElement(
+        ProjectTaskListContext.Provider,
+        { value: {} },
+        createElement(ProjectNode, {
             expanded: true,
             onExpandedChange: vi.fn(),
             project: {
@@ -61,15 +59,12 @@ describe("offline remote project", () => {
       expect(screen.queryByTestId("virtual-project-menu")).not.toBeNull();
       expect(
         screen.getByTestId("virtual-project-toggle").getAttribute("aria-roledescription"),
-      ).toBe(isWebRemoteControl ? null : "sortable");
-      expect(screen.getByTestId("virtual-project-toggle").className).toContain(
-        isWebRemoteControl ? "touch-pan-y" : "touch-none",
-      );
+      ).toBe("sortable");
+      expect(screen.getByTestId("virtual-project-toggle").className).toContain("touch-none");
       fireEvent.contextMenu(screen.getByTestId("virtual-project-toggle"));
       expect(screen.queryByTestId("virtual-project-edit")).toBeNull();
       expect(screen.getByTestId("virtual-project-remove-entry")).toBeDefined();
-    },
-  );
+  });
   it("does not expose expansion, creation or cached task facts when its owner is offline", () => {
     render(
       createElement(ProjectNode, {

@@ -6,7 +6,7 @@ import type { ZCodePermissionRequest } from "@zcode/shared";
 import "@/styles.css";
 const params = new URLSearchParams(location.search);
 document.documentElement.classList.add(
-  params.get("theme") === "light" ? "theme-zai-light" : "theme-zai-dark",
+  params.get("theme") === "light" ? "theme-light" : "theme-dark",
 );
 const request: ZCodePermissionRequest = {
   type: "permission_request",
@@ -50,7 +50,7 @@ function Fixture() {
     <main className="min-h-screen bg-background text-foreground p-3">
       <PermissionDialog
         request={request}
-        isWebRemoteControl={innerWidth < 600}
+        isMobileOverlay={innerWidth < 600}
         onRespond={(_id, option) => setResponse(option.optionId)}
       />
       <output data-testid="response">{response}</output>

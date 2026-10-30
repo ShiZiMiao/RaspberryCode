@@ -557,8 +557,8 @@ export function RemoteConnectionConnectingStep({
               size="sm"
               onClick={() => {
                 if (presentation.primaryAction === "cancel") onCancelConnection?.();
-                else if (presentation.primaryAction === "update-desktop")
-                  void platform.executeDesktopCommand(DesktopCommandIds.CheckForUpdates);
+                // 自动更新已下线：桌面端升级须通过分发渠道手动完成，这里保留入口位但不再触发更新器。
+                else if (presentation.primaryAction === "update-desktop") void 0;
                 else if (presentation.primaryAction === "update-server" && onUpgrade) onUpgrade();
                 else if (
                   ["credentials", "edit-auth", "edit-host"].includes(presentation.primaryAction)

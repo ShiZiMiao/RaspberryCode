@@ -455,25 +455,6 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
     );
   });
 
-  it("opens the Idle-time Automations tab without prefilling or navigating twice", async () => {
-    const workspacePath = "/tmp/suggested-prompt-offpeak";
-    const onOpenAutomations = vi.fn();
-    render(
-      createElement(ConversationDraftSuggestedPromptsContainer, {
-        workspacePath,
-        onOpenAutomations,
-      }),
-    );
-
-    fireEvent.click(await screen.findByRole("button", { name: offPeakLabel }));
-
-    expect(onOpenAutomations).toHaveBeenCalledOnce();
-    expect(onOpenAutomations).toHaveBeenCalledWith("idle");
-    expect(
-      useZCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
-    ).toBeNull();
-    expect(getPluginReferenceCatalog).not.toHaveBeenCalled();
-  });
 
   it("replaces the workspace draft with the plain commit prompt without sending", async () => {
     const workspacePath = "/tmp/suggested-prompt-plain";
@@ -1255,7 +1236,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
     render(
       createElement(ConversationDraftSuggestedPromptsContainer, {
         workspacePath,
-        isWebRemoteControl: true,
+        isMobileOverlay: true,
       }),
     );
 

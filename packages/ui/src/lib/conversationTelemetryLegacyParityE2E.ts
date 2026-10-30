@@ -202,8 +202,6 @@ async function applyLegacyOperation(input: {
           model_provider: operation.modelProvider ?? "",
           ...(operation.providerHostname ? { provider_name: operation.providerHostname } : {}),
           agent: "glm",
-          plan_status: "unknown",
-          plan_product_id: "",
         },
       });
       scope.lifecycles.set(operation.commandId, {

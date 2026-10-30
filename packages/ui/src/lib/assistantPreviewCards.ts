@@ -139,14 +139,14 @@ function cleanMarkdownLinkTitle(title: string): string | null {
 }
 
 export function shouldOpenAssistantHtmlInBrowser(params: {
-  compactForRemoteControl?: boolean;
+  compactForOverlay?: boolean;
   path: string;
   workspaceIdentity?: string;
   workspaceRemoteSessionId?: string;
 }): boolean {
   return (
     isAssistantPreviewHtmlPath(params.path) &&
-    params.compactForRemoteControl !== true &&
+    params.compactForOverlay !== true &&
     !params.workspaceIdentity?.trim() &&
     !params.workspaceRemoteSessionId
   );

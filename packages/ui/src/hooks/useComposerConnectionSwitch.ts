@@ -4,14 +4,25 @@ import {
   useBaseWorkspaceServices,
   useWorkspaceServicesResolution,
 } from "@/hooks/useWorkspaceServices.js";
-import { useSettings } from "@/hooks/useSettingService.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
-import { persistProviderFamilyConnection } from "@/lib/providerFamilyConnectionTransition.js";
-import { chooseConnectionModel, type ComposerConnection } from "@/lib/composerPlanGroups.js";
 import { buildRegistryModelSelectGroups } from "@/lib/modelSelectionGroups.js";
 import { decodeCustomModelValue } from "@/lib/zcodeCustomModelValue.js";
 import { logger } from "@/logger.js";
-import { resolveModelProviderFamilySpecByProviderId, type ZCodeProvider } from "@zcode/shared";
+import type { ZCodeProvider } from "@zcode/shared";
+import type { ModelSelectGroupItem } from "@/ModelConfigSelect.js";
+
+/** 模型切换主干使用的连接单元：一组同供应商可选模型，无套餐/账号语义。 */
+export interface ComposerConnection {
+  key: string;
+  label: string;
+  providerId: string;
+  items: readonly ModelSelectGroupItem[];
+  disabled?: boolean;
+}
+
+export function chooseConnectionModel(items: readonly ModelSelectGroupItem[], model?: string) {
+  return items.find((item) => item.name === model) ?? items[0];
+}
 
 export function useComposerConnectionSwitch({
   workspacePath,
@@ -42,7 +53,6 @@ export function useComposerConnectionSwitch({
     undefined,
     workspaceIdentity,
   );
-  const { update } = useSettings({ services: base });
   const { intl } = useZCodeIntl();
   const workspaceKey = workspaceIdentity?.trim() || workspacePath;
   const token = useMemo(() => ({}), [target, base, workspaceKey]);
@@ -122,38 +132,8 @@ export function useComposerConnectionSwitch({
       setState({ pending: true, error: null, previousKey });
       let awaitingPresentation = false;
       try {
-        const readModels = async (restoring = false) => {
-          if (!restoring && !stillCurrent()) throw new Error("Composer connection owner changed");
-          // 配置写入由根 Host 管理；执行候选始终从目标 Host 读取，不向远端伪造本地目录。
-          const baseView = await base.providerSettingsService.refresh("composer-connection");
-          if (target !== base && stillCurrent()) {
-            const targetView = await target.providerSettingsService.refresh("composer-connection");
-            // 远端配置交付由既有 provisioning owner 管理；旧团队也可能有同名模型，
-            // 必须核对账号连接身份，不能把目录非空误判成新团队已同步。
-            const expected = baseView.providers.find((p) => p.providerId === connection.providerId)
-              ?.accountState?.connectionKey;
-            const actual = targetView.providers.find((p) => p.providerId === connection.providerId)
-              ?.accountState?.connectionKey;
-            if (!restoring && (!expected || actual !== expected))
-              throw new Error("Target connection has not synchronized");
-          }
-          const view = await (stillCurrent() ? target : base).modelSelectionService.getView();
-          const candidate = buildRegistryModelSelectGroups(agentProvider, view).find(
-            (g) => g.key === `registry-provider:${connection.providerId}`,
-          );
-          if (!restoring && !candidate?.items.length)
-            throw new Error("Selected connection has no available models");
-          return view;
-        };
-        const view = connection.selection
-          ? await persistProviderFamilyConnection({
-              family: connection.family,
-              selection: connection.selection,
-              read: () => base.settingService.get(),
-              update,
-              synchronize: readModels,
-            })
-          : await target.modelSelectionService.getView();
+        // 配置写入由根 Host 管理；执行候选始终从目标 Host 读取，不向远端伪造本地目录。
+        const view = await target.modelSelectionService.getView();
         if (!stillCurrent()) return;
         const group = buildRegistryModelSelectGroups(agentProvider, view).find(
           (g) => g.key === `registry-provider:${connection.providerId}`,
@@ -168,27 +148,14 @@ export function useComposerConnectionSwitch({
           connectionKey: connection.key,
           workspaceKey,
         });
-        const source = decodeCustomModelValue(normalizedValue);
-        const family = resolveModelProviderFamilySpecByProviderId(source?.providerId ?? "");
-        // 原因：个人/团队的同名模型已经由账号 Selection resolver 自动映射并校验 options。
-        // 再走普通选模会重建无 reasoning 的意图，同时触发第二轮目录重读和菜单闪烁。
-        const sameAccountModel =
-          connection.selection &&
-          family?.id === connection.family &&
-          (source?.providerId === family.individualCodingPlanProviderId ||
-            source?.providerId === family.teamCodingPlanProviderId) &&
-          source?.modelName === model.name;
-        if (!sameAccountModel) {
-          // 原因：API → 团队时 Renderer 仍持有切换前目录，不能让旧闭包补齐目标档位。
-          // 直接使用同步完成的目标 Host 目录，将模型与档位一次交给草稿 owner。
-          const selection = completeNewModelSelection(view, {
-            providerId: connection.providerId,
-            modelId: model.name,
-          });
-          const reasoningLevel = selection?.options?.reasoningLevel;
-          if (reasoningLevel) onSelectModel(model.value, reasoningLevel);
-          else onSelectModel(model.value);
-        }
+        // 直接使用目标 Host 目录，将模型与档位一次交给草稿 owner。
+        const selection = completeNewModelSelection(view, {
+          providerId: connection.providerId,
+          modelId: model.name,
+        });
+        const reasoningLevel = selection?.options?.reasoningLevel;
+        if (reasoningLevel) onSelectModel(model.value, reasoningLevel);
+        else onSelectModel(model.value);
         if (waitForPresentation) {
           // 原因：重选同连接可能没有目录事件；每次显式读取当前展示 owner，不消费旧失败回执。
           await refreshPresentation?.();
@@ -227,13 +194,11 @@ export function useComposerConnectionSwitch({
     },
     [
       agentProvider,
-      base,
       intl,
       normalizedValue,
       onSelectModel,
       rpcReady,
       target,
-      update,
       workspaceKey,
       waitForPresentation,
       refreshPresentation,

@@ -52,7 +52,6 @@ import { RollingToolbarLabel } from "@/chat-input-toolbar/RollingToolbarLabel.js
 import {
   ComposerModelMenu,
   ComposerThoughtIndicator,
-  isGlmHighspeedModel,
   type ComposerModelOptions,
 } from "@/chat-input-toolbar/ComposerModelMenu.js";
 import { ModelInputCapabilityBadge } from "@/components/ModelInputCapabilityBadge.js";
@@ -531,10 +530,6 @@ export const ModelConfigSelect = memo(function ModelConfigSelectComponent({
     return actions;
   }, [composerOptions, footerActions, manageModelsLabel, onManageModels, showManageModelsAction]);
 
-  const highspeed = isGlmHighspeedModel(
-    modelGroups.flatMap((group) => group.items).find((item) => item.value === normalizedValue)
-      ?.name ?? "",
-  );
   const triggerContents = showSelectionLabel ? (
     <>
       <span
@@ -554,7 +549,7 @@ export const ModelConfigSelect = memo(function ModelConfigSelectComponent({
         data-composer-open-thought
         className="hidden group-data-[composer-model-icon=true]/toolbar:inline-flex"
       >
-        <ComposerThoughtIndicator options={composerOptions!} highspeed={highspeed} />
+        <ComposerThoughtIndicator options={composerOptions!} />
       </span>
     </>
   ) : (
@@ -574,7 +569,7 @@ export const ModelConfigSelect = memo(function ModelConfigSelectComponent({
         />
       </span>
       {composerOptions && hasSelectedModel ? (
-        <ComposerThoughtIndicator options={composerOptions} highspeed={highspeed} />
+        <ComposerThoughtIndicator options={composerOptions} />
       ) : null}
       {triggerBadge}
       {pending ? (

@@ -327,7 +327,8 @@ describe("ConversationComposer error banner", () => {
     });
 
     expect(captured.chatErrorBannerProps?.onOpenModelSettings).toBe(onOpenModelSettings);
-    expect(captured.chatErrorBannerProps?.onOpenUpgrade).toBe(onOpenModelUpgrade);
+    // 升级转发已随订阅体系移除。
+    expect(captured.chatErrorBannerProps?.onOpenUpgrade).toBeUndefined();
   });
 
   it("不再把 snapshot api retry 状态传入输入框工具条", () => {
@@ -429,49 +430,6 @@ it("离线输入栏优先显示禁发送原因，不让不可用模型控件挤�
   expect(captured.modelControlsProps).toBeNull();
 });
 
-describe("ConversationComposer Highspeed style", () => {
-  it("激活卡传递到期时间并锁定模型", () => {
-    vi.spyOn(Date, "now").mockReturnValue(1_000);
-
-    const html = renderHighspeedComposer();
-
-    expect(html).toContain('data-highspeed-composer="true"');
-    expect(captured.modelControlsProps).toMatchObject({
-      highspeedExpiresAt: 60_000,
-      modelLocked: true,
-    });
-  });
-
-  it("没有激活请求的卡（切回 Task、快照恢复）直接呈现稳定态，不重播激活动效", () => {
-    vi.spyOn(Date, "now").mockReturnValue(1_000);
-
-    const html = renderHighspeedComposer();
-
-    expect(html).toContain('data-highspeed-entrance="restore"');
-    expect(html).toContain('data-phase="stable"');
-    expect(html).not.toContain("highspeed-diffusion-canvas");
-    expect(html).toContain("highspeed-placeholder-presented");
-    expect(captured.modelControlsProps).toMatchObject({
-      highspeedPresented: true,
-      highspeedEntranceAnimated: false,
-      highspeedSweepActive: false,
-    });
-  });
-
-  it("draw 新命中的激活请求从扩散起点播放，模型与倒计时等待交接后再展示", () => {
-    vi.spyOn(Date, "now").mockReturnValue(1_000);
-
-    const html = renderHighspeedComposer({ highspeedActivationCardId: "hsc-composer" });
-
-    expect(html).toContain('data-highspeed-entrance="activation"');
-    expect(html).toContain('data-phase="diffusing"');
-    expect(html).not.toContain("highspeed-placeholder-presented");
-    expect(captured.modelControlsProps).toMatchObject({
-      highspeedPresented: false,
-      highspeedEntranceAnimated: true,
-    });
-  });
-});
 
 describe("history-first initialization", () => {
   it.each([true, false])("respects the remote gate when available=%s", (remoteAvailable) => {

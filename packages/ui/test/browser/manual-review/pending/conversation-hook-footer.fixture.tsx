@@ -97,7 +97,7 @@ createRoot(document.getElementById("root")!).render(
             workspacePath: "/fixture",
             theme,
             codePreviewSettings: DEFAULT_CODE_PREVIEW_SETTINGS,
-            compactForRemoteControl: mobile,
+            compactForOverlay: mobile,
           }}
           onFeedbackChange={() => undefined}
         />

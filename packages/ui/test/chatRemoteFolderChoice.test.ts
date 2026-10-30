@@ -2,7 +2,7 @@
 import { act, createElement } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { createLegacySingleRootProjectService } from "@zcode/services/node";
+import { createLegacySingleRootProjectService } from "../../services/src/project/legacy-single-root.js";
 import type {
   IProjectService,
   IRemoteProjectService,

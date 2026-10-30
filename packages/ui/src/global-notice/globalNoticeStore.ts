@@ -53,12 +53,6 @@ function emptyState(): PersistedGlobalNoticeState {
   };
 }
 
-function isLegacyHighspeedMockNotice(notice: GlobalNoticeEnvelope | null): boolean {
-  if (notice?.type !== "highspeed-share") return false;
-  const cardId = notice.payload.cardId;
-  return typeof cardId === "string" && cardId.startsWith("hsc_mock_");
-}
-
 function readState(
   storage: GlobalNoticeStorage,
   onPersistError?: (error: unknown) => void,
@@ -68,23 +62,12 @@ function readState(
     if (!raw) return emptyState();
     const parsed = JSON.parse(raw) as Partial<PersistedGlobalNoticeState>;
     if (parsed.version !== 1) return emptyState();
-    const state: PersistedGlobalNoticeState = {
+    return {
       version: 1,
       latest: parsed.latest ?? null,
       dismissedUntilByKey: parsed.dismissedUntilByKey ?? {},
       requiresPublishAfterDismissalByKey: parsed.requiresPublishAfterDismissalByKey ?? {},
     };
-    if (!isLegacyHighspeedMockNotice(state.latest)) return state;
-
-    // Bug 根因：早期 Highspeed mock 通知使用 latest-only 持久化，关闭 mock 后重启仍会恢复假分享数据。
-    const cleaned = { ...state, latest: null };
-    // 清理写失败不能把整份状态（含 24h 静默）打回空：内存态照常用 cleaned。
-    try {
-      storage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
-    } catch (error) {
-      onPersistError?.(error);
-    }
-    return cleaned;
   } catch {
     return emptyState();
   }

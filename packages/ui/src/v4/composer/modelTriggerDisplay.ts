@@ -1,7 +1,4 @@
-import {
-  BUILTIN_MODEL_PROVIDER_IDS,
-  resolveModelProviderFamilyIdByProviderId,
-} from "@zcode/shared";
+import { BUILTIN_MODEL_PROVIDER_IDS, isBuiltinModelProviderId } from "@zcode/shared";
 import type { IntlInstance } from "@/i18n/IntlProvider.js";
 import type { ModelSelectGroup } from "@/ModelConfigSelect.js";
 
@@ -43,12 +40,10 @@ export function formatProviderModelLabel(
   providerName: string | undefined,
   modelName: string,
 ): string {
-  // Z.ai / BigModel 的内置连接名属于产品固定入口，拼进模型文案会重复展示
-  // “Coding Plan”等连接信息；切换提示额外通过 formatModelChangeLabel 标明套餐类型。
-  if (providerId && resolveModelProviderFamilyIdByProviderId(providerId)) {
+  // 内置预置供应商只显示模型名（产品固定入口的名字不拼进触发器/时间线）。
+  if (providerId && isBuiltinModelProviderId(providerId)) {
     return modelName;
   }
-
   const normalizedProviderName = providerName?.trim();
   return normalizedProviderName ? `${normalizedProviderName}/${modelName}` : modelName;
 }
@@ -114,10 +109,8 @@ export function resolveV4ModelTriggerDisplay({
 
   const modelLabel = selectedItem.name;
   const normalizedProviderName = providerName?.trim() || providerId;
-  if (
-    !normalizedProviderName ||
-    (providerId && resolveModelProviderFamilyIdByProviderId(providerId))
-  ) {
+  // 内置预置供应商没有可隐藏的 provider 前缀（名字不拼进触发器）。
+  if (!normalizedProviderName || (providerId && isBuiltinModelProviderId(providerId))) {
     return { fullLabel, modelLabel };
   }
 

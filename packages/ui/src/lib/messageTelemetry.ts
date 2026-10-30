@@ -6,7 +6,6 @@ import {
 } from "@/lib/providerTelemetryIdentity.js";
 import type {
   InputId,
-  PlanIdentitySnapshot,
   ZCodeContextCompactionTimelineMeta,
   ZCodePersistedFileChange,
   ZCodeProvider,
@@ -600,7 +599,6 @@ export function buildPromptTelemetryExtraDetail(params: {
   provider?: ZCodeProvider;
   selectedSupplierKey?: string | null;
   providerBaseURL?: string | null;
-  planIdentitySnapshot?: PlanIdentitySnapshot | null;
 }): Record<string, string> {
   const modelProvider = resolvePromptTelemetryModelProvider({
     modelName: params.modelName,
@@ -619,8 +617,6 @@ export function buildPromptTelemetryExtraDetail(params: {
     ...(providerHostname ? { provider_name: providerHostname } : {}),
     // agent 字段取 RaspberryCode Agent provider；本仓库没有独立 session.agentId。
     agent: params.provider ?? "",
-    plan_status: params.planIdentitySnapshot?.planStatus ?? "unknown",
-    plan_product_id: params.planIdentitySnapshot?.planProductId ?? "",
   };
 }
 

@@ -8,7 +8,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from
 import type { KeyboardEvent } from "react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 
-import { CRON_DEFAULT_GROUP_ID, OFF_PEAK_DEFAULT_GROUP_ID } from "@zcode/shared";
+import { CRON_DEFAULT_GROUP_ID } from "@zcode/shared";
 import { ChevronDownIcon, ChevronRightIcon, MessageCirclePlus } from "lucide-react";
 import { cn } from "@/components/lib/utils.js";
 import { Button } from "@/components/ui/button.js";
@@ -56,7 +56,6 @@ export function GroupItem({
   activeWorkspacePath,
   activeWorkspaceIdentity,
   activeTaskId,
-  mobileActiveTaskKey,
   getTaskRemoteSessionId,
   getTaskWorkspaceLabel,
   onSelectTask,
@@ -89,7 +88,6 @@ export function GroupItem({
   activeWorkspacePath: string;
   activeWorkspaceIdentity?: string;
   activeTaskId: string | null;
-  mobileActiveTaskKey?: string | null;
   getTaskRemoteSessionId: (task: ZCodeTaskMeta) => string | undefined;
   getTaskWorkspaceLabel: (task: ZCodeTaskMeta) => string;
   onSelectTask: (workspacePath: string, taskId: string, workspaceIdentity?: string) => void;
@@ -135,14 +133,11 @@ export function GroupItem({
   const shouldShowEmptyDropZone = !hasDraftTask && node.tasks.length === 0;
   const visualCollapsed = collapsed;
   const titleEditorText = renameDraft || node.group.title;
-  // 系统分组（cron / 闲时）：固定归类，禁止重命名与删除(解散)；颜色可改（与 cron 既有行为一致）。
-  const isCronGroup = node.group.id === CRON_DEFAULT_GROUP_ID;
-  const isOffPeakGroup = node.group.id === OFF_PEAK_DEFAULT_GROUP_ID;
-  const isSystemGroup = isCronGroup || isOffPeakGroup;
-  // 系统分组的标题按语言环境本地化展示，忽略 DB 里存的固定占位标题（'cron' / 'off-peak'）。
+  // 系统分组（cron）：固定归类，禁止重命名与删除(解散)；颜色可改（与 cron 既有行为一致）。
+  const isSystemGroup = node.group.id === CRON_DEFAULT_GROUP_ID;
+  // 系统分组的标题按语言环境本地化展示，忽略 DB 里存的固定占位标题（'cron'）。
   const displayTitle = getTaskGroupDisplayTitle(node.group, {
     cron: intl.formatMessage({ id: "taskGroup.cronGroupName" }),
-    offPeak: intl.formatMessage({ id: "offPeak.sidebar.groupTitle" }),
   });
   const dragging = activeDragGroupId === node.group.id;
   const groupDraggable = useDraggable({
@@ -733,7 +728,6 @@ export function GroupItem({
                     activeWorkspacePath={activeWorkspacePath}
                     activeWorkspaceIdentity={activeWorkspaceIdentity}
                     activeTaskId={activeTaskId}
-                    mobileActiveTaskKey={mobileActiveTaskKey}
                     onSelectTask={onSelectTask}
                     onCloseTask={onCloseTask}
                     onOpenFileTree={onOpenFileTree}
@@ -761,8 +755,7 @@ export function GroupItem({
                       activeWorkspacePath={activeWorkspacePath}
                       activeWorkspaceIdentity={activeWorkspaceIdentity}
                       activeTaskId={activeTaskId}
-                      mobileActiveTaskKey={mobileActiveTaskKey}
-                      onSelectTask={onSelectTask}
+                        onSelectTask={onSelectTask}
                       onCloseTask={onCloseTask}
                       onOpenFileTree={onOpenFileTree}
                       onMoveTaskToGroup={onMoveTaskToGroup}

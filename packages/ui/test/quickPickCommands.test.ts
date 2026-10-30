@@ -16,8 +16,6 @@ function createHandlers() {
     switchTheme: vi.fn(),
     openFeedback: vi.fn(),
     openCommunity: vi.fn(),
-    openProductDocs: vi.fn(),
-    login: vi.fn(),
     logout: vi.fn(),
     toggleSidebar: vi.fn(),
     toggleTerminal: vi.fn(),
@@ -84,8 +82,6 @@ describe("createQuickPickCommands", () => {
       "mcp-settings",
       "feedback",
       "community",
-      "product-docs",
-      "login",
     ]);
     expect(commands.find((command) => command.id === "open-workspace")).toMatchObject({
       sectionId: "suggested",
@@ -131,9 +127,6 @@ describe("createQuickPickCommands", () => {
     });
     expect(commands.find((command) => command.id === "add-review-tab")).toMatchObject({
       sectionId: "panels",
-    });
-    expect(commands.find((command) => command.id === "product-docs")).toMatchObject({
-      sectionId: "app",
     });
   });
 
@@ -215,10 +208,8 @@ describe("createQuickPickCommands", () => {
     });
 
     commands.find((item) => item.id === "skills-settings")?.run();
-    commands.find((item) => item.id === "product-docs")?.run();
 
     expect(handlers.openSkillsSettings).toHaveBeenCalledTimes(1);
-    expect(handlers.openProductDocs).toHaveBeenCalledTimes(1);
   });
 
   it("has locale messages for every visible command label", () => {

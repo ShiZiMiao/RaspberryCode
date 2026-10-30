@@ -172,8 +172,9 @@ export function useUsageEntitlementWithService(
     (store) => (store.user ? `${store.user.id}:${store.authSessionSeq}` : "signed-out"),
     "unscoped",
   );
-  const enabled =
-    (options.enabled ?? true) && Boolean(usageStatsService) && authScope !== "signed-out";
+  // 登录门禁已随账号体系移除：额度键是计量 API Key，无登录也有效。
+  // 请求守护由调用方经 options.enabled 表达（如「活跃 provider 有计量 Key 才请求」）。
+  const enabled = (options.enabled ?? true) && Boolean(usageStatsService);
   const suppliedCacheKey = options.cacheKey?.trim() ?? "";
   const freshnessCacheKey =
     authScope === "unscoped" ? suppliedCacheKey : `${suppliedCacheKey}:auth:${authScope}`;

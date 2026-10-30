@@ -175,7 +175,7 @@ describe("useAssistantPreviewCardsForAssistantTextRow", () => {
         fileChangesTarget,
         fileChangesState: "active",
         fetchFileChanges,
-        compactForRemoteControl: true,
+        compactForOverlay: true,
       }),
     );
 
@@ -201,7 +201,7 @@ describe("useAssistantPreviewCardsForAssistantTextRow", () => {
         fileChangesTarget: { rowId: 1, entityId: "turn-header-1" },
         fileChangesState: "active",
         fetchFileChanges,
-        compactForRemoteControl: true,
+        compactForOverlay: true,
       }),
     );
 

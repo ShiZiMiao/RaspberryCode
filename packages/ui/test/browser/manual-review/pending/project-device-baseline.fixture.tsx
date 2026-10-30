@@ -74,7 +74,7 @@ createRoot(document.getElementById("root")!).render(
         <div className="mt-8">
           <ProjectComposerMenu
             workspacePath="/example"
-            compactForRemoteControl={params.get("mobile") === "1"}
+            compactForOverlay={params.get("mobile") === "1"}
             onCreateTask={noop}
             onSelectConversationWorkspace={noop}
           />

@@ -355,7 +355,7 @@ describe("ConversationStatusPanel", () => {
     statusPanelCapture.gitBranchSwitchers = [];
     const mobileHtml = await renderStatusPanel({
       isMobileViewport: true,
-      isWebRemoteControl: true,
+      isMobileOverlay: true,
       plan: longPlan,
       summaryPanelVariantOverride: "panel",
     });
@@ -368,7 +368,7 @@ describe("ConversationStatusPanel", () => {
     statusPanelCapture.gitBranchSwitchers = [];
     const desktopHtml = await renderStatusPanel({
       isMobileViewport: false,
-      isWebRemoteControl: false,
+      isMobileOverlay: false,
       plan: longPlan,
       summaryPanelVariantOverride: "panel",
     });

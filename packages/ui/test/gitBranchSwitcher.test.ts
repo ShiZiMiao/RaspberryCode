@@ -113,7 +113,7 @@ describe("GitBranchSwitcher", () => {
 
     const html = renderToStaticMarkup(
       createElement(GitBranchSwitcher, {
-        compactForRemoteControl: true,
+        compactForOverlay: true,
         dirtyFileCount: 0,
         gitSummary: {
           branchName: "main",

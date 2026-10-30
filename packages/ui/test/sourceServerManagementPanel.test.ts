@@ -191,7 +191,7 @@ describe("SourceServerManagementPanel", () => {
       onDidChangeState: new Emitter().event,
     } as never;
     const first = render(createElement(SourceServerManagementPanel, { management }));
-    fireEvent.click(await screen.findByRole("button", { name: "updateDialog.later" }));
+    fireEvent.click(await screen.findByRole("button", { name: "settings.source.upgradeLater" }));
     expect(screen.queryByText("settings.source.updateAvailableVersion")).toBeNull();
     first.unmount();
     const second = render(createElement(SourceServerManagementPanel, { management }));
@@ -200,7 +200,7 @@ describe("SourceServerManagementPanel", () => {
     second.unmount();
     snapshot.states[0]!.availableVersion = "defer-test-2";
     render(createElement(SourceServerManagementPanel, { management }));
-    expect(await screen.findByRole("button", { name: "updateDialog.later" })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "settings.source.upgradeLater" })).toBeTruthy();
   });
 
   it("强制更新确认列出 Host 返回的运行任务，取消不发送 force=true", async () => {
@@ -1846,7 +1846,7 @@ it("同连接的可选更新稍后隐藏后仍展示连接失败原因", async (
     }),
   );
   await screen.findByText("remote.error.hostUnreachable");
-  fireEvent.click(screen.getByRole("button", { name: "updateDialog.later" }));
+  fireEvent.click(screen.getByRole("button", { name: "settings.source.upgradeLater" }));
   expect(screen.getByText("remote.error.hostUnreachable")).toBeTruthy();
-  expect(screen.queryByRole("button", { name: "updateDialog.later" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "settings.source.upgradeLater" })).toBeNull();
 });

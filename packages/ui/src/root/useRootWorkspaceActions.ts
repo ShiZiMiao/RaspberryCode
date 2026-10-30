@@ -18,7 +18,6 @@ import type {
 } from "@/app-shell/types.js";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog.js";
 import { reportAppTelemetryEvent } from "@/lib/appTelemetry.js";
-import { resolveLogoutProviderFamilyDomain } from "@/lib/providerFamilyDomainSettings.js";
 import { isRendererReloadNavigation } from "@/lib/rendererNavigation.js";
 import { parseWslUncWorkspacePath } from "@/lib/wslUncWorkspace.js";
 import { logger } from "@/logger.js";
@@ -98,11 +97,9 @@ export function useRootWorkspaceActions({
   updateAppSettings,
   setOAuthError,
   setUser,
-  onProviderFamilyDomainClearedAfterLogout,
   userId,
   onOpenRemoteConnection,
   openRemoteProjectWorkspace,
-  openMobileProjectDraft,
   workbenchGroupClientMode = "desktop-continuous",
 }: {
   intl: ReturnType<typeof import("@/i18n/IntlProvider.js").useZCodeIntl>["intl"];
@@ -120,7 +117,6 @@ export function useRootWorkspaceActions({
   updateAppSettings: (patch: Partial<AppSettings>) => Promise<void>;
   setOAuthError: (error: string | null) => void;
   setUser: (user: UserInfo | null) => void;
-  onProviderFamilyDomainClearedAfterLogout?: () => void;
   userId?: string;
   onOpenRemoteConnection?: (preference?: RemoteConnectionOpenPreference) => void;
   openRemoteProjectWorkspace?: (target: {
@@ -131,7 +127,6 @@ export function useRootWorkspaceActions({
     projectId: string | null;
     isCurrent?: () => boolean;
   }) => Promise<void>;
-  openMobileProjectDraft?: (request: CreateTaskOptions) => Promise<void>;
   workbenchGroupClientMode?: ZCodeTaskClientMode;
 }) {
   const navigationSequence = useRef(0);
@@ -343,16 +338,6 @@ export function useRootWorkspaceActions({
           if (hostId && !projectId) throw new Error("project.remote-project-required");
         }
         if (!isCurrent()) return;
-        if (workbenchGroupClientMode === "web-remote-replayable") {
-          if (!openMobileProjectDraft) throw new Error("project.remote-navigation-unavailable");
-          // 归属先在共享入口解析，目录仍只由 bridge owner 准备；旧 Root 不写交接后的草稿。
-          await openMobileProjectDraft({
-            ...requestOptions,
-            ...(projectId ? { projectId } : {}),
-            ...(hostId ? { hostId } : {}),
-          });
-          return;
-        }
         if (!services.projectService) throw new Error("project.service-unavailable");
         const pendingDraft =
           !projectId && (!hostId || hostId === "local")
@@ -410,7 +395,6 @@ export function useRootWorkspaceActions({
       activeWorkspaceIdentity,
       tabStoreApi,
       addTab,
-      openMobileProjectDraft,
       workbenchGroupClientMode,
       startDraftInWorkspace,
     ],
@@ -469,33 +453,20 @@ export function useRootWorkspaceActions({
       },
       "Root",
     );
-    const settingsBeforeLogout = await services.settingService.get();
-    const nextProviderFamilyDomain = resolveLogoutProviderFamilyDomain({
-      currentDomain: settingsBeforeLogout.providerFamilyDomain,
-    });
     await services.oauthService.logout();
-    await updateAppSettings({
-      providerFamilyDomain: (nextProviderFamilyDomain ?? "") as AppSettings["providerFamilyDomain"],
-      providerFamilyDomainUpdatedAt: Date.now(),
-      providerFamilyDomainMigrated: true,
-    });
-    if (!nextProviderFamilyDomain) {
-      onProviderFamilyDomainClearedAfterLogout?.();
-    }
+    // 登录入口已移除（specs/no-login-startup.md）：登出后不再强制回到登录页，
+    // Relaunch 后按无登录启动直接进入主界面。
     // ZAI/BigModel provider 已恢复为 App 登录镜像。
     // 派生 Coding/Start key 由 OAuth logout 的 host hook 统一清理，Root 只负责刷新展示态。
     setOAuthError(null);
     setUser(null);
     // 退出登录后刷新 Account Source 与 Registry，避免继续展示退出前的 Provider 状态。
     await refreshProviderState();
-    // Coding Plan 官网 webview 使用独立持久 partition，App logout 必须同步清理。
-    await platform.executeDesktopCommand(DesktopCommandIds.ClearCodingPlanWebviewStorage);
     await platform.executeDesktopCommand(DesktopCommandIds.RelaunchApp);
   }, [
     intl,
     requestConfirmation,
     refreshProviderState,
-    onProviderFamilyDomainClearedAfterLogout,
     platform,
     services.oauthService,
     services.modelSelectionService,

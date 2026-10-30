@@ -7,11 +7,9 @@ import {
   CloudUpload,
   LoaderIcon,
   ListTree,
-  Moon,
   Pin,
-  Smartphone,
 } from "lucide-react";
-import { isCronTask, isOffPeakTask, type ZCodeTaskMeta } from "@zcode/shared";
+import { isCronTask, type ZCodeTaskMeta } from "@zcode/shared";
 import { TID_TASK_ARCHIVE, TID_TASK_ITEM, testId } from "@zcode/shared/test-ids";
 import { Badge } from "@/components/ui/badge.js";
 import { Button } from "@/components/ui/button.js";
@@ -62,7 +60,6 @@ interface TaskListItemProps {
   isPinned: boolean;
   isArchived?: boolean;
   isActive: boolean;
-  isMobileActive?: boolean;
   hoverEnabled?: boolean;
   connectionOverlay?: "disconnected" | "reconnecting";
   onSelectTask: (taskId: string) => void;
@@ -129,7 +126,6 @@ function areTaskListItemPropsEqual(left: TaskListItemProps, right: TaskListItemP
     left.isPinned === right.isPinned &&
     left.isArchived === right.isArchived &&
     left.isActive === right.isActive &&
-    left.isMobileActive === right.isMobileActive &&
     left.hoverEnabled === right.hoverEnabled &&
     left.connectionOverlay === right.connectionOverlay &&
     left.isArchiveConfirming === right.isArchiveConfirming &&
@@ -157,7 +153,6 @@ export const MemoTaskItem = memo(function TaskListItem({
   isPinned,
   isArchived = false,
   isActive,
-  isMobileActive = false,
   hoverEnabled = true,
   connectionOverlay,
   onSelectTask,
@@ -369,12 +364,7 @@ export const MemoTaskItem = memo(function TaskListItem({
     [task, taskActivity],
   );
   const isTaskCron = isCronTask(task);
-  // 月亮身份改为持久 meta 标记判断；off-peak store 反查在任务被删除后会丢失
-  // 会话溯源，且让每一行多背一个全局 store 订阅。
-  const isTaskOffPeak = isOffPeakTask(task);
-  // Bugfix: 手机远控标记和置顶状态共用左侧 leading 槽。
-  // 已置顶任务如果继续常显 Pin，会和绝对定位的手机图标重叠；手机激活态默认让手机图标优先，hover 时再显示 Pin 操作。
-  const showPinnedState = isPinned && leadingIndicator === "none" && !isMobileActive;
+  const showPinnedState = isPinned && leadingIndicator === "none";
   // 修复原因：手机会在 click 前合成 mouseenter/focus；此时切换内容会让首次点击只进入 hover。
   // 远控入口固定操作区和元信息，避免触摸引发 DOM 切换；桌面仍沿用 hover/focus 展示。
   const shouldSuppressWorkspaceTaskMetadata =
@@ -484,7 +474,7 @@ export const MemoTaskItem = memo(function TaskListItem({
     onOpenFileTree &&
     !workspaceActionsDisabled &&
     !hasPendingInteraction &&
-    (shouldMountWorkspaceTaskActions || isMobileActive) ? (
+    shouldMountWorkspaceTaskActions ? (
       <TaskRowActionButton
         label={intl.formatMessage({ id: "git.action.showTree" })}
         showTooltip
@@ -541,7 +531,6 @@ export const MemoTaskItem = memo(function TaskListItem({
       ref={itemRef}
       data-testid={testId(TID_TASK_ITEM, task.taskId)}
       data-task-item-key={taskItemKey}
-      data-mobile-active-task={isMobileActive ? "true" : undefined}
       data-archive-confirming-task-id={isArchiveConfirming ? task.taskId : undefined}
       onClick={handleSelect}
       onContextMenu={handleContextMenu}
@@ -595,7 +584,6 @@ export const MemoTaskItem = memo(function TaskListItem({
             // SVG 自身旋转会逐帧重算样式；让现有 HTML 槽位合成旋转，保留图标与状态语义。
             leadingIndicator === "loading" && "animate-spin",
             shouldRenderPinAction && "hidden",
-            isMobileActive && "invisible",
           )}
         >
           {/* 无状态只保留对齐槽，不显示代表空闲的占位圆点。 */}
@@ -626,24 +614,6 @@ export const MemoTaskItem = memo(function TaskListItem({
       {variant === "timeline" ? (
         <div className="relative flex min-w-0 flex-1 flex-col gap-0.5">
           <div className="flex min-w-0 items-center gap-1.5">
-            {isMobileActive && !shouldSuppressWorkspaceTaskMetadata ? (
-              <ControlHintTooltip
-                title={intl.formatMessage({ id: "taskList.mobileActive" })}
-                side="right"
-                align="center"
-                triggerClassName="absolute -left-6 top-2 z-10 -translate-y-1/2"
-              >
-                <span
-                  data-mobile-active-task="true"
-                  className="inline-flex size-4 items-center justify-center rounded-sm text-success"
-                  aria-label={intl.formatMessage({
-                    id: "taskList.mobileActive",
-                  })}
-                >
-                  <Smartphone className="size-3.5" />
-                </span>
-              </ControlHintTooltip>
-            ) : null}
             {remoteConnectionBadge}
             <TaskTitleOverflowText
               className="text-ui-base text-foreground"
@@ -706,14 +676,6 @@ export const MemoTaskItem = memo(function TaskListItem({
                       })}
                       className="size-3.5 shrink-0"
                     />
-                  ) : isTaskOffPeak ? (
-                    <Moon
-                      data-off-peak-task-icon="true"
-                      aria-label={intl.formatMessage({
-                        id: "taskList.offPeakTaskLabel",
-                      })}
-                      className="size-3.5 shrink-0"
-                    />
                   ) : null}
                   <span className="mr-1">{taskTimeLabel}</span>
                 </span>
@@ -727,28 +689,6 @@ export const MemoTaskItem = memo(function TaskListItem({
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex min-w-0 items-center gap-2">
             <div className="relative min-w-0 flex h-6 flex-1 flex-wrap items-center gap-1.5">
-              {isMobileActive && !shouldSuppressWorkspaceTaskMetadata ? (
-                <ControlHintTooltip
-                  title={intl.formatMessage({ id: "taskList.mobileActive" })}
-                  side="right"
-                  align="center"
-                  triggerClassName="absolute -left-6 top-1/2 z-10 -translate-y-1/2"
-                >
-                  <span
-                    data-mobile-active-task="true"
-                    className="inline-flex size-4 items-center justify-center rounded-sm text-success"
-                    aria-label={intl.formatMessage({
-                      id: "taskList.mobileActive",
-                    })}
-                  >
-                    {/* Bugfix: mobileViewState 已经能告诉桌面端手机正在看的 task，
-                        但列表未消费这个状态，用户会误以为只有桌面端在操作。上一版把图标作为标题前的 flex 子项，
-                        会把当前行标题往右挤，造成上下 task 标题不对齐；这里改成绝对定位到原有 leading 槽，
-                        标题文本仍然从原来的位置开始；同时 hover 时隐藏手机标记，把原来的置顶按钮还给用户。 */}
-                    <Smartphone className="size-3.5" />
-                  </span>
-                </ControlHintTooltip>
-              ) : null}
               {/* 默认行与 timeline 共用远程断连投影，工作流多行布局不改变连接状态。 */}
               {remoteConnectionBadge}
               <TaskTitleOverflowText
@@ -799,12 +739,6 @@ export const MemoTaskItem = memo(function TaskListItem({
                     aria-label={intl.formatMessage({
                       id: "taskList.cronTaskLabel",
                     })}
-                    className="size-3.5 shrink-0"
-                  />
-                ) : isTaskOffPeak ? (
-                  <Moon
-                    data-off-peak-task-icon="true"
-                    aria-label={intl.formatMessage({ id: "taskList.offPeakTaskLabel" })}
                     className="size-3.5 shrink-0"
                   />
                 ) : null}

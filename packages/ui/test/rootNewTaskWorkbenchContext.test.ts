@@ -300,43 +300,6 @@ describe("project-aware new task creation", () => {
   });
 });
 
-it("hands mobile project intent to the bridge owner without preparing or mutating the old Root", async () => {
-  let finish!: () => void;
-  const openMobileProjectDraft = vi.fn(
-    () =>
-      new Promise<void>((resolve) => {
-        finish = resolve;
-      }),
-  );
-  const { result, prepareSession, addTab } = fixture(
-    "web-remote-replayable",
-    undefined,
-    openMobileProjectDraft,
-  );
-  useZCodeSessionStore.getState().setActiveTaskId("/old", "old-session");
-  const request = { projectId: "p", hostId: "remote:server:s", initialPrompt: "$creator " };
-  let pending!: Promise<void>;
-  await act(async () => {
-    pending = result.current.handleCreateTask(request);
-  });
-  expect(openMobileProjectDraft).toHaveBeenCalledWith(request);
-  expect(prepareSession).not.toHaveBeenCalled();
-  useZCodeSessionStore
-    .getState()
-    .startDraft("/new", undefined, "remote:server:s:/new", { projectId: "p" });
-  await act(async () => {
-    finish();
-    await pending;
-  });
-  expect(addTab).not.toHaveBeenCalled();
-  expect(useZCodeSessionStore.getState().getWorkspaceState("/old").activeTaskId).toBe(
-    "old-session",
-  );
-  expect(
-    useZCodeSessionStore.getState().getWorkspaceState("/new", "remote:server:s:/new")
-      .draftProjectId,
-  ).toBe("p");
-});
 it("initializes a handed off draft with its project and exact input under the new identity", () => {
   const { result } = fixture("web-remote-replayable");
   const mention = {
@@ -358,16 +321,6 @@ it("initializes a handed off draft with its project and exact input under the ne
   expect(draft.draftProjectId).toBe("p");
   expect(draft.composerTextInsertRequest).toMatchObject({ text: "$creator ", mention });
   expect(useZCodeSessionStore.getState().workspaces["/new"]).toBeUndefined();
-});
-
-it("does not allocate a directory when the mobile peer lacks project admission", async () => {
-  const { result, prepareSession, addTab } = fixture("web-remote-replayable");
-  await act(async () => {
-    await result.current.handleCreateTask();
-  });
-  expect(prepareSession).not.toHaveBeenCalled();
-  expect(addTab).not.toHaveBeenCalled();
-  expect(result.current.workspaceActionError).toBe("project.remote-navigation-unavailable");
 });
 
 it.each(["desktop-continuous", "web-remote-replayable"] as const)(
@@ -407,29 +360,20 @@ it.each(["desktop-continuous", "web-remote-replayable"] as const)(
   },
 );
 
-it.each(["desktop-continuous", "web-remote-replayable"] as const)(
-  "D3 %s inherits the current session project by exact task identity",
-  async (mode) => {
-    useZCodeSessionStore.getState().setActiveTaskId("/old", "session");
-    const open = vi.fn(async () => {});
-    const { result, prepareSession, readTree } = fixture(mode, undefined, open);
-    readTree.mockResolvedValueOnce({
-      tasks: [
-        { taskId: "session", workspacePath: "/other", projectId: "wrong" },
-        { taskId: "session", workspacePath: "/old", projectId: "current" },
-      ],
-    });
-    await act(async () => {
-      await result.current.handleCreateTask();
-    });
-    if (mode === "desktop-continuous") {
-      expect(prepareSession).toHaveBeenCalledWith({ projectId: "current" });
-    } else {
-      expect(open).toHaveBeenCalledWith({ projectId: "current" });
-      expect(prepareSession).not.toHaveBeenCalled();
-    }
-  },
-);
+it("D3 desktop-continuous inherits the current session project by exact task identity", async () => {
+  useZCodeSessionStore.getState().setActiveTaskId("/old", "session");
+  const { result, prepareSession, readTree } = fixture("desktop-continuous");
+  readTree.mockResolvedValueOnce({
+    tasks: [
+      { taskId: "session", workspacePath: "/other", projectId: "wrong" },
+      { taskId: "session", workspacePath: "/old", projectId: "current" },
+    ],
+  });
+  await act(async () => {
+    await result.current.handleCreateTask();
+  });
+  expect(prepareSession).toHaveBeenCalledWith({ projectId: "current" });
+});
 
 it("D3 inherits draft project without reading task history; explicit null opts out", async () => {
   useZCodeSessionStore

@@ -184,8 +184,7 @@ describe("ListModelsToolCallBlock", () => {
 
     expect(screen.getByText("Available models")).toBeTruthy();
     expect(screen.getByText("4 models")).toBeTruthy();
-    // 内置家族 → 家族名；自定义 provider → 载荷里的 providerLabel。
-    expect(screen.getByText("BigModel")).toBeTruthy();
+    // 分组名取载荷里的 providerLabel（family 标签已随套餐体系移除，内置家族不再拼家族名）。
     expect(screen.getByText("MyProxy")).toBeTruthy();
     expect(screen.getByText("GLM-5.3-Flash")).toBeTruthy();
     expect(screen.getByText("glm-4.7")).toBeTruthy();

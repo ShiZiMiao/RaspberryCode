@@ -1,6 +1,5 @@
 import {
   isZCodeAgentProvider,
-  resolveModelProviderFamilySpecByProviderId,
   zcodeProviderAccountAccessSchema,
   type ZCodeProviderAccountAccess,
   type ZCodeProvider,
@@ -49,6 +48,8 @@ export function buildRegistryModelSelectGroups(
     const labelBadge =
       accountPresentation?.labelBadge ??
       (provider.config.access?.type === "api-key" ||
+      provider.config.access?.type === "metered-api-key" ||
+      // 旧值读兼容（未归一的原始 JSON）。
       provider.config.access?.type === "zhipu-coding-plan-api-key"
         ? (labels.apiKeyBadgeLabel ?? "API")
         : undefined);
@@ -82,8 +83,7 @@ function getRegistryAccountProviderGroupPresentation(
   access: ZCodeProviderAccountAccess,
   labels: ModelProviderGroupLabelOptions,
 ): Pick<ModelSelectGroup, "label" | "labelBadge"> {
-  const familySpec = resolveModelProviderFamilySpecByProviderId(providerId);
-  const label = familySpec?.label ?? providerId;
+  const label = providerId;
   if (access.mode === "start-plan") {
     return { label: "Start Plan", labelBadge: labels.startPlanBadgeLabel ?? "Free" };
   }

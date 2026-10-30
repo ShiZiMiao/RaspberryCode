@@ -4,7 +4,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ModelSelectionView } from "@zcode/services";
 import { useModelSelectionServiceView } from "@/hooks/useModelSelectionView.js";
 import {
-  type ModelSelection,
   ZCODE_AGENT_PROVIDER_NOT_READY_CODE,
   type ZCodeWorkspaceStateSnapshot,
 } from "@zcode/shared";
@@ -22,12 +21,6 @@ import type { V4InteractionDialogsProps } from "@/v4/V4InteractionDialogs.js";
 import { pendingCommandRegistry } from "@/v4/pendingCommandRegistry.js";
 import { logger } from "@/logger.js";
 
-const recommendation = vi.hoisted(() =>
-  vi.fn(async (selection: ModelSelection): Promise<ModelSelection | null> => selection),
-);
-vi.mock("@/hooks/useStartPlanRecommendation.js", () => ({
-  useStartPlanRecommendation: () => recommendation,
-}));
 const modelSelectionMock = vi.hoisted(() => ({ view: null as ModelSelectionView | null }));
 vi.mock("@/hooks/useModelSelectionView.js", () => ({
   useModelSelectionView: () => ({
@@ -689,7 +682,6 @@ async function renderPane(props: Partial<ComponentProps<typeof SessionPane>> = {
 }
 
 afterEach(() => {
-  recommendation.mockReset().mockImplementation(async (selection) => selection);
   modelSelectionMock.view = null;
   captured.composerProps = null;
   captured.interactionProps = null;
@@ -895,72 +887,6 @@ describe("SessionPane draft prewarm admission lifecycle", () => {
       await act(async () => root.unmount());
     }
   });
-
-  it.each(["existing", "prewarm", "no-prewarm"] as const)(
-    "keeps shared context and the complete submission together for %s",
-    async (entry) => {
-      const targetSessionId = entry === "existing" ? "session-1" : "share-created";
-      const snapshot = makeSnapshot();
-      snapshot.sessionId = targetSessionId;
-      projectionState.current = {
-        status: "live",
-        snapshot: entry === "no-prewarm" ? null : snapshot,
-        subscriptionId: "share-submission",
-        lastError: null,
-        optimisticCommands: [],
-        loadingOlder: false,
-      };
-      prewarmHookMock.binding =
-        entry === "prewarm"
-          ? {
-              workspaceKey: "/workspace",
-              sessionId: targetSessionId,
-              promote: vi.fn(),
-              discard: vi.fn(),
-            }
-          : entry === "no-prewarm"
-            ? undefined
-            : null;
-      const modelSelection = {
-        providerId: "alternate-provider",
-        modelId: "deepseek-v4-pro",
-        options: { reasoningLevel: "high" },
-      };
-      draftConfigMock.draftConfigRef.current = { modelSelection, mode: "build" };
-      mocks.sendCommand.mockImplementation(async (envelope: CommandEnvelope) =>
-        ackFor(envelope, {
-          status: "accepted",
-          ...(envelope.type === "createSession"
-            ? { result: { type: "createSession" as const, sessionId: targetSessionId } }
-            : {}),
-        }),
-      );
-      const root = await renderPane({ sessionId: entry === "existing" ? targetSessionId : null });
-      try {
-        await act(async () => {
-          await captured.composerProps?.onSendText("继续分享上下文", {
-            sharedContextRefs: [{ kind: "shared_context_import", context_id: "shared-1" }],
-          });
-          await flushMicrotasks();
-        });
-        const sends = mocks.sendCommand.mock.calls.filter(
-          ([command]) => command.type === "sendText",
-        );
-        expect(sends).toHaveLength(1);
-        expect(sends[0]?.[0]).toMatchObject({
-          sessionId: targetSessionId,
-          payload: {
-            text: "继续分享上下文",
-            modelSelection,
-            mode: "build",
-            context_refs: [{ kind: "shared_context_import", context_id: "shared-1" }],
-          },
-        });
-      } finally {
-        await act(async () => root.unmount());
-      }
-    },
-  );
 
   it("不记录预热尚无投影时首发的首次绑定", async () => {
     const createdSessionId = "fallback-created-session-open-excluded";
@@ -1459,7 +1385,7 @@ describe("SessionPane remote provider admission", () => {
     const root = await renderPane({
       workspaceIdentity: "remote:ssh:dev:/workspace",
       remoteSessionId: "remote-session-mobile",
-      compactForRemoteControl: true,
+      compactForOverlay: true,
     });
     try {
       await act(async () => {
@@ -1487,7 +1413,7 @@ describe("SessionPane mobile plan approval recovery", () => {
       loadingOlder: false,
     };
 
-    const root = await renderPane({ compactForRemoteControl: true });
+    const root = await renderPane({ compactForOverlay: true });
     try {
       act(() => {
         captured.interactionProps?.onPlanInteractionAccepted?.("plan-request-1");
@@ -1514,7 +1440,7 @@ describe("SessionPane mobile plan approval recovery", () => {
       loadingOlder: false,
     };
 
-    const root = await renderPane({ compactForRemoteControl: true });
+    const root = await renderPane({ compactForOverlay: true });
     try {
       act(() => {
         captured.interactionProps?.onPlanInteractionAccepted?.("plan-request-1");
@@ -1544,7 +1470,7 @@ describe("SessionPane mobile plan approval recovery", () => {
       loadingOlder: false,
     };
 
-    const root = await renderPane({ compactForRemoteControl: false });
+    const root = await renderPane({ compactForOverlay: false });
     try {
       expect(captured.interactionProps?.onPlanInteractionAccepted).toBeUndefined();
       expect(mocks.recoverFromStaleAuthority).not.toHaveBeenCalled();
@@ -1653,679 +1579,15 @@ describe("SessionPane model switch recovery", () => {
     }
   });
 
-  it("Highspeed Turn 在降级模型也不可用时仍作废卡并解锁 Composer", async () => {
-    const now = Date.now();
-    const snapshot = makeSnapshot();
-    snapshot.control = {
-      ...snapshot.control,
-      phase: "error",
-      sessionEnded: false,
-      lastError: {
-        code: "provider_not_found",
-        message: "原模型当前不可用",
-        recoverable: true,
-        at: now,
-        source: "provider",
-        traceId: "trace-fallback-unavailable",
-        attribution: {
-          source: "provider",
-          highspeedCardId: "hsc-fallback-unavailable",
-          highspeedFallbackUnavailable: true,
-        },
-      },
-    };
-    // 模型创建期尚无 userInput 行；错误事实中的 cardId 仍必须解锁 Composer。
-    projectionState.current = {
-      status: "live",
-      snapshot,
-      subscriptionId: "sub-highspeed-fallback-unavailable",
-      lastError: null,
-      optimisticCommands: [],
-      loadingOlder: false,
-    };
-    mocks.highspeedCardService.getSnapshot.mockResolvedValueOnce({
-      card: {
-        cardId: "hsc-fallback-unavailable",
-        taskId: "session-1",
-        provider: "builtin:zai-coding-plan",
-        model: "GLM-5.3",
-        issuedAt: now - 60_000,
-        expiresAt: now + 60_000,
-      },
-      nextDrawAt: now + 3_600_000,
-      drawing: false,
-    });
 
-    const root = await renderPane();
-    try {
-      await act(async () => {
-        await flushMicrotasks();
-      });
-      expect(mocks.highspeedCardService.invalidateCard).toHaveBeenCalledWith(
-        "hsc-fallback-unavailable",
-      );
-      expect(captured.composerProps?.highspeedCard).toBeNull();
-    } finally {
-      await act(async () => root.unmount());
-    }
-  });
 
-  it("Highspeed 请求期失败且无处可退时按 Core 归因作废卡并解锁模型选择器", async () => {
-    // Bug 根因：请求期 3402/网络失败没有 fallback 事件，TurnError 的 code 是 provider 错误码 "3402"，
-    // 旧实现只认目录错误白名单，卡一直锁住选择器、下一轮继续复用失败的卡。退卡只看 Core 发布的
-    // highspeedFallbackUnavailable 事实（spec §2.2），原错误保留在 Banner。
-    const now = Date.now();
-    const snapshot = makeSnapshot();
-    snapshot.control = {
-      ...snapshot.control,
-      phase: "error",
-      sessionEnded: false,
-      lastError: {
-        code: "3402",
-        message: "highspeed card is invalid",
-        recoverable: true,
-        at: now,
-        source: "provider",
-        traceId: "trace-request-fallback-unavailable",
-        attribution: {
-          source: "provider",
-          providerId: "account:bigmodel-highspeed-card",
-          providerErrorCode: "3402",
-          statusCode: 400,
-          highspeedCardId: "hsc-request-unavailable",
-          highspeedFallbackUnavailable: true,
-        },
-      },
-    };
-    projectionState.current = {
-      status: "live",
-      snapshot,
-      subscriptionId: "sub-highspeed-request-unavailable",
-      lastError: null,
-      optimisticCommands: [],
-      loadingOlder: false,
-    };
-    mocks.highspeedCardService.getSnapshot.mockResolvedValueOnce({
-      card: {
-        cardId: "hsc-request-unavailable",
-        taskId: "session-1",
-        provider: "builtin:bigmodel-coding-plan",
-        model: "GLM-5.3",
-        issuedAt: now - 60_000,
-        expiresAt: now + 60_000,
-      },
-      nextDrawAt: now + 3_600_000,
-      drawing: false,
-    });
 
-    const root = await renderPane();
-    try {
-      await act(async () => {
-        await flushMicrotasks();
-      });
-      expect(mocks.highspeedCardService.invalidateCard).toHaveBeenCalledWith(
-        "hsc-request-unavailable",
-      );
-      expect(captured.composerProps?.highspeedCard).toBeNull();
-      // 卡作废后选择器可用：切模不再被“加速期间模型已锁定”拦截。
-      await act(async () => {
-        captured.composerProps?.onSelectModel?.("alternate-provider", "deepseek-v4-pro", null);
-        await flushMicrotasks();
-      });
-      expect(mocks.toast).not.toHaveBeenCalledWith("加速期间模型已锁定");
-    } finally {
-      await act(async () => root.unmount());
-    }
-  });
 
-  it("Highspeed 归因到当前卡但 Core 未判定无处可退的错误不清卡", async () => {
-    // 上下文超窗、本地 runtime 失败等不参与退回，Core 不发布 highspeedFallbackUnavailable；
-    // Renderer 不得再按错误码自行推断，否则会把不该退的卡作废。
-    const now = Date.now();
-    const snapshot = makeSnapshot();
-    snapshot.control = {
-      ...snapshot.control,
-      phase: "error",
-      sessionEnded: false,
-      lastError: {
-        code: "context_exceeded",
-        message: "Model request exceeded the provider context window.",
-        recoverable: true,
-        at: now,
-        source: "provider",
-        traceId: "trace-context-exceeded-with-card",
-        attribution: {
-          source: "provider",
-          providerId: "account:bigmodel-highspeed-card",
-          highspeedCardId: "hsc-context-exceeded",
-        },
-      },
-    };
-    projectionState.current = {
-      status: "live",
-      snapshot,
-      subscriptionId: "sub-highspeed-context-exceeded",
-      lastError: null,
-      optimisticCommands: [],
-      loadingOlder: false,
-    };
-    mocks.highspeedCardService.getSnapshot.mockResolvedValueOnce({
-      card: {
-        cardId: "hsc-context-exceeded",
-        taskId: "session-1",
-        provider: "builtin:bigmodel-coding-plan",
-        model: "GLM-5.3",
-        issuedAt: now - 60_000,
-        expiresAt: now + 60_000,
-      },
-      nextDrawAt: now + 3_600_000,
-      drawing: false,
-    });
 
-    const root = await renderPane();
-    try {
-      await act(async () => {
-        await flushMicrotasks();
-      });
-      expect(mocks.highspeedCardService.invalidateCard).not.toHaveBeenCalled();
-      expect(captured.composerProps?.highspeedCard?.cardId).toBe("hsc-context-exceeded");
-    } finally {
-      await act(async () => root.unmount());
-    }
-  });
 
-  it("Highspeed 持卡期间普通轮的目录错误不清无关的有效卡", async () => {
-    // spec §2.2 错误归因：普通轮显式发布 null（排队后执行前 Registry 变化），
-    // 其目录错误不得消耗无关加速权益。
-    const now = Date.now();
-    const snapshot = makeSnapshot();
-    snapshot.control = {
-      ...snapshot.control,
-      phase: "error",
-      sessionEnded: false,
-      lastError: {
-        code: "provider_not_found",
-        message: "排队普通轮的模型不可用",
-        recoverable: true,
-        at: now,
-        source: "provider",
-        traceId: "trace-ordinary-catalog-error",
-        attribution: { source: "provider", highspeedCardId: null },
-      },
-    };
-    projectionState.current = {
-      status: "live",
-      snapshot,
-      subscriptionId: "sub-highspeed-ordinary-error",
-      lastError: null,
-      optimisticCommands: [],
-      loadingOlder: false,
-    };
-    mocks.highspeedCardService.getSnapshot.mockResolvedValueOnce({
-      card: {
-        cardId: "hsc-unrelated-valid",
-        taskId: "session-1",
-        provider: "builtin:zai-coding-plan",
-        model: "GLM-5.3",
-        issuedAt: now - 60_000,
-        expiresAt: now + 60_000,
-      },
-      nextDrawAt: now + 3_600_000,
-      drawing: false,
-    });
 
-    const root = await renderPane();
-    try {
-      await act(async () => {
-        await flushMicrotasks();
-      });
-      expect(mocks.highspeedCardService.invalidateCard).not.toHaveBeenCalled();
-      expect(captured.composerProps?.highspeedCard?.cardId).toBe("hsc-unrelated-valid");
-    } finally {
-      await act(async () => root.unmount());
-    }
-  });
 
-  it("Highspeed 归因到旧卡的目录错误不清当前卡", async () => {
-    // 失败输入用的是上一张卡；滞留错误不得清掉随后抽到的新卡，即使错误时间晚于新卡发卡时间。
-    const now = Date.now();
-    const snapshot = makeSnapshot();
-    snapshot.control = {
-      ...snapshot.control,
-      phase: "error",
-      sessionEnded: false,
-      lastError: {
-        code: "model_not_found",
-        message: "上一张卡的加速模型不可用",
-        recoverable: true,
-        at: now,
-        source: "provider",
-        traceId: "trace-old-card-error",
-        attribution: { source: "provider", highspeedCardId: "hsc-previous-card" },
-      },
-    };
-    projectionState.current = {
-      status: "live",
-      snapshot,
-      subscriptionId: "sub-highspeed-old-card-error",
-      lastError: null,
-      optimisticCommands: [],
-      loadingOlder: false,
-    };
-    mocks.highspeedCardService.getSnapshot.mockResolvedValueOnce({
-      card: {
-        cardId: "hsc-current-card",
-        taskId: "session-1",
-        provider: "builtin:zai-coding-plan",
-        model: "GLM-5.3",
-        issuedAt: now - 1_000,
-        expiresAt: now + 60_000,
-      },
-      nextDrawAt: now + 3_600_000,
-      drawing: false,
-    });
 
-    const root = await renderPane();
-    try {
-      await act(async () => {
-        await flushMicrotasks();
-      });
-      expect(mocks.highspeedCardService.invalidateCard).not.toHaveBeenCalled();
-      expect(captured.composerProps?.highspeedCard?.cardId).toBe("hsc-current-card");
-    } finally {
-      await act(async () => root.unmount());
-    }
-  });
-
-  it("Highspeed lastError 无 highspeedCardId 时按时间下界兼容清卡", async () => {
-    // 兼容旧 Agent：错误终态没有卡归因字段时退回保守行为，发卡之后的目录错误仍清卡解锁。
-    const now = Date.now();
-    const snapshot = makeSnapshot();
-    snapshot.control = {
-      ...snapshot.control,
-      phase: "error",
-      sessionEnded: false,
-      lastError: {
-        code: "provider_not_found",
-        message: "原模型当前不可用",
-        recoverable: true,
-        at: now,
-        source: "provider",
-        traceId: "trace-legacy-no-input-id",
-      },
-    };
-    projectionState.current = {
-      status: "live",
-      snapshot,
-      subscriptionId: "sub-highspeed-legacy-error",
-      lastError: null,
-      optimisticCommands: [],
-      loadingOlder: false,
-    };
-    mocks.highspeedCardService.getSnapshot.mockResolvedValueOnce({
-      card: {
-        cardId: "hsc-legacy-compat",
-        taskId: "session-1",
-        provider: "builtin:zai-coding-plan",
-        model: "GLM-5.3",
-        issuedAt: now - 60_000,
-        expiresAt: now + 60_000,
-      },
-      nextDrawAt: now + 3_600_000,
-      drawing: false,
-    });
-
-    const root = await renderPane();
-    try {
-      await act(async () => {
-        await flushMicrotasks();
-      });
-      expect(mocks.highspeedCardService.invalidateCard).toHaveBeenCalledWith("hsc-legacy-compat");
-      expect(captured.composerProps?.highspeedCard).toBeNull();
-    } finally {
-      await act(async () => root.unmount());
-    }
-  });
-
-  it("Highspeed 旧目录错误早于发卡时间时不清新抽的卡", async () => {
-    // spec §2.2 兼容路径（无 highspeedCardId）的时间下界：错误终态在下一轮开始前一直留在投影里，
-    // 而抽卡发生在发送之前；上一轮的目录错误不得清掉刚抽到的新卡（claim key 含新 cardId，去重防不住）。
-    const now = Date.now();
-    const snapshot = makeSnapshot();
-    snapshot.control = {
-      ...snapshot.control,
-      phase: "error",
-      sessionEnded: false,
-      lastError: {
-        code: "provider_not_found",
-        message: "上一轮的原模型不可用",
-        recoverable: true,
-        at: now - 120_000,
-        source: "provider",
-        traceId: "trace-stale-catalog-error",
-      },
-    };
-    projectionState.current = {
-      status: "live",
-      snapshot,
-      subscriptionId: "sub-highspeed-stale-error",
-      lastError: null,
-      optimisticCommands: [],
-      loadingOlder: false,
-    };
-    mocks.highspeedCardService.getSnapshot.mockResolvedValueOnce({
-      card: {
-        cardId: "hsc-fresh-after-stale-error",
-        taskId: "session-1",
-        provider: "builtin:zai-coding-plan",
-        model: "GLM-5.3",
-        issuedAt: now - 1_000,
-        expiresAt: now + 60_000,
-      },
-      nextDrawAt: now + 3_600_000,
-      drawing: false,
-    });
-
-    const root = await renderPane();
-    try {
-      await act(async () => {
-        await flushMicrotasks();
-      });
-      expect(mocks.highspeedCardService.invalidateCard).not.toHaveBeenCalled();
-      expect(captured.composerProps?.highspeedCard?.cardId).toBe("hsc-fresh-after-stale-error");
-    } finally {
-      await act(async () => root.unmount());
-    }
-  });
-
-  it("Highspeed 持卡期间的非模型错误不误作废卡", async () => {
-    const snapshot = makeSnapshot();
-    snapshot.control = {
-      ...snapshot.control,
-      phase: "error",
-      sessionEnded: false,
-      lastError: {
-        code: "fault.runtime.toolFailed",
-        message: "工具执行失败",
-        recoverable: true,
-        at: Date.now(),
-        source: "tool",
-        traceId: "trace-unrelated-tool-error",
-      },
-    };
-    projectionState.current = {
-      status: "live",
-      snapshot,
-      subscriptionId: "sub-highspeed-unrelated-error",
-      lastError: null,
-      optimisticCommands: [],
-      loadingOlder: false,
-    };
-    mocks.highspeedCardService.getSnapshot.mockResolvedValueOnce({
-      card: {
-        cardId: "hsc-unrelated-error",
-        taskId: "session-1",
-        provider: "builtin:zai-coding-plan",
-        model: "GLM-5.3",
-        issuedAt: Date.now() - 60_000,
-        expiresAt: Date.now() + 60_000,
-      },
-      nextDrawAt: Date.now() + 3_600_000,
-      drawing: false,
-    });
-
-    const root = await renderPane();
-    try {
-      await act(async () => {
-        await flushMicrotasks();
-      });
-      expect(mocks.highspeedCardService.invalidateCard).not.toHaveBeenCalled();
-      expect(captured.composerProps?.highspeedCard?.cardId).toBe("hsc-unrelated-error");
-    } finally {
-      await act(async () => root.unmount());
-    }
-  });
-
-  it("Highspeed 降级行按 fallbackReason 区分 Toast 文案；旧数据无原因时按卡过期处理", async () => {
-    // docs/highspeed/highspeed-card-spec.md §2.2：卡过期与加速服务不可用分别提示，且每轮只提示一次。
-    const fallbackAt = Date.now();
-    const highspeedRow = (
-      sourceCommandId: string,
-      fallbackReason:
-        | "highspeed_card_expired"
-        | "highspeed_request_failed"
-        | "highspeed_selection_unavailable"
-        | undefined,
-    ): ConversationSnapshot["rows"]["window"][number] => ({
-      rowId: 1,
-      turnId: "turn-1",
-      createdAt: fallbackAt - 1_000,
-      createdAtSeq: 1,
-      kind: "userInput",
-      text: "accelerated prompt",
-      origin: "realUser",
-      sourceCommandId,
-      highspeed: {
-        schemaVersion: 1,
-        cardId: "hsc-1",
-        taskId: "session-1",
-        provider: "builtin:zai-coding-plan",
-        model: "GLM-5.3",
-        issuedAt: fallbackAt - 60_000,
-        expiresAt: fallbackAt + 60_000,
-        fallbackAt,
-        ...(fallbackReason ? { fallbackReason } : {}),
-      },
-    });
-    const renderWithRow = async (
-      row: ConversationSnapshot["rows"]["window"][number],
-    ): Promise<Root> => {
-      const snapshot = makeSnapshot();
-      projectionState.current = {
-        status: "live",
-        snapshot: { ...snapshot, rows: { window: [row], totalCount: 1, firstRowId: 1 } },
-        subscriptionId: "sub-1",
-        lastError: null,
-        optimisticCommands: [],
-        loadingOlder: false,
-      };
-      return renderPane();
-    };
-
-    mocks.highspeedCardService.getSnapshot.mockResolvedValueOnce({
-      card: {
-        cardId: "hsc-1",
-        taskId: "session-1",
-        provider: "builtin:zai-coding-plan",
-        model: "GLM-5.3",
-        issuedAt: fallbackAt - 60_000,
-        expiresAt: fallbackAt + 60_000,
-      },
-      nextDrawAt: fallbackAt + 3_600_000,
-      drawing: false,
-    });
-    const failedRoot = await renderWithRow(
-      highspeedRow("command-hs-request-failed", "highspeed_request_failed"),
-    );
-    try {
-      await act(async () => {
-        await flushMicrotasks();
-      });
-      expect(mocks.highspeedCardService.invalidateCard).toHaveBeenCalledWith("hsc-1");
-      expect(captured.composerProps?.highspeedCard).toBeNull();
-      expect(mocks.toast).toHaveBeenCalledTimes(1);
-      expect(mocks.toast).toHaveBeenCalledWith(
-        "加速服务暂不可用，本轮后续内容将使用原模型继续生成",
-      );
-    } finally {
-      await act(async () => {
-        failedRoot.unmount();
-      });
-    }
-
-    mocks.toast.mockClear();
-    mocks.highspeedCardService.invalidateCard.mockClear();
-    mocks.highspeedCardService.getSnapshot.mockResolvedValueOnce({
-      card: {
-        cardId: "hsc-1",
-        taskId: "session-1",
-        provider: "builtin:zai-coding-plan",
-        model: "GLM-5.3",
-        issuedAt: fallbackAt - 60_000,
-        expiresAt: fallbackAt + 60_000,
-      },
-      nextDrawAt: fallbackAt + 3_600_000,
-      drawing: false,
-    });
-    const unavailableRoot = await renderWithRow(
-      highspeedRow("command-hs-selection-unavailable", "highspeed_selection_unavailable"),
-    );
-    try {
-      await act(async () => {
-        await flushMicrotasks();
-      });
-      expect(mocks.highspeedCardService.invalidateCard).toHaveBeenCalledWith("hsc-1");
-      expect(captured.composerProps?.highspeedCard).toBeNull();
-      expect(mocks.toast).toHaveBeenCalledWith(
-        "加速服务暂不可用，本轮后续内容将使用原模型继续生成",
-      );
-    } finally {
-      await act(async () => {
-        unavailableRoot.unmount();
-      });
-    }
-
-    mocks.toast.mockClear();
-    mocks.highspeedCardService.invalidateCard.mockClear();
-    mocks.highspeedCardService.getSnapshot.mockResolvedValueOnce({
-      card: {
-        cardId: "hsc-1",
-        taskId: "session-1",
-        provider: "builtin:zai-coding-plan",
-        model: "GLM-5.3",
-        issuedAt: fallbackAt - 60_000,
-        expiresAt: fallbackAt + 60_000,
-      },
-      nextDrawAt: fallbackAt + 3_600_000,
-      drawing: false,
-    });
-    const expiredRoot = await renderWithRow(
-      highspeedRow("command-hs-card-expired", "highspeed_card_expired"),
-    );
-    try {
-      await act(async () => {
-        await flushMicrotasks();
-      });
-      expect(mocks.highspeedCardService.invalidateCard).toHaveBeenCalledWith("hsc-1");
-      expect(captured.composerProps?.highspeedCard).toBeNull();
-      expect(mocks.toast).toHaveBeenCalledWith("加速卡已到期，本轮后续内容将使用原模型继续生成");
-    } finally {
-      await act(async () => {
-        expiredRoot.unmount();
-      });
-    }
-
-    mocks.toast.mockClear();
-    const legacyRoot = await renderWithRow(highspeedRow("command-hs-legacy", undefined));
-    try {
-      expect(mocks.toast).toHaveBeenCalledWith("加速卡已到期，本轮后续内容将使用原模型继续生成");
-    } finally {
-      await act(async () => {
-        legacyRoot.unmount();
-      });
-    }
-
-    // 同一 sourceCommandId 重挂载不重复提示（模块级 claim）。
-    mocks.toast.mockClear();
-    const remountRoot = await renderWithRow(highspeedRow("command-hs-legacy", undefined));
-    try {
-      expect(mocks.toast).not.toHaveBeenCalled();
-    } finally {
-      await act(async () => {
-        remountRoot.unmount();
-      });
-    }
-  });
-
-  it.each([
-    {
-      name: "历史行属于旧卡",
-      compactForRemoteControl: false,
-      rowCardId: "hsc-history-old",
-      activeCardId: "hsc-current",
-    },
-    {
-      name: "手机端没有 Highspeed 写能力",
-      compactForRemoteControl: true,
-      rowCardId: "hsc-mobile-current",
-      activeCardId: "hsc-mobile-current",
-    },
-  ])("$name 时只显示降级 Toast，不调用作废 RPC", async (fixture) => {
-    const fallbackAt = Date.now();
-    const snapshot = makeSnapshot();
-    snapshot.rows = {
-      window: [
-        {
-          rowId: 1,
-          turnId: "turn-fallback-history",
-          createdAt: fallbackAt - 1_000,
-          createdAtSeq: 1,
-          kind: "userInput",
-          text: "fallback history",
-          origin: "realUser",
-          sourceCommandId: `command-${fixture.name}`,
-          highspeed: {
-            schemaVersion: 1,
-            cardId: fixture.rowCardId,
-            taskId: "session-1",
-            provider: "builtin:zai-coding-plan",
-            model: "GLM-5.3",
-            issuedAt: fallbackAt - 60_000,
-            expiresAt: fallbackAt + 60_000,
-            fallbackAt,
-            fallbackReason: "highspeed_selection_unavailable",
-          },
-        },
-      ],
-      totalCount: 1,
-      firstRowId: 1,
-    };
-    projectionState.current = {
-      status: "live",
-      snapshot,
-      subscriptionId: `sub-${fixture.name}`,
-      lastError: null,
-      optimisticCommands: [],
-      loadingOlder: false,
-    };
-    mocks.highspeedCardService.getSnapshot.mockResolvedValueOnce({
-      card: {
-        cardId: fixture.activeCardId,
-        taskId: "session-1",
-        provider: "builtin:zai-coding-plan",
-        model: "GLM-5.3",
-        issuedAt: fallbackAt - 30_000,
-        expiresAt: fallbackAt + 60_000,
-      },
-      nextDrawAt: fallbackAt + 3_600_000,
-      drawing: false,
-    });
-
-    const root = await renderPane({
-      compactForRemoteControl: fixture.compactForRemoteControl,
-    });
-    try {
-      await act(async () => {
-        await flushMicrotasks();
-      });
-      expect(mocks.highspeedCardService.invalidateCard).not.toHaveBeenCalled();
-      expect(mocks.toast).toHaveBeenCalledWith(
-        "加速服务暂不可用，本轮后续内容将使用原模型继续生成",
-      );
-    } finally {
-      await act(async () => root.unmount());
-    }
-  });
 
   it("does not show an automatic fallback toast for a draft prewarm session", async () => {
     seedModelProviderNames();
@@ -2497,149 +1759,7 @@ describe("SessionPane model switch recovery", () => {
     });
   });
 
-  it("加速轮 accepted 后 Recent 记录 Composer 原始选择，不记隐藏加速 Provider（spec §5.1）", async () => {
-    prewarmHookMock.binding = {
-      workspaceKey: "/workspace",
-      sessionId: "session-1",
-      promote: vi.fn(),
-      discard: vi.fn(),
-    };
-    projectionState.current = {
-      status: "live",
-      snapshot: makeSnapshot(),
-      subscriptionId: "sub-1",
-      lastError: null,
-      optimisticCommands: [],
-      loadingOlder: false,
-    };
-    mocks.sendCommand.mockImplementation(async (envelope: CommandEnvelope) =>
-      ackFor(envelope, { status: "accepted" }),
-    );
-    // 抽中卡：execution 携带隐藏加速 Provider 的执行 Selection，会覆盖 payload.modelSelection。
-    mocks.highspeedCardService.prepareTurn.mockResolvedValueOnce({
-      kind: "accelerated",
-      card: {
-        cardId: "card-1",
-        taskId: "session-1",
-        provider: "builtin:zai-coding-plan",
-        model: "GLM-5.3",
-        issuedAt: 1,
-        expiresAt: Date.now() + 60_000,
-      },
-      nextDrawAt: Date.now() + 60_000,
-      execution: {
-        modelSelection: { providerId: "account:zai-highspeed-card", modelId: "GLM-5.3" },
-        requestAuth: { apiKey: "jwt", headers: {} },
-        selectionFallback: {
-          providerId: "account:zai-highspeed-card",
-          rules: [
-            { reason: "highspeed_card_expired", providerErrorCode: "3402" },
-            { reason: "highspeed_request_failed" },
-          ],
-        },
-      },
-    });
 
-    const root = await renderPane();
-    await act(async () => {
-      captured.composerProps?.onSelectModel("alternate-provider", "deepseek-v4-pro", {
-        provider: "primary-provider",
-        model: "deepseek-v4-flash",
-      });
-      await flushMicrotasks();
-    });
-
-    await act(async () => {
-      await captured.composerProps?.onSendText("accelerated turn keeps recent on the original");
-      await flushMicrotasks();
-    });
-
-    // payload 的 Selection 确已被执行材料覆盖为隐藏加速 Provider（证明本轮真的加速）。
-    expect(mocks.sendCommand).toHaveBeenCalledTimes(1);
-    expect(mocks.sendCommand.mock.calls[0]?.[0]).toMatchObject({
-      type: "sendText",
-      payload: {
-        modelSelection: { providerId: "account:zai-highspeed-card", modelId: "GLM-5.3" },
-        mode: "build",
-      },
-    });
-    // Recent 只记发送前 Composer 冻结的原始选择；否则新任务草稿种子解析为空选择器。
-    expect(composerRecentMocks.acceptSubmission).toHaveBeenCalledWith(
-      expect.objectContaining({
-        selection: {
-          modelSelection: {
-            providerId: "alternate-provider",
-            modelId: "deepseek-v4-pro",
-            options: { reasoningLevel: "high" },
-          },
-          mode: "build",
-          planEnabled: false,
-        },
-      }),
-    );
-
-    await act(async () => {
-      root.unmount();
-    });
-  });
-
-  it("Highspeed 退回目标在 ACK 前不可用时作废卡并保留 Composer 提交", async () => {
-    projectionState.current = {
-      status: "live",
-      snapshot: makeSnapshot(),
-      subscriptionId: "sub-highspeed-admission-rejected",
-      lastError: null,
-      optimisticCommands: [],
-      loadingOlder: false,
-    };
-    mocks.highspeedCardService.prepareTurn.mockResolvedValueOnce({
-      kind: "accelerated",
-      card: {
-        cardId: "hsc-admission-rejected",
-        taskId: "session-1",
-        provider: "builtin:zai-coding-plan",
-        model: "GLM-5.3",
-        issuedAt: Date.now(),
-        expiresAt: Date.now() + 60_000,
-      },
-      nextDrawAt: Date.now() + 60_000,
-      execution: {
-        modelSelection: { providerId: "account:zai-highspeed-card", modelId: "GLM-5.3" },
-        requestAuth: { apiKey: "jwt", headers: {} },
-        selectionFallback: {
-          providerId: "account:zai-highspeed-card",
-          rules: [
-            { reason: "highspeed_card_expired", providerErrorCode: "3402" },
-            { reason: "highspeed_request_failed" },
-          ],
-          target: { providerId: "primary-provider", modelId: "deepseek-v4-flash" },
-        },
-      },
-    });
-    mocks.sendCommand.mockImplementation(async (envelope: CommandEnvelope) =>
-      ackFor(envelope, { status: "failed", reasonCode: "modelUnavailable" }),
-    );
-
-    const root = await renderPane();
-    try {
-      let result: Awaited<ReturnType<ComposerProps["onSendText"]>>;
-      await act(async () => {
-        result = await captured.composerProps!.onSendText("双模型都不可用时保留这段输入");
-        await flushMicrotasks();
-      });
-
-      // blocked 由 Composer 的既有提交事务恢复正文和附件；不得抛错触发通用发送错误横幅。
-      expect(result!).toBe("blocked");
-      expect(mocks.highspeedCardService.invalidateCard).toHaveBeenCalledWith(
-        "hsc-admission-rejected",
-      );
-      expect(captured.composerProps?.highspeedCard).toBeNull();
-      expect(captured.composerProps?.error).toBeNull();
-      expect(composerRecentMocks.acceptSubmission).not.toHaveBeenCalled();
-    } finally {
-      await act(async () => root.unmount());
-    }
-  });
 
   it.each(["accepted", "rejected", "failed", "duplicate"] as const)(
     "运行中提交的 %s ACK 只在已接纳时记住提交瞬间的权限",
@@ -2716,13 +1836,6 @@ describe("SessionPane model switch recovery", () => {
         ],
       },
     },
-    {
-      text: "shared first input",
-      type: "sendText",
-      options: {
-        sharedContextRefs: [{ kind: "shared_context_import", context_id: "shared-1" }],
-      },
-    },
   ])("waits for the same pending prewarm: $text", async ({ text, type, options, mobile }) => {
     const initialConfig: Partial<SessionConfigState> = {
       modelSelection: {
@@ -2762,7 +1875,7 @@ describe("SessionPane model switch recovery", () => {
     const root = await renderPane({
       sessionId: null,
       workspaceIdentity,
-      compactForRemoteControl: mobile,
+      compactForOverlay: mobile,
       remoteSessionId: mobile ? "remote-session-mobile" : undefined,
     });
     expect(mocks.sendCommand).toHaveBeenCalledTimes(1);
@@ -2798,7 +1911,6 @@ describe("SessionPane model switch recovery", () => {
       payload: {
         ...(type === "sendText" ? { text } : {}),
         ...(options?.attachments ? { attachments: options.attachments } : {}),
-        ...(options?.sharedContextRefs ? { context_refs: options.sharedContextRefs } : {}),
         modelSelection: {
           providerId: "e2e-deepseek",
           modelId: "deepseek-v4-flash",
@@ -3290,7 +2402,7 @@ describe("SessionPane Plan picker action", () => {
     { sessionId: null },
     {
       sessionId: "session-1",
-      compactForRemoteControl: true,
+      compactForOverlay: true,
       workspaceIdentity: "remote:ssh:example:/repo",
       remoteSessionId: "remote-1",
     },
@@ -3474,152 +2586,6 @@ describe("SessionPane Plan mode goal guard", () => {
       root.unmount();
     });
   });
-});
-
-describe("Start 提交推荐只修改本次 Submission", () => {
-  it.each([false, true])("桌面/手机(%s)确认切换保留思考强度且只发送一次", async (mobile) => {
-    projectionState.current = {
-      status: "live",
-      snapshot: makeSnapshot(),
-      subscriptionId: "start154",
-      lastError: null,
-      optimisticCommands: [],
-      loadingOlder: false,
-    };
-    recommendation.mockImplementation(async (selection) => ({
-      ...selection,
-      providerId: "account:bigmodel-start-plan",
-    }));
-    mocks.sendCommand.mockImplementation(async (envelope: CommandEnvelope) =>
-      ackFor(envelope, { status: "accepted" }),
-    );
-    const root = await renderPane({ compactForRemoteControl: mobile });
-    try {
-      await act(async () => {
-        await captured.composerProps?.onSendText("start154-submit");
-      });
-      expect(recommendation).toHaveBeenCalledOnce();
-      const original = recommendation.mock.calls[0]![0];
-      const commands = mocks.sendCommand.mock.calls
-        .map(([envelope]) => envelope)
-        .filter((envelope) => envelope.type === "sendText");
-      expect(commands).toHaveLength(1);
-      expect(commands[0]).toMatchObject({
-        payload: { modelSelection: { ...original, providerId: "account:bigmodel-start-plan" } },
-      });
-    } finally {
-      await act(async () => root.unmount());
-    }
-  });
-  it("关闭推荐框不提交新消息，沿用原预热规则", async () => {
-    projectionState.current = {
-      status: "live",
-      snapshot: makeSnapshot(),
-      subscriptionId: "start154",
-      lastError: null,
-      optimisticCommands: [],
-      loadingOlder: false,
-    };
-    recommendation.mockResolvedValue(null);
-    const root = await renderPane({ sessionId: null });
-    try {
-      let result: unknown;
-      await act(async () => {
-        result = await captured.composerProps?.onSendText("keep-draft");
-      });
-      expect(result).toBe("blocked");
-      expect(
-        mocks.sendCommand.mock.calls
-          .map(([envelope]) => envelope)
-          .filter((envelope) => envelope.type !== "createSession"),
-      ).toEqual([]);
-    } finally {
-      await act(async () => root.unmount());
-    }
-  });
-});
-
-describe("副屏首条推荐的桌面与手机提交边界", () => {
-  for (const mobile of [false, true]) {
-    it.each(["confirm", "decline", "close"] as const)(
-      `mobile=${mobile}：%s 只决定 child 首条，不改父草稿`,
-      async (choice) => {
-        projectionState.current = {
-          status: "live",
-          snapshot: makeSnapshot(),
-          subscriptionId: "start156-side",
-          lastError: null,
-          optimisticCommands: [],
-          loadingOlder: false,
-        };
-        draftConfigMock.draftConfigRef.current = {
-          modelSelection: {
-            providerId: "alternate-provider",
-            modelId: "deepseek-v4-pro",
-            options: { reasoningLevel: "low" },
-          },
-        };
-        recommendation.mockImplementation(async (selection) =>
-          choice === "close"
-            ? null
-            : choice === "confirm"
-              ? { ...selection, providerId: "account:bigmodel-start-plan" }
-              : selection,
-        );
-        mocks.sendCommand.mockImplementation(async (envelope: CommandEnvelope) =>
-          ackFor(envelope, {
-            result: { type: "createSelectionSideSession", childSessionId: "start156-child" },
-          }),
-        );
-        const onOpenSelectionSideChat = vi.fn();
-        const root = await renderPane({ compactForRemoteControl: mobile, onOpenSelectionSideChat });
-        try {
-          const before = structuredClone(draftConfigMock.draftConfigRef.current);
-          let result: unknown;
-          await act(async () => {
-            result = await captured.composerProps?.onSendText("/side explain this");
-          });
-          expect(recommendation).toHaveBeenCalledExactlyOnceWith({
-            providerId: "primary-provider",
-            modelId: "deepseek-v4-flash",
-            options: { reasoningLevel: "high" },
-          });
-          expect(draftConfigMock.draftConfigRef.current).toEqual(before);
-          expect(result).toBe(choice === "close" ? "blocked" : "sent");
-          if (choice === "close") {
-            expect(mocks.sendCommand).not.toHaveBeenCalled();
-            expect(onOpenSelectionSideChat).not.toHaveBeenCalled();
-          } else {
-            expect(mocks.sendCommand).toHaveBeenCalledOnce();
-            expect(mocks.sendCommand.mock.calls[0]![0]).toMatchObject({
-              type: "createSelectionSideSession",
-              payload: {
-                firstInput: {
-                  text: "explain this",
-                  ...(choice === "confirm"
-                    ? {
-                        modelSelection: {
-                          providerId: "account:bigmodel-start-plan",
-                          modelId: "deepseek-v4-flash",
-                          options: { reasoningLevel: "high" },
-                        },
-                      }
-                    : {}),
-                },
-              },
-            });
-            if (choice === "decline")
-              expect(mocks.sendCommand.mock.calls[0]![0].payload).toEqual({
-                firstInput: { text: "explain this" },
-              });
-            expect(onOpenSelectionSideChat).toHaveBeenCalledOnce();
-          }
-        } finally {
-          await act(async () => root.unmount());
-        }
-      },
-    );
-  }
 });
 
 describe("SessionPane lease ownership", () => {

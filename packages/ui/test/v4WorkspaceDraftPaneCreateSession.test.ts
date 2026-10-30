@@ -379,7 +379,7 @@ describe("V4WorkspaceChatArea split draft session creation", () => {
         sessionId: "main-session",
       },
     );
-    renderWorkspace("main-session", vi.fn(), { compactForRemoteControl: true });
+    renderWorkspace("main-session", vi.fn(), { compactForOverlay: true });
 
     const primary = sessionPaneProps(V4_PRIMARY_PANE_ID);
     expect(primary.sessionId).toBe("main-session");

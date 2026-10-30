@@ -64,13 +64,13 @@ export function getNextChatEmptyGreetingDelayMs(date: Date = new Date()) {
 export function resolveGreetingFontSizePx({
   availableWidthPx,
   naturalTextWidthPx,
-  compactForRemoteControl = false,
+  compactForOverlay = false,
 }: {
   availableWidthPx: number;
   naturalTextWidthPx: number;
-  compactForRemoteControl?: boolean;
+  compactForOverlay?: boolean;
 }) {
-  if (compactForRemoteControl) {
+  if (compactForOverlay) {
     return GREETING_MIN_FONT_SIZE_PX;
   }
   if (
@@ -96,10 +96,10 @@ export function resolveGreetingFontSizePx({
 
 export function ConversationDraftEmptyState({
   className,
-  compactForRemoteControl = false,
+  compactForOverlay = false,
 }: {
   className?: string;
-  compactForRemoteControl?: boolean;
+  compactForOverlay?: boolean;
 }) {
   const { intl } = useZCodeIntl();
   const isOfficeMode = useIsOfficeMode();
@@ -126,7 +126,7 @@ export function ConversationDraftEmptyState({
   }, [greetingDate]);
 
   useLayoutEffect(() => {
-    if (compactForRemoteControl) {
+    if (compactForOverlay) {
       setGreetingFontSizePx(GREETING_MIN_FONT_SIZE_PX);
       return;
     }
@@ -196,7 +196,7 @@ export function ConversationDraftEmptyState({
       }
       observer.disconnect();
     };
-  }, [compactForRemoteControl, greeting]);
+  }, [compactForOverlay, greeting]);
 
   return (
     <div
@@ -224,7 +224,7 @@ export function ConversationDraftEmptyState({
         }
         className={cn(
           "relative z-10 w-full px-4 text-center font-medium text-foreground",
-          compactForRemoteControl
+          compactForOverlay
             ? "text-xl/[1.2]"
             : "text-[length:var(--v4-draft-greeting-font-size)]/[1.2]",
         )}

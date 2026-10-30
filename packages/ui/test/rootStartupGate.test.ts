@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   isProviderStartupSyncPending,
-  shouldEnableProviderAvailabilityLoginEntryGuard,
   shouldResolveProviderStartupState,
   shouldBlockRootRender,
   shouldShowRootStartupLoading,
@@ -80,41 +79,43 @@ describe("Root startup gate", () => {
     ).toBe(true);
   });
 
-  it("Web 远控 Root 不运行 provider 登录入口守卫", () => {
-    expect(
-      shouldEnableProviderAvailabilityLoginEntryGuard({
-        isWebRemoteControlRoot: true,
-      }),
-    ).toBe(false);
-  });
-
-  it("Web 远控 Root 不把 provider 启动态作为 workspace 注入门禁", () => {
+  it("桌面 Root 在 provider 启动同步未完成时继续等待", () => {
     expect(
       shouldResolveProviderStartupState({
-        isWebRemoteControlRoot: true,
+        isMobileOverlayRoot: false,
         providerStartupSyncPending: true,
-        providerAvailabilityStartupCheckCompleted: false,
-      }),
-    ).toBe(false);
-  });
-
-  it("桌面 Root 继续等待 provider 启动检查落定", () => {
-    expect(
-      shouldResolveProviderStartupState({
-        isWebRemoteControlRoot: false,
-        providerStartupSyncPending: false,
-        providerAvailabilityStartupCheckCompleted: false,
       }),
     ).toBe(true);
   });
 
-  it("登录入口已经打开时不应继续显示启动 loading", () => {
+  it("桌面 Root 在 provider 启动同步完成后放行（无登录判定）", () => {
+    // 登录入口守卫已移除（specs/no-login-startup.md）：不再有账号/Provider 可用性登录门禁。
+    expect(
+      shouldResolveProviderStartupState({
+        isMobileOverlayRoot: false,
+        providerStartupSyncPending: false,
+      }),
+    ).toBe(false);
+  });
+
+  it("启动门禁未清时显示启动 loading", () => {
     expect(
       shouldShowRootStartupLoading({
         isDesktop: true,
-        welcomeScreenOpen: true,
         isResolvingStartupAuthState: false,
         isResolvingProviderStartupState: true,
+        isRestoring: false,
+        isBootstrappingInitialWorkspace: false,
+      }),
+    ).toBe(true);
+  });
+
+  it("启动门禁清除后不再显示启动 loading", () => {
+    expect(
+      shouldShowRootStartupLoading({
+        isDesktop: true,
+        isResolvingStartupAuthState: false,
+        isResolvingProviderStartupState: false,
         isRestoring: false,
         isBootstrappingInitialWorkspace: false,
       }),

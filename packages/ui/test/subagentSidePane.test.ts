@@ -64,7 +64,7 @@ describe("subagent side pane tabs", () => {
     ]);
 
     for (const allowedContext of [
-      { ...context, compactForRemoteControl: true },
+      { ...context, compactForOverlay: true },
       { ...context, inSubagentDrilldown: true, sessionId: "nested-parent" },
     ]) {
       expect(
@@ -250,7 +250,7 @@ describe("subagent side pane tabs", () => {
 
     expect(paneState.props).toMatchObject({
       allowWorkspaceFileRewind: true,
-      compactForRemoteControl: false,
+      compactForOverlay: false,
       readOnly: true,
       sessionId: "child-session",
     });
@@ -259,13 +259,13 @@ describe("subagent side pane tabs", () => {
       createElement(SubagentSessionSidePane, {
         tab: tab!,
         focused: true,
-        compactForRemoteControl: true,
+        compactForOverlay: true,
         onOpenSubagentSession: vi.fn(),
       }),
     );
 
     expect(paneState.props).toMatchObject({
-      compactForRemoteControl: true,
+      compactForOverlay: true,
       readOnly: true,
       sessionId: "child-session",
     });

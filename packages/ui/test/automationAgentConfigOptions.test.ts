@@ -64,11 +64,12 @@ describe("automation model/thought linkage", () => {
         revision: 1,
         providers: [
           {
-            providerId: BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-            providerName: "BigModel Coding",
+            providerId: "demo-coding",
+            providerName: "Demo Coding",
             config: {
               access: {
-                type: "zhipu-account",
+                type: "api-key",
+                apiKey: "test-key",
               },
               api: {
                 type: "anthropic-messages",

@@ -4,12 +4,6 @@ import { RemoteConnectionNavigationDot } from "@/remote-connection/RemoteConnect
 import { resolveRemoteConnectionNavigationPresentation } from "@/lib/remoteConnectionPresentation.js";
 /* oxlint-disable eslint(max-lines) */
 import { ArrowLeft, Rocket, type LucideIcon } from "lucide-react";
-import { useStore } from "zustand";
-import {
-  marketingNavigation,
-  finishMarketingNavigation,
-  marketingSettingsSections,
-} from "@/lib/marketingNavigation.js";
 import {
   useCallback,
   useEffect,
@@ -44,7 +38,6 @@ import { usePlatform } from "@/hooks/usePlatform.js";
 import { logger } from "@/logger.js";
 import { getPathLeaf } from "@/lib/path.js";
 import { useProviderSettingsView } from "@/hooks/useProviderSettingsView.js";
-import { useUsageEntitlement } from "@/hooks/useUsageEntitlement.js";
 import {
   addPendingSettingsSectionListener,
   clearPendingSettingsPluginOrigin,
@@ -63,7 +56,6 @@ import {
   writeLastSettingsSectionPreference,
   type SettingsModelProviderTarget,
 } from "@/lib/settingsNavigation.js";
-import { readSidebarUsageCodingPlanSourcePreference } from "@/lib/sidebarUsageCodingPlanProviderPreference.js";
 import {
   resolveEntitledAccountProviderAccess,
   resolveEntitledAccountProviderAccessFingerprint,
@@ -72,14 +64,7 @@ import { buildUsageEntitlementCacheKey } from "@/lib/usageEntitlementCache.js";
 import { ArchiveManagement, useOptionalProjectDirectory } from "@/project-sidebar/index.js";
 import { resolveRecentRemoteProjectPreference } from "@/project-sidebar/remote-project-connection.js";
 import { ModelProviderSection } from "@/settings/ModelProviderSection.js";
-import { useCodingPlanUpgradeDialog } from "@/settings/CodingPlanUpgradeDialogProvider.js";
-import { useEnterpriseCodingPlanProducts } from "@/settings/model-provider-section/useEnterpriseCodingPlanProducts.js";
 import { UsageStatsSection, type UsageStatsSectionTab } from "@/settings/UsageStatsSection.js";
-import {
-  buildCodingPlanUsageSources,
-  type CodingPlanUsageSource,
-} from "@/settings/usage-stats/CodingPlanUsagePanel.js";
-import { buildPersonalCodingPlanUsageSource } from "@/lib/codingPlanUsageSources.js";
 import { SubagentsSection } from "@/settings/SubagentsSection.js";
 import { AutomationsSection } from "@/settings/AutomationsSection.js";
 import { SegmentPill } from "@/settings/PluginStoreListView.js";
@@ -158,95 +143,23 @@ function runSettingsActionAsync<T>(options: {
 }
 
 function SettingsUsageProviderTabs({
-  activeTab,
-  codingPlanSources,
   onTabChange,
 }: {
   activeTab: UsageStatsSectionTab;
-  codingPlanSources: CodingPlanUsageSource[];
+  codingPlanSources: never[];
   onTabChange: (tab: UsageStatsSectionTab) => void;
 }) {
   const { intl } = useZCodeIntl();
-  const tabItems = [
-    {
-      id: "app" as const,
-      label: intl.formatMessage({ id: "settings.usage.tab.appUsage" }),
-    },
-    ...codingPlanSources.map((source, index) => ({
-      id: createSettingsUsageCodingPlanTabId(source.id),
-      label: resolveSettingsUsageCodingPlanTabLabel({
-        defaultLabel: intl.formatMessage({
-          id: "settings.usage.tab.codingPlan",
-        }),
-        hasMultiplePersonalSources:
-          codingPlanSources.filter((item) => !isTeamCodingPlanUsageSource(item)).length > 1,
-        index,
-        source,
-      }),
-    })),
-  ];
-  const visibleActiveTab =
-    activeTab === "codingPlan" && codingPlanSources[0]
-      ? createSettingsUsageCodingPlanTabId(codingPlanSources[0].id)
-      : activeTab;
-
+  // Coding Plan 用量页签已随订阅体系移除，用量统计只保留 App 用量。
   return (
     <div className="flex items-center gap-1.5">
-      {tabItems.map((item) => (
-        <SegmentPill
-          key={item.id}
-          active={visibleActiveTab === item.id}
-          label={item.label}
-          testId={testId(TID_SETTINGS_USAGE_TAB, item.id)}
-          onClick={() => onTabChange(item.id)}
-        />
-      ))}
+      <SegmentPill
+        active
+        label={intl.formatMessage({ id: "settings.usage.tab.appUsage" })}
+        testId={testId(TID_SETTINGS_USAGE_TAB, "app")}
+        onClick={() => onTabChange("app")}
+      />
     </div>
-  );
-}
-
-function isTeamCodingPlanUsageSource(source: CodingPlanUsageSource): boolean {
-  return "planKind" in source.accountAccess && source.accountAccess.planKind === "team-coding-plan";
-}
-
-function createSettingsUsageCodingPlanTabId(sourceId: string): UsageStatsSectionTab {
-  return `codingPlan:${sourceId}`;
-}
-
-function resolveSettingsUsageCodingPlanSourceId(tab: UsageStatsSectionTab): string | null {
-  return tab.startsWith("codingPlan:") ? tab.slice("codingPlan:".length) : null;
-}
-
-function resolveSettingsUsageCodingPlanTabLabel({
-  defaultLabel,
-  hasMultiplePersonalSources,
-  source,
-}: {
-  defaultLabel: string;
-  hasMultiplePersonalSources: boolean;
-  index: number;
-  source: CodingPlanUsageSource;
-}): string {
-  if (isTeamCodingPlanUsageSource(source)) {
-    return source.label.replace(/^BigModel\s*-\s*/i, "").trim() || source.label;
-  }
-  if (hasMultiplePersonalSources) {
-    return source.label.replace(/\s*-\s*Coding Plan$/i, "").trim() || source.label;
-  }
-  return defaultLabel;
-}
-
-function hasActiveCodingPlanSnapshot(
-  snapshot: UsageEntitlementSnapshot | null,
-  providerId: string,
-): boolean {
-  return (
-    snapshot?.provider?.id === providerId &&
-    snapshot.unavailableReason !== "no_plan" &&
-    (Boolean(snapshot.subscription?.details.length) ||
-      // quota 暂时失败时服务仍能确认当前 provider，但旧过滤条件会把
-      // Coding Plan tab 当成未开通套餐删除。只有明确 no_plan 才应隐藏入口。
-      snapshot.unavailableReason === "unavailable")
   );
 }
 
@@ -294,7 +207,7 @@ export function SettingsPage({
   isDesktop,
   isWindowsDesktop,
   isMacDesktop,
-  isWebRemoteControl = false,
+  isMobileOverlay = false,
   windowsWindowControlsRightPaddingPx: _windowsWindowControlsRightPaddingPx,
   captionWorkspacePath,
   onBack,
@@ -302,14 +215,13 @@ export function SettingsPage({
   onOpenWorkspace,
   onOpenRemoteWorkspace,
   allowOpenWorkspace = true,
-  onLogin,
   onLogout,
   user,
 }: {
   isDesktop?: boolean;
   isWindowsDesktop?: boolean;
   isMacDesktop?: boolean;
-  isWebRemoteControl?: boolean;
+  isMobileOverlay?: boolean;
   windowsWindowControlsRightPaddingPx?: number;
   captionWorkspacePath?: string | null;
   onBack?: () => void;
@@ -318,7 +230,6 @@ export function SettingsPage({
   onOpenRemoteWorkspace?: (preference?: RemoteConnectionOpenPreference) => void;
   /** 远程设备卡「新任务」：激活该设备已打开的 tab 并开新草稿（Root 注入）。 */
   allowOpenWorkspace?: boolean;
-  onLogin?: () => void;
   onLogout?: () => void;
   user?: UserInfo | null;
 }) {
@@ -386,17 +297,6 @@ export function SettingsPage({
           linuxCloseToTrayCapability.gnomeLikeWithoutTray,
       }
     : undefined;
-  const marketingRequest = useStore(marketingNavigation, (state) => state.request);
-  useEffect(() => {
-    if (marketingRequest?.target.page !== "settings") return;
-    const target = marketingRequest.target;
-    const section = target.section ? marketingSettingsSections[target.section] : activeSection;
-    if (!settingsSections.some((item) => item.id === section)) {
-      finishMarketingNavigation(marketingRequest.id, new Error("marketing_navigation_unavailable"));
-    } else if (activeSection === section && !target.provider_id) {
-      finishMarketingNavigation(marketingRequest.id);
-    }
-  }, [activeSection, marketingRequest, settingsSections]);
   const [pluginNavigationOrigin, setPluginNavigationOrigin] = useState(() =>
     consumePendingSettingsPluginOrigin(),
   );
@@ -461,212 +361,20 @@ export function SettingsPage({
     usageProviderSettingsView,
     BUILTIN_MODEL_PROVIDER_IDS.bigmodelTeamCodingPlan,
   );
-  const usageZaiEntitlement = useUsageEntitlement({
-    enabled:
-      activeSection === "usage" &&
-      !usageProviderSettingsLoading &&
-      Boolean(usageZaiProviderFingerprint),
-    includeSubscription: true,
-    preferredProviderId: BUILTIN_MODEL_PROVIDER_IDS.zaiIndividualCodingPlan,
-    accountAccess: usageZaiProviderAccess?.access,
-    allowDisabledPreferredProvider: true,
-    requirePreferredProvider: true,
-    allowEnvApiKey: false,
-    cacheKey: buildUsageEntitlementCacheKey({
-      providerId: BUILTIN_MODEL_PROVIDER_IDS.zaiIndividualCodingPlan,
-      providerFingerprint: usageZaiProviderFingerprint,
-    }),
-    // 个人 Usage source 依赖 entitlement snapshot；冷启动无缓存时若不先探测，
-    // source 不会渲染，子面板也无法触发 access 刷新。共享 freshness window 继续负责限频。
-    refreshOnMount: true,
-  });
-  const usageBigmodelEntitlement = useUsageEntitlement({
-    enabled:
-      activeSection === "usage" &&
-      !usageProviderSettingsLoading &&
-      Boolean(usageBigmodelProviderFingerprint),
-    includeSubscription: true,
-    preferredProviderId: BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-    accountAccess: usageBigmodelProviderAccess?.access,
-    allowDisabledPreferredProvider: true,
-    requirePreferredProvider: true,
-    allowEnvApiKey: false,
-    cacheKey: buildUsageEntitlementCacheKey({
-      providerId: BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-      providerFingerprint: usageBigmodelProviderFingerprint,
-    }),
-    refreshOnMount: true,
-  });
-  // 原只拉 bigmodel family 的企业 pricing，zai team plan 在使用统计页
-  // 永远拿不到 team project 上下文；后续又误用 Individual Provider 的权益作为 Team
-  // 商品门禁，导致仅有 Team Plan 的账号仍然没有 Usage 来源。企业商品只依赖对应的
-  // Team Account Provider，个人额度继续依赖 Individual Provider，避免两个产品身份串线。
-  const usageBigmodelEnterpriseProducts = useEnterpriseCodingPlanProducts({
-    enabled: !usageProviderSettingsLoading && Boolean(usageBigmodelTeamProviderFingerprint),
-    authenticated: true,
-    family: "bigmodel",
-  });
-  const usageZaiEnterpriseProducts = useEnterpriseCodingPlanProducts({
-    enabled: !usageProviderSettingsLoading && Boolean(usageZaiTeamProviderFingerprint),
-    authenticated: true,
-    family: "zai",
-  });
-  const usageSubscribedTeamProducts = useMemo(
-    () => [
-      ...(usageBigmodelEnterpriseProducts.snapshot?.productList.filter(
-        (product) => product.subscribed === true,
-      ) ?? []),
-      ...(usageZaiEnterpriseProducts.snapshot?.productList.filter(
-        (product) => product.subscribed === true,
-      ) ?? []),
-    ],
-    [
-      usageBigmodelEnterpriseProducts.snapshot?.productList,
-      usageZaiEnterpriseProducts.snapshot?.productList,
-    ],
-  );
-  const [usageActiveTab, setUsageActiveTab] = useState<UsageStatsSectionTab>(() => {
-    const pendingTab = consumePendingSettingsUsageTab();
-    return pendingTab === "codingPlan" ? "codingPlan" : (pendingTab ?? "app");
-  });
-  const usagePersonalCodingPlanSources = useMemo(() => {
-    const sources: CodingPlanUsageSource[] = [];
-    if (
-      usageZaiProviderAccess &&
-      hasActiveCodingPlanSnapshot(
-        usageZaiEntitlement.snapshot,
-        BUILTIN_MODEL_PROVIDER_IDS.zaiIndividualCodingPlan,
-      )
-    ) {
-      sources.push(
-        buildPersonalCodingPlanUsageSource({
-          providerId: BUILTIN_MODEL_PROVIDER_IDS.zaiIndividualCodingPlan,
-          accountAccess: usageZaiProviderAccess.access,
-          label: usageZaiProvider?.providerName,
-        }),
-      );
-    }
-    if (
-      usageBigmodelProviderAccess &&
-      hasActiveCodingPlanSnapshot(
-        usageBigmodelEntitlement.snapshot,
-        BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-      )
-    ) {
-      sources.push(
-        buildPersonalCodingPlanUsageSource({
-          providerId: BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-          accountAccess: usageBigmodelProviderAccess.access,
-          label: usageBigmodelProvider?.providerName,
-        }),
-      );
-    }
-    return sources;
-  }, [
-    usageBigmodelEntitlement.snapshot,
-    usageBigmodelProvider,
-    usageBigmodelProviderAccess,
-    usageZaiEntitlement.snapshot,
-    usageZaiProvider,
-    usageZaiProviderAccess,
-  ]);
-  const usageTeamCodingPlanSources = useMemo(
-    () =>
-      buildCodingPlanUsageSources({
-        accountAccesses: {
-          ...(resolveEntitledAccountProviderAccess(
-            usageProviderSettingsView,
-            BUILTIN_MODEL_PROVIDER_IDS.zaiTeamCodingPlan,
-          )?.access
-            ? {
-                zai: resolveEntitledAccountProviderAccess(
-                  usageProviderSettingsView,
-                  BUILTIN_MODEL_PROVIDER_IDS.zaiTeamCodingPlan,
-                )!.access,
-              }
-            : {}),
-          ...(resolveEntitledAccountProviderAccess(
-            usageProviderSettingsView,
-            BUILTIN_MODEL_PROVIDER_IDS.bigmodelTeamCodingPlan,
-          )?.access
-            ? {
-                bigmodel: resolveEntitledAccountProviderAccess(
-                  usageProviderSettingsView,
-                  BUILTIN_MODEL_PROVIDER_IDS.bigmodelTeamCodingPlan,
-                )!.access,
-              }
-            : {}),
-        },
-        subscribedTeamProducts: usageSubscribedTeamProducts,
-      }),
-    [usageProviderSettingsView, usageSubscribedTeamProducts],
-  );
-  const usageCodingPlanSources = useMemo(
-    () => [...usagePersonalCodingPlanSources, ...usageTeamCodingPlanSources],
-    [usagePersonalCodingPlanSources, usageTeamCodingPlanSources],
-  );
-  const selectedUsageCodingPlanSourceId =
-    usageActiveTab === "codingPlan"
-      ? (usageCodingPlanSources[0]?.id ?? null)
-      : resolveSettingsUsageCodingPlanSourceId(usageActiveTab);
-  const selectedUsageCodingPlanSource =
-    usageCodingPlanSources.find((source) => source.id === selectedUsageCodingPlanSourceId) ?? null;
-  const showUsageCodingPlanTab = usageCodingPlanSources.length > 0;
-  const checkingUsageZaiCodingPlanTab = Boolean(
-    usageZaiProviderFingerprint &&
-    (usageZaiEntitlement.loading || (!usageZaiEntitlement.snapshot && !usageZaiEntitlement.error)),
-  );
-  const checkingUsageBigmodelCodingPlanTab = Boolean(
-    usageBigmodelProviderFingerprint &&
-    (usageBigmodelEntitlement.loading ||
-      (!usageBigmodelEntitlement.snapshot && !usageBigmodelEntitlement.error)),
-  );
-  const checkingUsageCodingPlanTab =
-    usageProviderSettingsLoading ||
-    checkingUsageZaiCodingPlanTab ||
-    checkingUsageBigmodelCodingPlanTab ||
-    usageBigmodelEnterpriseProducts.loading ||
-    usageZaiEnterpriseProducts.loading;
+  // Coding Plan 用量来源已随订阅体系移除（specs/no-login-startup.md 后续裁剪）：
+  // 使用统计只保留 App 用量，不再探测套餐权益/企业商品目录。
+  const usageCodingPlanSources: never[] = [];
+  const selectedUsageCodingPlanSource = null;
+  const showUsageCodingPlanTab = false;
+  const checkingUsageCodingPlanTab = usageProviderSettingsLoading;
   const [initialModelProviderTarget] = useState(() => consumePendingSettingsModelProviderTarget());
-  const { openCodingPlanUpgrade } = useCodingPlanUpgradeDialog();
   const [pendingModelProviderTarget, setPendingModelProviderTarget] = useState<
     SettingsModelProviderTarget | undefined
   >(() => initialModelProviderTarget);
+  const [usageActiveTab, setUsageActiveTab] = useState<UsageStatsSectionTab>("app");
   const handleUsageTabSelect = useCallback((tab: UsageStatsSectionTab) => {
     setUsageActiveTab(tab);
   }, []);
-  /*
-   * 使用统计是账号级 sources，不再绑定当前 workspace 连接方式。
-   * 旧入口只会写入 "codingPlan" 意图；等 sources 加载后需要落到真实来源。
-   * 剩余额度「更多」等入口会先写入来源偏好（当前 coding plan 类型/团队项目），
-   * 解析时优先选中该来源，缺失或已不可用时回退第一份真实来源。
-   */
-  useEffect(() => {
-    if (usageActiveTab !== "codingPlan" || !usageCodingPlanSources[0]) {
-      return;
-    }
-    const preferredSourceId = readSidebarUsageCodingPlanSourcePreference();
-    const preferredSource = preferredSourceId
-      ? usageCodingPlanSources.find((source) => source.id === preferredSourceId)
-      : undefined;
-    setUsageActiveTab(
-      createSettingsUsageCodingPlanTabId((preferredSource ?? usageCodingPlanSources[0]).id),
-    );
-  }, [usageActiveTab, usageCodingPlanSources]);
-  useEffect(() => {
-    if (
-      usageActiveTab === "app" ||
-      usageActiveTab === "codingPlan" ||
-      selectedUsageCodingPlanSource
-    ) {
-      return;
-    }
-    setUsageActiveTab(
-      usageCodingPlanSources[0]
-        ? createSettingsUsageCodingPlanTabId(usageCodingPlanSources[0].id)
-        : "app",
-    );
-  }, [selectedUsageCodingPlanSource, usageActiveTab, usageCodingPlanSources]);
   const setNewUserOnboardingOpen = useZCodeStore((state) => state.setNewUserOnboardingOpen);
   const requestOnboardingDialog = () => setNewUserOnboardingOpen(true);
   const setActiveSettingsSection = useCallback(
@@ -682,18 +390,6 @@ export function SettingsPage({
       setActiveSettingsSection("general");
     }
   }, [activeSection, isDesktop, setActiveSettingsSection]);
-  const handleOpenCodingPlanUpgradeSettings = useCallback(
-    (
-      providerId: string,
-      funnelContext?: import("@/lib/codingPlanFunnelTelemetry.js").CodingPlanFunnelContext,
-    ) => {
-      openCodingPlanUpgrade({
-        providerId,
-        funnelContext,
-      });
-    },
-    [openCodingPlanUpgrade],
-  );
   const handleOpenModelProviderSettings = useCallback(() => {
     setActiveSettingsSection("modelProvider");
   }, [setActiveSettingsSection]);
@@ -808,8 +504,6 @@ export function SettingsPage({
     desktopChromiumHardwareAccelerationEnabled,
     setDesktopChromiumHardwareAccelerationEnabled,
   ] = useState(true);
-  const [receivePreviewUpdates, setReceivePreviewUpdates] = useState(false);
-  const [autoDownloadAndInstallUpdates, setAutoDownloadAndInstallUpdates] = useState(false);
   const [messageStreamShowReasoning, setMessageStreamShowReasoning] = useState(true);
   const [messageStreamShowTodos, setMessageStreamShowTodos] = useState(false);
   const [toolGroupingExploreEnabled, setToolGroupingExploreEnabled] = useState(true);
@@ -819,30 +513,6 @@ export function SettingsPage({
     useState<ZCodeInteractionBehavior>("queue");
   const [defaultHomeDir, setDefaultHomeDir] = useState("");
   const [hostPlatform, setHostPlatform] = useState("");
-
-  useEffect(() => {
-    if (
-      !shouldFallbackSettingsUsageTabToApp({
-        activeTab: usageActiveTab === "app" ? "app" : "codingPlan",
-        checkingCodingPlanTab: checkingUsageCodingPlanTab,
-        loadingModelProviders: usageProviderSettingsLoading,
-        showCodingPlanTab: showUsageCodingPlanTab,
-      })
-    ) {
-      return;
-    }
-
-    // 剩余额度入口会先写入 Coding Plan tab 意图，再打开设置页。
-    // 如果首帧 provider/entitlement 仍在加载就立刻回退，会让“更多”看起来只打开了 App Usage。
-    // 这里等数据确认没有套餐后再回退，避免空入口误导用户。
-    setUsageActiveTab("app");
-  }, [
-    checkingUsageCodingPlanTab,
-    showUsageCodingPlanTab,
-    usageSubscribedTeamProducts.length,
-    usageActiveTab,
-    usageProviderSettingsLoading,
-  ]);
 
   useEffect(
     () =>
@@ -858,7 +528,8 @@ export function SettingsPage({
           section === "remoteDevices" && detail?.sourceServerDetails === true,
         );
         if (section === "usage" && detail?.usageTab) {
-          setUsageActiveTab(detail.usageTab);
+          // 订阅体系移除后用量统计只剩 App 用量。
+          setUsageActiveTab("app");
         }
         if (resolveSettingsSection(section) === "plugin" && detail?.pluginTab) {
           setPluginTab(detail.pluginTab);
@@ -951,8 +622,6 @@ export function SettingsPage({
     setToolGroupingTerminalEnabled(sharedSettings.toolGroupingTerminalEnabled ?? true);
     setToolGroupingChangesEnabled(sharedSettings.toolGroupingChangesEnabled ?? false);
     setZCodeInteractionBehavior(sharedSettings.zcodeInteractionBehavior ?? "queue");
-    setReceivePreviewUpdates(sharedSettings.receivePreviewUpdates ?? false);
-    setAutoDownloadAndInstallUpdates(sharedSettings.autoDownloadAndInstallUpdates ?? false);
   }, [sharedSettings]);
   const handleTerminalInheritSystemProfileChange = useCallback(
     async (enabled: boolean) => {
@@ -1279,38 +948,6 @@ export function SettingsPage({
     },
     [localHostServices.settingService, intl],
   );
-  const handleReceivePreviewUpdatesChange = useCallback(
-    async (enabled: boolean) => {
-      await runSettingsActionAsync({
-        featureId: "settings.update",
-        action: "toggle_preview_updates",
-        trigger: "switch",
-        operation: () => updateSharedSettings({ receivePreviewUpdates: enabled }),
-        completed: {
-          resultSource: "shared_settings",
-          stateAfter: enabled ? "enabled" : "disabled",
-        },
-      });
-      setReceivePreviewUpdates(enabled);
-    },
-    [updateSharedSettings],
-  );
-  const handleAutoDownloadAndInstallUpdatesChange = useCallback(
-    async (enabled: boolean) => {
-      await runSettingsActionAsync({
-        featureId: "settings.update",
-        action: "toggle_auto_update",
-        trigger: "switch",
-        operation: () => updateSharedSettings({ autoDownloadAndInstallUpdates: enabled }),
-        completed: {
-          resultSource: "shared_settings",
-          stateAfter: enabled ? "enabled" : "disabled",
-        },
-      });
-      setAutoDownloadAndInstallUpdates(enabled);
-    },
-    [updateSharedSettings],
-  );
   const handleMessageStreamShowReasoningChange = useCallback(
     async (enabled: boolean) => {
       await runSettingsActionAsync({
@@ -1431,8 +1068,8 @@ export function SettingsPage({
       if (
         value === "light" ||
         value === "dark" ||
-        value === "zai-light" ||
-        value === "zai-dark" ||
+        value === "light" ||
+        value === "dark" ||
         value === "system"
       ) {
         runUserAction({
@@ -1689,9 +1326,6 @@ export function SettingsPage({
                   onLocaleChange={handleFooterLocaleChange}
                   onThemeChange={handleFooterThemeChange}
                   onSettingsButtonClick={onBack}
-                  onUsageClick={handleOpenUsageSettings}
-                  onUpgradeClick={handleOpenCodingPlanUpgradeSettings}
-                  onLogin={onLogin}
                   onLogout={onLogout}
                   settingsButtonMode="back"
                   user={user}
@@ -1828,8 +1462,6 @@ export function SettingsPage({
                               desktopChromiumHardwareAccelerationEnabled={
                                 desktopChromiumHardwareAccelerationEnabled
                               }
-                              receivePreviewUpdates={receivePreviewUpdates}
-                              autoDownloadAndInstallUpdates={autoDownloadAndInstallUpdates}
                               dataBaseDir={dataBaseDir}
                               terminalInheritSystemProfile={terminalInheritSystemProfile}
                               terminalFontFamily={terminalFontFamily}
@@ -1904,10 +1536,6 @@ export function SettingsPage({
                               onKeepAwakeWhileRunningChange={handleKeepAwakeWhileRunningChange}
                               onDesktopChromiumHardwareAccelerationChange={
                                 handleDesktopChromiumHardwareAccelerationChange
-                              }
-                              onReceivePreviewUpdatesChange={handleReceivePreviewUpdatesChange}
-                              onAutoDownloadAndInstallUpdatesChange={
-                                handleAutoDownloadAndInstallUpdatesChange
                               }
                               onMessageStreamShowReasoningChange={
                                 handleMessageStreamShowReasoningChange
@@ -2113,7 +1741,7 @@ export function SettingsPage({
                               isDesktop={Boolean(isDesktop)}
                               isMacDesktop={Boolean(isMacDesktop)}
                               isWindowsDesktop={Boolean(isWindowsDesktop)}
-                              isWebRemoteControl={isWebRemoteControl}
+                              isMobileOverlay={isMobileOverlay}
                               initialTab={pluginTab}
                               initialScopeKey={pluginScopeKey}
                               workspacePath={activeWorkspacePath}
@@ -2130,7 +1758,7 @@ export function SettingsPage({
                             <PluginsSection
                               key={`mcp:${settingsSectionNavigationVersion}`}
                               mode="mcp"
-                              isWebRemoteControl={isWebRemoteControl}
+                              isMobileOverlay={isMobileOverlay}
                               workspacePath={activeWorkspacePath}
                               workspaceIdentity={activeWorkspaceIdentity}
                               onCreateTask={onCreateTask}
@@ -2144,7 +1772,7 @@ export function SettingsPage({
                             <PluginsSection
                               key={`skill:${settingsSectionNavigationVersion}`}
                               mode="skill"
-                              isWebRemoteControl={isWebRemoteControl}
+                              isMobileOverlay={isMobileOverlay}
                               workspacePath={activeWorkspacePath}
                               workspaceIdentity={activeWorkspaceIdentity}
                               onCreateTask={onCreateTask}
@@ -2173,13 +1801,7 @@ export function SettingsPage({
                               <ArchiveManagement />
                             </div>
                           ) : activeSection === "usage" ? (
-                            <UsageStatsSection
-                              activeTab={usageActiveTab}
-                              providerSourcesLoading={usageProviderSettingsLoading}
-                              selectedCodingPlanSource={selectedUsageCodingPlanSource}
-                              workspaceIdentity={activeWorkspaceIdentity}
-                              workspacePath={activeWorkspacePath ?? undefined}
-                            />
+                            <UsageStatsSection />
                           ) : activeSection === "subagents" ? (
                             <SubagentsSection
                               onManageModels={handleOpenModelProviderSettings}
@@ -2194,7 +1816,7 @@ export function SettingsPage({
                           ) : activeSection === "commands" ? (
                             <PluginsSection
                               mode="command"
-                              isWebRemoteControl={isWebRemoteControl}
+                              isMobileOverlay={isMobileOverlay}
                               workspacePath={activeWorkspacePath}
                               workspaceIdentity={activeWorkspaceIdentity}
                               onCreateTask={onCreateTask}

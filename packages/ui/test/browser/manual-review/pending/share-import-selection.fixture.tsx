@@ -86,7 +86,7 @@ if (!sessionStorage.getItem("prepared")) {
     });
 }
 document.documentElement.className =
-  params.get("theme") === "light" ? "light theme-zai-light" : "dark theme-zai-dark";
+  params.get("theme") === "light" ? "light theme-light" : "dark theme-dark";
 
 function Fixture() {
   const { intl } = useZCodeIntl();

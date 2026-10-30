@@ -469,7 +469,7 @@ export function PermissionDialog({
   remoteSessionId,
   workflowSessionModel,
   provider,
-  isWebRemoteControl = false,
+  isMobileOverlay = false,
   responding = false,
   responseError,
 }: {
@@ -492,7 +492,7 @@ export function PermissionDialog({
   remoteSessionId?: string;
   workflowSessionModel?: { providerId: string; modelId: string };
   provider?: ZCodeProvider;
-  isWebRemoteControl?: boolean;
+  isMobileOverlay?: boolean;
 }) {
   const { intl } = useZCodeIntl();
   const presentationCapabilities = useToolPresentationHostCapabilities(workspacePath);
@@ -501,7 +501,7 @@ export function PermissionDialog({
   // 与 composer 复用同一套视口判断和 16px 兼容 token，桌面和非远控 Web 保持原有字号。
   const avoidIosInputFocusZoom = shouldAvoidIosInputFocusZoom({
     isMobileTextInputViewport,
-    isWebRemoteControl,
+    isMobileOverlay,
   });
   // M5②.5 store 耦合剥离：主题/代码预览设置在宿主处取 store，向下走 props/render context。
   const theme = useZCodeStoreWithDefault((state) => state.theme, "system");

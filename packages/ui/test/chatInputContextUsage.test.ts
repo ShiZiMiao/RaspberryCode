@@ -4,7 +4,6 @@ import {
   formatContextUsageSummary,
   formatContextUsageTokenCount,
 } from "@/chat-input-toolbar/contextUsage.js";
-import { runContextPanelActionWithClose } from "@/chat-input-toolbar/contextPanelAction.js";
 
 describe("chat input context usage formatting", () => {
   it("uses uppercase English compact units", () => {
@@ -42,14 +41,4 @@ describe("chat input context usage formatting", () => {
     expect(formatContextCacheHitRateLabel(null, "en-US")).toBeNull();
   });
 
-  it("closes the context panel before running an inner action", () => {
-    const calls: string[] = [];
-
-    runContextPanelActionWithClose({
-      action: () => calls.push("action"),
-      close: () => calls.push("close"),
-    });
-
-    expect(calls).toEqual(["close", "action"]);
-  });
 });

@@ -134,16 +134,6 @@ describe("WindowsCaptionMenuButton", () => {
     );
   }
 
-  it("Preview 隐藏更新入口，生产版继续保留", async () => {
-    const { shouldShowDesktopUpdateEntry } = await import("@/WindowsCaptionMenuButton.js");
-
-    // 更新入口跟随产品身份：生产后端的 Preview 同样隐藏。
-    expect(shouldShowDesktopUpdateEntry("preview")).toBe(false);
-    expect(shouldShowDesktopUpdateEntry("production")).toBe(true);
-
-    const html = await renderButton("header");
-    expect(html).not.toContain("titleBar.menu.help.checkForUpdates");
-  });
 
   it("includes help actions migrated from the shared question-mark menu", async () => {
     capturedWindowsCaptionMenu.openSubmit.mockClear();
@@ -156,7 +146,6 @@ describe("WindowsCaptionMenuButton", () => {
 
     expect(html).toContain("titleBar.menu.help.feedback");
     expect(html).toContain("workspaceHeader.help.productRequest");
-    expect(html).toContain("workspaceHeader.help.docs");
     expect(html).toContain("titleBar.menu.help.exportLogs");
 
     await capturedWindowsCaptionMenu.menuItems
@@ -164,9 +153,6 @@ describe("WindowsCaptionMenuButton", () => {
       ?.onSelect?.();
     capturedWindowsCaptionMenu.menuItems
       .find((item) => item.label === "workspaceHeader.help.productRequest")
-      ?.onSelect?.();
-    capturedWindowsCaptionMenu.menuItems
-      .find((item) => item.label === "workspaceHeader.help.docs")
       ?.onSelect?.();
     capturedWindowsCaptionMenu.menuItems
       .find((item) => item.label === "titleBar.menu.help.exportLogs")
@@ -181,7 +167,6 @@ describe("WindowsCaptionMenuButton", () => {
       }),
     );
     expect(capturedWindowsCaptionMenu.openFeatureRequest).toHaveBeenCalledTimes(1);
-    expect(capturedWindowsCaptionMenu.openExternal).toHaveBeenCalledWith("https://zcode.z.ai/docs");
     expect(capturedWindowsCaptionMenu.exportLogs).toHaveBeenCalledTimes(1);
   });
 

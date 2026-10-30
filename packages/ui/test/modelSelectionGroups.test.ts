@@ -167,7 +167,8 @@ describe("model selection groups", () => {
     expect(buildRegistryModelSelectGroups("glm", selectionView)).toEqual([
       {
         key: `registry-provider:${providerId}`,
-        label: "BigModel",
+        // 家族显示名已随 family 体系摘除（无家族名来源），组名回落 providerId。
+        label: providerId,
         labelBadge: "Team",
         directItems: true,
         items: [

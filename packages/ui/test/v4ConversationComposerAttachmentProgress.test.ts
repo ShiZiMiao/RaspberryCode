@@ -152,7 +152,7 @@ describe("ConversationComposer attachment upload progress", () => {
   it("只让聚焦且未禁用的 composer 监听 add-to-chat，并保留 CUA 常驻入口", () => {
     const html = renderComposer({
       disabled: true,
-      isWebRemoteControl: true,
+      isMobileOverlay: true,
       listenAddToChatEvents: false,
       remoteSessionId: "remote-1",
     });
@@ -163,7 +163,7 @@ describe("ConversationComposer attachment upload progress", () => {
     expect(html).toContain('data-cua-entry="true"');
     expect(cuaEntryProps.at(-1)).toMatchObject({
       currentSessionBusy: false,
-      isWebRemoteControl: true,
+      isMobileOverlay: true,
       remoteSessionId: "remote-1",
       workspacePath: "/workspace",
     });

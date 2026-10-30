@@ -1,9 +1,5 @@
 import { Cpu } from "lucide-react";
 import { useCallback, useMemo } from "react";
-import {
-  getModelProviderFamilySpec,
-  resolveModelProviderFamilyIdByProviderId,
-} from "@zcode/shared";
 // 分享页通过 ToolPresentation 复用本渲染器；从 thoughtLevelOptions 引入会经 display → CodingPlan 拉进
 // @zcode/provider 闭包，导致 web-share 构建失败，因此直接依赖纯词表模块。
 import { thoughtLevelLabelId } from "@/chat-input-toolbar/thoughtLevelLabels.js";
@@ -161,10 +157,6 @@ function listModelsGroupName(
   providerName: ProviderNameLookup,
   formatMessage: FormatMessage,
 ): string {
-  const familyId = resolveModelProviderFamilyIdByProviderId(providerId);
-  if (familyId !== null) {
-    return getModelProviderFamilySpec(familyId).label;
-  }
   const label = providerLabel?.trim();
   if (label !== undefined && label.length > 0 && label !== providerId) {
     return label;

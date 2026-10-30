@@ -49,7 +49,6 @@ export const TaskList = memo(function TaskList({
   onArchiveTask,
   isArchived = false,
   onSetTaskUnread,
-  mobileActiveTaskKey,
   readOnlyReason,
   onOpenFileTree,
   organizationActions,
@@ -77,7 +76,6 @@ export const TaskList = memo(function TaskList({
   onArchiveTask: (taskId: string) => Promise<ZCodeTaskMeta | null>;
   isArchived?: boolean;
   onSetTaskUnread: (taskId: string, unread: boolean) => Promise<ZCodeTaskMeta | null>;
-  mobileActiveTaskKey?: string | null;
   readOnlyReason?: string;
   onOpenFileTree?: () => void | Promise<void>;
 }) {
@@ -377,10 +375,6 @@ export const TaskList = memo(function TaskList({
         isPinned={isPinned}
         isArchived={isArchived}
         isActive={isWorkspaceActive && task.taskId === activeTaskId}
-        isMobileActive={
-          mobileActiveTaskKey ===
-          `${buildTaskWorkspaceKey(workspacePath, workspaceIdentity)}:${task.taskId}`
-        }
         onSelectTask={handleSelectTaskItem}
         onArchiveTaskInline={handleArchiveTaskFromInline}
         onCancelArchiveConfirm={handleCancelArchiveConfirm}

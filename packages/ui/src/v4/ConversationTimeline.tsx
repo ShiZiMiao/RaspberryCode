@@ -47,7 +47,6 @@ import {
 import { ConversationPendingGuideList } from "@/v4/ConversationPendingGuideList.js";
 import type { AssistantFeedbackHandler } from "@/v4/ConversationRowView.js";
 import { ConversationTurnNavigator } from "@/v4/ConversationTurnNavigator.js";
-import { syncConversationShareSelectionPanelLayout } from "@/v4/conversationShareSelectionPanelLayout.js";
 import type { ConversationRowRenderContext } from "@/v4/conversationRowContext.js";
 import {
   isSameConversationLatestTurnSummary,
@@ -55,14 +54,12 @@ import {
   splitConversationTimelineLiveTail,
   type ConversationLatestTurnSummary,
 } from "@/v4/conversationTimelineLiveTail.js";
-import { armHighspeedFooterExpiryClock } from "@/highspeed/highspeedFooterExpiryClock.js";
 import {
   getConversationContentWidthClassName,
   getConversationStatusPanelOffsetClassName,
 } from "@/v4/conversationLayout.js";
 import {
   buildConversationTurnRenderUnits,
-  resolveNextHighspeedExpiryMs,
   type ConversationTurnRenderUnit,
 } from "@/v4/conversationTurnRenderUnits.js";
 import {
@@ -268,7 +265,7 @@ function getUnitHeightCacheKey(unit: ConversationTurnRenderUnit | undefined): st
 export interface ConversationTimelineProps {
   rows: readonly ConversationRow[];
   /** 手机远控窄屏允许整条会话 flex 链按抽屉宽度收缩；桌面布局保持原样。 */
-  compactForRemoteControl?: boolean;
+  compactForOverlay?: boolean;
   /** CLI 权威 queue 中等待 model-step 注入的 guide；只改变 renderer 落位。 */
   pendingGuides?: readonly QueueItem[];
   /** runtime memory 状态，只交给当前 live turn，不进入历史虚拟列表。 */
@@ -310,7 +307,6 @@ export interface ConversationTimelineProps {
   /** 与旧 ChatView 对齐：composer dock 属于同一个滚动视口，sticky 到滚动容器底部。 */
   bottomDock?: ReactNode;
   /** 分享选择面板所在的共享父容器；用于把 dock 的真实位置写入同一坐标系。 */
-  selectionPanelLayoutContainerRef?: { current: HTMLElement | null };
   /**
    * 锁定背景滚动。
    *
@@ -378,7 +374,7 @@ export interface ConversationTimelineProps {
  */
 function ConversationTimelineImpl({
   rows,
-  compactForRemoteControl = false,
+  compactForOverlay = false,
   pendingGuides = EMPTY_PENDING_GUIDES,
   apiRetry = null,
   totalCount,
@@ -395,7 +391,6 @@ function ConversationTimelineImpl({
   onLoadAllOlder,
   turnNavigatorDirectoryRevision = 0,
   bottomDock,
-  selectionPanelLayoutContainerRef,
   backgroundScrollLocked = false,
   emptyState,
   headerSlot,
@@ -508,10 +503,6 @@ function ConversationTimelineImpl({
     };
     onLatestTurnSummaryChange(latestTurnSummary);
   }, [latestTurnSummary, onLatestTurnSummaryChange]);
-  const nextHighspeedExpiryMs = useMemo(
-    () => resolveNextHighspeedExpiryMs(rows, liveNowMs),
-    [liveNowMs, rows],
-  );
   const turnNavigatorQueryRowIds = useMemo(
     () =>
       new Set(
@@ -603,10 +594,6 @@ function ConversationTimelineImpl({
   const composerDockRef = useRef<HTMLDivElement>(null);
   const floatingComposerDockRef = useRef(floatingComposerDock);
   floatingComposerDockRef.current = floatingComposerDock;
-  const shareSelectionPanelLayoutRef = useRef<{
-    centerYPx: number;
-    maxHeightPx: number;
-  } | null>(null);
   // 右侧状态面板完整 inline 展开时，中间消息列和输入 dock 必须使用同一偏移；
   // 否则面板会覆盖正文，而不是并排布局。
   const summaryPanelInlineOffsetClassName =
@@ -616,46 +603,6 @@ function ConversationTimelineImpl({
     statusPanelLayout: summaryPanelLayout,
   });
 
-  const syncShareSelectionPanelLayout = useCallback(() => {
-    if (!backgroundScrollLocked) return;
-    const container = selectionPanelLayoutContainerRef?.current;
-    const dock = composerDockRef.current;
-    if (!container || !dock) return;
-
-    // 选择面板是 SessionPane 的兄弟节点，不能把 CSS 变量写在 Timeline
-    // 自身，否则面板拿不到 dock 的真实边界；统一写入共享父容器供两者使用。
-    const layout = syncConversationShareSelectionPanelLayout(container, dock);
-    const previous = shareSelectionPanelLayoutRef.current;
-    if (previous?.centerYPx === layout.centerYPx && previous.maxHeightPx === layout.maxHeightPx) {
-      return;
-    }
-    shareSelectionPanelLayoutRef.current = layout;
-  }, [backgroundScrollLocked, selectionPanelLayoutContainerRef]);
-
-  useLayoutEffect(() => {
-    if (!backgroundScrollLocked) return;
-    const container = selectionPanelLayoutContainerRef?.current;
-    const dock = composerDockRef.current;
-    if (!container || !dock) return;
-
-    syncShareSelectionPanelLayout();
-    let resizeObserver: ResizeObserver | null = null;
-    if (typeof ResizeObserver !== "undefined") {
-      resizeObserver = new ResizeObserver(syncShareSelectionPanelLayout);
-      resizeObserver.observe(container);
-      resizeObserver.observe(timelineRootRef.current ?? container);
-      if (scrollRef.current) resizeObserver.observe(scrollRef.current);
-      resizeObserver.observe(dock);
-    }
-
-    // ResizeObserver 在部分 Electron flex 布局中可能晚于窗口尺寸变化回调，
-    // 因此窗口 resize 也始终触发一次几何同步，保证面板随窗口放大/缩小。
-    window.addEventListener("resize", syncShareSelectionPanelLayout);
-    return () => {
-      window.removeEventListener("resize", syncShareSelectionPanelLayout);
-      resizeObserver?.disconnect();
-    };
-  }, [backgroundScrollLocked, selectionPanelLayoutContainerRef, syncShareSelectionPanelLayout]);
 
   const hasBottomDock = Boolean(bottomDock);
   useLayoutEffect(() => {
@@ -685,18 +632,6 @@ function ConversationTimelineImpl({
 
     return () => window.clearInterval(timer);
   }, [hasRunningUnit]);
-
-  useEffect(() => {
-    if (nextHighspeedExpiryMs === undefined) return;
-
-    // Bug 根因：会话完成后工作时钟会停止；若 Highspeed 卡稍后才到期，footer 不会自行出现。
-    // 单独订阅最近的卡片到期边界，避免为了等待倒计时持续刷新整个历史列表。
-    // spec §9.3：到期唤醒基于 renderer setTimeout，窗口隐藏/被遮挡时会被 Chromium 冻结停摆；
-    // helper 额外监听窗口恢复可见/获得焦点并即时追平 liveNowMs，footer 才能不依赖用户再发
-    // 消息就出现。与 SessionPane 的 highspeedAutoShareClock 窗口唤醒补偿分工：那条刷新分享
-    // 入口/查看按钮的完成态数据，这条刷新组尾 footer 的显隐时钟。
-    return armHighspeedFooterExpiryClock(nextHighspeedExpiryMs, () => setLiveNowMs(Date.now()));
-  }, [nextHighspeedExpiryMs]);
 
   useLayoutEffect(() => {
     const element = timelineRootRef.current;
@@ -1920,7 +1855,7 @@ function ConversationTimelineImpl({
   return (
     <div
       ref={timelineRootRef}
-      className={cn("relative flex min-h-0 flex-1 flex-col", compactForRemoteControl && "min-w-0")}
+      className={cn("relative flex min-h-0 flex-1 flex-col", compactForOverlay && "min-w-0")}
     >
       {selectionActions ? (
         <ConversationSelectionTooltip
@@ -1984,7 +1919,7 @@ function ConversationTimelineImpl({
           // 分享选择面板展开时改为 overflow-hidden：scrollTop 与 scrollbar-gutter 都保持不变，
           // 但原生滚动条、滚轮和键盘翻页都不再能移动背景，勾选目标不会漂走。
           backgroundScrollLocked && "!overflow-y-hidden",
-          compactForRemoteControl && "min-w-0",
+          compactForOverlay && "min-w-0",
           // 浮窗形态：滚动容器止于输入框上方 12px，消息底部再留 16px 空白。
           floatingComposerDock &&
             "mb-[calc(var(--v4-floating-composer-dock-height,0px)+12px)] pb-4",
@@ -2079,7 +2014,6 @@ function ConversationTimelineImpl({
                     >
                       <ConversationTurnGroup
                         unit={unit}
-                        nowMs={liveNowMs}
                         apiRetry={null}
                         context={rowContext}
                         onFork={onFork}
@@ -2109,7 +2043,6 @@ function ConversationTimelineImpl({
                 >
                   <ConversationTurnGroup
                     unit={liveUnit}
-                    nowMs={liveNowMs}
                     apiRetry={apiRetry}
                     context={rowContext}
                     onFork={onFork}

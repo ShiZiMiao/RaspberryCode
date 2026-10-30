@@ -1208,7 +1208,7 @@ export function AnimatedSidePanePanel({
                           <SubagentSessionSidePane
                             tab={tab}
                             focused={isVisible && tab.id === contentActiveTabId}
-                            compactForRemoteControl={mobileOverlay}
+                            compactForOverlay={mobileOverlay}
                             onOpenBrowserUrl={onOpenBrowserUrl}
                             onOpenCodeViewer={onOpenCodeViewer}
                             onOpenFileLink={onOpenFileLink}
@@ -1403,7 +1403,7 @@ export function AnimatedSidePanePanel({
                                 isDesktop={isDesktop}
                                 isWindowsDesktop={isWindowsDesktop}
                                 isMacDesktop={isMacDesktop}
-                                isWebRemoteControl={mobileOverlay}
+                                isMobileOverlay={mobileOverlay}
                               />
                             </div>
                           </ServiceProvider>

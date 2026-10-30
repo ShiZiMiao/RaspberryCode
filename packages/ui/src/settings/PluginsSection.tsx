@@ -109,7 +109,7 @@ interface PluginsSectionProps {
   isDesktop?: boolean;
   isMacDesktop?: boolean;
   isWindowsDesktop?: boolean;
-  isWebRemoteControl?: boolean;
+  isMobileOverlay?: boolean;
   initialTab?: PluginTabTarget;
   initialScopeKey?: string;
   mode?: "plugin" | "market" | "mcp" | "skill" | "command";
@@ -135,7 +135,7 @@ function PluginList({
   isDesktop,
   isMacDesktop,
   isWindowsDesktop,
-  isWebRemoteControl,
+  isMobileOverlay,
   onAdd,
   onCreateTask,
   onDetailOpenChange,
@@ -153,7 +153,7 @@ function PluginList({
   isDesktop: boolean;
   isMacDesktop: boolean;
   isWindowsDesktop: boolean;
-  isWebRemoteControl: boolean;
+  isMobileOverlay: boolean;
   onAdd?: () => void;
   onCreateTask?: (request?: CreateTaskRequest) => void;
   onDetailOpenChange?: (open: boolean) => void;
@@ -208,7 +208,7 @@ function PluginList({
     shouldShowRemoteSyncActions({
       remoteSessionId: target?.remoteSessionId,
       remoteTarget: target?.remoteTarget,
-      clientMode: isWebRemoteControl ? "web-remote-replayable" : "desktop-continuous",
+      clientMode: isMobileOverlay ? "web-remote-replayable" : "desktop-continuous",
       hasLocalSourceService: Boolean(baseServices.pluginSyncService),
     }) &&
     target?.workspacePath
@@ -823,7 +823,7 @@ function PluginList({
                 <PluginAddMenu
                   testId="plugin-settings-add"
                   onCreateTask={onCreateTask}
-                  isWebRemoteControl={isWebRemoteControl}
+                  isMobileOverlay={isMobileOverlay}
                   onAddMarketplace={() => onOpenPluginStore(undefined, "add-marketplace")}
                 />
               </>
@@ -956,7 +956,7 @@ export function PluginsSection({
   isDesktop = false,
   isMacDesktop = false,
   isWindowsDesktop = false,
-  isWebRemoteControl = false,
+  isMobileOverlay = false,
   initialTab = "plugins",
   initialScopeKey,
   mode = "plugin",
@@ -1306,7 +1306,7 @@ export function PluginsSection({
                 isDesktop={isDesktop}
                 isMacDesktop={isMacDesktop}
                 isWindowsDesktop={isWindowsDesktop}
-                isWebRemoteControl={isWebRemoteControl}
+                isMobileOverlay={isMobileOverlay}
                 searchQuery={searchQueries.plugins}
                 onAdd={selectedScope.kind === "user" ? openPluginStoreForSelectedScope : undefined}
                 onCreateTask={onCreateTask}
@@ -1342,7 +1342,7 @@ export function PluginsSection({
                   remoteSessionId={mcpTarget.remoteSessionId}
                   remoteTarget={mcpTarget.remoteTarget}
                   localWorkspacePath={mcpTarget.localWorkspacePath}
-                  isWebRemoteControl={isWebRemoteControl}
+                  isMobileOverlay={isMobileOverlay}
                   scopeFilter={effectiveMcpScopeKey === "user" ? "user" : "workspace"}
                   parentScopeKey={selectedScopeKey}
                   workspaceTabs={workspaceTabs}
@@ -1382,7 +1382,7 @@ export function PluginsSection({
                   workspaceIdentity={target.workspaceIdentity}
                   remoteSessionId={target.remoteSessionId}
                   remoteTarget={target.remoteTarget}
-                  isWebRemoteControl={isWebRemoteControl}
+                  isMobileOverlay={isMobileOverlay}
                   scopeFilter={selectedScope.kind === "user" ? "user" : "workspace"}
                   searchQuery={searchQueries.skills}
                   onCreateTask={onCreateTask}

@@ -2,20 +2,19 @@
 import { createElement, useState } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ModelConfigSelect } from "@/ModelConfigSelect.js";
+import { ModelConfigSelect, type ModelSelectGroup } from "@/ModelConfigSelect.js";
 import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import { TooltipProvider } from "@/components/ui/tooltip.js";
-import type { ComposerPlanGroup } from "@/lib/composerPlanGroups.js";
-const items = [{ key: "m", value: "team/model", name: "GLM-5.3" }];
-const groups: ComposerPlanGroup[] = [
+const items = [{ key: "m", value: "shared/model", name: "GLM-5.3" }];
+const groups: ModelSelectGroup[] = [
   {
-    key: "personal",
-    label: "BigModel",
-    labelBadge: "Individual",
-    items: [{ ...items[0]!, value: "personal/model" }],
+    key: "glm",
+    label: "GLM",
+    labelBadge: "API",
+    items: [{ ...items[0]!, value: "glm/model" }],
   },
-  { key: "one", label: "BigModel", labelBadge: "Team One", items },
-  { key: "two", label: "BigModel", labelBadge: "Team Two", items },
+  { key: "one", label: "Qwen", labelBadge: "API", items },
+  { key: "two", label: "Kimi", labelBadge: "API", items },
   {
     key: "api",
     label: "DeepSeek",
@@ -24,8 +23,8 @@ const groups: ComposerPlanGroup[] = [
   },
 ];
 function Harness({ pending = false, error = null }: { pending?: boolean; error?: string | null }) {
-  const [selected, setSelected] = useState("personal");
-  const [model, setModel] = useState("personal/model");
+  const [selected, setSelected] = useState("glm");
+  const [model, setModel] = useState("glm/model");
   return createElement(
     ZCodeIntlProvider,
     { locale: "en-US" },
@@ -75,23 +74,23 @@ beforeEach(() => {
     .mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() });
 });
 afterEach(cleanup);
-describe("Composer direct team provider menu", () => {
-  it("保持主菜单一行供应商，直接选择第二团队时勾选不落到同模型的第一团队", async () => {
+describe("Composer direct provider menu", () => {
+  it("保持主菜单一行供应商，直接选择第二个供应商时勾选不落到同模型的第一个供应商", async () => {
     render(createElement(Harness));
     expect(screen.queryByTestId("composer-connection-trigger")).toBeNull();
     fireEvent.keyDown(screen.getByTestId("composer-provider-trigger"), { key: "ArrowRight" });
-    fireEvent.click(await screen.findByRole("menuitemradio", { name: "BigModel Team Two" }));
+    fireEvent.click(await screen.findByRole("menuitemradio", { name: "Kimi API" }));
     await waitFor(() =>
-      expect(screen.getByTestId("composer-provider-trigger").textContent).toContain("Team Two"),
+      expect(screen.getByTestId("composer-provider-trigger").textContent).toContain("Kimi"),
     );
     fireEvent.keyDown(screen.getByTestId("composer-provider-trigger"), { key: "ArrowRight" });
     expect(
-      (await screen.findByRole("menuitemradio", { name: "BigModel Team Two" })).getAttribute(
+      (await screen.findByRole("menuitemradio", { name: "Kimi API" })).getAttribute(
         "aria-checked",
       ),
     ).toBe("true");
     expect(
-      screen.getByRole("menuitemradio", { name: "BigModel Team One" }).getAttribute("aria-checked"),
+      screen.getByRole("menuitemradio", { name: "Qwen API" }).getAttribute("aria-checked"),
     ).toBe("false");
     expect(screen.getByRole("menuitemradio", { name: "DeepSeek API" })).toBeTruthy();
   });
@@ -107,7 +106,7 @@ describe("Composer direct team provider menu", () => {
       const trigger = screen.getByTestId("composer-provider-trigger");
       expect(trigger.getAttribute("aria-disabled")).toBe("true");
       expect(trigger.getAttribute("aria-busy")).toBe("true");
-      expect(trigger.textContent).toContain("Individual");
+      expect(trigger.textContent).toContain("GLM");
       expect(screen.getByRole("status", { name: "Loading..." })).toBeTruthy();
       expect(screen.getByRole("slider").getAttribute("aria-disabled")).toBe("true");
       rerender(createElement(Harness, { error: "Switch failed; retry" }));
@@ -123,16 +122,16 @@ describe("Composer direct team provider menu", () => {
       ).toBeTruthy();
     },
   );
-  it("窄屏使用现有返回导航，选团队后回到模型页", async () => {
+  it("窄屏使用现有返回导航，选供应商后回到模型页", async () => {
     window.matchMedia = vi
       .fn()
       .mockReturnValue({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() });
     render(createElement(Harness));
     fireEvent.click(screen.getByTestId("composer-provider-trigger"));
     expect(screen.getByTestId("composer-provider-back")).toBeTruthy();
-    fireEvent.click(screen.getByRole("menuitemradio", { name: "BigModel Team One" }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Qwen API" }));
     await waitFor(() =>
-      expect(screen.getByTestId("composer-provider-trigger").textContent).toContain("Team One"),
+      expect(screen.getByTestId("composer-provider-trigger").textContent).toContain("Qwen"),
     );
     expect(screen.queryByTestId("composer-provider-back")).toBeNull();
     expect(screen.getByRole("slider")).toBeTruthy();
@@ -149,7 +148,7 @@ it("连接 loading 期间固定原菜单展示，完成后一次采用新目录"
         null,
         createElement(ModelConfigSelect, {
           modelGroups: target ? [groups[3]!] : groups,
-          normalizedValue: target ? "api/model" : "personal/model",
+          normalizedValue: target ? "api/model" : "glm/model",
           triggerLabel: target ? "API model" : "GLM-5.3",
           lockReasonMessage: "",
           isItemLocked: () => false,
@@ -171,7 +170,7 @@ it("连接 loading 期间固定原菜单展示，完成后一次采用新目录"
             onValueChange: () => {},
             providerMenu: {
               groups: target ? [groups[3]!] : groups,
-              selectedKey: target ? "api" : "personal",
+              selectedKey: target ? "api" : "glm",
               pending,
               error: null,
               onSelect: () => {},
@@ -184,7 +183,7 @@ it("连接 loading 期间固定原菜单展示，完成后一次采用新目录"
   expect(screen.getByTestId("composer-thought-slider").getAttribute("aria-valuetext")).toBe("Low");
   ui.rerender(content(true, true));
   expect(screen.getByTestId("composer-thought-slider").getAttribute("aria-valuetext")).toBe("Low");
-  expect(screen.getByTestId("composer-provider-trigger").textContent).toContain("Individual");
+  expect(screen.getByTestId("composer-provider-trigger").textContent).toContain("GLM");
   ui.rerender(content(false, true));
   expect(screen.queryByTestId("composer-thought-slider")).toBeNull();
   expect(screen.getByTestId("composer-provider-trigger").textContent).toContain("DeepSeek");

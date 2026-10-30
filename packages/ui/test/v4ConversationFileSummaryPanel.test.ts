@@ -185,7 +185,7 @@ afterEach(() => {
 describe("ConversationFileSummaryPanel", () => {
   it.each([false, true])(
     "visualize 混合摘要只统计普通文件，compact=%s",
-    async (compactForRemoteControl) => {
+    async (compactForOverlay) => {
       const container = installMinimalDom();
       const root = createRoot(container);
       const path = "/workspace/visualizations/calendar.html";
@@ -212,7 +212,7 @@ describe("ConversationFileSummaryPanel", () => {
                 workspacePath: "/workspace",
                 theme: "system",
                 codePreviewSettings: DEFAULT_CODE_PREVIEW_SETTINGS,
-                compactForRemoteControl,
+                compactForOverlay,
                 fetchFileChanges,
               },
             }),

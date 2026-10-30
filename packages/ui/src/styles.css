@@ -4,8 +4,6 @@
 @import "shadcn/tailwind.css";
 @import "@xterm/xterm/css/xterm.css";
 @import "katex/dist/katex.min.css";
-@import "./highspeed/highspeed-activation.css";
-@import "./highspeed/highspeed-share.css";
 @source "../../../node_modules/streamdown/dist/*.js"; /* 感觉这行也是不好使呢*/
 
 @plugin "@tailwindcss/typography";
@@ -510,7 +508,7 @@ html[data-document-hidden] *::after {
   --color-plugin-paid-plan-badge-foreground: #ffd8b8;
 }
 
-.theme-zai-light {
+.theme-light {
   --animated-gradient-text-strong: rgba(13, 13, 13, 1);
   --animated-gradient-text-soft: rgba(13, 13, 13, 0.22);
   --color-background: #f8f8f8;
@@ -674,7 +672,7 @@ html[data-document-hidden] *::after {
   --color-plugin-paid-plan-badge-foreground: #4b280f;
 }
 
-.theme-zai-dark {
+.theme-dark {
   --animated-gradient-text-strong: rgba(255, 255, 255, 1);
   --animated-gradient-text-soft: rgba(255, 255, 255, 0.22);
   --color-background: #161616;
@@ -933,12 +931,6 @@ html[data-document-hidden] *::after {
 
   .animated-gradient-text-subtle {
     --animated-gradient-text-strong: var(--color-foreground-subtle);
-  }
-
-  .highspeed-animated-gradient-text .animated-gradient-text {
-    /* Bug 根因：accelerated turn 只改了工时文案，内部思考和工具仍继承普通扫光色。 */
-    --animated-gradient-text-strong: var(--color-icon-purple);
-    --animated-gradient-text-soft: color-mix(in srgb, var(--color-icon-purple) 22%, transparent);
   }
 
   .cua-group-gradient-text {

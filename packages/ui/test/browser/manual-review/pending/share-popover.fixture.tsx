@@ -17,7 +17,7 @@ import { aggregateConversationShareBlockingIssues } from "@/v4/conversationShare
 import "@/styles.css";
 const params = new URLSearchParams(location.search);
 document.documentElement.className =
-  params.get("theme") === "light" ? "light theme-zai-light" : "dark theme-zai-dark";
+  params.get("theme") === "light" ? "light theme-light" : "dark theme-dark";
 const items = Array.from({ length: Number(params.get("items") ?? 9) }, (_, i) => ({
   key: String(i),
   rowId: i + 1,

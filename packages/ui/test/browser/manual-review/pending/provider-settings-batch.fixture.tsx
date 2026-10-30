@@ -31,7 +31,7 @@ import { Checkbox } from "@/components/ui/checkbox.js";
 
 const params = new URLSearchParams(location.search);
 document.documentElement.className =
-  params.get("theme") === "light" ? "light theme-zai-light" : "dark theme-zai-dark";
+  params.get("theme") === "light" ? "light theme-light" : "dark theme-dark";
 const rules = parseZCodeBuiltinModelConfigRules(release.config.modelConfigRules);
 const templates = release.config.providerConfigRules
   .templateRules as ProviderSettingsView["providerTemplates"];

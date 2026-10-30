@@ -546,7 +546,7 @@ interface McpSettingsSectionProps {
   remoteSessionId?: string;
   remoteTarget?: RemoteTarget;
   localWorkspacePath?: string;
-  isWebRemoteControl?: boolean;
+  isMobileOverlay?: boolean;
   scopeFilter: "user" | "workspace";
   parentScopeKey: string;
   workspaceTabs: ConfigWorkspaceTarget[];
@@ -566,7 +566,7 @@ export function McpSettingsSection({
   remoteSessionId,
   remoteTarget,
   localWorkspacePath,
-  isWebRemoteControl = false,
+  isMobileOverlay = false,
   scopeFilter,
   parentScopeKey,
   workspaceTabs,
@@ -1168,7 +1168,7 @@ export function McpSettingsSection({
     shouldShowRemoteSyncActions({
       remoteSessionId,
       remoteTarget,
-      clientMode: isWebRemoteControl ? "web-remote-replayable" : "desktop-continuous",
+      clientMode: isMobileOverlay ? "web-remote-replayable" : "desktop-continuous",
       hasLocalSourceService: Boolean(baseServices.mcpSyncService),
     }) && activeWorkspacePath
       ? remoteTarget

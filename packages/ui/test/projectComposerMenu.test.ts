@@ -362,7 +362,7 @@ describe("输入框的虚拟项目目录", () => {
     fixture.projects = [remote];
     fixture.availability.set(projectKey(remote), { online: true, entryId: "online" });
     const p = props();
-    render(createElement(ProjectComposerMenu, { ...p, compactForRemoteControl: true }));
+    render(createElement(ProjectComposerMenu, { ...p, compactForOverlay: true }));
     open();
     fireEvent.click(entries()[0]!);
     expect(p.onCreateTask).toHaveBeenCalledWith({ projectId: remote.id, hostId: remote.hostId });
@@ -372,7 +372,7 @@ describe("输入框的虚拟项目目录", () => {
       createElement(ProjectComposerMenu, {
         ...props(),
         allowRemoteWorkspace: false,
-        compactForRemoteControl: true,
+        compactForOverlay: true,
       }),
     );
     open();

@@ -14,7 +14,7 @@ import "@/styles.css";
 
 const params = new URLSearchParams(location.search);
 document.documentElement.className =
-  params.get("theme") === "light" ? "light theme-zai-light" : "dark theme-zai-dark";
+  params.get("theme") === "light" ? "light theme-light" : "dark theme-dark";
 const services = { settingService: { get: async () => ({}) } } as unknown as IServiceAccessor;
 const platform = {} as IPlatformService;
 const values = [

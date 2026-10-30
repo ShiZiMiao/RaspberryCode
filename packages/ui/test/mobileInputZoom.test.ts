@@ -23,28 +23,28 @@ describe("mobile text input zoom guard", () => {
       shouldEnableModifiedEnterSubmit({
         inputRoutingMode: "startNow",
         isMobileTextInputViewport: true,
-        isWebRemoteControl: false,
+        isMobileOverlay: false,
       }),
     ).toBe(true);
     expect(
       shouldEnableModifiedEnterSubmit({
         inputRoutingMode: "enqueue",
         isMobileTextInputViewport: true,
-        isWebRemoteControl: false,
+        isMobileOverlay: false,
       }),
     ).toBe(true);
     expect(
       shouldEnableModifiedEnterSubmit({
         inputRoutingMode: "enqueue",
         isMobileTextInputViewport: true,
-        isWebRemoteControl: true,
+        isMobileOverlay: true,
       }),
     ).toBe(false);
     expect(
       shouldEnableModifiedEnterSubmit({
         inputRoutingMode: "reject",
         isMobileTextInputViewport: false,
-        isWebRemoteControl: false,
+        isMobileOverlay: false,
       }),
     ).toBe(false);
   });
@@ -184,13 +184,13 @@ describe("mobile text input zoom guard", () => {
     expect(
       shouldAvoidIosInputFocusZoom({
         isMobileTextInputViewport: false,
-        isWebRemoteControl: true,
+        isMobileOverlay: true,
       }),
     ).toBe(false);
     expect(
       shouldAvoidIosInputFocusZoom({
         isMobileTextInputViewport: true,
-        isWebRemoteControl: false,
+        isMobileOverlay: false,
       }),
     ).toBe(false);
   });
@@ -199,7 +199,7 @@ describe("mobile text input zoom guard", () => {
     expect(
       shouldAvoidIosInputFocusZoom({
         isMobileTextInputViewport: true,
-        isWebRemoteControl: true,
+        isMobileOverlay: true,
       }),
     ).toBe(true);
   });

@@ -41,7 +41,7 @@ export interface V4ChatPaneProps {
   isDesktop?: boolean;
   readOnly?: boolean;
   allowEscapeStopOutsidePane?: boolean;
-  compactForRemoteControl?: boolean;
+  compactForOverlay?: boolean;
   /** CLI session id；null = draft 首发。 */
   sessionId: string | null;
   /** 当前 workspace 主 pane 的打开入口，未提供时按 sidebar 统计。 */
@@ -94,7 +94,7 @@ export function V4ChatPane({
   isDesktop = false,
   readOnly = false,
   allowEscapeStopOutsidePane = false,
-  compactForRemoteControl = false,
+  compactForOverlay = false,
   sessionId,
   openTrigger = "sidebar",
   provider,
@@ -161,7 +161,7 @@ export function V4ChatPane({
         workspacePath={workspacePath}
         workspaceIdentity={workspaceIdentity}
         isDesktop={isDesktop}
-        compactForRemoteControl={compactForRemoteControl}
+        compactForOverlay={compactForOverlay}
         provider={provider}
         onSessionCreated={onSessionCreated}
         onSessionDeleted={onSessionDeleted}

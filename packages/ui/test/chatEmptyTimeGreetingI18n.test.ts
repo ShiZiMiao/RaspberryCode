@@ -49,7 +49,7 @@ describe("chat empty time greeting i18n", () => {
       resolveGreetingFontSizePx({
         availableWidthPx: 406,
         naturalTextWidthPx: 360,
-        compactForRemoteControl: true,
+        compactForOverlay: true,
       }),
     ).toBe(20);
   });

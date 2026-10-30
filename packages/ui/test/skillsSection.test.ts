@@ -297,7 +297,7 @@ vi.mock("@/hooks/useServices.js", () => ({
       })),
       checkRemoteUserSkillWriteAccess: vi.fn(async () => ({
         ok: true,
-        path: "/home/dev/.zcode/skills",
+        path: "/home/dev/.raspberrycode/skills",
       })),
       importSkillsArchive: vi.fn(async () => ({ results: [] })),
     },
@@ -335,7 +335,7 @@ vi.mock("@/hooks/useWorkspaceServices.js", () => ({
         })),
         checkRemoteUserSkillWriteAccess: vi.fn(async () => ({
           ok: true,
-          path: "/home/dev/.zcode/skills",
+          path: "/home/dev/.raspberrycode/skills",
         })),
         importSkillsArchive: vi.fn(async () => ({ results: [] })),
       },
@@ -368,7 +368,7 @@ vi.mock("@/hooks/useWorkspaceServices.js", () => ({
       })),
       checkRemoteUserSkillWriteAccess: vi.fn(async () => ({
         ok: true,
-        path: "/home/dev/.zcode/skills",
+        path: "/home/dev/.raspberrycode/skills",
       })),
       importSkillsArchive: vi.fn(async () => ({ results: [] })),
     },
@@ -567,7 +567,7 @@ describe("SkillsSection", () => {
         name: "skill-creator",
         description: "Create skills",
         body: "",
-        path: "/tmp/workspace/.zcode/skills/skill-creator/SKILL.md",
+        path: "/tmp/workspace/.raspberrycode/skills/skill-creator/SKILL.md",
         scope: "workspace",
         enabled: true,
       },
@@ -580,7 +580,7 @@ describe("SkillsSection", () => {
       defaultPrevented: false,
     });
 
-    const markdown = "[$skill-creator](/tmp/workspace/.zcode/skills/skill-creator/SKILL.md)";
+    const markdown = "[$skill-creator](/tmp/workspace/.raspberrycode/skills/skill-creator/SKILL.md)";
     expect(onCreateTaskMock).toHaveBeenCalledTimes(1);
     expect(onCreateTaskMock).toHaveBeenCalledWith({
       provider: "glm",
@@ -593,7 +593,7 @@ describe("SkillsSection", () => {
         markdown,
         description: "Create skills",
         data: {
-          path: "/tmp/workspace/.zcode/skills/skill-creator/SKILL.md",
+          path: "/tmp/workspace/.raspberrycode/skills/skill-creator/SKILL.md",
           scope: "workspace",
         },
       },
@@ -609,13 +609,13 @@ describe("SkillsSection", () => {
         code: "skill_missing_frontmatter",
         severity: "error",
         message: "缺少 frontmatter",
-        path: "/tmp/workspace/.zcode/skills/bad/SKILL.md",
+        path: "/tmp/workspace/.raspberrycode/skills/bad/SKILL.md",
       },
       {
         code: "skill_unknown_frontmatter",
         severity: "warning",
         message: "未识别字段: foo",
-        path: "/tmp/workspace/.zcode/skills/other/SKILL.md",
+        path: "/tmp/workspace/.raspberrycode/skills/other/SKILL.md",
         skillName: "other",
       },
     ];
@@ -627,7 +627,7 @@ describe("SkillsSection", () => {
     expect(html).toContain("Missing YAML frontmatter");
     expect(html).toContain("Unknown frontmatter key");
     expect(html).toContain("缺少 frontmatter");
-    expect(html).toContain("/tmp/workspace/.zcode/skills/bad/SKILL.md");
+    expect(html).toContain("/tmp/workspace/.raspberrycode/skills/bad/SKILL.md");
   });
 
   it("Plugin 只展示当前 scope 的技能", async () => {
@@ -638,7 +638,7 @@ describe("SkillsSection", () => {
         name: "repo-review",
         description: "review repo",
         body: "",
-        path: "/tmp/workspace/.zcode/skills/repo-review/SKILL.md",
+        path: "/tmp/workspace/.raspberrycode/skills/repo-review/SKILL.md",
         scope: "workspace",
         enabled: true,
       },
@@ -647,7 +647,7 @@ describe("SkillsSection", () => {
         name: "global-skill",
         description: "user skill",
         body: "",
-        path: "/Users/dev/.zcode/skills/global-skill/SKILL.md",
+        path: "/Users/dev/.raspberrycode/skills/global-skill/SKILL.md",
         scope: "user",
         enabled: true,
       },
@@ -665,7 +665,7 @@ describe("SkillsSection", () => {
       name: "lark-approval",
       description: "approval",
       body: "",
-      path: "/root/.zcode/skills/lark-approval/SKILL.md",
+      path: "/root/.raspberrycode/skills/lark-approval/SKILL.md",
       scope: "user" as const,
       enabled: true,
     };
@@ -717,7 +717,7 @@ describe("SkillsSection", () => {
       name: "lark-approval",
       description: "approval",
       body: "",
-      path: "/root/.zcode/skills/lark-approval/SKILL.md",
+      path: "/root/.raspberrycode/skills/lark-approval/SKILL.md",
       scope: "user" as const,
       enabled: true,
     };
@@ -726,7 +726,7 @@ describe("SkillsSection", () => {
       name: "local-helper",
       description: "local",
       body: "",
-      path: "/Users/alice/.zcode/skills/local-helper/SKILL.md",
+      path: "/Users/alice/.raspberrycode/skills/local-helper/SKILL.md",
       scope: "user" as const,
       enabled: true,
     };

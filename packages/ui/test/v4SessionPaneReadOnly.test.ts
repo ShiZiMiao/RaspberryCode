@@ -1,6 +1,5 @@
 // @vitest-environment jsdom
 import { createElement, type ReactNode } from "react";
-import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ConversationSnapshot } from "@zcode/shared/zcode-protocol-v4";
@@ -8,8 +7,6 @@ import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import { SessionPane } from "@/v4/SessionPane.js";
 import type { ConversationShareSelectionDraft } from "@/store/conversationShareSelectionStore.js";
 import type { ConversationRowRenderContext } from "@/v4/conversationRowContext.js";
-
-const sessionPaneSource = readFileSync("packages/ui/src/v4/SessionPane.tsx", "utf8");
 
 const projectionState = vi.hoisted(() => ({
   current: null as {
@@ -406,34 +403,12 @@ describe("SessionPane 分享模式接线", () => {
     expect(timelineState.scrollToQueryActionRef).not.toBeNull();
   });
 
-  it("分享选择确认 handler 接线到当前 session 的 confirmShareSelection", () => {
-    const nextHandlerStart = sessionPaneSource.indexOf(
-      "const handleConfirmShareSelection = useCallback",
-    );
-    const nextHandlerEnd = sessionPaneSource.indexOf(
-      "const handleDismissShareError = useCallback",
-      nextHandlerStart,
-    );
-    expect(nextHandlerStart).toBeGreaterThanOrEqual(0);
-    expect(nextHandlerEnd).toBeGreaterThan(nextHandlerStart);
-
-    const nextHandler = sessionPaneSource.slice(nextHandlerStart, nextHandlerEnd);
-    expect(nextHandler).toContain("confirmShareSelection(sessionId)");
-  });
-
   it("不在分享模式时不锁定背景滚动", () => {
     renderSharePane(undefined);
 
     expect(timelineState.backgroundScrollLocked).toBe(false);
   });
 
-  it("局部勾选期间禁用全局 message 工具条，退出分享后恢复", () => {
-    renderSharePane(partialDraft());
-    expect(timelineState.selectionActionsEnabled).toBe(false);
-
-    renderSharePane(undefined);
-    expect(timelineState.selectionActionsEnabled).toBe(true);
-  });
 
   it("分享浮窗保持 chat 输入区，不再替换 Composer", () => {
     expect(renderSharePane(undefined)).toContain('data-conversation-bottom-dock-mode="chat"');

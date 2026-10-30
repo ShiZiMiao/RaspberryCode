@@ -488,7 +488,7 @@ it("远控 Header 从身份索引读取连接并从同一 Host 读取名称，�
     workspaceHeaderState: { selectedProvider: "glm" },
     selectedEditor: null,
     onRefreshGit: vi.fn(),
-    isWebRemoteControl: true,
+    isMobileOverlay: true,
   } satisfies import("@/WorkspaceHeaderSections.js").WorkspaceHeaderTitleSectionProps;
   const view = render(createElement(WorkspaceHeaderTitleSection, props));
   try {

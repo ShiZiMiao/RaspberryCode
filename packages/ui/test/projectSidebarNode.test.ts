@@ -82,11 +82,14 @@ it("回调与项目身份变化不能被 memo 忽略，新建始终使用当前�
   expect(props.onCreateTask).not.toHaveBeenCalled();
   expect(latestCreate).toHaveBeenLastCalledWith({ projectId: "p", taskGroupId: null });
   const project = { ...props.project, id: "remote-p", hostId: "remote:server:example" };
+  // 手机远控已下线：远项目创建目标改走 remoteHost prop（SSH 远程工作区保留流）。
   rerender(
     createElement(ProjectSidebarNode, {
       ...props,
       project,
-      isWebRemoteControl: true,
+      remoteHost: { connectionStatus: "online" } as ComponentProps<
+        typeof ProjectSidebarNode
+      >["remoteHost"],
       onCreateTask: latestCreate,
     }),
   );

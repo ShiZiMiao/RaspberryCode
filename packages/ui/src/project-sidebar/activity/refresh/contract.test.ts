@@ -228,7 +228,6 @@ it.each([
   { title: "renamed" },
   { unreadAt: 123 },
   { cronAutomationId: "cron" },
-  { offPeakTaskId: "offpeak" },
   { pinned: true },
   { archived: true },
 ])("事实变化仍刷新目录：%j", async (patch) => {

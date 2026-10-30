@@ -7,7 +7,7 @@ import type { IServiceAccessor } from "@zcode/services";
 import "@/styles.css";
 const params = new URLSearchParams(location.search);
 document.documentElement.classList.add(
-  params.get("theme") === "light" ? "theme-zai-light" : "theme-zai-dark",
+  params.get("theme") === "light" ? "theme-light" : "theme-dark",
 );
 const services = {
   zcodeAgentService: {

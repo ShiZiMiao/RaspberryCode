@@ -126,12 +126,6 @@ function renderTaskItem({
 }
 
 describe("TaskList mobile active indicator", () => {
-  it("shows a phone marker on the desktop task row that is open on mobile", () => {
-    const html = renderTaskItem();
-
-    expect(html).toContain('data-mobile-active-task="true"');
-    expect(html).toContain("手机正在操作此任务");
-  });
 
   it("renders unread dot with the prototype blue token", () => {
     const html = renderTaskItem({
@@ -159,31 +153,6 @@ describe("TaskList mobile active indicator", () => {
     expect(html).not.toContain('data-unread-indicator="true"');
   });
 
-  it("places the phone marker before the task title text", () => {
-    const html = renderTaskItem();
 
-    expect(html.indexOf('aria-label="手机正在操作此任务"')).toBeLessThan(
-      html.indexOf('data-task-title-copy="original"'),
-    );
-    expect(html).not.toContain('title="手机正在查看的任务"');
-  });
 
-  it("keeps the phone marker mounted until React interaction state replaces it", () => {
-    const html = renderTaskItem();
-
-    expect(html).toMatch(
-      /<span data-mobile-active-task="true"[^>]*aria-label="手机正在操作此任务"[^>]*data-slot="tooltip-trigger">/,
-    );
-    expect(html).not.toContain("group-hover/task-item:hidden");
-    expect(html).not.toContain('aria-label="taskList.pin"');
-  });
-
-  it("does not mount unpin until interaction when the phone marker owns the leading slot", () => {
-    const html = renderTaskItem({ isPinned: true });
-
-    expect(html).toMatch(
-      /<span data-mobile-active-task="true"[^>]*aria-label="手机正在操作此任务"[^>]*data-slot="tooltip-trigger">/,
-    );
-    expect(html).not.toContain('aria-label="taskList.unpin"');
-  });
 });

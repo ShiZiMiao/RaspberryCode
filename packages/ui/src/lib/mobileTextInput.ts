@@ -88,12 +88,12 @@ export function resolveChatEnterShortcut({
 
 export function shouldAvoidIosInputFocusZoom({
   isMobileTextInputViewport,
-  isWebRemoteControl,
+  isMobileOverlay,
 }: {
   isMobileTextInputViewport: boolean;
-  isWebRemoteControl: boolean;
+  isMobileOverlay: boolean;
 }): boolean {
-  return isWebRemoteControl && isMobileTextInputViewport;
+  return isMobileOverlay && isMobileTextInputViewport;
 }
 
 export function resolveMobileInputTextSizeClassName({

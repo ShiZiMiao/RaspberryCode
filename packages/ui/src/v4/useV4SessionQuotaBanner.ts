@@ -1,10 +1,8 @@
-import { useProviderSettingsView } from "@/hooks/useProviderSettingsView.js";
-import { buildStartPlanEntitlementOptions } from "@/lib/startPlanEntitlementOptions.js";
 import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
-import { BUILTIN_MODEL_PROVIDER_IDS, isStartPlanModelProviderId } from "@zcode/shared";
 import type { IUsageStatsService } from "@zcode/services";
 import type { SessionErrorInfo, SessionPhase } from "@zcode/shared/zcode-protocol-v4";
 import { useUsageEntitlementWithService } from "@/hooks/useUsageEntitlement.js";
+import { useProviderSettingsView } from "@/hooks/useProviderSettingsView.js";
 import {
   resolveGlmQuotaBannerBusinessCode,
   resolveStartPlanConcurrentLimitBannerReason,
@@ -12,36 +10,33 @@ import {
   resolveStartPlanQuotaExhaustedBusinessCode,
 } from "@/lib/providerBusinessError.js";
 import {
-  isMaxCodingPlanSnapshot,
-  isTerminalCodingPlanSnapshot,
-} from "@/lib/sidebarCodingPlanUpgrade.js";
-import {
   buildSessionQuotaBannerDismissKey,
   buildSessionQuotaBannerState,
-  resolveQuotaBannerUpgradeProviderId,
-  shouldOfferQuotaBannerUpgrade,
 } from "@/v4/sessionQuotaBannerState.js";
 import type { McpUnavailableNotice } from "@/v4/mcpUnavailableBannerNotice.js";
 import { logger } from "@/logger.js";
 import { sessionQuotaBannerDismissalStore } from "@/v4/sessionQuotaBannerDismissalStore.js";
-import { startPlanQuotaReminderStore } from "@/v4/startPlanQuotaReminderStore.js";
-
-function isGlmQuotaBannerProviderId(providerId: string | null): boolean {
-  return (
-    providerId === BUILTIN_MODEL_PROVIDER_IDS.zaiIndividualCodingPlan ||
-    providerId === BUILTIN_MODEL_PROVIDER_IDS.zaiStartPlan ||
-    providerId === BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan ||
-    providerId === BUILTIN_MODEL_PROVIDER_IDS.bigmodelStartPlan
-  );
-}
 
 function isRunningPhase(phase: SessionPhase | null): boolean {
   return phase === "prewarming" || phase === "running";
 }
 
+/** 额度请求守护：只有活跃 provider 配置了计量 Key（metered-api-key）才有可查额度。 */
+function hasMeteredApiKey(
+  access: { type?: string; apiKey?: string } | null | undefined,
+): boolean {
+  return (
+    (access?.type === "metered-api-key" ||
+      // 旧值读兼容（构造归一前的原始 JSON）。
+      access?.type === "zhipu-coding-plan-api-key") &&
+    Boolean(access?.apiKey?.trim())
+  );
+}
+
 /**
  * V4 quota 业务状态：conversation snapshot 只提供当前 provider/model/错误，额度仍由
- * entitlement 服务读取。两者在 renderer 合并，不把购买或额度状态写回 conversation。
+ * usage stats 服务读取（bigmodelUsageQuotaProvider 的 API Key 用量）。
+ * 两者在 renderer 合并；账号套餐权益已随订阅体系移除，横幅只做信息提示。
  */
 export function useV4SessionQuotaBanner(params: {
   sessionId: string | null;
@@ -53,15 +48,12 @@ export function useV4SessionQuotaBanner(params: {
   usageStatsService?: IUsageStatsService;
   /**
    * 官方 Server MCP 不可用的事实。由调用方从 conversation rows 解析——它是会话事件的投影，
-   * 与 entitlement 服务无关，不放进这个 hook 里取。
+   * 与额度服务无关，不放进这个 hook 里取。
    */
   mcpUnavailableNotice?: McpUnavailableNotice | null;
 }) {
   const activeProviderId = params.providerId?.trim() || null;
   const modelId = params.modelId?.trim() || null;
-  const isStartPlanProvider = Boolean(
-    activeProviderId && isStartPlanModelProviderId(activeProviderId),
-  );
   const quotaExhaustedCode = resolveStartPlanQuotaExhaustedBusinessCode(
     params.error?.code,
     params.error?.message,
@@ -71,38 +63,39 @@ export function useV4SessionQuotaBanner(params: {
     params.error?.message,
   );
   const providerLimitedCode = resolveGlmQuotaBannerBusinessCode(params.error?.code);
-  const serverQuotaExhausted = quotaExhaustedCode === "1005" && isStartPlanProvider;
-  const serverConcurrentLimited = Boolean(concurrentLimitCode) && isStartPlanProvider;
-  const serverProviderLimited = Boolean(
-    providerLimitedCode && isGlmQuotaBannerProviderId(activeProviderId),
-  );
-  const takesOverError = serverQuotaExhausted || serverConcurrentLimited || serverProviderLimited;
+  // 展示规则（含 provider 范围）由 sessionQuotaBannerState 统一判定；这里只透传业务码。
+  const serverQuotaExhausted = quotaExhaustedCode === "1005";
+  const serverConcurrentLimited = Boolean(concurrentLimitCode);
+  const serverProviderLimited = Boolean(providerLimitedCode);
 
-  const settings = useProviderSettingsView();
+  // 请求守护：只有活跃 provider 配置了计量 Key 才读取额度，避免对普通
+  // api-key/无 Key provider 发无谓请求（其它情况由服务端业务码/MCP 分支覆盖）。
+  const providerSettingsRead = useProviderSettingsView();
+  const hasMeteredKey = useMemo(() => {
+    if (providerSettingsRead.state.status !== "ready" || !activeProviderId) return false;
+    const provider = providerSettingsRead.state.view.providers.find(
+      (entry) => entry.providerId === activeProviderId,
+    );
+    return hasMeteredApiKey(
+      (provider?.effectiveConfig as { access?: { type?: string; apiKey?: string } } | undefined)
+        ?.access,
+    );
+  }, [providerSettingsRead.state, activeProviderId]);
+
   const entitlement = useUsageEntitlementWithService(params.usageStatsService, {
-    ...buildStartPlanEntitlementOptions(
-      settings.state.status === "ready" ? settings.state.view : null,
-      isStartPlanProvider ? activeProviderId! : "",
-    ),
+    enabled: hasMeteredKey,
+    preferredProviderId: activeProviderId ?? undefined,
+    allowDisabledPreferredProvider: true,
+    requirePreferredProvider: true,
+    allowEnvApiKey: true,
+    refreshOnMount: false,
   });
-  const reminderVersion = useSyncExternalStore(
-    startPlanQuotaReminderStore.subscribe,
-    startPlanQuotaReminderStore.getSnapshot,
-    startPlanQuotaReminderStore.getSnapshot,
-  );
-  // 展示实例随任务/模型切换而更新；余额刷新不能生成新实例，否则会立即收起当前提醒。
-  const reminderOwner = useMemo(
-    () => ({ sessionId: params.sessionId, activeProviderId, modelId }),
-    [params.sessionId, activeProviderId, modelId],
-  );
   const state = useMemo(
     () =>
       buildSessionQuotaBannerState({
         activeProviderId,
         snapshot: entitlement.snapshot,
         modelId,
-        isReminderHidden: (key, referenceTime) =>
-          startPlanQuotaReminderStore.isHidden(key, reminderOwner, referenceTime),
         serverQuotaExhausted,
         serverConcurrentLimited,
         ...(concurrentLimitCode ? { serverConcurrentLimitBusinessCode: concurrentLimitCode } : {}),
@@ -123,8 +116,6 @@ export function useV4SessionQuotaBanner(params: {
       }),
     [
       activeProviderId,
-      reminderOwner,
-      reminderVersion,
       concurrentLimitCode,
       entitlement.snapshot,
       modelId,
@@ -137,19 +128,17 @@ export function useV4SessionQuotaBanner(params: {
     ],
   );
 
+  // 只有命中服务端业务错误分支的展示才接管 composer 错误；bucket 提示不吞原始错误。
+  const takesOverError = Boolean(
+    (serverQuotaExhausted && state.kind === "daily-exhausted") ||
+      (serverConcurrentLimited && state.kind === "concurrent-limit") ||
+      (serverProviderLimited && state.kind === "provider-limited"),
+  );
+
   const dismissKey = buildSessionQuotaBannerDismissKey(
     state,
     takesOverError ? params.errorKey : null,
   );
-  const previousReminderKeyRef = useRef<string | undefined>(undefined);
-  useEffect(() => {
-    const previousKey = previousReminderKeyRef.current;
-    previousReminderKeyRef.current = state.reminderKey;
-    // 已展示的提醒退出后结束展示实例，避免余额回升再降低时在同一周期重复弹出。
-    if (previousKey && previousKey !== state.reminderKey) {
-      startPlanQuotaReminderStore.dismiss(previousKey);
-    }
-  }, [state.reminderKey]);
   useSyncExternalStore(
     sessionQuotaBannerDismissalStore.subscribe,
     sessionQuotaBannerDismissalStore.getSnapshot,
@@ -157,13 +146,13 @@ export function useV4SessionQuotaBanner(params: {
   );
   const dismissed = Boolean(
     params.sessionId &&
-    dismissKey &&
-    sessionQuotaBannerDismissalStore.isDismissed(params.sessionId, dismissKey),
+      dismissKey &&
+      sessionQuotaBannerDismissalStore.isDismissed(params.sessionId, dismissKey),
   );
   const restoredDismissalRef = useRef<string | null>(null);
   useEffect(() => {
     if (!dismissed || !params.sessionId || !dismissKey) return;
-    const fingerprint = `${params.sessionId}\u0000${dismissKey}`;
+    const fingerprint = `${params.sessionId} ${dismissKey}`;
     if (restoredDismissalRef.current === fingerprint) return;
     restoredDismissalRef.current = fingerprint;
     logger.debug("session quota banner dismissal restored", {
@@ -172,47 +161,21 @@ export function useV4SessionQuotaBanner(params: {
     });
   }, [dismissKey, dismissed, params.sessionId]);
 
-  const upgradeProviderId = resolveQuotaBannerUpgradeProviderId(activeProviderId);
-  const shouldCheckTerminalPlan =
-    state.visible &&
-    upgradeProviderId !== null &&
-    // 不提供升级入口的提示（如 MCP 今日额度用完）无需判断是否已是顶配套餐，
-    // 省掉一次 refreshOnMount 的 entitlement 请求。
-    shouldOfferQuotaBannerUpgrade(state.kind) &&
-    !isStartPlanModelProviderId(upgradeProviderId);
-  const upgradeEntitlement = useUsageEntitlementWithService(params.usageStatsService, {
-    enabled: shouldCheckTerminalPlan,
-    includeSubscription: true,
-    preferredProviderId: upgradeProviderId ?? undefined,
-    allowDisabledPreferredProvider: true,
-    requirePreferredProvider: true,
-    allowEnvApiKey: false,
-    refreshOnMount: true,
-  });
-  const terminalSnapshot =
-    entitlement.snapshot?.provider?.id === upgradeProviderId
-      ? entitlement.snapshot
-      : upgradeEntitlement.snapshot?.provider?.id === upgradeProviderId
-        ? upgradeEntitlement.snapshot
-        : null;
-  const terminalPlan = terminalSnapshot !== null && isTerminalCodingPlanSnapshot(terminalSnapshot);
-  const maxPlan = terminalSnapshot !== null && isMaxCodingPlanSnapshot(terminalSnapshot);
-
   const previousPhaseRef = useRef<SessionPhase | null>(params.phase);
   useEffect(() => {
     const previousPhase = previousPhaseRef.current;
     previousPhaseRef.current = params.phase;
-    if (!isStartPlanProvider || previousPhase === params.phase) return;
+    if (previousPhase === params.phase) return;
     if (isRunningPhase(previousPhase) !== isRunningPhase(params.phase)) {
       // 任务开始会预占额度，终止会扣减或释放；必须绕过普通 freshness 校正一次。
       void entitlement.refresh({ force: true, silent: true, reason: "manual" });
     }
-  }, [entitlement.refresh, isStartPlanProvider, params.phase]);
+  }, [entitlement.refresh, params.phase]);
 
   const modelRefreshInitializedRef = useRef(false);
   const previousModelKeyRef = useRef<string | null>(null);
   useEffect(() => {
-    const nextKey = isStartPlanProvider && modelId ? `${activeProviderId}:${modelId}` : null;
+    const nextKey = activeProviderId && modelId ? `${activeProviderId}:${modelId}` : null;
     const previousKey = previousModelKeyRef.current;
     previousModelKeyRef.current = nextKey;
     if (!modelRefreshInitializedRef.current) {
@@ -222,57 +185,18 @@ export function useV4SessionQuotaBanner(params: {
     if (nextKey && nextKey !== previousKey) {
       void entitlement.refresh({ reason: "initial" });
     }
-  }, [activeProviderId, entitlement.refresh, isStartPlanProvider, modelId]);
+  }, [activeProviderId, entitlement.refresh, modelId]);
 
   const dismiss = useCallback(() => {
-    if (state.reminderKey) {
-      // 点击关闭本身证明用户已看到提示，避免可见性回调尚未执行时关闭无效。
-      if (state.reminderExpiresAt !== undefined && state.reminderReferenceTime !== undefined) {
-        startPlanQuotaReminderStore.markShown(
-          state.reminderKey,
-          state.reminderExpiresAt,
-          reminderOwner,
-          state.reminderReferenceTime,
-        );
-      }
-      startPlanQuotaReminderStore.dismiss(state.reminderKey);
-      return;
-    }
     if (!params.sessionId || !dismissKey) return;
     sessionQuotaBannerDismissalStore.dismiss(params.sessionId, dismissKey);
-  }, [
-    dismissKey,
-    params.sessionId,
-    reminderOwner,
-    state.reminderKey,
-    state.reminderExpiresAt,
-    state.reminderReferenceTime,
-  ]);
-
-  const markShown = useCallback(() => {
-    if (
-      state.reminderKey &&
-      state.reminderExpiresAt !== undefined &&
-      state.reminderReferenceTime !== undefined
-    ) {
-      startPlanQuotaReminderStore.markShown(
-        state.reminderKey,
-        state.reminderExpiresAt,
-        reminderOwner,
-        state.reminderReferenceTime,
-      );
-    }
-  }, [reminderOwner, state.reminderExpiresAt, state.reminderKey, state.reminderReferenceTime]);
+  }, [dismissKey, params.sessionId]);
 
   return {
     state,
     dismissKey,
     dismissed,
     dismiss,
-    markShown,
     takesOverError,
-    upgradeProviderId:
-      terminalPlan || !shouldOfferQuotaBannerUpgrade(state.kind) ? null : upgradeProviderId,
-    upgradeActionLabelId: maxPlan ? "chat.quota.action.renew" : "chat.quota.action.upgrade",
   } as const;
 }

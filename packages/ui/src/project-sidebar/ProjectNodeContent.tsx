@@ -98,10 +98,8 @@ export const ProjectNodeContent = memo(function ProjectNodeContent({
   attributes,
   listeners,
   setActivatorNodeRef,
-  dragEnabled,
 }: ProjectNodeProps &
   Pick<ReturnType<typeof useSortable>, "attributes" | "listeners" | "setActivatorNodeRef"> & {
-    dragEnabled: boolean;
     editable: boolean;
     canOpen: boolean;
     isOpen: boolean;
@@ -216,11 +214,11 @@ export const ProjectNodeContent = memo(function ProjectNodeContent({
                 <CollapsibleTrigger asChild>
                   <Button
                     ref={setActivatorNodeRef}
-                    {...(dragEnabled ? attributes : {})}
-                    {...(dragEnabled ? listeners : {})}
+                    {...attributes}
+                    {...listeners}
                     variant="ghost"
                     className={cn(
-                      dragEnabled ? "touch-none" : "touch-pan-y",
+                      "touch-none",
                       "flex h-8 min-w-0 flex-1 justify-start gap-2 rounded-lg pl-2.5 pr-1 text-left text-foreground hover:bg-transparent hover:text-foreground aria-expanded:bg-transparent aria-expanded:text-foreground",
                       primaryRootDisabledReason && "opacity-50",
                     )}

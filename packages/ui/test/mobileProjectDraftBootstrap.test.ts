@@ -55,18 +55,6 @@ function mount(options: Partial<Parameters<typeof useRootPlatformEffects>[0]> = 
   );
   return startDraftInWorkspace;
 }
-it("mobile Root recreation restores project under the same identity before initializing the draft", () => {
-  persistV4ComposerDraft("/cwd", "remote:server:s:/cwd", V4_DRAFT_SCOPE_ROOT, {
-    text: "unsent",
-    projectId: "p",
-    taskGroupId: "g",
-  });
-  const start = mount();
-  expect(start).toHaveBeenCalledWith("/cwd", "remote:server:s:/cwd", {
-    projectId: "p",
-    taskGroupId: "g",
-  });
-});
 it("explicit new unclassified intent wins over a saved project draft", () => {
   persistV4ComposerDraft("/cwd", "remote:server:s:/cwd", V4_DRAFT_SCOPE_ROOT, {
     text: "unsent",

@@ -477,7 +477,7 @@ describe("ConversationRowView reasoning summary", () => {
 describe("ConversationRowView user query editing", () => {
   it.each([false, true])(
     "renders topic originals separately (mobile=%s)",
-    async (compactForRemoteControl) => {
+    async (compactForOverlay) => {
       const container = installMinimalDom();
       const root = createRoot(container);
       const row = userInputRow({
@@ -515,7 +515,7 @@ describe("ConversationRowView user query editing", () => {
             ZCodeIntlProvider,
             { initialLocale: "zh-CN" },
             createElement(ConversationRowView, {
-              context: { ...rowContext, compactForRemoteControl },
+              context: { ...rowContext, compactForOverlay },
               row,
             }),
           ),
@@ -1420,7 +1420,7 @@ describe("ConversationRowView user query editing", () => {
           ZCodeIntlProvider,
           { initialLocale: "zh-CN" },
           createElement(ConversationRowView, {
-            context: { ...rowContext, compactForRemoteControl: true },
+            context: { ...rowContext, compactForOverlay: true },
             row,
             onEdit: vi.fn(),
           }),
@@ -1452,7 +1452,7 @@ describe("ConversationRowView user query editing", () => {
           ZCodeIntlProvider,
           { initialLocale: "zh-CN" },
           createElement(ConversationRowView, {
-            context: { ...rowContext, compactForRemoteControl: true },
+            context: { ...rowContext, compactForOverlay: true },
             row,
             onFeedbackChange: vi.fn(async () => true),
           }),

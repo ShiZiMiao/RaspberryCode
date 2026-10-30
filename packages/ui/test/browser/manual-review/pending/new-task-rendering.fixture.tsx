@@ -120,7 +120,7 @@ const common = {
   workspacePath: "/example",
   theme,
   isDesktop: !mobile,
-  isWebRemoteControl: mobile,
+  isMobileOverlay: mobile,
   onSelectTask: noop,
   onStartDraftInWorkspace: noop,
   onOpenFolderFromWorkspaceMenu: noop,

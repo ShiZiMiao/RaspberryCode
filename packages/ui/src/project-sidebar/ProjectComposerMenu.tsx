@@ -49,7 +49,7 @@ import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
 export function ProjectComposerMenu({
   workspacePath,
   workspaceIdentity,
-  compactForRemoteControl = false,
+  compactForOverlay = false,
   allowConversationWorkspaceSelection = true,
   allowConversationWorkspaceDetach = allowConversationWorkspaceSelection,
   onCreateTask,
@@ -64,7 +64,7 @@ export function ProjectComposerMenu({
 }: {
   workspacePath: string;
   workspaceIdentity?: string;
-  compactForRemoteControl?: boolean;
+  compactForOverlay?: boolean;
   allowConversationWorkspaceSelection?: boolean;
   /** 是否显示项目 chip 的快捷脱离按钮；默认跟随非项目工作区选择能力。 */
   allowConversationWorkspaceDetach?: boolean;
@@ -338,7 +338,7 @@ export function ProjectComposerMenu({
               "min-w-0 rounded-full bg-transparent text-ui-base/relaxed hover:bg-transparent",
               // Bugfix: 远程控制页面空态文案区域更窄，workspacePath 过长会把同一行挤坏。
               // 这里在远控模式收紧菜单触发按钮宽度，让超长路径在按钮内走省略号。
-              compactForRemoteControl ? "max-w-44 pl-3 pr-2" : "max-w-[15rem] pl-3 pr-2",
+              compactForOverlay ? "max-w-44 pl-3 pr-2" : "max-w-[15rem] pl-3 pr-2",
               triggerClassName,
             )}
             ref={trigger}
@@ -434,7 +434,7 @@ export function ProjectComposerMenu({
                           operation: () =>
                             createProjectTask({
                               projectId: project.id,
-                              ...(compactForRemoteControl ||
+                              ...(compactForOverlay ||
                               directory.hosts.some((host) => host.id === project.hostId)
                                 ? { hostId: project.hostId }
                                 : {}),

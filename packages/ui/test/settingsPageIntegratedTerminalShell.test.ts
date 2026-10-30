@@ -232,17 +232,7 @@ vi.mock("@/lib/settingsNavigation.js", () => ({
   writeLastSettingsSectionPreference: vi.fn(),
 }));
 
-vi.mock("@/settings/CodingPlanUpgradeDialogProvider.js", () => ({
-  useCodingPlanUpgradeDialog: () => ({
-    openCodingPlanUpgrade: vi.fn(),
-  }),
-}));
 
-vi.mock("@/lib/sidebarUsageCodingPlanProviderPreference.js", () => ({
-  readSidebarUsageCodingPlanProviderPreference: () => undefined,
-  readSidebarUsageCodingPlanSourcePreference: () => undefined,
-  writeSidebarUsageCodingPlanProviderPreference: vi.fn(),
-}));
 
 vi.mock("@/lib/codingPlanProvider.js", () => ({}));
 

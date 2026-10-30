@@ -28,8 +28,6 @@ it.each([
       isWindowsDesktop,
       isMacDesktop,
       isSidebarVisible: true,
-      updateReadyVersion: null,
-      updateState: null,
       toggleSidebarShortcutLabel: "Ctrl+B",
       newTaskShortcutLabel: "Ctrl+N",
       goBackShortcutLabel: "Alt+Left",

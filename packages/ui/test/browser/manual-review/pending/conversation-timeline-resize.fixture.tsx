@@ -97,7 +97,7 @@ function Fixture() {
               totalCount={rows.length}
               sessionKey={session}
               scrollMemoryKey={`fixture::main::${session}`}
-              compactForRemoteControl={query.get("mobile") === "true"}
+              compactForOverlay={query.get("mobile") === "true"}
               scrollToBottomActionRef={back}
               scrollToQueryActionRef={locate}
               rowContext={{

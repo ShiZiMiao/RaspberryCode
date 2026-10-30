@@ -26,19 +26,16 @@ export function resolveTopOverlayLeadingPaddingClass({
   isSidebarVisible,
   isMacDesktop,
   isMacFullscreen,
-  hasUpdateReady,
 }: {
   isSidebarVisible: boolean;
   isMacDesktop?: boolean;
   isMacFullscreen?: boolean;
-  hasUpdateReady?: boolean;
 }): string | false {
   if (isSidebarVisible) return false;
   if (isMacDesktop) {
-    if (hasUpdateReady) return isMacFullscreen ? "pl-48" : "pl-66";
     return isMacFullscreen ? "pl-38" : "pl-58";
   }
-  return hasUpdateReady ? "pl-44" : "pl-38";
+  return "pl-38";
 }
 
 export function WorkspaceHeader({
@@ -54,7 +51,6 @@ export function WorkspaceHeader({
   projectName,
   activeTaskTitle,
   activeTaskChangeSummary,
-  hasUpdateReady,
   activeTaskId,
   user,
   activeTraceId,
@@ -75,10 +71,8 @@ export function WorkspaceHeader({
   isMacDesktop,
   isMacFullscreen,
   isWindowsDesktop,
-  isWebRemoteControl = false,
 
   isDesktop,
-  simplifyForNarrowRemote = false,
   isSidebarVisible,
   isTerminalOpen,
   isSidePaneOpen,
@@ -101,7 +95,6 @@ export function WorkspaceHeader({
   projectName: string;
   activeTaskTitle: string;
   activeTaskChangeSummary?: ZCodeTaskChangeSummary | null;
-  hasUpdateReady: boolean;
   activeTaskId: string | null;
   user?: UserInfo | null;
   activeTraceId: string | null;
@@ -123,10 +116,8 @@ export function WorkspaceHeader({
   isMacFullscreen?: boolean;
   isWindowsDesktop?: boolean;
   reserveWindowControls?: boolean;
-  isWebRemoteControl?: boolean;
   windowsWindowControlsRightPaddingPx?: number;
   isDesktop?: boolean;
-  simplifyForNarrowRemote?: boolean;
   isSidebarVisible: boolean;
   isTerminalOpen: boolean;
   isSidePaneOpen: boolean;
@@ -152,7 +143,6 @@ export function WorkspaceHeader({
     isSidebarVisible,
     isMacDesktop,
     isMacFullscreen,
-    hasUpdateReady,
   });
 
   return (
@@ -213,8 +203,6 @@ export function WorkspaceHeader({
             isMacDesktop={isMacDesktop}
             isMacFullscreen={isMacFullscreen}
             isWindowsDesktop={isWindowsDesktop}
-            isWebRemoteControl={isWebRemoteControl}
-            simplifyForNarrowRemote={simplifyForNarrowRemote}
             selectedEditor={selectedEditor}
             onReloadSession={onReloadSession}
             reloadSessionDisabled={reloadSessionDisabled}
@@ -233,14 +221,12 @@ export function WorkspaceHeader({
           workspaceIdentity={workspaceIdentity}
           remoteSessionId={remoteSessionId}
           remoteTarget={remoteTarget}
-          isWebRemoteControl={isWebRemoteControl}
           isDesktop={isDesktop}
           isTerminalOpen={isTerminalOpen}
           isSidePaneOpen={isSidePaneOpen}
           onToggleTerminal={onToggleTerminal}
           onToggleSidePane={onToggleSidePane}
           toggleSidePaneShortcutLabel={toggleSidePaneShortcutLabel}
-          simplifyForNarrowRemote={simplifyForNarrowRemote}
           hideHelpMenu={false}
           showWindowControls={usesInlineWindowControls}
           // 面板操作按钮沿用 macOS 紧凑样式，Windows/Linux 窗控跟随最右侧 Header。

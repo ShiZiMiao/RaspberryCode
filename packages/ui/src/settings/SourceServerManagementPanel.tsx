@@ -541,9 +541,7 @@ export function SourceServerManagementPanel({
       return;
     switch (presentation.primaryAction) {
       case "update-desktop":
-        void run("desktop-update", async () => {
-          await platform?.executeDesktopCommand(DesktopCommandIds.CheckForUpdates);
-        });
+        // 自动更新已下线：桌面端升级须通过分发渠道手动完成。
         return;
       case "update-server":
         void updateProfile(profile);
@@ -1296,7 +1294,7 @@ export function SourceServerManagementPanel({
                       className="ml-auto"
                       onClick={() => sourceServerUpdatePreferences.defer(updateKey)}
                     >
-                      {intl.formatMessage({ id: "updateDialog.later" })}
+                      {intl.formatMessage({ id: "settings.source.upgradeLater" })}
                     </Button>
                   ) : null}
                   {serverState.state !== "updating" &&
@@ -1311,12 +1309,8 @@ export function SourceServerManagementPanel({
                         const profile = serverProfiles.find(
                           (candidate) => candidate.profileId === serverState.profileId,
                         );
-                        if (serverState.upgradeTarget === "controller")
-                          void run("desktop-update", async () => {
-                            await platform?.executeDesktopCommand(
-                              DesktopCommandIds.CheckForUpdates,
-                            );
-                          });
+                        // 自动更新已下线：桌面端升级须通过分发渠道手动完成。
+                        if (serverState.upgradeTarget === "controller") void 0;
                         else if (profile) void updateProfile(profile);
                       }}
                     >

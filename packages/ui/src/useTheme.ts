@@ -1,7 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
 
-export type Theme = "light" | "dark" | "zai-light" | "zai-dark" | "system";
+export type Theme = "light" | "dark" | "system";
 export type ResolvedTheme = "light" | "dark";
+// 历史版本（ZCode 时代）localStorage 里存过 zai-* 主题值，读取时映射到中性值，写入只写新值。
+const LEGACY_THEME_MAP: Record<string, Theme> = {
+  "zai-light": "light",
+  "zai-dark": "dark",
+};
 
 const STORAGE_KEY = "zcode-theme";
 const BROWSER_THEME_SURFACE_ATTRIBUTE = "data-zcode-browser-theme-surface";
@@ -15,13 +20,13 @@ export function resolveTheme(theme: Theme): ResolvedTheme {
     return getSystemTheme();
   }
 
-  return theme === "dark" || theme === "zai-dark" ? "dark" : "light";
+  return theme === "dark" ? "dark" : "light";
 }
 
-export function normalizeThemePreference(theme: Theme): Theme {
-  if (theme === "dark") return "zai-dark";
-  if (theme === "light") return "zai-light";
-  return theme;
+export function normalizeThemePreference(theme: Theme | string | null | undefined): Theme {
+  if (theme === "dark" || theme === "light" || theme === "system") return theme;
+  const legacy = theme ? LEGACY_THEME_MAP[theme] : undefined;
+  return legacy ?? "dark";
 }
 
 function setThemeMetaContent(name: "theme-color" | "color-scheme", content: string) {
@@ -58,32 +63,27 @@ function syncBrowserThemeSurface(resolved: ResolvedTheme) {
 export function applyTheme(theme: Theme) {
   const resolved = resolveTheme(theme);
   const appliedTheme =
-    theme === "system"
-      ? resolved === "dark"
-        ? "zai-dark"
-        : "zai-light"
-      : normalizeThemePreference(theme);
+    theme === "system" ? resolved : normalizeThemePreference(theme);
   document.documentElement.classList.toggle("dark", resolved === "dark");
-  document.documentElement.classList.toggle("theme-zai-light", appliedTheme === "zai-light");
-  document.documentElement.classList.toggle("theme-zai-dark", appliedTheme === "zai-dark");
+  document.documentElement.classList.toggle("theme-light", appliedTheme === "light");
+  document.documentElement.classList.toggle("theme-dark", appliedTheme === "dark");
   syncBrowserThemeSurface(resolved);
 }
 
 function isTheme(value: string | null): value is Theme {
-  return (
-    value === "light" ||
-    value === "dark" ||
-    value === "zai-light" ||
-    value === "zai-dark" ||
-    value === "system"
-  );
+  return value === "light" || value === "dark" || value === "system";
+}
+
+function readStoredTheme(): Theme {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  // 迁移：旧版本存的 zai-* 值读取时归一为中性值，用户偏好不丢。
+  return normalizeThemePreference(saved);
 }
 
 export function useTheme() {
   const [theme, setThemeState] = useState<Theme>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    // 默认主题统一收敛到 Zai dark，避免旧 hook 兜底值和 Zustand store 默认值分叉。
-    return isTheme(saved) ? normalizeThemePreference(saved) : "zai-dark";
+    // 默认主题统一收敛到 dark，避免旧 hook 兜底值和 Zustand store 默认值分叉。
+    return readStoredTheme();
   });
 
   const setTheme = useCallback((t: Theme) => {

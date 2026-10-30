@@ -175,10 +175,10 @@ vi.mock("@/request-security-edition/V4ProviderRuntimeHeadersController.js", asyn
 vi.mock("@/v4/ConversationDraftEmptyState.js", async () => {
   const React = await import("react");
   return {
-    ConversationDraftEmptyState: (props: { compactForRemoteControl?: boolean }) =>
+    ConversationDraftEmptyState: (props: { compactForOverlay?: boolean }) =>
       React.createElement("div", {
         "data-testid": "mock-draft-empty",
-        "data-compact-remote": props.compactForRemoteControl ? "true" : "false",
+        "data-compact-remote": props.compactForOverlay ? "true" : "false",
       }),
   };
 });
@@ -317,14 +317,14 @@ function makeSnapshot(overrides: Partial<ConversationSnapshot> = {}): Conversati
 }
 
 function renderPane({
-  compactForRemoteControl = false,
+  compactForOverlay = false,
   onOpenSubagentSession,
   onOpenWorkflowRun,
   onSummaryPanelVariantOverrideChange,
   snapshot = makeSnapshot(),
   sessionId = "session-1",
 }: {
-  compactForRemoteControl?: boolean;
+  compactForOverlay?: boolean;
   onOpenSubagentSession?: (request: OpenScopedSubagentSideTabRequest) => void;
   onOpenWorkflowRun?: (request: OpenScopedWorkflowRunSideTabRequest) => void;
   onSummaryPanelVariantOverrideChange?: (variant: "panel" | "mini" | null) => void;
@@ -350,7 +350,7 @@ function renderPane({
         paneId: "workspace-main",
         sessionId,
         workspacePath: "/workspace",
-        compactForRemoteControl,
+        compactForOverlay,
         ...(onOpenSubagentSession ? { onOpenSubagentSession } : {}),
         ...(onOpenWorkflowRun ? { onOpenWorkflowRun } : {}),
         ...(onSummaryPanelVariantOverrideChange ? { onSummaryPanelVariantOverrideChange } : {}),
@@ -373,7 +373,7 @@ describe("SessionPane v4 chat layout parity", () => {
   });
 
   it("passes compact remote draft mode to the empty state", () => {
-    const html = renderPane({ sessionId: null, compactForRemoteControl: true });
+    const html = renderPane({ sessionId: null, compactForOverlay: true });
 
     expect(html).toContain('data-compact-remote="true"');
   });
@@ -446,16 +446,16 @@ describe("SessionPane v4 chat layout parity", () => {
     expect(html).toContain('data-blocking-request-id="perm-1"');
   });
 
-  for (const compactForRemoteControl of [false, true]) {
+  for (const compactForOverlay of [false, true]) {
     it.each([
       ["permission", [pendingPermissionInteraction()]],
       ["user input", [pendingStructuredUserInputInteraction()]],
       ["mixed requests", [pendingPermissionInteraction(), pendingStructuredUserInputInteraction()]],
     ])(
-      `keeps %s in the bottom dock without a top notice (remote=${compactForRemoteControl})`,
+      `keeps %s in the bottom dock without a top notice (remote=${compactForOverlay})`,
       (_label, pendingInteractions) => {
         const html = renderPane({
-          compactForRemoteControl,
+          compactForOverlay,
           snapshot: makeSnapshot({ pendingInteractions }),
         });
 
@@ -612,11 +612,11 @@ describe("SessionPane v4 chat layout parity", () => {
     });
 
     renderPane({
-      compactForRemoteControl: true,
+      compactForOverlay: true,
       snapshot,
       onOpenSubagentSession,
     });
-    expect(statusPanelCapture.props.at(-1)?.isWebRemoteControl).toBe(true);
+    expect(statusPanelCapture.props.at(-1)?.isMobileOverlay).toBe(true);
     expect(statusPanelCapture.props.at(-1)?.isMobileViewport).toBe(false);
     expect(statusPanelCapture.props.at(-1)?.onOpenSubagentSession).toEqual(expect.any(Function));
     expect(statusPanelCapture.props.at(-1)?.onOpenSubagentDirectory).toBeUndefined();

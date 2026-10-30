@@ -27,12 +27,6 @@ const captured = vi.hoisted(() => ({
     disabled?: boolean;
     onSelect: (() => void | Promise<void>) | undefined;
   }>,
-  updateMenu: {
-    visible: true,
-    disabled: false,
-    labelId: "titleBar.menu.help.checkForUpdates",
-    labelValues: undefined,
-  },
   executeDesktopCommand: vi.fn(async () => undefined),
 }));
 
@@ -81,14 +75,6 @@ vi.mock("@/feedback/feedbackStore.js", () => ({
       openFeatureRequest: () => void;
     }) => unknown,
   ) => selector({ openSubmit: vi.fn(), openFeatureRequest: vi.fn() }),
-}));
-
-vi.mock("@/hooks/useDesktopUpdateMenu.js", () => ({
-  useDesktopUpdateMenu: (isDesktop: boolean) => ({
-    ...captured.updateMenu,
-    visible: isDesktop && captured.updateMenu.visible,
-    checkForUpdates: () => captured.executeDesktopCommand(DesktopCommandIds.CheckForUpdates),
-  }),
 }));
 
 vi.mock("@/hooks/usePlatform.js", () => ({
@@ -207,28 +193,7 @@ describe("WorkspaceHelpMenuButton", () => {
     }
   });
 
-  it("资源管理器之后显示检查更新，点击执行已有命令", async () => {
-    await render(true);
-    const index = captured.menuItems.findIndex(
-      (entry) => entry.label === "titleBar.menu.help.checkForUpdates",
-    );
-    expect(index).toBeGreaterThan(0);
-    expect(captured.menuItems[index - 1]?.testId).toBe(TID_WORKSPACE_HELP_MENU_RESOURCE_MANAGER);
-    await captured.menuItems[index]?.onSelect?.();
-    expect(captured.executeDesktopCommand).toHaveBeenCalledExactlyOnceWith(
-      DesktopCommandIds.CheckForUpdates,
-    );
-  });
 
-  it("Web 与 Preview 不显示检查更新", async () => {
-    expect(await render(false)).not.toContain("titleBar.menu.help.checkForUpdates");
-    captured.updateMenu.visible = false;
-    try {
-      expect(await render(true)).not.toContain("titleBar.menu.help.checkForUpdates");
-    } finally {
-      captured.updateMenu.visible = true;
-    }
-  });
 
   it("桌面导出日志复用平台导出及共享提示", async () => {
     await render(true);
@@ -255,7 +220,6 @@ describe("WorkspaceHelpMenuButton", () => {
     for (const desktop of [true, false]) {
       const html = await render(desktop);
       expect(captured.menuItems.map((item) => item.label)).toEqual([
-        "workspaceHeader.help.docs",
         "workspaceHeader.help.community",
         "workspaceHeader.help.issueReport",
         "workspaceHeader.help.productRequest",
@@ -263,7 +227,6 @@ describe("WorkspaceHelpMenuButton", () => {
           ? [
               "titleBar.menu.help.exportLogs",
               "titleBar.menu.help.resourceManager",
-              "titleBar.menu.help.checkForUpdates",
               "titleBar.menu.help.about",
             ]
           : []),
@@ -279,7 +242,6 @@ describe("WorkspaceHelpMenuButton", () => {
         "workspaceHeader.help.issueReport",
         "workspaceHeader.help.productRequest",
         "workspaceHeader.help.community",
-        "workspaceHeader.help.docs",
       ]) {
         expect(html).toContain(id);
       }

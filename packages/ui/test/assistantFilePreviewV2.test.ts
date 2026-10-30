@@ -433,7 +433,7 @@ describe("assistant HTML open target", () => {
     expect(
       shouldOpenAssistantHtmlInBrowser({
         path: "/workspace/page.html",
-        compactForRemoteControl: true,
+        compactForOverlay: true,
       }),
     ).toBe(false);
   });

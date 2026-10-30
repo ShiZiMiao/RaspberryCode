@@ -3,9 +3,9 @@ import { decodeCustomModelValue } from "@/lib/zcodeCustomModelValue.js";
 
 export function shouldShowManageModelsAction(
   onManageModels?: () => void,
-  options: { isWebRemoteControl?: boolean } = {},
+  options: { isMobileOverlay?: boolean } = {},
 ): boolean {
-  if (options.isWebRemoteControl) return false;
+  if (options.isMobileOverlay) return false;
   return typeof onManageModels === "function";
 }
 
