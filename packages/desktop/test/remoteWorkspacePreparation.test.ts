@@ -15,12 +15,12 @@ const fileService = createFileService();
 describe.each([null, 0o000, 0o400, 0o100])(
   "远程工作区目录 admission，权限 %s（null 为删除）",
   (permissions) => {
-    it.each(["manual", "automatic"] as const)(
+    // 修复原因：vitest 4 的 it.each 回调不传 test context，运行期 context.skip() 会 TypeError；
+    // 权限用例只在 POSIX 非 root 下有断言语义，条件注册期已知，改用 it.skipIf 干净跳过。
+    it.skipIf(permissions !== null && (process.platform === "win32" || process.getuid?.() === 0))
+      .each(["manual", "automatic"] as const)(
       "%s：单个目录失效只拒绝该项目，修复后可以重连",
-      async (mode, context) => {
-        if (permissions !== null && (process.platform === "win32" || process.getuid?.() === 0)) {
-          context.skip();
-        }
+      async (mode) => {
         const root = await realpath(await mkdtemp(join(tmpdir(), "zcode-workspace-admission-")));
         const paths = [1, 2, 3].map((n) => join(root, `workspace-${n}`));
         const closedListeners = new Set<
