@@ -68,18 +68,13 @@ ZCODE_DATA_BASE_DIR="$HOME/.zcode-dev-home" pnpm dev:desktop:test
 
 先执行 `pnpm bootstrap:with-remote` 准备远程资源（mock-cdn），再 `pnpm dev:desktop`；连接远程项目时资源选择「本地下载后上传」。开发态资源取自本地 `packages/desktop/mock-cdn` 和本地构建产物，经 SFTP 上传到远程，不访问 CDN。
 
-### Web 开发
+### 服务端开发
 
-修改 Web 或后端源码时，使用开发模式：
+后端源码修改时，使用开发模式：
 
 ```bash
-pnpm dev:web
-
-# 指定后端工作区（macOS / Linux）
-ZCODE_SERVER_WORKSPACE=/path/to/project pnpm dev:web
+pnpm dev:server
 ```
-
-该命令同时启动 Web 开发服务器（默认 `http://localhost:5173`）和后端（默认 `http://localhost:3030`）；浏览器访问前者。`/ws` 和一般 `/api` 请求代理到本地后端，`/api/v1/oauth/token` 单独代理到当前配置的产品服务。
 
 Agent 源码修改后，执行 `pnpm --filter @zcode/cli... build` 并重启服务。需要验证完整发行包时，按下方“RaspberryCode 命令行版”打包章节解压运行。
 
@@ -218,7 +213,6 @@ node dist/zcode/debug/zcode/bin/zcode.mjs --web \
 | 目录                                                 | 职责                                       |
 | ---------------------------------------------------- | ------------------------------------------ |
 | `packages/desktop`                                   | Electron Main、Host、Renderer 与桌面打包   |
-| `packages/web`                                       | Web 客户端                                 |
 | `packages/server`                                    | HTTP / WebSocket 服务与远程连接            |
 | `packages/zcode-server-cli`                          | 独立 Server 启动与进程管理                 |
 | `packages/ui`                                        | 共享 React 组件、hooks 与 Zustand 状态     |
