@@ -1,6 +1,5 @@
 import type { RemoteAssetInstallMode } from "./remoteAssetInstallMode.js";
 import type { RemoteResourcePackageSelection } from "./remoteResourcePackages.js";
-import type { ProviderFamilyDomain } from "./model-provider-family.js";
 import type { ProviderFamilyConnectionSelectionSettings } from "./provider-family-connection-selection.js";
 import type { ZCodeProvider } from "./zcode-task-types-core.js";
 import type { WorkspacePurpose } from "./workspacePurpose.js";
@@ -346,12 +345,6 @@ export interface AppSettings {
   enabledBuiltinAgentCliProviders?: ZCodeProvider[];
   /** 设置页中每个 Provider Family 当前唯一的结构化连接选择。 */
   providerFamilyConnectionSelections?: ProviderFamilyConnectionSelectionSettings;
-  /** 用户通过 WelcomeScreen 成功连接后确认的 ZAI / BigModel provider family 运行域。 */
-  providerFamilyDomain?: ProviderFamilyDomain;
-  /** 最近一次设置或清空 providerFamilyDomain 的时间。 */
-  providerFamilyDomainUpdatedAt?: number;
-  /** 旧 oauth/provider 状态是否已经尝试迁移到 providerFamilyDomain。 */
-  providerFamilyDomainMigrated?: boolean;
   /** 新建或冷恢复 Session 是否为 Bash 注入 bfs/ugrep 增强；默认启用。 */
   nativeSearchEnhancementsEnabled?: boolean;
   /** 新建或冷恢复时读取；已有 Runtime 保持原策略。 */
@@ -422,22 +415,6 @@ export interface AppSettings {
   skippedElectronUpdateVersions?: Partial<Record<ElectronReleaseChannel, string>>;
   /** 首次启动设置同步提示是否已消费；只表示弹窗不再出现，不代表导入成功。 */
   settingsSyncFirstRunPromptHandled?: boolean;
-  /** 外部 Web 远控 relay 的非敏感设备身份；passHash 必须存 credentialService。 */
-  /** V2 非敏感注册身份；JWT 和一次性 token 不持久化于 AppSettings。 */
-  webRemoteControlRelayV2Device?: {
-    deviceSid: string;
-    userId: string;
-    endpointOrigin: string;
-  };
-  webRemoteControlExternalRelayDevice?: {
-    deviceSid: string;
-  };
-  /** 上次成功开启 Web 远控时的目标；缺失表示用户已明确关闭，不自动恢复。 */
-  webRemoteControlLastEnabledContext?: {
-    workspacePath: string;
-    workspaceIdentity?: string;
-    initialTaskId?: string;
-  };
   /** 设置页里的临时 endpoint override；正式/测试默认 base url 由 ZCODE_BASE_URL env 管理。 */
   zcodeEndpointOrigin?: string;
 }

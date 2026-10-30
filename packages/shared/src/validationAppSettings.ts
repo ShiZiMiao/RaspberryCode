@@ -69,7 +69,6 @@ const enabledBuiltinAgentCliProvidersSchema = z
   // 兼容旧 settings：历史列表可能残留三方 CLI provider，解析后统一归一为 RaspberryCode Agent。
   .array(z.enum(["claude", "opencode", "gemini", "codex", "glm"]))
   .transform(() => [...ZCODE_ENABLED_AGENT_PROVIDERS]);
-const providerFamilyDomainSchema = z.enum(["zai", "bigmodel"]);
 
 export const postUpdateReleaseNotesPayloadSchema = z.object({
   version: nonEmptyStringSchema,
@@ -144,11 +143,6 @@ const appWorkspaceSessionEntrySchema = z.discriminatedUnion("kind", [
   }),
 ]);
 
-const webRemoteControlRelayV2DeviceSchema = z.object({
-  deviceSid: z.string().min(1),
-  userId: z.string().min(1),
-  endpointOrigin: z.url(),
-});
 const remoteConversationWorkspaceRecordSchema = z
   .object({
     workspacePath: nonEmptyStringSchema,
@@ -156,14 +150,6 @@ const remoteConversationWorkspaceRecordSchema = z
   })
   .strict();
 
-const webRemoteControlExternalRelayDeviceSchema = z.object({
-  deviceSid: nonEmptyStringSchema,
-});
-const webRemoteControlLastEnabledContextSchema = z.object({
-  workspacePath: nonEmptyStringSchema,
-  workspaceIdentity: nonEmptyStringSchema.optional(),
-  initialTaskId: nonEmptyStringSchema.optional(),
-});
 const zcodeEndpointOriginSchema = z.preprocess((value) => {
   if (typeof value !== "string") {
     return undefined;
@@ -546,9 +532,6 @@ const appSettingsObjectSchema = z.object({
   ]),
   startPlanRecommendationDismissed: z.boolean().default(false),
   providerFamilyConnectionSelections: providerFamilyConnectionSelectionSettingsSchema.default({}),
-  providerFamilyDomain: providerFamilyDomainSchema.optional(),
-  providerFamilyDomainUpdatedAt: z.number().int().nonnegative().optional(),
-  providerFamilyDomainMigrated: z.boolean().default(false),
   nativeSearchEnhancementsEnabled: z.boolean().default(true),
   toolSearchMode: appToolSearchModeSchema.default("off"),
   onboardingOccupation: appSettingsOccupationSchema.nullish(),
@@ -576,29 +559,46 @@ const appSettingsObjectSchema = z.object({
   autoDownloadAndInstallUpdates: z.boolean().default(false),
   skippedElectronUpdateVersions: skippedElectronUpdateVersionsSchema,
   settingsSyncFirstRunPromptHandled: z.boolean().optional(),
-  webRemoteControlRelayV2Device: webRemoteControlRelayV2DeviceSchema.optional(),
-  webRemoteControlExternalRelayDevice: webRemoteControlExternalRelayDeviceSchema.optional(),
-  webRemoteControlLastEnabledContext: webRemoteControlLastEnabledContextSchema.optional(),
   zcodeEndpointOrigin: zcodeEndpointOriginSchema.optional(),
 });
 
+/** Web 远控已随 zcode.z.ai 云端功能下线：旧 settings 文件里的远控键静默丢弃（读兼容）。 */
+function stripRetiredWebRemoteControlSettings(value: unknown): unknown {
+  if (typeof value !== "object" || value === null) return value;
+  const { webRemoteControlRelayV2Device: _a, webRemoteControlExternalRelayDevice: _b, webRemoteControlLastEnabledContext: _c, ...rest } =
+    value as Record<string, unknown>;
+  return rest;
+}
+
+/** providerFamilyDomain 随账号域 family 体系退役：旧 settings 文件里的该组键静默丢弃（读兼容）。 */
+function stripRetiredProviderFamilyDomainSettings(value: unknown): unknown {
+  if (typeof value !== "object" || value === null) return value;
+  const { providerFamilyDomain: _a, providerFamilyDomainUpdatedAt: _b, providerFamilyDomainMigrated: _c, ...rest } =
+    value as Record<string, unknown>;
+  return rest;
+}
+
 export const appSettingsSchema = z.preprocess(
   (value) =>
-    sanitizeEmbeddedBrowserViewportPreference(
-      sanitizeDesktopWindowSize(
-        migrateMessageStreamShowReasoningDefault(
-          migrateCloseToTrayOnWindowsDefault(
-            migrateLegacyLocalePreference(
-              sanitizeZCodeEndpointOrigin(
-                migrateLegacyWorkspaceSession(
-                  migrateLegacyBuiltinAgentCliProviders(
-                    migrateRemoteBoundaryIntroAcknowledgement(migrateTaskAutoArchiveReset(value)),
+    stripRetiredWebRemoteControlSettings(
+      stripRetiredProviderFamilyDomainSettings(
+      sanitizeEmbeddedBrowserViewportPreference(
+        sanitizeDesktopWindowSize(
+          migrateMessageStreamShowReasoningDefault(
+            migrateCloseToTrayOnWindowsDefault(
+              migrateLegacyLocalePreference(
+                sanitizeZCodeEndpointOrigin(
+                  migrateLegacyWorkspaceSession(
+                    migrateLegacyBuiltinAgentCliProviders(
+                      migrateRemoteBoundaryIntroAcknowledgement(migrateTaskAutoArchiveReset(value)),
+                    ),
                   ),
                 ),
               ),
             ),
           ),
         ),
+      ),
       ),
     ),
   appSettingsObjectSchema,
@@ -641,9 +641,6 @@ export const appSettingsPatchSchema = z.object({
   enabledBuiltinAgentCliProviders: enabledBuiltinAgentCliProvidersSchema.optional(),
   startPlanRecommendationDismissed: z.boolean().optional(),
   providerFamilyConnectionSelections: providerFamilyConnectionSelectionSettingsSchema.optional(),
-  providerFamilyDomain: z.union([providerFamilyDomainSchema, z.literal("")]).optional(),
-  providerFamilyDomainUpdatedAt: z.number().int().nonnegative().optional(),
-  providerFamilyDomainMigrated: z.boolean().optional(),
   nativeSearchEnhancementsEnabled: z.boolean().optional(),
   toolSearchMode: appToolSearchModeSchema.optional(),
   onboardingOccupation: z
@@ -688,8 +685,5 @@ export const appSettingsPatchSchema = z.object({
     .partialRecord(electronReleaseChannelSchema, nonEmptyStringSchema)
     .optional(),
   settingsSyncFirstRunPromptHandled: z.boolean().optional(),
-  webRemoteControlRelayV2Device: webRemoteControlRelayV2DeviceSchema.optional(),
-  webRemoteControlExternalRelayDevice: webRemoteControlExternalRelayDeviceSchema.optional(),
-  webRemoteControlLastEnabledContext: webRemoteControlLastEnabledContextSchema.optional(),
   zcodeEndpointOrigin: zcodeEndpointOriginSchema.optional(),
 });

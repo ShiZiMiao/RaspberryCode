@@ -1,7 +1,6 @@
 import type { RequestVerificationProof } from "./request-security-edition/verification-policy.js";
 /* eslint-disable max-lines -- Coding Plan 订阅协议类型需要集中导出给 UI、services 和 RPC 共享，拆散会增加跨包类型入口复杂度。 */
 import type { Locale } from "./protocol.js";
-import type { ProviderFamilyDomain } from "./model-provider-family.js";
 import type { BUILTIN_MODEL_PROVIDER_IDS } from "./model-provider-types.js";
 
 export type CodingPlanPayType = "ALI" | "WECHAT";
@@ -483,12 +482,6 @@ export interface EnterpriseCodingPlanPricingResponse {
 
 export interface EnterpriseCodingPlanPricingRequest {
   authenticated?: boolean;
-  /**
-   * 指定按哪个 family 读取企业定价。
-   * 缺省时按 bigmodel 处理，向后兼容既有调用点。
-   * service 层据此路由到对应 family 的 subscription provider。
-   */
-  family?: ProviderFamilyDomain;
 }
 
 export interface EnterpriseCodingPlanBalanceResponse {

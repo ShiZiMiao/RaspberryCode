@@ -100,10 +100,6 @@ export const errorAttributionSchema = z
     statusCode: z.number().int().min(100).max(599).optional(),
     providerErrorCode: z.string().min(1).max(160).optional(),
     retryable: z.boolean().optional(),
-    /** string=使用该 Highspeed 卡，null=明确未使用，undefined=旧 Agent 未发布。 */
-    highspeedCardId: z.string().nullable().optional(),
-    /** true=本轮 Highspeed 失败已命中退回声明但无可用退回目标；Renderer 据此作废匹配卡。 */
-    highspeedFallbackUnavailable: z.boolean().optional(),
   })
   .strict();
 export type ErrorAttribution = z.infer<typeof errorAttributionSchema>;

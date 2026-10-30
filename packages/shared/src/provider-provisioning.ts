@@ -50,7 +50,6 @@ export type ProviderProvisioningPersonalConfig = z.infer<
 
 export const providerProvisioningAccountSettingsSchema = z
   .object({
-    providerFamilyDomain: z.enum(["zai", "bigmodel"]).nullable(),
     providerFamilyConnectionSelections: providerFamilyConnectionSelectionSettingsSchema,
   })
   .strict();

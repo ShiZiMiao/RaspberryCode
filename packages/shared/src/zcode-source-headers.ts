@@ -1,9 +1,8 @@
-import { DEFAULT_ZCODE_ENDPOINT_ORIGIN } from "./zcodeEndpoint.js";
 
+// HTTP-Referer 仅在用户配置了服务端点时发送（单机版无默认云服务，不向模型厂商泄漏占位域）。
 export const ZCODE_SOURCE_HEADERS = {
   "User-Agent": "RaspberryCode/unknown",
-  "HTTP-Referer": DEFAULT_ZCODE_ENDPOINT_ORIGIN,
-  "X-Title": "Z Code@electron",
+  "X-Title": "RaspberryCode@electron",
 } as const;
 
 export interface BuildZCodeSourceHeadersFromContextOptions {
@@ -35,8 +34,7 @@ export function buildZCodeSourceHeadersFromContext(
   const clientLanguage = normalizeZCodeSourceHeaderValue(options.clientLanguage) ?? "unknown";
   const clientTimezone = normalizeZCodeSourceHeaderValue(options.clientTimezone) ?? "unknown";
   const deviceMid = normalizeZCodeSourceHeaderValue(options.deviceMid);
-  const endpointOrigin =
-    normalizeZCodeSourceHeaderValue(options.endpointOrigin) ?? DEFAULT_ZCODE_ENDPOINT_ORIGIN;
+  const endpointOrigin = normalizeZCodeSourceHeaderValue(options.endpointOrigin);
   const osVersion = normalizeZCodeSourceHeaderValue(options.osVersion);
   const platform = normalizeZCodeSourceHeaderValue(options.platform);
   const releaseChannel = normalizeZCodeSourceHeaderValue(options.releaseChannel);
@@ -44,10 +42,10 @@ export function buildZCodeSourceHeadersFromContext(
 
   return {
     ...ZCODE_SOURCE_HEADERS,
-    "HTTP-Referer": endpointOrigin,
+    ...(endpointOrigin ? { "HTTP-Referer": endpointOrigin } : {}),
     "User-Agent": `RaspberryCode/${appVersion ?? "unknown"}`,
     ...(appVersion ? { "X-RaspberryCode-App-Version": appVersion } : {}),
-    "X-Title": `Z Code@${sourceTitle}`,
+    "X-Title": `RaspberryCode@${sourceTitle}`,
     ...(platform && arch ? { "X-Platform": `${platform}-${arch}` } : {}),
     ...(releaseChannel ? { "X-Release-Channel": releaseChannel } : {}),
     "X-Client-Language": clientLanguage,

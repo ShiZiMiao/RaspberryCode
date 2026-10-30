@@ -14,15 +14,6 @@ import type {
   SaveCliMcpToUserDirectoryRequest,
 } from "./mcp.js";
 import type { OAuthStateRegistration } from "./oauth.js";
-import type {
-  WebRemoteControlAuthStateChange,
-  WebRemoteControlContext,
-  WebRemoteControlReconnectWorkspaceResult,
-  WebRemoteControlStartOperationResult,
-  WebRemoteControlStatus,
-  WebRemoteControlReconnectWorkspaceRequest,
-  WebRemoteControlWorkspaceTarget,
-} from "./web-remote-control.js";
 import type { AppSettings, Locale } from "./protocol.js";
 import type { ArmsCustomEventPayload, RendererTelemetryEventPayload } from "./telemetry.js";
 import type {
@@ -36,16 +27,6 @@ import type {
   PrepareCuaHelperPermissionDragResult,
 } from "./cuaAccessibilitySettings.js";
 import type { BrowserViewportSize } from "./browser-use/command-metadata.js";
-import type {
-  PostUpdateReleaseNotesPayload,
-  UpdateCheckResultPayload,
-  UpdateStatePayload,
-} from "./update.js";
-export type {
-  PostUpdateReleaseNotesPayload,
-  UpdateCheckResultPayload,
-  UpdateStatePayload,
-} from "./update.js";
 
 export interface TaskNotificationPayload {
   taskId: string;
@@ -611,7 +592,6 @@ export interface BindRemoteWorkspaceSessionContextResult {
   workspacePath: string;
   workspaceIdentity: string;
   workspacePurpose?: import("./workspacePurpose.js").WorkspacePurpose;
-  /** Desktop 专用的 tab 原地换代提示；不是任务路由身份，手机 replayable 客户端忽略。 */
   previousWorkspaceIdentity?: string;
 }
 
@@ -638,7 +618,6 @@ export const DesktopCommandIds = {
   ZoomOut: "zoomOut",
   ShowAbout: "showAbout",
   OpenChangelog: "openChangelog",
-  CheckForUpdates: "checkForUpdates",
   RelaunchApp: "relaunchApp",
   OpenFeedback: "openFeedback",
   OpenCommunity: "openCommunity",
@@ -646,12 +625,7 @@ export const DesktopCommandIds = {
   ToggleDevTools: "toggleDevTools",
   OpenResourceManager: "openResourceManager",
   ToggleZCodeStdioTapDevProxy: "toggleZCodeStdioTapDevProxy",
-  SetZCodeEndpointProduction: "setZCodeEndpointProduction",
-  SetZCodeEndpointTest: "setZCodeEndpointTest",
-  SetZCodeEndpointCustom: "setZCodeEndpointCustom",
-  ResetZCodeEndpoint: "resetZCodeEndpoint",
   ClearAllData: "clearAllData",
-  ClearCodingPlanWebviewStorage: "clearCodingPlanWebviewStorage",
   GetCuaOsSupport: "getCuaOsSupport",
 } as const;
 
@@ -786,22 +760,8 @@ export interface IPlatformService {
     context: BindRemoteWorkspaceSessionContextRequest,
   ): Promise<BindRemoteWorkspaceSessionContextResult>;
 
-  /** 为当前 workspace 开启 Web 远程控制能力 */
-  startWebRemoteControl(
-    context: WebRemoteControlContext,
-  ): Promise<WebRemoteControlStartOperationResult>;
-
-  /** 关闭当前窗口已开启的 Web 远程控制能力 */
-  stopWebRemoteControl(): Promise<void>;
-
-  /** 查询当前窗口 Web 远程控制状态 */
-  getWebRemoteControlStatus(): Promise<WebRemoteControlStatus>;
-
   /** 桌面 OAuth 会话通知；main 独立重读凭据后决定是否恢复远控。 */
-  notifyWebRemoteControlAuthStateChanged?(change: WebRemoteControlAuthStateChange): void;
 
-  /** 订阅当前窗口 Web 远程控制状态变化；旧平台可不实现，UI 会保留轮询兜底 */
-  onWebRemoteControlStatusChanged?(handler: (status: WebRemoteControlStatus) => void): () => void;
 
   /** 释放当前窗口里已创建的远程 session */
   disposeRemoteSession(sessionId: string): Promise<void>;
@@ -818,7 +778,6 @@ export interface IPlatformService {
   /** 列出当前机器 SSH config 中可用于快速填表的 alias */
   listSSHConfigAliases(): Promise<SSHConfigAliasOption[]>;
 
-  /** 读取宿主环境中的原生 MCP 用户目录配置；手机远控通过已连接桌面 host 转发。 */
   loadMcpFromUserDirectory?(
     payload?: LoadCliMcpFromUserDirectoryRequest,
   ): Promise<LoadCliMcpFromUserDirectoryResult>;
@@ -828,7 +787,6 @@ export interface IPlatformService {
     payload: SaveCliMcpToUserDirectoryRequest,
   ): Promise<{ success: boolean; error?: string }>;
 
-  /** 迁移旧版 Common MCP 配置；仅宿主环境可执行，手机远控通过 desktop attachment 转发。 */
   migrateLegacyCommonMcp?(
     payload?: MigrateLegacyCommonMcpRequest,
   ): Promise<MigrateLegacyCommonMcpResult>;
@@ -907,9 +865,7 @@ export interface IPlatformService {
   /** 通过宿主环境上报 ARMS 自定义事件；Web 端当前为空实现 */
   reportArmsCustomEvent(payload: ArmsCustomEventPayload): Promise<void>;
 
-  /** 读取 Desktop Renderer 用户操作 Trace 的当前灰度配置；Web/手机不实现。 */
   getRendererActionTraceConfig?(): Promise<RendererActionTraceConfigV1>;
-  /** 订阅 Main 推送的 Renderer 用户操作 Trace 配置；Web/手机不实现。 */
   onRendererActionTraceConfigChanged?(
     callback: (config: RendererActionTraceConfigV1) => void,
   ): () => void;
@@ -926,15 +882,6 @@ export interface IPlatformService {
   /** 同步当前窗口所有 tab 的 workspace 路径到 main 进程（用于跨窗口去重） */
   syncWindowTabs(paths: string[]): void;
 
-  /** 同步当前窗口里 Web 远程控制允许切换的 workspace；Web fallback 可忽略 */
-  syncWebRemoteControlWorkspaces?(workspaces: WebRemoteControlWorkspaceTarget[]): void;
-
-  /** 注册 Web 远程控制手机端请求重连 workspace 的回调，返回 disposer */
-  onWebRemoteControlReconnectWorkspace?(
-    handler: (
-      request: WebRemoteControlReconnectWorkspaceRequest,
-    ) => Promise<WebRemoteControlReconnectWorkspaceResult>,
-  ): () => void;
 
   /** 同步当前窗口的未读 task 数给宿主环境，用于 Dock / 任务栏徽标聚合 */
   syncWindowUnreadCount(count: number): void;
@@ -1129,38 +1076,6 @@ export interface IPlatformService {
   /** 清理内置浏览器持久化分区；cache 模式保留认证数据，all 模式清理全部站点数据。 */
   clearEmbeddedBrowserData?(mode: "cache" | "all"): Promise<EmbeddedBrowserDataClearResult>;
 
-  /** 注册新版本已下载完毕的回调，参数为新版本号，返回 disposer */
-  onUpdateReady(callback: (version: string) => void): () => void;
-
-  /** 注册"手动检查更新"结果的回调（用于 toast 反馈），返回 disposer */
-  onUpdateCheckResult(callback: (payload: UpdateCheckResultPayload) => void): () => void;
-
-  /** 注册自动更新持续状态变化的回调，返回 disposer */
-  onUpdateStateChanged?(callback: (payload: UpdateStatePayload) => void): () => void;
-
-  /** 主动读取当前自动更新状态，用于菜单打开时补偿异步事件丢失 */
-  getUpdateState?(): Promise<UpdateStatePayload>;
-
-  /** 用户在更新弹窗中确认开始下载当前已发现版本 */
-  downloadUpdate(): Promise<void>;
-
-  /** 用户在更新弹窗中取消当前下载中的更新 */
-  cancelUpdateDownload(): Promise<void>;
-
-  /** 打开桌面端独立更新窗口；非桌面端可不实现并回退到内嵌弹窗 */
-  openUpdateStatusWindow?(): Promise<void>;
-
-  /** 读取桌面端自动更新偏好；非桌面端可返回默认值 */
-  getAutoUpdatePreferences?(): Promise<{
-    autoDownloadAndInstallUpdates: boolean;
-  }>;
-
-  /** 写入“以后自动下载并安装更新”偏好；非桌面端可 no-op */
-  setAutoDownloadAndInstallUpdates?(enabled: boolean): Promise<void>;
-
-  /** 用户跳过当前已发现版本；main 进程负责按当前通道持久化 */
-  skipUpdateVersion(version: string): Promise<void>;
-
   /** 查询桌面端当前正在运行的会话数量；非桌面端可返回 0 */
   getDesktopSessionActivity?(): Promise<{
     runningAgentSessionCount: number;
@@ -1180,15 +1095,6 @@ export interface IPlatformService {
 
   /** 宿主系统语言；桌面端由 main 进程读取，Web 端可回退到 navigator.language。 */
   getSystemLocale?(): Promise<Locale>;
-
-  /** 注册更新完成后的版本说明，返回 disposer */
-  onPostUpdateReleaseNotes(callback: (payload: PostUpdateReleaseNotesPayload) => void): () => void;
-
-  /** 标记当前版本说明已读，允许 main 进程清理持久化状态 */
-  acknowledgePostUpdateReleaseNotes(version: string): Promise<void>;
-
-  /** 用户确认重启安装更新 */
-  quitAndInstallUpdate(): Promise<void>;
 
   /** 获取已安装编辑器/终端；传文件路径时追加匹配类型的本机应用（含图标）。 */
   getInstalledEditors(filePath?: string): Promise<EditorInfo[]>;

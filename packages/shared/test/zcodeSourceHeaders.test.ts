@@ -24,7 +24,7 @@ describe("buildZCodeSourceHeadersFromContext", () => {
       "HTTP-Referer": "https://zcode.z.ai",
       "User-Agent": "RaspberryCode/2.14.0",
       "X-RaspberryCode-App-Version": "2.14.0",
-      "X-Title": "Z Code@cli",
+      "X-Title": "RaspberryCode@cli",
       "X-Platform": "darwin-arm64",
       "X-Release-Channel": "test",
       "X-Client-Language": "zh-CN",
@@ -50,8 +50,10 @@ describe("buildZCodeSourceHeadersFromContext", () => {
       "X-Client-Language": "unknown",
       "X-Client-Timezone": "unknown",
       "X-Os-Category": "windows",
-      "X-Title": "Z Code@electron",
+      "X-Title": "RaspberryCode@electron",
     });
+    // HTTP-Referer 仅在用户配置了服务端点时发送，不向模型厂商泄漏占位域。
+    expect(headers).not.toHaveProperty("HTTP-Referer");
     expect(headers).not.toHaveProperty("X-Device-Mid");
     expect(headers).not.toHaveProperty("X-RaspberryCode-App-Version");
   });

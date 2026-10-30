@@ -16,14 +16,6 @@ export const modelExecutionSchema = z
   .object({
     memoryExtraction: z.literal("skip").optional(),
     selectionScope: z.literal("execution"),
-    offPeak: z
-      .object({
-        executionId: z.string().min(1),
-        ticketId: z.string().min(1),
-        providerErrorCode: z.string().min(1),
-      })
-      .strict()
-      .optional(),
     requestAuth: z
       .object({
         apiKey: z.string().min(1).optional(),
@@ -50,7 +42,7 @@ export const modelExecutionSchema = z
      * 的任何失败（用户取消与上下文超窗除外）。CLI 不按 provider id 前缀、模型名或错误文案硬编码。
      * 退回目标先取 `target`（发起方抽卡时的提交选择，即会话原模型），再取本轮接纳前复制的 runtime 会话常驻 Selection：
      * 接纳用户消息时绑定普通提交选择，但常驻选择只在 runtime 内存里，冷恢复竞态下可能未绑定，
-     * 所以发起方必须声明 `target`（docs/highspeed/highspeed-card-spec.md §2.2）。
+     * 所以发起方必须声明 `target`。
      */
     selectionFallback: z
       .object({

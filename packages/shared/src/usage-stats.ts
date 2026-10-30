@@ -44,7 +44,7 @@ export interface CodingPlanUsageRequest {
   timeZone?: string;
 }
 
-/** Highspeed 只读取普通 Pro/Max decode TPS，不触发完整 Coding Plan 用量聚合。 */
+/** TPS 只读取普通 Pro/Max decode 指标，不触发完整用量聚合。 */
 export interface CodingPlanRegularTpsRequest {
   preferredProviderId: string;
   /**

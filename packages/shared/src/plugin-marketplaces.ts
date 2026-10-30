@@ -29,7 +29,7 @@ export const DEFAULT_ENABLED_OFFICIAL_PLUGIN_IDS: ReadonlySet<string> = new Set(
   "node-repl-host@zcode-plugins-official",
   "skill-creator@zcode-plugins-official",
   "plugin-creator@zcode-plugins-official",
-  "zcode-guide@zcode-plugins-official",
+  // zcode-guide 移出默认启用（中立产品不默认注入使用指南插件），用户可在插件市场手动安装。
   // visualize（交互视图）随 UI 插件合入时 CLI 定义已标 defaultEnabled，但这里漏加，
   // Settings 会把它当成默认关闭，与 CLI 实际启用状态不一致。
   "visualize@zcode-plugins-official",
@@ -40,10 +40,10 @@ export const DEFAULT_ENABLED_OFFICIAL_PLUGIN_IDS: ReadonlySet<string> = new Set(
 
 export const DEFAULT_PLUGIN_MARKETPLACES: DefaultPluginMarketplace[] = [
   {
-    // RaspberryCode 官方唯一市场：本地 seed 分片与 CDN 分片在 Agent storage 内合并。
-    // CDN manifest 的 name 必须与该 canonical id 一致。
+    // RaspberryCode 官方市场：内置插件的本地 seed 分片归此 id（启动时合并，与远端源无关）。
+    // 无默认远端源（vendor CDN 分发已断开）；用户可在设置里自行补充市场源。
     id: ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID,
-    source: "https://cdn-zcode.z.ai/zcode/official-plugin/marketplace.json",
+    source: "",
     name: ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID,
     description: "Official RaspberryCode plugins marketplace: built-in and community plugins for RaspberryCode.",
     pluginCount: 0,

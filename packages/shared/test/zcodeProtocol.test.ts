@@ -401,31 +401,6 @@ describe("RaspberryCode Protocol", () => {
     ).toThrow();
   });
 
-  it("session/send accepts Off-Peak turn attribution but rejects competing automation identity", () => {
-    expect(
-      zcodeSessionSendParamsSchema.parse({
-        sessionId: "sess_1",
-        content: "continue",
-        offPeakTaskId: "offpeak-1",
-        offPeakRunType: "resume",
-      }),
-    ).toMatchObject({ offPeakTaskId: "offpeak-1", offPeakRunType: "resume" });
-    expect(() =>
-      zcodeSessionSendParamsSchema.parse({
-        sessionId: "sess_1",
-        content: "invalid",
-        offPeakRunType: "init",
-      }),
-    ).toThrow();
-    expect(() =>
-      zcodeSessionSendParamsSchema.parse({
-        sessionId: "sess_1",
-        content: "continue",
-        automationId: "automation-1",
-        offPeakTaskId: "offpeak-1",
-      }),
-    ).toThrow();
-  });
 
   it("session/send and automation/create validate the bot delivery target strictly", () => {
     const botDeliveryTarget = {

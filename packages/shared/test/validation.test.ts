@@ -4,46 +4,10 @@ import {
   appSettingsSchema,
   appSettingsPatchSchema,
   hostIncomingMessageSchema,
-  webRemoteControlAppPayloadSchema,
   hostResponseMessageSchema,
   wslConnectOptionsSchema,
   zcodePersistedMessageSchema,
 } from "../src/validation.js";
-
-it("PD01 手机任务草稿身份通过两层协议，且不能注入路径或混用项目", () => {
-  const intent = {
-    projectId: null,
-    draftId: "12345678-1234-4234-8234-123456789012",
-    reuseDraft: true,
-  };
-  const bridge = {
-    zcode_type: "workspace-bridge-open",
-    requestId: "draft",
-    bridgeSessionId: "bridge",
-    workspaceKey: "draft",
-    project: intent,
-  };
-  const host = {
-    type: "prepare-project-workspace",
-    requestId: "draft",
-    clientMode: "web-remote-replayable",
-    ...intent,
-  };
-  expect(webRemoteControlAppPayloadSchema.safeParse(bridge).success).toBe(true);
-  expect(hostIncomingMessageSchema.safeParse(host).success).toBe(true);
-  for (const invalid of [
-    { draftId: "../escape" },
-    { projectId: "project" },
-    { draftId: undefined },
-    { workspacePath: "/injected" },
-  ]) {
-    expect(
-      webRemoteControlAppPayloadSchema.safeParse({ ...bridge, project: { ...intent, ...invalid } })
-        .success,
-    ).toBe(false);
-    expect(hostIncomingMessageSchema.safeParse({ ...host, ...invalid }).success).toBe(false);
-  }
-});
 
 it("资源查询取消必须指定 requestId 且不接受附加字段", () => {
   const cancel = { type: "resource-usage-snapshot-cancel", requestId: "sample-1" };
@@ -691,7 +655,7 @@ describe("hostResponseMessageSchema", () => {
     });
   });
 
-  it("accepts provider family domain settings and defaults migration marker to false", () => {
+  it("silently drops retired provider family domain keys on read (legacy compat)", () => {
     const defaults = appSettingsSchema.parse({});
     const parsed = appSettingsSchema.parse({
       providerFamilyDomain: "zai",
@@ -704,13 +668,14 @@ describe("hostResponseMessageSchema", () => {
       providerFamilyDomainMigrated: true,
     });
 
+    // providerFamilyDomain 随账号域 family 体系退役：旧 settings 文件里的该组键静默丢弃。
     expect(defaults.providerFamilyDomain).toBeUndefined();
-    expect(defaults.providerFamilyDomainMigrated).toBe(false);
-    expect(parsed.providerFamilyDomain).toBe("zai");
-    expect(parsed.providerFamilyDomainUpdatedAt).toBe(123);
-    expect(parsed.providerFamilyDomainMigrated).toBe(true);
-    expect(patch.providerFamilyDomain).toBe("");
-    expect(patch.providerFamilyDomainUpdatedAt).toBe(456);
+    expect(parsed.providerFamilyDomain).toBeUndefined();
+    expect(parsed.providerFamilyDomainUpdatedAt).toBeUndefined();
+    expect(parsed.providerFamilyDomainMigrated).toBeUndefined();
+    expect(Object.keys(parsed)).not.toContain("providerFamilyDomain");
+    expect(patch.providerFamilyDomain).toBeUndefined();
+    expect(patch.providerFamilyDomainUpdatedAt).toBeUndefined();
   });
 
   it("normalizes legacy enabled agent CLI providers to RaspberryCode Agent", () => {
