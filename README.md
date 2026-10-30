@@ -12,7 +12,7 @@
   简体中文 | <a href="README.en.md">English</a>
 </p>
 
-RaspberryCode 是 AI 编程工作台，提供桌面应用、浏览器界面和终端 Agent。本仓库包含客户端、后端服务、共享 UI，以及 Agent CLI 与运行时源码。
+RaspberryCode 是 AI 编程工作台，提供桌面应用和终端 Agent。本仓库包含客户端、后端服务、共享 UI，以及 Agent CLI 与运行时源码。
 
 ## 更新
 
@@ -80,26 +80,20 @@ Agent 源码修改后，执行 `pnpm --filter @zcode/cli... build` 并重启服�
 
 ### RaspberryCode 命令行版
 
-命令行发行包包含 TUI、Web 和 Agent，统一使用 `zcode` 启动：无参数进入 TUI；第一个参数为 `--web` 时启动 Web；其他参数交给现有 Agent CLI 处理。两种模式都在本机运行，无需 Electron。
+命令行发行包包含 TUI 和 Agent，统一使用 `zcode` 启动：无参数进入 TUI；其他参数交给 Agent CLI 处理。在本机运行，无需 Electron。
 
 ```bash
 # 默认进入终端交互界面
 zcode
 
-# 启动 Web 界面
-zcode --web
-
-# 指定项目和端口，不自动打开浏览器
-zcode --web --workspace /path/to/project --port 3030 --no-open
-
-# 查看 CLI 或 Web 参数
+# 查看 CLI 参数
 zcode --help
-zcode --web --help
+
+# 查看发行包版本
+zcode --version
 ```
 
-Web 模式默认工作目录为当前目录，监听 `127.0.0.1`，默认不启用访问令牌，自动选择空闲端口并打开浏览器。访问终端输出的地址，按 `Ctrl+C` 停止服务。局域网访问可使用 `--host 0.0.0.0`；监听非本机地址时默认生成访问令牌，使用终端输出的带令牌链接。可通过 `--token` 指定令牌或 `--no-token` 关闭令牌认证。
-
-直接启动通用 Web 服务的 HTTP 入口时，通过 `ZCODE_SERVER_AUTH_TOKEN` 配置 API／WebSocket 认证；通过程序接口创建服务时，使用 `authToken` 选项。
+直接启动通用 Web 服务的 HTTP 入口（`server/entry-http.js`，bot 回调等）时，通过 `ZCODE_SERVER_AUTH_TOKEN` 配置 API／WebSocket 认证；通过程序接口创建服务时，使用 `authToken` 选项。
 
 构建方式见下方打包章节。`pnpm build:zcode` 只生成发行包，不会替换 `PATH` 中已有的 `zcode`。如果命令仍指向旧安装或其他源码目录，macOS / Linux 可用 `command -v zcode` 检查，Windows 可用 `where.exe zcode` 检查。
 
@@ -118,7 +112,7 @@ pnpm --filter @zcode/cli... build
 node apps/zcode-cli/packages/cli/dist/zcode.cjs --help
 ```
 
-这个入口直接运行 Agent CLI，不经过发行包的 `--web` 分流。开发 Web 用 `pnpm dev:web`；验证统一的 `zcode` 命令，用下方解压后的 `bin/zcode.mjs`。
+这个入口直接运行 Agent CLI。验证统一的 `zcode` 命令，用下方解压后的 `bin/zcode.mjs`。
 
 ### UI Plugin 开发
 
@@ -164,7 +158,7 @@ sudo xattr -rd com.apple.quarantine /Applications/RaspberryCode.app
 
 ### RaspberryCode 命令行版
 
-构建入口为 `pnpm build:zcode`。脚本会依次构建 CLI/TUI、后端和 Web，收集 TUI 的原生库、worker 与运行时依赖，再组装发行包；运行发行包仍需要 Node.js，版本以 `mise.toml` 为准。
+构建入口为 `pnpm build:zcode`。脚本会依次构建 CLI/TUI 和后端，收集 TUI 的原生库、worker 与运行时依赖，再组装发行包；运行发行包仍需要 Node.js，版本以 `mise.toml` 为准。
 
 打包前必须设置下载根地址 `ZCODE_DIST_BASE_URL`（可放在 `.env`、`.env.local` 或环境变量中），也可以通过 `--base-url` 传入。以下地址是占位示例，发布时替换为实际托管地址：
 
@@ -174,7 +168,7 @@ pnpm build:zcode --base-url https://downloads.example.com/zcode/
 # 已配置 ZCODE_DIST_BASE_URL 时
 pnpm build:zcode
 
-# 仅重新组包，复用已有的 Agent、后端和 Web 构建产物
+# 仅重新组包，复用已有的 Agent 和后端构建产物
 pnpm build:zcode --skip-build
 
 # 查看版本、输出目录等可选参数
@@ -200,13 +194,7 @@ tar -xzf "dist/zcode/releases/$zcode_version/zcode-$zcode_version.tar.gz" \
   -C dist/zcode/debug
 # 默认启动 TUI
 node dist/zcode/debug/zcode/bin/zcode.mjs
-
-# 启动 Web
-node dist/zcode/debug/zcode/bin/zcode.mjs --web \
-  --workspace "$PWD" --port 3030 --no-open
 ```
-
-浏览器打开 `http://127.0.0.1:3030`，即可验证同一后端服务托管 Web 页面和 Agent 的完整链路。该端口需要空闲；如正在运行 `pnpm dev:web`，可改用其他 `--port`。
 
 ## 仓库结构
 

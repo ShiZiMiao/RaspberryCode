@@ -3,11 +3,10 @@
 ## Product rules
 
 - The Node distribution is named `zcode`, with executable `bin/zcode.mjs` and installed command `zcode`.
-- `zcode` starts the existing terminal UI. All arguments except a leading `--web` are forwarded unchanged to the existing CLI (including `tui`, prompt, login, resume and internal protocol commands).
-- `zcode --web` starts the existing local HTTP/WebSocket server with bundled Web assets and Agent. Existing Web flags remain available: `--workspace`, `--host`, `--port`, `--open`, `--no-open`, `--token`, `--no-token`.
-- Only a leading `--web` selects Web mode; a prompt value containing `--web` must remain CLI input. CLI parsing, locale, permissions and sessions keep their existing owner.
-- `zcode --help` includes the Web invocation plus existing CLI help; `zcode --web --help` describes Web flags. `zcode --version` reports the distribution version.
-- Web keeps localhost binding, automatic port selection and non-loopback token defaults. TUI inherits the real terminal in the same process; the launcher must not consume its stdin or print Web status.
+- `zcode` starts the existing terminal UI. All arguments are forwarded unchanged to the existing CLI (including `tui`, prompt, login, resume and internal protocol commands).
+- `zcode --version` reports the distribution version. `zcode --help` is forwarded to the CLI help.
+- TUI inherits the real terminal in the same process; the launcher must not consume its stdin.
+- Web 模式（`zcode --web`）已于 2026-10-30 随浏览器界面（`packages/web`）整体下线：启动器不再分流 Web，所有参数（含 `--web`）一律直达 Agent CLI。发行包内 `server/entry-http.js` 仍可作为通用 Web 服务入口独立启动（bot 回调等），但不再由 `zcode` 命令拉起。
 
 ## Ownership and boundaries
 
@@ -15,25 +14,16 @@ The release scripts own archive assembly and installation. They reuse the CLI's 
 
 TUI assets are placed under `agent/node_modules`, preserving package-relative paths and keeping their dependency versions separate from server dependencies. The CLI's built `provider/` config and third-party notices accompany `agent/zcode.cjs`; its external Playwright runtime is also included. Assets for the existing six SEA targets are combined; duplicate paths must have identical hashes or packaging fails. Required missing assets fail the build, including with `--skip-build`.
 
-The launcher imports the existing Agent CLI entry in the same process, setting `process.argv[1]` to that entry so self-spawned CLI workers continue to use the canonical Agent. It introduces no session state, persistence, queue, replay or lease owner. The existing Web server owns its Agent process; the launcher forwards shutdown and observes child exit/error.
+The launcher imports the existing Agent CLI entry in the same process, setting `process.argv[1]` to that entry so self-spawned CLI workers continue to use the canonical Agent. It introduces no session state, persistence, queue, replay or lease owner.
 
 ```mermaid
 sequenceDiagram
     participant User
     participant Launcher as zcode launcher
     participant CLI as Existing CLI / TUI
-    participant Server as Existing Web server
-    participant Agent as Agent app-server
     User->>Launcher: argv
-    alt no leading --web
-        Launcher->>CLI: import Agent entry with original arguments and terminal
-        CLI->>CLI: existing runtime admission and persistence
-    else leading --web
-        Launcher->>Server: spawn with workspace, static root and Agent command
-        Server->>Agent: existing app-server --stdio lifecycle
-        User->>Launcher: shutdown
-        Launcher->>Server: SIGTERM
-    end
+    Launcher->>CLI: import Agent entry with original arguments and terminal
+    CLI->>CLI: existing runtime admission and persistence
 ```
 
 ## Packaging and migration
@@ -46,12 +36,10 @@ sequenceDiagram
 
 ## Acceptance and validation
 
-1. Launcher process tests prove default CLI routing, unchanged CLI arguments, help/version, exit-code propagation and no Web startup in TUI mode.
-2. Web process tests prove leading flag routing, workspace/static-root/Agent configuration, invalid arguments, help and shutdown behavior without requiring a model or network service.
-3. Installer test uses a local fixture archive to prove the installed command is `zcode` and defaults to CLI while forwarding `--web`.
-4. Build a real release, extract outside the repository, unset workspace module fallbacks, import its TUI/native runtime and interact with it through a pseudo-terminal. Verify first render and clean keyboard exit without sending a model prompt.
-5. Start the same extracted release with `--web`; verify HTML, `/api/server-info`, workspace and WebSocket connection, then stop it.
-6. Run root typecheck, lint and architecture checks. Report actual platform and any unexecuted cross-platform or model-call paths.
+1. Launcher process tests prove default CLI routing, unchanged CLI arguments, help/version forwarding and exit-code propagation.
+2. Installer test uses a local fixture archive to prove the installed command is `zcode` and defaults to CLI while forwarding arguments unchanged.
+3. Build a real release, extract outside the repository, unset workspace module fallbacks, import its TUI/native runtime and interact with it through a pseudo-terminal. Verify first render and clean keyboard exit without sending a model prompt.
+4. Run root typecheck, lint and architecture checks. Report actual platform and any unexecuted cross-platform or model-call paths.
 
 ## Recorded validation (2026-09-20, open-source branch)
 

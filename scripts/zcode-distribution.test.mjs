@@ -1,10 +1,8 @@
 import assert from "node:assert/strict";
-import { execFile, spawn } from "node:child_process";
-import { once } from "node:events";
-import { cp, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { cp, mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { setTimeout } from "node:timers/promises";
 import { promisify } from "node:util";
 import { test } from "node:test";
 import { installScriptSource } from "./zcode-distribution/installer.mjs";
@@ -16,7 +14,7 @@ async function fixture(t) {
   const directory = await realpath(await mkdtemp(join(tmpdir(), "zcode-distribution-")));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const root = join(directory, "zcode");
-  for (const name of ["bin", "agent", "web", "server"]) {
+  for (const name of ["bin", "agent"]) {
     await mkdir(join(root, name), { recursive: true });
   }
   await cp(runnerSource, join(root, "bin/zcode.mjs"));
@@ -28,25 +26,12 @@ process.stdout.write(JSON.stringify({ argv: process.argv.slice(2), entry: proces
 process.exitCode = Number(process.env.FIXTURE_EXIT_CODE || 0);
 `,
   );
-  await writeFile(
-    join(root, "server/entry-http.js"),
-    `
-import { writeFile } from 'node:fs/promises';
-await writeFile(process.env.FIXTURE_WEB_RESULT, JSON.stringify({
-  cwd: process.cwd(), port: process.env.PORT, host: process.env.ZCODE_SERVER_HOST,
-  workspace: process.env.ZCODE_SERVER_WORKSPACE, staticRoot: process.env.ZCODE_WEB_STATIC_ROOT,
-  command: process.env.ZCODE_AGENT_SERVER_COMMAND, args: JSON.parse(process.env.ZCODE_AGENT_SERVER_ARGS_JSON),
-  token: process.env.ZCODE_SERVER_AUTH_TOKEN,
-}));
-process.on('SIGTERM', () => process.exit(0));
-setInterval(() => {}, 1000);
-`,
-  );
   return { directory, root, runner: join(root, "bin/zcode.mjs") };
 }
 
-test("default launch and CLI arguments reuse the Agent entry without starting Web", async (t) => {
+test("default launch and CLI arguments reuse the Agent entry", async (t) => {
   const { runner, root, directory } = await fixture(t);
+  // Web 模式已下线：--web 一律作为普通参数转发给 Agent CLI，不再分流。
   for (const args of [[], ["tui"], ["--prompt", "--web"], ["app-server", "--stdio"]]) {
     const result = await exec(process.execPath, [runner, ...args], { cwd: directory });
     assert.deepEqual(JSON.parse(result.stdout), {
@@ -61,118 +46,48 @@ test("default launch and CLI arguments reuse the Agent entry without starting We
   );
 });
 
-test("help exposes Web mode and preserves CLI help; version uses the distribution", async (t) => {
+test("help is forwarded to the CLI; version uses the distribution", async (t) => {
   const { runner } = await fixture(t);
   assert.equal((await exec(process.execPath, [runner, "--version"])).stdout.trim(), "1.2.3");
   const help = (await exec(process.execPath, [runner, "--help"])).stdout;
-  assert.match(help, /zcode --web/);
   assert.match(help, /"argv":\["--help"\]/);
-  const webHelp = (await exec(process.execPath, [runner, "--web", "--help"])).stdout;
-  assert.match(webHelp, /--workspace/);
-  assert.doesNotMatch(webHelp, /"argv"/);
-  await assert.rejects(exec(process.execPath, [runner, "--web", "--unknown"]), /Unknown option/);
-  await assert.rejects(
-    exec(process.execPath, [runner, "--web", "--port", "NaN"]),
-    /--port must be an integer/,
-  );
-});
-
-test("Web startup errors preserve a failing exit code", async (t) => {
-  const { runner, directory, root } = await fixture(t);
-  await assert.rejects(
-    exec(process.execPath, [
-      runner,
-      "--web",
-      "--workspace",
-      join(directory, "missing"),
-      "--no-open",
-    ]),
-    /Unable to start Web server/,
-  );
-  await rm(join(root, "server/entry-http.js"));
-  await assert.rejects(
-    exec(process.execPath, [runner, "--web", "--no-open"]),
-    /Missing runtime file/,
-  );
-});
-
-test("Web mode passes its runtime configuration and terminates its child on shutdown", async (t) => {
-  const { directory, runner, root } = await fixture(t);
-  const resultPath = join(directory, "web-result.json");
-  const child = spawn(
-    process.execPath,
-    [
-      runner,
-      "--web",
-      "--workspace",
-      directory,
-      "--host",
-      "127.0.0.1",
-      "--port",
-      "3041",
-      "--no-open",
-      "--no-token",
-    ],
-    {
-      env: {
-        ...process.env,
-        FIXTURE_WEB_RESULT: resultPath,
-        ZCODE_SERVER_AUTH_TOKEN: "stale-token",
-      },
-      stdio: ["ignore", "pipe", "pipe"],
-    },
-  );
-  t.after(() => {
-    if (child.exitCode === null) child.kill();
-  });
-  let result;
-  for (let attempt = 0; attempt < 100; attempt++) {
-    result = await readFile(resultPath, "utf8")
-      .then(JSON.parse)
-      .catch(() => undefined);
-    if (result) break;
-    await setTimeout(20);
-  }
-  assert.deepEqual(result, {
-    cwd: directory,
-    port: "3041",
-    host: "127.0.0.1",
-    workspace: directory,
-    staticRoot: join(root, "web"),
-    command: process.execPath,
-    args: [join(root, "agent/zcode.cjs"), "app-server", "--stdio"],
-    token: "",
-  });
-  const exited = once(child, "exit");
-  child.kill("SIGTERM");
-  assert.deepEqual(await exited, [0, null]);
 });
 
 test("installer creates zcode and the installed command defaults to CLI", async (t) => {
+  // 环境限制：安装脚本依赖 ln -s 创建 current 链接。Windows 无符号链接权限时 MSYS 只能创建
+  // 伪链接，原生 Node 无法遍历，本用例无法在 Windows 成立；发行安装面向 macOS/Linux，
+  // 按"环境受限如实说明"约定在此跳过。macOS/Linux 上用 cwd 相对路径运行，
+  // 同时规避安全删除守卫对带盘符删除路径的拦截（该拦截在 Windows 上会误伤 rm -rf）。
+  if (process.platform === "win32") {
+    t.skip("install.sh 依赖 POSIX 符号链接，Windows 环境无法验证");
+    return;
+  }
   const { directory, root } = await fixture(t);
   const downloads = join(directory, "downloads");
   const releaseDir = join(downloads, "releases/1.2.3");
   await mkdir(releaseDir, { recursive: true });
-  await exec("tar", ["-czf", join(releaseDir, "zcode-1.2.3.tar.gz"), "-C", directory, "zcode"]);
+  // 修复原因：GNU tar 会把含盘符冒号的绝对路径误判为远程主机（Windows 上报
+  // "Cannot connect to C:"）；改用 cwd 相对路径打包，bsdtar 同样兼容。
+  await exec("tar", ["-czf", "downloads/releases/1.2.3/zcode-1.2.3.tar.gz", "zcode"], {
+    cwd: directory,
+  });
   await writeFile(
     join(downloads, "latest.json"),
     JSON.stringify({ version: "1.2.3", tarball: "zcode-1.2.3.tar.gz" }),
   );
   const installer = join(directory, "install.sh");
   await writeFile(installer, installScriptSource(`file://${downloads}/`));
-  const installRoot = join(directory, "installed");
   const bin = join(directory, "bin");
   await exec("sh", [installer], {
+    cwd: directory,
     env: {
       ...process.env,
       ZCODE_DIST_BASE_URL: `file://${downloads}/`,
-      ZCODE_DIST_HOME: installRoot,
-      ZCODE_DIST_BIN_DIR: bin,
+      ZCODE_DIST_HOME: "installed",
+      ZCODE_DIST_BIN_DIR: "bin",
     },
   });
   await rm(root, { recursive: true });
-  const result = await exec(join(bin, "zcode"), [], { cwd: directory });
+  const result = await exec("sh", [join(bin, "zcode")], { cwd: directory });
   assert.deepEqual(JSON.parse(result.stdout).argv, []);
-  const webHelp = await exec(join(bin, "zcode"), ["--web", "--help"]);
-  assert.match(webHelp.stdout, /zcode --web/);
 });

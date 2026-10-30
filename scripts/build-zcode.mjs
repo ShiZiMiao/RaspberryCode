@@ -24,7 +24,7 @@ const usage = `Usage:
   node scripts/build-zcode.mjs --base-url http://host/zcode/deps/zcode/
 
 Options:
-  --skip-build        Reuse existing web/server/agent build outputs.
+  --skip-build        Reuse existing server/agent build outputs.
   --version <text>    Release version. Defaults to root package.json version.
   --out-dir <path>    Output directory. Defaults to dist/zcode.
   --base-url <url>    Default install.sh download base URL.

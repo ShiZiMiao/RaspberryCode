@@ -40,7 +40,9 @@ tar -xzf "$ARCHIVE" -C "$TARGET.new"
 rm -rf "$TARGET"
 mv "$TARGET.new/${packageDirName}" "$TARGET"
 rm -rf "$TARGET.new"
-ln -sfn "$TARGET" "$INSTALL_DIR/current"
+# 修复原因：链接目标用相对链接自身位置的路径，INSTALL_DIR 为相对目录时链接不会断，
+# 整体移动安装目录后链接也仍然有效；语义与原先的绝对 TARGET 等价。
+ln -sfn "releases/$VERSION" "$INSTALL_DIR/current"
 
 cat > "$BIN_DIR/zcode" <<SH
 #!/usr/bin/env sh
@@ -49,7 +51,7 @@ SH
 chmod +x "$BIN_DIR/zcode"
 
 echo "RaspberryCode $VERSION installed."
-echo "Run: zcode (TUI) or zcode --web (Web)"
+echo "Run: zcode"
 case ":$PATH:" in
   *":$BIN_DIR:"*) ;;
   *) echo "Note: $BIN_DIR is not in PATH." ;;

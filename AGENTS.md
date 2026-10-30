@@ -50,7 +50,7 @@ affected 使用 Vitest 官方选择，只运行选中的根 UT；选中整个套
 
 ## UI 与平台边界
 
-- 遵守 `DESIGN.md`，复用已有组件，兼顾桌面与手机 Web 的布局、交互、主题和国际化。
+- 遵守 `DESIGN.md`，复用已有组件，兼顾布局、交互、主题和国际化。
 - 组件通过 `packages/ui/src/hooks/` 访问服务；平台操作通过 `IPlatformService`（`packages/shared/src/platform.ts`），不直接调用 `window.zcode`。
 - 通过依赖注入处理 Desktop、Web、本地和远程环境的差异，并兼顾 Windows、macOS 和 Linux。
 - Zustand 状态位于 `packages/ui/src/store/`。广播同步的主题、语言等字段需要防止回环；UI 局部状态不应被误当作服务端事实。

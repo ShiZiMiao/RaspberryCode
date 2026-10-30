@@ -12,7 +12,7 @@
   <a href="README.md">简体中文</a> | English
 </p>
 
-RaspberryCode is an AI coding workspace with desktop, browser, and terminal interfaces. This repository contains the clients, backend services, shared UI, and Agent CLI and runtime source code.
+RaspberryCode is an AI coding workspace with desktop and terminal interfaces. This repository contains the clients, backend services, shared UI, and Agent CLI and runtime source code.
 
 ## Updates
 
@@ -64,43 +64,32 @@ Set `ZCODE_DATA_BASE_DIR` to use a separate development data directory. For exam
 ZCODE_DATA_BASE_DIR="$HOME/.zcode-dev-home" pnpm dev:desktop:test
 ```
 
-### Web Development
+### Server development
 
-Use development mode when editing Web or backend source code:
+Use development mode when editing backend source code:
 
 ```bash
-pnpm dev:web
-
-# Set the backend workspace (macOS / Linux)
-ZCODE_SERVER_WORKSPACE=/path/to/project pnpm dev:web
+pnpm dev:server
 ```
-
-This starts both the Web development server (default: `http://localhost:5173`) and the backend (default: `http://localhost:3030`). Open the Web development server in your browser. `/ws` and general `/api` requests are proxied to the local backend; `/api/v1/oauth/token` is proxied separately to the configured product service.
 
 After changing Agent source code, run `pnpm --filter @zcode/cli... build` and restart the service. To validate the complete distribution, extract and run it as described under Packaging → RaspberryCode CLI distribution below.
 
 ### RaspberryCode CLI distribution
 
-The command-line distribution includes the TUI, Web client, and Agent behind one `zcode` command. With no arguments it starts the TUI; a leading `--web` starts Web mode; all other arguments go to the existing Agent CLI. Both modes run locally without Electron.
+The command-line distribution includes the TUI and Agent behind one `zcode` command. With no arguments it starts the TUI; all other arguments go to the Agent CLI. It runs locally without Electron.
 
 ```bash
 # Start the terminal UI by default
 zcode
 
-# Start the Web interface
-zcode --web
-
-# Set the project and port without opening a browser automatically
-zcode --web --workspace /path/to/project --port 3030 --no-open
-
-# Show CLI or Web options
+# Show CLI options
 zcode --help
-zcode --web --help
+
+# Show the distribution version
+zcode --version
 ```
 
-In Web mode, it uses the current directory as the workspace, listens on `127.0.0.1` without token authentication by default, selects an available port, and opens a browser. Use the URL printed in the terminal and press `Ctrl+C` to stop the service. For LAN access, use `--host 0.0.0.0`; listening on a non-local address generates an access token by default. Use the token-bearing URL printed in the terminal. Set a token with `--token`, or disable token authentication with `--no-token`.
-
-When starting the general Web service's HTTP entry directly, configure API/WebSocket authentication with `ZCODE_SERVER_AUTH_TOKEN`. When creating the service programmatically, use the `authToken` option.
+When starting the general Web service's HTTP entry (`server/entry-http.js`, bot callbacks, etc.) directly, configure API/WebSocket authentication with `ZCODE_SERVER_AUTH_TOKEN`. When creating the service programmatically, use the `authToken` option.
 
 See Packaging below for build instructions. `pnpm build:zcode` only creates the distribution; it does not replace an existing `zcode` on `PATH`. If the command still points to an older installation or another checkout, check it with `command -v zcode` on macOS / Linux or `where.exe zcode` on Windows.
 
@@ -119,7 +108,7 @@ pnpm --filter @zcode/cli... build
 node apps/zcode-cli/packages/cli/dist/zcode.cjs --help
 ```
 
-This entry runs the Agent CLI directly and does not handle the distribution's `--web` switch. Use `pnpm dev:web` for Web development, or the extracted `bin/zcode.mjs` shown below to test the unified command.
+This entry runs the Agent CLI directly. Use the extracted `bin/zcode.mjs` shown below to test the unified command.
 
 ### UI Plugin development
 
@@ -159,7 +148,7 @@ The default target is macOS arm64, and the default output directory is `packages
 
 ### RaspberryCode CLI distribution
 
-Run `pnpm build:zcode` to build the CLI/TUI, backend, and Web client, collect the TUI native libraries, workers, and runtime dependencies, then assemble the distribution. Running the distribution still requires Node.js; use the version specified in `mise.toml`.
+Run `pnpm build:zcode` to build the CLI/TUI and backend, collect the TUI native libraries, workers, and runtime dependencies, then assemble the distribution. Running the distribution still requires Node.js; use the version specified in `mise.toml`.
 
 Before packaging, set the download base URL with `ZCODE_DIST_BASE_URL` in `.env`, `.env.local`, or the process environment, or pass it through `--base-url`. The URL below is a placeholder; replace it with your hosting URL when publishing:
 
@@ -195,20 +184,13 @@ tar -xzf "dist/zcode/releases/$zcode_version/zcode-$zcode_version.tar.gz" \
   -C dist/zcode/debug
 # Start the TUI by default
 node dist/zcode/debug/zcode/bin/zcode.mjs
-
-# Start Web mode
-node dist/zcode/debug/zcode/bin/zcode.mjs --web \
-  --workspace "$PWD" --port 3030 --no-open
 ```
-
-Open `http://127.0.0.1:3030` to validate the complete flow, with one backend serving the Web pages and running the Agent. The port must be available; if `pnpm dev:web` is already running, choose another `--port`.
 
 ## Repository Structure
 
 | Directory                                            | Responsibility                                                                          |
 | ---------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | `packages/desktop`                                   | Electron Main, Host, Renderer, and desktop packaging                                    |
-| `packages/web`                                       | Web client                                                                              |
 | `packages/server`                                    | HTTP / WebSocket services and remote connections                                        |
 | `packages/zcode-server-cli`                          | Standalone server startup and process management                                        |
 | `packages/ui`                                        | Shared React components, hooks, and Zustand state                                       |
