@@ -1,7 +1,7 @@
 import { EventEmitter } from "node:events";
 import { describe, expect, it, vi } from "vitest";
 import { utilityProcess as electronUtilityProcess } from "electron";
-import { hostCronRunMessageSchema, hostOffPeakRunMessageSchema } from "@zcode/shared";
+import { hostCronRunMessageSchema } from "@zcode/shared";
 import { spawnCronScheduler } from "../src/main/desktopCronScheduler.js";
 
 vi.mock("electron", () => ({
@@ -22,7 +22,7 @@ class MockSchedulerProcess extends EventEmitter {
 }
 
 describe("desktopCronScheduler", () => {
-  it.each(["cron", "offpeak"] as const)(
+  it.each(["cron"] as const)(
     "forwards and validates the saved %s project directory snapshot",
     async (kind) => {
       const child = new MockSchedulerProcess();
@@ -55,7 +55,7 @@ describe("desktopCronScheduler", () => {
       const frame = host.postMessage.mock.calls[0]?.[0];
       expect(frame).toMatchObject(execution);
       expect(
-        (kind === "cron" ? hostCronRunMessageSchema : hostOffPeakRunMessageSchema).parse(frame),
+        hostCronRunMessageSchema.parse(frame),
       ).toMatchObject(execution);
       const disposing = scheduler.dispose();
       child.emit("exit", 0);

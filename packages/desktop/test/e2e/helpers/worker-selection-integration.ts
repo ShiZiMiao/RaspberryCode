@@ -101,19 +101,6 @@ export async function createWorkerSelectionIntegration() {
     }),
     modelSelectionReadinessSource: modelSelectionService,
     accountProviderConfigSource: deliverySource,
-    // 测试只核对选择合同；不使用真实账号、真实 secret 或外部 IM 网络。
-    accountRequestAuthService: {
-      resolveAccessCurrent: async () => ({
-        type: "zhipu-account",
-        family: "bigmodel",
-        planKind: "team-coding-plan",
-        productId: "product-team-a",
-        organizationId: "org-team-a",
-        projectId: "proj-team-a",
-      }),
-      resolveCurrent: async () => ({ apiKey: "e2e-fixture-key" }),
-      assertCurrent: async () => {},
-    },
   });
   const repo = new TaskIndexRepo();
   const syncer = createZCodeTaskIndexSyncer({ agentService: agent, taskIndexRepo: repo });

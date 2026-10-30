@@ -320,20 +320,26 @@ describe("设置页 UI polish E2E", () => {
     expect(templateLayout.cardHeights.every((height) => height >= 64)).toBe(true);
     expect(templateLayout.columns).toBe(2);
     expect(templateLayout.hasChevron).toBe(true);
+    // 智谱/Z.ai 与其他供应商一视同仁平铺展示，不做单独分组。
+    expect(
+      await browser.execute(
+        () => document.querySelectorAll('[data-provider-template-group="zhipu"]').length,
+      ),
+    ).toBe(0);
     expect(
       await browser.execute(() =>
         Array.from(
-          document.querySelectorAll(
-            '[data-provider-template-group="zhipu"] [data-testid^="model-provider-template-item-"]',
-          ),
+          document.querySelectorAll('[data-testid^="model-provider-template-item-"]'),
         ).map((node) => node.getAttribute("data-testid")),
       ),
-    ).toEqual([
-      "model-provider-template-item-bigmodel-api",
-      "model-provider-template-item-zai-api",
-      "model-provider-template-item-bigmodel-standard-api",
-      "model-provider-template-item-zai-standard-api",
-    ]);
+    ).toEqual(
+      expect.arrayContaining([
+        "model-provider-template-item-bigmodel-api",
+        "model-provider-template-item-zai-api",
+        "model-provider-template-item-bigmodel-standard-api",
+        "model-provider-template-item-zai-standard-api",
+      ]),
+    );
     await clickTestIdByDom(TID_MODEL_PROVIDER_TEMPLATE_BACK_BUTTON);
     await browser.waitUntil(
       async () =>

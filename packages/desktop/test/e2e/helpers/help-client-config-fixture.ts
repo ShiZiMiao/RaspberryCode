@@ -101,7 +101,7 @@ export async function buildHelpBrowserFixture(): Promise<string> {
   const result = await build({
     stdin: {
       contents:
-        'import * as help from "./packages/web/src/communityUrl.ts"; window.helpFixture = help;',
+        'import * as help from "./packages/desktop/test/e2e/helpers/helpCommunityUrl.ts"; window.helpFixture = help;',
       resolveDir: resolve(import.meta.dirname, "../../../../.."),
     },
     bundle: true,

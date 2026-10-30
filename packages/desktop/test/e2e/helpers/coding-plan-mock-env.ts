@@ -48,30 +48,10 @@ const CODING_PLAN_TEAM_SPEC_MARKERS = [
   "conversation-session-worker-effective-selection.test.ts",
   "conversation-session-model-provider-turbo-recovery.test.ts",
   "conversation-session-model-provider-turbo-switch.test.ts",
-  // Highspeed 抽卡 case 要按 Coding Plan 权益判定资格，缺 team mock 时抽卡入口不曝光。
-  "conversation-session-highspeed-card.test.ts",
-  "conversation-session-highspeed-card-draw-timeout.test.ts",
-  "conversation-session-highspeed-card-draw-miss.test.ts",
-  // 创建期退回 case 也依赖同一份 Team 权益；漏配会让假账号请求真实控制面，
-  // 登录过期弹窗先于 Highspeed 断言遮住工作区。
-  "conversation-session-highspeed-card-fallback-unlocks-model.test.ts",
-  "conversation-session-highspeed-card-admission-retains-draft.test.ts",
-  "conversation-session-highspeed-queue-edit.test.ts",
   "conversation-session-model-provider-plan-surface.test.ts",
   // Bug 原因：连续切模回放也播种了模拟登录态；未隔离控制面时，线上 401
   // 会触发登录过期弹窗，遮住第二轮的模型菜单，导致与切模无关的失败。
   "conversation-session-active-model-context.test.ts",
-  "conversation-session-off-peak-team-plan.test.ts",
-  // Bug 原因：只有取票网关 mock，没有账号控制面，当前 Registry 会正确判定无闲时
-  // 模型，导致 OffPeakCreate 不曝光。复用正常账号解析前置，不在产品里塞静态名单。
-  "conversation-session-offpeak-create.test.ts",
-  "conversation-session-offpeak-create-existing-session.test.ts",
-  "conversation-session-offpeak-subagent-model-inheritance.test.ts",
-  "conversation-session-off-peak-invalid-ticket.test.ts",
-  "off-peak-create-manage.test.ts",
-  // 主页布局和额度门禁同样依赖 Registry 的账号模型事实，取号网关不提供这些数据。
-  "off-peak-automations-home-layout.test.ts",
-  "off-peak-limit-pre-gate.test.ts",
 ] as const;
 
 export function shouldPrepareCodingPlanTeamMock(specs: readonly string[]) {

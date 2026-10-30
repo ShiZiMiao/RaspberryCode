@@ -11,7 +11,6 @@ const h = vi.hoisted(() => ({
   handlers: new Map<string, IpcHandler>(),
   listeners: new Map<string, IpcHandler>(),
   fromWebContents: vi.fn(),
-  registerWebRemoteControlIpcHandlers: vi.fn(),
   shellOpenExternal: vi.fn(),
   shellOpenPath: vi.fn(),
   configureRemoteUsageArmsTelemetry: vi.fn(),
@@ -51,10 +50,6 @@ vi.mock("../src/main/desktopArmsCustomEvent.js", () => ({
   dispatchFinalArmsCustomEvent: vi.fn(),
 }));
 
-vi.mock("../src/main/desktopWebRemoteControlIpc.js", () => ({
-  registerWebRemoteControlIpcHandlers: h.registerWebRemoteControlIpcHandlers,
-}));
-
 vi.mock("../src/main/desktopRemoteUsageArmsTelemetry.js", () => ({
   configureRemoteUsageArmsTelemetry: h.configureRemoteUsageArmsTelemetry,
   reportRemoteConnectResultToArms: h.reportRemoteConnectResultToArms,
@@ -81,13 +76,6 @@ function createOptions(overrides?: Partial<RemoteIpcOptions>): RemoteIpcOptions 
       platform: "darwin",
       appVersion: "1.0.0",
       armsEnv: "test",
-    },
-    webRemoteControlManager: {
-      notifyAuthStateChanged: vi.fn(),
-      authorizeStart: vi.fn(),
-      startAuthorized: vi.fn(),
-      stop: vi.fn(),
-      getStatus: vi.fn(),
     },
     createRemoteWorkspaceSession: vi.fn(async () => "remote-session-1"),
     disposeRemoteWorkspaceSession: vi.fn(),
@@ -129,7 +117,6 @@ describe("remote workspace connect telemetry IPC", () => {
     h.listeners.clear();
     h.fromWebContents.mockReset();
     h.fromWebContents.mockReturnValue({ id: 17 });
-    h.registerWebRemoteControlIpcHandlers.mockReset();
     h.shellOpenExternal.mockReset().mockResolvedValue(undefined);
     h.shellOpenPath.mockReset().mockResolvedValue("");
     h.configureRemoteUsageArmsTelemetry.mockReset();
@@ -141,7 +128,7 @@ describe("remote workspace connect telemetry IPC", () => {
       activeSessionCount: 2,
       activeTargetCount: 1,
     }));
-    const { options } = await registerHarness({ getRemoteConnectionStats });
+    await registerHarness({ getRemoteConnectionStats });
 
     expect(h.configureRemoteUsageArmsTelemetry).toHaveBeenCalledOnce();
     expect(h.configureRemoteUsageArmsTelemetry).toHaveBeenCalledWith(
@@ -157,10 +144,6 @@ describe("remote workspace connect telemetry IPC", () => {
         logger: expect.any(Object),
       }),
     );
-    expect(h.registerWebRemoteControlIpcHandlers).toHaveBeenCalledWith({
-      reportRemoteUsageEvent: expect.any(Function),
-      webRemoteControlManager: options.webRemoteControlManager,
-    });
   });
 
   it("只允许 main 进程打开 http/https/file URL", async () => {
@@ -183,79 +166,8 @@ describe("remote workspace connect telemetry IPC", () => {
     expect(options.logger.warn).toHaveBeenCalledTimes(2);
   });
 
-  it("keeps Coding Plan PayPal callback openExternal requests in the sender webview", async () => {
-    const { registerRemoteIpcHandlers } = await import("../src/main/desktopMainIpcRemote.js");
-    const options = createOptions();
-    registerRemoteIpcHandlers(options);
-    const listener = h.listeners.get(PlatformChannels.OpenExternal);
-    expect(listener).toBeDefined();
 
-    const sender = {
-      getURL: vi.fn(() => "https://www.sandbox.paypal.com/agreements/approve"),
-      loadURL: vi.fn(() => Promise.resolve()),
-    };
-    const returnTo = encodeURIComponent(
-      "/coding-plan?provider=zai&embedded=app&lang=cn&theme=zai-dark",
-    );
-    const callbackUrl = `http://localhost:3000/coding-plan/payment/callback?channel=paypal&status=return&returnTo=${returnTo}&approval_token_id=setup-1`;
-    listener?.({ sender }, callbackUrl);
 
-    expect(sender.loadURL).toHaveBeenCalledWith(callbackUrl);
-    expect(h.shellOpenExternal).not.toHaveBeenCalled();
-  });
-
-  it("uses Coding Plan bridge sourceUrl when routing openExternal callbacks", async () => {
-    const { registerRemoteIpcHandlers } = await import("../src/main/desktopMainIpcRemote.js");
-    const options = createOptions();
-    registerRemoteIpcHandlers(options);
-    const listener = h.listeners.get(PlatformChannels.OpenExternal);
-    expect(listener).toBeDefined();
-
-    const sender = {
-      getURL: vi.fn(() => "file:///Applications/RaspberryCode/index.html"),
-      loadURL: vi.fn(() => Promise.resolve()),
-    };
-    const returnTo = encodeURIComponent(
-      "/coding-plan?provider=zai&embedded=app&lang=cn&theme=zai-dark",
-    );
-    const callbackUrl = `http://localhost:3000/coding-plan/payment/callback?channel=paypal&status=return&returnTo=${returnTo}&approval_token_id=setup-1`;
-    listener?.(
-      {
-        sender,
-        senderFrame: { url: "https://www.sandbox.paypal.com/agreements/approve" },
-      },
-      {
-        sourceUrl: "file:///stale-host-url.html",
-        url: callbackUrl,
-      },
-    );
-
-    expect(sender.loadURL).toHaveBeenCalledWith(callbackUrl);
-    expect(h.shellOpenExternal).not.toHaveBeenCalled();
-  });
-
-  it("opens cross-origin Coding Plan callback openExternal requests externally", async () => {
-    const { registerRemoteIpcHandlers } = await import("../src/main/desktopMainIpcRemote.js");
-    const options = createOptions();
-    registerRemoteIpcHandlers(options);
-    const listener = h.listeners.get(PlatformChannels.OpenExternal);
-    expect(listener).toBeDefined();
-
-    const sender = {
-      getURL: vi.fn(() => "https://www.sandbox.paypal.com/agreements/approve"),
-      loadURL: vi.fn(() => Promise.resolve()),
-    };
-    // returnTo 与回调页不同源即应外部打开；用中性域名表达“不同源”，不依赖测试环境域名
-    //（开源导出会把测试域名改写成正式域名，回调与 returnTo 就变成同源）。
-    const returnTo = encodeURIComponent(
-      "https://other-origin.example/coding-plan?provider=zai&embedded=app",
-    );
-    const callbackUrl = `https://zcode.z.ai/coding-plan/payment/callback?channel=paypal&status=return&returnTo=${returnTo}`;
-    listener?.({ sender }, callbackUrl);
-
-    expect(sender.loadURL).not.toHaveBeenCalled();
-    expect(h.shellOpenExternal).toHaveBeenCalledWith(callbackUrl);
-  });
 
   it("把 renderer attachment-ready ACK 转发给对应窗口 session manager", async () => {
     const confirmRendererAttachmentReady = vi.fn();

@@ -208,7 +208,7 @@ async function waitForAnswerBubble(text: string) {
 async function saveThemeScreenshots(name: string) {
   const artifactDir = process.env.ZCODE_E2E_ARTIFACT_DIR;
   if (!artifactDir) return;
-  for (const theme of ["zai-light", "zai-dark"]) {
+  for (const theme of ["light", "dark"]) {
     await browser.execute((value) => {
       const actions = (
         window as typeof window & { __testActions?: { setTheme(theme: string): void } }

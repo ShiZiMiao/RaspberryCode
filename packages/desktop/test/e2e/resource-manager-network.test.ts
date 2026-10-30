@@ -87,8 +87,8 @@ describe("资源管理器网络", () => {
       );
       await $("input").setValue("");
       for (const [theme, locale] of [
-        ["zai-dark", "en-US"],
-        ["zai-light", "zh-CN"],
+        ["dark", "en-US"],
+        ["light", "zh-CN"],
       ]) {
         await browser.execute(
           (themeValue, localeValue) => {

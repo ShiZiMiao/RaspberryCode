@@ -75,11 +75,11 @@ describe(`${CASE_MARKER}: 设置防护、连接编辑与机器标注`, () => {
       process.env.ZCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/settings-notice",
     );
     await mkdir(artifactDir, { recursive: true });
-    for (const theme of ["zai-light", "zai-dark"] as const) {
+    for (const theme of ["light", "dark"] as const) {
       await browser.execute((value) => {
         const actions = (
           window as Window & {
-            __testActions?: { setTheme(theme: "zai-light" | "zai-dark"): void };
+            __testActions?: { setTheme(theme: "light" | "dark"): void };
           }
         ).__testActions;
         if (!actions) throw new Error("Missing theme actions");

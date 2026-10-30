@@ -135,24 +135,6 @@ vi.mock("@zcode/shared", () => ({
   },
 }));
 
-vi.mock("electron-updater", () => ({
-  default: {
-    autoUpdater: {
-      autoDownload: false,
-      autoInstallOnAppQuit: false,
-      logger: undefined,
-      on: vi.fn(),
-      checkForUpdates: vi.fn(() => Promise.resolve()),
-      quitAndInstall: vi.fn(),
-    },
-  },
-}));
-
-vi.mock("../src/main/autoUpdater.js", () => ({
-  CHECK_FOR_UPDATE_MENU_ID: "check-for-update",
-  setAutoUpdaterMenuLocale: vi.fn(),
-}));
-
 vi.mock("../src/main/desktopCommandHandlers.js", () => ({
   HELP_TOGGLE_DEV_TOOLS_MENU_ID: "help.toggle-dev-tools",
   HELP_TOGGLE_ZCODE_STDIO_TAP_MENU_ID: "help.toggle-zcode-stdio-tap",
@@ -185,63 +167,8 @@ describe("desktopApplicationMenu endpoint submenu", () => {
     expect(resolveSystemApplicationLocale()).toBe("zh-CN");
   });
 
-  it("test 环境显示 endpoint 子菜单并标记当前 test 选项", async () => {
-    envMock.value = "test";
-    const { HELP_ZCODE_ENDPOINT_TEST_MENU_ID, rebuildApplicationMenu } =
-      await import("../src/main/desktopApplicationMenu.js");
 
-    rebuildApplicationMenu({
-      currentApplicationLocale: "en-US",
-      zcodeEndpointSelection: "test",
-      executeDesktopCommand: vi.fn(),
-    });
 
-    const template = buildFromTemplateMock.mock
-      .calls[0]?.[0] as Electron.MenuItemConstructorOptions[];
-    const endpointItem = findMenuItem(template, "RaspberryCode Endpoint");
-    const testItem = findMenuItem(template, undefined, HELP_ZCODE_ENDPOINT_TEST_MENU_ID);
-    expect(endpointItem).toBeTruthy();
-    expect(testItem?.checked).toBe(true);
-  });
-
-  it("production 环境隐藏 endpoint 子菜单", async () => {
-    envMock.value = "production";
-    const { rebuildApplicationMenu } = await import("../src/main/desktopApplicationMenu.js");
-
-    rebuildApplicationMenu({
-      currentApplicationLocale: "en-US",
-      zcodeEndpointSelection: "test",
-      executeDesktopCommand: vi.fn(),
-    });
-
-    const template = buildFromTemplateMock.mock
-      .calls[0]?.[0] as Electron.MenuItemConstructorOptions[];
-    expect(findMenuItem(template, "RaspberryCode Endpoint")).toBeUndefined();
-  });
-
-  it("Preview 隐藏更新入口，生产版继续显示", async () => {
-    const { rebuildApplicationMenu } = await import("../src/main/desktopApplicationMenu.js");
-
-    envMock.value = "test";
-    rebuildApplicationMenu({
-      currentApplicationLocale: "en-US",
-      executeDesktopCommand: vi.fn(),
-    });
-    let template = buildFromTemplateMock.mock.calls.at(
-      -1,
-    )?.[0] as Electron.MenuItemConstructorOptions[];
-    expect(findMenuItem(template, undefined, "check-for-update")).toBeUndefined();
-
-    envMock.value = "production";
-    rebuildApplicationMenu({
-      currentApplicationLocale: "en-US",
-      executeDesktopCommand: vi.fn(),
-    });
-    template = buildFromTemplateMock.mock.calls.at(
-      -1,
-    )?.[0] as Electron.MenuItemConstructorOptions[];
-    expect(findMenuItem(template, undefined, "check-for-update")).toBeTruthy();
-  });
 
   it("开发运行形态也隐藏已下线的压测开关", async () => {
     envMock.value = "production";

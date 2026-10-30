@@ -66,7 +66,7 @@ function readUpstreamThoughtLevel() {
   if (process.env.E2E_PROVIDER_THOUGHT_LEVEL !== undefined) {
     return process.env.E2E_PROVIDER_THOUGHT_LEVEL.trim();
   }
-  return process.env.E2E_PROVIDER_PRESET?.trim() === "glmhighspeed" ? "" : "high";
+  return "high";
 }
 
 export function getUpstreamApiKey() {

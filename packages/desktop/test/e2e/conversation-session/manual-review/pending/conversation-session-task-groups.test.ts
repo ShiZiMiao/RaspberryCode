@@ -177,8 +177,8 @@ describe("任务分组独立视图", () => {
     expect(await renamed.$('[data-testid="grouped-draft-task"]').isExisting()).toBe(false);
     await setV4ComposerText("");
     for (const [theme, locale] of [
-      ["zai-light", "zh-CN"],
-      ["zai-dark", "en-US"],
+      ["light", "zh-CN"],
+      ["dark", "en-US"],
     ]) {
       await browser.execute(
         ([theme, locale]) => {

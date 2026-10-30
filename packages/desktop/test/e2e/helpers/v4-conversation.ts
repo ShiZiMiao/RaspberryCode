@@ -16,9 +16,6 @@ import {
   TID_CHAT_THOUGHT_LEVEL_SELECT_TRIGGER,
   TID_PROMPT_SUGGESTION_OPTION,
   TID_PROMPT_SUGGESTION_PANEL,
-  TID_LOGIN_API_KEY_CONTINUE_BUTTON,
-  TID_LOGIN_API_KEY_INPUT,
-  TID_LOGIN_USE_API_KEY_BUTTON,
   TID_TASK_ITEM,
   TID_TASK_NEW_BUTTON,
   TID_V4_AUTODRAIN_TOGGLE,
@@ -156,20 +153,15 @@ export async function prepareV4ConversationE2E(options: PrepareV4ConversationE2E
 }
 
 async function ensureV4ShellReady() {
-  try {
-    // 新隔离 profile 的职业引导会遮住工作区，先复用真实 UI 跳过流程。
-    await skipOccupationOnboardingIfPresent();
-    await waitForProjectRow(DEFAULT_WORKSPACE, { timeout: 30000 });
-    return;
-  } catch (error) {
-    if (!(await hasApiKeyLoginButton())) {
-      throw error;
-    }
-    await loginWithApiKey();
-    await skipOccupationOnboardingIfPresent();
-    await waitForProjectRow(DEFAULT_WORKSPACE, { timeout: 30000 });
-  }
+  // 无登录启动（specs/no-login-startup.md）：冷启动直接进入工作区，不再有欢迎页登录兜底。
+  // 新隔离 profile 的职业引导会遮住工作区，先复用真实 UI 跳过流程。
+  await skipOccupationOnboardingIfPresent();
+  await waitForProjectRow(DEFAULT_WORKSPACE, { timeout: 30000 });
 }
+
+// 登录页已整体移除（specs/no-login-startup.md）：冷启动直接进入工作区，
+// API Key 统一在「设置 → 模型供应商」配置。保留导出给既有测试调用，语义为 no-op。
+export async function loginWithApiKey() {}
 
 async function ensureV4PreparationDraft(options: PrepareV4ConversationE2EOptions) {
   // Bug 根因：全局新建会创建独立 cwd；反复点击会让固定目录夹具与 Agent 工作区分离。
@@ -203,44 +195,6 @@ async function ensureV4PreparationDraft(options: PrepareV4ConversationE2EOptions
   } else {
     await startDraftFromProject(DEFAULT_WORKSPACE);
   }
-}
-
-async function hasApiKeyLoginButton() {
-  const exists = await browser
-    .execute(
-      (currentTestId) => Boolean(document.querySelector(`[data-testid="${currentTestId}"]`)),
-      TID_LOGIN_USE_API_KEY_BUTTON,
-    )
-    .catch(() => false);
-  return Boolean(exists);
-}
-
-export async function loginWithApiKey() {
-  await clickTestIdByDom(TID_LOGIN_USE_API_KEY_BUTTON, {
-    timeout: 30000,
-    timeoutMsg: "欢迎页没有出现 API Key 登录入口",
-  });
-  await setInputValueByTestIdDom(TID_LOGIN_API_KEY_INPUT, LOGIN_API_KEY, {
-    timeout: 15000,
-    timeoutMsg: "API Key 登录输入框没有出现",
-  });
-  await browser.waitUntil(
-    async () =>
-      browser.execute((continueButtonTestId) => {
-        const button = document.querySelector<HTMLElement>(
-          `[data-testid="${continueButtonTestId}"]`,
-        );
-        return button instanceof HTMLButtonElement && !button.disabled;
-      }, TID_LOGIN_API_KEY_CONTINUE_BUTTON),
-    {
-      timeout: 15000,
-      timeoutMsg: "API Key 登录继续按钮没有变为可用",
-    },
-  );
-  await clickTestIdByDom(TID_LOGIN_API_KEY_CONTINUE_BUTTON, {
-    timeout: 15000,
-    timeoutMsg: "API Key 登录继续按钮没有出现或不可点击",
-  });
 }
 
 /** 新建草稿：点侧栏新任务按钮，等 v4 pane 回到 draft 态。 */

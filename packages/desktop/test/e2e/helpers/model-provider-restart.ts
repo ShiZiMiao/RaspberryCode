@@ -75,12 +75,6 @@ export async function seedBigModelOAuthCredential() {
   });
 }
 
-/** 为需要经过 Highspeed 网关鉴权的 E2E 补齐登录 JWT。 */
-export async function seedHighspeedLoginCredential() {
-  await writeJsonPatch(CREDENTIALS_FILE, {
-    zcodejwttoken: "e2e-highspeed-zcode-jwt",
-  });
-}
 
 /**
  * 为需要实际进入 BigModel Start Plan 的 E2E 补齐 zcode JWT。

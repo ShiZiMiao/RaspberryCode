@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { resolveBigModelApiOrigin, resolveRuntimeZCodeEndpointOrigin } from "@zcode/shared";
 import {
   getE2EProviderEndpointEnv,
   shouldUseProductionE2EProviderEndpoint,
@@ -20,18 +19,6 @@ afterEach(() => {
 });
 
 describe("E2E provider endpoint ownership", () => {
-  it.each([liveTeam, liveShare])("生产账号统一使用可沿 SSH 传递的生产环境：%s", (spec) => {
-    const env = {
-      ZCODE_ENV: "test",
-      ...getE2EProviderEndpointEnv([spec], "deepseek", "replay"),
-    };
-    expect(resolveRuntimeZCodeEndpointOrigin(env)).toBe("https://zcode.z.ai");
-    expect(resolveBigModelApiOrigin(env)).toBe("https://bigmodel.cn");
-    // SSH 只透传环境档位，不透传 BIGMODEL_API_BASE_URL；远端仍必须解析到生产域。
-    expect(env.ZCODE_ENV).toBe("production");
-    expect(resolveBigModelApiOrigin({ ZCODE_ENV: env.ZCODE_ENV })).toBe("https://bigmodel.cn");
-  });
-
   it("普通用例的控制面覆盖原样来自请求安全实现，不获得真实 Team 的 BigModel 接口覆盖", () => {
     expect(getE2EProviderEndpointEnv([ordinary], "deepseek", "replay")).toEqual({});
     expect(shouldUseProductionE2EProviderEndpoint([ordinary], "deepseek", "replay")).toBe(false);

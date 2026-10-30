@@ -24,31 +24,31 @@ declare global {
   }
 }
 
-type Theme = "light" | "dark" | "zai-light" | "zai-dark" | "system";
+type Theme = "light" | "dark" | "light" | "dark" | "system";
 
 function resolveTheme(theme: Theme): "light" | "dark" {
   if (theme === "system") {
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   }
-  return theme === "dark" || theme === "zai-dark" ? "dark" : "light";
+  return theme === "dark" || theme === "dark" ? "dark" : "light";
 }
 
 function applyResourceManagerTheme(): void {
-  const savedTheme = (localStorage.getItem("zcode-theme") as Theme | null) ?? "zai-dark";
+  const savedTheme = (localStorage.getItem("zcode-theme") as Theme | null) ?? "dark";
   const resolvedTheme = resolveTheme(savedTheme);
   const appliedTheme =
     savedTheme === "system"
       ? resolvedTheme === "dark"
-        ? "zai-dark"
-        : "zai-light"
+        ? "dark"
+        : "light"
       : savedTheme === "dark"
-        ? "zai-dark"
+        ? "dark"
         : savedTheme === "light"
-          ? "zai-light"
+          ? "light"
           : savedTheme;
   document.documentElement.classList.toggle("dark", resolvedTheme === "dark");
-  document.documentElement.classList.toggle("theme-zai-light", appliedTheme === "zai-light");
-  document.documentElement.classList.toggle("theme-zai-dark", appliedTheme === "zai-dark");
+  document.documentElement.classList.toggle("theme-light", appliedTheme === "light");
+  document.documentElement.classList.toggle("theme-dark", appliedTheme === "dark");
 }
 
 applyResourceManagerTheme();

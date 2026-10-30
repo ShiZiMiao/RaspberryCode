@@ -280,8 +280,8 @@ describe("desktopCommandHandlers resolveFeedbackUrl", () => {
     await openChangelog("zh-CN");
     await openChangelog("en-US");
 
-    expect(shell.openExternal).toHaveBeenNthCalledWith(1, "https://zcode.z.ai/cn/changelog");
-    expect(shell.openExternal).toHaveBeenNthCalledWith(2, "https://zcode.z.ai/en/changelog");
+    expect(shell.openExternal).toHaveBeenNthCalledWith(1, "https://your-server.example/cn/changelog");
+    expect(shell.openExternal).toHaveBeenNthCalledWith(2, "https://your-server.example/en/changelog");
   });
 
   it("changelog 按当前非生产 endpoint 打开", async () => {
@@ -311,70 +311,6 @@ describe("desktopCommandHandlers resolveFeedbackUrl", () => {
     });
 
     expect(onRelaunchApp).toHaveBeenCalledTimes(1);
-  });
-
-  it("清理 Coding Plan webview 持久 partition，避免账号切换后复用旧凭据", async () => {
-    const { executeDesktopCommand } = await import("../src/main/desktopCommandHandlers.js");
-    const commandOptions = createCommandOptions();
-
-    await executeDesktopCommand({
-      ...commandOptions,
-      command: DesktopCommandIds.ClearCodingPlanWebviewStorage,
-    });
-
-    expect(sessionFromPartitionMock).toHaveBeenCalledWith("persist:zcode-coding-plan");
-    expect(sessionFromPartitionMock).toHaveBeenCalledWith("persist:zcode-rewards");
-    expect(codingPlanPartitionSession.clearStorageData).toHaveBeenCalledTimes(2);
-    expect(commandOptions.logger.info).toHaveBeenCalledWith(
-      "[coding-plan-webview] cleared persistent partition storage",
-    );
-  });
-
-  it("非生产 endpoint 菜单命令能保存 test、自定义和 reset", async () => {
-    const { executeDesktopCommand } = await import("../src/main/desktopCommandHandlers.js");
-    const onZCodeEndpointChanged = vi.fn();
-    const commandOptions = createCommandOptions({ onZCodeEndpointChanged });
-
-    await executeDesktopCommand({
-      ...commandOptions,
-      command: DesktopCommandIds.SetZCodeEndpointTest,
-    });
-    expect(commandOptions.settingService.update).toHaveBeenLastCalledWith({
-      zcodeEndpointOrigin: "https://zcode.z.ai",
-    });
-
-    await executeDesktopCommand({
-      ...commandOptions,
-      command: DesktopCommandIds.ResetZCodeEndpoint,
-    });
-    expect(commandOptions.settingService.update).toHaveBeenLastCalledWith({
-      zcodeEndpointOrigin: undefined,
-    });
-    expect(onZCodeEndpointChanged).toHaveBeenCalledTimes(2);
-  });
-
-  it("Custom endpoint 菜单打开主进程输入窗并保存提交值", async () => {
-    const { executeDesktopCommand } = await import("../src/main/desktopCommandHandlers.js");
-    const onZCodeEndpointChanged = vi.fn();
-    const commandOptions = createCommandOptions({ onZCodeEndpointChanged });
-
-    const commandPromise = executeDesktopCommand({
-      ...commandOptions,
-      command: DesktopCommandIds.SetZCodeEndpointCustom,
-    });
-    await vi.waitFor(() => expect(BrowserWindowMock).toHaveBeenCalledTimes(1));
-    const promptWindow = browserWindowInstances[0];
-    expect(promptWindow?.loadURL).toHaveBeenCalledWith(expect.stringContaining("data:text/html"));
-
-    promptWindow?.emitTitle(
-      "zcode-endpoint-submit:" + encodeURIComponent("http://localhost:3030/path"),
-    );
-    await commandPromise;
-
-    expect(commandOptions.settingService.update).toHaveBeenCalledWith({
-      zcodeEndpointOrigin: "http://localhost:3030",
-    });
-    expect(onZCodeEndpointChanged).toHaveBeenCalledTimes(1);
   });
 
   it("系统缩放命令会限制在缩小 3 档和放大 5 档之间", async () => {

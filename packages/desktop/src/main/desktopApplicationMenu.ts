@@ -10,7 +10,6 @@ import {
   type Locale,
 } from "@zcode/shared";
 import { readZCodeStdioTapDevState } from "@zcode/services/node";
-import { CHECK_FOR_UPDATE_MENU_ID, setAutoUpdaterMenuLocale } from "./autoUpdater.js";
 import {
   DESKTOP_ZOOM_MAX_LEVEL,
   DESKTOP_ZOOM_MIN_LEVEL,
@@ -21,8 +20,6 @@ import {
   HELP_TOGGLE_DEV_TOOLS_MENU_ID,
 } from "./desktopCommandHandlers.js";
 
-export const HELP_ZCODE_ENDPOINT_PRODUCTION_MENU_ID = "help.zcode-endpoint.production";
-export const HELP_ZCODE_ENDPOINT_TEST_MENU_ID = "help.zcode-endpoint.test";
 
 export function getDesktopMenuLabel(
   locale: Locale,
@@ -83,7 +80,6 @@ function resolveMenuAccelerator(
 
 function buildApplicationMenuTemplate(options: {
   currentApplicationLocale: Locale;
-  zcodeEndpointSelection?: "production" | "test" | "custom";
   executeDesktopCommand: (
     command: DesktopCommandId,
     senderWindow?: BrowserWindow | null,
@@ -119,16 +115,6 @@ function buildApplicationMenuTemplate(options: {
                 click: () => void options.executeDesktopCommand(DesktopCommandIds.ShowAbout),
               },
               // 更新入口跟随产品身份：Preview 禁用更新器，生产后端的 Preview 也不例外。
-              ...(ZCODE_PRODUCT_FLAVOR === "production"
-                ? [
-                    {
-                      id: CHECK_FOR_UPDATE_MENU_ID,
-                      label: getLabel(desktopMenuMessageIds.helpCheckForUpdates),
-                      click: () =>
-                        void options.executeDesktopCommand(DesktopCommandIds.CheckForUpdates),
-                    },
-                  ]
-                : []),
               { type: "separator" as const },
               {
                 label: getLabel(desktopMenuMessageIds.appServices),
@@ -260,16 +246,6 @@ function buildApplicationMenuTemplate(options: {
                 label: getLabel(desktopMenuMessageIds.helpAbout),
                 click: () => void options.executeDesktopCommand(DesktopCommandIds.ShowAbout),
               },
-              ...(ZCODE_PRODUCT_FLAVOR === "production"
-                ? [
-                    {
-                      id: CHECK_FOR_UPDATE_MENU_ID,
-                      label: getLabel(desktopMenuMessageIds.helpCheckForUpdates),
-                      click: () =>
-                        void options.executeDesktopCommand(DesktopCommandIds.CheckForUpdates),
-                    },
-                  ]
-                : []),
               { type: "separator" as const },
             ]
           : []),
@@ -287,45 +263,6 @@ function buildApplicationMenuTemplate(options: {
                 checked: stdioTapState.enabled,
                 click: () =>
                   void options.executeDesktopCommand(DesktopCommandIds.ToggleZCodeStdioTapDevProxy),
-              },
-              { type: "separator" as const },
-            ]
-          : []),
-        ...(ZCODE_ENV === "test"
-          ? [
-              {
-                label: getLabel(desktopMenuMessageIds.helpZCodeEndpoint),
-                submenu: [
-                  {
-                    id: HELP_ZCODE_ENDPOINT_PRODUCTION_MENU_ID,
-                    label: getLabel(desktopMenuMessageIds.helpZCodeEndpointProduction),
-                    type: "radio" as const,
-                    checked: (options.zcodeEndpointSelection ?? "production") === "production",
-                    click: () =>
-                      void options.executeDesktopCommand(
-                        DesktopCommandIds.SetZCodeEndpointProduction,
-                      ),
-                  },
-                  {
-                    id: HELP_ZCODE_ENDPOINT_TEST_MENU_ID,
-                    label: getLabel(desktopMenuMessageIds.helpZCodeEndpointTest),
-                    type: "radio" as const,
-                    checked: options.zcodeEndpointSelection === "test",
-                    click: () =>
-                      void options.executeDesktopCommand(DesktopCommandIds.SetZCodeEndpointTest),
-                  },
-                  { type: "separator" as const },
-                  {
-                    label: getLabel(desktopMenuMessageIds.helpZCodeEndpointCustom),
-                    click: () =>
-                      void options.executeDesktopCommand(DesktopCommandIds.SetZCodeEndpointCustom),
-                  },
-                  {
-                    label: getLabel(desktopMenuMessageIds.helpZCodeEndpointReset),
-                    click: () =>
-                      void options.executeDesktopCommand(DesktopCommandIds.ResetZCodeEndpoint),
-                  },
-                ],
               },
               { type: "separator" as const },
             ]
@@ -362,7 +299,6 @@ function buildApplicationMenuTemplate(options: {
 
 export function rebuildApplicationMenu(options: {
   currentApplicationLocale: Locale;
-  zcodeEndpointSelection?: "production" | "test" | "custom";
   executeDesktopCommand: (
     command: DesktopCommandId,
     senderWindow?: BrowserWindow | null,
@@ -376,7 +312,6 @@ export function rebuildApplicationMenu(options: {
     Menu.buildFromTemplate(
       buildApplicationMenuTemplate({
         currentApplicationLocale: options.currentApplicationLocale,
-        zcodeEndpointSelection: options.zcodeEndpointSelection,
         executeDesktopCommand: options.executeDesktopCommand,
         currentZoomLevel: options.currentZoomLevel,
         shortcutBindings: options.shortcutBindings,
@@ -384,7 +319,6 @@ export function rebuildApplicationMenu(options: {
       }),
     ),
   );
-  setAutoUpdaterMenuLocale(options.currentApplicationLocale);
   if (!app.isPackaged) {
     updateZCodeStdioTapDevMenuState();
   }

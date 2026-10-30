@@ -7,7 +7,6 @@ import {
   AppErrorBoundary,
   Root,
   GlobalDatabaseStartupLoading,
-  UpdateStatusWindowRoot,
   ZCodeIntlProvider,
   registerBaseWorkspaceServices,
   registerRemoteWorkspaceSession,
@@ -78,28 +77,28 @@ function registerE2EStoreBridgesIfEnabled() {
 
 // 初始化主题：默认 Zai dark，后续由 useTheme hook 接管
 {
-  const saved = localStorage.getItem("zcode-theme") || "zai-dark";
+  const saved = localStorage.getItem("zcode-theme") || "dark";
   const resolved =
     saved === "system"
       ? window.matchMedia("(prefers-color-scheme: dark)").matches
         ? "dark"
         : "light"
-      : saved === "dark" || saved === "zai-dark"
+      : saved === "dark" || saved === "dark"
         ? "dark"
         : "light";
   const appliedTheme =
     saved === "system"
       ? resolved === "dark"
-        ? "zai-dark"
-        : "zai-light"
+        ? "dark"
+        : "light"
       : saved === "dark"
-        ? "zai-dark"
+        ? "dark"
         : saved === "light"
-          ? "zai-light"
+          ? "light"
           : saved;
   if (resolved === "dark") document.documentElement.classList.add("dark");
-  document.documentElement.classList.toggle("theme-zai-light", appliedTheme === "zai-light");
-  document.documentElement.classList.toggle("theme-zai-dark", appliedTheme === "zai-dark");
+  document.documentElement.classList.toggle("theme-light", appliedTheme === "light");
+  document.documentElement.classList.toggle("theme-dark", appliedTheme === "dark");
 }
 
 const isMacDesktop = navigator.userAgent.includes("Mac");
@@ -137,7 +136,6 @@ const supportsSettings = readBooleanFlag("supportsSettings", true);
 const initialWorkspaceAbsPath = readStringFlag("initialWorkspacePath");
 const initialWorkspacePurpose = readStringFlag("initialWorkspacePurpose");
 const unavailableWorkspacePath = readStringFlag("unavailableWorkspacePath");
-const windowKind = readStringFlag("windowKind");
 const initialLocaleFlag = readStringFlag("locale");
 const initialLocale: Locale =
   initialLocaleFlag === "zh-CN" || initialLocaleFlag === "en-US"
@@ -166,8 +164,7 @@ initializeDesktopUserActionTrace({
 installDocumentHiddenMotionPause();
 let appInitialized = false;
 const databaseStartupAdmission = new DatabaseStartupAdmission();
-const appRoot =
-  windowKind === "update-status" ? null : createRoot(document.getElementById("root")!);
+const appRoot = createRoot(document.getElementById("root")!);
 const sendStartupControl = (control: DatabaseStartupControl) =>
   window.postMessage({ type: InternalChannels.DatabaseStartupControl, control }, "*");
 function renderDatabaseStartup(): void {
@@ -199,10 +196,7 @@ function enterAppIfPrepared(): void {
   const port = databaseStartupAdmission.takeReadyPort();
   if (port) initializeBusinessRoot(port);
 }
-const firstStartupStateTimer =
-  windowKind === "update-status"
-    ? undefined
-    : setTimeout(() => {
+const firstStartupStateTimer = setTimeout(() => {
         if (databaseStartupAdmission.state) return;
         const now = Date.now();
         databaseStartupAdmission.state = {
@@ -370,20 +364,5 @@ function initializeBusinessRoot(port: MessagePort): void {
 }
 
 window.addEventListener("message", handleServicePortMessage);
-if (windowKind !== "update-status") {
-  renderDatabaseStartup();
-  sendStartupControl({ action: "snapshot" });
-}
-
-if (windowKind === "update-status") {
-  createRoot(document.getElementById("root")!).render(
-    <AppErrorBoundary isDesktop isMacDesktop={isMacDesktop} isWindowsDesktop={isWindowsDesktop}>
-      <StartupReadyNotifier />
-      <UpdateStatusWindowRoot
-        platform={desktopPlatform}
-        initialLocale={initialLocale}
-        onRequestClose={() => window.close()}
-      />
-    </AppErrorBoundary>,
-  );
-}
+renderDatabaseStartup();
+sendStartupControl({ action: "snapshot" });

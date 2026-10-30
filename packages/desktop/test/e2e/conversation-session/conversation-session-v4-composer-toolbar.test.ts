@@ -667,30 +667,9 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
 
   it("slider dots grow on hover and remain white on the filled track", async () => {
     // 用命名模型的独立回放声明预期，避免测试复用产品的名称匹配实现。
-    const highspeed = process.env.E2E_COMPOSER_EXPECT_HIGHSPEED === "1";
     await ensureCompletedTask();
-    if (highspeed) {
-      // 回放请求继续使用录制模型；命名模型只验证展示，不发送请求。
-      const model = process.env.E2E_COMPOSER_ANIMATION_MODEL || "GLM-5.3-FlashX";
-      await seedPersonalProviderConfig(getE2EAppDataPaths().configFile, {
-        id: "e2e-animation-model",
-        label: "Animation Fixture",
-        apiFormat: "anthropic-messages",
-        apiKey: "e2e-fixture-key",
-        baseURL: "http://127.0.0.1:1/v1",
-        models: [{ id: model, reasoningLevel: { values: ["high", "max"], map: "{}" } }],
-      });
-      await waitForProviderConfigPolling();
-      await switchV4Model("e2e-animation-model", model, "high");
-    }
     await openComposerPicker("model");
     const slider = $('[data-testid="composer-thought-slider"]');
-    expect(await $(".composer-thought-slider-fill").getAttribute("data-highspeed")).toBe(
-      String(highspeed),
-    );
-    expect(await $('[data-testid="composer-thought-meter"]').getAttribute("data-highspeed")).toBe(
-      String(highspeed),
-    );
     const filledOpacity = await browser.execute(
       () =>
         getComputedStyle(
@@ -773,11 +752,7 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
       return { gradient: getComputedStyle(fill, "::before").backgroundImage, accent, purple };
     });
     expect(gradientColors.gradient).toContain(gradientColors.accent);
-    if (highspeed) {
-      // Chromium 序列化默认 OKLab 时省略 in oklab；检查真实紫色端点和无色相插值。
-      expect(gradientColors.gradient).toContain(gradientColors.purple);
-      expect(gradientColors.gradient).not.toContain("in oklch");
-    } else expect(gradientColors.gradient).toContain("in oklch");
+    expect(gradientColors.gradient).toContain("in oklch");
     const bubbles = await browser.execute(() => {
       const layer = document.querySelector<HTMLElement>(
         '[data-testid="composer-thought-bubbles"]',
@@ -790,11 +765,7 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
         duration: parseFloat(getComputedStyle(layer.firstElementChild!).animationDuration),
       };
     });
-    expect(bubbles.count).toBe(highspeed ? 32 : 12);
-    if (highspeed && !bubbles.reduced) {
-      expect(bubbles.duration).toBeGreaterThanOrEqual(0.8);
-      expect(bubbles.duration).toBeLessThanOrEqual(1.2);
-    }
+    expect(bubbles.count).toBe(12);
     expect(bubbles.animation).toBe(bubbles.reduced ? "none" : "composer-thought-bubble-flow");
     if (bubbles.reduced) expect(bubbles.display).toBe("none");
     await browser.keys("ArrowLeft");
@@ -809,7 +780,6 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
     );
     expect(await $('[data-testid="composer-thought-bubbles"]').isExisting()).toBe(false);
     await closeComposerPicker();
-    if (highspeed) await switchV4Model(UPSTREAM_PROVIDER_ID, UPSTREAM_MODEL, "high");
   });
 
   it("模型管理入口位于 Provider 子菜单并打开模型设置", async () => {
