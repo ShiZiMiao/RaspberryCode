@@ -702,22 +702,6 @@ modules:
     layers:
       adapters: .
     owner: desktop
-  # marketing-touch-controller：由 architecture:adopt 登记
-  - id: marketing-touch-controller
-    roots:
-      - packages/ui/src/marketing-touch-contract
-      - packages/ui/src/components/marketing-touch/marketingTouchController.ts
-    managed: true
-    requires:
-      - services
-      - shared
-      - ui
-    publicEntrypoints:
-      - packages/ui/src/components/marketing-touch/marketingTouchController.ts
-      - packages/ui/src/marketing-touch-contract/contract.ts
-    layers:
-      app: .
-    owner: desktop
   # side-pane-full-view：由 architecture:adopt 登记
   - id: side-pane-full-view
     roots:
@@ -892,7 +876,6 @@ exceptions:
       - packages/desktop/src/main/windowsCuaOperationIndicatorContent.ts
       - packages/services/src/feedback/feedbackLogArchive.ts
       - packages/services/src/file/workspaceFileIgnore.ts
-      - packages/services/src/marketing-touch/marketingTouchService.ts
       - packages/ui/src/v4/officeSuggestedPrompts.ts
     reason: "Modified for RaspberryCode: admitted upstream files edited only to rebrand user-visible product strings; adopting the surrounding unmanaged directories needs a separate module boundary refactor."
   - id: raspberrycode-data-dir-independence-unmanaged-edit

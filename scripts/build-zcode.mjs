@@ -151,16 +151,13 @@ async function buildOutputs(skipBuild) {
     recursive: true,
   });
   run("pnpm", ["--filter", "@zcode/server", "build"]);
-  run("pnpm", ["--filter", "@zcode/web", "build"]);
 }
 
 async function stageZCodePackage({ packageRoot, version }) {
-  const webDist = resolve(root, "packages", "web", "dist");
   const serverDist = resolve(root, "packages", "server", "dist");
   const agentBundle = resolve(root, "apps", "zcode-cli", "packages", "cli", "dist", "zcode.cjs");
   const agentProvider = resolve(root, "apps/zcode-cli/packages/cli/dist/provider");
 
-  await assertDirectory(webDist, "web dist");
   await assertDirectory(serverDist, "server dist");
   await assertFile(resolve(serverDist, "entry-http.js"), "server HTTP entry");
   await assertFile(agentBundle, "agent app-server bundle");
@@ -174,9 +171,6 @@ async function stageZCodePackage({ packageRoot, version }) {
     recursive: true,
   });
 
-  await cp(webDist, resolve(packageRoot, "web"), {
-    recursive: true,
-  });
   await cp(serverDist, resolve(packageRoot, "server"), {
     recursive: true,
   });
