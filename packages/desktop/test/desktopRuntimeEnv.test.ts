@@ -59,8 +59,6 @@ vi.mock("@zcode/shared", () => ({
   TEST_ZCODE_ENDPOINT_ORIGIN: "https://zcode.z.ai",
   resolveRuntimeZCodeEndpointOrigin: (env: Record<string, string | undefined>) =>
     env.ZCODE_BASE_URL ?? env.ZCODE_TEST_BASE_URL ?? "https://zcode.z.ai",
-  resolveZaiBusinessBaseUrl: (env: Record<string, string | undefined>) =>
-    env.ZAI_BUSINESS_BASE_URL ?? env.ZAI_TEST_BUSINESS_BASE_URL ?? "https://api.z.ai",
   sanitizeZCodeRuntimeEnv: (env: Record<string, string | undefined>) => {
     const sanitizedKeys = new Set([
       "NODE_ENV",
@@ -156,9 +154,6 @@ const originalGlmBinaryPath = process.env["GLM_BINARY_PATH"];
 const originalZCodeBaseUrl = process.env["ZCODE_BASE_URL"];
 const originalZCodeEndpointOrigin = process.env["ZCODE_ENDPOINT_ORIGIN"];
 const originalDynamicWorkflowMode = process.env["ZCODE_DYNAMIC_WORKFLOW_MODE"];
-const originalZaiOAuthOrigin = process.env["ZAI_OAUTH_ORIGIN"];
-const originalZaiBusinessBaseUrl = process.env["ZAI_BUSINESS_BASE_URL"];
-const originalZaiOAuthClientId = process.env["ZAI_OAUTH_CLIENT_ID"];
 const originalDesktopApplicationName = process.env["ZCODE_DESKTOP_APPLICATION_NAME"];
 const originalDesktopHomeDir = process.env["ZCODE_DESKTOP_HOME_DIR"];
 const originalDesktopUserDataDir = process.env["ZCODE_DESKTOP_USER_DATA_DIR"];
@@ -453,9 +448,6 @@ describe("desktopRuntimeEnv buildHostProcessEnv", () => {
     }
     restoreEnvValue("ZCODE_BASE_URL", originalZCodeBaseUrl);
     restoreEnvValue("ZCODE_ENDPOINT_ORIGIN", originalZCodeEndpointOrigin);
-    restoreEnvValue("ZAI_OAUTH_ORIGIN", originalZaiOAuthOrigin);
-    restoreEnvValue("ZAI_BUSINESS_BASE_URL", originalZaiBusinessBaseUrl);
-    restoreEnvValue("ZAI_OAUTH_CLIENT_ID", originalZaiOAuthClientId);
     if (originalResourcesPathDescriptor) {
       Object.defineProperty(process, "resourcesPath", originalResourcesPathDescriptor);
     } else {
@@ -775,9 +767,6 @@ describe("desktopRuntimeEnv buildHostProcessEnv", () => {
     });
     delete process.env["ZCODE_BASE_URL"];
     delete process.env["ZCODE_ENDPOINT_ORIGIN"];
-    delete process.env["ZAI_OAUTH_ORIGIN"];
-    delete process.env["ZAI_BUSINESS_BASE_URL"];
-    delete process.env["ZAI_OAUTH_CLIENT_ID"];
 
     const { buildHostProcessEnv, loadHostProcessEnvFromLocalFiles } =
       await import("../src/main/desktopRuntimeEnv.js");

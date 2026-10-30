@@ -93,9 +93,9 @@ function resolvePlatformScopedBundledAgentRoots(moduleDir?: string): Array<strin
   return [
     resolvePath(process.cwd(), "bundled-agents", platformKey),
     resolvePath(process.cwd(), "packages", "desktop", "bundled-agents", platformKey),
-    // dev:web 会用 pnpm --filter @zcode/server dev 启动，cwd 落在 packages/server。
+    // pnpm --filter @zcode/server dev 启动时 cwd 落在 packages/server。
     // RaspberryCode Agent 资源可能位于桌面包或仓库根的 bundled-agents/<platform>。
-    // 这里统一补齐仓库内所有平台化目录候选，desktop/web/server 共享一套解析链路。
+    // 这里统一补齐仓库内所有平台化目录候选，desktop/server 共享一套解析链路。
     resolvePath(process.cwd(), "..", "desktop", "bundled-agents", platformKey),
     moduleDir ? resolvePath(moduleDir, "..", "..", "desktop", "bundled-agents", platformKey) : null,
     moduleDir ? resolvePath(moduleDir, "..", "..", "bundled-agents", platformKey) : null,

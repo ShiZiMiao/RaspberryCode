@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { Emitter, ChannelClient, SocketProtocol, type IDisposable, type Event } from "@zcode/rpc";
 import { ZCODE_VERSION, TOPIC_RESOURCE_RELAY_CHANNEL } from "@zcode/shared";
 import { wrapStdioStream } from "../src/remote/stdio-socket.js";
-import { connectRemote, pickRemoteRuntimeEnv } from "../src/remote/connect.js";
+import { connectRemote, pickRemoteRuntimeEnv, type RemoteRuntimeEnv } from "../src/remote/connect.js";
 import type { IRemoteBackend, RemoteDisconnectEvent, StdioStream } from "../src/remote/backend.js";
 
 class FakeConnectBackend implements IRemoteBackend {
@@ -311,20 +311,19 @@ describe("connectRemote", () => {
     const connection = await connectRemote(backend, {
       clientId: "test-client",
       skipDeploy: true,
+      // ZAI OAuth 环境已随登录体系拆除、退出透传白名单（2026-10-30）；凭据类变量永不跨越 SSH。
       remoteRuntimeEnv: {
         ZCODE_ENV: "test",
         ZCODE_BASE_URL: "https://zcode.z.ai/api/v1",
         ZAI_OAUTH_ORIGIN: "https://chat.z.ai",
-        ZAI_OAUTH_CLIENT_ID: "client_'test",
         ZAI_OAUTH_APP_SECRET: "must-not-cross-ssh",
-      },
+      } as RemoteRuntimeEnv,
     });
     connection.dispose();
 
     expect(backend.commands[0]).toContain("ZCODE_ENV='test'");
     expect(backend.commands[0]).toContain("ZCODE_BASE_URL='https://zcode.z.ai/api/v1'");
-    expect(backend.commands[0]).toContain("ZAI_OAUTH_ORIGIN='https://chat.z.ai'");
-    expect(backend.commands[0]).toContain(`ZAI_OAUTH_CLIENT_ID='client_'"'"'test'`);
+    expect(backend.commands[0]).not.toContain("ZAI_OAUTH_ORIGIN");
     expect(backend.commands[0]).not.toContain("ZAI_OAUTH_APP_SECRET");
     expect(backend.commands[0]).not.toContain("must-not-cross-ssh");
   });

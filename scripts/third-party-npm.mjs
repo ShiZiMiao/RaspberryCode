@@ -162,11 +162,10 @@ export function assertProductionGraphs(lockedProjects, installedProjects, isInst
 export async function readWorkspaceProductionGraph(root) {
   root = await realpath(root);
   const runOptions = { cwd: root, ...resolveSpawnRuntimeOptions("pnpm") };
-  const { stdout: projectsJson } = await exec(
-    "pnpm",
-    ["-r", "ls", "--depth", "-1", "--json"],
-    { ...runOptions, maxBuffer: 64 * 1024 * 1024 },
-  );
+  const { stdout: projectsJson } = await exec("pnpm", ["-r", "ls", "--depth", "-1", "--json"], {
+    ...runOptions,
+    maxBuffer: 64 * 1024 * 1024,
+  });
   const workspaceProjects = JSON.parse(projectsJson);
   // 修复：pnpm ls 默认读取安装快照，不能把旧图与当前锁文件哈希拼成有效声明。
   const results = { locked: [], actual: [] };

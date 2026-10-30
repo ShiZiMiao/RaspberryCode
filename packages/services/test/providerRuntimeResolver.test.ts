@@ -155,7 +155,7 @@ describe("providerRuntimeResolver workspace config dir identity", () => {
     const workspaceIdentity = "remote:ssh:localhost:2223:dev:/home/dev";
 
     expect(resolveProviderConfigDir("glm", workspacePath, workspaceIdentity)).toBe(
-      join(home, ".zcode", "cli"),
+      join(home, ".raspberrycode", "cli"),
     );
   });
 });
