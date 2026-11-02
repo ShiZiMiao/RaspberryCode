@@ -33,12 +33,15 @@ export async function replaceAppAsarFromStaging({
   const candidateUnpackedPath = `${candidateAsarPath}.unpacked`;
   const unpackedPath = `${appAsarPath}.unpacked`;
 
+  console.log("[asar-repack] step:rm-candidates start");
   await Promise.all([
     rm(candidateAsarPath, { force: true, recursive: true }),
     rm(candidateUnpackedPath, { force: true, recursive: true }),
   ]);
+  console.log("[asar-repack] step:rm-candidates done");
 
   try {
+    console.log("[asar-repack] step:pack start");
     runAsarCommand(
       createAppAsarPackArgs({
         sourceDir,
@@ -46,6 +49,7 @@ export async function replaceAppAsarFromStaging({
         targetPlatformKey,
       }),
     );
+    console.log("[asar-repack] step:pack done");
 
     if (!(await pathExists(candidateAsarPath)) || !(await pathExists(candidateUnpackedPath))) {
       // CI 的 TMPDIR 位于隐藏目录 `.tmp`。旧 glob 含 `**/`，@electron/asar 用绝对路径
@@ -54,14 +58,18 @@ export async function replaceAppAsarFromStaging({
     }
 
     // 先完整生成候选文件，再替换旧 archive 和 sidecar；不会把上一次打包的跨平台 native 留在 unpacked。
+    console.log("[asar-repack] step:rm-old-unpacked start");
     await rm(unpackedPath, { force: true, recursive: true });
+    console.log("[asar-repack] step:rm-old-unpacked done");
     await rename(candidateUnpackedPath, unpackedPath);
     await rm(appAsarPath, { force: true });
     await rename(candidateAsarPath, appAsarPath);
+    console.log("[asar-repack] step:swap done");
   } finally {
     await Promise.all([
       rm(candidateAsarPath, { force: true, recursive: true }),
       rm(candidateUnpackedPath, { force: true, recursive: true }),
     ]);
+    console.log("[asar-repack] step:rm-final done");
   }
 }

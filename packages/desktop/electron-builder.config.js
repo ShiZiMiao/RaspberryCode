@@ -1,5 +1,5 @@
 /* eslint-disable max-lines -- Electron Builder config keeps related packaging hooks together so build order stays explicit. */
-import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -213,6 +213,74 @@ function assertPackagedCuaHelper(context) {
 }
 const shouldEnableWindowsVsign =
   process.platform === "win32" && process.env.ZCODE_ENABLE_WINDOWS_SIGN === "1";
+
+// Windows 本机打包时，Go app-builder 的 rcedit 前置会反复下载 winCodeSign，解压 darwin
+// 符号链接因无开发者模式特权而报错，整包中断。设 ZCODE_SKIP_BUILTIN_RCEDIT=1 时跳过内置
+// 资源编辑（win.signAndEditExecutable=false），改在 afterPack 用 electron-builder 缓存中
+// 已解压的 rcedit-x64.exe 设置可执行文件元数据与图标，保证安装包用户可见身份不残留
+// Electron 默认值。CI/正常打包机不设该变量，走原生编辑链路。
+const shouldSkipBuiltinRcedit =
+  targetPlatform.os === "win32" && process.env.ZCODE_SKIP_BUILTIN_RCEDIT === "1";
+
+function findCachedRcedit() {
+  const localAppData =
+    process.env.LOCALAPPDATA ??
+    resolve(process.env.HOME ?? process.env.USERPROFILE ?? "", "AppData", "Local");
+  const cacheRoot = resolve(localAppData, "electron-builder", "Cache", "winCodeSign");
+  if (!existsSync(cacheRoot)) {
+    return null;
+  }
+  for (const entry of readdirSync(cacheRoot)) {
+    const candidate = resolve(cacheRoot, entry, "rcedit-x64.exe");
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+function editWinExecutableMetadata(context) {
+  const rceditPath = process.env.RCEDIT_PATH || findCachedRcedit();
+  if (!rceditPath || !existsSync(rceditPath)) {
+    throw new Error(
+      "[afterPack] rcedit-x64.exe not found in electron-builder cache; set RCEDIT_PATH explicitly",
+    );
+  }
+  const exeName = readdirSync(context.appOutDir).find((name) => name.endsWith(".exe"));
+  if (!exeName) {
+    throw new Error(`[afterPack] no executable found in ${context.appOutDir}`);
+  }
+  const exePath = resolve(context.appOutDir, exeName);
+  const iconPath = resolve(import.meta.dirname, "build", "icon.ico");
+  const appVersion = buildMetadata.appVersion;
+  runCommand(rceditPath, [
+    exePath,
+    "--set-version-string",
+    "FileDescription",
+    desktopProductIdentity.productName,
+    "--set-version-string",
+    "ProductName",
+    desktopProductIdentity.productName,
+    "--set-version-string",
+    "CompanyName",
+    desktopProductIdentity.productName,
+    "--set-version-string",
+    "OriginalFilename",
+    exeName,
+    "--set-version-string",
+    "InternalName",
+    desktopProductIdentity.productName,
+    "--set-version-string",
+    "LegalCopyright",
+    `Copyright © ${new Date().getFullYear()} ${desktopProductIdentity.productName}`,
+    "--set-file-version",
+    appVersion,
+    "--set-product-version",
+    appVersion,
+    ...(existsSync(iconPath) ? ["--set-icon", iconPath] : []),
+  ]);
+  console.log(`[afterPack] win executable metadata set via rcedit: ${exeName}`);
+}
 const commandStdoutMaxBuffer = 64 * 1024 * 1024;
 // 产物后缀只标记后端环境（_TEST）；身份靠 productName 区分，生产后端的 Preview 包没有后缀。
 const desktopArtifactEnvSuffix = resolveDesktopArtifactSuffix(process.env);
@@ -660,6 +728,11 @@ export default {
             configuredTargetPlatform: targetPlatform,
           })
         : null;
+    if (shouldSkipBuiltinRcedit) {
+      runTimedSync("afterPack:editWinExecutableMetadata", () =>
+        editWinExecutableMetadata(context),
+      );
+    }
     await runTimedAsync("afterPack:injectHoistedRuntimeModulesIntoAsar", () =>
       injectHoistedRuntimeModulesIntoAsar(context),
     );
@@ -861,6 +934,9 @@ export default {
     target: ["nsis"],
     artifactName: buildDesktopArtifactName("win"),
     signExts: [".node", ".dll"],
+    // 本机打包绕过 Go app-builder 的 rcedit 前置（winCodeSign darwin 符号链接无特权），
+    // 元数据与图标由 afterPack 的 editWinExecutableMetadata 补设。见 shouldSkipBuiltinRcedit。
+    ...(shouldSkipBuiltinRcedit ? { signAndEditExecutable: false } : {}),
     // Bugfix: Windows CI 之前完全依赖 electron-builder 内置 signtool.exe，
     // 一旦 runner 的证书链路要求改走 vsigntool，打包阶段就会在内置签名环节卡死。
     // 这里通过自定义 sign hook 把所有 Windows 可执行文件统一切到仓库内的 vsigntool 封装，
