@@ -21,11 +21,11 @@ RaspberryCode Agent 以前每个平台都内置一份独立的原生二进制 `z
 
 ```
 process.execPath  <Electron Helper>
-  args: [resources/glm/zcode.cjs, app-server, --stdio]
+  args: [resources/agent/zcode.cjs, app-server, --stdio]
   env:  { ELECTRON_RUN_AS_NODE: "1" }   // 必须，否则子进程被当成 Chromium 子进程卡在 GPU 初始化
 ```
 
-**远端**：完整 archive 将 `zcode.cjs` 放入 immutable release 的 `runtime/`，Server Core 按 release manifest 创建 Workspace Agent；不再向 `~/.raspberrycode/server/agents/glm/` 部署散文件或 wrapper。
+**远端**：完整 archive 将 `zcode.cjs` 放入 immutable release 的 `runtime/`，Server Core 按 release manifest 创建 Workspace Agent；不再向 `~/.raspberrycode/server/agents/agent/` 部署散文件或 wrapper。
 
 ## 实现
 
@@ -34,9 +34,9 @@ esbuild `target` 从 `node26` 降到 **`node22`**，取两端运行时里最低�
 
 **桌面**
 - `zcode-agent-runtime.ts`：描述符加 `nodeBundleEntryFile: "zcode.cjs"` + `resolveNodeBundleSegments()`。
-- `providerRuntimeResolver.ts`：`findZCodeAgentRuntimeNodeBundle()` 定位 `resources/glm/zcode.cjs`。
+- `providerRuntimeResolver.ts`：`findZCodeAgentRuntimeNodeBundle()` 定位 `resources/agent/zcode.cjs`。
 - `zcodeAgentProcessManager.ts`：`resolveElectronRuntimeZCodeAgentCommand`，插在 monorepo dev 与 native-binary 兜底之间。
-- 打包：`prepare:agent-bundle`（`prepare-agent-node-bundle.mjs`）构建 cli、把 `zcode.cjs` stage 进 `bundled-agents/<平台>/glm/`、删掉旧原生 `zcode-agent`；`prepare:runtime-assets` 本机列表用它替换 `prepare:glm`；electron-builder 整目录拷 `resources/glm`。
+- 打包：`prepare:agent-bundle`（`prepare-agent-node-bundle.mjs`）构建 cli、把 `zcode.cjs` stage 进 `bundled-agents/<平台>/agent/`、删掉旧原生 `zcode-agent`；`prepare:runtime-assets` 本机列表用它替换 `prepare:agent-binary`；electron-builder 整目录拷 `resources/agent`。
 
 **远端**
 - `@zcode/server-cli stage:remote-assets` 为四个平台生成完整 archive；`runtime/zcode.cjs` 与 Server CLI/Core 使用同一 descriptor SHA 身份。
@@ -52,4 +52,4 @@ esbuild `target` 从 `node26` 降到 **`node22`**，取两端运行时里最低�
 
 ## 备注
 
-`scripts/download-glm.mjs`（下载原生二进制）与 desktop `prepare:glm` 脚本不再进入默认链路，保留作为手动兜底，未删除。
+`scripts/download-glm.mjs`（下载原生二进制）与 desktop `prepare:agent-binary` 脚本不再进入默认链路，保留作为手动兜底，未删除。
