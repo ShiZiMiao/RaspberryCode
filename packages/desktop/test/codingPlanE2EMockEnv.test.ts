@@ -3,24 +3,16 @@ import { describe, expect, it } from "vitest";
 import {
   shouldReuseDesktopE2EBuild,
   CODING_PLAN_TEAM_MOCK_BASE_URL_ENV,
-  CODING_PLAN_UPGRADE_MOCK_BASE_URL_ENV,
   applyCodingPlanTeamMockEnv,
-  applyCodingPlanUpgradeMockEnv,
   clearCodingPlanTeamMockEnv,
-  clearCodingPlanUpgradeMockEnv,
   shouldPrepareCodingPlanTeamMock,
 } from "./e2e/helpers/coding-plan-mock-env.js";
 
 describe("Coding Plan E2E mock env", () => {
-  it("网页 mock 分配新端口后不能复用父构建，源码证据也必须标记重新构建", () => {
+  it("跳过构建开关允许复用父构建；历史动态端口源已随升级购买场景移除", () => {
     expect(shouldReuseDesktopE2EBuild({})).toBe(false);
     expect(shouldReuseDesktopE2EBuild({ ZCODE_E2E_SKIP_BUILD: "1" })).toBe(true);
-    expect(
-      shouldReuseDesktopE2EBuild({
-        ZCODE_E2E_SKIP_BUILD: "1",
-        [CODING_PLAN_UPGRADE_MOCK_BASE_URL_ENV]: "http://127.0.0.1:43123",
-      }),
-    ).toBe(false);
+    expect(shouldReuseDesktopE2EBuild({ ZCODE_E2E_SKIP_BUILD: "0" })).toBe(false);
   });
   it.each([
     "settings/settings-ui-polish.test.ts",
@@ -93,39 +85,6 @@ describe("Coding Plan E2E mock env", () => {
       true,
     );
   });
-  it("keeps both prepared mock addresses while a team worker activates only the team mock", () => {
-    const environment: Record<string, string | undefined> = {};
-    const teamBaseUrl = "http://127.0.0.1:41001";
-    const upgradeBaseUrl = "http://127.0.0.1:41002";
-
-    applyCodingPlanTeamMockEnv(environment, teamBaseUrl);
-    applyCodingPlanUpgradeMockEnv(environment, upgradeBaseUrl);
-
-    expect(environment[CODING_PLAN_TEAM_MOCK_BASE_URL_ENV]).toBe(teamBaseUrl);
-    expect(environment[CODING_PLAN_UPGRADE_MOCK_BASE_URL_ENV]).toBe(upgradeBaseUrl);
-
-    applyCodingPlanTeamMockEnv(environment, teamBaseUrl);
-    clearCodingPlanUpgradeMockEnv(environment, upgradeBaseUrl);
-
-    expect(environment.ZCODE_BASE_URL).toBe(teamBaseUrl);
-    expect(environment.ZCODE_ENDPOINT_ORIGIN).toBe(teamBaseUrl);
-    expect(environment.ZCODE_E2E_CODING_PLAN_MOCK_URL).toBe(teamBaseUrl);
-  });
-
-  it("does not clear an active upgrade mock when a non-team worker drops the prepared team mock", () => {
-    const environment: Record<string, string | undefined> = {};
-    const teamBaseUrl = "http://127.0.0.1:42001";
-    const upgradeBaseUrl = "http://127.0.0.1:42002";
-
-    applyCodingPlanTeamMockEnv(environment, teamBaseUrl);
-    applyCodingPlanUpgradeMockEnv(environment, upgradeBaseUrl);
-    clearCodingPlanTeamMockEnv(environment, teamBaseUrl);
-
-    expect(environment.ZCODE_BASE_URL).toBe(upgradeBaseUrl);
-    expect(environment.ZCODE_ENDPOINT_ORIGIN).toBe(upgradeBaseUrl);
-    expect(environment.ZCODE_E2E_CODING_PLAN_MOCK_URL).toBe(upgradeBaseUrl);
-  });
-
   it("prepares the team mock for targeted login and provider transition cases", () => {
     expect(
       shouldPrepareCodingPlanTeamMock([

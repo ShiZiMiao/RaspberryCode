@@ -1,5 +1,4 @@
 export const CODING_PLAN_TEAM_MOCK_BASE_URL_ENV = "ZCODE_CODING_PLAN_TEAM_MOCK_BASE_URL";
-export const CODING_PLAN_UPGRADE_MOCK_BASE_URL_ENV = "ZCODE_CODING_PLAN_UPGRADE_MOCK_BASE_URL";
 
 type MutableEnvironment = Record<string, string | undefined>;
 
@@ -82,34 +81,11 @@ export function clearCodingPlanTeamMockEnv(environment: MutableEnvironment, base
   }
 }
 
-export function applyCodingPlanUpgradeMockEnv(environment: MutableEnvironment, baseUrl: string) {
-  environment[CODING_PLAN_UPGRADE_MOCK_BASE_URL_ENV] = baseUrl;
-  for (const key of CODING_PLAN_COMMON_ENV_KEYS) {
-    environment[key] = baseUrl;
-  }
-  environment.BIGMODEL_TEST_API_BASE_URL = baseUrl;
-  environment.VITE_CODING_PLAN_WEBVIEW_ORIGIN = baseUrl;
-  environment.ZAI_BUSINESS_BASE_URL = baseUrl;
-}
-
 export function shouldReuseDesktopE2EBuild(environment: MutableEnvironment): boolean {
   // 子 shard 的动态端口晚于父构建；构建决策和源码证据必须共用这个判据。
-  return (
-    environment.ZCODE_E2E_SKIP_BUILD === "1" &&
-    !environment[CODING_PLAN_UPGRADE_MOCK_BASE_URL_ENV]?.trim()
-  );
-}
-
-export function clearCodingPlanUpgradeMockEnv(environment: MutableEnvironment, baseUrl: string) {
-  clearOwnedEnvironmentValues(environment, baseUrl, [
-    ...CODING_PLAN_COMMON_ENV_KEYS,
-    "BIGMODEL_TEST_API_BASE_URL",
-    "VITE_CODING_PLAN_WEBVIEW_ORIGIN",
-    "ZAI_BUSINESS_BASE_URL",
-  ]);
-  if (environment[CODING_PLAN_UPGRADE_MOCK_BASE_URL_ENV] === baseUrl) {
-    delete environment[CODING_PLAN_UPGRADE_MOCK_BASE_URL_ENV];
-  }
+  // 历史 upgrade mock 的动态端口源已随升级购买场景移除，当前无晚建端口源，
+  // 判据等价于只看跳过构建开关。
+  return environment.ZCODE_E2E_SKIP_BUILD === "1";
 }
 
 function clearOwnedEnvironmentValues(

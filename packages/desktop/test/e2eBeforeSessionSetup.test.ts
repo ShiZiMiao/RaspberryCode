@@ -33,9 +33,6 @@ describe("desktop e2e beforeSession setup", () => {
       startCodingPlanDataPlaneProxyIfNeeded: async () => {
         events.push("coding-plan-data-plane");
       },
-      startCodingPlanUpgradeMockIfNeeded: async () => {
-        events.push("coding-plan-upgrade");
-      },
       startUpstreamHttpIfNeeded: async () => {
         events.push("upstream-http");
       },
@@ -55,7 +52,6 @@ describe("desktop e2e beforeSession setup", () => {
       "coding-plan-case-mode",
       "upstream-http",
       "coding-plan-data-plane",
-      "coding-plan-upgrade",
       "plugin-cdn",
       "reset-started",
     ]);

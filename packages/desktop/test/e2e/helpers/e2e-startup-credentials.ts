@@ -18,7 +18,7 @@ export function createE2EStartupCredentialSeed(
     return (
       fileName === "conversation-session-share-popover.test.ts" ||
       isRequestSecuritySpec(fileName) ||
-      fileName === "coding-plan-upgrade-webview-refresh-provider.test.ts" ||
+
       fileName === "start-plan-manual-claim-experience.test.ts" ||
       fileName === "provider-family-responsive.test.ts"
     );

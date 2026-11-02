@@ -102,17 +102,6 @@ describe("desktop e2e startup credentials", () => {
       }),
     ).toEqual({});
   });
-  it.each([
-    "coding-plan-upgrade-webview-refresh-provider.test.ts",
-  ])("%s 保留本地 Start 余额/请求鉴权所需 JWT", (spec) => {
-    expect(
-      createE2EStartupCredentialSeed({
-        specs: [spec],
-        legacyAuthToken: "fake-auth-token",
-        restoredOAuthCredentials,
-      }).zcodejwttoken,
-    ).toBe("fake-zcode-jwt");
-  });
   it("供应商响应式 spec 保留本地 balance mock 所需的 JWT", () => {
     expect(
       createE2EStartupCredentialSeed({
