@@ -202,6 +202,8 @@ export function ConversationDraftEmptyState({
     <div
       className={cn(
         "relative mb-10 flex w-full max-w-2xl flex-col items-center justify-center gap-6 text-foreground sm:mb-8",
+        // 品牌插画与问候语是纯展示装饰，设为不可选择，避免误拖选中。
+        "select-none",
         className,
       )}
     >
