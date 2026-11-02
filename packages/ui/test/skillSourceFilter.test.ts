@@ -43,12 +43,12 @@ const demoSkills = [
 
 describe("skillSourceFilter", () => {
   it("把 .zcode/skills 和官方 plugin cache 识别为 RaspberryCode Agent 技能来源", () => {
-    expect(resolveSkillSourceType("/tmp/workspace/.raspberrycode/skills/my-skill/SKILL.md")).toBe("glm");
+    expect(resolveSkillSourceType("/tmp/workspace/.raspberrycode/skills/my-skill/SKILL.md")).toBe("agent");
     expect(
       resolveSkillSourceType(
         "/tmp/home/.raspberrycode/cli/plugins/cache/zcode-plugins-official/document-skills/0.1.0/skills/pdf/SKILL.md",
       ),
-    ).toBe("glm");
+    ).toBe("agent");
     expect(resolveSkillSourceType("/tmp/workspace/.raspberrycode/cli/skills/my-skill/SKILL.md")).toBe(
       "unknown",
     );
@@ -67,7 +67,7 @@ describe("skillSourceFilter", () => {
       "skill-plugin-by-path",
     ];
 
-    expect(filterSkillsForProvider(demoSkills, "glm").map((skill) => skill.id)).toEqual(
+    expect(filterSkillsForProvider(demoSkills, "agent").map((skill) => skill.id)).toEqual(
       expectedIds,
     );
   });

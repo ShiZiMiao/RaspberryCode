@@ -27,9 +27,9 @@ export const ZCODE_AGENT_RUNTIME: ZCodeAgentRuntimeDescriptor = {
   binaryKind: "native-binary",
   // 中立命名（specs/provider-neutrality.md）：历史 GLM_BINARY_PATH 由桌面端做旧名读兼容。
   binaryEnvVar: "ZCODE_AGENT_BINARY_PATH",
-  // TODO(C1b)：打包资源目录仍为历史名 "glm"，改名为 "agent" 需同步打包脚本、
-  // 安装资源锁与 CLI 侧 resources/<dir>/packages/*-plugin 插件 seed 路径约定。
-  bundledResourceDir: "glm",
+  // 打包资源目录（resources/agent、bundled-agents/<platform>/agent）。历史名 "agent" 已
+  // 随中立化改名，旧工作树残留 bundled-agents/<platform>/glm 需重跑 prepare 脚本生成新目录。
+  bundledResourceDir: "agent",
   version: "0.13.3",
   spawnArgs: ["app-server", "--stdio"],
   nativeConfigDir: ".raspberrycode/cli",

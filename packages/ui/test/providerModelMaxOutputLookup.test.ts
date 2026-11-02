@@ -213,7 +213,7 @@ describe("provider model config resolution", () => {
 
     expect(maxOutputTokensInput.disabled).toBe(true);
     fireEvent.change(modelIdInput, { target: { value: "g" } });
-    fireEvent.change(modelIdInput, { target: { value: "glm" } });
+    fireEvent.change(modelIdInput, { target: { value: "agent" } });
     fireEvent.change(modelIdInput, { target: { value: "glm-5" } });
 
     expect(maxOutputTokensInput.disabled).toBe(false);

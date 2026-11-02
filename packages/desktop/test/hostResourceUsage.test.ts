@@ -24,7 +24,7 @@ describe("hostResourceUsage", () => {
         collectLocalRuntimeChildProcesses: async () => [
           {
             pid: 100,
-            provider: "glm",
+            provider: "agent",
             workspacePath: "/Users/me/demo",
             children: [
               {

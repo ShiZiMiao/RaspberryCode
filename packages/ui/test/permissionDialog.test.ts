@@ -430,7 +430,7 @@ describe("PermissionDialog", () => {
           },
         },
       },
-      "glm",
+      "agent",
     );
 
     expect(html).toContain("始终允许此命令");

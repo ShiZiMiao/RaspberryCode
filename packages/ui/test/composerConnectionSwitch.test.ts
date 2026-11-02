@@ -76,7 +76,7 @@ describe("Composer connection switching ownership", () => {
     const { result } = renderHook(() =>
       useComposerConnectionSwitch({
         workspacePath: "/work",
-        agentProvider: "glm",
+        agentProvider: "agent",
         normalizedValue: "",
         onSelectModel,
       }),
@@ -118,7 +118,7 @@ describe("Composer connection switching ownership", () => {
     const { result } = renderHook(() =>
       useComposerConnectionSwitch({
         workspacePath: "/work",
-        agentProvider: "glm",
+        agentProvider: "agent",
         normalizedValue: encodeCustomModelValue("ordinary-api", "GLM-5.3"),
         onSelectModel,
       }),
@@ -140,7 +140,7 @@ describe("Composer connection switching ownership", () => {
         useComposerConnectionSwitch({
           workspacePath: "/work",
           workspaceIdentity: identity,
-          agentProvider: "glm",
+          agentProvider: "agent",
           normalizedValue: "",
           onSelectModel,
         }),
@@ -164,7 +164,7 @@ describe("Composer connection switching ownership", () => {
     const { result } = renderHook(() =>
       useComposerConnectionSwitch({
         workspacePath: "/work",
-        agentProvider: "glm",
+        agentProvider: "agent",
         normalizedValue: "",
         onSelectModel,
       }),
@@ -186,7 +186,7 @@ describe("Composer connection switching ownership", () => {
       ({ value, status }) =>
         useComposerConnectionSwitch({
           workspacePath: "/work",
-          agentProvider: "glm",
+          agentProvider: "agent",
           normalizedValue: value,
           waitForPresentation: true,
           presentationStatus: status as "loading" | "ready",
@@ -206,7 +206,7 @@ describe("Composer connection switching ownership", () => {
       ({ status }: { status: "loading" | "error" }) =>
         useComposerConnectionSwitch({
           workspacePath: "/work",
-          agentProvider: "glm",
+          agentProvider: "agent",
           normalizedValue: "",
           waitForPresentation: true,
           presentationStatus: status,
@@ -230,7 +230,7 @@ it("ready 不匹配解除 pending，显示错误并允许下一次选择", async
     ({ status, value }) =>
       useComposerConnectionSwitch({
         workspacePath: "/work",
-        agentProvider: "glm",
+        agentProvider: "agent",
         normalizedValue: value,
         waitForPresentation: true,
         presentationStatus: status as "loading" | "ready",
@@ -260,7 +260,7 @@ it("旧 ready 不是本次展示回执：等待目标 revision，再对不匹配
     ({ revision, errorRevision }) =>
       useComposerConnectionSwitch({
         workspacePath: "/work",
-        agentProvider: "glm",
+        agentProvider: "agent",
         normalizedValue: "old/model",
         waitForPresentation: true,
         presentationStatus: "ready",
@@ -313,7 +313,7 @@ it("真实展示 hook 保留旧 ready 时，目标刷新失败也必须结束连
     const state = presentation.state;
     return useComposerConnectionSwitch({
       workspacePath: "/work",
-      agentProvider: "glm",
+      agentProvider: "agent",
       normalizedValue: value,
       onSelectModel: vi.fn(),
       waitForPresentation: true,
@@ -369,7 +369,7 @@ it("真实展示 hook 的旧读取失败不能否定新输入已成功的连接�
         state,
         connection: useComposerConnectionSwitch({
           workspacePath: "/work",
-          agentProvider: "glm",
+          agentProvider: "agent",
           normalizedValue: value,
           onSelectModel: vi.fn(),
           waitForPresentation: true,

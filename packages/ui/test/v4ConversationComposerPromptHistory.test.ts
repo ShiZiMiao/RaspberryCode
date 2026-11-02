@@ -46,8 +46,8 @@ function expectedTelemetrySendOptions() {
       extraDetail: {
         ask_mode: "",
         model_name: "",
-        model_provider: "glm",
-        agent: "glm",
+        model_provider: "agent",
+        agent: "agent",
         message_source: "chat",
         task_trigger: "",
       },

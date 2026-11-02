@@ -156,6 +156,16 @@ pnpm bundle:desktop -- --help
 sudo xattr -rd com.apple.quarantine /Applications/RaspberryCode.app
 ```
 
+### 发布检查清单
+
+发行构建前须替换默认托管地址（默认值指向公共 CDN 占位，自托管发行不改会指向外部基础设施）：
+
+| 检查项 | 替换方式 |
+| ------ | -------- |
+| 下载根地址 `ZCODE_DIST_BASE_URL` | 构建环境变量或 `--base-url`（见下方命令行版章节） |
+| 远程资源 CDN 根（远程部署资源下载） | 构建期设置 `CDN_DOMAIN`（逗号分隔可多域名，配 `OSS_PATH_PREFIX`），由打包时注入 `__ZCODE_REMOTE_CDN_RELEASE_ROOTS__` |
+| 遥测上报端点 `ZCODE_TELEMETRY_REPORT_ENDPOINT` | 不设置即不发送遥测（默认关闭）；接入自有收集端时按构建配置注入 |
+
 ### RaspberryCode 命令行版
 
 构建入口为 `pnpm build:zcode`。脚本会依次构建 CLI/TUI 和后端，收集 TUI 的原生库、worker 与运行时依赖，再组装发行包；运行发行包仍需要 Node.js，版本以 `mise.toml` 为准。

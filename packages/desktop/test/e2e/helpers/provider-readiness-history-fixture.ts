@@ -45,7 +45,7 @@ const DEFAULT_PROVIDER_READINESS_HISTORY_FIXTURE: ProviderReadinessHistoryFixtur
   modelId: "missing-model",
   runtimeProviderId: "missing-provider",
   sessionId: PROVIDER_READINESS_HISTORY_SESSION_ID,
-  taskProviderId: "glm",
+  taskProviderId: "agent",
   title: PROVIDER_READINESS_HISTORY_TITLE,
   userText: PROVIDER_READINESS_HISTORY_USER_TEXT,
 };

@@ -631,7 +631,7 @@ describe("useDraftConfigControl slash command hydration", () => {
       useDraftConfigControl({
         workspacePath,
         workspaceIdentity,
-        provider: "glm",
+        provider: "agent",
         sessionId: null,
         modelSelectionView: null,
       });
@@ -667,7 +667,7 @@ describe("useDraftConfigControl slash command hydration", () => {
     function Probe() {
       useDraftConfigControl({
         workspacePath,
-        provider: "glm",
+        provider: "agent",
         sessionId: "session-known",
         modelSelectionView: null,
       });
@@ -698,7 +698,7 @@ describe("useDraftConfigControl slash command hydration", () => {
     function Probe() {
       useDraftConfigControl({
         workspacePath,
-        provider: "glm",
+        provider: "agent",
         sessionId: "session-known",
         modelSelectionView: null,
       });
@@ -750,7 +750,7 @@ describe("useDraftConfigControl slash command hydration", () => {
     const store = useZCodeSessionStore.getState();
     store.setActiveTaskId(workspacePath, taskId);
     store.setTaskConfigOptions(workspacePath, taskId, inheritedOptions);
-    store.startDraft(workspacePath, "glm");
+    store.startDraft(workspacePath, "agent");
     prepareWorkspaceMock.mockResolvedValue({
       configOptions: inheritedOptions,
       slashCommands: CUSTOM_COMMANDS,
@@ -760,7 +760,7 @@ describe("useDraftConfigControl slash command hydration", () => {
     function Probe() {
       const control = useDraftConfigControl({
         workspacePath,
-        provider: "glm",
+        provider: "agent",
         sessionId: null,
         modelSelectionView: null,
       });
@@ -822,7 +822,7 @@ describe("useDraftConfigControl slash command hydration", () => {
     function Probe({ sessionId }: { sessionId: string | null }) {
       const control = useDraftConfigControl({
         workspacePath,
-        provider: "glm",
+        provider: "agent",
         sessionId,
         modelSelectionView: null,
       });
@@ -838,7 +838,7 @@ describe("useDraftConfigControl slash command hydration", () => {
     });
 
     act(() => {
-      useZCodeSessionStore.getState().startDraft(workspacePath, "glm");
+      useZCodeSessionStore.getState().startDraft(workspacePath, "agent");
       root.render(createElement(Probe, { sessionId: null }));
     });
 
@@ -858,7 +858,7 @@ describe("useDraftConfigControl slash command hydration", () => {
     function Probe({ view }: { view: ModelSelectionView }) {
       control = useDraftConfigControl({
         workspacePath,
-        provider: "glm",
+        provider: "agent",
         sessionId: null,
         modelSelectionView: view,
       });

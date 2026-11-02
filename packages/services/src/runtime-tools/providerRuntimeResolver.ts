@@ -60,13 +60,13 @@ export function buildCleanEnv(
       delete env[nonCanonicalPathKey];
     }
   }
-  if (provider === "glm") {
-    const glmHome = getDataBaseDir();
-    // Bugfix: GLM agent 会把 config/session 产物写到 dataBaseDir 下的 ~/.raspberrycode/cli。
+  if (provider === "agent") {
+    const agentHome = getDataBaseDir();
+    // Bugfix: Agent 会把 config/session 产物写到 dataBaseDir 下的 ~/.raspberrycode/cli。
     // 这里统一把子进程 HOME 切到 dataBaseDir，保证“写入目录”和“运行时读取目录”始终一致。
-    env.HOME = glmHome;
+    env.HOME = agentHome;
     if (process.platform === "win32") {
-      env.USERPROFILE = glmHome;
+      env.USERPROFILE = agentHome;
     }
   }
   Object.assign(env, buildRuntimeProcessEnvPatch(env));
@@ -169,11 +169,11 @@ export function findZCodeAgentRuntimeNodeBundle(): string | null {
 
 /** 根据 provider 查找对应 binary 路径 */
 export function findBinary(provider: string): string | null {
-  if (provider !== "glm") {
+  if (provider !== "agent") {
     return null;
   }
-  // GLM 开发态：ZCODE_AGENT_WORKDIR 或相邻目录发现，返回源码入口路径作为 "binary"
-  const devEntry = findGlmDevEntry();
+  // 开发态：ZCODE_AGENT_WORKDIR 或相邻目录发现，返回源码入口路径作为 "binary"
+  const devEntry = findAgentDevEntry();
   if (devEntry) {
     return devEntry.agentPath;
   }
@@ -209,7 +209,7 @@ function resolveGlmDevEntry(workdir: string): GlmDevEntry | null {
   return null;
 }
 
-function findGlmDevEntry(): GlmDevEntry | null {
+function findAgentDevEntry(): GlmDevEntry | null {
   const workdir = process.env[ZCODE_AGENT_WORKDIR_ENV];
   if (workdir) {
     const entry = resolveGlmDevEntry(workdir);
@@ -219,12 +219,13 @@ function findGlmDevEntry(): GlmDevEntry | null {
   }
   // Bugfix: desktop dev 进程的 cwd 是 packages/desktop，旧逻辑只查 cwd 的父级，
   // 会误找 packages/zcode-cli，而不是仓库旁边的 ../zcode-cli。这里先向上定位仓库根，
-  // 再按“仓库相邻目录”发现本地 GLM 源码，同时保留 cwd 相邻目录作为非 monorepo 兜底。
+  // 再按“仓库相邻目录”发现本地 Agent 源码，同时保留 cwd 相邻目录作为非 monorepo 兜底。
   const repoRoot = findWorkspaceRoot(process.cwd());
   const anchorDirs = [repoRoot, process.cwd()].filter((anchor): anchor is string =>
     Boolean(anchor),
   );
-  const candidates = ["zcode-cli", "glm", "cc-refactor"];
+  // "agent" 是历史源码目录名，保留作开发态目录发现的读兼容候选。
+  const candidates = ["zcode-cli", "agent", "cc-refactor"];
   const seen = new Set<string>();
   for (const anchorDir of anchorDirs) {
     for (const name of candidates) {

@@ -319,13 +319,13 @@ describe("startDraftSessionPrewarm", () => {
       workspaceKey: "/w",
       dispatchCommand: dispatch as never,
       onReady: () => {},
-      resolveInitialConfig: () => ({ provider: "glm", model: "glm-4.6" }),
+      resolveInitialConfig: () => ({ provider: "agent", model: "glm-4.6" }),
     });
     await flushMicrotasks();
     const create = payloads.find((p) => p.type === "createSession");
     expect(create?.payload).toEqual({
       workspaceId: "/w",
-      config: { provider: "glm", model: "glm-4.6" },
+      config: { provider: "agent", model: "glm-4.6" },
     });
   });
 

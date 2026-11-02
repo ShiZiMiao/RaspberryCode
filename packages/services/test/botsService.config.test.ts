@@ -235,7 +235,7 @@ describe("botsService config", () => {
             mode: "draft",
             activeTaskId: null,
             draftOptions: {
-              provider: "glm",
+              provider: "agent",
               modelSelection: { providerId: "old-provider", modelId: "deepseek-v4-flash" },
             },
             updatedAt: 1,
@@ -295,7 +295,7 @@ describe("botsService config", () => {
             workspacePath: "/tmp/workspace",
             mode: "draft",
             activeTaskId: null,
-            draftOptions: { provider: "glm", modelSelection: original },
+            draftOptions: { provider: "agent", modelSelection: original },
             updatedAt: 1,
           },
         },

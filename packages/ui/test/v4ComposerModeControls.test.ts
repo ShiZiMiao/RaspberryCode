@@ -72,7 +72,7 @@ describe("V4ComposerModeSwitch", () => {
     const html = renderToStaticMarkup(
       createElement(V4ComposerModeSwitch, {
         workspacePath: "/workspace",
-        provider: "glm",
+        provider: "agent",
         draftConfig: { mode: "guarded", planEnabled: true },
         activeConfigPicker: null,
         onConfigPickerOpenChange: vi.fn(),
@@ -89,7 +89,7 @@ describe("V4ComposerModeSwitch", () => {
     renderToStaticMarkup(
       createElement(V4ComposerModeSwitch, {
         workspacePath: "/workspace",
-        provider: "glm",
+        provider: "agent",
         draftConfig: { mode: "build" },
         activeConfigPicker: null,
         onConfigPickerOpenChange: vi.fn(),
@@ -114,7 +114,7 @@ describe("V4ComposerModeSwitch", () => {
     renderToStaticMarkup(
       createElement(V4ComposerModeSwitch, {
         workspacePath: "/workspace",
-        provider: "glm",
+        provider: "agent",
         draftConfig: { mode: "yolo" },
         activeConfigPicker: null,
         onConfigPickerOpenChange: vi.fn(),
@@ -132,7 +132,7 @@ describe("V4ComposerModeSwitch", () => {
     renderToStaticMarkup(
       createElement(V4ComposerModeSwitch, {
         workspacePath: "/workspace",
-        provider: "glm",
+        provider: "agent",
         draftConfig: { mode: "edit" },
         activeConfigPicker: null,
         onConfigPickerOpenChange: vi.fn(),
@@ -150,7 +150,7 @@ describe("V4ComposerModeSwitch", () => {
     const html = renderToStaticMarkup(
       createElement(V4ComposerModeSwitch, {
         workspacePath: "/workspace",
-        provider: "glm",
+        provider: "agent",
         draftConfig: { mode: "yolo", planEnabled: true },
         activeConfigPicker: "mode",
         onConfigPickerOpenChange: vi.fn(),

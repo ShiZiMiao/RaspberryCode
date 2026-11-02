@@ -93,7 +93,7 @@ function snapshotWithReview() {
     inputRouting: { mode: "enqueue" },
     meta: { title: "workspace", titleSource: "custom" },
     config: {
-      provider: "glm",
+      provider: "agent",
       model: "glm-5",
       thought: "medium",
       thoughtLevels: [],

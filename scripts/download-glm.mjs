@@ -1,4 +1,4 @@
-// 下载并整理 GLM 平台二进制。
+// 下载并整理 Agent 平台二进制。
 //
 // 开发态优先走 ZCODE_AGENT_WORKDIR / 同级仓库源码启动；只有打包态、生产态和无源码的开发环境
 // 才需要依赖这个脚本提前准备平台二进制。目录布局统一服务本机打包与远程部署：
@@ -28,11 +28,11 @@ function readZCodeAgentRuntimeVersion() {
   return match[1];
 }
 
-export const GLM_RUNTIME_VERSION = readZCodeAgentRuntimeVersion();
-// Bugfix: GLM 二进制按 zcode-cli 版本发布，旧的 deps/zcode-cli 会在版本升级后复用旧目录。
-// 这里读取 shared runtime 里的 glm.version，让下载目录与远程 manifest/cache 版本来源一致。
-function resolveDefaultGlmBinaryDownloadBaseUrl(env = process.env) {
-  return `${resolveIntranetDepsBaseUrl(env)}/zcode-cli-${GLM_RUNTIME_VERSION}`;
+export const AGENT_RUNTIME_VERSION = readZCodeAgentRuntimeVersion();
+// Bugfix: Agent 二进制按 zcode-cli 版本发布，旧的 deps/zcode-cli 会在版本升级后复用旧目录。
+// 这里读取 shared runtime 里的 agent runtime version，让下载目录与远程 manifest/cache 版本来源一致。
+function resolveDefaultAgentBinaryDownloadBaseUrl(env = process.env) {
+  return `${resolveIntranetDepsBaseUrl(env)}/zcode-cli-${AGENT_RUNTIME_VERSION}`;
 }
 
 function normalizePlatform(raw) {
@@ -83,7 +83,7 @@ function detectArch() {
   return normalizeArch(m);
 }
 
-export function resolveGlmDownloadName(platform, arch) {
+export function resolveAgentDownloadName(platform, arch) {
   // Bugfix：Windows 产物命名恢复为 zcode-windows-*.exe，避免继续请求到错误文件名。
   if (platform === "win32") {
     return `zcode-windows-${arch}.exe`;
@@ -92,15 +92,15 @@ export function resolveGlmDownloadName(platform, arch) {
   return `zcode-${platform}-${arch}`;
 }
 
-export function resolveGlmDownloadBaseUrl(env = process.env) {
-  return env.GLM_BINARY_DOWNLOAD_BASE_URL || resolveDefaultGlmBinaryDownloadBaseUrl(env);
+export function resolveAgentDownloadBaseUrl(env = process.env) {
+  return env.ZCODE_AGENT_BINARY_DOWNLOAD_BASE_URL || resolveDefaultAgentBinaryDownloadBaseUrl(env);
 }
 
 function isPlainObject(value) {
   return typeof value === "object" && value !== null;
 }
 
-export function isGlmBundleMetaMatch(meta, expected) {
+export function isAgentBundleMetaMatch(meta, expected) {
   if (!isPlainObject(meta)) {
     return false;
   }
@@ -111,7 +111,7 @@ export function isGlmBundleMetaMatch(meta, expected) {
   const source = typeof meta.source === "string" ? meta.source : null;
 
   return (
-    provider === "glm" &&
+    provider === "agent" &&
     version === expected.version &&
     platform === expected.platform &&
     source === expected.source
@@ -123,15 +123,15 @@ function readJsonFile(filePath) {
     return JSON.parse(fs.readFileSync(filePath, "utf8"));
   } catch {
     // Bugfix: 历史下载中断或手工改动可能留下损坏 meta。
-    // 解析失败时不命中缓存，后续按当前 GLM 版本重新下载并重写 meta。
+    // 解析失败时不命中缓存，后续按当前 Agent 版本重新下载并重写 meta。
     return null;
   }
 }
 
-function writeGlmBundleMeta(outputDir, expectedMeta) {
+function writeAgentBundleMeta(outputDir, expectedMeta) {
   const metadata = JSON.stringify(
     {
-      provider: "glm",
+      provider: "agent",
       version: expectedMeta.version,
       platform: expectedMeta.platform,
       source: expectedMeta.source,
@@ -185,13 +185,13 @@ export async function main() {
 
   const repoRoot = REPO_ROOT;
 
-  const localOutputDir = path.join(repoRoot, "packages/desktop/bundled-agents", platformKey, "glm");
+  const localOutputDir = path.join(repoRoot, "packages/desktop/bundled-agents", platformKey, "agent");
   const version = require(path.join(repoRoot, "package.json")).version;
   const remoteOutputDir = path.join(
     repoRoot,
     "packages/desktop/mock-cdn/releases",
     version,
-    "glm",
+    "agent",
     platformKey,
   );
   const outputDir = forceRemoteOutput
@@ -203,24 +203,24 @@ export async function main() {
   const binaryName = platform === "win32" ? "zcode-agent.exe" : "zcode-agent";
   const binaryPath = path.join(outputDir, binaryName);
 
-  const baseUrl = resolveGlmDownloadBaseUrl();
-  const downloadUrl = `${baseUrl}/${resolveGlmDownloadName(platform, arch)}`;
+  const baseUrl = resolveAgentDownloadBaseUrl();
+  const downloadUrl = `${baseUrl}/${resolveAgentDownloadName(platform, arch)}`;
   const expectedMeta = {
-    version: GLM_RUNTIME_VERSION,
+    version: AGENT_RUNTIME_VERSION,
     platform: platformKey,
     source: downloadUrl,
   };
   const metadataPath = path.join(outputDir, ".bundle-meta.json");
 
-  console.log("==> glm binary download");
+  console.log("==> agent binary download");
   console.log(`    version:  v${expectedMeta.version}`);
   console.log(`    platform: ${platformKey}`);
   console.log(`    target:   ${binaryPath}`);
 
   if (fs.existsSync(binaryPath)) {
     const existingMeta = readJsonFile(metadataPath);
-    if (isGlmBundleMetaMatch(existingMeta, expectedMeta)) {
-      console.log(`    [skip] 已存在 glm v${expectedMeta.version}，跳过`);
+    if (isAgentBundleMetaMatch(existingMeta, expectedMeta)) {
+      console.log(`    [skip] 已存在 agent v${expectedMeta.version}，跳过`);
       process.exit(0);
     }
   }
@@ -231,12 +231,12 @@ export async function main() {
     const bundledBinaryPath = path.join(localOutputDir, binaryName);
     const bundledMetadataPath = path.join(localOutputDir, ".bundle-meta.json");
     const bundledMeta = readJsonFile(bundledMetadataPath);
-    if (fs.existsSync(bundledBinaryPath) && isGlmBundleMetaMatch(bundledMeta, expectedMeta)) {
+    if (fs.existsSync(bundledBinaryPath) && isAgentBundleMetaMatch(bundledMeta, expectedMeta)) {
       // Bugfix: 本机平台与远端平台一致时，旧逻辑会只写 bundled-agents，
       // 导致 remote deploy 在 mock-cdn 查不到对应平台资源。
-      // 这里只回填版本匹配的 bundled 产物，避免把旧 GLM 二进制复制进 mock-cdn。
+      // 这里只回填版本匹配的 bundled 产物，避免把旧 Agent 二进制复制进 mock-cdn。
       fs.copyFileSync(bundledBinaryPath, binaryPath);
-      writeGlmBundleMeta(outputDir, expectedMeta);
+      writeAgentBundleMeta(outputDir, expectedMeta);
       if (platform !== "win32") {
         try {
           fs.chmodSync(binaryPath, 0o755);
@@ -249,13 +249,13 @@ export async function main() {
 
   // Bugfix: CI（如 GitLab Docker）里系统临时目录与仓库常在不同挂载点，`rename` 会报 EXDEV；
   // 下载临时文件与目标同目录，保证同卷原子替换。
-  const tmpFile = path.join(outputDir, `.glm-dl-${Date.now()}.part`);
+  const tmpFile = path.join(outputDir, `.agent-dl-${Date.now()}.part`);
 
   try {
     console.log(`    [download] ${downloadUrl}`);
     await download(downloadUrl, tmpFile);
-    // Bugfix: 旧逻辑只按文件存在判断缓存，GLM 版本升级后会复用旧二进制。
-    // 现在 GLM runtime version 已稳定可用，下载完成后重写二进制和 meta，后续按版本命中缓存。
+    // Bugfix: 旧逻辑只按文件存在判断缓存，Agent 版本升级后会复用旧二进制。
+    // 现在 Agent runtime version 已稳定可用，下载完成后重写二进制和 meta，后续按版本命中缓存。
     fs.rmSync(binaryPath, { force: true });
     fs.renameSync(tmpFile, binaryPath);
 
@@ -264,9 +264,9 @@ export async function main() {
         fs.chmodSync(binaryPath, 0o755);
       } catch {}
     }
-    writeGlmBundleMeta(outputDir, expectedMeta);
+    writeAgentBundleMeta(outputDir, expectedMeta);
 
-    console.log(`==> Done! glm (${platformKey}) -> ${binaryPath}`);
+    console.log(`==> Done! agent (${platformKey}) -> ${binaryPath}`);
   } catch (err) {
     try {
       fs.unlinkSync(tmpFile);

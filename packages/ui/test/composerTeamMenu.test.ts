@@ -8,7 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip.js";
 const items = [{ key: "m", value: "shared/model", name: "GLM-5.3" }];
 const groups: ModelSelectGroup[] = [
   {
-    key: "glm",
+    key: "agent",
     label: "GLM",
     labelBadge: "API",
     items: [{ ...items[0]!, value: "glm/model" }],
@@ -23,7 +23,7 @@ const groups: ModelSelectGroup[] = [
   },
 ];
 function Harness({ pending = false, error = null }: { pending?: boolean; error?: string | null }) {
-  const [selected, setSelected] = useState("glm");
+  const [selected, setSelected] = useState("agent");
   const [model, setModel] = useState("glm/model");
   return createElement(
     ZCodeIntlProvider,
@@ -170,7 +170,7 @@ it("连接 loading 期间固定原菜单展示，完成后一次采用新目录"
             onValueChange: () => {},
             providerMenu: {
               groups: target ? [groups[3]!] : groups,
-              selectedKey: target ? "api" : "glm",
+              selectedKey: target ? "api" : "agent",
               pending,
               error: null,
               onSelect: () => {},

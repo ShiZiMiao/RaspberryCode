@@ -204,7 +204,7 @@ export interface ConversationTelemetryParityScenario {
 const seedDetail = {
   askMode: "build",
   modelName: "glm-model",
-  modelProvider: "glm",
+  modelProvider: "agent",
   providerHostname: "api.example.com",
 } as const;
 
@@ -260,7 +260,7 @@ function successfulTextTurn(input: {
             turnId,
             requestId: id(input.caseId, "request"),
             status: "model_request_started",
-            providerId: "glm",
+            providerId: "agent",
             modelId: "glm-model",
             providerHostname: "api.example.com",
             scope,
@@ -300,7 +300,7 @@ function successfulTextTurn(input: {
             turnId,
             requestId: id(input.caseId, "request"),
             status: "model_request_completed",
-            providerId: "glm",
+            providerId: "agent",
             modelId: "glm-model",
             providerHostname: "api.example.com",
             durationMs: terminalAt - sendAt - 15,
@@ -411,7 +411,7 @@ function buildScenarios(): ConversationTelemetryParityScenario[] {
         turnId,
         requestId: `tdp05-request-${suffix}`,
         status: "model_request_started",
-        providerId: "glm",
+        providerId: "agent",
         modelId: "glm-model",
       },
       {
@@ -447,7 +447,7 @@ function buildScenarios(): ConversationTelemetryParityScenario[] {
         turnId,
         requestId: `tdp05-request-${suffix}`,
         status: "model_request_failed",
-        providerId: "glm",
+        providerId: "agent",
         modelId: "glm-model",
         reason: index === 0 ? "provider failed" : "",
         statusCode: 500,
@@ -787,7 +787,7 @@ function buildScenarios(): ConversationTelemetryParityScenario[] {
           reason: index === 0 ? "manual request" : undefined,
           compactReason: index === 1 ? "context_limit" : undefined,
           modelName: index === 2 ? "glm-model" : "external-model",
-          modelProvider: index === 2 ? "glm" : "anthropic",
+          modelProvider: index === 2 ? "agent" : "anthropic",
           startedAt: 100,
           endedAt: 150 + index * 10,
           preCompactTokenCount: 100,
@@ -814,7 +814,7 @@ function buildScenarios(): ConversationTelemetryParityScenario[] {
       status: "completed",
       trigger: "auto",
       modelName: "glm-model",
-      modelProvider: "glm",
+      modelProvider: "agent",
     },
   ];
 
@@ -853,14 +853,14 @@ function buildScenarios(): ConversationTelemetryParityScenario[] {
       name: "valid",
       sendAt: 100,
       chunkAt: 180,
-      provider: "glm",
+      provider: "agent",
       foreground: true,
     },
     {
       name: "negative",
       sendAt: 400,
       chunkAt: 350,
-      provider: "glm",
+      provider: "agent",
       foreground: true,
     },
     {
@@ -874,7 +874,7 @@ function buildScenarios(): ConversationTelemetryParityScenario[] {
       name: "background",
       sendAt: 1_000,
       chunkAt: 1_080,
-      provider: "glm",
+      provider: "agent",
       foreground: false,
     },
   ];

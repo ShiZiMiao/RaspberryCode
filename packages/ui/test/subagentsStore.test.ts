@@ -49,7 +49,7 @@ describe("subagentsStore", () => {
       workspaceIdentity: null,
       loadedWorkspacePath: null,
       loadedWorkspaceIdentity: null,
-      provider: "glm",
+      provider: "agent",
       loadedProvider: null,
       agents: [],
       capability: null,
@@ -64,9 +64,9 @@ describe("subagentsStore", () => {
     const remote = createSubagentsServiceMock();
     const contexts = useSubagentsContextStore.getState();
     await useSubagentsStore.getState().initialize("/local-a", local);
-    await contexts.initialize("/local-a", "glm", local);
-    await contexts.initialize("/local-b", "glm", local);
-    await contexts.initialize("/local-a", "glm", remote, "remote:server:source-a:/local-a");
+    await contexts.initialize("/local-a", "agent", local);
+    await contexts.initialize("/local-b", "agent", local);
+    await contexts.initialize("/local-a", "agent", remote, "remote:server:source-a:/local-a");
     vi.mocked(local.list)
       .mockClear()
       .mockResolvedValue({
@@ -84,7 +84,7 @@ describe("subagentsStore", () => {
     expect(local.list).toHaveBeenCalledWith(expect.objectContaining({ workspacePath: "/local-b" }));
     expect(remote.list).not.toHaveBeenCalled();
     expect(useSubagentsStore.getState().agents[0]?.name).toBe("saved-user-agent");
-    const key = getSubagentsContextKey("/local-b", "glm", undefined, local);
+    const key = getSubagentsContextKey("/local-b", "agent", undefined, local);
     expect(useSubagentsContextStore.getState().contexts[key]?.agents[0]?.name).toBe(
       "saved-user-agent",
     );
@@ -260,8 +260,8 @@ describe("subagentsStore", () => {
       workspaceIdentity: null,
       loadedWorkspacePath: workspacePath,
       loadedWorkspaceIdentity: null,
-      provider: "glm",
-      loadedProvider: "glm",
+      provider: "agent",
+      loadedProvider: "agent",
       agents: [createAgent("stale-reviewer")],
       capability: { userScopeAvailable: true },
       loading: false,

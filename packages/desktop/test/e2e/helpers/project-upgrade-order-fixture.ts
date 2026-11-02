@@ -31,7 +31,7 @@ export function seedLegacyProviderTasks(db: DatabaseSync, workspacePath: string)
     workspacePath,
     CURRENT_IMPORTED_TASK_ID,
     "E2E_CURRENT_IMPORTED",
-    "glm",
+    "agent",
     "claudeCode",
     now,
     now,

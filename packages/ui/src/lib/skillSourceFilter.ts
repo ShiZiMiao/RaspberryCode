@@ -1,14 +1,14 @@
 import type { ZCodeProvider } from "@zcode/shared";
 
-type SkillSourceType = "glm" | "unknown";
+type SkillSourceType = "agent" | "unknown";
 
 export function resolveSkillSourceType(skillPath: string): SkillSourceType {
   const normalized = skillPath.replaceAll("\\", "/").toLowerCase();
   if (normalized.includes("/.raspberrycode/skills/")) {
-    return "glm";
+    return "agent";
   }
   if (normalized.includes("/.raspberrycode/cli/plugins/cache/")) {
-    return "glm";
+    return "agent";
   }
   return "unknown";
 }
@@ -21,7 +21,7 @@ function isZcodeSkill(skill: { id?: string; path: string; scope?: string }): boo
     // 服务层已用 scope 标记来源，前端过滤时要放行，否则 `/` 和 `$` 面板会漏掉插件技能。
     skill.scope === "plugin" ||
     (typeof skill.id === "string" && SKILL_ID_PROVIDER_RE.test(skill.id)) ||
-    resolveSkillSourceType(skill.path) === "glm"
+    resolveSkillSourceType(skill.path) === "agent"
   );
 }
 

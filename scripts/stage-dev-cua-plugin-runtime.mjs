@@ -29,7 +29,7 @@ export function stageDevCuaPluginRuntime({
   // shared node_repl host，不再作为 CUA native 依赖的解析根目录。
   return stageSharpIntoBundledAgents({
     desktopPackageRoot,
-    glmDir: pluginRoot,
+    agentDir: pluginRoot,
     targetPlatform: {
       os: platform,
       arch,

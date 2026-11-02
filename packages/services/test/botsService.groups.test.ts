@@ -98,7 +98,7 @@ function setup(
             ensureConnected: vi.fn(async () => ({ ok: remoteConnection.connected })),
             getZCodeTaskService: vi.fn(async () => taskService),
             getModelSelectionService: vi.fn(async () =>
-              f.createModelSelectionService([{ id: "glm", name: "GLM", models: ["default"] }]),
+              f.createModelSelectionService([{ id: "agent", name: "GLM", models: ["default"] }]),
             ),
           },
         }
@@ -2110,14 +2110,14 @@ describe("Feishu group sessions", () => {
     taskService.listTasks = vi.fn(async () => [
       {
         taskId: parent.activeTaskId!,
-        provider: "glm",
+        provider: "agent",
         model: "glm/default$max",
         title: "Parent",
         workspacePath: "/tmp/workspace",
       },
     ]) as typeof taskService.listTasks;
     taskService.getTaskModelSelection = vi.fn(async () => ({
-      providerId: "glm",
+      providerId: "agent",
       modelId: "default",
       options: { reasoningLevel: "max" },
     }));
@@ -2128,7 +2128,7 @@ describe("Feishu group sessions", () => {
     expect(taskService.getTaskModelSelection).toHaveBeenCalledWith({ taskId: parent.activeTaskId });
     const creation = vi.mocked(taskService.createTask).mock.calls.at(-1)?.[0];
     expect(creation?.modelSelection ?? topic.draftOptions?.modelSelection).toEqual({
-      providerId: "glm",
+      providerId: "agent",
       modelId: "default",
       options: { reasoningLevel: "max" },
     });
@@ -2140,9 +2140,9 @@ describe("Feishu group sessions", () => {
     const state = await repo.readState();
     const parent = Object.values(state.bots).find((value) => value.group)!;
     parent.draftOptions = {
-      provider: "glm",
+      provider: "agent",
       modelSelection: {
-        providerId: "glm",
+        providerId: "agent",
         modelId: "default",
         options: { reasoningLevel: "high" },
       },
@@ -2159,7 +2159,7 @@ describe("Feishu group sessions", () => {
     const { send, repo, service } = setup();
     const config = await repo.readConfig();
     const modelSelection = {
-      providerId: "glm",
+      providerId: "agent",
       modelId: "default",
       options: { reasoningLevel: "high" },
     };
@@ -2361,7 +2361,7 @@ describe("Feishu group sessions", () => {
               taskId: originalTaskId,
               title: "Historical group task",
               workspacePath: originalPath,
-              provider: "glm",
+              provider: "agent",
             },
           ]
         : [],

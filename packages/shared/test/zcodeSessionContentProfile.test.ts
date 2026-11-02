@@ -12,7 +12,7 @@ import {
 } from "../src/index.js";
 
 const SESSION_ID = "sess_idx";
-const model = { providerId: "glm", modelId: "glm-4.6" };
+const model = { providerId: "agent", modelId: "glm-4.6" };
 const BIG = "x".repeat(2 * 1024 * 1024);
 
 function user(

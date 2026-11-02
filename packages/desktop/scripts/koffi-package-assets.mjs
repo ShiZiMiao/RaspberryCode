@@ -37,10 +37,10 @@ function koffiPlatformKey(targetPlatform) {
   return `${targetPlatform.os}_${targetPlatform.arch}`;
 }
 
-export function stageKoffiIntoBundledAgents({ koffiPackageRoot, glmDir, targetPlatform }) {
-  if (!koffiPackageRoot || !glmDir || !targetPlatform?.os || !targetPlatform?.arch) {
+export function stageKoffiIntoBundledAgents({ koffiPackageRoot, agentDir, targetPlatform }) {
+  if (!koffiPackageRoot || !agentDir || !targetPlatform?.os || !targetPlatform?.arch) {
     throw new Error(
-      "[koffi-package-assets] koffiPackageRoot, glmDir and targetPlatform are required",
+      "[koffi-package-assets] koffiPackageRoot, agentDir and targetPlatform are required",
     );
   }
   const sourceRoot = resolveKoffiRoot(koffiPackageRoot);
@@ -52,7 +52,7 @@ export function stageKoffiIntoBundledAgents({ koffiPackageRoot, glmDir, targetPl
     );
   }
 
-  const targetRoot = resolve(glmDir, "node_modules", "koffi");
+  const targetRoot = resolve(agentDir, "node_modules", "koffi");
   rmSync(targetRoot, { recursive: true, force: true });
   mkdirSync(resolve(targetRoot, "build", "koffi", platformKey), { recursive: true });
   for (const file of ["index.js", "package.json", "index.d.ts"]) {
@@ -71,7 +71,7 @@ export function verifyStagedKoffi({
   pluginRelativePath = "packages/zcode-cua-plugin",
 }) {
   const platformKey = koffiPlatformKey(targetPlatform);
-  const koffiRoot = resolve(resourcesDir, "glm", pluginRelativePath, "node_modules", "koffi");
+  const koffiRoot = resolve(resourcesDir, "agent", pluginRelativePath, "node_modules", "koffi");
   const nativePath = resolve(koffiRoot, "build", "koffi", platformKey, "koffi.node");
   return existsSync(nativePath) && existsSync(resolve(koffiRoot, "index.js"))
     ? []

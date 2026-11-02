@@ -63,7 +63,7 @@ export function buildCliZCodeSourceHeaders(
     "X-Release-Channel": resolveRuntimeZCodeEnv(env),
     "X-Client-Language": locale ?? "unknown",
     "X-Client-Timezone": timezone ?? "unknown",
-    "X-RaspberryCode-Agent": "glm",
+    "X-RaspberryCode-Agent": "agent",
     ...createRuntimePlatformHeaders(),
   };
 }

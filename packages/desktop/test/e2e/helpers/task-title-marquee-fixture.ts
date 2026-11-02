@@ -71,7 +71,7 @@ export async function seedTaskTitleMarqueeFixture(
         updatedAt: timestamp,
         mode: "build",
         model: "missing-model",
-        provider: "glm",
+        provider: "agent",
         status: "completed",
       };
       insertTask.run(

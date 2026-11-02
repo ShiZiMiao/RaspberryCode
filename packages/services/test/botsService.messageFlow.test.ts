@@ -50,7 +50,7 @@ describe("botsService messageFlow", () => {
     async (availability) => {
       const original = {
         providerId: "account:personal",
-        modelId: "glm",
+        modelId: "agent",
         options: { reasoningLevel: "high" },
       };
       const effective = { ...original, providerId: "account:team" };
@@ -172,7 +172,7 @@ describe("botsService messageFlow", () => {
       expect.objectContaining({
         workspacePath: "/tmp/workspace",
         workspaceIdentity: "remote:server:test-owner:/tmp/workspace",
-        provider: "glm",
+        provider: "agent",
       }),
     );
     service.disposeAll();
@@ -837,13 +837,13 @@ describe("botsService messageFlow", () => {
           {
             value: "gpt-5.3",
             name: "GPT-5.3",
-            modelProviderId: "glm",
+            modelProviderId: "agent",
             modelProviderName: "RaspberryCode Agent",
           },
           {
             value: "gpt-5.4",
             name: "GPT-5.4",
-            modelProviderId: "glm",
+            modelProviderId: "agent",
             modelProviderName: "RaspberryCode Agent",
           },
         ],
@@ -953,7 +953,7 @@ describe("botsService messageFlow", () => {
         channel: "bots:task",
         payload: expect.objectContaining({
           taskId: "task-1",
-          provider: "glm",
+          provider: "agent",
           configOptions: expect.arrayContaining([
             expect.objectContaining({ currentValue: "gpt-5.4" }),
           ]),
@@ -998,7 +998,7 @@ describe("botsService messageFlow", () => {
         title: "Active task",
         workspacePath: "/tmp/workspace",
         workspaceIdentity: "remote:server:test-owner:/tmp/workspace",
-        provider: "glm",
+        provider: "agent",
         model: "glm-4.6",
         status: "completed",
       },
@@ -1098,7 +1098,7 @@ describe("botsService messageFlow", () => {
         taskId: "task-1",
         title: "Active task",
         workspacePath: "/tmp/workspace",
-        provider: "glm",
+        provider: "agent",
         model: "glm-4.6",
         status: "completed",
       },
@@ -1294,7 +1294,7 @@ describe("botsService messageFlow", () => {
         title: "Active task",
         workspacePath: "/tmp/workspace",
         workspaceIdentity: "remote:server:test-owner:/tmp/workspace",
-        provider: "glm",
+        provider: "agent",
         model: "gpt-5.3",
         status: "completed",
       },
@@ -1310,7 +1310,7 @@ describe("botsService messageFlow", () => {
             {
               value: "gpt-5.4",
               name: "GPT-5.4",
-              modelProviderId: "glm",
+              modelProviderId: "agent",
               modelProviderName: "RaspberryCode Agent",
             },
           ],
@@ -1389,7 +1389,7 @@ describe("botsService messageFlow", () => {
           mode: "draft",
           activeTaskId: null,
           draftOptions: {
-            provider: "glm",
+            provider: "agent",
             modelSelection: { providerId, modelId },
           },
           updatedAt: Date.now(),
@@ -1523,7 +1523,7 @@ describe("botsService messageFlow", () => {
           mode: "draft",
           activeTaskId: null,
           draftOptions: {
-            provider: "glm",
+            provider: "agent",
             model: encodeCustomModelValue(providerId, modelId),
           },
           updatedAt: Date.now(),
@@ -1597,8 +1597,8 @@ describe("botsService messageFlow", () => {
       expect.objectContaining({
         workspacePath: "/tmp/workspace",
         workspaceIdentity: "remote:server:test-owner:/tmp/workspace",
-        provider: "glm",
-        modelSelection: { providerId: "glm", modelId: "default" },
+        provider: "agent",
+        modelSelection: { providerId: "agent", modelId: "default" },
         v4Create: true,
       }),
     );
@@ -4346,7 +4346,7 @@ describe("botsService messageFlow", () => {
         ensureConnected: vi.fn(async () => ({ ok: true })),
         getZCodeTaskService: vi.fn(async () => legacyTaskService),
         getModelSelectionService: vi.fn(async () =>
-          f.createModelSelectionService([{ id: "glm", name: "GLM", models: ["default"] }]),
+          f.createModelSelectionService([{ id: "agent", name: "GLM", models: ["default"] }]),
         ),
       },
       repo: repo as never,
@@ -4436,7 +4436,7 @@ describe("botsService messageFlow", () => {
           draftOptions: {
             provider: "codex",
             modelSelection: {
-              providerId: "glm",
+              providerId: "agent",
               modelId: "gpt-5.4",
               options: { reasoningLevel: "medium" },
             },
@@ -4498,7 +4498,7 @@ describe("botsService messageFlow", () => {
     expect(legacyTaskService.createTask).toHaveBeenCalledWith(
       expect.objectContaining({
         modelSelection: {
-          providerId: "glm",
+          providerId: "agent",
           modelId: "gpt-5.4",
           options: { reasoningLevel: "medium" },
         },
@@ -4523,7 +4523,7 @@ describe("botsService messageFlow", () => {
           mode: "draft",
           activeTaskId: null,
           draftOptions: {
-            provider: "glm",
+            provider: "agent",
             model: "custom:deepseek:deepseek-v4-flash",
             thoughtLevel: "enabled",
           },
@@ -4585,7 +4585,7 @@ describe("botsService messageFlow", () => {
           workspaceId: "remote:server:test-owner:/tmp/workspace",
           mode: "draft",
           activeTaskId: null,
-          draftOptions: { provider: "glm" },
+          draftOptions: { provider: "agent" },
           updatedAt: Date.now(),
         },
       },
@@ -4757,7 +4757,7 @@ describe("botsService messageFlow", () => {
       },
     ]);
     vi.mocked(legacyTaskService.getTaskModelSelection).mockResolvedValue({
-      providerId: "glm",
+      providerId: "agent",
       modelId: "claude-sonnet",
       options: { reasoningLevel: "medium" },
     });
@@ -4779,9 +4779,9 @@ describe("botsService messageFlow", () => {
       mode: "draft",
       activeTaskId: null,
       draftOptions: {
-        provider: "glm",
+        provider: "agent",
         modelSelection: {
-          providerId: "glm",
+          providerId: "agent",
           modelId: "claude-sonnet",
           options: { reasoningLevel: "medium" },
         },
@@ -4926,7 +4926,7 @@ describe("botsService messageFlow", () => {
     });
     expect((await repo.readState()).bots["weixin-1"]).toMatchObject({
       draftOptions: {
-        provider: "glm",
+        provider: "agent",
         modelSelection: {
           providerId: "runtime-provider",
           modelId: "gpt-5.4",
@@ -4943,7 +4943,7 @@ describe("botsService messageFlow", () => {
     });
     expect(legacyTaskService.createTask).toHaveBeenCalledWith(
       expect.objectContaining({
-        provider: "glm",
+        provider: "agent",
         modelSelection: {
           providerId: "runtime-provider",
           modelId: "gpt-5.4",
@@ -4970,7 +4970,7 @@ describe("botsService messageFlow", () => {
           mode: "draft",
           activeTaskId: null,
           draftOptions: {
-            provider: "glm",
+            provider: "agent",
             mode: "default",
           },
           updatedAt: Date.now(),
@@ -5001,7 +5001,7 @@ describe("botsService messageFlow", () => {
 
     expect(legacyTaskService.createTask).toHaveBeenCalledWith(
       expect.objectContaining({
-        provider: "glm",
+        provider: "agent",
       }),
     );
     expect(legacyTaskService.setMode).toHaveBeenCalledWith(
@@ -5345,7 +5345,7 @@ describe("botsService messageFlow", () => {
             workspaceId: "/tmp/workspace",
             mode: "draft",
             activeTaskId: null,
-            draftOptions: { provider: "glm", mode: "yolo", modelSelection: original },
+            draftOptions: { provider: "agent", mode: "yolo", modelSelection: original },
             updatedAt: Date.now(),
           },
         },

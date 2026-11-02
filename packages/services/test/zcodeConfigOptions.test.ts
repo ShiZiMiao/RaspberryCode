@@ -11,7 +11,7 @@ function settingsWithMode(
 ): ZCodeSessionSettingsState {
   return {
     model: {
-      current: { providerId: "glm", modelId: "glm-5" },
+      current: { providerId: "agent", modelId: "glm-5" },
       available: [],
     },
     thoughtLevel: {

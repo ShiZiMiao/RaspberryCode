@@ -46,7 +46,7 @@ export function parseModelPickerValue(value: string): ModelSelection {
   if (providerSeparatorIndex <= 0) {
     throw new Error(`模型选择缺少 Provider: ${normalized}`);
   }
-  const providerId = normalized.slice(0, providerSeparatorIndex);
+  const providerId = normalizeLegacyProviderSegment(normalized.slice(0, providerSeparatorIndex));
   const rawModelId = normalized.slice(providerSeparatorIndex + 1);
   const reasoningSeparatorIndex = rawModelId.indexOf(ZCODE_MODEL_REASONING_SEPARATOR);
   if (reasoningSeparatorIndex <= 0 || reasoningSeparatorIndex >= rawModelId.length - 1) {
@@ -57,4 +57,9 @@ export function parseModelPickerValue(value: string): ModelSelection {
     modelId: rawModelId.slice(0, reasoningSeparatorIndex),
     options: { reasoningLevel: rawModelId.slice(reasoningSeparatorIndex + 1) },
   });
+}
+
+/** 历史 Picker 值的 provider 段是执行后端 "glm"，读入归一为 "agent"（specs/provider-neutrality.md）。 */
+function normalizeLegacyProviderSegment(providerSegment: string): string {
+  return providerSegment === "glm" ? "agent" : providerSegment;
 }

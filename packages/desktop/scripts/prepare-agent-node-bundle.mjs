@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// 桌面打包态的 agent 运行时资产：把 agent 的 JS bundle（zcode.cjs）放进 bundled-agents/<platform>/glm，
+// 桌面打包态的 agent 运行时资产：把 agent 的 JS bundle（zcode.cjs）放进 bundled-agents/<platform>/agent，
 // 由 app 内置的 Electron Node runtime（ELECTRON_RUN_AS_NODE）执行，替代以前随包内置的独立 Node 二进制。
 //
 // 为什么这么做：
@@ -77,7 +77,7 @@ const platform = normalizePlatform(process.env.ZCODE_TARGET_OS || "") || process
 const arch = normalizeArch(process.env.ZCODE_TARGET_ARCH || "") || process.arch;
 const platformKey = `${platform}-${arch}`;
 
-const glmDir = resolve(desktopRoot, "bundled-agents", platformKey, "glm");
+const agentDir = resolve(desktopRoot, "bundled-agents", platformKey, "agent");
 // zcode.cjs / .node-bundle-meta.json 的落点由 stage-agent-bundle.mjs 自己解析（同源）。
 // node_repl 宿主抽成独立包
 // @zcode/node-repl-host 之后，browser-use 不再产出 dist/mcp/server.js，CUA 资产
@@ -240,7 +240,7 @@ const officialPluginPackages = [
   },
   {
     // 修复原因：zcode-guide 已注册为官方默认启用内容型插件（见 official-plugin-definitions.ts）。
-    // Electron 生产包不是 SEA 路径，官方插件 seed 依赖这里 stage 的 resources/glm/packages/*-plugin；
+    // Electron 生产包不是 SEA 路径，官方插件 seed 依赖这里 stage 的 resources/agent/packages/*-plugin；
     // 漏掉它会导致生产桌面包首启 seed 不到该插件，用户拿不到默认启用的配置指南技能。
     packageName: "@zcode/zcode-guide-plugin",
     relativePath: "apps/zcode-cli/packages/zcode-guide-plugin",
@@ -391,7 +391,7 @@ function stageOfficialPlugins() {
       throw new Error(`[prepare:agent-bundle] missing official plugin manifest: ${manifestPath}`);
     }
 
-    const targetRoot = resolve(glmDir, plugin.stagedPath);
+    const targetRoot = resolve(agentDir, plugin.stagedPath);
     mkdirSync(targetRoot, { recursive: true });
     for (const entryName of includedOfficialPluginTopLevelPaths) {
       const sourcePath = resolve(sourceRoot, entryName);
@@ -415,7 +415,7 @@ function stageOfficialPlugins() {
 
 function stageBundledSkillPack() {
   const sourceRoot = resolve(repoRoot, bundledSkillPack.relativePath);
-  const targetRoot = resolve(glmDir, bundledSkillPack.stagedPath);
+  const targetRoot = resolve(agentDir, bundledSkillPack.stagedPath);
   mkdirSync(targetRoot, { recursive: true });
   for (const entryName of bundledSkillPack.topLevelPaths) {
     const sourcePath = resolve(sourceRoot, entryName);
@@ -450,9 +450,9 @@ function stageSharpForNodeReplPlugin() {
   // Browser Use 目录保留一份兼容 staging。三份 staging 都位于 plugin 子目录下，避免
   // electron-builder 过滤 extraResources 根目录的 node_modules。
   const pluginStagedDirs = [
-    [NODE_REPL_HOST_PACKAGE_NAME, resolve(glmDir, "packages", "node-repl-host")],
-    [BROWSER_USE_PLUGIN_PACKAGE_NAME, resolve(glmDir, "packages", "browser-use-plugin")],
-    [CUA_PLUGIN_PACKAGE_NAME, resolve(glmDir, "packages", "zcode-cua-plugin")],
+    [NODE_REPL_HOST_PACKAGE_NAME, resolve(agentDir, "packages", "node-repl-host")],
+    [BROWSER_USE_PLUGIN_PACKAGE_NAME, resolve(agentDir, "packages", "browser-use-plugin")],
+    [CUA_PLUGIN_PACKAGE_NAME, resolve(agentDir, "packages", "zcode-cua-plugin")],
   ];
   for (const [packageName, pluginStagedDir] of pluginStagedDirs) {
     if (!existsSync(resolve(pluginStagedDir, ".zcode-plugin", "plugin.json"))) {
@@ -461,7 +461,7 @@ function stageSharpForNodeReplPlugin() {
     }
     stageSharpIntoBundledAgents({
       desktopPackageRoot: desktopRoot,
-      glmDir: pluginStagedDir,
+      agentDir: pluginStagedDir,
       targetPlatform: { os: platform, arch },
     });
     console.log(
@@ -471,14 +471,14 @@ function stageSharpForNodeReplPlugin() {
 }
 
 function stageKoffiForCuaPlugin() {
-  const cuaPluginStagedDir = resolve(glmDir, "packages", "zcode-cua-plugin");
+  const cuaPluginStagedDir = resolve(agentDir, "packages", "zcode-cua-plugin");
   if (!existsSync(resolve(cuaPluginStagedDir, ".zcode-plugin", "plugin.json"))) {
     console.log("[prepare:agent-bundle] zcode-cua-plugin not staged, skip koffi staging");
     return;
   }
   stageKoffiIntoBundledAgents({
     koffiPackageRoot: adaptersRoot,
-    glmDir: cuaPluginStagedDir,
+    agentDir: cuaPluginStagedDir,
     targetPlatform: { os: platform, arch },
   });
   console.log(
@@ -486,9 +486,9 @@ function stageKoffiForCuaPlugin() {
   );
 }
 
-// 修复原因：Electron 生产包只带 resources/glm/zcode.cjs 时，app-server 进程的
+// 修复原因：Electron 生产包只带 resources/agent/zcode.cjs 时，app-server 进程的
 // __dirname 附近没有官方插件目录，启动时 seed 找不到 source，用户侧不会自动得到内置插件。
-// 这里把官方插件按 bootstrap 的 rootCandidates 期望放到 glm/packages/*-plugin，
+// 这里把官方插件按 bootstrap 的 rootCandidates 期望放到 agent/packages/*-plugin，
 // 让 Electron Node 运行 zcode.cjs 时复用同一套 filesystem seed 逻辑。
 // browser-use runtime 的声明生成依赖 @zcode/core/dist。CI 干净检出没有该产物，
 // 必须先构建 CLI 依赖，再构建官方插件；开发机残留的 dist 曾掩盖这个顺序问题。

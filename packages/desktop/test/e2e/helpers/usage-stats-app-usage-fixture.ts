@@ -95,7 +95,7 @@ async function seedHistory(
       modelId: "e2e-model-alpha",
       runtimeProviderId: "e2e-usage-provider",
       sessionId,
-      taskProviderId: "glm",
+      taskProviderId: "agent",
       title,
       userText: `${sessionId} user history`,
     },

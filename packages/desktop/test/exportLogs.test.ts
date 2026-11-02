@@ -441,7 +441,7 @@ describe("export logs archive", () => {
         await mkdir(join(sourceDir, "logs"), { recursive: true });
         await mkdir(rolloutDir, { recursive: true });
         await mkdir(debugDir, { recursive: true });
-        await writeFile(join(zcodeCliDir, "config.json"), '{"model":"glm"}', "utf-8");
+        await writeFile(join(zcodeCliDir, "config.json"), '{"model":"agent"}', "utf-8");
         await writeFile(join(rolloutDir, "model-io-recent.jsonl"), "rollout-recent", "utf-8");
         await writeFile(join(debugDir, "model-io-old.jsonl"), "debug-old", "utf-8");
         // 故意把 rollout 文件改成远超 3 天窗口的旧时间，验证 rollout 不参与时间过滤。
@@ -454,7 +454,7 @@ describe("export logs archive", () => {
         await writeLogArchiveZip(zipPath, artifacts, createWriteZipTestOptions(tempDir));
 
         const entries = await readZipEntries(zipPath);
-        expect(entries.get(".raspberrycode/cli/config.json")).toBe('{"model":"glm"}');
+        expect(entries.get(".raspberrycode/cli/config.json")).toBe('{"model":"agent"}');
         expect(entries.get(".raspberrycode/cli/rollout/model-io-recent.jsonl")).toBe("rollout-recent");
         expect(entries.has(".raspberrycode/cli/debug/model-io-old.jsonl")).toBe(false);
       });
@@ -558,7 +558,7 @@ describe("export logs archive", () => {
         await writeFile(
           join(zcodeCliDir, "config.json"),
           JSON.stringify({
-            model: "glm",
+            model: "agent",
             apiKey: "config-secret",
             plugins: {
               enabledPlugins: { "example-plugin@example": true },
@@ -607,7 +607,7 @@ describe("export logs archive", () => {
         expect(entries.has("certs/app-ca.pem")).toBe(false);
         expect(entries.get(".raspberrycode/cli/log/agent.log")).toBe("agent-log");
         const configEntry = entries.get(".raspberrycode/cli/config.json");
-        expect(configEntry).toContain('"model":"glm"');
+        expect(configEntry).toContain('"model":"agent"');
         expect(configEntry).toContain('"enabledPlugins"');
         expect(configEntry).toContain('"example-plugin@example":true');
         expect(configEntry).not.toContain("config-secret");

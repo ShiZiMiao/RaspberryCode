@@ -99,7 +99,7 @@ afterEach(() => {
 });
 const sessions = (query = "", workspaceScope = "same-authority-workspaces" as const) =>
   useSessionsMentionProvider(
-    "glm",
+    "agent",
     "/cwd",
     undefined,
     query,
@@ -145,7 +145,7 @@ it("@ session candidates keep workspace identity isolation even when physical pa
   const { result } = renderHook(
     () =>
       useSessionsMentionProvider(
-        "glm",
+        "agent",
         "/cwd",
         undefined,
         "",
@@ -179,7 +179,7 @@ it("closed session mention does not read projects or start an Agent", () => {
   const { result } = renderHook(
     () =>
       useSessionsMentionProvider(
-        "glm",
+        "agent",
         "/cwd",
         undefined,
         "",

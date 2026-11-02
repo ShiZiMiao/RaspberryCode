@@ -42,7 +42,7 @@ describe("GLM remote asset live identity", () => {
   it("ignores the semantic version when the artifact SHA is unchanged", async () => {
     const sha256 = "a".repeat(64);
     const backend = new IdentityBackend({
-      id: "glm",
+      id: "agent",
       version: "v0.13.2",
       sha256,
       platformArch: "linux-x64",
@@ -50,7 +50,7 @@ describe("GLM remote asset live identity", () => {
 
     await expect(
       checkRemoteAssetComponentIdentity(backend, {
-        componentId: "glm",
+        componentId: "agent",
         platformArch: "linux-x64",
         expectedIdentity: { sha256 },
       }),
@@ -60,14 +60,14 @@ describe("GLM remote asset live identity", () => {
   it("does not require a version field when the artifact SHA is unchanged", async () => {
     const sha256 = "a".repeat(64);
     const backend = new IdentityBackend({
-      id: "glm",
+      id: "agent",
       sha256,
       platformArch: "linux-x64",
     });
 
     await expect(
       checkRemoteAssetComponentIdentity(backend, {
-        componentId: "glm",
+        componentId: "agent",
         platformArch: "linux-x64",
         expectedIdentity: { sha256 },
       }),
@@ -76,7 +76,7 @@ describe("GLM remote asset live identity", () => {
 
   it("deploys when the artifact SHA changes even if the version is unchanged", async () => {
     const backend = new IdentityBackend({
-      id: "glm",
+      id: "agent",
       version: "v0.13.3",
       sha256: "a".repeat(64),
       platformArch: "linux-x64",
@@ -84,7 +84,7 @@ describe("GLM remote asset live identity", () => {
 
     await expect(
       checkRemoteAssetComponentIdentity(backend, {
-        componentId: "glm",
+        componentId: "agent",
         platformArch: "linux-x64",
         expectedIdentity: { sha256: "b".repeat(64) },
       }),

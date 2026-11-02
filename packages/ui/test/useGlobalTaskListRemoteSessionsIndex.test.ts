@@ -403,7 +403,7 @@ describe("useGlobalTaskList remote shard tasks-index 行 + sessions-index detail
     let values: string[] = [];
     function Probe() {
       const result = useSessionsMentionProvider(
-        "glm",
+        "agent",
         "/remote-ws",
         REMOTE_IDENTITY,
         "",

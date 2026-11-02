@@ -255,8 +255,8 @@ describe("useZCodeSessionStore provider preference", () => {
     useZCodeSessionStore.getState().bindRuntimeProvider(workspacePath, "opencode");
 
     const workspaceState = useZCodeSessionStore.getState().getWorkspaceState(workspacePath);
-    expect(storage.getItem(LAST_SELECTED_AGENT_PROVIDER_STORAGE_KEY)).toBe("glm");
-    expect(workspaceState.selectedProvider).toBe("glm");
+    expect(storage.getItem(LAST_SELECTED_AGENT_PROVIDER_STORAGE_KEY)).toBe("agent");
+    expect(workspaceState.selectedProvider).toBe("agent");
     expect(workspaceState.selectedSupplierKey).toBe(customSupplierKey);
   });
 
@@ -429,7 +429,7 @@ describe("useZCodeSessionStore provider preference", () => {
       .getState()
       .getWorkspaceState(workspacePath, workspaceIdentity);
 
-    expect(firstSnapshot.selectedProvider).toBe("glm");
+    expect(firstSnapshot.selectedProvider).toBe("agent");
     expect(firstSnapshot).toBe(secondSnapshot);
 
     useZCodeSessionStore.getState().setTaskUnreadIndicator(workspacePath, "task-1", true);
@@ -439,7 +439,7 @@ describe("useZCodeSessionStore provider preference", () => {
       .getWorkspaceState(workspacePath, workspaceIdentity);
 
     expect(thirdSnapshot).not.toBe(firstSnapshot);
-    expect(thirdSnapshot.selectedProvider).toBe("glm");
+    expect(thirdSnapshot.selectedProvider).toBe("agent");
     expect(thirdSnapshot.taskUnreadByTaskId["task-1"]).toBe(true);
   });
 
@@ -528,7 +528,7 @@ describe("useZCodeSessionStore provider preference", () => {
     useZCodeSessionStore.getState().startDraft(workspacePath, "claude");
 
     const workspaceState = useZCodeSessionStore.getState().getWorkspaceState(workspacePath);
-    expect(workspaceState.selectedProvider).toBe("glm");
+    expect(workspaceState.selectedProvider).toBe("agent");
     expect(workspaceState.selectedSupplierKey).toBe(customSupplierKey);
   });
 
@@ -570,7 +570,7 @@ describe("useZCodeSessionStore provider preference", () => {
         createThoughtConfigOption("max"),
       ]);
 
-    useZCodeSessionStore.getState().startDraft(workspacePath, "glm");
+    useZCodeSessionStore.getState().startDraft(workspacePath, "agent");
 
     const workspaceState = useZCodeSessionStore.getState().getWorkspaceState(workspacePath);
     expect(workspaceState.activeTaskId).toBeNull();
@@ -640,7 +640,7 @@ describe("useZCodeSessionStore provider preference", () => {
     useZCodeSessionStore
       .getState()
       .setTaskConfigOptions(workspacePath, "task-1", [createModelConfigOption("glm-path")]);
-    useZCodeSessionStore.getState().startDraft(workspacePath, "glm", identityA);
+    useZCodeSessionStore.getState().startDraft(workspacePath, "agent", identityA);
     useZCodeSessionStore
       .getState()
       .setConfigOptions(workspacePath, [createModelConfigOption("glm-identity-b")], identityB);
@@ -996,7 +996,7 @@ describe("useZCodeSessionStore provider preference", () => {
       createTaskMeta({
         taskId,
         workspacePath,
-        provider: "glm",
+        provider: "agent",
         model: taskModel,
       }),
     );

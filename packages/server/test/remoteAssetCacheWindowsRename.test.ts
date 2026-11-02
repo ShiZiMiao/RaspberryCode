@@ -56,10 +56,10 @@ describe("remote asset cache Windows directory commit", () => {
     try {
       await mkdir(join(sourceRoot, "server"), { recursive: true });
       await mkdir(join(sourceRoot, "node", platformArch), { recursive: true });
-      await mkdir(join(sourceRoot, "glm", platformArch), { recursive: true });
+      await mkdir(join(sourceRoot, "agent", platformArch), { recursive: true });
       await writeFile(join(sourceRoot, "server", "zcode-server.cjs"), "server", "utf8");
       await writeFile(join(sourceRoot, "node", platformArch, "node"), "node", "utf8");
-      await writeFile(join(sourceRoot, "glm", platformArch, "zcode-agent"), "glm", "utf8");
+      await writeFile(join(sourceRoot, "agent", platformArch, "zcode-agent"), "agent", "utf8");
 
       const components = [
         {
@@ -75,7 +75,7 @@ describe("remote asset cache Windows directory commit", () => {
           mount: `node/${platformArch}`,
         },
         {
-          id: "glm",
+          id: "agent",
           version: "3.1.2-glm",
           artifactPath: `components/${platformArch}/glm.tar.gz`,
           mount: `glm/${platformArch}`,
@@ -94,7 +94,7 @@ describe("remote asset cache Windows directory commit", () => {
         });
       }
       const glmSha256 = manifestComponents.find(
-        (component) => component.id === "glm",
+        (component) => component.id === "agent",
       )?.sha256;
       if (!glmSha256) {
         throw new Error("missing GLM component SHA");
@@ -123,7 +123,7 @@ describe("remote asset cache Windows directory commit", () => {
             const normalizedTo = normalize(to);
             if (
               !failedGlmReleaseCommit &&
-              normalizedTo.endsWith(normalize(join("glm", platformArch)))
+              normalizedTo.endsWith(normalize(join("agent", platformArch)))
             ) {
               failedGlmReleaseCommit = true;
               failedRenameTargets.push(normalizedTo);
@@ -177,8 +177,8 @@ describe("remote asset cache Windows directory commit", () => {
       );
       expect(failedRenameTargets).toHaveLength(1);
       await expect(
-        readFile(join(releaseDir, "glm", platformArch, "zcode-agent"), "utf8"),
-      ).resolves.toBe("glm");
+        readFile(join(releaseDir, "agent", platformArch, "zcode-agent"), "utf8"),
+      ).resolves.toBe("agent");
     } finally {
       await rm(rootDir, { force: true, recursive: true });
     }

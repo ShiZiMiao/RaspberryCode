@@ -12,7 +12,7 @@ import {
 } from "../src/index.js";
 
 const model = {
-  providerId: "glm",
+  providerId: "agent",
   modelId: "glm-4.6",
 };
 type ZCodeUserMessageInfo = Extract<ZCodeMessageWithParts["info"], { role: "user" }>;

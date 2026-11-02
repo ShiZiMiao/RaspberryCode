@@ -414,7 +414,7 @@ describe("zcodeAgentService v4 conversation channel", () => {
                 ? []
                 : [
                     {
-                      providerId: "glm",
+                      providerId: "agent",
                       config: {
                         kind: "api" as const,
                         api: {
@@ -501,7 +501,7 @@ describe("zcodeAgentService v4 conversation channel", () => {
                   createdAt: 1,
                   updatedAt: 2,
                   mode: "build",
-                  provider: "glm",
+                  provider: "agent",
                 },
               });
             } finally {
@@ -1035,7 +1035,7 @@ describe("zcodeAgentService v4 conversation channel", () => {
           createdAt: 1,
           updatedAt: 2,
           mode: "build",
-          provider: "glm",
+          provider: "agent",
           model: "glm/GLM-5.2",
           thoughtLevel: "max",
         },
@@ -1299,7 +1299,7 @@ describe("zcodeAgentService v4 conversation channel", () => {
           createdAt: 1,
           updatedAt: 2,
           mode: "build",
-          provider: "glm",
+          provider: "agent",
         },
       });
       await seedTaskIndex(repo, {
@@ -1312,7 +1312,7 @@ describe("zcodeAgentService v4 conversation channel", () => {
           createdAt: 1,
           updatedAt: 3,
           mode: "build",
-          provider: "glm",
+          provider: "agent",
         },
       });
 
@@ -1646,7 +1646,7 @@ describe("zcodeAgentService v4 conversation channel", () => {
           createdAt: 1,
           updatedAt: 2,
           mode: "build",
-          provider: "glm",
+          provider: "agent",
           cronAutomationId: "automation-cron",
         },
       });

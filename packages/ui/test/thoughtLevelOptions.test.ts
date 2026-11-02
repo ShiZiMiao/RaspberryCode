@@ -34,7 +34,7 @@ describe.each([
   for (const row of expectedLabels) {
     it.each(row[0])("%s 使用约定文案且不改原始值", (value) => {
       const entry = Object.freeze({ value: ` ${value.toUpperCase()} `, name: "原始名称" });
-      expect(getThoughtLevelLabel(intl, "glm", option, entry)).toBe(row[column]);
+      expect(getThoughtLevelLabel(intl, "agent", option, entry)).toBe(row[column]);
       expect(entry.value).toBe(` ${value.toUpperCase()} `);
     });
   }
@@ -53,7 +53,7 @@ describe.each([
     "constructor",
     "__proto__",
   ])("%s 保留来源名称", (value) => {
-    expect(getThoughtLevelLabel(intl, "glm", option, { value, name: `来源 ${value}` })).toBe(
+    expect(getThoughtLevelLabel(intl, "agent", option, { value, name: `来源 ${value}` })).toBe(
       `来源 ${value}`,
     );
   });

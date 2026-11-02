@@ -193,7 +193,7 @@ describe("attributeHostProcessTree", () => {
       agents: [
         {
           pid: 100,
-          provider: "glm",
+          provider: "agent",
           workspacePath: "/Users/me/demo",
           children: [
             {
@@ -235,7 +235,7 @@ describe("attributeHostProcessTree", () => {
     const rows = attributeHostProcessTree({
       samples,
       hostPid: 60,
-      agents: [{ pid: 100, provider: "glm", workspacePath: "C:\\work\\demo", children: [] }],
+      agents: [{ pid: 100, provider: "agent", workspacePath: "C:\\work\\demo", children: [] }],
     });
     expect(rows.map((row) => [row.pid, row.groupKey, row.name])).toEqual([
       [100, "cli", "zcode-agent-glm-demo"],

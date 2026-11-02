@@ -59,7 +59,7 @@ function setup(locale: "zh-CN" | "en-US" = "zh-CN", remote = true) {
   vi.mocked(taskService.listDeletedTaskIds).mockResolvedValue(["deleted-task"]);
   const broadcastService = f.createBroadcastService();
   const modelSelectionService = f.createModelSelectionService([
-    { id: "glm", name: "GLM", models: ["default"] },
+    { id: "agent", name: "GLM", models: ["default"] },
   ]);
   const requests: string[] = [];
   const fetch = vi.fn(async (_url: unknown, init?: RequestInit) => {

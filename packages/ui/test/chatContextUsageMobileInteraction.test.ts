@@ -35,7 +35,7 @@ function renderContextUsage() {
         formatMessage: ({ id }: { id: string }) => id,
       } as never,
       locale: "en-US",
-      selectedProvider: "glm",
+      selectedProvider: "agent",
       taskUsage: {
         used: 17_000,
         size: 1_000_000,

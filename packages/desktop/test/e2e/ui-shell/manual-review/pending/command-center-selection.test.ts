@@ -66,7 +66,7 @@ describe("Command Center 重名任务选中", () => {
             createdAt: timestamp,
             updatedAt: timestamp,
             mode: "build",
-            provider: "glm",
+            provider: "agent",
             status: "completed",
           }),
         );

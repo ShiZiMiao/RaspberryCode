@@ -732,7 +732,7 @@ describe("desktopResourceTelemetry CLI 角色与 Windows 门禁保留行为", ()
 
     registerHostAgentProcess("local-1", {
       pid: 43210,
-      provider: "glm",
+      provider: "agent",
       workspacePath: "C:\\repo\\demo",
       command: "zcode-agent.exe",
       args: ["--stdio"],

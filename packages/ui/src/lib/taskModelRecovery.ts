@@ -59,7 +59,7 @@ export function resolveRecoveredTaskModelValue(
     return null;
   }
 
-  if (taskMeta.provider === "glm") {
+  if (taskMeta.provider === "agent") {
     return resolveGlmRecoveredTaskModelValue(normalizedTaskModel);
   }
 
@@ -221,7 +221,7 @@ export function resolveTaskRestorePreloadConfigOptions({
   }
 
   const mode = taskMeta.mode?.trim();
-  if (taskMeta.provider === "glm" && mode) {
+  if (taskMeta.provider === "agent" && mode) {
     let hasModeOption = false;
     cachedOptions = cachedOptions.map((option) => {
       if (option.category !== "mode" || option.type !== "select") {
@@ -238,7 +238,7 @@ export function resolveTaskRestorePreloadConfigOptions({
   }
 
   const thoughtLevel = taskMeta.thoughtLevel?.trim();
-  if (taskMeta.provider === "glm" && thoughtLevel) {
+  if (taskMeta.provider === "agent" && thoughtLevel) {
     let hasThoughtOption = false;
     cachedOptions = cachedOptions.map((option) => {
       if (option.category !== "thought_level" || option.type !== "select") {
@@ -268,7 +268,7 @@ export function mergeGlmRecoveredTaskModelConfigOptions({
   taskMeta: Pick<ZCodeTaskMeta, "provider" | "model">;
   configOptions: readonly ZCodeConfigOption[];
 }): ZCodeConfigOption[] | null {
-  if (taskMeta.provider !== "glm") {
+  if (taskMeta.provider !== "agent") {
     return null;
   }
 

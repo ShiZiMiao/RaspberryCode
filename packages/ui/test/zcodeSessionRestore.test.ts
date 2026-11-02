@@ -17,7 +17,7 @@ const workspace = {
   workspaceKey: "ssh://dev/workspace/app",
 };
 
-const model = { providerId: "glm", modelId: "glm-4.6" };
+const model = { providerId: "agent", modelId: "glm-4.6" };
 
 function createSnapshot(params: {
   title?: string;
@@ -85,7 +85,7 @@ function createLegacyTaskSnapshot(): ZCodeTaskSnapshot {
       createdAt: 1,
       updatedAt: 2,
       mode: "build",
-      provider: "glm",
+      provider: "agent",
       status: "completed",
     },
     messages: [

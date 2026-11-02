@@ -754,7 +754,7 @@ describe("LocalUploadAssetInstaller", () => {
     ).mockResolvedValue(cdnReleaseDir);
 
     await expect(
-      installer.tryResolveLocalPath(["glm"], sourceRelativePath, [
+      installer.tryResolveLocalPath(["agent"], sourceRelativePath, [
         `${sourceRelativePath}/skill-creator-plugin/.zcode-plugin/plugin.json`,
       ]),
     ).resolves.toBe(join(cdnReleaseDir, sourceRelativePath));
@@ -786,7 +786,7 @@ describe("LocalUploadAssetInstaller", () => {
 
     const startedAt = Date.now();
     await expect(
-      installer.tryResolveLocalPath(["glm"], "glm/linux-x64/missing-zcode.cjs"),
+      installer.tryResolveLocalPath(["agent"], "glm/linux-x64/missing-zcode.cjs"),
     ).resolves.toBeNull();
     expect(Date.now() - startedAt).toBeLessThan(1_000);
     expect(fetchMock).toHaveBeenCalled();
@@ -1153,7 +1153,7 @@ describe("RemoteDownloadAssetInstaller", () => {
       ...validManifest,
       components: [
         {
-          id: "glm",
+          id: "agent",
           version: hashedVersion,
           sha256: "b".repeat(64),
           artifactPath: "components/linux-x64/glm/v0.13.3+bbbbbbbbbbbb.tar.gz",
@@ -1184,7 +1184,7 @@ describe("RemoteDownloadAssetInstaller", () => {
     );
 
     await installer.installFile({
-      componentId: "glm",
+      componentId: "agent",
       sourceRelativePath: "glm/linux-x64/zcode.cjs",
       remotePath: "~/.zcode/server/agents/glm/zcode.cjs",
     });

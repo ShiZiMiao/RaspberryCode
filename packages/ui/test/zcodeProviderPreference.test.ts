@@ -33,9 +33,9 @@ describe("agent provider preference", () => {
 
     useZCodeSessionStore.getState().startDraft("/tmp/workspace-draft", "gemini");
 
-    expect(storage.getItem(LAST_SELECTED_AGENT_PROVIDER_STORAGE_KEY)).toBe("glm");
+    expect(storage.getItem(LAST_SELECTED_AGENT_PROVIDER_STORAGE_KEY)).toBe("agent");
     expect(
       useZCodeSessionStore.getState().getWorkspaceState("/tmp/workspace-draft").selectedProvider,
-    ).toBe("glm");
+    ).toBe("agent");
   });
 });

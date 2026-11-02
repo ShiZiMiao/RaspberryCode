@@ -77,7 +77,7 @@ describe("hostResponseMessageSchema", () => {
     const spawned = hostResponseMessageSchema.safeParse({
       type: HostResponseTypes.AgentProcessSpawned,
       pid: 12345,
-      provider: "glm",
+      provider: "agent",
       workspacePath: "/repo/demo",
       command: "/tmp/zcode-agent",
       args: ["--stdio"],
@@ -89,7 +89,7 @@ describe("hostResponseMessageSchema", () => {
     const ready = hostResponseMessageSchema.safeParse({
       type: HostResponseTypes.AgentProcessReady,
       pid: 12345,
-      provider: "glm",
+      provider: "agent",
       workspacePath: "/repo/demo",
       readyAt: Date.now(),
       startupDurationMs: 120,
@@ -100,7 +100,7 @@ describe("hostResponseMessageSchema", () => {
     const exited = hostResponseMessageSchema.safeParse({
       type: HostResponseTypes.AgentProcessExited,
       pid: 12345,
-      provider: "glm",
+      provider: "agent",
       workspacePath: "/repo/demo",
       exitCode: 1,
       signal: null,
@@ -117,7 +117,7 @@ describe("hostResponseMessageSchema", () => {
     const spawnError = hostResponseMessageSchema.safeParse({
       type: HostResponseTypes.AgentProcessError,
       pid: null,
-      provider: "glm",
+      provider: "agent",
       workspacePath: "/repo/demo",
       command: "/tmp/missing-zcode-agent",
       args: ["app-server", "--stdio"],
@@ -140,7 +140,7 @@ describe("hostResponseMessageSchema", () => {
     const spawned = hostResponseMessageSchema.safeParse({
       type: HostResponseTypes.AgentProcessSpawned,
       pid: 12345,
-      provider: "glm",
+      provider: "agent",
       workspacePath: "/repo/demo",
       command: "/tmp/zcode-agent",
       args: ["--stdio"],
@@ -149,7 +149,7 @@ describe("hostResponseMessageSchema", () => {
     const exited = hostResponseMessageSchema.safeParse({
       type: HostResponseTypes.AgentProcessExited,
       pid: 12345,
-      provider: "glm",
+      provider: "agent",
       workspacePath: "/repo/demo",
       exitCode: 1,
       signal: null,
@@ -678,7 +678,7 @@ describe("hostResponseMessageSchema", () => {
     expect(patch.providerFamilyDomainUpdatedAt).toBeUndefined();
   });
 
-  it("normalizes legacy enabled agent CLI providers to RaspberryCode Agent", () => {
+  it("normalizes legacy enabled agent CLI providers to the agent provider", () => {
     const parsed = appSettingsSchema.parse({
       enabledBuiltinAgentCliProviders: ["claude", "codex", "gemini", "opencode"],
     });
@@ -686,8 +686,8 @@ describe("hostResponseMessageSchema", () => {
       enabledBuiltinAgentCliProviders: ["claude", "codex"],
     });
 
-    expect(parsed.enabledBuiltinAgentCliProviders).toEqual(["glm"]);
-    expect(patch.enabledBuiltinAgentCliProviders).toEqual(["glm"]);
+    expect(parsed.enabledBuiltinAgentCliProviders).toEqual(["agent"]);
+    expect(patch.enabledBuiltinAgentCliProviders).toEqual(["agent"]);
   });
 
   it("preserves SSH remote asset install mode and drops historical resource packages", () => {

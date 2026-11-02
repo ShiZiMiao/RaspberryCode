@@ -64,7 +64,7 @@ describe("BOT-E2E-SC-01 Feishu streaming card lifecycle", () => {
           taskId: "task-e2e-bot-streaming-card",
           title: "E2E Bot Streaming Card",
           workspacePath: E2E_BOT_WORKSPACE,
-          provider: "glm",
+          provider: "agent",
         };
       },
       sendPrompt: async (params: unknown) => {
@@ -92,7 +92,7 @@ describe("BOT-E2E-SC-01 Feishu streaming card lifecycle", () => {
         taskId: "task-e2e-bot-streaming-card",
         title: "E2E Bot Streaming Card",
         workspacePath: E2E_BOT_WORKSPACE,
-        provider: "glm",
+        provider: "agent",
       }),
       respondPermission: async () => true,
       respondElicitation: async () => true,
@@ -119,7 +119,7 @@ describe("BOT-E2E-SC-01 Feishu streaming card lifecycle", () => {
           locale: "zh-CN",
           recentProjects: [E2E_BOT_WORKSPACE],
           lastWorkspaceSession: [{ kind: "local", workspacePath: E2E_BOT_WORKSPACE }],
-          enabledBuiltinAgentCliProviders: ["glm"],
+          enabledBuiltinAgentCliProviders: ["agent"],
         }),
         update: async () => undefined,
         updateDataBaseDir: async () => undefined,

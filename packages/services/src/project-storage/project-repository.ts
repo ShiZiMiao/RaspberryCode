@@ -113,9 +113,10 @@ function resolveDirectories(
 
 function readTasks(db: DatabaseSync): ProjectTask[] {
   // 迁移后的旧后端行也有 CLI 时间；沿用列表的 provider 边界，避免展示 Controller 无法操作的会话。
+  // 历史磁盘行 provider 仍是 "glm"（未归一原始值），与 "agent" 同属 Agent，过滤双值兼容。
   return db
     .prepare(
-      "SELECT * FROM tasks WHERE provider=? AND deleted=0 AND coalesce(cli_deleted,0)=0 AND cli_created_at IS NOT NULL ORDER BY cli_updated_at DESC,task_id",
+      "SELECT * FROM tasks WHERE (provider=? OR provider='glm') AND deleted=0 AND coalesce(cli_deleted,0)=0 AND cli_created_at IS NOT NULL ORDER BY cli_updated_at DESC,task_id",
     )
     .all(ZCODE_AGENT_PROVIDER)
     .map((row) => {

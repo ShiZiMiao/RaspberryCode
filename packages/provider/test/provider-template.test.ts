@@ -167,7 +167,7 @@ describe("Provider Template", () => {
           config: { enabled: false },
         },
       ],
-      templateModelRules: [{ templateId: "glm", modelId: "GLM-5.3", config: { enabled: true } }],
+      templateModelRules: [{ templateId: "agent", modelId: "GLM-5.3", config: { enabled: true } }],
       builtinProviderModelRules: [
         { providerId: "provider-a", modelId: "GLM-5.3", config: { enabled: false } },
       ],
@@ -175,7 +175,7 @@ describe("Provider Template", () => {
 
     const resolved = rules.resolve({
       providerId: "provider-a",
-      templateId: "glm",
+      templateId: "agent",
       modelId: "GLM-5.3",
       apiType: "anthropic-messages",
       baseUrl: "https://api.example.com/anthropic",

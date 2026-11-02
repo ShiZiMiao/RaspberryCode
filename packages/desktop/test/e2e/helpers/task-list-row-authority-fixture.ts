@@ -72,7 +72,7 @@ export async function seedTaskIndexRowAuthorityFixture(
         updatedAt,
         mode: "build",
         model: "missing-model",
-        provider: "glm",
+        provider: "agent",
         status,
       };
 

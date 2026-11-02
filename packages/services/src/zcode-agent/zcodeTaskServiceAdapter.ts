@@ -210,7 +210,7 @@ type ZCodeTerminalStreamEvent =
   | Extract<ZCodeStreamEvent, { type: "task_complete" }>
   | Extract<ZCodeStreamEvent, { type: "task_error" }>;
 
-const GLM_PROVIDER: ZCodeProvider = ZCODE_AGENT_PROVIDER;
+const AGENT_PROVIDER: ZCodeProvider = ZCODE_AGENT_PROVIDER;
 const EMPTY_SLASH_COMMANDS: ZCodeSlashCommand[] = [];
 const logger = createServiceLogger("zcode-task-service");
 const ASK_USER_QUESTION_TOOL_NAME = "AskUserQuestion";
@@ -1205,7 +1205,7 @@ export function createZCodeTaskServiceAdapter(
         title: indexedMeta?.title ?? legacyFile.meta.title,
         updatedAt: indexedMeta?.updatedAt ?? legacyFile.meta.updatedAt,
         mode: legacyFile.meta.mode ?? indexedMeta?.mode ?? "default",
-        provider: legacyFile.meta.provider ?? indexedMeta?.provider ?? GLM_PROVIDER,
+        provider: legacyFile.meta.provider ?? indexedMeta?.provider ?? AGENT_PROVIDER,
         status: legacyFile.meta.status ?? indexedMeta?.status ?? "completed",
         lastError: legacyFile.meta.lastError ?? indexedMeta?.lastError,
       };
@@ -1315,7 +1315,7 @@ export function createZCodeTaskServiceAdapter(
       mode: fromZCodeMode(snapshot.session.mode),
       model: formatTaskMetaModelSelectionFromSnapshot(snapshot),
       thoughtLevel: snapshot.settings.thoughtLevel.current,
-      provider: GLM_PROVIDER,
+      provider: AGENT_PROVIDER,
       status: deriveZCodeTaskStatusFromSessionSnapshot(snapshot),
       lastError: snapshot.projection.lastError
         ? {
@@ -2471,7 +2471,7 @@ export function createZCodeTaskServiceAdapter(
       const tasks = await taskIndexRepo.listTaskMetas({
         workspacePath: params.workspacePath,
         workspaceIdentity: params.workspaceIdentity,
-        provider: GLM_PROVIDER,
+        provider: AGENT_PROVIDER,
         pinned: false,
         archived: false,
       });
@@ -2480,7 +2480,7 @@ export function createZCodeTaskServiceAdapter(
 
     async listPinnedTaskIds(): Promise<string[]> {
       const tasks = await taskIndexRepo.listTaskMetas({
-        provider: GLM_PROVIDER,
+        provider: AGENT_PROVIDER,
         pinned: true,
         archived: false,
       });
@@ -2491,7 +2491,7 @@ export function createZCodeTaskServiceAdapter(
       const tasks = await taskIndexRepo.listTaskMetas({
         workspacePath: params.workspacePath,
         workspaceIdentity: params.workspaceIdentity,
-        provider: GLM_PROVIDER,
+        provider: AGENT_PROVIDER,
         pinned: true,
         archived: false,
       });
@@ -2502,7 +2502,7 @@ export function createZCodeTaskServiceAdapter(
       return taskIndexRepo.listDeletedTaskIds({
         workspacePath: params.workspacePath,
         workspaceIdentity: params.workspaceIdentity,
-        provider: GLM_PROVIDER,
+        provider: AGENT_PROVIDER,
       });
     },
 
@@ -2518,7 +2518,7 @@ export function createZCodeTaskServiceAdapter(
     async listTaskList(params: ZCodeTaskListQuery): Promise<ZCodeTaskListResult> {
       const result = await taskIndexRepo.queryTaskList({
         ...params,
-        provider: GLM_PROVIDER,
+        provider: AGENT_PROVIDER,
       });
       return {
         ...result,
@@ -2530,7 +2530,7 @@ export function createZCodeTaskServiceAdapter(
       const tasks = await taskIndexRepo.listTaskMetas({
         workspacePath: params.workspacePath,
         workspaceIdentity: params.workspaceIdentity,
-        provider: GLM_PROVIDER,
+        provider: AGENT_PROVIDER,
         archived: true,
       });
       return tasks.map(rememberIndexedTaskMeta);
@@ -2890,7 +2890,7 @@ export function createZCodeTaskServiceAdapter(
 
     async getWorkspaceProviderConfigFile(params) {
       return {
-        provider: GLM_PROVIDER,
+        provider: AGENT_PROVIDER,
         path: params.workspacePath,
         exists: false,
       };
@@ -2899,7 +2899,7 @@ export function createZCodeTaskServiceAdapter(
     async getTaskNativeSessionLogFile() {
       const path = resolveZCodeAgentCurrentLogFilePath();
       // 返回 RaspberryCode Agent 的结构化日志 JSONL；日志行中的 sessionId 用于按当前任务排查。
-      return { provider: GLM_PROVIDER, path, exists: existsSync(path) };
+      return { provider: AGENT_PROVIDER, path, exists: existsSync(path) };
     },
 
     async getModelTrajectory(params) {
@@ -3906,7 +3906,7 @@ function mapStateUpdated(
       availableModes: getZCodeAgentAvailableModes(),
     },
     {
-      type: "glm_agent_model_state_update",
+      type: "agent_model_state_update",
       taskId: params.taskId,
       traceId,
       version: 1,

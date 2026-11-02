@@ -31,7 +31,7 @@ export async function seedSessionPaneRetentionFixture(options: {
         assistantOutputTokens: 100,
         modelId: "probe-model",
         runtimeProviderId: "probe-local",
-        taskProviderId: "glm",
+        taskProviderId: "agent",
       },
     });
   }

@@ -34,8 +34,13 @@ function appendZCodeAgentIndexedProviderFilter(
   args: Array<string | number>,
   provider: ZCodeProvider,
 ): void {
-  // Bugfix: RaspberryCode Agent 列表入口只展示当前 glm runtime 产生的 task。
-  // 旧 Claude Code 导入也不再例外，否则非 glm 历史数据仍会混入项目树与任务区。
+  // Bugfix: RaspberryCode Agent 列表入口只展示 agent runtime 产生的 task。
+  // 旧 Claude Code 导入也不再例外，否则非 agent 历史数据仍会混入项目树与任务区。
+  // 历史磁盘行与调用参数都可能仍是 "glm"（未归一原始值），与 "agent" 同属 Agent，对称双值兼容。
+  if (provider === "agent" || provider === "glm") {
+    where.push("(provider = 'agent' OR provider = 'glm')");
+    return;
+  }
   where.push("provider = ?");
   args.push(provider);
 }
@@ -1201,8 +1206,9 @@ export class TaskIndexRepo {
         WHERE (@workspace_key IS NULL OR workspace_key = @workspace_key)
           AND cli_created_at IS NOT NULL
           AND (@include_deleted = 1 OR (deleted = 0 AND coalesce(cli_deleted,0) = 0))
-          -- Bugfix: RaspberryCode Agent 列表只接受当前 glm provider；Claude Code 导入也属于非 glm 历史数据。
-          AND (@provider IS NULL OR provider = @provider)
+          -- Bugfix: RaspberryCode Agent 列表只接受 agent provider；Claude Code 导入也属于非 agent 历史数据。
+          -- 历史磁盘行的 provider 仍是 "glm"（未归一原始值），与 "agent" 同属 RaspberryCode Agent，过滤需双值兼容。
+          AND (@provider IS NULL OR provider = @provider OR (provider = 'glm' AND @provider = 'agent') OR (provider = 'agent' AND @provider = 'glm'))
           AND (@pinned IS NULL OR pinned = @pinned)
           AND (@archived IS NULL OR archived = @archived)
         ORDER BY cli_updated_at DESC, cli_created_at DESC, task_id DESC`,
@@ -1239,7 +1245,7 @@ export class TaskIndexRepo {
         FROM tasks
         WHERE workspace_key = @workspace_key
           AND deleted = 1
-          AND (@provider IS NULL OR provider = @provider)
+          AND (@provider IS NULL OR provider = @provider OR (provider = 'glm' AND @provider = 'agent') OR (provider = 'agent' AND @provider = 'glm'))
         ORDER BY task_id`,
       )
       .all({

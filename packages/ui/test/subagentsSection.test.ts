@@ -1053,7 +1053,7 @@ describe("SubagentsSection", () => {
       expect(mockSubagentsService.list).toHaveBeenCalledWith({
         workspacePath: "",
         workspaceIdentity: undefined,
-        provider: "glm",
+        provider: "agent",
         mode: "settingsUserOnly",
       }),
     );

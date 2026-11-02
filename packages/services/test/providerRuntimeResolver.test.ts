@@ -49,7 +49,7 @@ describe("providerRuntimeResolver glm workdir discovery", () => {
 
     process.chdir(appRepoDir);
 
-    expect(realpathSync(findBinary("glm")!)).toBe(
+    expect(realpathSync(findBinary("agent")!)).toBe(
       realpathSync(join(glmRepoDir, "packages", "cli", "src", "main.ts")),
     );
   });
@@ -70,7 +70,7 @@ describe("providerRuntimeResolver glm workdir discovery", () => {
 
     process.chdir(desktopDir);
 
-    expect(realpathSync(findBinary("glm")!)).toBe(
+    expect(realpathSync(findBinary("agent")!)).toBe(
       realpathSync(join(glmRepoDir, "packages", "cli", "src", "main.ts")),
     );
   });
@@ -89,7 +89,7 @@ describe("providerRuntimeResolver glm workdir discovery", () => {
 
     process.chdir(appRepoDir);
 
-    expect(realpathSync(findBinary("glm")!)).toBe(realpathSync(join(glmRepoDir, "src", "cli.ts")));
+    expect(realpathSync(findBinary("agent")!)).toBe(realpathSync(join(glmRepoDir, "src", "cli.ts")));
   });
 
   it("无源码仓库时会回退到准备好的 zcode-agent 二进制", () => {
@@ -105,16 +105,16 @@ describe("providerRuntimeResolver glm workdir discovery", () => {
 
     const appRepoDir = join(sandboxRoot, "z-code-2");
     // Bugfix: GLM 生产态二进制名会按平台解析，Windows 下实际查找的是 zcode-agent.exe。
-    // 之前测试固定写成无后缀文件，导致 findBinary("glm") 返回 null，
+    // 之前测试固定写成无后缀文件，导致 findBinary("agent") 返回 null，
     // 最终被 realpathSync(null) 表现成对 ...\\null 的 lstat，掩盖了真实原因。
     const binaryName = process.platform === "win32" ? "zcode-agent.exe" : "zcode-agent";
-    const binaryPath = join(appRepoDir, "bundled-resources", "glm", binaryName);
-    mkdirSync(join(appRepoDir, "bundled-resources", "glm"), { recursive: true });
+    const binaryPath = join(appRepoDir, "bundled-resources", "agent", binaryName);
+    mkdirSync(join(appRepoDir, "bundled-resources", "agent"), { recursive: true });
     writeFileSync(binaryPath, "binary\n");
 
     process.chdir(appRepoDir);
 
-    expect(realpathSync(findBinary("glm")!)).toBe(realpathSync(binaryPath));
+    expect(realpathSync(findBinary("agent")!)).toBe(realpathSync(binaryPath));
   });
 
   it("ZCODE_AGENT_WORKDIR 可显式指定 zcode-cli 源码入口", () => {
@@ -126,7 +126,7 @@ describe("providerRuntimeResolver glm workdir discovery", () => {
     writeFileSync(join(workdir, "packages", "cli", "src", "main.ts"), "console.log('new');\n");
     process.env.ZCODE_AGENT_WORKDIR = workdir;
 
-    expect(realpathSync(findBinary("glm")!)).toBe(
+    expect(realpathSync(findBinary("agent")!)).toBe(
       realpathSync(join(workdir, "packages", "cli", "src", "main.ts")),
     );
   });
@@ -154,7 +154,7 @@ describe("providerRuntimeResolver workspace config dir identity", () => {
     const workspacePath = "/home/dev";
     const workspaceIdentity = "remote:ssh:localhost:2223:dev:/home/dev";
 
-    expect(resolveProviderConfigDir("glm", workspacePath, workspaceIdentity)).toBe(
+    expect(resolveProviderConfigDir("agent", workspacePath, workspaceIdentity)).toBe(
       join(home, ".raspberrycode", "cli"),
     );
   });
@@ -187,7 +187,7 @@ describe("providerRuntimeResolver clean env", () => {
     createdDirs.push(dataBaseDir);
     setDataBaseDir(dataBaseDir);
 
-    const env = buildCleanEnv("glm", join(dataBaseDir, ".zcode", "cli"));
+    const env = buildCleanEnv("agent", join(dataBaseDir, ".zcode", "cli"));
 
     expect(env.HOME).toBe(dataBaseDir);
     if (process.platform === "win32") {
@@ -198,7 +198,7 @@ describe("providerRuntimeResolver clean env", () => {
   it("clean env 会剔除宿主 GOOGLE_API_KEY 并保留调用方额外参数", () => {
     process.env.GOOGLE_API_KEY = "host-google-api-key";
 
-    const env = buildCleanEnv("glm", "/tmp/glm-home", {
+    const env = buildCleanEnv("agent", "/tmp/glm-home", {
       EXTRA_FLAG: "1",
     });
 
@@ -207,7 +207,7 @@ describe("providerRuntimeResolver clean env", () => {
   });
 
   it("agent 子进程会强制 Python 使用 UTF-8 输出，避免 Windows GBK 字节被模型读成乱码", () => {
-    const env = buildCleanEnv("glm", "/tmp/glm-home");
+    const env = buildCleanEnv("agent", "/tmp/glm-home");
 
     expect(env.PYTHONIOENCODING).toBe("utf-8");
     expect(env.PYTHONUTF8).toBe("1");

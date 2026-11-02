@@ -58,7 +58,7 @@ const workspace = {
 };
 
 const model = {
-  providerId: "glm",
+  providerId: "agent",
   modelId: "glm-4.6",
 };
 
@@ -535,7 +535,7 @@ describe("RaspberryCode Protocol", () => {
       cronExpr: "0 9 * * *",
       prompt: "summarize",
       modelSelection: {
-        providerId: "glm",
+        providerId: "agent",
         modelId: "glm-5.2",
         options: { reasoningLevel: "high" },
       },
@@ -552,7 +552,7 @@ describe("RaspberryCode Protocol", () => {
     ).toMatchObject({ relativeDelayMinutes: 3, recurring: false });
     expect(create).toMatchObject({
       modelSelection: {
-        providerId: "glm",
+        providerId: "agent",
         modelId: "glm-5.2",
         options: { reasoningLevel: "high" },
       },
@@ -1330,7 +1330,7 @@ describe("RaspberryCode Protocol", () => {
       ],
     });
 
-    expect(snapshot.settings.model.current.providerId).toBe("glm");
+    expect(snapshot.settings.model.current.providerId).toBe("agent");
     expect(snapshot.session.titleSource).toBe("generated");
     expect(snapshot.projection.lastError).toEqual({
       type: "MODEL_ERROR",

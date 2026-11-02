@@ -149,7 +149,7 @@ describe("createBackgroundSessionEventCoalescer", () => {
         session: { sessionId: "sess-1", title: "t", status: "running" },
         workspace: { rootPath: "/repo" },
         settings: {
-          model: { current: { providerId: "glm", modelId: "m" }, available: [] },
+          model: { current: { providerId: "agent", modelId: "m" }, available: [] },
           mode: { current: "build", available: [] },
           thoughtLevel: { enabled: false, available: [] },
         },

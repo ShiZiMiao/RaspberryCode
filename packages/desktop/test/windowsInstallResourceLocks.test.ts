@@ -40,7 +40,7 @@ describe("windows install resource locks", () => {
     );
 
     expect(resolveWindowsPackagedResourceLockMarkers(resourcesPath)).toEqual([
-      join(resourcesPath, "glm"),
+      join(resourcesPath, "agent"),
       join(resourcesPath, "tools"),
     ]);
   });
@@ -89,7 +89,7 @@ describe("windows install resource locks", () => {
         exists: true,
         entries: ["rg"],
       });
-      expect(snapshot.find((entry) => entry.dir === "glm")).toMatchObject({
+      expect(snapshot.find((entry) => entry.dir === "agent")).toMatchObject({
         exists: false,
         entries: [],
       });
@@ -101,12 +101,12 @@ describe("windows install resource locks", () => {
   it("probes packaged resource dirs with writable and missing states", () => {
     const root = mkdtempSync(join(tmpdir(), "zcode-resource-probe-"));
     try {
-      const glmDir = join(root, "glm");
+      const glmDir = join(root, "agent");
       mkdirSync(glmDir, { recursive: true });
 
       const probes = probeWindowsPackagedResourceWritable(root);
 
-      expect(probes.find((entry) => entry.dir === "glm")).toMatchObject({
+      expect(probes.find((entry) => entry.dir === "agent")).toMatchObject({
         path: glmDir,
         exists: true,
         writable: true,

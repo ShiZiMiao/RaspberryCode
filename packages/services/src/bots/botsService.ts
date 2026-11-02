@@ -2297,7 +2297,7 @@ export function createBotsService(
     }
     const isEnglish = locale === "en-US";
     const labels: Partial<Record<ZCodeProvider, Record<string, string>>> = {
-      glm: {
+  agent: {
         default: isEnglish ? "Default" : "默认",
         yolo: "Yolo",
         plan: isEnglish ? "Plan" : "计划",

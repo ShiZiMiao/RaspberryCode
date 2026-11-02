@@ -50,12 +50,12 @@ describe("workspace catalog context stores", () => {
     const service = createSubagentsService(list);
 
     await Promise.all([
-      useSubagentsContextStore.getState().initialize(workspacePath, "glm", service, identityA),
-      useSubagentsContextStore.getState().initialize(workspacePath, "glm", service, identityB),
+      useSubagentsContextStore.getState().initialize(workspacePath, "agent", service, identityA),
+      useSubagentsContextStore.getState().initialize(workspacePath, "agent", service, identityB),
     ]);
 
-    const keyA = getSubagentsContextKey(workspacePath, "glm", identityA, service);
-    const keyB = getSubagentsContextKey(workspacePath, "glm", identityB, service);
+    const keyA = getSubagentsContextKey(workspacePath, "agent", identityA, service);
+    const keyB = getSubagentsContextKey(workspacePath, "agent", identityB, service);
     expect(useSubagentsContextStore.getState().contexts[keyA]?.agents[0]?.name).toBe(
       "agent-shared-path-host-a",
     );

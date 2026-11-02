@@ -74,7 +74,7 @@ function resolveTestPlatformBinaryName(binaryName: string, platform: string): st
 }
 
 const LEGACY_REMOTE_TEST_AGENT_RUNTIME: Record<
-  "claude" | "opencode" | "gemini" | "codex" | "glm",
+  "claude" | "opencode" | "gemini" | "codex" | "agent",
   LegacyRemoteTestAgentRuntime
 > = {
   claude: {
@@ -109,7 +109,7 @@ const LEGACY_REMOTE_TEST_AGENT_RUNTIME: Record<
   },
   glm: {
     binaryKind: "native-binary",
-    bundledResourceDir: "glm",
+    bundledResourceDir: "agent",
     version: ZCODE_AGENT_RUNTIME.version,
     resolveEntrySegments: (platform) => [resolveTestPlatformBinaryName("zcode-agent", platform)],
   },
@@ -463,7 +463,7 @@ async function stageRemoteRuntimeRelease(
     await writeFile(join(binaryDir, binaryName), `${provider} binary`, "utf8");
     // RaspberryCode Agent（glm）远端不再发原生二进制，而是发编译产物 zcode.cjs，
     // 由远端已部署的 node 通过 wrapper 执行，故 source release 需提供该 bundle。
-    if (provider === "glm") {
+    if (provider === "agent") {
       await writeFile(join(binaryDir, REMOTE_AGENT_BUNDLE_FILE_NAME), `${provider} bundle`, "utf8");
       for (const relativePath of OFFICIAL_PLUGIN_REQUIRED_RELATIVE_PATHS) {
         await mkdir(dirname(join(binaryDir, "packages", relativePath)), {
@@ -516,7 +516,7 @@ function createFullyDeployedRemoteFiles(platformKey: RemotePlatformKey): Record<
           `${remoteProviderDir}/node_modules/@anthropic-ai/claude-agent-sdk-${platformKey}/claude`
         ] = "claude native binary";
       }
-    } else if (provider === "glm") {
+    } else if (provider === "agent") {
       // RaspberryCode Agent 远端部署后：wrapper（zcode-agent）+ 编译产物 bundle（zcode.cjs）。
       const entrySegments = runtime.resolveEntrySegments(platform);
       const wrapperName = entrySegments[entrySegments.length - 1];
@@ -566,12 +566,12 @@ function addMatchingGlmArtifactIdentity(
   platformKey: RemotePlatformKey,
   version = LEGACY_REMOTE_TEST_AGENT_RUNTIME.glm.version,
 ): void {
-  const glm = manifest.components.find((component) => component.id === "glm");
+  const glm = manifest.components.find((component) => component.id === "agent");
   if (!glm) {
     throw new Error("missing glm component in staged manifest");
   }
   remoteFiles["~/.zcode/server/.asset-components/glm.json"] = JSON.stringify({
-    id: "glm",
+    id: "agent",
     version,
     sha256: glm.sha256,
     platformArch: platformKey,
@@ -704,7 +704,7 @@ async function stageRemoteAssetArchive(
       archivePath: `opencode/${platformKey}`,
     },
     {
-      sourcePath: join(sourceReleaseDir, "glm", platformKey),
+      sourcePath: join(sourceReleaseDir, "agent", platformKey),
       archivePath: `glm/${platformKey}`,
     },
     {
@@ -1303,7 +1303,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
         force: false,
         mockCdnDir,
         resourcePackages: {
-          selectedPackageIds: ["server-bundle", "node-runtime", "glm"],
+          selectedPackageIds: ["server-bundle", "node-runtime", "agent"],
         },
       },
     );
@@ -1397,7 +1397,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     expect(installedFiles).toEqual(["glm:~/.zcode/server/agents/glm/zcode.cjs"]);
     expect(installedDirectories).toEqual([
       {
-        componentId: "glm",
+        componentId: "agent",
         remoteDir: "~/.zcode/server/agents/glm/packages",
         sourceRelativePath: "glm/linux-arm64/packages",
       },
@@ -1446,8 +1446,8 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     );
 
     expect(installRequests).toEqual([
-      { componentId: "glm", forceRefresh: true, kind: "file" },
-      { componentId: "glm", forceRefresh: true, kind: "directory" },
+      { componentId: "agent", forceRefresh: true, kind: "file" },
+      { componentId: "agent", forceRefresh: true, kind: "directory" },
     ]);
   });
 
@@ -1477,7 +1477,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
 
     const wrapperTempPath = `~/.zcode/server/agents/glm/${REMOTE_AGENT_WRAPPER_FILE_NAME}.new`;
     expect(backend.uploads.map((upload) => upload.remotePath)).toContain(wrapperTempPath);
-    expect(backend.remoteFiles.get(wrapperTempPath)).toBe(buildRemoteAgentBundleWrapper("glm"));
+    expect(backend.remoteFiles.get(wrapperTempPath)).toBe(buildRemoteAgentBundleWrapper("agent"));
     expect(backend.remoteFiles.get(wrapperTempPath)).toContain('"$runtime_root/node"');
     expect(installedDirectories).toEqual(["glm:~/.zcode/server/agents/glm/packages"]);
     expect(
@@ -1570,13 +1570,13 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
 
     expect(installRequests).toEqual([
       {
-        componentId: "glm",
+        componentId: "agent",
         forceRefresh: false,
         kind: "file",
         remotePath: "~/.zcode/server/agents/glm/zcode.cjs",
       },
       {
-        componentId: "glm",
+        componentId: "agent",
         forceRefresh: false,
         kind: "directory",
         remoteDir: "~/.zcode/server/agents/glm/packages",
@@ -1594,7 +1594,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
     remoteFiles["~/.zcode/server/agents/glm/.version"] = "旧版本标签\n";
     remoteFiles["~/.zcode/server/.asset-components/glm.json"] = JSON.stringify({
-      id: "glm",
+      id: "agent",
       version: "旧版本标签",
       sha256: TEST_GLM_ARTIFACT_SHA256,
       platformArch: "linux-arm64",
@@ -1633,7 +1633,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   it("GLM 版本相同但制品 hash 变化时应重新部署并修复旧目录权限", async () => {
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
     remoteFiles["~/.zcode/server/.asset-components/glm.json"] = JSON.stringify({
-      id: "glm",
+      id: "agent",
       version: ZCODE_AGENT_RUNTIME.version,
       sha256: "b".repeat(64),
       platformArch: "linux-arm64",
@@ -1691,13 +1691,13 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     );
     expect(installRequests).toEqual([
       {
-        componentId: "glm",
+        componentId: "agent",
         forceRefresh: false,
         kind: "file",
         remotePath: "~/.zcode/server/agents/glm/zcode.cjs",
       },
       {
-        componentId: "glm",
+        componentId: "agent",
         forceRefresh: false,
         kind: "directory",
         remoteDir: "~/.zcode/server/agents/glm/packages",
@@ -1852,7 +1852,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
         {
           platformArch: "linux-arm64",
           installer,
-          selectedResourcePackageIds: ["glm"],
+          selectedResourcePackageIds: ["agent"],
         },
         { log: () => undefined, logWarn: () => undefined },
       ),
@@ -1908,7 +1908,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       {
         platformArch: "linux-arm64",
         installer,
-        selectedResourcePackageIds: ["glm"],
+        selectedResourcePackageIds: ["agent"],
       },
       { log: () => undefined, logWarn: () => undefined },
     );
@@ -2032,7 +2032,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
         {
           platformArch: "linux-arm64",
           installer,
-          selectedResourcePackageIds: ["glm"],
+          selectedResourcePackageIds: ["agent"],
         },
         { log: () => undefined, logWarn: () => undefined },
       );
@@ -2223,7 +2223,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const manifest = await stageRemoteComponentArtifacts(mockCdnDir, cdnRoot);
     await stageRemoteAssetArchive(mockCdnDir, cdnRoot);
     const cdnServer = await createStaticFileServer(cdnRoot);
-    const glmBundle = manifest.components.find((component) => component.id === "glm");
+    const glmBundle = manifest.components.find((component) => component.id === "agent");
     if (!glmBundle) {
       throw new Error("missing glm component in staged manifest");
     }
@@ -2305,7 +2305,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
           String(input).endsWith(`/${ZCODE_VERSION}/manifest-linux-arm64.json`),
         ),
       ).toBe(true);
-      const glmComponent = findManifestComponent(manifest, "glm");
+      const glmComponent = findManifestComponent(manifest, "agent");
       expect(
         remoteAssetFetch.mock.calls.some(([input]) =>
           String(input).endsWith(`/${glmComponent.artifactPath}`),
@@ -2339,7 +2339,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
             remoteCacheDir: join(rootDir, "remote-cache"),
             version: ZCODE_VERSION,
             platformArch: "linux-arm64",
-            componentIds: ["glm"],
+            componentIds: ["agent"],
           },
           { log: () => undefined, logWarn: () => undefined },
         ),
@@ -2413,16 +2413,16 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     );
     await stageRemoteRuntimeRelease(cdnSourceDir);
     await writeFile(
-      join(cdnSourceDir, "releases", ZCODE_VERSION, "glm", "linux-arm64", "zcode.cjs"),
+      join(cdnSourceDir, "releases", ZCODE_VERSION, "agent", "linux-arm64", "zcode.cjs"),
       "new CDN GLM bytes under the same semantic version",
       "utf8",
     );
     const cdnManifest = await stageRemoteComponentArtifacts(cdnSourceDir, cdnRoot);
-    const mockGlm = mockManifest.components.find((component) => component.id === "glm");
-    const cdnGlm = cdnManifest.components.find((component) => component.id === "glm");
+    const mockGlm = mockManifest.components.find((component) => component.id === "agent");
+    const cdnGlm = cdnManifest.components.find((component) => component.id === "agent");
     expect(cdnGlm?.version).toBe(mockGlm?.version);
     expect(cdnGlm?.sha256).not.toBe(mockGlm?.sha256);
-    await rm(join(mockCdnDir, "releases", ZCODE_VERSION, "glm", "linux-arm64", "zcode.cjs"));
+    await rm(join(mockCdnDir, "releases", ZCODE_VERSION, "agent", "linux-arm64", "zcode.cjs"));
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
     addMatchingGlmArtifactIdentity(remoteFiles, mockManifest, "linux-arm64");
     const backend = new FakeRemoteBackend(remoteFiles);
@@ -2460,13 +2460,13 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       mutateManifest: (sourceManifest) => ({
         ...sourceManifest,
         components: sourceManifest.components.map((component) =>
-          component.id === "glm"
+          component.id === "agent"
             ? { ...component, version: `${component.version}+aaaaaaaaaaaa` }
             : component,
         ),
       }),
     });
-    const glmComponent = manifest.components.find((component) => component.id === "glm");
+    const glmComponent = manifest.components.find((component) => component.id === "agent");
     if (!glmComponent) {
       throw new Error("missing glm component in staged manifest");
     }
@@ -2474,7 +2474,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const staleComponentDir = join(
       remoteCacheDir,
       "components",
-      "glm",
+      "agent",
       "linux-arm64",
       glmSemanticVersion,
     );
@@ -2521,7 +2521,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
           join(
             remoteCacheDir,
             "components",
-            "glm",
+            "agent",
             "linux-arm64",
             glmComponent.sha256,
             "packages",
@@ -2552,13 +2552,13 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       mutateManifest: (sourceManifest) => ({
         ...sourceManifest,
         components: sourceManifest.components.map((component) =>
-          component.id === "glm"
+          component.id === "agent"
             ? { ...component, version: `${component.version}+bbbbbbbbbbbb` }
             : component,
         ),
       }),
     });
-    const glmComponent = manifest.components.find((component) => component.id === "glm");
+    const glmComponent = manifest.components.find((component) => component.id === "agent");
     if (!glmComponent) {
       throw new Error("missing glm component in staged manifest");
     }
@@ -2566,7 +2566,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const staleComponentDir = join(
       remoteCacheDir,
       "components",
-      "glm",
+      "agent",
       "linux-arm64",
       glmSemanticVersion,
     );
@@ -2585,7 +2585,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
             remoteCacheDir,
             version: ZCODE_VERSION,
             platformArch: "linux-arm64",
-            componentIds: ["glm"],
+            componentIds: ["agent"],
           },
           { log: () => {}, logWarn: () => {} },
         ),
@@ -2595,7 +2595,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
             remoteCacheDir,
             version: ZCODE_VERSION,
             platformArch: "linux-arm64",
-            componentIds: ["glm"],
+            componentIds: ["agent"],
             requiredReleasePaths: [requiredReleasePath],
           },
           { log: () => {}, logWarn: () => {} },
@@ -2753,7 +2753,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       if (!serverBundle) {
         throw new Error("missing server-bundle component in staged manifest");
       }
-      const glm = manifest.components.find((component) => component.id === "glm");
+      const glm = manifest.components.find((component) => component.id === "agent");
       if (!glm) {
         throw new Error("missing glm component in staged manifest");
       }
@@ -2797,7 +2797,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     if (!serverBundle) {
       throw new Error("missing server-bundle component in staged manifest");
     }
-    const glm = manifest.components.find((component) => component.id === "glm");
+    const glm = manifest.components.find((component) => component.id === "agent");
     if (!glm) {
       throw new Error("missing glm component in staged manifest");
     }
@@ -2915,7 +2915,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const remoteCacheDir = join(rootDir, "remote-cache");
     await stageRemoteRuntimeRelease(mockCdnDir);
     const backupManifest = await stageRemoteComponentArtifacts(mockCdnDir, backupCdnRoot);
-    const glm = backupManifest.components.find((component) => component.id === "glm");
+    const glm = backupManifest.components.find((component) => component.id === "agent");
     if (!glm) {
       throw new Error("missing glm component in staged manifest");
     }
@@ -3129,7 +3129,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
         "node-runtime",
         "node-pty",
         `${retiredProtocolPrefix}-codex`,
-        "glm",
+        "agent",
         "ripgrep",
       ]) {
         expect(
@@ -3156,7 +3156,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const manifest = await stageRemoteComponentArtifacts(mockCdnDir, cdnRoot);
     const cdnServer = await createStaticFileServer(cdnRoot);
     const serverBundle = findManifestComponent(manifest, "server-bundle");
-    const glm = findManifestComponent(manifest, "glm");
+    const glm = findManifestComponent(manifest, "agent");
 
     try {
       const warmCacheBackend = new FakeRemoteBackend(createFullyDeployedRemoteFiles("linux-arm64"));
@@ -3228,7 +3228,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     await stageRemoteRuntimeRelease(mockCdnDir);
     const manifest = await stageRemoteComponentArtifacts(mockCdnDir, cdnRoot);
     const cdnServer = await createStaticFileServer(cdnRoot);
-    const glm = findManifestComponent(manifest, "glm");
+    const glm = findManifestComponent(manifest, "agent");
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
     addMatchingGlmAndServerArtifactIdentities(remoteFiles, manifest, "linux-arm64");
     remoteFiles["~/.zcode/server/.asset-components/node-runtime.json"] =
@@ -3261,7 +3261,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
             backend.remoteFiles.set(
               "~/.zcode/server/.asset-components/glm.json",
               JSON.stringify({
-                id: "glm",
+                id: "agent",
                 platformArch: "linux-arm64",
                 pendingRefreshAppVersion: ZCODE_VERSION,
               }),
@@ -3347,7 +3347,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const manifest = await stageRemoteComponentArtifacts(mockCdnDir, cdnRoot);
     const cdnServer = await createStaticFileServer(cdnRoot);
     const serverBundle = findManifestComponent(manifest, "server-bundle");
-    const glm = findManifestComponent(manifest, "glm");
+    const glm = findManifestComponent(manifest, "agent");
     const serverBundleCacheDir = `~/.zcode/server/asset-cache/components/linux-arm64/server-bundle/${serverBundle.sha256}`;
     const glmCacheDir = `~/.zcode/server/asset-cache/components/linux-arm64/glm/${glm.sha256}`;
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
@@ -3428,7 +3428,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const manifest = await stageRemoteComponentArtifacts(mockCdnDir, cdnRoot);
     const cdnServer = await createStaticFileServer(cdnRoot);
     const serverBundle = findManifestComponent(manifest, "server-bundle");
-    const glm = findManifestComponent(manifest, "glm");
+    const glm = findManifestComponent(manifest, "agent");
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
     addMatchingGlmAndServerArtifactIdentities(remoteFiles, manifest, "linux-arm64");
     remoteFiles[
@@ -3466,7 +3466,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
             backend.remoteFiles.set(
               "~/.zcode/server/.asset-components/glm.json",
               JSON.stringify({
-                id: "glm",
+                id: "agent",
                 platformArch: "linux-arm64",
                 pendingRefreshAppVersion: ZCODE_VERSION,
               }),
@@ -3778,7 +3778,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       expect(deployed).toBe(false);
       expect(backend.uploads).toEqual([]);
       expect(cdnServer.getRequestCount(`/${ZCODE_VERSION}/manifest-linux-arm64.json`)).toBe(1);
-      const glm = manifest.components.find((component) => component.id === "glm");
+      const glm = manifest.components.find((component) => component.id === "agent");
       if (!glm) {
         throw new Error("missing glm component in staged manifest");
       }
@@ -3953,13 +3953,13 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       expect(backend.uploads).toEqual([]);
 
       await writeFile(
-        join(mockCdnDir, "releases", ZCODE_VERSION, "glm", "linux-arm64", "zcode.cjs"),
+        join(mockCdnDir, "releases", ZCODE_VERSION, "agent", "linux-arm64", "zcode.cjs"),
         "glm bundle republished with the same semantic version",
         "utf8",
       );
       const updatedManifest = await stageRemoteComponentArtifacts(mockCdnDir, cdnRoot);
-      const initialGlm = initialManifest.components.find((component) => component.id === "glm");
-      const updatedGlm = updatedManifest.components.find((component) => component.id === "glm");
+      const initialGlm = initialManifest.components.find((component) => component.id === "agent");
+      const updatedGlm = updatedManifest.components.find((component) => component.id === "agent");
       expect(updatedGlm?.version).toBe(initialGlm?.version);
       expect(updatedGlm?.sha256).not.toBe(initialGlm?.sha256);
 
@@ -4144,7 +4144,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const remoteCacheDir = join(rootDir, "remote-cache");
     await stageRemoteRuntimeRelease(mockCdnDir);
     const initialManifest = await stageRemoteComponentArtifacts(mockCdnDir, cdnRoot);
-    const initialGlm = initialManifest.components.find((component) => component.id === "glm");
+    const initialGlm = initialManifest.components.find((component) => component.id === "agent");
     if (!initialGlm) {
       throw new Error("missing glm component in staged manifest");
     }
@@ -4153,17 +4153,17 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const pinnedInitialManifest: RemoteComponentManifest = {
       ...initialManifest,
       components: initialManifest.components.map((component) =>
-        component.id === "glm" ? { ...component, artifactPath: pinnedArtifactPath } : component,
+        component.id === "agent" ? { ...component, artifactPath: pinnedArtifactPath } : component,
       ),
     };
 
     await writeFile(
-      join(mockCdnDir, "releases", ZCODE_VERSION, "glm", "linux-arm64", "zcode.cjs"),
+      join(mockCdnDir, "releases", ZCODE_VERSION, "agent", "linux-arm64", "zcode.cjs"),
       "new GLM bytes under the same semantic version",
       "utf8",
     );
     const updatedManifest = await stageRemoteComponentArtifacts(mockCdnDir, cdnRoot);
-    const updatedGlm = updatedManifest.components.find((component) => component.id === "glm");
+    const updatedGlm = updatedManifest.components.find((component) => component.id === "agent");
     if (!updatedGlm) {
       throw new Error("missing updated glm component in staged manifest");
     }
@@ -4179,7 +4179,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
             remoteCacheDir,
             version: ZCODE_VERSION,
             platformArch: "linux-arm64",
-            componentIds: ["glm"],
+            componentIds: ["agent"],
             manifestRef: {
               manifest: pinnedInitialManifest,
               releaseBaseCandidatesForComponents: [`${cdnServer.baseUrl}/${ZCODE_VERSION}`],
@@ -4193,7 +4193,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
             remoteCacheDir,
             version: ZCODE_VERSION,
             platformArch: "linux-arm64",
-            componentIds: ["glm"],
+            componentIds: ["agent"],
             manifestRef: {
               manifest: updatedManifest,
               releaseBaseCandidatesForComponents: [`${cdnServer.baseUrl}/${ZCODE_VERSION}`],
@@ -4224,7 +4224,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const remoteCacheDir = join(rootDir, "remote-cache");
     await stageRemoteRuntimeRelease(mockCdnDir);
     const manifest = await stageRemoteComponentArtifacts(mockCdnDir, cdnRoot);
-    const glm = findManifestComponent(manifest, "glm");
+    const glm = findManifestComponent(manifest, "agent");
     const requiredPluginPath = OFFICIAL_PLUGIN_REQUIRED_RELATIVE_PATHS[0];
     if (!requiredPluginPath) {
       throw new Error("missing required official plugin test path");
@@ -4242,7 +4242,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       remoteCacheDir,
       version: ZCODE_VERSION,
       platformArch: "linux-arm64",
-      componentIds: ["glm"],
+      componentIds: ["agent"],
       requiredReleasePaths: [
         "glm/linux-arm64/zcode.cjs",
         ...OFFICIAL_PLUGIN_REQUIRED_RELATIVE_PATHS.map(
@@ -4279,11 +4279,11 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       expect(forceReleaseDir).toContain(glm.sha256);
       expect(cdnServer.getRequestCount(artifactRequestPath)).toBe(1);
       await expect(
-        readFile(join(forceReleaseDir, "glm", "linux-arm64", "zcode.cjs"), "utf8"),
+        readFile(join(forceReleaseDir, "agent", "linux-arm64", "zcode.cjs"), "utf8"),
       ).resolves.toBe("glm bundle");
       await expect(
         readFile(
-          join(forceReleaseDir, "glm", "linux-arm64", "packages", requiredPluginPath),
+          join(forceReleaseDir, "agent", "linux-arm64", "packages", requiredPluginPath),
           "utf8",
         ),
       ).resolves.toBe(`glm official plugin ${requiredPluginPath}`);
@@ -4332,7 +4332,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     if (!nodeRuntime) {
       throw new Error("missing node-runtime component in staged manifest");
     }
-    const glm = manifest.components.find((component) => component.id === "glm");
+    const glm = manifest.components.find((component) => component.id === "agent");
     if (!glm) {
       throw new Error("missing glm component in staged manifest");
     }
@@ -4389,13 +4389,13 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const oldGlmComponentDir = join(
       remoteCacheDir,
       "components",
-      "glm",
+      "agent",
       platformKey,
       oldGlmComponentVersion,
     );
     await mkdir(oldGlmComponentDir, { recursive: true });
     await copySourcePathContentToDir(
-      join(sourceReleaseDir, "glm", platformKey),
+      join(sourceReleaseDir, "agent", platformKey),
       oldGlmComponentDir,
     );
     await writeFile(join(oldGlmComponentDir, ".ready"), "old-component-ready\n", "utf8");
@@ -4406,7 +4406,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       mutateManifest: (rawManifest) => ({
         ...rawManifest,
         components: rawManifest.components.map((component) =>
-          component.id === "glm"
+          component.id === "agent"
             ? {
                 ...component,
                 version: semanticGlmComponentVersion,
@@ -4415,7 +4415,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
         ),
       }),
     });
-    const glm = manifest.components.find((component) => component.id === "glm");
+    const glm = manifest.components.find((component) => component.id === "agent");
     if (!glm) {
       throw new Error("missing glm component in staged manifest");
     }
@@ -4429,7 +4429,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
             remoteCacheDir,
             version: ZCODE_VERSION,
             platformArch: platformKey,
-            componentIds: ["glm"],
+            componentIds: ["agent"],
           },
           { log: () => {}, logWarn: () => {} },
         ),
@@ -4440,7 +4440,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       expect(cdnServer.getRequestCount(toComponentArtifactRequestPath(glm.artifactPath))).toBe(1);
       await expect(
         readFile(
-          join(remoteCacheDir, "components", "glm", platformKey, glm.sha256, ".ready"),
+          join(remoteCacheDir, "components", "agent", platformKey, glm.sha256, ".ready"),
           "utf8",
         ),
       ).resolves.toBeTruthy();

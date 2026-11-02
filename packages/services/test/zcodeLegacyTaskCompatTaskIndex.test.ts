@@ -2094,7 +2094,7 @@ describe("RaspberryCode legacy task compat task index", () => {
         payload: expect.objectContaining({
           workspaceId: "/repo",
           config: expect.objectContaining({
-            provider: "glm",
+            provider: "agent",
             model: "deepseek-v4-flash",
           }),
           mcpServers,
@@ -4387,7 +4387,7 @@ describe("RaspberryCode legacy task compat task index", () => {
     ).resolves.toMatchObject({
       taskId: acpSessionId,
       workspacePath,
-      provider: "glm",
+      provider: "agent",
     });
 
     const dbSnapshot = makeSnapshot({

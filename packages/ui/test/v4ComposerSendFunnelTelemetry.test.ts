@@ -49,7 +49,7 @@ const SEED_DETAIL = {
   ask_mode: "build",
   model_name: "seed-model",
   model_provider: "seed-provider",
-  agent: "glm",
+  agent: "agent",
 } as const;
 
 function createSupervisor(clock: { value: number }, options: { installReporter?: boolean } = {}) {

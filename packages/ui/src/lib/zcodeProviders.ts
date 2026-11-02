@@ -7,7 +7,7 @@ import {
 export const ZCODE_AGENT_PROVIDERS: ZCodeProvider[] = [ZCODE_AGENT_PROVIDER];
 
 export const ZCODE_AGENT_PROVIDER_LABELS: Record<ZCodeProvider, string> = {
-  glm: ZCODE_AGENT_PROVIDER_LABEL,
+  agent: ZCODE_AGENT_PROVIDER_LABEL,
 };
 
 export function supportsZCodeSessionFork(provider: ZCodeProvider): boolean {

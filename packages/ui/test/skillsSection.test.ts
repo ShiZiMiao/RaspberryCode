@@ -583,7 +583,7 @@ describe("SkillsSection", () => {
     const markdown = "[$skill-creator](/tmp/workspace/.raspberrycode/skills/skill-creator/SKILL.md)";
     expect(onCreateTaskMock).toHaveBeenCalledTimes(1);
     expect(onCreateTaskMock).toHaveBeenCalledWith({
-      provider: "glm",
+      provider: "agent",
       initialPrompt: `${markdown} `,
       initialPromptMention: {
         id: "skill:glm:skill-creator@official",
@@ -683,8 +683,8 @@ describe("SkillsSection", () => {
       workspaceIdentity: "remote:ssh:dev:/tmp/workspace",
       loadedWorkspacePath: "/tmp/workspace",
       loadedWorkspaceIdentity: "remote:ssh:dev:/tmp/workspace",
-      provider: "glm",
-      loadedProvider: "glm",
+      provider: "agent",
+      loadedProvider: "agent",
       skills: [skill],
       capability: { userScopeAvailable: true },
       loading: false,
@@ -697,7 +697,7 @@ describe("SkillsSection", () => {
       expect(mockSkillsServiceSetEnabled).toHaveBeenCalledWith({
         workspacePath: "/tmp/workspace",
         workspaceIdentity: "remote:ssh:dev:/tmp/workspace",
-        provider: "glm",
+        provider: "agent",
         scope: "user",
         skillId: "skill-1",
         enabled: false,
@@ -744,8 +744,8 @@ describe("SkillsSection", () => {
       workspaceIdentity: null,
       loadedWorkspacePath: "/Users/alice/local-project",
       loadedWorkspaceIdentity: null,
-      provider: "glm",
-      loadedProvider: "glm",
+      provider: "agent",
+      loadedProvider: "agent",
       skills: [localSkill],
       capability: { userScopeAvailable: true },
       loading: false,

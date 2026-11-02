@@ -35,7 +35,7 @@ describe("BotsRepo", () => {
             mode: "draft",
             activeTaskId: null,
             draftOptions: {
-              provider: "glm",
+              provider: "agent",
               model: "custom:old-provider:deepseek-v4-flash",
             },
             updatedAt: 1,

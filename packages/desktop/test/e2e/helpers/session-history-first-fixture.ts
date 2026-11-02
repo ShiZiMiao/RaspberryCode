@@ -31,7 +31,7 @@ export async function seedSessionHistoryFirstFixture(options: {
         assistantOutputTokens: 10,
         modelId: options.modelId,
         runtimeProviderId: options.providerId,
-        taskProviderId: "glm",
+        taskProviderId: "agent",
       },
     });
     // 通用 fixture 用于测试缺失 provider；此处补齐正式会话的 durable 模型选择，验证 ready 后续发。

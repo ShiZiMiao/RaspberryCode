@@ -103,7 +103,7 @@ describe("task model recovery", () => {
   it("GLM 恢复态没有 configOptions 时，会用 task meta 合成最小模型配置", () => {
     const recovered = mergeGlmRecoveredTaskModelConfigOptions({
       taskMeta: {
-        provider: "glm",
+        provider: "agent",
         model: "provider-demo/qwen-plus",
       },
       configOptions: [],
@@ -148,7 +148,7 @@ describe("task model recovery", () => {
 
     const recovered = mergeGlmRecoveredTaskModelConfigOptions({
       taskMeta: {
-        provider: "glm",
+        provider: "agent",
         model: "provider-demo/qwen-plus",
       },
       configOptions: currentConfigOptions,
@@ -186,7 +186,7 @@ describe("task model recovery", () => {
 
     const recovered = mergeGlmRecoveredTaskModelConfigOptions({
       taskMeta: {
-        provider: "glm",
+        provider: "agent",
         model: "provider-demo/qwen-plus",
       },
       configOptions: currentConfigOptions,
@@ -225,7 +225,7 @@ describe("task model recovery", () => {
 
     const recovered = resolveTaskRestorePreloadConfigOptions({
       taskMeta: {
-        provider: "glm",
+        provider: "agent",
         model: "provider-demo/qwen-plus",
       },
       cachedTaskConfigOptions: currentConfigOptions,
@@ -251,7 +251,7 @@ describe("task model recovery", () => {
 
     const recovered = resolveTaskRestorePreloadConfigOptions({
       taskMeta: {
-        provider: "glm",
+        provider: "agent",
         model: undefined,
       },
       cachedTaskConfigOptions: currentConfigOptions,

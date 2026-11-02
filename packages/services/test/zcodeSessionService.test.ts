@@ -412,7 +412,7 @@ describe("createZCodeSessionService", () => {
       },
       settings: {
         model: {
-          current: { providerId: "glm", modelId: "glm-4.6" },
+          current: { providerId: "agent", modelId: "glm-4.6" },
           available: [],
         },
         thoughtLevel: { enabled: true, current: "think", available: [] },
@@ -451,7 +451,7 @@ describe("createZCodeSessionService", () => {
       workspaceIdentity: undefined,
       sessionId,
       mode: "build",
-      model: { providerId: "glm", modelId: "glm-4.6" },
+      model: { providerId: "agent", modelId: "glm-4.6" },
       thoughtLevel: "think",
       persistence: "immediate",
       importedHistory: {
@@ -509,7 +509,7 @@ describe("createZCodeSessionService", () => {
       },
       settings: {
         model: {
-          current: { providerId: "glm", modelId: "glm-4.6" },
+          current: { providerId: "agent", modelId: "glm-4.6" },
           available: [],
         },
         thoughtLevel: { enabled: true, current: "think", available: [] },
@@ -599,7 +599,7 @@ describe("createZCodeSessionService", () => {
       },
       settings: {
         model: {
-          current: { providerId: "glm", modelId: "glm-4.6" },
+          current: { providerId: "agent", modelId: "glm-4.6" },
           available: [],
         },
         thoughtLevel: { enabled: true, current: "think", available: [] },

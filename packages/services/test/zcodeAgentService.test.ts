@@ -41,7 +41,7 @@ function createReadyZCodeAgentService(options?: Parameters<typeof createZCodeAge
           revision: 1,
           providers: [
             {
-              providerId: "glm",
+              providerId: "agent",
               config: {
                 kind: "api" as const,
                 api: {
@@ -554,8 +554,8 @@ function createSnapshot(sessionId) {
     },
     settings: {
       model: {
-        current: { providerId: "glm", modelId: "glm-4.6" },
-        available: [{ ref: { providerId: "glm", modelId: "glm-4.6" }, label: "GLM 4.6", properties: ${protocolModelPropertiesJson} }],
+        current: { providerId: "agent", modelId: "glm-4.6" },
+        available: [{ ref: { providerId: "agent", modelId: "glm-4.6" }, label: "GLM 4.6", properties: ${protocolModelPropertiesJson} }],
       },
       thoughtLevel: { enabled: true, available: [] },
       mode: { current: "build" },
@@ -623,8 +623,8 @@ function createSnapshot(workspace, thoughtLevel) {
     },
     settings: {
       model: {
-        current: { providerId: "glm", modelId: "glm-4.6" },
-        available: [{ ref: { providerId: "glm", modelId: "glm-4.6" }, label: "GLM 4.6", properties: ${protocolModelPropertiesJson} }],
+        current: { providerId: "agent", modelId: "glm-4.6" },
+        available: [{ ref: { providerId: "agent", modelId: "glm-4.6" }, label: "GLM 4.6", properties: ${protocolModelPropertiesJson} }],
       },
       thoughtLevel: {
         enabled: true,
@@ -1216,7 +1216,7 @@ describe("createZCodeAgentService", () => {
     const controller = new AbortController();
     try {
       await expect(service.collectLocalRuntimeChildProcesses(controller.signal)).resolves.toEqual([
-        { pid: 101, workspacePath: "/ready", provider: "glm", children: [] },
+        { pid: 101, workspacePath: "/ready", provider: "agent", children: [] },
       ]);
       expect(request).toHaveBeenCalledWith("process/childProcesses", {}, expect.anything(), {
         lifecycle: "observation",
@@ -1578,7 +1578,7 @@ describe("createZCodeAgentService", () => {
     await vi.waitFor(() => expect(processLifecycleReporter.onReady).toHaveBeenCalledTimes(1));
     expect(processLifecycleReporter.onReady.mock.calls[0]![0]).toMatchObject({
       pid: processLifecycleReporter.onSpawn.mock.calls[0]![0].pid,
-      provider: "glm",
+      provider: "agent",
       workspacePath,
       runtimeGeneration: 1,
       runtimeInstanceId: processLifecycleReporter.onSpawn.mock.calls[0]![0].runtimeInstanceId,
@@ -2526,7 +2526,7 @@ describe("createZCodeAgentService", () => {
     try {
       const snapshot = await service.createSession({
         workspacePath,
-        model: { providerId: "glm", modelId: "glm-4.6" },
+        model: { providerId: "agent", modelId: "glm-4.6" },
         persistence: "deferred",
         thoughtLevel: "max",
         mcpServers: [
@@ -2765,7 +2765,7 @@ describe("createZCodeAgentService", () => {
       // 评审 SG-02：mcp-status 与 plugin lane 共用同一 workspacePath/command，事件必须带 lane 才可归因。
       expect(processLifecycleReporter.onSpawn.mock.calls[0]![0]).toMatchObject({
         pid: expect.any(Number),
-        provider: "glm",
+        provider: "agent",
         lane: "mcp-status",
       });
     } finally {

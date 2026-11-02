@@ -18,11 +18,11 @@ describe("resolveDraftDisplayedConfig", () => {
   it("工具条只投影 Composer 的结构化选择", () => {
     expect(
       resolveDraftDisplayedConfig({
-        modelSelection: { providerId: "glm", modelId: "GLM-5.2" },
+        modelSelection: { providerId: "agent", modelId: "GLM-5.2" },
       }),
     ).toEqual({
-      modelSelection: { providerId: "glm", modelId: "GLM-5.2" },
-      provider: "glm",
+      modelSelection: { providerId: "agent", modelId: "GLM-5.2" },
+      provider: "agent",
       model: "GLM-5.2",
       thought: "",
       thoughtLevels: [],
@@ -34,7 +34,7 @@ describe("resolveDraftDisplayedConfig", () => {
   it("同模型的旧 Session 档位也不能补齐 Composer 留空的档位", () => {
     expect(
       resolveDraftDisplayedConfig({
-        modelSelection: { providerId: "glm", modelId: "GLM-5.2" },
+        modelSelection: { providerId: "agent", modelId: "GLM-5.2" },
         thought: "medium",
       })?.thought,
     ).toBe("");
@@ -43,7 +43,7 @@ describe("resolveDraftDisplayedConfig", () => {
   it("Composer 模型留空时不能恢复 Session 模型", () => {
     expect(
       resolveDraftDisplayedConfig({
-        provider: "glm",
+        provider: "agent",
         model: "GLM-5-Turbo",
         mode: "yolo",
         modelSelection: undefined,
@@ -56,7 +56,7 @@ describe("resolveDraftDisplayedConfig", () => {
       resolveDraftDisplayedConfig({
         thought: "medium",
         modelSelection: {
-          providerId: "glm",
+          providerId: "agent",
           modelId: "GLM-5.2",
           options: { reasoningLevel: "low" },
         },
@@ -70,7 +70,7 @@ describe("resolveDraftModelThoughtOption", () => {
     revision: 1,
     providers: [
       {
-        providerId: "glm",
+        providerId: "agent",
         providerName: "GLM",
         config: {},
         models: [
@@ -110,18 +110,18 @@ describe("resolveDraftModelThoughtOption", () => {
   };
 
   it("returns the selected model's own levels without inventing a reasoning value", () => {
-    expect(resolveDraftModelThoughtOption("glm", "GLM-5.2", modelSelectionView)).toMatchObject({
+    expect(resolveDraftModelThoughtOption("agent", "GLM-5.2", modelSelectionView)).toMatchObject({
       currentValue: "",
       options: [{ value: "low" }, { value: "medium" }, { value: "high" }],
     });
   });
 
   it("does not fall back to another model's thought capabilities", () => {
-    expect(resolveDraftModelThoughtOption("glm", "unknown", modelSelectionView)).toBeNull();
+    expect(resolveDraftModelThoughtOption("agent", "unknown", modelSelectionView)).toBeNull();
   });
 
   it("does not infer reasoning from the GLM model name", () => {
-    expect(resolveDraftModelThoughtOption("glm", "glm-5.2-pro", modelSelectionView)).toMatchObject({
+    expect(resolveDraftModelThoughtOption("agent", "glm-5.2-pro", modelSelectionView)).toMatchObject({
       currentValue: "",
       options: [{ value: "disabled" }],
     });
@@ -132,7 +132,7 @@ describe("resolveDraftModelThoughtOption", () => {
       revision: 2,
       providers: [
         {
-          providerId: "glm",
+          providerId: "agent",
           providerName: "GLM",
           config: {},
           models: [
@@ -153,7 +153,7 @@ describe("resolveDraftModelThoughtOption", () => {
       ],
     };
 
-    expect(resolveDraftModelThoughtOption("glm", "GLM-5.2", updatedSelectionView)).toMatchObject({
+    expect(resolveDraftModelThoughtOption("agent", "GLM-5.2", updatedSelectionView)).toMatchObject({
       currentValue: "",
       options: [{ value: "high" }, { value: "max" }],
     });
@@ -177,24 +177,24 @@ describe("buildDraftCreateConfigPayload", () => {
     expect(
       applyDraftModelSelection(
         {
-          provider: "glm",
+          provider: "agent",
           model: "GLM-5-Turbo",
           thought: "enabled",
           mode: "build",
         },
-        { providerId: "glm", modelId: "GLM-5.2" },
+        { providerId: "agent", modelId: "GLM-5.2" },
       ),
     ).toEqual({
-      provider: "glm",
+      provider: "agent",
       model: "GLM-5.2",
-      modelSelection: { providerId: "glm", modelId: "GLM-5.2" },
+      modelSelection: { providerId: "agent", modelId: "GLM-5.2" },
       mode: "build",
     });
   });
 
   it("有草稿选择 → 携带 config 键；无选择 → 空对象（createSession 不带 config）", () => {
-    expect(buildDraftCreateConfigPayload({ provider: "glm", model: "glm-4.7" })).toEqual({
-      config: { provider: "glm", model: "glm-4.7" },
+    expect(buildDraftCreateConfigPayload({ provider: "agent", model: "glm-4.7" })).toEqual({
+      config: { provider: "agent", model: "glm-4.7" },
     });
     expect(buildDraftCreateConfigPayload({})).toEqual({});
   });
@@ -203,9 +203,9 @@ describe("buildDraftCreateConfigPayload", () => {
     expect(buildDraftCreateConfigPayload({}, "guide")).toEqual({
       config: { followupMode: "guide" },
     });
-    expect(buildDraftCreateConfigPayload({ provider: "glm", model: "glm-4.7" }, "queue")).toEqual({
+    expect(buildDraftCreateConfigPayload({ provider: "agent", model: "glm-4.7" }, "queue")).toEqual({
       config: {
-        provider: "glm",
+        provider: "agent",
         model: "glm-4.7",
         followupMode: "queue",
       },

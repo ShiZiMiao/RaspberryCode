@@ -81,7 +81,7 @@ export function createLegacyTaskService(): IZCodeTaskService {
       title: "Task 1",
       workspacePath: "/tmp/workspace",
       workspaceIdentity: "remote:server:test-owner:/tmp/workspace",
-      provider: "glm",
+      provider: "agent",
     })),
     sendPrompt: vi.fn(async () => undefined),
     setMode: vi.fn(async () => undefined),
@@ -89,7 +89,7 @@ export function createLegacyTaskService(): IZCodeTaskService {
     setModel: vi.fn(async () => []),
     getTaskConfigOptions: vi.fn(async () => []),
     getTaskModelSelection: vi.fn(async () => ({
-      providerId: "glm",
+      providerId: "agent",
       modelId: "glm-4.6",
       options: { reasoningLevel: "high" },
     })),
@@ -111,7 +111,7 @@ export function createLegacyTaskService(): IZCodeTaskService {
       title: "Task 1",
       workspacePath: "/tmp/workspace",
       workspaceIdentity: "remote:server:test-owner:/tmp/workspace",
-      provider: "glm",
+      provider: "agent",
     })),
     switchAgent: vi.fn(async () => ({
       meta: {
@@ -119,9 +119,9 @@ export function createLegacyTaskService(): IZCodeTaskService {
         title: "Task 1",
         workspacePath: "/tmp/workspace",
         workspaceIdentity: "remote:server:test-owner:/tmp/workspace",
-        provider: "glm",
+        provider: "agent",
       },
-      provider: "glm",
+      provider: "agent",
       sessionId: "session-1",
       reusedBinding: false,
     })),
@@ -162,14 +162,14 @@ export function createSettingService(settings: {
       })
   >;
   locale?: Locale;
-  enabledBuiltinAgentCliProviders?: Array<"claude" | "opencode" | "gemini" | "codex" | "glm">;
+  enabledBuiltinAgentCliProviders?: Array<"claude" | "opencode" | "gemini" | "codex" | "agent">;
 }): ISettingService {
   return {
     get: vi.fn(async () => ({
       recentProjects: settings.recentProjects ?? [],
       lastWorkspaceSession: settings.lastWorkspaceSession ?? [],
       locale: settings.locale ?? "en-US",
-      enabledBuiltinAgentCliProviders: settings.enabledBuiltinAgentCliProviders ?? ["glm"],
+      enabledBuiltinAgentCliProviders: settings.enabledBuiltinAgentCliProviders ?? ["agent"],
     })),
     update: vi.fn(async () => undefined),
     updateDataBaseDir: vi.fn(async () => undefined),
@@ -214,7 +214,7 @@ export interface TestModelSelectionProvider {
 function parseModelSelectionForTest(value: string): ModelSelection {
   const separatorIndex = value.indexOf("/");
   if (separatorIndex <= 0) {
-    return { providerId: "glm", modelId: value || "default" };
+    return { providerId: "agent", modelId: value || "default" };
   }
   const providerId = value.slice(0, separatorIndex);
   const rawModelId = value.slice(separatorIndex + 1);
@@ -362,7 +362,7 @@ export function createBotsService(
     providedZCodeTaskService ?? legacyTaskService ?? createLegacyTaskService();
   const modelSelectionService =
     deps.modelSelectionService ??
-    createModelSelectionService([{ id: "glm", name: "GLM", models: ["default"] }]);
+    createModelSelectionService([{ id: "agent", name: "GLM", models: ["default"] }]);
   return createBotsServiceImpl({
     ...createBotProjectServices(undefined, (target) => zcodeTaskService.listTasks(target)),
     settingService: createSettingService({

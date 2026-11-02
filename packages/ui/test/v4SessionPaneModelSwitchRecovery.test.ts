@@ -2276,7 +2276,7 @@ describe("SessionPane model switch recovery", () => {
     expect(mocks.zcodeTaskService.restartWorkspaceProcess).toHaveBeenCalledWith({
       workspacePath: "/workspace",
       workspaceIdentity: undefined,
-      provider: "glm",
+      provider: "agent",
       bumpRuntimeEpoch: true,
     });
     expect(mocks.zcodeTaskService.restartWorkspaceProcess.mock.invocationCallOrder[0]).toBeLessThan(

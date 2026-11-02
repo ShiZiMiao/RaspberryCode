@@ -260,7 +260,7 @@ describe("remoteWorkspaceHistory helpers", () => {
         username: "root",
         assetInstallMode: "remote-download",
         resourcePackages: {
-          selectedPackageIds: ["server-bundle", "node-runtime", "glm"],
+          selectedPackageIds: ["server-bundle", "node-runtime", "agent"],
         },
       },
     );

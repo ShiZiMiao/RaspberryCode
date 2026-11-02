@@ -158,7 +158,7 @@ async function applyCurrentOperation(input: {
           model_name: operation.modelName ?? "",
           model_provider: operation.modelProvider ?? "",
           ...(operation.providerHostname ? { provider_name: operation.providerHostname } : {}),
-          agent: "glm",
+          agent: "agent",
         },
       });
       return;

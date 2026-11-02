@@ -6148,7 +6148,7 @@ export function createZCodeAgentService(
             await automationTaskIndexRepo.listTaskMetas({
               workspacePath: params.workspacePath,
               workspaceIdentity: params.workspaceIdentity,
-              provider: "glm",
+              provider: "agent",
             })
           )
             .slice(0, MAX_LEGACY_TASK_IDS_PER_SUBSCRIBE)

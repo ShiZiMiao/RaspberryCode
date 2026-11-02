@@ -14,7 +14,7 @@ const groups = [
     logo: { type: "builtin" as const, key: "deepseek" },
     items: [
       { key: "flash", value: "a/flash", name: "GLM-5.3-Flash", supportsVisionInput: true },
-      { key: "glm", value: "a/glm", name: "GLM-5.3" },
+      { key: "agent", value: "a/glm", name: "GLM-5.3" },
     ],
   },
   {

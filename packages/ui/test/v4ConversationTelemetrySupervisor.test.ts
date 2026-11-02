@@ -367,7 +367,7 @@ describe("ConversationTelemetrySupervisor", () => {
   it("send seed 以 V4 config provider 为 model_provider，并保留旧 model value 与 agent 口径", () => {
     expect(
       buildV4ConversationPromptTelemetryExtraDetail({
-        agentProvider: "glm",
+        agentProvider: "agent",
         configProvider: "custom-provider-id",
         modelName: "custom-model",
         askMode: "plan",
@@ -378,7 +378,7 @@ describe("ConversationTelemetrySupervisor", () => {
       model_name: "custom:custom-provider-id:custom-model",
       model_provider: "custom-provider-id",
       provider_name: "api.example.com",
-      agent: "glm",
+      agent: "agent",
       message_source: "chat",
       task_trigger: "",
     });
@@ -387,15 +387,15 @@ describe("ConversationTelemetrySupervisor", () => {
   it("send seed 缺少显式运行时 provider 时沿用 RaspberryCode Agent 默认值", () => {
     expect(
       buildV4ConversationPromptTelemetryExtraDetail({
-        configProvider: "glm",
+        configProvider: "agent",
         modelName: "glm-model",
         askMode: "build",
       }),
     ).toMatchObject({
-      agent: "glm",
+      agent: "agent",
       message_source: "chat",
       model_name: "glm-model",
-      model_provider: "glm",
+      model_provider: "agent",
       task_trigger: "",
     });
   });
@@ -422,7 +422,7 @@ describe("ConversationTelemetrySupervisor", () => {
         ask_mode: "build",
         model_name: "seed-model",
         model_provider: "seed-provider",
-        agent: "glm",
+        agent: "agent",
       },
     });
 
@@ -438,7 +438,7 @@ describe("ConversationTelemetrySupervisor", () => {
         ask_mode: "build",
         model_name: "seed-model",
         model_provider: "seed-provider",
-        agent: "glm",
+        agent: "agent",
         input_start_time: "100",
         input_first_char_time: "120",
         input_send_time: "200",
@@ -605,7 +605,7 @@ describe("ConversationTelemetrySupervisor", () => {
         model_name: "runtime-provider/runtime-model",
         model_provider: "runtime-provider",
         provider_name: "runtime.example.com",
-        agent: "glm",
+        agent: "agent",
         input_tokens: "10",
         output_tokens: "5",
         reasoning_tokens: "3",
@@ -3394,13 +3394,13 @@ describe("ConversationTelemetrySupervisor", () => {
       trigger: "auto",
       compactReason: "context_limit",
       modelName: "glm-model",
-      modelProvider: "glm",
+      modelProvider: "agent",
     });
     expect(reportsByElement(reportTelemetryEvent, "context_compaction")[0]).toMatchObject({
       eventExtraDetail: {
         reason: "",
         model_name: "glm-model",
-        model_provider: "glm",
+        model_provider: "agent",
       },
     });
     supervisor.dispose();

@@ -9,9 +9,9 @@ describe("remote resource packages", () => {
   it("ignores historical selections and always returns active packages", () => {
     expect(
       normalizeRemoteResourcePackageSelection({
-        selectedPackageIds: ["glm"],
+        selectedPackageIds: ["agent"],
       }),
-    ).toEqual(["server-bundle", "node-runtime", "node-pty", "glm", "bfs", "ripgrep", "ugrep"]);
+    ).toEqual(["server-bundle", "node-runtime", "node-pty", "agent", "bfs", "ripgrep", "ugrep"]);
   });
 
   it("Linux remote 使用 native-search 三工具，Darwin 保留 legacy ripgrep", () => {
@@ -32,12 +32,12 @@ describe("remote resource packages", () => {
         host: "demo.internal",
         username: "root",
         resourcePackages: {
-          selectedPackageIds: ["server-bundle", "node-runtime", "glm"],
+          selectedPackageIds: ["server-bundle", "node-runtime", "agent"],
         },
       }),
     ).toMatchObject({
       resourcePackages: {
-        selectedPackageIds: ["server-bundle", "node-runtime", "glm"],
+        selectedPackageIds: ["server-bundle", "node-runtime", "agent"],
       },
     });
   });

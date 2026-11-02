@@ -63,10 +63,10 @@ const snapshot = {
   },
   settings: {
     model: {
-      current: { providerId: "glm", modelId: "glm-4.6" },
+      current: { providerId: "agent", modelId: "glm-4.6" },
       available: [
         {
-          ref: { providerId: "glm", modelId: "glm-4.6" },
+          ref: { providerId: "agent", modelId: "glm-4.6" },
           label: "GLM 4.6",
           properties: protocolModelProperties,
         },
@@ -261,7 +261,7 @@ describe("ZCodeProtocolClient", () => {
 
     await expect(request).resolves.toMatchObject({
       session: { sessionId: "sess_1" },
-      settings: { model: { current: { providerId: "glm" } } },
+      settings: { model: { current: { providerId: "agent" } } },
     });
   });
 

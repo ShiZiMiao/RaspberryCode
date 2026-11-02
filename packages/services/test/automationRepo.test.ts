@@ -176,7 +176,7 @@ describe("AutomationRepo 调度状态机", () => {
       for (const raw of [null, "{}", "invalid-json"]) {
         db.prepare(
           "UPDATE automations SET model_selection = ?, model = ?, provider = ? WHERE automation_id = ?",
-        ).run(raw, "unrecognized-old-model", "glm", created.automationId);
+        ).run(raw, "unrecognized-old-model", "agent", created.automationId);
         await expect(
           repo.getModelSelectionForDispatch(created.automationId, created.workspaceKey),
         ).rejects.toThrow("Automation 模型选择不可用");
@@ -270,7 +270,7 @@ describe("AutomationRepo 调度状态机", () => {
       )
       .get(created.automationId);
     persistedDb.close();
-    expect(row).toMatchObject({ model: legacyModel, provider: "glm", thought_level: "high" });
+    expect(row).toMatchObject({ model: legacyModel, provider: "agent", thought_level: "high" });
     expect(JSON.parse(String(row?.model_selection))).toEqual(expected);
     repo = new AutomationRepo(dbPath);
     expect((await repo.get(created.automationId))?.modelSelection).toEqual(expected);

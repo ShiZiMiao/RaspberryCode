@@ -286,7 +286,7 @@ Message from coordinator:
       (snapshot) => snapshot.workspaceKey !== null,
       "running guide steer 基础消息没有进入 task store",
     );
-    expect(storeSnapshot.selectedProvider).toBe("glm");
+    expect(storeSnapshot.selectedProvider).toBe("agent");
     expect(storeSnapshot.queueCount).toBe(0);
 
     const guidedPrompt = `${guidedMarker}: Keep guiding the current turn and preserve this message.`;

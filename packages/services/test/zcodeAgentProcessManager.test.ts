@@ -920,7 +920,7 @@ require("node:readline").createInterface({ input: process.stdin }).on("line", li
       await vi.waitFor(() => expect(reporter.onSpawn).toHaveBeenCalledTimes(1));
       const spawnEvent = reporter.onSpawn.mock.calls[0]![0];
       expect(spawnEvent).toMatchObject({
-        provider: "glm",
+        provider: "agent",
         workspacePath,
         command: process.execPath,
         args: ["-e", "setTimeout(() => process.exit(7), 20);"],
@@ -935,7 +935,7 @@ require("node:readline").createInterface({ input: process.stdin }).on("line", li
       await vi.waitFor(() => expect(reporter.onExit).toHaveBeenCalledTimes(1));
       expect(reporter.onExit.mock.calls[0]![0]).toMatchObject({
         pid: spawnEvent.pid,
-        provider: "glm",
+        provider: "agent",
         workspacePath,
         exitCode: 7,
         signal: null,
@@ -1469,7 +1469,7 @@ require("node:readline").createInterface({ input: process.stdin }).on("line", li
       await vi.waitFor(() => expect(reporter.onError).toHaveBeenCalledTimes(1));
       expect(reporter.onError.mock.calls[0]![0]).toMatchObject({
         pid: null,
-        provider: "glm",
+        provider: "agent",
         workspacePath,
         command: missingCommand,
         args: ["app-server", "--stdio"],

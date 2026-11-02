@@ -98,7 +98,7 @@ describe("planModeTool", () => {
 
     expect(getCurrentModeIdFromConfigOptions(configOptions)).toBe("edit");
     expect(getModeLabelFromConfigOptions(configOptions, "edit")).toBe("Edit automatically");
-    expect(resolveProviderNativeModeIdFromSemantic(configOptions, "edit", "glm")).toBe("edit");
+    expect(resolveProviderNativeModeIdFromSemantic(configOptions, "edit", "agent")).toBe("edit");
   });
 
   it("does not map retired provider-native agent mode ids", () => {

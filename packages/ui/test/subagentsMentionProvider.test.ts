@@ -34,7 +34,7 @@ function createAgent(name: string): AgentSummary {
 function SubagentMentionProbe({ query }: { query: string }) {
   const result = useSubagentsMentionProvider(
     "/repo",
-    "glm",
+    "agent",
     query,
     true,
     "No subagents",

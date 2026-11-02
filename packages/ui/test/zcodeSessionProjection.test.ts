@@ -36,7 +36,7 @@ const subagentOrigin = {
   parentToolCallId: "tool_parent_agent",
   parentTurnId: "turn_parent_snapshot",
 } as const;
-const model = { providerId: "glm", modelId: "glm-4.6" };
+const model = { providerId: "agent", modelId: "glm-4.6" };
 const backgroundAgentProviderError =
   "Requests are too frequent. Please reduce your request frequency, wait a short moment, and retry your request. Request id: e2e-background-subagent-rate-limit";
 const settings = {
@@ -328,8 +328,8 @@ describe("zcodeSessionProjection", () => {
       taskId: "sess_1",
     });
 
-    expect(events.find((event) => event.type === "glm_agent_model_state_update")).toMatchObject({
-      type: "glm_agent_model_state_update",
+    expect(events.find((event) => event.type === "agent_model_state_update")).toMatchObject({
+      type: "agent_model_state_update",
       thoughtLevel: {
         enabled: true,
         currentValue: "max",
@@ -346,7 +346,7 @@ describe("zcodeSessionProjection", () => {
 
     expect(snapshot.meta).toMatchObject({
       taskId: "sess_1",
-      provider: "glm",
+      provider: "agent",
       title: "hello",
       status: "running",
       workspaceIdentity: workspace.workspaceIdentity,
@@ -5641,21 +5641,21 @@ describe("zcodeSessionProjection", () => {
     });
 
     expect(options.find((option) => option.category === "model")).toMatchObject({
-      currentValue: "glm/glm-4.6",
+      currentValue: "agent/glm-4.6",
     });
     expect(events.map((event) => event.type)).toEqual([
       "mode_update",
-      "glm_agent_model_state_update",
+      "agent_model_state_update",
     ]);
     expect(events[0]).toMatchObject({
       type: "mode_update",
       currentModeId: "build",
     });
     expect(events[1]).toMatchObject({
-      type: "glm_agent_model_state_update",
+      type: "agent_model_state_update",
       reason: "model_changed",
       model: {
-        currentValue: "glm/glm-4.6",
+        currentValue: "agent/glm-4.6",
       },
       thoughtLevel: {
         enabled: true,
@@ -5670,7 +5670,7 @@ describe("zcodeSessionProjection", () => {
 
   it("parses UI model values into strict RaspberryCode model refs", () => {
     expect(parseModelPickerValue("glm/glm-4.6")).toEqual({
-      providerId: "glm",
+      providerId: "agent",
       modelId: "glm-4.6",
     });
     expect(parseModelPickerValue("custom-openai/agent-model$fast")).toEqual({

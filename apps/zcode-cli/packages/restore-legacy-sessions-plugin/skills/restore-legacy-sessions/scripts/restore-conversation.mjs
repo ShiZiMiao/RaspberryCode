@@ -24,7 +24,7 @@ process.emitWarning = function filterSqliteExperimentalWarning(warning, ...args)
 const { DatabaseSync } = await import("node:sqlite");
 process.emitWarning = originalEmitWarning;
 
-const ZCODE_PROVIDER = "glm";
+const ZCODE_PROVIDER = "agent";
 const defaultTaskIndexPath = join(homedir(), ".zcode", "v2", "tasks-index.sqlite");
 const defaultCliDbPath = join(homedir(), ".zcode", "cli", "db", "db.sqlite");
 

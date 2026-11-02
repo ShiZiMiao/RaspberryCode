@@ -66,7 +66,7 @@ describe("Bot v3 单向导入与回滚文件隔离", () => {
   });
 
   it("远端旧状态不使用本地账号转换，失联时不主动重连", async () => {
-    const raw = legacyState({ provider: "glm", model: "builtin:bigmodel-coding-plan/GLM" });
+    const raw = legacyState({ provider: "agent", model: "builtin:bigmodel-coding-plan/GLM" });
     await writeFile(
       join(dir, "bot-state.v2.json"),
       JSON.stringify({
@@ -107,7 +107,7 @@ describe("Bot v3 单向导入与回滚文件隔离", () => {
         thoughtLevel: z.string().min(1).optional(),
         sandboxMode: z.string().min(1).optional(),
         approvalPolicy: z.string().min(1).optional(),
-        cli: z.enum(["codex", "claude", "opencode", "gemini", "glm"]).optional(),
+        cli: z.enum(["codex", "claude", "opencode", "gemini", "agent"]).optional(),
       })
       .strict();
     const oldReader = z
@@ -168,7 +168,7 @@ describe("Bot v3 单向导入与回滚文件隔离", () => {
   it("并发首次读取只导入一次，并在读成功时固定旧 Coding Plan 身份", async () => {
     await writeFile(
       join(dir, "bot-state.v2.json"),
-      JSON.stringify(legacyState({ provider: "glm", model: "builtin:bigmodel-coding-plan/GLM" })),
+      JSON.stringify(legacyState({ provider: "agent", model: "builtin:bigmodel-coding-plan/GLM" })),
     );
     const repo = new BotsRepo();
     const results = await Promise.all([repo.readState(), repo.readState()]);
@@ -182,7 +182,7 @@ describe("Bot v3 单向导入与回滚文件隔离", () => {
     await writeFile(join(dir, "bot-state.v3.json"), '{"version":3,"bots":{}}');
     await writeFile(
       join(dir, "bot-state.v2.json"),
-      JSON.stringify(legacyState({ provider: "glm", model: "deepseek/model" })),
+      JSON.stringify(legacyState({ provider: "agent", model: "deepseek/model" })),
     );
     await writeFile(join(dir, "bot-config.json"), '{"version":2,"bots":[]}');
     await makeRepo().readConfig();
@@ -191,7 +191,7 @@ describe("Bot v3 单向导入与回滚文件隔离", () => {
 
   it("首次导入并立即固定 v3，之后写入不改旧文件，也不再导入已删除的状态", async () => {
     const old = JSON.stringify(
-      legacyState({ provider: "glm", model: "deepseek/model", thoughtLevel: "high" }),
+      legacyState({ provider: "agent", model: "deepseek/model", thoughtLevel: "high" }),
     );
     await writeFile(join(dir, "bot-state.v2.json"), old);
     await writeFile(join(dir, "bot-config.json"), '{"version":2,"bots":[]}');
@@ -214,7 +214,7 @@ describe("Bot v3 单向导入与回滚文件隔离", () => {
   it("当前 v3 损坏时不回读旧文件，也不覆盖损坏文件", async () => {
     await writeFile(
       join(dir, "bot-state.v2.json"),
-      JSON.stringify(legacyState({ provider: "glm", model: "deepseek/model" })),
+      JSON.stringify(legacyState({ provider: "agent", model: "deepseek/model" })),
     );
     await writeFile(join(dir, "bot-state.v3.json"), "broken");
     await expect(makeRepo().readState()).rejects.toThrow();
@@ -232,7 +232,7 @@ describe("Bot v3 单向导入与回滚文件隔离", () => {
   it("未知 Provider 仍保留原意图，不按同名模型换供应商、不丢掉 Bot 状态", async () => {
     await writeFile(
       join(dir, "bot-state.v2.json"),
-      JSON.stringify(legacyState({ provider: "glm", model: "missing/model", mode: "yolo" })),
+      JSON.stringify(legacyState({ provider: "agent", model: "missing/model", mode: "yolo" })),
     );
     expect((await makeRepo().readState()).bots.bot).toMatchObject({
       botId: "bot",
@@ -253,7 +253,7 @@ describe("Bot v3 单向导入与回滚文件隔离", () => {
     };
     await writeFile(
       join(dir, "bot-state.v2.json"),
-      JSON.stringify(legacyState({ provider: "glm", modelSelection, thoughtLevel: "high" })),
+      JSON.stringify(legacyState({ provider: "agent", modelSelection, thoughtLevel: "high" })),
     );
     expect((await makeRepo().readState()).bots.bot?.draftOptions?.modelSelection).toEqual(
       modelSelection,

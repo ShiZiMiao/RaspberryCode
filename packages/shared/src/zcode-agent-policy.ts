@@ -2,17 +2,17 @@ import { z } from "zod";
 import type { CommandAgentSource } from "./command-types.js";
 import type { ZCodeProvider } from "./zcode-task-types-core.js";
 
-export const ZCODE_AGENT_PROVIDER = "glm" satisfies ZCodeProvider;
+export const ZCODE_AGENT_PROVIDER = "agent" satisfies ZCodeProvider;
 export const ZCODE_AGENT_PROVIDER_LABEL = "RaspberryCode Agent";
 export const ZCODE_COMMAND_AGENT_SOURCE = "zcodeAgent" satisfies CommandAgentSource;
 
 /**
  * 解析持久化/relay 数据时的 provider 归一 schema：
- * 已移除的第三方 provider 历史值仅作为归一化输入保留，统一收敛为 glm；
+ * 已移除的第三方 provider 历史值仅作为归一化输入保留，统一收敛为 agent（历史 glm 值随 transform 归一，读兼容保留）；
  * 其它非法值保持拒绝，与收窄前的校验边界一致。
  */
 export const legacyZCodeProviderSchema = z
-  .enum(["claude", "opencode", "gemini", "codex", "glm"])
+  .enum(["claude", "opencode", "gemini", "codex", "glm", "agent"])
   .transform((): typeof ZCODE_AGENT_PROVIDER => ZCODE_AGENT_PROVIDER);
 
 export const ZCODE_ENABLED_AGENT_PROVIDERS = [

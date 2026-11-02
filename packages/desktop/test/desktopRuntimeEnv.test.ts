@@ -33,7 +33,7 @@ vi.mock("@zcode/shared", () => ({
   ZCODE_AGENT_RUNTIME: {
     binaryKind: "native-binary",
     binaryEnvVar: "GLM_BINARY_PATH",
-    bundledResourceDir: "glm",
+    bundledResourceDir: "agent",
     version: "0.0.0-test",
     spawnArgs: ["app-server", "--stdio"],
     nativeConfigDir: ".zcode/cli",
@@ -723,9 +723,9 @@ describe("desktopRuntimeEnv buildHostProcessEnv", () => {
     createdDirs.push(sandboxRoot);
     const platformKey = `${process.platform}-${process.arch}`;
     const bundledBinaryName = process.platform === "win32" ? "zcode-agent.exe" : "zcode-agent";
-    const bundledPath = join(sandboxRoot, "bundled-agents", platformKey, "glm", bundledBinaryName);
+    const bundledPath = join(sandboxRoot, "bundled-agents", platformKey, "agent", bundledBinaryName);
     const localAgentPath = join(sandboxRoot, "local", "zcode-agent");
-    mkdirSync(join(sandboxRoot, "bundled-agents", platformKey, "glm"), {
+    mkdirSync(join(sandboxRoot, "bundled-agents", platformKey, "agent"), {
       recursive: true,
     });
     mkdirSync(join(sandboxRoot, "local"), { recursive: true });

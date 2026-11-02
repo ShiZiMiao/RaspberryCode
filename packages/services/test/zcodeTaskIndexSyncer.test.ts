@@ -310,7 +310,7 @@ async function seedRunningTask(repo: TaskIndexRepo): Promise<ZCodeTaskMeta> {
     meta: {
       taskId: seedTarget.sessionId,
       traceId: "trace_seed",
-      provider: "glm",
+      provider: "agent",
       title: "Pending task",
       workspacePath: seedTarget.workspacePath,
       createdAt: 1,
@@ -869,7 +869,7 @@ describe("createZCodeTaskIndexSyncer", () => {
       expect(meta).toMatchObject({
         taskId: "sess_history",
         title: "历史会话",
-        provider: "glm",
+        provider: "agent",
         status: "completed",
       });
     });
@@ -1097,7 +1097,7 @@ describe("createZCodeTaskIndexSyncer", () => {
             createdAt: 1,
             updatedAt: 2,
             mode: "build",
-            provider: "glm",
+            provider: "agent",
             status: "completed",
           },
         });
@@ -1112,7 +1112,7 @@ describe("createZCodeTaskIndexSyncer", () => {
           createdAt: 1,
           updatedAt: 2,
           mode: "build",
-          provider: "glm",
+          provider: "agent",
           status: "completed",
         },
       });
@@ -1163,7 +1163,7 @@ describe("createZCodeTaskIndexSyncer", () => {
     async (failure) => {
       const env = setupEnv();
       await seedTaskIndex(env.repo, {
-        meta: { ...(await seedRunningTask(env.repo)), provider: "glm" },
+        meta: { ...(await seedRunningTask(env.repo)), provider: "agent" },
       });
       let finish:
         | ((value: Awaited<ReturnType<IZCodeAgentService["listSessions"]>>) => void)
@@ -1241,7 +1241,7 @@ describe("createZCodeTaskIndexSyncer", () => {
         updatedAt: 100,
         mode: "build",
         model: "anthropic/haiku-4.5",
-        provider: "glm",
+        provider: "agent",
         status: "completed",
       },
       pinned: true,
@@ -1937,7 +1937,7 @@ describe("createZCodeTaskIndexSyncer", () => {
           taskId: snapshot.session.sessionId,
           workspacePath: "/repo",
           traceId: "seed",
-          provider: "glm",
+          provider: "agent",
           title: snapshot.session.title,
           mode: "default",
           createdAt: snapshot.session.createdAt,

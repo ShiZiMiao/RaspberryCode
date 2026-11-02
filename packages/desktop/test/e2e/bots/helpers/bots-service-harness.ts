@@ -134,7 +134,7 @@ export function createBotsServiceHarness(options: BotsServiceHarnessOptions): Bo
         taskId: "task-e2e-bot",
         title: "E2E Bot Task",
         workspacePath: E2E_BOT_WORKSPACE,
-        provider: "glm",
+        provider: "agent",
       };
     },
     sendPrompt: async (params: unknown) => {
@@ -166,7 +166,7 @@ export function createBotsServiceHarness(options: BotsServiceHarnessOptions): Bo
       taskId: "task-e2e-bot",
       title: "E2E Bot Task",
       workspacePath: E2E_BOT_WORKSPACE,
-      provider: "glm",
+      provider: "agent",
     }),
     respondPermission: async () => true,
     respondElicitation: async (params: unknown) => {
@@ -196,7 +196,7 @@ export function createBotsServiceHarness(options: BotsServiceHarnessOptions): Bo
         locale: "zh-CN",
         recentProjects: [E2E_BOT_WORKSPACE],
         lastWorkspaceSession: [],
-        enabledBuiltinAgentCliProviders: ["glm"],
+        enabledBuiltinAgentCliProviders: ["agent"],
       }),
       update: async () => undefined,
       updateDataBaseDir: async () => undefined,

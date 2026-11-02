@@ -1182,7 +1182,7 @@ export function zcodeStateUpdatedToZCodeStreamEvents(params: {
       availableModes: getZCodeAgentAvailableModes(),
     },
     {
-      type: "glm_agent_model_state_update",
+      type: "agent_model_state_update",
       taskId: params.taskId,
       traceId,
       version: 1,

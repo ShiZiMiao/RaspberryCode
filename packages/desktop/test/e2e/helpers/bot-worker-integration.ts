@@ -129,7 +129,7 @@ export async function createBotWorkerIntegration(baseUrl: string, dropTextContai
             workspacePath,
             mode: "draft",
             activeTaskId: null,
-            draftOptions: { provider: "glm", modelSelection },
+            draftOptions: { provider: "agent", modelSelection },
             updatedAt: Date.now(),
           },
         },
