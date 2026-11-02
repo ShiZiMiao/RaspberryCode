@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BUILTIN_MODEL_PROVIDER_IDS, type ApiClient } from "@zcode/shared";
-import { BigModelUsageQuotaProvider } from "../src/usage-stats/providers/bigmodelUsageQuotaProvider.js";
+import { MeteredUsageQuotaProvider } from "../src/usage-stats/providers/meteredUsageQuotaProvider.js";
 
 const TEST_BIGMODEL_PROVIDER_ID = "test-bigmodel-api-provider";
 
@@ -15,7 +15,7 @@ interface LegacyModelProviderReader {
 }
 
 type LegacyQuotaProviderTestOptions = Omit<
-  ConstructorParameters<typeof BigModelUsageQuotaProvider>[0],
+  ConstructorParameters<typeof MeteredUsageQuotaProvider>[0],
   "resolveApiAuthorization"
 > & {
   modelProviderService?: LegacyModelProviderReader;
@@ -27,8 +27,8 @@ type LegacyQuotaProviderTestOptions = Omit<
  */
 function createProviderForTest(
   options: LegacyQuotaProviderTestOptions,
-): BigModelUsageQuotaProvider {
-  return new BigModelUsageQuotaProvider({
+): MeteredUsageQuotaProvider {
+  return new MeteredUsageQuotaProvider({
     ...options,
     resolveApiAuthorization: async ({ preferredProviderId }) => {
       const providers = await options.modelProviderService?.getAllCached();
@@ -46,20 +46,20 @@ function createProviderForTest(
   });
 }
 
-function createBigModelCodingPlanProvider(): TestUsageProvider {
+function createMeteredCodingPlanProvider(): TestUsageProvider {
   return {
     id: BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
     apiKey: "bigmodel-api-key",
-    name: "BigModel - Coding Plan",
+    name: "Metered - Coding Plan",
   };
 }
 
-function createBigModelApiKeyProvider(): TestUsageProvider {
+function createMeteredApiKeyProvider(): TestUsageProvider {
   return {
-    ...createBigModelCodingPlanProvider(),
+    ...createMeteredCodingPlanProvider(),
     id: TEST_BIGMODEL_PROVIDER_ID,
     apiKey: "ordinary-api-key",
-    name: "BigModel",
+    name: "Metered",
   };
 }
 
@@ -78,7 +78,7 @@ function createJsonResponse(body: unknown): Response {
   });
 }
 
-describe("BigModelUsageQuotaProvider", () => {
+describe("MeteredUsageQuotaProvider", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
   });
@@ -106,7 +106,7 @@ describe("BigModelUsageQuotaProvider", () => {
       modelProviderService: {
         getAllCached: vi.fn(async () => [
           {
-            ...createBigModelCodingPlanProvider(),
+            ...createMeteredCodingPlanProvider(),
             apiKey: "",
           },
         ]),
@@ -133,10 +133,10 @@ describe("BigModelUsageQuotaProvider", () => {
       modelProviderService: {
         getAllCached: vi.fn(async () => [
           {
-            ...createBigModelCodingPlanProvider(),
+            ...createMeteredCodingPlanProvider(),
             apiKey: "",
           },
-          createBigModelApiKeyProvider(),
+          createMeteredApiKeyProvider(),
         ]),
       } as LegacyModelProviderReader,
     });
@@ -228,7 +228,7 @@ describe("BigModelUsageQuotaProvider", () => {
     const provider = createProviderForTest({
       apiClient,
       modelProviderService: {
-        getAllCached: vi.fn(async () => [createBigModelCodingPlanProvider()]),
+        getAllCached: vi.fn(async () => [createMeteredCodingPlanProvider()]),
       } as LegacyModelProviderReader,
     });
 

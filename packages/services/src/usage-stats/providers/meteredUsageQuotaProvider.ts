@@ -1,4 +1,10 @@
 /* eslint-disable max-lines -- quota、entitlement 与 monitor 请求共用同一套 provider 鉴权逻辑，拆文件会让 Coding Plan strict key 边界更难追踪。 */
+/**
+ * 计量 API Key 的用量/额度查询适配（specs/provider-neutrality.md）。
+ * wire 层的 envelope/payload 形状是计量用量 API（BigModel 协议）的响应格式事实，
+ * 本目录按格式适配维护；服务层类名与消费链路保持中立，未来其他计量协议
+ * 在此并列实现，不在消费方按品牌分支。
+ */
 import type {
   ApiClient,
   CodingPlanRegularTpsRequest,
@@ -18,36 +24,36 @@ import type { ICredentialService } from "../../credential/credential.js";
 import { readApiJson } from "../../providers/api/apiJson.js";
 import { readEnv } from "../../oauth/providers/configUtils.js";
 import type {
-  BigModelUsageModelUsagePayload,
-  BigModelUsageModelUsageEnvelope,
-  BigModelUsageToolUsagePayload,
-  BigModelUsageToolUsageEnvelope,
-  BigModelCreditUsageActivityPayload,
-  BigModelCreditUsageActivityEnvelope,
-  BigModelCreditUsageDetailPayload,
-  BigModelCreditUsageDetailEnvelope,
-  BigModelUsageModelPerformancePayload,
-  BigModelUsageModelPerformanceEnvelope,
-} from "./bigmodelUsageMonitorMapper.js";
+  MeteredUsageModelUsagePayload,
+  MeteredUsageModelUsageEnvelope,
+  MeteredUsageToolUsagePayload,
+  MeteredUsageToolUsageEnvelope,
+  MeteredCreditUsageActivityPayload,
+  MeteredCreditUsageActivityEnvelope,
+  MeteredCreditUsageDetailPayload,
+  MeteredCreditUsageDetailEnvelope,
+  MeteredUsageModelPerformancePayload,
+  MeteredUsageModelPerformanceEnvelope,
+} from "./meteredUsageMonitorMapper.js";
 import {
   buildCodingPlanUsageSnapshotFromMonitor,
   buildUsageStatsSnapshotFromMonitor,
-} from "./bigmodelUsageMonitorMapper.js";
+} from "./meteredUsageMonitorMapper.js";
 import {
   resolveCodingPlanUsageTimeRange,
   resolveUsageTimeRange,
-} from "./bigmodelUsageMonitorRange.js";
-import type { BigModelUsageQuotaEnvelope } from "./bigmodelUsageQuotaMapper.js";
-import { normalizeLimits, pickPrimaryLimit } from "./bigmodelUsageQuotaMapper.js";
+} from "./meteredUsageMonitorRange.js";
+import type { MeteredUsageQuotaEnvelope } from "./meteredUsageQuotaMapper.js";
+import { normalizeLimits, pickPrimaryLimit } from "./meteredUsageQuotaMapper.js";
 
 const BIGMODEL_QUOTA_PATH = "/api/monitor/usage/quota/limit";
 const REQUEST_TIMEOUT_MS = 15_000;
 const log = createServiceLogger("usage-stats");
-const EMPTY_MODEL_USAGE_PAYLOAD = {} satisfies BigModelUsageModelUsagePayload;
-const EMPTY_TOOL_USAGE_PAYLOAD = {} satisfies BigModelUsageToolUsagePayload;
-const EMPTY_CREDIT_ACTIVITY_PAYLOAD = {} satisfies BigModelCreditUsageActivityPayload;
-const EMPTY_CREDIT_DETAIL_PAYLOAD = {} satisfies BigModelCreditUsageDetailPayload;
-const EMPTY_MODEL_PERFORMANCE_PAYLOAD = {} satisfies BigModelUsageModelPerformancePayload;
+const EMPTY_MODEL_USAGE_PAYLOAD = {} satisfies MeteredUsageModelUsagePayload;
+const EMPTY_TOOL_USAGE_PAYLOAD = {} satisfies MeteredUsageToolUsagePayload;
+const EMPTY_CREDIT_ACTIVITY_PAYLOAD = {} satisfies MeteredCreditUsageActivityPayload;
+const EMPTY_CREDIT_DETAIL_PAYLOAD = {} satisfies MeteredCreditUsageDetailPayload;
+const EMPTY_MODEL_PERFORMANCE_PAYLOAD = {} satisfies MeteredUsageModelPerformancePayload;
 
 export interface UsageApiAuthorizationRequest {
   readonly preferredProviderId?: string;
@@ -60,7 +66,7 @@ export interface UsageApiAuthorization {
   readonly provider: ResolvedQuotaAuthorization["provider"];
 }
 
-interface BigModelUsageQuotaProviderOptions {
+interface MeteredUsageQuotaProviderOptions {
   apiClient: ApiClient;
   resolveApiAuthorization?: (
     request: UsageApiAuthorizationRequest,
@@ -78,13 +84,13 @@ interface ResolvedQuotaAuthorization {
   };
 }
 
-export class BigModelUsageQuotaProvider {
+export class MeteredUsageQuotaProvider {
   private readonly apiClient: ApiClient;
-  private readonly resolveApiAuthorization?: BigModelUsageQuotaProviderOptions["resolveApiAuthorization"];
+  private readonly resolveApiAuthorization?: MeteredUsageQuotaProviderOptions["resolveApiAuthorization"];
   private readonly credentialService?: Pick<ICredentialService, "load">;
   private readonly env: NodeJS.ProcessEnv;
 
-  constructor(options: BigModelUsageQuotaProviderOptions) {
+  constructor(options: MeteredUsageQuotaProviderOptions) {
     this.apiClient = options.apiClient;
     this.resolveApiAuthorization = options.resolveApiAuthorization;
     this.credentialService = options.credentialService;
@@ -120,7 +126,7 @@ export class BigModelUsageQuotaProvider {
     const subscription = null;
     const payload = resolved ? await this.fetchQuota(resolved).catch(() => null) : null;
     // quota 失败或 level 存在都不改变权益；额度耗尽也只影响用量显示。
-    const quotaData = payload && isSuccessfulBigModelEnvelope(payload) ? payload.data : null;
+    const quotaData = payload && isSuccessfulMeteredEnvelope(payload) ? payload.data : null;
     const limits = normalizeLimits(quotaData?.limits);
     const primaryLimit = pickPrimaryLimit(limits);
     return {
@@ -155,7 +161,7 @@ export class BigModelUsageQuotaProvider {
     if (!resolved) {
       // 设置页使用统计可被显式收口到 Coding Plan provider。
       // 严格指定 provider 时不允许回退到普通 API Key、环境变量或本地 session 聚合。
-      throw new Error("no_bigmodel_api_key");
+      throw new Error("no_metered_api_key");
     }
 
     const { startTime, endTime } = resolveUsageTimeRange(request);
@@ -164,14 +170,14 @@ export class BigModelUsageQuotaProvider {
       this.fetchToolUsage(resolved, startTime, endTime),
     ]);
 
-    const modelData = readSuccessfulBigModelMonitorData(
+    const modelData = readSuccessfulMeteredMonitorData(
       modelPayload,
-      "BigModel model usage failed",
+      "Metered model usage failed",
       EMPTY_MODEL_USAGE_PAYLOAD,
     );
-    const toolData = readSuccessfulBigModelMonitorData(
+    const toolData = readSuccessfulMeteredMonitorData(
       toolPayload,
-      "BigModel tool usage failed",
+      "Metered tool usage failed",
       EMPTY_TOOL_USAGE_PAYLOAD,
       { allowMissingData: true },
     );
@@ -203,30 +209,30 @@ export class BigModelUsageQuotaProvider {
     const [quotaPayload, activityData, modelDetailData, toolDetailData, health7dData] =
       await Promise.all([
         this.fetchQuota(resolved),
-        readBestEffortBigModelMonitorData(
+        readBestEffortMeteredMonitorData(
           this.fetchCreditUsageActivity(resolved, request.timeZone),
-          "BigModel activity usage failed",
+          "Metered activity usage failed",
           EMPTY_CREDIT_ACTIVITY_PAYLOAD,
         ),
-        readBestEffortBigModelMonitorData(
+        readBestEffortMeteredMonitorData(
           this.fetchCreditUsageDetail(resolved, usageRange.startTime, usageRange.endTime, "MODEL"),
-          "BigModel model usage detail failed",
+          "Metered model usage detail failed",
           EMPTY_CREDIT_DETAIL_PAYLOAD,
         ),
-        readBestEffortBigModelMonitorData(
+        readBestEffortMeteredMonitorData(
           this.fetchCreditUsageDetail(resolved, usageRange.startTime, usageRange.endTime, "MCP"),
-          "BigModel tool usage detail failed",
+          "Metered tool usage detail failed",
           EMPTY_CREDIT_DETAIL_PAYLOAD,
         ),
-        readBestEffortBigModelMonitorData(
+        readBestEffortMeteredMonitorData(
           this.fetchModelPerformanceDay(resolved, request.timeZone, "7d"),
-          "BigModel model performance failed",
+          "Metered model performance failed",
           EMPTY_MODEL_PERFORMANCE_PAYLOAD,
         ),
       ]);
 
     const quota =
-      isSuccessfulBigModelEnvelope(quotaPayload) && quotaPayload.data
+      isSuccessfulMeteredEnvelope(quotaPayload) && quotaPayload.data
         ? {
             level: quotaPayload.data.level?.trim() || null,
             limits: normalizeLimits(quotaPayload.data.limits),
@@ -274,15 +280,15 @@ export class BigModelUsageQuotaProvider {
       const response = await this.apiClient.request(requestUrl, {
         method: "GET",
         timeoutMs: REQUEST_TIMEOUT_MS,
-        headers: createBigModelUsageHeaders(resolved),
+        headers: createMeteredUsageHeaders(resolved),
       });
       responseStatus = response.status;
       responseStatusText = response.statusText;
       responseHeaders = readApiDiagnosticHeaders(response.headers) ?? {};
-      let payload: BigModelUsageModelPerformanceEnvelope | undefined;
+      let payload: MeteredUsageModelPerformanceEnvelope | undefined;
       let parseError: unknown;
       try {
-        payload = JSON.parse(await response.text()) as BigModelUsageModelPerformanceEnvelope;
+        payload = JSON.parse(await response.text()) as MeteredUsageModelPerformanceEnvelope;
         responseCode = typeof payload.code === "number" ? payload.code : undefined;
       } catch (error) {
         parseError = error;
@@ -307,9 +313,9 @@ export class BigModelUsageQuotaProvider {
           cause: parseError,
         });
       }
-      const data = readSuccessfulBigModelMonitorData<BigModelUsageModelPerformancePayload>(
+      const data = readSuccessfulMeteredMonitorData<MeteredUsageModelPerformancePayload>(
         payload,
-        "BigModel model performance failed",
+        "Metered model performance failed",
         EMPTY_MODEL_PERFORMANCE_PAYLOAD,
         { allowMissingData: true },
       );
@@ -348,10 +354,10 @@ export class BigModelUsageQuotaProvider {
       if (envApiKey) {
         return {
           authorization: envApiKey,
-          quotaUrl: resolveQuotaUrlFromEnv(this.env) ?? buildBigModelQuotaUrl(this.env),
+          quotaUrl: resolveQuotaUrlFromEnv(this.env) ?? buildMeteredQuotaUrl(this.env),
           provider: {
             id: "env:bigmodel-usage",
-            name: "BigModel",
+            name: "Metered",
           },
         };
       }
@@ -360,7 +366,7 @@ export class BigModelUsageQuotaProvider {
     const providerId = request.preferredProviderId?.trim() ?? "";
     // 账号态已移除：Coding Plan 动态凭据解析链（accountRequestAuthService）不再存在。
     // Coding Plan 与普通 provider 共用同一条装配层注入的鉴权来源（resolveApiAuthorization），
-    // 未注入即未配置（no_bigmodel_api_key），不回退环境变量/OAuth/本地聚合。
+    // 未注入即未配置（no_metered_api_key），不回退环境变量/OAuth/本地聚合。
     const apiAuthorization = await this.resolveApiAuthorization?.({
       preferredProviderId: providerId || undefined,
       requirePreferredProvider: request.requirePreferredProvider === true,
@@ -370,11 +376,11 @@ export class BigModelUsageQuotaProvider {
 
   private async fetchQuota(
     resolved: ResolvedQuotaAuthorization,
-  ): Promise<BigModelUsageQuotaEnvelope> {
-    return readApiJson<BigModelUsageQuotaEnvelope>(this.apiClient, buildQuotaLimitUrl(resolved), {
+  ): Promise<MeteredUsageQuotaEnvelope> {
+    return readApiJson<MeteredUsageQuotaEnvelope>(this.apiClient, buildQuotaLimitUrl(resolved), {
       method: "GET",
       timeoutMs: REQUEST_TIMEOUT_MS,
-      headers: createBigModelUsageHeaders(resolved),
+      headers: createMeteredUsageHeaders(resolved),
     });
   }
 
@@ -382,14 +388,14 @@ export class BigModelUsageQuotaProvider {
     resolved: ResolvedQuotaAuthorization,
     startTime: string,
     endTime: string,
-  ): Promise<BigModelUsageModelUsageEnvelope> {
-    return readApiJson<BigModelUsageModelUsageEnvelope>(
+  ): Promise<MeteredUsageModelUsageEnvelope> {
+    return readApiJson<MeteredUsageModelUsageEnvelope>(
       this.apiClient,
       buildUsageMonitorUrl(resolved, "model-usage", startTime, endTime),
       {
         method: "GET",
         timeoutMs: REQUEST_TIMEOUT_MS,
-        headers: createBigModelUsageHeaders(resolved),
+        headers: createMeteredUsageHeaders(resolved),
       },
     );
   }
@@ -398,14 +404,14 @@ export class BigModelUsageQuotaProvider {
     resolved: ResolvedQuotaAuthorization,
     startTime: string,
     endTime: string,
-  ): Promise<BigModelUsageToolUsageEnvelope> {
-    return readApiJson<BigModelUsageToolUsageEnvelope>(
+  ): Promise<MeteredUsageToolUsageEnvelope> {
+    return readApiJson<MeteredUsageToolUsageEnvelope>(
       this.apiClient,
       buildUsageMonitorUrl(resolved, "tool-usage", startTime, endTime),
       {
         method: "GET",
         timeoutMs: REQUEST_TIMEOUT_MS,
-        headers: createBigModelUsageHeaders(resolved),
+        headers: createMeteredUsageHeaders(resolved),
       },
     );
   }
@@ -413,15 +419,15 @@ export class BigModelUsageQuotaProvider {
   private async fetchCreditUsageActivity(
     resolved: ResolvedQuotaAuthorization,
     timeZone: string | undefined,
-  ): Promise<BigModelCreditUsageActivityEnvelope> {
+  ): Promise<MeteredCreditUsageActivityEnvelope> {
     const range = resolveCreditUsageActivityTimeRange(timeZone);
-    return readApiJson<BigModelCreditUsageActivityEnvelope>(
+    return readApiJson<MeteredCreditUsageActivityEnvelope>(
       this.apiClient,
       buildCreditUsageMonitorUrl(resolved, "activity", range.startTime, range.endTime),
       {
         method: "GET",
         timeoutMs: REQUEST_TIMEOUT_MS,
-        headers: createBigModelUsageHeaders(resolved),
+        headers: createMeteredUsageHeaders(resolved),
       },
     );
   }
@@ -431,14 +437,14 @@ export class BigModelUsageQuotaProvider {
     startTime: string,
     endTime: string,
     usageType: "MODEL" | "MCP",
-  ): Promise<BigModelCreditUsageDetailEnvelope> {
-    return readApiJson<BigModelCreditUsageDetailEnvelope>(
+  ): Promise<MeteredCreditUsageDetailEnvelope> {
+    return readApiJson<MeteredCreditUsageDetailEnvelope>(
       this.apiClient,
       buildCreditUsageMonitorUrl(resolved, "usage-detail", startTime, endTime, usageType),
       {
         method: "GET",
         timeoutMs: REQUEST_TIMEOUT_MS,
-        headers: createBigModelUsageHeaders(resolved),
+        headers: createMeteredUsageHeaders(resolved),
       },
     );
   }
@@ -447,15 +453,15 @@ export class BigModelUsageQuotaProvider {
     resolved: ResolvedQuotaAuthorization,
     timeZone: string | undefined,
     range: "7d" | "30d",
-  ): Promise<BigModelUsageModelPerformanceEnvelope> {
+  ): Promise<MeteredUsageModelPerformanceEnvelope> {
     const timeRange = resolveModelPerformanceTimeRange(timeZone, range);
-    return readApiJson<BigModelUsageModelPerformanceEnvelope>(
+    return readApiJson<MeteredUsageModelPerformanceEnvelope>(
       this.apiClient,
       buildModelPerformanceMonitorUrl(resolved, timeRange.startTime, timeRange.endTime),
       {
         method: "GET",
         timeoutMs: REQUEST_TIMEOUT_MS,
-        headers: createBigModelUsageHeaders(resolved),
+        headers: createMeteredUsageHeaders(resolved),
       },
     );
   }
@@ -517,7 +523,7 @@ function buildUsageEntitlementContext(
   };
 }
 
-function createBigModelUsageHeaders(resolved: ResolvedQuotaAuthorization): Record<string, string> {
+function createMeteredUsageHeaders(resolved: ResolvedQuotaAuthorization): Record<string, string> {
   // monitor 接口要求 authorization 直接传完整凭据。
   // 普通用量和 Coding Plan 用量都走 API Key，不能额外加 Bearer 前缀。
   return {
@@ -529,7 +535,7 @@ function buildQuotaLimitUrl(resolved: ResolvedQuotaAuthorization): string {
   return resolved.quotaUrl;
 }
 
-function readSuccessfulBigModelMonitorData<TData extends object>(
+function readSuccessfulMeteredMonitorData<TData extends object>(
   payload: {
     code?: number;
     message?: string;
@@ -541,26 +547,26 @@ function readSuccessfulBigModelMonitorData<TData extends object>(
   emptyData: TData,
   options: { allowMissingData?: boolean } = {},
 ): TData {
-  if (!isSuccessfulBigModelEnvelope(payload)) {
-    throw new Error(readBigModelEnvelopeMessage(payload) || fallbackMessage);
+  if (!isSuccessfulMeteredEnvelope(payload)) {
+    throw new Error(readMeteredEnvelopeMessage(payload) || fallbackMessage);
   }
   if (payload.data) {
     return payload.data;
   }
-  if (options.allowMissingData === true && hasExplicitBigModelSuccessSignal(payload)) {
-    // BigModel monitor 的 tool-usage 在团队项目无工具调用时会返回
+  if (options.allowMissingData === true && hasExplicitMeteredSuccessSignal(payload)) {
+    // Metered monitor 的 tool-usage 在团队项目无工具调用时会返回
     // code=200、msg=“操作成功”但省略 data。空用量应显示为空统计，不能中断整个统计页。
     return emptyData;
   }
-  throw new Error(readBigModelEnvelopeMessage(payload) || fallbackMessage);
+  throw new Error(readMeteredEnvelopeMessage(payload) || fallbackMessage);
 }
 
 // credit-usage/activity、usage-detail、model-performance-day 是可选数据面。
 // 传输层失败（HTTP 非 2xx、超时、断网）时只清空对应区域并记 warn，不能让
 // Promise.all 提前 reject 拖垮整张 Coding Plan Usage 面板。HTTP 200 但业务信封失败
-// （如 token expired）仍由 readSuccessfulBigModelMonitorData 抛错：鉴权/后端错误必须
+// （如 token expired）仍由 readSuccessfulMeteredMonitorData 抛错：鉴权/后端错误必须
 // 显式暴露给用户，不能伪装成空用量（既有测试已锁定该语义）。
-async function readBestEffortBigModelMonitorData<TData extends object>(
+async function readBestEffortMeteredMonitorData<TData extends object>(
   request: Promise<{
     code?: number;
     message?: string;
@@ -581,12 +587,12 @@ async function readBestEffortBigModelMonitorData<TData extends object>(
     });
     return emptyData;
   }
-  return readSuccessfulBigModelMonitorData(payload, fallbackMessage, emptyData, {
+  return readSuccessfulMeteredMonitorData(payload, fallbackMessage, emptyData, {
     allowMissingData: true,
   });
 }
 
-function readBigModelEnvelopeMessage(payload: { message?: string; msg?: string }): string {
+function readMeteredEnvelopeMessage(payload: { message?: string; msg?: string }): string {
   return payload.msg?.trim() || payload.message?.trim() || "";
 }
 
@@ -600,13 +606,13 @@ function sanitizeMonitorDiagnosticUrl(url: string | undefined): string {
   }
 }
 
-function hasExplicitBigModelSuccessSignal(payload: { code?: number; success?: boolean }): boolean {
+function hasExplicitMeteredSuccessSignal(payload: { code?: number; success?: boolean }): boolean {
   return payload.success === true || payload.code === 0 || payload.code === 200;
 }
 
-function isSuccessfulBigModelEnvelope(payload: { code?: number; success?: boolean }): boolean {
+function isSuccessfulMeteredEnvelope(payload: { code?: number; success?: boolean }): boolean {
   const code = payload.code;
-  // BigModel monitor/quota 后端存在 code=0 且 msg=“操作成功”的成功响应。
+  // Metered monitor/quota 后端存在 code=0 且 msg=“操作成功”的成功响应。
   // 只按 code=200 判断会把团队用量统计的成功包误抛成错误，导致设置页显示无法读取统计。
   return (
     payload.success !== false && (code === undefined || code === null || code === 0 || code === 200)
@@ -715,6 +721,6 @@ function resolveCodingPlanApiKeyError(providerId: string | undefined): string {
 }
 
 // 厂商事实地址（API Key 用量配额查询）；不再经产品端点拼装。
-function buildBigModelQuotaUrl(_env: NodeJS.ProcessEnv = process.env): string {
+function buildMeteredQuotaUrl(_env: NodeJS.ProcessEnv = process.env): string {
   return `https://bigmodel.cn${BIGMODEL_QUOTA_PATH}`;
 }

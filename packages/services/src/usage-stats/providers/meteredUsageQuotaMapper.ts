@@ -1,18 +1,18 @@
 import type { UsageQuotaLimit, UsageQuotaUsageDetail } from "@zcode/shared";
 
-export interface BigModelUsageQuotaEnvelope {
+export interface MeteredUsageQuotaEnvelope {
   code?: number;
   msg?: string;
   success?: boolean;
-  data?: BigModelUsageQuotaPayload | null;
+  data?: MeteredUsageQuotaPayload | null;
 }
 
-export interface BigModelUsageQuotaPayload {
+export interface MeteredUsageQuotaPayload {
   level?: string;
-  limits?: BigModelUsageQuotaLimitPayload[];
+  limits?: MeteredUsageQuotaLimitPayload[];
 }
 
-interface BigModelUsageQuotaLimitPayload {
+interface MeteredUsageQuotaLimitPayload {
   type?: string;
   unit?: number;
   number?: number;
@@ -28,7 +28,7 @@ interface BigModelUsageQuotaLimitPayload {
   }>;
 }
 
-export function normalizeLimits(limits: BigModelUsageQuotaPayload["limits"]): UsageQuotaLimit[] {
+export function normalizeLimits(limits: MeteredUsageQuotaPayload["limits"]): UsageQuotaLimit[] {
   if (!Array.isArray(limits)) {
     return [];
   }
@@ -58,7 +58,7 @@ export function pickPrimaryLimit(limits: UsageQuotaLimit[]): UsageQuotaLimit | n
 }
 
 function normalizeUsageDetails(
-  details: BigModelUsageQuotaLimitPayload["usageDetails"],
+  details: MeteredUsageQuotaLimitPayload["usageDetails"],
 ): UsageQuotaUsageDetail[] {
   if (!Array.isArray(details)) {
     return [];

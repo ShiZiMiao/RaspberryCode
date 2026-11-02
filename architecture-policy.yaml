@@ -795,3 +795,14 @@ exceptions:
       - packages/ui/src/sidebar-activity/SidebarBottomActivity.tsx
       - packages/ui/src/v4/conversationTurnRenderUnitTypes.ts
     reason: "Modified for RaspberryCode: admitted unmanaged files created or reworked by the standalone CodingAgent transformation (endpoint setting row, account-chain removal, model selection rework); adopting the surrounding unmanaged directories needs a separate module boundary refactor."
+  - id: raspberrycode-provider-neutrality-unmanaged-edit
+    rule: unmanaged-new-file
+    paths:
+      - packages/shared/src/reasoning-signature-scope.ts
+      - packages/shared/src/bridged-vision-models.ts
+      - packages/services/src/usage-stats/providers/meteredUsageQuotaProvider.ts
+      - packages/services/src/usage-stats/providers/meteredUsageQuotaMapper.ts
+      - packages/services/src/usage-stats/providers/meteredUsageMonitorMapper.ts
+      - packages/services/src/usage-stats/providers/meteredUsageMonitorRange.ts
+      - packages/ui/src/v4/featureSuggestedPrompts.ts
+    reason: "Modified for RaspberryCode (specs/provider-neutrality.md): usage-stats metered quota adapters renamed brand-neutral (bigmodel* -> metered*, wire behavior unchanged), shared gains two small data/mechanism modules (reasoning signature scope, bridged vision fact) and the feature prompts file localizes plugin icons; module boundaries unchanged, adopting the surrounding unmanaged directories needs a separate module boundary refactor."

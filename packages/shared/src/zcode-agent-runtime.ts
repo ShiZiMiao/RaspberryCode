@@ -25,14 +25,17 @@ export function resolvePlatformBinaryName(binaryName: string, platform: string):
 
 export const ZCODE_AGENT_RUNTIME: ZCodeAgentRuntimeDescriptor = {
   binaryKind: "native-binary",
-  binaryEnvVar: "GLM_BINARY_PATH",
+  // 中立命名（specs/provider-neutrality.md）：历史 GLM_BINARY_PATH 由桌面端做旧名读兼容。
+  binaryEnvVar: "ZCODE_AGENT_BINARY_PATH",
+  // TODO(C1b)：打包资源目录仍为历史名 "glm"，改名为 "agent" 需同步打包脚本、
+  // 安装资源锁与 CLI 侧 resources/<dir>/packages/*-plugin 插件 seed 路径约定。
   bundledResourceDir: "glm",
   version: "0.13.3",
   spawnArgs: ["app-server", "--stdio"],
   nativeConfigDir: ".raspberrycode/cli",
   nativeConfigFileName: "config.json",
   missingBinaryMessage:
-    "[RaspberryCode Agent] glm binary 未找到，请设置 ZCODE_AGENT_WORKDIR、GLM_BINARY_PATH 或先准备 GLM 运行时资源",
+    "[RaspberryCode Agent] agent binary 未找到，请设置 ZCODE_AGENT_WORKDIR、ZCODE_AGENT_BINARY_PATH 或先准备 Agent 运行时资源",
   resolveEntrySegments: (platform) => [resolvePlatformBinaryName("zcode-agent", platform)],
   nodeBundleEntryFile: "zcode.cjs",
   resolveNodeBundleSegments() {

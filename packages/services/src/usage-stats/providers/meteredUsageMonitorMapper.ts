@@ -21,26 +21,26 @@ import type {
 import { ESTIMATED_TOKEN_CHAR_DIVISOR } from "@zcode/shared";
 
 // ============================================================================
-// 把 BigModel monitor 接口数据(model-usage / tool-usage)转成 RaspberryCode 内部统一
+// 把 Metered monitor 接口数据(model-usage / tool-usage)转成 RaspberryCode 内部统一
 // 的 UsageStatsSnapshot 结构。
 //
 // monitor 接口直接返回估算 token 数,反推字符数以保持现有 UI 字段语义。
 // ============================================================================
 
-export interface BigModelUsageModelSummaryPayload {
+export interface MeteredUsageModelSummaryPayload {
   modelName?: string;
   totalTokens?: number;
   sortOrder?: number;
 }
 
-export interface BigModelUsageModelDataPayload {
+export interface MeteredUsageModelDataPayload {
   modelName?: string;
   totalTokens?: number;
   tokensUsage?: number[];
   sortOrder?: number;
 }
 
-export interface BigModelUsageModelUsagePayload {
+export interface MeteredUsageModelUsagePayload {
   x_time?: string[];
   granularity?: string;
   modelCallCount?: number[];
@@ -48,13 +48,13 @@ export interface BigModelUsageModelUsagePayload {
   totalUsage?: {
     totalModelCallCount?: number;
     totalTokensUsage?: number;
-    modelSummaryList?: BigModelUsageModelSummaryPayload[];
+    modelSummaryList?: MeteredUsageModelSummaryPayload[];
   };
-  modelDataList?: BigModelUsageModelDataPayload[];
-  modelSummaryList?: BigModelUsageModelSummaryPayload[];
+  modelDataList?: MeteredUsageModelDataPayload[];
+  modelSummaryList?: MeteredUsageModelSummaryPayload[];
 }
 
-export interface BigModelUsageToolUsagePayload {
+export interface MeteredUsageToolUsagePayload {
   x_time?: string[];
   granularity?: string;
   networkSearchCount?: number[];
@@ -65,18 +65,18 @@ export interface BigModelUsageToolUsagePayload {
     totalWebReadMcpCount?: number;
     totalZreadMcpCount?: number;
     totalSearchMcpCount?: number;
-    toolSummaryList?: BigModelUsageToolSummaryPayload[];
+    toolSummaryList?: MeteredUsageToolSummaryPayload[];
   };
-  toolDataList?: BigModelUsageToolDataPayload[];
-  toolSummaryList?: BigModelUsageToolSummaryPayload[];
+  toolDataList?: MeteredUsageToolDataPayload[];
+  toolSummaryList?: MeteredUsageToolSummaryPayload[];
 }
 
-export interface BigModelCreditUsageMetricPayload {
+export interface MeteredCreditUsageMetricPayload {
   value?: number | string | null;
   trend?: number | string | null;
 }
 
-export interface BigModelCreditUsageActivitySummaryPayload {
+export interface MeteredCreditUsageActivitySummaryPayload {
   totalTokens?: number;
   peakDailyTokens?: number;
   peakDailyTokensDate?: string;
@@ -85,36 +85,36 @@ export interface BigModelCreditUsageActivitySummaryPayload {
   longestStreakDays?: number;
 }
 
-export interface BigModelCreditUsageActivitySeriesPayload {
+export interface MeteredCreditUsageActivitySeriesPayload {
   date?: string;
   totalTokens?: number;
   modelCallCount?: number;
   mcpCalls?: number;
 }
 
-export interface BigModelCreditUsageActivityPayload {
-  summary?: BigModelCreditUsageActivitySummaryPayload | null;
-  series?: BigModelCreditUsageActivitySeriesPayload[];
+export interface MeteredCreditUsageActivityPayload {
+  summary?: MeteredCreditUsageActivitySummaryPayload | null;
+  series?: MeteredCreditUsageActivitySeriesPayload[];
 }
 
-export interface BigModelCreditUsageModelDataPayload {
+export interface MeteredCreditUsageModelDataPayload {
   modelCode?: string;
   modelName?: string;
   sortOrder?: number;
   totalTokens?: number;
   totalCredits?: number;
-  totalCreditsUsage?: BigModelUsageNumberSeries;
-  cachedInputCreditsUsage?: BigModelUsageNumberSeries;
-  uncachedInputCreditsUsage?: BigModelUsageNumberSeries;
-  outputCreditsUsage?: BigModelUsageNumberSeries;
-  tokensUsage?: BigModelUsageNumberSeries;
-  totalTokensUsage?: BigModelUsageNumberSeries;
-  cachedInputTokensUsage?: BigModelUsageNumberSeries;
-  uncachedInputTokensUsage?: BigModelUsageNumberSeries;
-  outputTokensUsage?: BigModelUsageNumberSeries;
+  totalCreditsUsage?: MeteredUsageNumberSeries;
+  cachedInputCreditsUsage?: MeteredUsageNumberSeries;
+  uncachedInputCreditsUsage?: MeteredUsageNumberSeries;
+  outputCreditsUsage?: MeteredUsageNumberSeries;
+  tokensUsage?: MeteredUsageNumberSeries;
+  totalTokensUsage?: MeteredUsageNumberSeries;
+  cachedInputTokensUsage?: MeteredUsageNumberSeries;
+  uncachedInputTokensUsage?: MeteredUsageNumberSeries;
+  outputTokensUsage?: MeteredUsageNumberSeries;
 }
 
-export interface BigModelCreditUsageMcpDataPayload {
+export interface MeteredCreditUsageMcpDataPayload {
   mcpCode?: string;
   mcpName?: string;
   toolCode?: string;
@@ -122,12 +122,12 @@ export interface BigModelCreditUsageMcpDataPayload {
   sortOrder?: number;
   totalCredits?: number;
   totalUsageCount?: number;
-  creditsUsage?: BigModelUsageNumberSeries;
-  mcpCallCount?: BigModelUsageNumberSeries;
-  usageCount?: BigModelUsageNumberSeries;
+  creditsUsage?: MeteredUsageNumberSeries;
+  mcpCallCount?: MeteredUsageNumberSeries;
+  usageCount?: MeteredUsageNumberSeries;
 }
 
-type BigModelUsageNumberSeries = Array<number | string | null | undefined>;
+type MeteredUsageNumberSeries = Array<number | string | null | undefined>;
 const CREDIT_USAGE_BREAKDOWN_BUCKET_CODES = new Set([
   "cached_input",
   "cachedInput",
@@ -140,32 +140,32 @@ const CREDIT_USAGE_BREAKDOWN_BUCKET_CODES = new Set([
   "outputTokens",
 ]);
 
-export interface BigModelCreditUsageDetailPayload {
+export interface MeteredCreditUsageDetailPayload {
   summary?: {
-    cacheHitRate?: BigModelCreditUsageMetricPayload;
-    totalCredits?: BigModelCreditUsageMetricPayload;
-    averageDailyCredits?: BigModelCreditUsageMetricPayload;
+    cacheHitRate?: MeteredCreditUsageMetricPayload;
+    totalCredits?: MeteredCreditUsageMetricPayload;
+    averageDailyCredits?: MeteredCreditUsageMetricPayload;
   } | null;
   modelUsage?: {
     xTime?: string[];
     periodTypes?: string[];
-    modelDataList?: BigModelCreditUsageModelDataPayload[];
+    modelDataList?: MeteredCreditUsageModelDataPayload[];
   } | null;
   mcpUsage?: {
     xTime?: string[];
     periodTypes?: string[];
-    mcpDataList?: BigModelCreditUsageMcpDataPayload[];
+    mcpDataList?: MeteredCreditUsageMcpDataPayload[];
   } | null;
 }
 
-export interface BigModelUsageModelPerformancePayload {
+export interface MeteredUsageModelPerformancePayload {
   x_time?: string[];
   xTime?: string[];
   proMaxDecodeSpeed?: number[];
   liteDecodeSpeed?: number[];
 }
 
-export interface BigModelUsageToolDataPayload {
+export interface MeteredUsageToolDataPayload {
   toolCode?: string;
   toolName?: string;
   sortOrder?: number;
@@ -173,52 +173,52 @@ export interface BigModelUsageToolDataPayload {
   totalUsageCount?: number;
 }
 
-export interface BigModelUsageToolSummaryPayload {
+export interface MeteredUsageToolSummaryPayload {
   toolCode?: string;
   toolName?: string;
   totalUsageCount?: number;
   sortOrder?: number;
 }
 
-export interface BigModelUsageModelUsageEnvelope {
+export interface MeteredUsageModelUsageEnvelope {
   code?: number;
   msg?: string;
   success?: boolean;
-  data?: BigModelUsageModelUsagePayload | null;
+  data?: MeteredUsageModelUsagePayload | null;
 }
 
-export interface BigModelUsageToolUsageEnvelope {
+export interface MeteredUsageToolUsageEnvelope {
   code?: number;
   msg?: string;
   success?: boolean;
-  data?: BigModelUsageToolUsagePayload | null;
+  data?: MeteredUsageToolUsagePayload | null;
 }
 
-export interface BigModelCreditUsageActivityEnvelope {
+export interface MeteredCreditUsageActivityEnvelope {
   code?: number;
   msg?: string;
   success?: boolean;
-  data?: BigModelCreditUsageActivityPayload | null;
+  data?: MeteredCreditUsageActivityPayload | null;
 }
 
-export interface BigModelCreditUsageDetailEnvelope {
+export interface MeteredCreditUsageDetailEnvelope {
   code?: number;
   msg?: string;
   success?: boolean;
-  data?: BigModelCreditUsageDetailPayload | null;
+  data?: MeteredCreditUsageDetailPayload | null;
 }
 
-export interface BigModelUsageModelPerformanceEnvelope {
+export interface MeteredUsageModelPerformanceEnvelope {
   code?: number;
   msg?: string;
   success?: boolean;
-  data?: BigModelUsageModelPerformancePayload | null;
+  data?: MeteredUsageModelPerformancePayload | null;
 }
 
 export function buildUsageStatsSnapshotFromMonitor(
   request: UsageStatsRequest,
-  modelData: BigModelUsageModelUsagePayload,
-  toolData: BigModelUsageToolUsagePayload,
+  modelData: MeteredUsageModelUsagePayload,
+  toolData: MeteredUsageToolUsagePayload,
 ): UsageStatsSnapshot {
   const xTime = modelData.x_time ?? [];
   const tokensUsage = modelData.tokensUsage ?? [];
@@ -253,7 +253,7 @@ export function buildUsageStatsSnapshotFromMonitor(
 
   const summaryList = modelData.totalUsage?.modelSummaryList ?? modelData.modelSummaryList ?? [];
   const models: UsageStatsModelUsage[] = summaryList
-    .filter((entry): entry is BigModelUsageModelSummaryPayload => Boolean(entry?.modelName))
+    .filter((entry): entry is MeteredUsageModelSummaryPayload => Boolean(entry?.modelName))
     .map((entry) => {
       const totalEstimatedTokens = entry.totalTokens ?? 0;
       return {
@@ -324,14 +324,14 @@ export function buildCodingPlanUsageSnapshotFromMonitor(params: {
   quota: UsageQuotaSnapshot | null;
   granularity: CodingPlanUsageGranularity;
   xTime: string[];
-  activityData?: BigModelCreditUsageActivityPayload;
-  modelDetailData?: BigModelCreditUsageDetailPayload;
-  toolDetailData?: BigModelCreditUsageDetailPayload;
-  healthData?: BigModelUsageModelPerformancePayload;
+  activityData?: MeteredCreditUsageActivityPayload;
+  modelDetailData?: MeteredCreditUsageDetailPayload;
+  toolDetailData?: MeteredCreditUsageDetailPayload;
+  healthData?: MeteredUsageModelPerformancePayload;
   startDateKey: string;
   endDateKey: string;
-  modelData?: BigModelUsageModelUsagePayload;
-  toolData?: BigModelUsageToolUsagePayload;
+  modelData?: MeteredUsageModelUsagePayload;
+  toolData?: MeteredUsageToolUsagePayload;
 }): CodingPlanUsageSnapshot {
   const modelUsage = params.modelDetailData?.modelUsage ?? null;
   const toolUsage = params.toolDetailData?.mcpUsage ?? null;
@@ -383,7 +383,7 @@ export function buildCodingPlanUsageSnapshotFromMonitor(params: {
 }
 
 function buildCodingPlanActivitySnapshot(
-  payload: BigModelCreditUsageActivityPayload | undefined,
+  payload: MeteredCreditUsageActivityPayload | undefined,
 ): CodingPlanUsageSnapshot["activity"] {
   const heatmap = buildCodingPlanActivityHeatmap(payload?.series ?? []);
   return {
@@ -401,7 +401,7 @@ function buildCodingPlanActivitySnapshot(
 }
 
 function buildCodingPlanActivityHeatmap(
-  series: BigModelCreditUsageActivitySeriesPayload[],
+  series: MeteredCreditUsageActivitySeriesPayload[],
 ): AppUsageHeatmap {
   const cells = series
     .map((item) => {
@@ -478,8 +478,8 @@ function levelForTokens(value: number, max: number): AppUsageHeatmapCell["level"
 }
 
 function buildCodingPlanUsageDetailSnapshot(
-  modelDetailData: BigModelCreditUsageDetailPayload | undefined,
-  toolDetailData: BigModelCreditUsageDetailPayload | undefined,
+  modelDetailData: MeteredCreditUsageDetailPayload | undefined,
+  toolDetailData: MeteredCreditUsageDetailPayload | undefined,
 ): CodingPlanUsageSnapshot["detail"] {
   return {
     model: buildCodingPlanUsageDetailSummary(modelDetailData?.summary),
@@ -488,7 +488,7 @@ function buildCodingPlanUsageDetailSnapshot(
 }
 
 function buildCodingPlanUsageDetailSummary(
-  summary: BigModelCreditUsageDetailPayload["summary"] | undefined,
+  summary: MeteredCreditUsageDetailPayload["summary"] | undefined,
 ): CodingPlanUsageSnapshot["detail"]["model"] {
   return {
     cacheHitRate: toFiniteNumber(summary?.cacheHitRate?.value),
@@ -501,7 +501,7 @@ function buildCodingPlanUsageDetailSummary(
 }
 
 function buildCodingPlanHealthSnapshot(
-  payload: BigModelUsageModelPerformancePayload | undefined,
+  payload: MeteredUsageModelPerformancePayload | undefined,
 ): CodingPlanUsageSnapshot["health"] {
   return {
     xTime: payload?.x_time ?? payload?.xTime ?? [],
@@ -511,12 +511,12 @@ function buildCodingPlanHealthSnapshot(
 }
 
 function normalizeModelDataList(
-  payload: BigModelUsageModelUsagePayload,
+  payload: MeteredUsageModelUsagePayload,
   xTime: string[],
   granularity: CodingPlanUsageGranularity,
 ): CodingPlanModelData[] {
   return (payload.modelDataList ?? [])
-    .filter((item): item is BigModelUsageModelDataPayload => Boolean(item?.modelName?.trim()))
+    .filter((item): item is MeteredUsageModelDataPayload => Boolean(item?.modelName?.trim()))
     .map((item, index) => ({
       modelName: item.modelName!.trim(),
       sortOrder: item.sortOrder ?? index,
@@ -527,12 +527,12 @@ function normalizeModelDataList(
 }
 
 function normalizeCreditModelDataList(
-  payload: NonNullable<BigModelCreditUsageDetailPayload["modelUsage"]>,
+  payload: NonNullable<MeteredCreditUsageDetailPayload["modelUsage"]>,
   xTime: string[],
   granularity: CodingPlanUsageGranularity,
 ): CodingPlanModelData[] {
   return (payload.modelDataList ?? [])
-    .filter((item): item is BigModelCreditUsageModelDataPayload =>
+    .filter((item): item is MeteredCreditUsageModelDataPayload =>
       Boolean(item?.modelName?.trim() || item?.modelCode?.trim()),
     )
     .filter((item) => !isCreditUsageBreakdownBucket(item))
@@ -611,19 +611,19 @@ function normalizeCreditModelDataList(
     .sort((left, right) => left.sortOrder - right.sortOrder);
 }
 
-function isCreditUsageBreakdownBucket(item: BigModelCreditUsageModelDataPayload): boolean {
+function isCreditUsageBreakdownBucket(item: MeteredCreditUsageModelDataPayload): boolean {
   const code = item.modelCode?.trim();
   if (code && CREDIT_USAGE_BREAKDOWN_BUCKET_CODES.has(code)) {
     return true;
   }
   const name = item.modelName?.trim().toLowerCase();
-  // BigModel usage-detail 的 MODEL 数据有时返回“缓存/未缓存/输出”
+  // Metered usage-detail 的 MODEL 数据有时返回“缓存/未缓存/输出”
   // 这种 token 拆分桶。它们是计费组成，不是模型维度，不能作为使用详情的模型图例。
   return name === "缓存" || name === "未缓存" || name === "输出";
 }
 
 function sumCreditModelTokens(
-  payload: NonNullable<BigModelCreditUsageDetailPayload["modelUsage"]>,
+  payload: NonNullable<MeteredCreditUsageDetailPayload["modelUsage"]>,
 ): number {
   // usage-detail 有时会同时返回真实模型行和“缓存/未缓存/输出”拆分桶，
   // 桶是全部模型 token 的计费组成而非模型维度，直接全量求和会把总用量算成约 2 倍。
@@ -652,10 +652,10 @@ function sumCreditModelTokens(
 }
 
 function normalizeModelSummaryList(
-  payload: BigModelUsageModelUsagePayload,
+  payload: MeteredUsageModelUsagePayload,
 ): CodingPlanModelSummary[] {
   return (payload.modelSummaryList ?? payload.totalUsage?.modelSummaryList ?? [])
-    .filter((item): item is BigModelUsageModelSummaryPayload => Boolean(item?.modelName?.trim()))
+    .filter((item): item is MeteredUsageModelSummaryPayload => Boolean(item?.modelName?.trim()))
     .map((item, index) => ({
       modelName: item.modelName!.trim(),
       totalTokens: item.totalTokens ?? 0,
@@ -665,7 +665,7 @@ function normalizeModelSummaryList(
 }
 
 function normalizeCreditModelSummaryList(
-  payload: NonNullable<BigModelCreditUsageDetailPayload["modelUsage"]>,
+  payload: NonNullable<MeteredCreditUsageDetailPayload["modelUsage"]>,
 ): CodingPlanModelSummary[] {
   return normalizeCreditModelDataList(
     payload,
@@ -680,12 +680,12 @@ function normalizeCreditModelSummaryList(
 }
 
 function normalizeToolDataList(
-  payload: BigModelUsageToolUsagePayload,
+  payload: MeteredUsageToolUsagePayload,
   xTime: string[],
   granularity: CodingPlanUsageGranularity,
 ): CodingPlanToolData[] {
   return (payload.toolDataList ?? [])
-    .filter((item): item is BigModelUsageToolDataPayload =>
+    .filter((item): item is MeteredUsageToolDataPayload =>
       Boolean(item?.toolCode?.trim() || item?.toolName?.trim()),
     )
     .map((item, index) => ({
@@ -699,12 +699,12 @@ function normalizeToolDataList(
 }
 
 function normalizeCreditToolDataList(
-  payload: NonNullable<BigModelCreditUsageDetailPayload["mcpUsage"]>,
+  payload: NonNullable<MeteredCreditUsageDetailPayload["mcpUsage"]>,
   xTime: string[],
   granularity: CodingPlanUsageGranularity,
 ): CodingPlanToolData[] {
   return (payload.mcpDataList ?? [])
-    .filter((item): item is BigModelCreditUsageMcpDataPayload =>
+    .filter((item): item is MeteredCreditUsageMcpDataPayload =>
       Boolean(
         item?.mcpCode?.trim() ||
         item?.mcpName?.trim() ||
@@ -732,9 +732,9 @@ function normalizeCreditToolDataList(
     .sort((left, right) => left.sortOrder - right.sortOrder);
 }
 
-function normalizeToolSummaryList(payload: BigModelUsageToolUsagePayload): CodingPlanToolSummary[] {
+function normalizeToolSummaryList(payload: MeteredUsageToolUsagePayload): CodingPlanToolSummary[] {
   return (payload.toolSummaryList ?? payload.totalUsage?.toolSummaryList ?? [])
-    .filter((item): item is BigModelUsageToolSummaryPayload =>
+    .filter((item): item is MeteredUsageToolSummaryPayload =>
       Boolean(item?.toolCode?.trim() || item?.toolName?.trim()),
     )
     .map((item, index) => ({
@@ -747,7 +747,7 @@ function normalizeToolSummaryList(payload: BigModelUsageToolUsagePayload): Codin
 }
 
 function normalizeCreditToolSummaryList(
-  payload: NonNullable<BigModelCreditUsageDetailPayload["mcpUsage"]>,
+  payload: NonNullable<MeteredCreditUsageDetailPayload["mcpUsage"]>,
 ): CodingPlanToolSummary[] {
   return normalizeCreditToolDataList(
     payload,
@@ -778,11 +778,11 @@ function normalizeNumberSeries(
   return (values ?? []).map((value) => toFiniteNumber(value) ?? 0);
 }
 
-function sumNumbers(values: BigModelUsageNumberSeries | undefined): number {
+function sumNumbers(values: MeteredUsageNumberSeries | undefined): number {
   return (values ?? []).reduce<number>((sum, value) => sum + (toFiniteNumber(value) ?? 0), 0);
 }
 
-function sumSeries(seriesList: Array<BigModelUsageNumberSeries | undefined>): number[] | undefined {
+function sumSeries(seriesList: Array<MeteredUsageNumberSeries | undefined>): number[] | undefined {
   const maxLength = Math.max(0, ...seriesList.map((series) => series?.length ?? 0));
   if (maxLength === 0) return undefined;
   return Array.from({ length: maxLength }, (_, index) =>
@@ -791,7 +791,7 @@ function sumSeries(seriesList: Array<BigModelUsageNumberSeries | undefined>): nu
 }
 
 function pickFirstNonEmptySeries(
-  seriesList: Array<BigModelUsageNumberSeries | undefined>,
+  seriesList: Array<MeteredUsageNumberSeries | undefined>,
 ): number[] | undefined {
   const series = seriesList.find(
     (item) => Array.isArray(item) && item.some((value) => (toFiniteNumber(value) ?? 0) > 0),
@@ -802,7 +802,7 @@ function pickFirstNonEmptySeries(
 function alignUsageSeries(
   sourceXTime: string[],
   targetXTime: string[],
-  values: BigModelUsageNumberSeries | undefined,
+  values: MeteredUsageNumberSeries | undefined,
   granularity: CodingPlanUsageGranularity,
 ): number[] {
   const sourceValues = normalizeNumberSeries(values);
@@ -842,7 +842,7 @@ function normalizeCodingPlanAxisValue(
   return value;
 }
 
-function buildToolUsages(toolData: BigModelUsageToolUsagePayload): UsageStatsToolUsage[] {
+function buildToolUsages(toolData: MeteredUsageToolUsagePayload): UsageStatsToolUsage[] {
   const tools: UsageStatsToolUsage[] = [];
 
   const definitions: Array<{

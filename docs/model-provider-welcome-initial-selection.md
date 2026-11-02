@@ -1,5 +1,11 @@
 # Model Provider Welcome 初始选中策略
 
+> **已过时（2026-11-02）**：WelcomeScreen 与 OAuth 登录入口已随无登录改造整体移除
+> （见 [specs/no-login-startup.md](../specs/no-login-startup.md)），本文描述的登录选中策略
+> 不再有对应实现。设置页模型供应商导航按供应商中立规则维护
+> （见 [specs/provider-neutrality.md](../specs/provider-neutrality.md)）。
+> 本文仅作历史背景保留，不再更新。
+
 ## 背景
 
 WelcomeScreen 同时承载账号 OAuth 登录和 API Key 配置入口。两类入口的用户意图不同：

@@ -3,7 +3,7 @@ import type { ApiClient, AppUsageSnapshot, ZCodeAccountAccess } from "@zcode/sha
 import { BUILTIN_MODEL_PROVIDER_IDS } from "@zcode/shared";
 import type { IZCodeAgentService } from "../src/zcode-agent/zcodeAgent.js";
 import { createUsageStatsService } from "../src/usage-stats/usageStatsService.js";
-import { resolveCodingPlanUsageTimeRange } from "../src/usage-stats/providers/bigmodelUsageMonitorRange.js";
+import { resolveCodingPlanUsageTimeRange } from "../src/usage-stats/providers/meteredUsageMonitorRange.js";
 
 const TEST_BIGMODEL_PROVIDER_ID = "test-bigmodel-api-provider";
 const TEST_ZAI_PROVIDER_ID = "test-zai-api-provider";
@@ -53,7 +53,7 @@ interface TestUsageProvider {
 function createProvider(overrides: Partial<TestUsageProvider>): TestUsageProvider {
   return {
     id: TEST_BIGMODEL_PROVIDER_ID,
-    name: "BigModel",
+    name: "Metered",
     enabled: true,
     apiKey: "bigmodel-api-key",
     ...overrides,
@@ -174,7 +174,7 @@ describe("createUsageStatsService", () => {
       providers: [
         createProvider({
           id: BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-          name: "BigModel - Coding Plan",
+          name: "Metered - Coding Plan",
           apiKey: "coding-plan-api-key",
         }),
       ],
@@ -215,7 +215,7 @@ describe("createUsageStatsService", () => {
       providers: [
         createProvider({
           id: BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-          name: "BigModel - Coding Plan",
+          name: "Metered - Coding Plan",
           apiKey: "coding-plan-api-key",
         }),
       ],
@@ -267,7 +267,7 @@ describe("createUsageStatsService", () => {
       providers: [
         createProvider({
           id: BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-          name: "BigModel - Coding Plan",
+          name: "Metered - Coding Plan",
           apiKey: "coding-plan-api-key",
         }),
       ],
@@ -309,7 +309,7 @@ describe("createUsageStatsService", () => {
       providers: [
         createProvider({
           id: BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-          name: "BigModel - Coding Plan",
+          name: "Metered - Coding Plan",
           apiKey: "coding-plan-api-key",
         }),
       ],
@@ -442,7 +442,7 @@ describe("createUsageStatsService", () => {
       providers: [
         createProvider({
           id: BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-          name: "BigModel - Coding Plan",
+          name: "Metered - Coding Plan",
         }),
       ],
       getAppUsageStats,
@@ -612,12 +612,12 @@ describe("createUsageStatsService", () => {
       providers: [
         createProvider({
           id: BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-          name: "BigModel - Coding Plan",
+          name: "Metered - Coding Plan",
           apiKey: "legacy-coding-plan-api-key",
         }),
         createProvider({
           id: TEST_BIGMODEL_PROVIDER_ID,
-          name: "BigModel",
+          name: "Metered",
           apiKey: "ordinary-api-key",
         }),
       ],
@@ -763,7 +763,7 @@ describe("createUsageStatsService", () => {
       providers: [
         createProvider({
           id: BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-          name: "BigModel - Coding Plan",
+          name: "Metered - Coding Plan",
           apiKey: "coding-plan-api-key",
         }),
       ],
@@ -855,7 +855,7 @@ describe("createUsageStatsService", () => {
       providers: [
         createProvider({
           id: BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-          name: "BigModel - Coding Plan",
+          name: "Metered - Coding Plan",
           apiKey: "coding-plan-api-key",
         }),
       ],
@@ -943,7 +943,7 @@ describe("createUsageStatsService", () => {
       providers: [
         createProvider({
           id: BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-          name: "BigModel - Coding Plan",
+          name: "Metered - Coding Plan",
           apiKey: "coding-plan-api-key",
         }),
       ],
@@ -1027,7 +1027,7 @@ describe("createUsageStatsService", () => {
       providers: [
         createProvider({
           id: BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-          name: "BigModel - Coding Plan",
+          name: "Metered - Coding Plan",
         }),
       ],
     });
@@ -1063,7 +1063,7 @@ describe("createUsageStatsService", () => {
       providers: [
         createProvider({
           id: BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-          name: "BigModel - Coding Plan",
+          name: "Metered - Coding Plan",
         }),
       ],
     });
@@ -1088,12 +1088,12 @@ describe("createUsageStatsService", () => {
       providers: [
         createProvider({
           id: BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-          name: "BigModel - Coding Plan",
+          name: "Metered - Coding Plan",
           apiKey: "",
         }),
         createProvider({
           id: TEST_BIGMODEL_PROVIDER_ID,
-          name: "BigModel",
+          name: "Metered",
           apiKey: "ordinary-api-key",
         }),
       ],
@@ -1121,7 +1121,7 @@ describe("createUsageStatsService", () => {
         preferredProviderId: TEST_BIGMODEL_PROVIDER_ID,
         timeZone: "UTC",
       }),
-    ).rejects.toThrow("no_bigmodel_api_key");
+    ).rejects.toThrow("no_metered_api_key");
   });
 
   it("已配置供应商但 monitor 接口失败时保留真实错误", async () => {

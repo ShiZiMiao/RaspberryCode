@@ -400,7 +400,7 @@ function resolveDeployedZCodeAgentBinaryCommand(
   // SSH 远端把 zcode-server.cjs 单文件部署到 ~/.raspberrycode/server/，宿主进程的 cwd 不在仓库内、
   // env 也不会被 ssh exec 继承，即使 zcode-agent 已经部署到 ~/.raspberrycode/server/agents/glm/，
   // resolver 也找不到，第一次 getClient 就抛 "RaspberryCode agent server command is not configured"。
-  // 这里复用 findZCodeAgentRuntimeBinary 的候选链（含 GLM_BINARY_PATH env、
+  // 这里复用 findZCodeAgentRuntimeBinary 的候选链（含 ZCODE_AGENT_BINARY_PATH env（旧名 GLM_BINARY_PATH 读兼容）、
   // packagedResourcesPath、~/.raspberrycode/server/agents/glm、bundled-agents 等），
   // 把已部署的原生 binary 当成最终兜底，远端/桌面打包形态都能命中。
   const binaryPath = findZCodeAgentRuntimeBinary();

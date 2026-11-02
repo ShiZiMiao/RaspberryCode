@@ -1,20 +1,25 @@
 import type { ProviderConfigObject } from "@zcode/provider";
+import { isMeteredBridgedVisionModel } from "@zcode/shared";
 
-/** 产品展示例外：套餐 GLM-5.3 的图片输入是服务端桥接，不能把桥接标为原生视觉。 */
+/**
+ * 视觉能力徽标展示判定（specs/provider-neutrality.md）：计量/套餐接入下
+ * 图片输入为服务端桥接的模型不标原生视觉徽标。桥接模型名单是共享展示事实数据
+ * （`@zcode/shared` 的 bridged-vision-models），本模块不按 modelId 硬编码。
+ * 只控制徽标，不改能力事实、附件校验或精确模型身份。
+ */
 export function shouldShowModelVisionBadge(
   modelId: string,
   supportsImage: boolean | null | undefined,
   access?: ProviderConfigObject["access"],
 ): boolean {
   if (supportsImage !== true) return false;
-  // 体验套餐也在展示例外之内；与 Coding Plan 一样只隐藏 GLM-5.3 徽标。
-  const hideGlm53Vision =
+  // 计量/套餐接入的图片输入由服务端桥接（含历史套餐 access 读兼容值）；直连 API Key 不受此影响。
+  const meteredAccess =
     access?.type === "metered-api-key" ||
     access?.type === "zhipu-coding-plan-api-key" ||
     (access?.type === "zhipu-account" &&
       (access.mode === "individual-coding-plan" ||
         access.mode === "team-coding-plan" ||
         access.mode === "start-plan"));
-  // 只控制徽标，不改能力事实、附件校验或精确模型身份；Flash 和其他型号不受影响。
-  return !(hideGlm53Vision && modelId.toLowerCase() === "glm-5.3");
+  return !(meteredAccess && isMeteredBridgedVisionModel(modelId));
 }

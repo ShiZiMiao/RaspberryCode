@@ -148,7 +148,7 @@ import {
   listAvailableDockerContainers,
   listAvailableWSLDistros,
   loadHostProcessEnvFromLocalFiles,
-  resolveBundledGlmBinaryPath,
+  resolveBundledAgentBinaryPath,
   resolveRemoteAssetDirs,
   resolveZCodeEndpointEnvBaseOrigin,
   desktopRuntimeEnv,
@@ -1172,7 +1172,7 @@ function logWindowsBundledRuntimeIntegrityDiagnostic() {
   }
 
   const binaryPaths = {
-    glm: resolveBundledGlmBinaryPath(),
+    agent: resolveBundledAgentBinaryPath(),
   };
   const missingProviders = Object.entries(binaryPaths)
     .filter(([, binaryPath]) => !binaryPath)

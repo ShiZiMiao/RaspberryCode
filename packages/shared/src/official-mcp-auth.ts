@@ -2,7 +2,12 @@
    放在 shared 是因为头集合有两个消费者且分属不同包：
    - `packages/services` 侧生产身份头；
    - `apps/zcode-cli/packages/adapters` 侧（Plugin parser + MCP adapter）拦截保留头。
-   两侧必须同源，否则新增身份头时会漏掉黑名单，出现静态 header 覆盖凭证的缺口。 */
+   两侧必须同源，否则新增身份头时会漏掉黑名单，出现静态 header 覆盖凭证的缺口。
+
+   中立性边界（specs/provider-neutrality.md 第 6 条例外）：本文件的头名与 meta 键是
+   与官方 Server MCP 服务端、已发布插件（跨语言）之间的 wire 互操作契约，
+   改名即协议破坏，按数据事实保留品牌命名；单机版无登录 JWT 时该授权链路
+   无身份源、处于不可用状态，属正常降级，不得由此向产品能力逻辑扩散品牌分支。 */
 
 /** `.mcp.json` 中 `auth.type` 的唯一合法值；区分大小写，不接受别名。 */
 export const ZCODE_OFFICIAL_MCP_AUTH_TYPE = "zcode_official" as const;

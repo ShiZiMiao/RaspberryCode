@@ -152,18 +152,18 @@ export async function createCloudContentMockServer({ port = 0 } = {}) {
       };
       payload.dialog.description = {
         format: "html",
-        text: "<p><b>GLM-5.3-Flash</b> 已可使用。</p><p>这是本地 HTTP mock，不会领取真实套餐。</p>",
+        text: "<p><b>Mock-Model-1</b> 已可使用。</p><p>这是本地 HTTP mock，不会领取真实套餐。</p>",
       };
       if (url.searchParams.get("locale") === "en-US") {
         payload.locale = "en-US";
         payload.dialog.title = "Your Weekend Plan is ready";
         payload.dialog.description.text =
-          "<p><b>GLM-5.3-Flash</b> is ready to use.</p><p>This local HTTP mock does not claim a real plan.</p>";
+          "<p><b>Mock-Model-1</b> is ready to use.</p><p>This local HTTP mock does not claim a real plan.</p>";
         payload.dialog.buttons[0].label = "Model settings";
         payload.dialog.buttons[1].label = "Copy & share";
         payload.dialog.hero.data.endsAtPrefix = "Valid until";
         payload.dialog.hero.data.replayLabel = "Replay";
-        payload.dialog.hero.data.benefits = ["GLM-5.3-Flash daily quota"];
+        payload.dialog.hero.data.benefits = ["Mock-Model-1 daily quota"];
         payload.actions["copy-share"].text = "Try the new RaspberryCode experience.";
       }
       const english = payload.locale === "en-US";

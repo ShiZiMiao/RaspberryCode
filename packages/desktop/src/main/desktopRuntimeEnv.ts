@@ -421,7 +421,7 @@ function resolveBundledLarkCliBinaryPath(): string | undefined {
   return resolveBundledRuntimeToolBinaryPath("lark-cli", "lark-cli");
 }
 
-export function resolveBundledGlmBinaryPath(): string | undefined {
+export function resolveBundledAgentBinaryPath(): string | undefined {
   return resolveBundledZCodeAgentBinaryPath();
 }
 
@@ -431,7 +431,7 @@ function resolveHostProcessBinaryEnv(
   bundledPath: string | undefined,
 ): string | undefined {
   // RaspberryCode Agent 与 app 协议适配强绑定版本，生产包必须优先使用随包携带的固定 runtime。
-  // 用户机器或本地 .env 里残留的 GLM_BINARY_PATH 即使存在，也可能版本不兼容。
+  // 用户机器或本地 .env 里残留的显式路径即使存在，也可能版本不兼容。
   // 只有 bundled runtime 缺失时才把显式路径作为兜底，避免用户本机 CLI 覆盖内嵌版本。
   if (bundledPath) {
     return bundledPath;
@@ -491,13 +491,17 @@ export function resolveDynamicWorkflowModeHostEnv(options: {
 }
 
 export function buildHostProcessEnv(hostProcessLocalEnv: Record<string, string>) {
-  const glmBinaryPath = resolveBundledGlmBinaryPath();
+  const agentBinaryPath = resolveBundledAgentBinaryPath();
   const larkCliBinaryPath = resolveBundledLarkCliBinaryPath();
-  const resolvedGlmBinaryPath = resolveHostProcessBinaryEnv(
-    "GLM_BINARY_PATH",
-    hostProcessLocalEnv,
-    glmBinaryPath,
-  );
+  // 先按中立 env 名解析；旧名 GLM_BINARY_PATH 仅作用户残留 .env 的读兼容兜底，
+  // 对 host 进程一律以 ZCODE_AGENT_BINARY_PATH 下发（specs/provider-neutrality.md 兼容面）。
+  const resolvedAgentBinaryPath =
+    resolveHostProcessBinaryEnv(
+      "ZCODE_AGENT_BINARY_PATH",
+      hostProcessLocalEnv,
+      agentBinaryPath,
+    ) ??
+    resolveHostProcessBinaryEnv("GLM_BINARY_PATH", hostProcessLocalEnv, agentBinaryPath);
   const resolvedLarkCliBinaryPath = resolveHostProcessBinaryEnv(
     "ZCODE_LARK_CLI_BINARY",
     hostProcessLocalEnv,
@@ -560,6 +564,9 @@ export function buildHostProcessEnv(hostProcessLocalEnv: Record<string, string>)
   // 三层里有两层不写这个键，空对象无法覆盖 inheritedEnv，所以先无条件删掉继承值再按决策 spread 回去。
   // 少了这一行，production 包和 dev 的非法取值都会原样穿透到 Host。
   delete inheritedEnv[ZCODE_DYNAMIC_WORKFLOW_MODE_ENV];
+  // 旧名 GLM_BINARY_PATH 只做输入读兼容（上方兜底解析），一律不下发给 host：
+  // 新旧键并存会让下游按 binaryEnvVar（ZCODE_AGENT_BINARY_PATH）读到另一份值。
+  delete inheritedEnv.GLM_BINARY_PATH;
 
   return {
     ...inheritedEnv,
@@ -588,7 +595,7 @@ export function buildHostProcessEnv(hostProcessLocalEnv: Record<string, string>)
     ...(bundledCuaHelperAppPath
       ? { [ZCODE_CUA_BUNDLED_HELPER_APP_PATH_ENV]: bundledCuaHelperAppPath }
       : {}),
-    ...(resolvedGlmBinaryPath ? { GLM_BINARY_PATH: resolvedGlmBinaryPath } : {}),
+    ...(resolvedAgentBinaryPath ? { ZCODE_AGENT_BINARY_PATH: resolvedAgentBinaryPath } : {}),
     ...(resolvedLarkCliBinaryPath ? { ZCODE_LARK_CLI_BINARY: resolvedLarkCliBinaryPath } : {}),
   };
 }

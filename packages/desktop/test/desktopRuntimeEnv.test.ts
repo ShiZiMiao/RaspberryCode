@@ -718,26 +718,43 @@ describe("desktopRuntimeEnv buildHostProcessEnv", () => {
     });
   });
 
-  it("bundled GLM runtime 优先于本地显式 GLM_BINARY_PATH", async () => {
+  it("bundled agent runtime 优先于本地显式 ZCODE_AGENT_BINARY_PATH", async () => {
     const sandboxRoot = mkdtempSync(join(tmpdir(), "zcode-desktop-runtime-env-"));
     createdDirs.push(sandboxRoot);
     const platformKey = `${process.platform}-${process.arch}`;
     const bundledBinaryName = process.platform === "win32" ? "zcode-agent.exe" : "zcode-agent";
     const bundledPath = join(sandboxRoot, "bundled-agents", platformKey, "glm", bundledBinaryName);
-    const localGlmPath = join(sandboxRoot, "local", "zcode-agent");
+    const localAgentPath = join(sandboxRoot, "local", "zcode-agent");
     mkdirSync(join(sandboxRoot, "bundled-agents", platformKey, "glm"), {
       recursive: true,
     });
     mkdirSync(join(sandboxRoot, "local"), { recursive: true });
     writeFileSync(bundledPath, "bundled\n", "utf-8");
-    writeFileSync(localGlmPath, "local\n", "utf-8");
+    writeFileSync(localAgentPath, "local\n", "utf-8");
     process.chdir(sandboxRoot);
 
     const { buildHostProcessEnv } = await import("../src/main/desktopRuntimeEnv.js");
 
-    const env = buildHostProcessEnv({ GLM_BINARY_PATH: localGlmPath });
+    const env = buildHostProcessEnv({ ZCODE_AGENT_BINARY_PATH: localAgentPath });
 
-    expectRuntimePath(env.GLM_BINARY_PATH, bundledPath);
+    expectRuntimePath(env.ZCODE_AGENT_BINARY_PATH, bundledPath);
+    expect(env.GLM_BINARY_PATH).toBeUndefined();
+  });
+
+  it("旧名 GLM_BINARY_PATH 仅作读兼容兜底，输出一律以 ZCODE_AGENT_BINARY_PATH 下发", async () => {
+    const sandboxRoot = mkdtempSync(join(tmpdir(), "zcode-desktop-runtime-env-"));
+    createdDirs.push(sandboxRoot);
+    const localAgentPath = join(sandboxRoot, "local", "zcode-agent");
+    mkdirSync(join(sandboxRoot, "local"), { recursive: true });
+    writeFileSync(localAgentPath, "local\n", "utf-8");
+    process.chdir(sandboxRoot);
+
+    const { buildHostProcessEnv } = await import("../src/main/desktopRuntimeEnv.js");
+
+    const env = buildHostProcessEnv({ GLM_BINARY_PATH: localAgentPath });
+
+    expectRuntimePath(env.ZCODE_AGENT_BINARY_PATH, localAgentPath);
+    expect(env.GLM_BINARY_PATH).toBeUndefined();
   });
 
   it("本地 host 进程加载工作区 .env.development 的测试环境 API", async () => {

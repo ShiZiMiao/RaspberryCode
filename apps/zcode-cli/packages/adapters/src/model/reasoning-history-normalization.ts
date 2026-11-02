@@ -6,31 +6,29 @@ import type {
   ModelId,
   ModelProviderId,
 } from "@zcode/contracts";
-import { BUILTIN_MODEL_PROVIDER_IDS } from "@zcode/shared";
+import {
+  areReasoningSignatureCompatible,
+  type ReasoningSignatureScope,
+} from "@zcode/shared";
 import { getStatusCode, unwrapRetryError } from "./failure-inspection.js";
 
 const EMPTY_ASSISTANT_CONTENT_FALLBACK = "(no content)";
 const REJECTED_REASONING_FALLBACK = "[Thinking removed]";
 
-// 旧历史保留 builtin 身份，当前选型已迁到 account 身份；Individual/Team
-// 也会使用不同 ID。只在 reasoning 回放时识别同服务的这些明确身份，不改变选型或鉴权。
-// 不能复用套餐展示分组：Start/Off-Peak/API 接入不在这份签名兼容范围内。
-const REASONING_PROVIDER_GROUPS: readonly (readonly string[])[] = [
-  [
-    "builtin:zai-coding-plan",
-    BUILTIN_MODEL_PROVIDER_IDS.zaiIndividualCodingPlan,
-    BUILTIN_MODEL_PROVIDER_IDS.zaiTeamCodingPlan,
-  ],
-  [
-    "builtin:bigmodel-coding-plan",
-    BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-    BUILTIN_MODEL_PROVIDER_IDS.bigmodelTeamCodingPlan,
-  ],
-];
+/**
+ * reasoning 回放的签名兼容域注入入口：域成员与判定规则见
+ * `packages/shared/src/reasoning-signature-scope.ts`（specs/provider-neutrality.md）。
+ * 调用方可为自定义多身份场景注入额外域；本模块不维护任何品牌名单。
+ */
+export type ReasoningTargetModel = {
+  modelId: ModelId;
+  providerId: ModelProviderId;
+  reasoningSignatureScopes?: readonly ReasoningSignatureScope[];
+};
 
 export function normalizeReasoningHistory(
   messages: ModelInputMessage[],
-  targetModel?: { modelId: ModelId; providerId: ModelProviderId },
+  targetModel?: ReasoningTargetModel,
 ): ModelInputMessage[] {
   const compatibleHistory = removeCrossModelReasoning(messages, targetModel);
   const withoutOrphans = removeReasoningOnlyAssistants(compatibleHistory);
@@ -93,7 +91,7 @@ export function isThinkingSignatureRejection(error: unknown): boolean {
 
 function removeCrossModelReasoning(
   messages: ModelInputMessage[],
-  targetModel: { modelId: ModelId; providerId: ModelProviderId } | undefined,
+  targetModel: ReasoningTargetModel | undefined,
 ): ModelInputMessage[] {
   if (!targetModel) return messages;
 
@@ -101,22 +99,16 @@ function removeCrossModelReasoning(
     if (!message.providerId || !message.modelId) return false;
     if (
       message.modelId === targetModel.modelId &&
-      areReasoningProvidersCompatible(message.providerId, targetModel.providerId)
+      areReasoningSignatureCompatible(
+        message.providerId,
+        targetModel.providerId,
+        targetModel.reasoningSignatureScopes,
+      )
     ) {
       return false;
     }
     return isSignedOrRedactedReasoning(block);
   });
-}
-
-function areReasoningProvidersCompatible(
-  source: ModelProviderId,
-  target: ModelProviderId,
-): boolean {
-  return (
-    source === target ||
-    REASONING_PROVIDER_GROUPS.some((group) => group.includes(source) && group.includes(target))
-  );
 }
 
 function filterReasoningBlocks(

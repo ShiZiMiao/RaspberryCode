@@ -35,7 +35,7 @@ function hasMeteredApiKey(
 
 /**
  * V4 quota 业务状态：conversation snapshot 只提供当前 provider/model/错误，额度仍由
- * usage stats 服务读取（bigmodelUsageQuotaProvider 的 API Key 用量）。
+ * usage stats 服务读取（meteredUsageQuotaProvider 的 API Key 用量）。
  * 两者在 renderer 合并；账号套餐权益已随订阅体系移除，横幅只做信息提示。
  */
 export function useV4SessionQuotaBanner(params: {

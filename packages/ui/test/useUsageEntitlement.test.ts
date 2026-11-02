@@ -1,4 +1,4 @@
-import { BigModelUsageQuotaProvider } from "../../services/src/usage-stats/providers/bigmodelUsageQuotaProvider.js";
+import { MeteredUsageQuotaProvider } from "../../services/src/usage-stats/providers/meteredUsageQuotaProvider.js";
 import type { ReactElement } from "react";
 import type { Root } from "react-dom/client";
 import type { UsageEntitlementSnapshot, ZCodeAccountAccess } from "@zcode/shared";

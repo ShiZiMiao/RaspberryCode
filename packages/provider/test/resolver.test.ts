@@ -805,3 +805,65 @@ describe("ProviderConfigResolver", () => {
     );
   });
 });
+
+describe("provider order neutrality", () => {
+  it("group 不做品牌置顶：顺序只由内置声明顺序与个人顺序决定", () => {
+    const personal = new ProviderConfigMap([
+      [
+        "custom",
+        createApiKeyProviderConfig({
+          apiFormat: "anthropic-messages",
+          baseURL: "https://custom.example.com",
+          models: ["m"],
+        }),
+      ],
+    ]);
+    const result = new ProviderConfigResolver().resolve({
+      zcodeBuiltinProviders: new ProviderConfigMap([
+        [
+          "alpha",
+          createApiKeyProviderConfig({
+            group: null,
+            apiFormat: "anthropic-messages",
+            baseURL: "https://alpha.example.com",
+            models: ["m"],
+          }),
+        ],
+        [
+          "branded",
+          createApiKeyProviderConfig({
+            group: "zai-family",
+            apiFormat: "anthropic-messages",
+            baseURL: "https://branded.example.com",
+            models: ["m"],
+          }),
+        ],
+        [
+          "omega",
+          createApiKeyProviderConfig({
+            group: null,
+            apiFormat: "anthropic-messages",
+            baseURL: "https://omega.example.com",
+            models: ["m"],
+          }),
+        ],
+      ]),
+      personalProviders: parseProviderConfigMap(personal.toJSON()),
+      personalProviderOrder: ["custom", "omega"],
+      personalModels: ModelConfigRules.empty(),
+      zcodeBuiltinModelRules: new ModelConfigRules([
+        { type: "model", modelMatch: "m", config: completeModelConfig() },
+      ]),
+      accountProviders: ProviderConfigMap.empty(),
+    });
+
+    // specs/provider-neutrality.md：带 zai-family group 的 provider 不得置顶，
+    // 顺序 = 未出现在个人顺序中的内置 → 个人声明顺序 → 其余个人。
+    expect(result.resolvedProviders.map((provider) => provider.providerId)).toEqual([
+      "alpha",
+      "branded",
+      "custom",
+      "omega",
+    ]);
+  });
+});

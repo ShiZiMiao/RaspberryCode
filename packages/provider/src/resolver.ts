@@ -214,7 +214,7 @@ export class ProviderConfigResolver {
     const resolvedProviders: ResolvedProvider[] = [];
     const registryProviders: Provider[] = [];
 
-    for (const providerId of resolveProviderOrder(input, effectiveProviders)) {
+    for (const providerId of resolveProviderOrder(input)) {
       const rule = effectiveProviders.getRule(providerId)!;
       const { config, providerName } = rule;
       // 账号不再支持总禁用；旧覆盖值不能让无开关的账号永久失效，其他资格仍正常校验。
@@ -354,23 +354,14 @@ function uniqueInOrder(modelIds: readonly ModelId[]): readonly ModelId[] {
 
 function resolveProviderOrder(
   input: ProviderConfigResolverInput,
-  effectiveProviders: ProviderConfigMap,
 ): readonly ProviderId[] {
-  const sourceIds = effectiveProviders.keys();
-  const familyIds = sourceIds.filter((providerId) => {
-    const group = effectiveProviders.get(providerId)?.group;
-    return group === "zai-family" || group === "bigmodel-family";
-  });
-  const familySet = new Set(familyIds);
-  const builtinIds = input.zcodeBuiltinProviders
-    .keys()
-    .filter((providerId) => !familySet.has(providerId));
+  // 排序中立（specs/provider-neutrality.md）：内置声明顺序在前、个人自定义顺序在后，
+  // 不按 group 做品牌置顶。account/personal 覆盖进入时已 withoutGroup，
+  // group 只用于设置页分组展示，不进入排序。
+  const builtinIds = input.zcodeBuiltinProviders.keys();
   const builtinSet = new Set(builtinIds);
   const personalIds = input.personalProviders
     .keys()
-    .filter((providerId) => !builtinSet.has(providerId) && !familySet.has(providerId));
-  return [
-    ...familyIds,
-    ...resolveOwnedOrder(builtinIds, personalIds, input.personalProviderOrder ?? []),
-  ];
+    .filter((providerId) => !builtinSet.has(providerId));
+  return resolveOwnedOrder(builtinIds, personalIds, input.personalProviderOrder ?? []);
 }

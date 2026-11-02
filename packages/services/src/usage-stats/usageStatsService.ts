@@ -15,10 +15,10 @@ import type { ICredentialService } from "../credential/credential.js";
 import type { IZCodeAgentService } from "../zcode-agent/zcodeAgent.js";
 import type { IUsageStatsService } from "./usageStats.js";
 import {
-  BigModelUsageQuotaProvider,
+  MeteredUsageQuotaProvider,
   type UsageApiAuthorizationRequest,
   type UsageApiAuthorization,
-} from "./providers/bigmodelUsageQuotaProvider.js";
+} from "./providers/meteredUsageQuotaProvider.js";
 
 interface UsageStatsServiceDependencies {
   apiClient: ApiClient;
@@ -40,7 +40,7 @@ function isCodingPlanProviderId(providerId: string | undefined): boolean {
 export function createUsageStatsService(
   dependencies: UsageStatsServiceDependencies,
 ): IUsageStatsService {
-  const quotaProvider = new BigModelUsageQuotaProvider({
+  const quotaProvider = new MeteredUsageQuotaProvider({
     apiClient: dependencies.apiClient,
     resolveApiAuthorization: dependencies.resolveApiAuthorization,
     credentialService: dependencies.credentialService,
@@ -75,9 +75,9 @@ export function createUsageStatsService(
       request: CodingPlanUsageRequest,
     ): Promise<CodingPlanUsageSnapshot> {
       if (!isCodingPlanProviderId(request.preferredProviderId)) {
-        // Coding Plan 页面只允许预置的 Z.AI/BigModel Coding Plan 账号。
+        // Coding Plan 页面只允许预置的套餐订阅身份（Z.ai / BigModel 服务的 Coding Plan provider ID）。
         // 普通 provider id 不能进入 monitor 链路，避免误读 API Key 或环境变量。
-        throw new Error("no_bigmodel_api_key");
+        throw new Error("no_metered_api_key");
       }
       return quotaProvider.getCodingPlanUsageSnapshot(request);
     },
@@ -85,7 +85,7 @@ export function createUsageStatsService(
       request: CodingPlanRegularTpsRequest,
     ): Promise<number | undefined> {
       if (!isCodingPlanProviderId(request.preferredProviderId)) {
-        throw new Error("no_bigmodel_api_key");
+        throw new Error("no_metered_api_key");
       }
       const key = regularTpsCacheKey(request);
       const cached = regularTpsCache.get(key);

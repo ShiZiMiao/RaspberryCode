@@ -14,11 +14,9 @@ export async function confirmAndDeleteModelProvider({
   intl: IntlInstance;
   deleteProvider: (providerId: string) => Promise<void>;
 }) {
-  if (provider.config.group === "zai-family" || provider.config.group === "bigmodel-family") {
-    return;
-  }
-
-  logger.info("[ModelProviderSection] 请求删除自定义模型供应商", {
+  // 删除规则对所有供应商一致（specs/provider-neutrality.md）：内置供应商删除的是个人
+  // 覆盖层（deletePersonalProvider），自定义供应商删除条目；不按品牌区分能否删除。
+  logger.info("[ModelProviderSection] 请求删除模型供应商", {
     providerId: provider.providerId,
     providerName: getProviderFormLabel(provider),
   });

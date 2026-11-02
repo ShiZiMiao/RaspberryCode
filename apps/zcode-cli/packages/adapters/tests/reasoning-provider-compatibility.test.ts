@@ -50,10 +50,33 @@ describe("reasoning replay provider identity", () => {
     const messages = history("custom-a");
     expect(normalizeReasoningHistory(messages, identity("custom-a"))).toBe(messages);
   });
+
+  // 签名兼容域是开放机制而非品牌特权：自定义 provider 声明同域后与内置身份享同等待遇。
+  it("keeps signed reasoning across providers registered in an injected scope", () => {
+    const messages = history("custom-a");
+    expect(
+      normalizeReasoningHistory(messages, identityWithScopes("custom-b", [["custom-a", "custom-b"]])),
+    ).toBe(messages);
+  });
+
+  it("still strips across injected scope boundaries", () => {
+    expectStripped(history("custom-a"), identityWithScopes("custom-c", [["custom-a", "custom-b"]]));
+  });
+
+  it("does not leak injected scopes into builtin scope membership", () => {
+    expectStripped(
+      history("builtin:zai-coding-plan"),
+      identityWithScopes("custom-b", [["custom-a", "custom-b"]]),
+    );
+  });
 });
 
 function identity(providerId: string) {
   return { providerId: createModelProviderId(providerId), modelId: MODEL_ID };
+}
+
+function identityWithScopes(providerId: string, reasoningSignatureScopes: string[][]) {
+  return { ...identity(providerId), reasoningSignatureScopes };
 }
 
 function history(providerId: string): ModelInputMessage[] {
