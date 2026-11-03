@@ -1,5 +1,4 @@
 # RaspberryCode
-> **Provenance**: RaspberryCode is a fork of [zai-org/ZCode](https://github.com/zai-org/ZCode) (Apache-2.0).
 
 <div align="center">
   <img src="public/logo/icons/1024x1024.png" alt="RaspberryCode" width="128" height="128" />

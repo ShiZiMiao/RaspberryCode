@@ -1,7 +1,5 @@
 # RaspberryCode 相关功能说明与第三方组件声明
 
-> **出处说明**：RaspberryCode 是基于 [zai-org/ZCode](https://github.com/zai-org/ZCode)（Apache-2.0）二次开发的分支，上游版权声明见 [LICENSE](LICENSE)。本文档描述 RaspberryCode 现行产品的数据行为与安全边界。
-
 本声明适用于本仓库公开的源码及其构建产物。各运行形态的功能、权限、存储位置和网络行为不同，不能将其中一种形态的默认设置理解为整个项目的统一设置。
 
 ## 一、AI 输出、执行权限与自动化风险

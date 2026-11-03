@@ -1,5 +1,4 @@
 # RaspberryCode
-> **出处说明**：RaspberryCode 是基于 [zai-org/ZCode](https://github.com/zai-org/ZCode)（Apache-2.0）二次开发的分支。
 
 <div align="center">
   <img src="public/logo/icons/1024x1024.png" alt="RaspberryCode" width="128" height="128" />
