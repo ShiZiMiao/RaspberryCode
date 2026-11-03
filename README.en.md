@@ -1,25 +1,14 @@
 # RaspberryCode
-> **Provenance**: RaspberryCode is a fork of [zai-org/ZCode](https://github.com/zai-org/ZCode) (Apache-2.0). Some ecosystem links and service notes in this document are inherited from upstream.
+> **Provenance**: RaspberryCode is a fork of [zai-org/ZCode](https://github.com/zai-org/ZCode) (Apache-2.0).
 
 <div align="center">
   <img src="public/logo/icons/1024x1024.png" alt="RaspberryCode" width="128" height="128" />
 </div>
 <p align="center">
-  <a href="https://applink.feishu.cn/client/chat/chatter/add_by_link?link_token=47ag983c-8fcb-4d6d-814b-5395193a712c&amp;qr_code=true">Feishu community</a> ·
-  <a href="https://discord.gg/z9aBcQXZQ3">Discord</a>
-</p>
-<p align="center">
   <a href="README.md">简体中文</a> | English
 </p>
 
 RaspberryCode is an AI coding workspace with desktop and terminal interfaces. This repository contains the clients, backend services, shared UI, and Agent CLI and runtime source code.
-
-## Updates
-
-- **2026-10-19**: Updated to RaspberryCode v3.16.2.
-- **2026-10-16**: Updated to RaspberryCode v3.16.1.
-- 2026-10-10: Updated to RaspberryCode v3.15.1.
-- 2026-9-23: Updated to RaspberryCode v3.14.3.
 
 ## Setup
 

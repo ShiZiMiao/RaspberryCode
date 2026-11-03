@@ -4,7 +4,7 @@ Self-contained library for the dynamic workflow feature: the TypeScript facade t
 main agent writes scripts against, and the compiler that recovers rigor from those
 scripts (typecheck, schema synthesis, dependency inference, site identity).
 
-**Spec / decision record:** `docs/dynamic-workflow.md` in the z-code app repo is the
+**Spec / decision record:** `docs/dynamic-workflow.md` in the app repo is the
 entry point. The facade, compiler options and authoring rules are decided in
 `docs/dynamic-workflow/authoring.md`; the analysis and the engine in this package's
 `docs/`. This package implements the spec; amend the spec first when behaviour changes.

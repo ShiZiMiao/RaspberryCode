@@ -1,25 +1,14 @@
 # RaspberryCode
-> **出处说明**：RaspberryCode 是基于 [zai-org/ZCode](https://github.com/zai-org/ZCode)（Apache-2.0）二次开发的分支，原文档中的部分生态链接与服务说明沿用上游。
+> **出处说明**：RaspberryCode 是基于 [zai-org/ZCode](https://github.com/zai-org/ZCode)（Apache-2.0）二次开发的分支。
 
 <div align="center">
   <img src="public/logo/icons/1024x1024.png" alt="RaspberryCode" width="128" height="128" />
 </div>
 <p align="center">
-  <a href="https://applink.feishu.cn/client/chat/chatter/add_by_link?link_token=47ag983c-8fcb-4d6d-814b-5395193a712c&amp;qr_code=true">飞书社群</a> ·
-  <a href="https://discord.gg/z9aBcQXZQ3">Discord</a>
-</p>
-<p align="center">
   简体中文 | <a href="README.en.md">English</a>
 </p>
 
 RaspberryCode 是 AI 编程工作台，提供桌面应用和终端 Agent。本仓库包含客户端、后端服务、共享 UI，以及 Agent CLI 与运行时源码。
-
-## 更新
-
-- **2026-10-19**：更新至 RaspberryCode v3.16.2 版本。
-- **2026-10-16**：更新至 RaspberryCode v3.16.1 版本。
-- 2026-10-10：更新至 RaspberryCode v3.15.1 版本。
-- 2026-9-23：更新至 RaspberryCode v3.14.3 版本。
 
 ## 初始化
 
