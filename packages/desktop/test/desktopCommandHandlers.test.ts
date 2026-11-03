@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { join } from "node:path";
-import { DesktopCommandIds } from "@zcode/shared";
+import { DesktopCommandIds } from "@raspberrycode/shared";
 
 const appMock = {
   isPackaged: false,
@@ -236,7 +236,7 @@ describe("desktopCommandHandlers resolveFeedbackUrl", () => {
     const { executeDesktopCommand } = await import("../src/main/desktopCommandHandlers.js");
     const { shell } = await import("electron");
     const commandOptions = createCommandOptions({
-      settings: { zcodeEndpointOrigin: "https://zcode.z.ai" },
+      settings: { raspberrycodeEndpointOrigin: "https://raspberrycode.example.com" },
     });
 
     await executeDesktopCommand({
@@ -245,7 +245,7 @@ describe("desktopCommandHandlers resolveFeedbackUrl", () => {
       currentApplicationLocale: "en-US",
     });
 
-    expect(shell.openExternal).toHaveBeenCalledWith("https://zcode.z.ai/en/changelog");
+    expect(shell.openExternal).toHaveBeenCalledWith("https://raspberrycode.example.com/en/changelog");
   });
 
   it("relaunch app 命令交给主进程重启回调", async () => {
@@ -270,11 +270,11 @@ describe("desktopCommandHandlers resolveFeedbackUrl", () => {
     expect(targetWindow.webContents.setZoomFactor).toHaveBeenLastCalledWith(Math.pow(1.1, 5));
     expect(targetWindow.setWindowButtonPosition).toHaveBeenLastCalledWith({ x: 22, y: 44 });
     expect(targetWindow.webContents.send).toHaveBeenLastCalledWith(
-      "zcode:desktop-zoom-level-changed",
+      "raspberrycode:desktop-zoom-level-changed",
       { zoomLevel: 5 },
     );
     expect(targetWindow.webContents.send).toHaveBeenCalledWith(
-      "zcode:window-controls-overlay-changed",
+      "raspberrycode:window-controls-overlay-changed",
       { leftPaddingPx: 60 },
     );
 
@@ -282,7 +282,7 @@ describe("desktopCommandHandlers resolveFeedbackUrl", () => {
     updateDesktopZoomLevel(targetWindow, "in");
     expect(targetWindow.webContents.setZoomFactor).toHaveBeenLastCalledWith(Math.pow(1.1, 5));
     expect(targetWindow.webContents.send).toHaveBeenLastCalledWith(
-      "zcode:desktop-zoom-level-changed",
+      "raspberrycode:desktop-zoom-level-changed",
       { zoomLevel: 5 },
     );
 
@@ -291,11 +291,11 @@ describe("desktopCommandHandlers resolveFeedbackUrl", () => {
     expect(targetWindow.webContents.setZoomFactor).toHaveBeenLastCalledWith(Math.pow(1.1, -3));
     expect(targetWindow.setWindowButtonPosition).toHaveBeenLastCalledWith({ x: 22, y: 14 });
     expect(targetWindow.webContents.send).toHaveBeenCalledWith(
-      "zcode:window-controls-overlay-changed",
+      "raspberrycode:window-controls-overlay-changed",
       { leftPaddingPx: 128 },
     );
     expect(targetWindow.webContents.send).toHaveBeenLastCalledWith(
-      "zcode:desktop-zoom-level-changed",
+      "raspberrycode:desktop-zoom-level-changed",
       { zoomLevel: -3 },
     );
 
@@ -304,11 +304,11 @@ describe("desktopCommandHandlers resolveFeedbackUrl", () => {
     expect(targetWindow.webContents.setZoomFactor).toHaveBeenLastCalledWith(1);
     expect(targetWindow.setWindowButtonPosition).toHaveBeenLastCalledWith({ x: 22, y: 23 });
     expect(targetWindow.webContents.send).toHaveBeenCalledWith(
-      "zcode:window-controls-overlay-changed",
+      "raspberrycode:window-controls-overlay-changed",
       { leftPaddingPx: 96 },
     );
     expect(targetWindow.webContents.send).toHaveBeenLastCalledWith(
-      "zcode:desktop-zoom-level-changed",
+      "raspberrycode:desktop-zoom-level-changed",
       { zoomLevel: 0 },
     );
   });
@@ -328,11 +328,11 @@ describe("desktopCommandHandlers resolveFeedbackUrl", () => {
       height: 77,
     });
     expect(targetWindow.webContents.send).toHaveBeenCalledWith(
-      "zcode:window-controls-overlay-changed",
+      "raspberrycode:window-controls-overlay-changed",
       { rightPaddingPx: 84, titleBarHeightPx: 77 },
     );
     expect(targetWindow.webContents.send).toHaveBeenLastCalledWith(
-      "zcode:desktop-zoom-level-changed",
+      "raspberrycode:desktop-zoom-level-changed",
       { zoomLevel: 5 },
     );
 
@@ -344,11 +344,11 @@ describe("desktopCommandHandlers resolveFeedbackUrl", () => {
       height: 36,
     });
     expect(targetWindow.webContents.send).toHaveBeenCalledWith(
-      "zcode:window-controls-overlay-changed",
+      "raspberrycode:window-controls-overlay-changed",
       { rightPaddingPx: 181, titleBarHeightPx: 36 },
     );
     expect(targetWindow.webContents.send).toHaveBeenLastCalledWith(
-      "zcode:desktop-zoom-level-changed",
+      "raspberrycode:desktop-zoom-level-changed",
       { zoomLevel: -3 },
     );
   });
@@ -373,11 +373,11 @@ describe("desktopCommandHandlers resolveFeedbackUrl", () => {
 
       expect(customWindow.setTitleBarOverlay).not.toHaveBeenCalled();
       expect(customWindow.webContents.send).toHaveBeenCalledWith(
-        "zcode:window-controls-overlay-changed",
+        "raspberrycode:window-controls-overlay-changed",
         { rightPaddingPx: 136 },
       );
       expect(nativeWindow.webContents.send).toHaveBeenCalledWith(
-        "zcode:window-controls-overlay-changed",
+        "raspberrycode:window-controls-overlay-changed",
         { rightPaddingPx: nativePadding, titleBarHeightPx: height },
       );
       for (const targetWindow of [customWindow, nativeWindow]) {
@@ -425,21 +425,21 @@ function createZoomWindow(initialZoomFactor: number) {
 function createCommandOptions(options?: {
   onDesktopZoomChanged?: () => void;
   onRelaunchApp?: () => Promise<void>;
-  onZCodeEndpointChanged?: () => void;
-  settings?: { zcodeEndpointOrigin?: string; desktopZoomLevel?: number };
+  onRaspberryCodeEndpointChanged?: () => void;
+  settings?: { raspberrycodeEndpointOrigin?: string; desktopZoomLevel?: number };
 }) {
   return {
     command: DesktopCommandIds.OpenChangelog,
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-    updateZCodeStdioTapDevMenuState: vi.fn(),
+    updateRaspberryCodeStdioTapDevMenuState: vi.fn(),
     onDesktopZoomChanged: options?.onDesktopZoomChanged ?? vi.fn(),
-    onZCodeEndpointChanged: options?.onZCodeEndpointChanged ?? vi.fn(),
+    onRaspberryCodeEndpointChanged: options?.onRaspberryCodeEndpointChanged ?? vi.fn(),
     onRelaunchApp: options?.onRelaunchApp ?? vi.fn(async () => undefined),
     settingService: {
       get: vi.fn(async () => options?.settings ?? {}),
       update: vi.fn(async () => undefined),
     },
-    credentialsDir: "/tmp/zcode-test",
+    credentialsDir: "/tmp/raspberrycode-test",
     currentApplicationLocale: "zh-CN" as const,
   };
 }

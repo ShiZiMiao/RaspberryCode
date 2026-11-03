@@ -2,7 +2,7 @@ import { FileTextIcon, GlobeIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { MessageFileLinkTarget } from "@/components/ai-elements/message.js";
 import { useWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import {
   type AssistantPreviewCard,
   type AssistantPreviewCardFileStatService,
@@ -194,7 +194,7 @@ export function AssistantPreviewCards({
   onAutoOpenPptx,
   compactForOverlay,
 }: AssistantPreviewCardsProps) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   const { visibleCards, settled } = useAssistantPreviewCardValidation(cards, {
     workspacePath,
     workspaceIdentity,
@@ -296,10 +296,10 @@ function AssistantPreviewCardRow({
         <div
           className="flex w-full items-center gap-3 rounded-xl border border-card-border bg-card p-3 pr-4 text-foreground"
           data-preview-card-title={card.title}
-          data-zcode-stream-animate="true"
+          data-raspberrycode-stream-animate="true"
           style={
             {
-              "--zcode-stream-animation-delay": `${animationDelayMs}ms`,
+              "--raspberrycode-stream-animation-delay": `${animationDelayMs}ms`,
             } as CSSProperties
           }
         >

@@ -10,13 +10,13 @@ overrides:
 
 patchedDependencies:
   '@ai-sdk/anthropic@3.0.81':
-    hash: d3a7c381eba7f5157f765a0528003af17cf84544911dfb7412c7800168e01c18
+    hash: 443c3c365177882dff2df827eea03ff0bfce755f9523e6520631d084362ca34d
     path: patches/@ai-sdk__anthropic@3.0.81.patch
   '@ai-sdk/openai-compatible@2.0.60':
-    hash: 9632fe9d821b3dc20939ae509cc35b968d90d018bbd1d812390718898182a38b
+    hash: 558d786cec856f82e40b4c92a986e9b6355431e246ebd2b074d8bf6f5471ca40
     path: patches/@ai-sdk__openai-compatible@2.0.60.patch
   '@arms/rum-electron@0.0.3':
-    hash: 36855354851ea495bc47a03340b0484ff62836b739cad56904b8a69f18e2ae97
+    hash: eac7aa6bbe7b3e29ac1e73dba6d40068560cb186393e387bb886ff23fa710d9b
     path: patches/@arms__rum-electron@0.0.3.patch
   '@radix-ui/react-collapsible@1.1.12':
     hash: 4b7b3781f603e111bb33aef9c4b1694ac9bacd3dff47692606de9876d4631164
@@ -45,6 +45,9 @@ importers:
       '@jridgewell/trace-mapping':
         specifier: 0.3.31
         version: 0.3.31
+      '@raspberrycode/raspberrycode-cua':
+        specifier: workspace:*
+        version: link:packages/raspberrycode-cua
       '@release-it/conventional-changelog':
         specifier: ^10.0.6
         version: 10.0.6(conventional-commits-filter@5.0.0)(conventional-commits-parser@6.4.0)(release-it@19.2.4(@types/node@25.6.0)(magicast@0.5.2))
@@ -57,9 +60,6 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^4.1.1
         version: 4.1.4(vitest@4.1.4)
-      '@zcode/zcode-cua':
-        specifier: workspace:*
-        version: link:packages/zcode-cua
       concurrently:
         specifier: ^9.1.2
         version: 9.2.1
@@ -155,7 +155,7 @@ importers:
         specifier: ^8.0.2
         version: 8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0)
 
-  apps/zcode-cli:
+  apps/raspberrycode-cli:
     dependencies:
       dotenv:
         specifier: ^17.4.2
@@ -201,38 +201,38 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@5.9.3))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.25.12)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/adapters:
+  apps/raspberrycode-cli/packages/adapters:
     dependencies:
       '@ai-sdk/anthropic':
         specifier: 3.0.81
-        version: 3.0.81(patch_hash=d3a7c381eba7f5157f765a0528003af17cf84544911dfb7412c7800168e01c18)(zod@4.6.5)
+        version: 3.0.81(patch_hash=443c3c365177882dff2df827eea03ff0bfce755f9523e6520631d084362ca34d)(zod@4.6.5)
       '@ai-sdk/openai':
         specifier: ^3.0.58
         version: 3.0.65(zod@4.6.5)
       '@ai-sdk/openai-compatible':
         specifier: ^2.0.58
-        version: 2.0.60(patch_hash=9632fe9d821b3dc20939ae509cc35b968d90d018bbd1d812390718898182a38b)(zod@4.6.5)
+        version: 2.0.60(patch_hash=558d786cec856f82e40b4c92a986e9b6355431e246ebd2b074d8bf6f5471ca40)(zod@4.6.5)
       '@modelcontextprotocol/client':
         specifier: 2.0.0
         version: 2.0.0
-      '@zcode/contracts':
+      '@raspberrycode/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@zcode/dynamic-workflow':
+      '@raspberrycode/dynamic-workflow':
         specifier: workspace:*
         version: link:../dynamic-workflow
-      '@zcode/model-option-map':
+      '@raspberrycode/model-option-map':
         specifier: workspace:*
         version: link:../../../../packages/model-option-map
-      '@zcode/provider':
+      '@raspberrycode/provider':
         specifier: workspace:*
         version: link:../../../../packages/provider
-      '@zcode/shared':
+      '@raspberrycode/raspberrycode-cua':
+        specifier: workspace:*
+        version: link:../../../../packages/raspberrycode-cua
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../../../../packages/shared
-      '@zcode/zcode-cua':
-        specifier: workspace:*
-        version: link:../../../../packages/zcode-cua
       ai:
         specifier: 6.0.193
         version: 6.0.193(zod@4.6.5)
@@ -280,7 +280,7 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@6.0.2))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/android-emulator-plugin:
+  apps/raspberrycode-cli/packages/android-emulator-plugin:
     dependencies:
       '@modelcontextprotocol/server':
         specifier: 2.0.0
@@ -302,36 +302,36 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@5.9.3))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.25.12)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/bootstrap:
+  apps/raspberrycode-cli/packages/bootstrap:
     dependencies:
-      '@zcode/adapters':
+      '@raspberrycode/adapters':
         specifier: workspace:*
         version: link:../adapters
-      '@zcode/contracts':
+      '@raspberrycode/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@zcode/core':
+      '@raspberrycode/core':
         specifier: workspace:*
         version: link:../core
-      '@zcode/dynamic-workflow':
+      '@raspberrycode/dynamic-workflow':
         specifier: workspace:*
         version: link:../dynamic-workflow
-      '@zcode/dynamic-workflow-runtime':
+      '@raspberrycode/dynamic-workflow-runtime':
         specifier: workspace:*
         version: link:../dynamic-workflow-runtime
-      '@zcode/i18n':
+      '@raspberrycode/i18n':
         specifier: workspace:*
         version: link:../i18n
-      '@zcode/provider':
+      '@raspberrycode/provider':
         specifier: workspace:*
         version: link:../../../../packages/provider
-      '@zcode/provider-node':
+      '@raspberrycode/provider-node':
         specifier: workspace:*
         version: link:../../../../packages/provider-node
-      '@zcode/shared':
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../../../../packages/shared
-      '@zcode/telemetry':
+      '@raspberrycode/telemetry':
         specifier: workspace:*
         version: link:../telemetry
       diff:
@@ -341,34 +341,34 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
     devDependencies:
+      '@raspberrycode/formal-proof':
+        specifier: workspace:*
+        version: link:../../../../packages/formal-proof
       '@types/node':
         specifier: ^24.0.0
         version: 24.12.2
       '@types/yazl':
         specifier: ^3.3.1
         version: 3.3.1
-      '@zcode/formal-proof':
-        specifier: workspace:*
-        version: link:../../../../packages/formal-proof
       yazl:
         specifier: ^3.3.1
         version: 3.3.1
 
-  apps/zcode-cli/packages/browser-use-plugin:
+  apps/raspberrycode-cli/packages/browser-use-plugin:
     dependencies:
       '@modelcontextprotocol/server':
         specifier: 2.0.0
         version: 2.0.0
-      '@zcode/contracts':
+      '@raspberrycode/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@zcode/core':
+      '@raspberrycode/core':
         specifier: workspace:*
         version: link:../core
-      '@zcode/node-repl-host':
+      '@raspberrycode/node-repl-host':
         specifier: workspace:*
         version: link:../node-repl-host
-      '@zcode/shared':
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../../../../packages/shared
       zod:
@@ -378,15 +378,15 @@ importers:
       '@modelcontextprotocol/client':
         specifier: 2.0.0
         version: 2.0.0
+      '@raspberrycode/adapters':
+        specifier: workspace:*
+        version: link:../adapters
+      '@raspberrycode/bootstrap':
+        specifier: workspace:*
+        version: link:../bootstrap
       '@types/node':
         specifier: ^24.0.0
         version: 24.12.2
-      '@zcode/adapters':
-        specifier: workspace:*
-        version: link:../adapters
-      '@zcode/bootstrap':
-        specifier: workspace:*
-        version: link:../bootstrap
       esbuild:
         specifier: ^0.25.0
         version: 0.25.12
@@ -400,36 +400,36 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@5.9.3))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.25.12)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/cli:
+  apps/raspberrycode-cli/packages/cli:
     dependencies:
-      '@zcode/adapters':
+      '@raspberrycode/adapters':
         specifier: workspace:*
         version: link:../adapters
-      '@zcode/bootstrap':
+      '@raspberrycode/bootstrap':
         specifier: workspace:*
         version: link:../bootstrap
-      '@zcode/contracts':
+      '@raspberrycode/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@zcode/core':
+      '@raspberrycode/core':
         specifier: workspace:*
         version: link:../core
-      '@zcode/dynamic-workflow-runtime':
+      '@raspberrycode/dynamic-workflow-runtime':
         specifier: workspace:*
         version: link:../dynamic-workflow-runtime
-      '@zcode/i18n':
+      '@raspberrycode/i18n':
         specifier: workspace:*
         version: link:../i18n
-      '@zcode/provider-node':
+      '@raspberrycode/provider-node':
         specifier: workspace:*
         version: link:../../../../packages/provider-node
-      '@zcode/shared':
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../../../../packages/shared
-      '@zcode/shared-types':
+      '@raspberrycode/shared-types':
         specifier: workspace:*
         version: link:../shared-types
-      '@zcode/tui':
+      '@raspberrycode/tui':
         specifier: workspace:*
         version: link:../tui
       dotenv:
@@ -439,9 +439,9 @@ importers:
         specifier: 1.59.1
         version: 1.59.1
 
-  apps/zcode-cli/packages/contracts:
+  apps/raspberrycode-cli/packages/contracts:
     dependencies:
-      '@zcode/shared':
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../../../../packages/shared
       zod:
@@ -458,23 +458,23 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@6.0.2))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/core:
+  apps/raspberrycode-cli/packages/core:
     dependencies:
-      '@zcode/contracts':
+      '@raspberrycode/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@zcode/dynamic-workflow':
+      '@raspberrycode/dynamic-workflow':
         specifier: workspace:*
         version: link:../dynamic-workflow
-      '@zcode/shared':
+      '@raspberrycode/raspberrycode-cua':
+        specifier: workspace:*
+        version: link:../../../../packages/raspberrycode-cua
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../../../../packages/shared
-      '@zcode/shared-types':
+      '@raspberrycode/shared-types':
         specifier: workspace:*
         version: link:../shared-types
-      '@zcode/zcode-cua':
-        specifier: workspace:*
-        version: link:../../../../packages/zcode-cua
       cheerio:
         specifier: ^1.0.0
         version: 1.2.0
@@ -504,12 +504,12 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@6.0.2))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/debug:
+  apps/raspberrycode-cli/packages/debug:
     dependencies:
       '@hono/node-server':
         specifier: ^1.14.4
         version: 1.19.14(hono@4.12.12)
-      '@zcode/shared':
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../../../../packages/shared
       hono:
@@ -556,13 +556,13 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@5.9.3))(vite@7.3.3(@types/node@24.12.2)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/documents-plugin:
+  apps/raspberrycode-cli/packages/documents-plugin:
     devDependencies:
-      '@zcode/office-runtime':
+      '@raspberrycode/office-runtime':
         specifier: workspace:*
         version: link:../office-runtime
 
-  apps/zcode-cli/packages/dynamic-workflow:
+  apps/raspberrycode-cli/packages/dynamic-workflow:
     dependencies:
       typescript:
         specifier: ^5.9.0
@@ -575,9 +575,9 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@5.9.3))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/dynamic-workflow-runtime:
+  apps/raspberrycode-cli/packages/dynamic-workflow-runtime:
     dependencies:
-      '@zcode/dynamic-workflow':
+      '@raspberrycode/dynamic-workflow':
         specifier: workspace:*
         version: link:../dynamic-workflow
     devDependencies:
@@ -588,9 +588,9 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@6.0.2))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/i18n:
+  apps/raspberrycode-cli/packages/i18n:
     dependencies:
-      '@zcode/contracts':
+      '@raspberrycode/contracts':
         specifier: workspace:*
         version: link:../contracts
     devDependencies:
@@ -598,9 +598,9 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@25.6.0)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@25.6.0)(typescript@6.0.2))(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/image-search-plugin: {}
+  apps/raspberrycode-cli/packages/image-search-plugin: {}
 
-  apps/zcode-cli/packages/ios-simulator-plugin:
+  apps/raspberrycode-cli/packages/ios-simulator-plugin:
     dependencies:
       '@modelcontextprotocol/server':
         specifier: 2.0.0
@@ -622,23 +622,23 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@5.9.3))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.25.12)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/node-repl-host:
+  apps/raspberrycode-cli/packages/node-repl-host:
     dependencies:
       '@modelcontextprotocol/server':
         specifier: 2.0.0
         version: 2.0.0
-      '@zcode/contracts':
+      '@raspberrycode/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@zcode/core':
+      '@raspberrycode/core':
         specifier: workspace:*
         version: link:../core
-      '@zcode/shared':
+      '@raspberrycode/raspberrycode-cua':
+        specifier: workspace:*
+        version: link:../../../../packages/raspberrycode-cua
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../../../../packages/shared
-      '@zcode/zcode-cua':
-        specifier: workspace:*
-        version: link:../../../../packages/zcode-cua
       zod:
         specifier: ^4.4.3
         version: 4.6.5
@@ -659,7 +659,7 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@5.9.3))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.25.12)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/office-runtime:
+  apps/raspberrycode-cli/packages/office-runtime:
     devDependencies:
       '@aiden0z/pptx-renderer':
         specifier: 1.2.4
@@ -725,45 +725,58 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
 
-  apps/zcode-cli/packages/pdf-plugin:
+  apps/raspberrycode-cli/packages/pdf-plugin:
     devDependencies:
-      '@zcode/office-runtime':
+      '@raspberrycode/office-runtime':
         specifier: workspace:*
         version: link:../office-runtime
 
-  apps/zcode-cli/packages/plugin-creator-plugin: {}
+  apps/raspberrycode-cli/packages/plugin-creator-plugin: {}
 
-  apps/zcode-cli/packages/presentations-plugin:
+  apps/raspberrycode-cli/packages/presentations-plugin:
     devDependencies:
-      '@zcode/office-runtime':
+      '@raspberrycode/office-runtime':
         specifier: workspace:*
         version: link:../office-runtime
 
-  apps/zcode-cli/packages/restore-legacy-sessions-plugin: {}
+  apps/raspberrycode-cli/packages/raspberrycode-cua-plugin:
+    dependencies:
+      '@raspberrycode/raspberrycode-cua':
+        specifier: workspace:*
+        version: link:../../../../packages/raspberrycode-cua
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.12.2
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
 
-  apps/zcode-cli/packages/shared-types:
+  apps/raspberrycode-cli/packages/raspberrycode-guide-plugin: {}
+
+  apps/raspberrycode-cli/packages/shared-types:
     devDependencies:
       '@types/node':
         specifier: ^24.0.0
         version: 24.12.2
 
-  apps/zcode-cli/packages/skill-creator-plugin: {}
+  apps/raspberrycode-cli/packages/skill-creator-plugin: {}
 
-  apps/zcode-cli/packages/spreadsheets-plugin:
+  apps/raspberrycode-cli/packages/spreadsheets-plugin:
     devDependencies:
-      '@zcode/office-runtime':
+      '@raspberrycode/office-runtime':
         specifier: workspace:*
         version: link:../office-runtime
 
-  apps/zcode-cli/packages/superpowers-plugin: {}
+  apps/raspberrycode-cli/packages/superpowers-plugin: {}
 
-  apps/zcode-cli/packages/swift-bridge:
+  apps/raspberrycode-cli/packages/swift-bridge:
     dependencies:
-      '@zcode/shared-types':
+      '@raspberrycode/shared-types':
         specifier: workspace:*
         version: link:../shared-types
 
-  apps/zcode-cli/packages/telemetry:
+  apps/raspberrycode-cli/packages/telemetry:
     dependencies:
       '@opentelemetry/api':
         specifier: ^1.9.0
@@ -789,7 +802,7 @@ importers:
       '@opentelemetry/sdk-trace-base':
         specifier: 2.6.1
         version: 2.6.1(@opentelemetry/api@1.9.1)
-      '@zcode/contracts':
+      '@raspberrycode/contracts':
         specifier: workspace:*
         version: link:../contracts
     devDependencies:
@@ -800,7 +813,7 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@6.0.2))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/tui:
+  apps/raspberrycode-cli/packages/tui:
     dependencies:
       '@mbears/opentui-core':
         specifier: 0.2.15
@@ -808,13 +821,13 @@ importers:
       '@mbears/opentui-react':
         specifier: 0.2.15
         version: 0.2.15(react-devtools-core@7.0.1)(react@19.2.7)(typescript@6.0.2)(web-tree-sitter@0.25.10)(ws@8.18.0)
-      '@zcode/contracts':
+      '@raspberrycode/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@zcode/i18n':
+      '@raspberrycode/i18n':
         specifier: workspace:*
         version: link:../i18n
-      '@zcode/shared':
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../../../../packages/shared
       react:
@@ -840,24 +853,9 @@ importers:
         specifier: ^4.20.0
         version: 4.21.0
 
-  apps/zcode-cli/packages/visualize-plugin: {}
+  apps/raspberrycode-cli/packages/visualize-plugin: {}
 
-  apps/zcode-cli/packages/zcode-cua-plugin:
-    dependencies:
-      '@zcode/zcode-cua':
-        specifier: workspace:*
-        version: link:../../../../packages/zcode-cua
-    devDependencies:
-      '@types/node':
-        specifier: ^24.0.0
-        version: 24.12.2
-      typescript:
-        specifier: ^5.9.0
-        version: 5.9.3
-
-  apps/zcode-cli/packages/zcode-guide-plugin: {}
-
-  apps/zcode-cli/tools/prompt-trajectory:
+  apps/raspberrycode-cli/tools/prompt-trajectory:
     devDependencies:
       '@types/node':
         specifier: ^24.0.0
@@ -869,17 +867,17 @@ importers:
         specifier: ^5.9.0
         version: 5.9.3
 
-  apps/zcode-cli/tools/typescript: {}
+  apps/raspberrycode-cli/tools/typescript: {}
 
   packages/client:
     dependencies:
-      '@zcode/rpc':
+      '@raspberrycode/rpc':
         specifier: workspace:*
         version: link:../rpc
-      '@zcode/services':
+      '@raspberrycode/services':
         specifier: workspace:*
         version: link:../services
-      '@zcode/shared':
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../shared
     devDependencies:
@@ -891,7 +889,7 @@ importers:
     dependencies:
       '@arms/rum-electron':
         specifier: ^0.0.3
-        version: 0.0.3(patch_hash=36855354851ea495bc47a03340b0484ff62836b739cad56904b8a69f18e2ae97)(@babel/runtime@7.29.7)(electron@41.0.3)
+        version: 0.0.3(patch_hash=eac7aa6bbe7b3e29ac1e73dba6d40068560cb186393e387bb886ff23fa710d9b)(@babel/runtime@7.29.7)(electron@41.0.3)
       '@babel/runtime':
         specifier: ^7.24.5
         version: 7.29.7
@@ -934,36 +932,36 @@ importers:
       '@opentelemetry/sdk-trace-base':
         specifier: 2.6.1
         version: 2.6.1(@opentelemetry/api@1.9.1)
-      '@zcode/client':
+      '@raspberrycode/client':
         specifier: workspace:*
         version: link:../client
-      '@zcode/e2e-report':
+      '@raspberrycode/e2e-report':
         specifier: workspace:*
         version: link:../e2e-report
-      '@zcode/provider':
+      '@raspberrycode/provider':
         specifier: workspace:*
         version: link:../provider
-      '@zcode/provider-node':
+      '@raspberrycode/provider-node':
         specifier: workspace:*
         version: link:../provider-node
-      '@zcode/rpc':
+      '@raspberrycode/raspberrycode-cua':
+        specifier: workspace:*
+        version: link:../raspberrycode-cua
+      '@raspberrycode/rpc':
         specifier: workspace:*
         version: link:../rpc
-      '@zcode/server':
+      '@raspberrycode/server':
         specifier: workspace:*
         version: link:../server
-      '@zcode/services':
+      '@raspberrycode/services':
         specifier: workspace:*
         version: link:../services
-      '@zcode/shared':
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../shared
-      '@zcode/ui':
+      '@raspberrycode/ui':
         specifier: workspace:*
         version: link:../ui
-      '@zcode/zcode-cua':
-        specifier: workspace:*
-        version: link:../zcode-cua
       module-details-from-path:
         specifier: ^1.0.4
         version: 1.0.4
@@ -1162,10 +1160,10 @@ importers:
 
   packages/provider:
     dependencies:
-      '@zcode/model-option-map':
+      '@raspberrycode/model-option-map':
         specifier: workspace:*
         version: link:../model-option-map
-      '@zcode/shared':
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../shared
       zod:
@@ -1181,12 +1179,57 @@ importers:
 
   packages/provider-node:
     dependencies:
-      '@zcode/provider':
+      '@raspberrycode/provider':
         specifier: workspace:*
         version: link:../provider
-      '@zcode/shared':
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../shared
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
+    devDependencies:
+      '@raspberrycode/model-option-map':
+        specifier: workspace:*
+        version: link:../model-option-map
+      '@types/node':
+        specifier: ^25.5.0
+        version: 25.6.0
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.2
+      vitest:
+        specifier: ^4.1.1
+        version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@25.6.0)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@25.6.0)(typescript@6.0.2))(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0))
+
+  packages/raspberrycode-cua: {}
+
+  packages/raspberrycode-server-cli:
+    dependencies:
+      '@hono/node-server':
+        specifier: ^1.19.11
+        version: 1.19.14(hono@4.12.12)
+      '@hono/node-ws':
+        specifier: ^1.3.0
+        version: 1.3.0(@hono/node-server@1.19.14(hono@4.12.12))(hono@4.12.12)
+      '@raspberrycode/rpc':
+        specifier: workspace:*
+        version: link:../rpc
+      '@raspberrycode/services':
+        specifier: workspace:*
+        version: link:../services
+      '@raspberrycode/shared':
+        specifier: workspace:*
+        version: link:../shared
+      hono:
+        specifier: ^4.12.9
+        version: 4.12.12
+      ws:
+        specifier: ^8.20.0
+        version: 8.20.0
+      yauzl:
+        specifier: ^3.3.0
+        version: 3.3.0
       zod:
         specifier: 4.6.5
         version: 4.6.5
@@ -1194,9 +1237,18 @@ importers:
       '@types/node':
         specifier: ^25.5.0
         version: 25.6.0
-      '@zcode/model-option-map':
-        specifier: workspace:*
-        version: link:../model-option-map
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.1
+      '@types/yauzl':
+        specifier: ^2.10.3
+        version: 2.10.3
+      tsup:
+        specifier: ^8.4.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.9)(tsx@4.21.0)(typescript@6.0.2)(yaml@2.9.0)
+      tsx:
+        specifier: ^4.19.4
+        version: 4.21.0
       typescript:
         specifier: ^6.0.2
         version: 6.0.2
@@ -1233,16 +1285,16 @@ importers:
       '@lydell/node-pty-linux-x64':
         specifier: 1.2.0-beta.10
         version: 1.2.0-beta.10
-      '@zcode/client':
+      '@raspberrycode/client':
         specifier: workspace:*
         version: link:../client
-      '@zcode/rpc':
+      '@raspberrycode/rpc':
         specifier: workspace:*
         version: link:../rpc
-      '@zcode/services':
+      '@raspberrycode/services':
         specifier: workspace:*
         version: link:../services
-      '@zcode/shared':
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../shared
       axios:
@@ -1318,21 +1370,21 @@ importers:
       '@larksuiteoapi/node-sdk':
         specifier: 1.64.0
         version: 1.64.0
-      '@zcode/provider':
+      '@raspberrycode/provider':
         specifier: workspace:*
         version: link:../provider
-      '@zcode/provider-node':
+      '@raspberrycode/provider-node':
         specifier: workspace:*
         version: link:../provider-node
-      '@zcode/rpc':
+      '@raspberrycode/raspberrycode-cua':
+        specifier: workspace:*
+        version: link:../raspberrycode-cua
+      '@raspberrycode/rpc':
         specifier: workspace:*
         version: link:../rpc
-      '@zcode/shared':
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../shared
-      '@zcode/zcode-cua':
-        specifier: workspace:*
-        version: link:../zcode-cua
       chokidar:
         specifier: 4.0.3
         version: 4.0.3
@@ -1385,7 +1437,7 @@ importers:
 
   packages/shared:
     dependencies:
-      '@zcode/model-option-map':
+      '@raspberrycode/model-option-map':
         specifier: workspace:*
         version: link:../model-option-map
       zod:
@@ -1495,6 +1547,18 @@ importers:
       '@radix-ui/react-use-controllable-state':
         specifier: ^1.2.2
         version: 1.2.2(@types/react@19.2.14)(react@19.2.7)
+      '@raspberrycode/provider':
+        specifier: workspace:*
+        version: link:../provider
+      '@raspberrycode/rpc':
+        specifier: workspace:*
+        version: link:../rpc
+      '@raspberrycode/services':
+        specifier: workspace:*
+        version: link:../services
+      '@raspberrycode/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@rive-app/react-webgl2':
         specifier: ^4.27.3
         version: 4.28.0(react@19.2.7)
@@ -1528,18 +1592,6 @@ importers:
       '@xyflow/react':
         specifier: ^12.10.1
         version: 12.10.2(@types/react@19.2.14)(immer@11.1.8)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@zcode/provider':
-        specifier: workspace:*
-        version: link:../provider
-      '@zcode/rpc':
-        specifier: workspace:*
-        version: link:../rpc
-      '@zcode/services':
-        specifier: workspace:*
-        version: link:../services
-      '@zcode/shared':
-        specifier: workspace:*
-        version: link:../shared
       ai:
         specifier: ^6.0.138
         version: 6.0.159(zod@4.6.5)
@@ -1688,60 +1740,6 @@ importers:
       unified:
         specifier: ^11.0.5
         version: 11.0.5
-
-  packages/zcode-cua: {}
-
-  packages/zcode-server-cli:
-    dependencies:
-      '@hono/node-server':
-        specifier: ^1.19.11
-        version: 1.19.14(hono@4.12.12)
-      '@hono/node-ws':
-        specifier: ^1.3.0
-        version: 1.3.0(@hono/node-server@1.19.14(hono@4.12.12))(hono@4.12.12)
-      '@zcode/rpc':
-        specifier: workspace:*
-        version: link:../rpc
-      '@zcode/services':
-        specifier: workspace:*
-        version: link:../services
-      '@zcode/shared':
-        specifier: workspace:*
-        version: link:../shared
-      hono:
-        specifier: ^4.12.9
-        version: 4.12.12
-      ws:
-        specifier: ^8.20.0
-        version: 8.20.0
-      yauzl:
-        specifier: ^3.3.0
-        version: 3.3.0
-      zod:
-        specifier: 4.6.5
-        version: 4.6.5
-    devDependencies:
-      '@types/node':
-        specifier: ^25.5.0
-        version: 25.6.0
-      '@types/ws':
-        specifier: ^8.18.1
-        version: 8.18.1
-      '@types/yauzl':
-        specifier: ^2.10.3
-        version: 2.10.3
-      tsup:
-        specifier: ^8.4.0
-        version: 8.5.1(jiti@2.6.1)(postcss@8.5.9)(tsx@4.21.0)(typescript@6.0.2)(yaml@2.9.0)
-      tsx:
-        specifier: ^4.19.4
-        version: 4.21.0
-      typescript:
-        specifier: ^6.0.2
-        version: 6.0.2
-      vitest:
-        specifier: ^4.1.1
-        version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@25.6.0)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@25.6.0)(typescript@6.0.2))(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0))
 
 packages:
 
@@ -12174,7 +12172,7 @@ snapshots:
     dependencies:
       zod: 4.6.5
 
-  '@ai-sdk/anthropic@3.0.81(patch_hash=d3a7c381eba7f5157f765a0528003af17cf84544911dfb7412c7800168e01c18)(zod@4.6.5)':
+  '@ai-sdk/anthropic@3.0.81(patch_hash=443c3c365177882dff2df827eea03ff0bfce755f9523e6520631d084362ca34d)(zod@4.6.5)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
       '@ai-sdk/provider-utils': 4.0.27(zod@4.6.5)
@@ -12194,7 +12192,7 @@ snapshots:
       '@vercel/oidc': 3.1.0
       zod: 4.6.5
 
-  '@ai-sdk/openai-compatible@2.0.60(patch_hash=9632fe9d821b3dc20939ae509cc35b968d90d018bbd1d812390718898182a38b)(zod@4.6.5)':
+  '@ai-sdk/openai-compatible@2.0.60(patch_hash=558d786cec856f82e40b4c92a986e9b6355431e246ebd2b074d8bf6f5471ca40)(zod@4.6.5)':
     dependencies:
       '@ai-sdk/provider': 3.0.14
       '@ai-sdk/provider-utils': 4.0.39(zod@4.6.5)
@@ -12262,7 +12260,7 @@ snapshots:
     dependencies:
       '@babel/runtime': 7.29.7
 
-  '@arms/rum-electron@0.0.3(patch_hash=36855354851ea495bc47a03340b0484ff62836b739cad56904b8a69f18e2ae97)(@babel/runtime@7.29.7)(electron@41.0.3)':
+  '@arms/rum-electron@0.0.3(patch_hash=eac7aa6bbe7b3e29ac1e73dba6d40068560cb186393e387bb886ff23fa710d9b)(@babel/runtime@7.29.7)(electron@41.0.3)':
     dependencies:
       '@arms/rum-browser': 0.1.8(@babel/runtime@7.29.7)
       '@arms/rum-core': 0.1.4(@babel/runtime@7.29.7)
@@ -16197,7 +16195,7 @@ snapshots:
       obug: 2.1.1
       std-env: 4.0.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@6.0.2))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0))
+      vitest: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@5.9.3))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.25.12)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0))
 
   '@vitest/expect@4.1.4':
     dependencies:

@@ -1,4 +1,4 @@
-import type { ZCodeStreamEvent } from "@zcode/shared";
+import type { RaspberryCodeStreamEvent } from "@raspberrycode/shared";
 
 import {
   createBotsServiceHarness,
@@ -55,7 +55,7 @@ describe("Bot provider interaction E2E", () => {
           multiSelect: true,
         },
       ],
-    } as ZCodeStreamEvent);
+    } as RaspberryCodeStreamEvent);
 
     const token = requests
       .map((request) => request.body ?? "")
@@ -66,11 +66,11 @@ describe("Bot provider interaction E2E", () => {
     const callback = (command: string, formValue?: Record<string, string>) =>
       harness.service.handleProviderCallbackResponse("feishu", {
         botId: "feishu-e2e",
-        zcodeFeishuSynchronousCardAction: true,
+        raspberrycodeFeishuSynchronousCardAction: true,
         event: {
           operator: { operator_id: { open_id: "ou_e2e_user" } },
           action: {
-            behaviors: [{ type: "callback", value: { command, zcodeCardText: "Question" } }],
+            behaviors: [{ type: "callback", value: { command, raspberrycodeCardText: "Question" } }],
             ...(formValue ? { form_value: formValue } : {}),
           },
           context: { card_update_token: "card-update-token-e2e" },
@@ -157,7 +157,7 @@ describe("Bot provider interaction E2E", () => {
       taskId: "task-e2e-bot",
       traceId: "run-e2e-il-before",
       content: "交互前的普通输出",
-    } as ZCodeStreamEvent);
+    } as RaspberryCodeStreamEvent);
     await listener?.({
       type: "elicitation_request",
       taskId: "task-e2e-bot",
@@ -169,7 +169,7 @@ describe("Bot provider interaction E2E", () => {
         interaction: "plan_approval",
         plan: "# 完整计划\n\n执行生命周期调整。",
       },
-    } as ZCodeStreamEvent);
+    } as RaspberryCodeStreamEvent);
 
     const token = requests
       .map((request) => request.body ?? "")
@@ -185,7 +185,7 @@ describe("Bot provider interaction E2E", () => {
             type: "callback",
             value: {
               command: `/elicitation ${token} approve`,
-              zcodeCardText: "Review this implementation plan.",
+              raspberrycodeCardText: "Review this implementation plan.",
             },
           }],
         },
@@ -197,7 +197,7 @@ describe("Bot provider interaction E2E", () => {
       taskId: "task-e2e-bot",
       traceId: "run-e2e-il-after",
       content: "交互后的新输出",
-    } as ZCodeStreamEvent);
+    } as RaspberryCodeStreamEvent);
 
     const messagePosts = requests.filter(
       (request) =>

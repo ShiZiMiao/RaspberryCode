@@ -5,10 +5,10 @@ import {
   DesktopCommandIds,
   desktopMenuMessageIds,
   getDesktopMenuMessage,
-  ZCODE_PRODUCT_FLAVOR,
+  RASPBERRYCODE_PRODUCT_FLAVOR,
   type DesktopCommandId,
   type Locale,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import {
   blendBadgeIntoBitmap,
   renderAntialiasedStatusDotPixels,
@@ -86,7 +86,7 @@ export function createDesktopTray(options: {
     desktopTray?.setContextMenu(
       Menu.buildFromTemplate([
         {
-          label: getLabel(desktopMenuMessageIds.trayOpenZCode),
+          label: getLabel(desktopMenuMessageIds.trayOpenRaspberryCode),
           click: showTrayWindow,
         },
         { type: "separator" },

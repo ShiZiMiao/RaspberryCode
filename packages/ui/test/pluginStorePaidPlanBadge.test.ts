@@ -16,9 +16,9 @@ vi.mock("@/ControlHintTooltip.js", () => ({
 // 见 docs/plugin-marketplace-ui-ux.md「降级矩阵」。
 function makeItem(requiresPaidPlan: boolean | undefined): StorePluginItem {
   return {
-    id: "pro-plugin@zcode-plugins-official",
+    id: "pro-plugin@raspberrycode-plugins-official",
     name: "pro-plugin",
-    marketplace: "zcode-plugins-official",
+    marketplace: "raspberrycode-plugins-official",
     installed: false,
     restorable: false,
     orphaned: false,
@@ -41,10 +41,10 @@ const actions: PluginStoreActions = {
 
 async function renderCard(item: StorePluginItem): Promise<string> {
   const { PluginStoreCard } = await import("../src/settings/PluginStoreCard.js");
-  const { ZCodeIntlProvider } = await import("@/i18n/IntlProvider.js");
+  const { RaspberryCodeIntlProvider } = await import("@/i18n/IntlProvider.js");
   return renderToStaticMarkup(
     createElement(
-      ZCodeIntlProvider,
+      RaspberryCodeIntlProvider,
       { initialLocale: "en-US" },
       createElement(PluginStoreCard, { item, actions, locale: "en-US" }),
     ),
@@ -53,10 +53,10 @@ async function renderCard(item: StorePluginItem): Promise<string> {
 
 async function renderDetail(item: StorePluginItem): Promise<string> {
   const { PluginStoreDetailView } = await import("../src/settings/PluginStoreDetailView.js");
-  const { ZCodeIntlProvider } = await import("@/i18n/IntlProvider.js");
+  const { RaspberryCodeIntlProvider } = await import("@/i18n/IntlProvider.js");
   return renderToStaticMarkup(
     createElement(
-      ZCodeIntlProvider,
+      RaspberryCodeIntlProvider,
       { initialLocale: "en-US" },
       createElement(PluginStoreDetailView, {
         item,

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { Emitter } from "@zcode/rpc";
-import type { SessionSummary, SessionsIndexTopicFrame } from "@zcode/shared/zcode-protocol-v4";
+import { Emitter } from "@raspberrycode/rpc";
+import type { SessionSummary, SessionsIndexTopicFrame } from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import {
   sessionsIndexRegistrySize,
   type SessionsIndexAgentService,

@@ -51,9 +51,9 @@ export const DEFAULT_E2E_DESKTOP_BUILD_INPUTS = [
   "tsconfig.base.json",
   "packages/desktop/scripts/build-metadata.mjs",
   "scripts/builtin-provider-config.mjs",
-  "config/provider/zcode-builtin.json",
-  "config/provider/zcode-builtin.test.json",
-  "packages/provider-node/src/zcode-builtin-release.ts",
+  "config/provider/raspberrycode-builtin.json",
+  "config/provider/raspberrycode-builtin.test.json",
+  "packages/provider-node/src/raspberrycode-builtin-release.ts",
   "packages/desktop/scripts/run-production-build.mjs",
   "packages/desktop/tsconfig.json",
   "packages/desktop/tsconfig.host.json",
@@ -74,21 +74,21 @@ export const E2E_DESKTOP_BUILD_ENV_NAMES = [
   "CI_COMMIT_TAG",
   "NODE_ENV",
   "OSS_PATH_PREFIX",
-  "VITE_ZCODE_BASE_URL",
-  "VITE_ZCODE_E2E_STORE_BRIDGE",
-  "VITE_ZCODE_ENDPOINT_ORIGIN",
-  "ZCODE_BASE_URL",
-  "ZCODE_COMMIT",
-  "ZCODE_CUA_HELPER_BUILD_ID",
-  "ZCODE_ENDPOINT_ORIGIN",
-  "ZCODE_ENV",
-  "ZCODE_E2E_COVERAGE",
-  "ZCODE_E2E_KEEP_BUILD_CACHE",
-  "ZCODE_PACKAGED_AGENT_OTEL_ENDPOINT",
-  "ZCODE_PACKAGED_AGENT_OTEL_HEADERS",
-  "ZCODE_PACKAGED_AGENT_OTEL_SERVICE_NAME",
-  "ZCODE_PRODUCTION_BASE_URL",
-  "ZCODE_TEST_BASE_URL",
+  "VITE_RASPBERRYCODE_BASE_URL",
+  "VITE_RASPBERRYCODE_E2E_STORE_BRIDGE",
+  "VITE_RASPBERRYCODE_ENDPOINT_ORIGIN",
+  "RASPBERRYCODE_BASE_URL",
+  "RASPBERRYCODE_COMMIT",
+  "RASPBERRYCODE_CUA_HELPER_BUILD_ID",
+  "RASPBERRYCODE_ENDPOINT_ORIGIN",
+  "RASPBERRYCODE_ENV",
+  "RASPBERRYCODE_E2E_COVERAGE",
+  "RASPBERRYCODE_E2E_KEEP_BUILD_CACHE",
+  "RASPBERRYCODE_PACKAGED_AGENT_OTEL_ENDPOINT",
+  "RASPBERRYCODE_PACKAGED_AGENT_OTEL_HEADERS",
+  "RASPBERRYCODE_PACKAGED_AGENT_OTEL_SERVICE_NAME",
+  "RASPBERRYCODE_PRODUCTION_BASE_URL",
+  "RASPBERRYCODE_TEST_BASE_URL",
 ];
 
 const WORKSPACE_DEPENDENCY_FIELDS = [
@@ -138,7 +138,7 @@ export function createE2EDesktopBuildFingerprint({
 }
 
 export function resolveE2EDesktopBuildInputPaths({
-  entryPackageName = "@zcode/desktop",
+  entryPackageName = "@raspberrycode/desktop",
   repoRoot = REPO_ROOT,
 } = {}) {
   const workspacePackages = readWorkspacePackages(repoRoot);
@@ -168,7 +168,7 @@ export function resolveE2EDesktopBuildInputPaths({
     }
   }
 
-  // Bug 根因：手写输入目录遗漏了 tsup noExternal 内联的 @zcode/server，导致同一
+  // Bug 根因：手写输入目录遗漏了 tsup noExternal 内联的 @raspberrycode/server，导致同一
   // HEAD 下修改 server 仍可能命中旧 bundle。依赖图作为权威输入，新增 workspace
   // 依赖时无需再同步维护缓存白名单。
   return [...new Set([...DEFAULT_E2E_DESKTOP_BUILD_INPUTS, ...packageInputPaths])].sort();
@@ -243,7 +243,7 @@ export function ensureE2EDesktopBuild({
     // Bug 根因：两个 full runner 会在锁外同时观察 miss，随后递归清理并重写同一个
     // packages/desktop/out。fingerprint 与 cache hit 必须在获得共享写锁后重新计算和检查。
     const fingerprint = createE2EDesktopBuildFingerprint({ ...fingerprintOptions, env });
-    const forceBuild = env.ZCODE_E2E_FORCE_DESKTOP_BUILD === "1";
+    const forceBuild = env.RASPBERRYCODE_E2E_FORCE_DESKTOP_BUILD === "1";
     if (
       !forceBuild &&
       isE2EDesktopBuildCacheHit({
@@ -263,7 +263,7 @@ export function ensureE2EDesktopBuild({
     if (buildDesktop) {
       buildDesktop();
     } else {
-      execFileSync("pnpm", ["--filter", "@zcode/desktop", "build:no-runtime-assets"], {
+      execFileSync("pnpm", ["--filter", "@raspberrycode/desktop", "build:no-runtime-assets"], {
         cwd: REPO_ROOT,
         env,
         shell: process.platform === "win32",

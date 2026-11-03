@@ -3,7 +3,6 @@ import { promisify } from "node:util";
 
 import { selectDefaultBranchRef } from "../affected-unit-test-baseline.mjs";
 import { gitFileNames } from "./git-file-names.mjs";
-import { applyUpstreamAdmission } from "./upstream-admission.mjs";
 
 const execFileAsync = promisify(execFile);
 const ZERO_SHA = /^0{40}$/;
@@ -43,7 +42,8 @@ function parsePrePushInput(text) {
  * 选择 --changed 的比较基线。
  * 修复原因：首版只用 `git diff HEAD`（工作树 vs HEAD）。CI 干净 checkout 与 pre-push 时改动
  * 已提交，差异为空，scoped 违规只剩 cycle 等 global 规则，门禁实际不工作。
- * 架构检查的选择顺序：显式 > CI 变量 > pre-push stdin > upstream > 默认分支 merge-base > HEAD。
+ * 架构检查的选择顺序：显式 > CI 变量 > pre-push stdin > 默认分支 merge-base > HEAD。
+ * 全新独立发行后不再跟随任何外部上游仓库，基线只在本地/自有远端内选取。
  */
 export async function resolveDiffBase(
   cwd = process.cwd(),
@@ -57,8 +57,8 @@ export async function resolveDiffBase(
   };
   const explicitRef =
     explicit ??
-    env.ZCODE_PRE_PUSH_BASE?.trim() ??
-    env.ZCODE_AFFECTED_TEST_BASE?.trim() ??
+    env.RASPBERRYCODE_PRE_PUSH_BASE?.trim() ??
+    env.RASPBERRYCODE_AFFECTED_TEST_BASE?.trim() ??
     env.ARCHITECTURE_BASE?.trim();
   if (explicitRef) {
     const chosen = await pick(explicitRef, `explicit ${explicitRef}`, true);
@@ -73,7 +73,7 @@ export async function resolveDiffBase(
     const chosen = await pick(env[key], `${key} ${env[key]}`);
     if (chosen) return chosen;
   }
-  const entries = parsePrePushInput(env.ZCODE_PRE_PUSH_STDIN ?? "");
+  const entries = parsePrePushInput(env.RASPBERRYCODE_PRE_PUSH_STDIN ?? "");
   if (entries.length > 0) {
     const head = await gitOut(cwd, ["rev-parse", "HEAD"]);
     const candidate =
@@ -83,14 +83,6 @@ export async function resolveDiffBase(
       candidate && (await pick(candidate.remoteSha, `pre-push remote ${candidate.remoteRef}`));
     if (chosen) return chosen;
   }
-  const upstream = await gitOut(cwd, [
-    "rev-parse",
-    "--abbrev-ref",
-    "--symbolic-full-name",
-    "@{upstream}",
-  ]);
-  const viaUpstream = upstream && (await pick(upstream, `upstream ${upstream}`, true));
-  if (viaUpstream) return viaUpstream;
   // 架构检查优先 origin/staging，其次 origin/HEAD；
   // 否则长期分支会把 staging 尚未合入 main 的历史差异误算成本分支新增。
   const originHead =
@@ -132,8 +124,6 @@ export async function addedFilesFromGit(
   {
     base = "HEAD",
     since = null,
-    acceptedUpstreamCommits = [],
-    acceptedUpstreamSnapshot = null,
   } = {},
 ) {
   const [added, untracked] = await Promise.all([
@@ -157,12 +147,5 @@ export async function addedFilesFromGit(
     );
     enforced = added.filter((file) => untrackedSet.has(file) || recent.has(file));
   }
-  return applyUpstreamAdmission(cwd, {
-    base,
-    candidates: [...new Set([...enforced, ...untracked])],
-    untracked,
-    admissions: acceptedUpstreamCommits,
-    snapshotPath: acceptedUpstreamSnapshot,
-    eligibleHistoryFiles: recent,
-  });
+  return [...new Set([...enforced, ...untracked])];
 }

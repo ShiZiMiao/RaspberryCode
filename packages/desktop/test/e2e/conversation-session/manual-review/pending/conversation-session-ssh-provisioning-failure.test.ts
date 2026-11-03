@@ -1,6 +1,6 @@
 import { withCredentialFault } from "#e2e/helpers/credential-fault";
-import { NodePersonalProviderConfigRepository } from "@zcode/provider-node";
-import { parseRemoteWorkspaceIdentity } from "@zcode/shared";
+import { NodePersonalProviderConfigRepository } from "@raspberrycode/provider-node";
+import { parseRemoteWorkspaceIdentity } from "@raspberrycode/shared";
 import {
   clearAppData,
   getE2EAppDataPaths,

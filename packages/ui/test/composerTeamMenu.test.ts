@@ -3,7 +3,7 @@ import { createElement, useState } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ModelConfigSelect, type ModelSelectGroup } from "@/ModelConfigSelect.js";
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+import { RaspberryCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import { TooltipProvider } from "@/components/ui/tooltip.js";
 const items = [{ key: "m", value: "shared/model", name: "GLM-5.3" }];
 const groups: ModelSelectGroup[] = [
@@ -26,7 +26,7 @@ function Harness({ pending = false, error = null }: { pending?: boolean; error?:
   const [selected, setSelected] = useState("agent");
   const [model, setModel] = useState("glm/model");
   return createElement(
-    ZCodeIntlProvider,
+    RaspberryCodeIntlProvider,
     { locale: "en-US" },
     createElement(
       TooltipProvider,
@@ -141,7 +141,7 @@ describe("Composer direct provider menu", () => {
 it("连接 loading 期间固定原菜单展示，完成后一次采用新目录", () => {
   const content = (pending: boolean, target: boolean) =>
     createElement(
-      ZCodeIntlProvider,
+      RaspberryCodeIntlProvider,
       { locale: "en-US" },
       createElement(
         TooltipProvider,

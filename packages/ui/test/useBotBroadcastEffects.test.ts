@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ZCodeConfigOption } from "@zcode/shared";
+import type { RaspberryCodeConfigOption } from "@raspberrycode/shared";
 import {
   shouldRefreshBotTaskList,
   shouldMirrorBotTaskStreamToStore,
@@ -37,7 +37,7 @@ describe("useBotBroadcastEffects", () => {
   });
 
   it("syncs bot config options through the task config bucket", () => {
-    const configOptions: ZCodeConfigOption[] = [
+    const configOptions: RaspberryCodeConfigOption[] = [
       {
         id: "runtime_mode",
         category: "mode",
@@ -49,19 +49,19 @@ describe("useBotBroadcastEffects", () => {
         ],
       },
     ];
-    const zcodeSessionStore = {
+    const raspberrycodeSessionStore = {
       setTaskConfigOptions: vi.fn(),
     };
 
     syncBotTaskConfigOptionsToStore({
-      zcodeSessionStore,
+      raspberrycodeSessionStore,
       workspacePath: "/repo",
       workspaceIdentity: "ssh://host/repo",
       taskId: "task-1",
       configOptions,
     });
 
-    expect(zcodeSessionStore.setTaskConfigOptions).toHaveBeenCalledWith(
+    expect(raspberrycodeSessionStore.setTaskConfigOptions).toHaveBeenCalledWith(
       "/repo",
       "task-1",
       configOptions,

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ConversationSnapshot } from "@zcode/shared/zcode-protocol-v4";
+import type { ConversationSnapshot } from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import {
   applyExternalTextInsertRequestToComposer,
   applyComposerRestoreRequestToComposer,
@@ -148,12 +148,12 @@ describe("v4 queue edit extraction", () => {
 
   it("插件安装完成后把唯一 chip 前置到编辑器当前正文而不回放旧 prompt", () => {
     const mention = {
-      id: "plugin:document-skills@zcode-plugins-official",
+      id: "plugin:document-skills@raspberrycode-plugins-official",
       category: "plugins" as const,
       label: "文档技能",
-      value: "document-skills@zcode-plugins-official",
-      markdown: "[@文档技能](plugin://document-skills@zcode-plugins-official)",
-      data: { pluginId: "document-skills@zcode-plugins-official" },
+      value: "document-skills@raspberrycode-plugins-official",
+      markdown: "[@文档技能](plugin://document-skills@raspberrycode-plugins-official)",
+      data: { pluginId: "document-skills@raspberrycode-plugins-official" },
     };
     const inputApi = {
       getMarkdown: vi.fn(() => `${mention.markdown} 用户安装期间编辑后的正文`),

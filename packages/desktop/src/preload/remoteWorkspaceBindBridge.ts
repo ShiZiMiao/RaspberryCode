@@ -1,7 +1,7 @@
 import type {
   BindRemoteWorkspaceSessionContextIpcResult,
   BindRemoteWorkspaceSessionContextResult,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 
 export function unwrapRemoteWorkspaceBindResult(
   result: BindRemoteWorkspaceSessionContextIpcResult,

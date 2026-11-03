@@ -1,4 +1,4 @@
-import type { ApiClient } from "@zcode/shared";
+import type { ApiClient } from "@raspberrycode/shared";
 import type { OAuthRuntimeConfig } from "../runtimeConfig.js";
 import type { OAuthProviderAdapter } from "./providerAdapter.js";
 

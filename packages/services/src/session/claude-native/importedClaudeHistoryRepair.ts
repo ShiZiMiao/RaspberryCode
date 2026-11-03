@@ -1,10 +1,10 @@
 import { existsSync, readFileSync } from "node:fs";
 import type {
-  ZCodeAgentMcpServer,
-  ZCodeSessionImportHistory,
-  ZCodeSessionImportMessage,
-  ZCodeSessionStateSnapshot,
-} from "@zcode/shared";
+  RaspberryCodeAgentMcpServer,
+  RaspberryCodeSessionImportHistory,
+  RaspberryCodeSessionImportMessage,
+  RaspberryCodeSessionStateSnapshot,
+} from "@raspberrycode/shared";
 import {
   getLegacyDeletedTaskSessionSnapshotPath,
   getLegacyTaskSessionSnapshotPath,
@@ -24,29 +24,29 @@ export interface ImportedClaudeHistoryRepairResult {
   title?: string;
   createdAt?: number;
   updatedAt?: number;
-  messages: ZCodeSessionImportMessage[];
+  messages: RaspberryCodeSessionImportMessage[];
   source: "legacySnapshot" | "nativeJsonl";
 }
 
 export interface ImportedClaudeSessionRepairTarget extends ImportedClaudeHistoryRepairTarget {
-  mcpServers?: ZCodeAgentMcpServer[];
+  mcpServers?: RaspberryCodeAgentMcpServer[];
 }
 
 export interface ImportedClaudeSessionRepairCreateParams {
   workspacePath: string;
   workspaceIdentity?: string;
   sessionId: string;
-  mode: ZCodeSessionStateSnapshot["session"]["mode"];
-  model: ZCodeSessionStateSnapshot["settings"]["model"]["current"];
+  mode: RaspberryCodeSessionStateSnapshot["session"]["mode"];
+  model: RaspberryCodeSessionStateSnapshot["settings"]["model"]["current"];
   thoughtLevel?: string;
   persistence: "immediate";
-  mcpServers?: ZCodeAgentMcpServer[];
-  importedHistory: ZCodeSessionImportHistory;
+  mcpServers?: RaspberryCodeAgentMcpServer[];
+  importedHistory: RaspberryCodeSessionImportHistory;
 }
 
 function toImportMessages(
   messages: readonly { role: string; content: string; timestamp?: number }[],
-): ZCodeSessionImportMessage[] {
+): RaspberryCodeSessionImportMessage[] {
   return messages
     .filter((message) => message.role === "user" || message.role === "assistant")
     .map((message) => ({
@@ -56,12 +56,12 @@ function toImportMessages(
     }));
 }
 
-function countAssistantMessages(messages: readonly ZCodeSessionImportMessage[]): number {
+function countAssistantMessages(messages: readonly RaspberryCodeSessionImportMessage[]): number {
   return messages.filter((message) => message.role === "assistant").length;
 }
 
 export function shouldRepairImportedClaudeSnapshot(
-  snapshot: Pick<ZCodeSessionStateSnapshot, "messages" | "runtime" | "session">,
+  snapshot: Pick<RaspberryCodeSessionStateSnapshot, "messages" | "runtime" | "session">,
 ): boolean {
   if (snapshot.session.status === "running" || snapshot.runtime.activeTurnId) {
     return false;
@@ -180,7 +180,7 @@ export async function resolveImportedClaudeHistoryForRepair(
 }
 
 export async function repairImportedClaudeSessionSnapshot<T>(params: {
-  snapshot: ZCodeSessionStateSnapshot;
+  snapshot: RaspberryCodeSessionStateSnapshot;
   target: ImportedClaudeSessionRepairTarget;
   createSession(input: ImportedClaudeSessionRepairCreateParams): Promise<T>;
   onRepair?(history: ImportedClaudeHistoryRepairResult): void;
@@ -195,7 +195,7 @@ export async function repairImportedClaudeSessionSnapshot<T>(params: {
 
   params.onRepair?.(history);
   // 早期导入可能已经创建了真实 RaspberryCode session，但没有把 Claude 历史写入
-  // zcode-cli sessionStore，或用了全局 msg_import_* 导致串会话。这里统一用同名 sessionId
+  // raspberrycode-cli sessionStore，或用了全局 msg_import_* 导致串会话。这里统一用同名 sessionId
   // 幂等回填 importedHistory，让 session/read、task snapshot 和远控恢复路径走同一套修复。
   return params.createSession({
     workspacePath: params.target.workspacePath,

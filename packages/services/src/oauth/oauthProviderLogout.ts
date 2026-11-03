@@ -2,7 +2,7 @@ import {
   BIGMODEL_PROVIDER_ID,
   ZAI_PROVIDER_ID,
   type OAuthProviderId,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 
 interface OAuthProviderLogoutDependencies {
   readonly refreshAccountProviders?: (reason: string) => Promise<unknown>;

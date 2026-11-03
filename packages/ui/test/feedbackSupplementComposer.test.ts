@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { IFeedbackService } from "@zcode/services";
+import type { IFeedbackService } from "@raspberrycode/services";
 import {
   submitSupplementFeedback,
   type SupplementAttachmentDraft,

@@ -3,19 +3,19 @@ import { existsSync } from "node:fs";
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import {
-  type ZCodePluginsInstallResult,
-  type ZCodePluginsListResult,
-  type ZCodePluginsMarketplaceMutationResult,
-  type ZCodePluginsOverviewResult,
-  type ZCodePluginsReferenceCatalogResult,
-} from "@zcode/shared";
+  type RaspberryCodePluginsInstallResult,
+  type RaspberryCodePluginsListResult,
+  type RaspberryCodePluginsMarketplaceMutationResult,
+  type RaspberryCodePluginsOverviewResult,
+  type RaspberryCodePluginsReferenceCatalogResult,
+} from "@raspberrycode/shared";
 import {
   TID_PLUGIN_STORE_BROWSE,
   TID_SETTINGS_PAGE,
   TID_SETTINGS_SECTION_NAV,
   TID_TASK_SETTINGS_BUTTON,
   testId,
-} from "@zcode/shared/test-ids";
+} from "@raspberrycode/shared/test-ids";
 import {
   DEFAULT_WORKSPACE,
   clickTestIdByDom,
@@ -75,8 +75,8 @@ export function requirePluginManualReview(): void {
   const runningPendingSpec = process.argv.some((arg) =>
     arg.replaceAll("\\", "/").includes("/plugins/manual-review/"),
   );
-  if (runningPendingSpec && process.env.ZCODE_E2E_MANUAL_REVIEW !== "1") {
-    throw new Error("Plugin lifecycle pending specs require ZCODE_E2E_MANUAL_REVIEW=1");
+  if (runningPendingSpec && process.env.RASPBERRYCODE_E2E_MANUAL_REVIEW !== "1") {
+    throw new Error("Plugin lifecycle pending specs require RASPBERRYCODE_E2E_MANUAL_REVIEW=1");
   }
 }
 
@@ -156,7 +156,7 @@ export async function corruptLifecycleMarketplaceManifest(
 function lifecycleManagedPluginRoot(homeDir: string): string {
   return join(
     homeDir,
-    ".zcode",
+    ".raspberrycode",
     "cli",
     "plugins",
     "marketplaces",
@@ -170,7 +170,7 @@ export async function createInvalidOfficialCollisionFixture(): Promise<string> {
   const { homeDir } = getE2EAppDataPaths();
   const root = join(homeDir, "fixtures", "plugin-official-name-collision");
   await writeJson(join(root, ".claude-plugin", "marketplace.json"), {
-    name: "zcode-plugins-official",
+    name: "raspberrycode-plugins-official",
     plugins: [],
   });
   return root;
@@ -179,7 +179,7 @@ export async function createInvalidOfficialCollisionFixture(): Promise<string> {
 export async function seedInlineLifecyclePlugin(): Promise<string> {
   const { homeDir } = getE2EAppDataPaths();
   const root = join(homeDir, "fixtures", PLUGIN_INLINE_NAME);
-  await writeJson(join(root, ".zcode-plugin", "plugin.json"), {
+  await writeJson(join(root, ".raspberrycode-plugin", "plugin.json"), {
     name: PLUGIN_INLINE_NAME,
     version: "1.0.0",
     description: "E2E inline plugin lifecycle smoke fixture",
@@ -213,7 +213,7 @@ export async function seedInlineLifecyclePlugin(): Promise<string> {
     ].join("\n"),
   );
 
-  const configPath = join(homeDir, ".zcode", "cli", "config.json");
+  const configPath = join(homeDir, ".raspberrycode", "cli", "config.json");
   const config = await readJsonRecord(configPath);
   const plugins = isRecord(config.plugins) ? config.plugins : {};
   const enabledPlugins = isRecord(plugins.enabledPlugins) ? plugins.enabledPlugins : {};
@@ -308,7 +308,7 @@ export async function selectPluginSettingsScope(scope: "user" | "workspace"): Pr
           await browser.execute(() => {
             const tabStore = (
               window as typeof window & {
-                __zcodeTabStoreE2E?: {
+                __raspberrycodeTabStoreE2E?: {
                   getState?: () => {
                     activeWorkspacePath?: string | null;
                     activeWorkspaceIdentity?: string | null;
@@ -316,7 +316,7 @@ export async function selectPluginSettingsScope(scope: "user" | "workspace"): Pr
                   };
                 };
               }
-            ).__zcodeTabStoreE2E;
+            ).__raspberrycodeTabStoreE2E;
             const state = tabStore?.getState?.();
             return {
               activeWorkspacePath: state?.activeWorkspacePath ?? null,
@@ -809,7 +809,7 @@ export async function restartPluginLifecycleApp(): Promise<void> {
 export async function getPluginOverview(
   workspacePath = DEFAULT_WORKSPACE,
   configScope?: "user" | "workspace",
-): Promise<ZCodePluginsOverviewResult> {
+): Promise<RaspberryCodePluginsOverviewResult> {
   return callPluginTestAction("getPluginsOverview", {
     workspacePath,
     ...(configScope ? { configScope } : {}),
@@ -819,7 +819,7 @@ export async function getPluginOverview(
 export async function addMarketplaceSourceThroughAgent(
   source: string,
   workspacePath = DEFAULT_WORKSPACE,
-): Promise<ZCodePluginsMarketplaceMutationResult> {
+): Promise<RaspberryCodePluginsMarketplaceMutationResult> {
   return callPluginTestAction("addPluginMarketplace", {
     source,
     workspacePath,
@@ -829,7 +829,7 @@ export async function addMarketplaceSourceThroughAgent(
 export async function updateMarketplaceThroughAgent(
   marketplace: string,
   workspacePath = DEFAULT_WORKSPACE,
-): Promise<ZCodePluginsMarketplaceMutationResult> {
+): Promise<RaspberryCodePluginsMarketplaceMutationResult> {
   return callPluginTestAction("updatePluginMarketplace", {
     marketplace,
     workspacePath,
@@ -840,7 +840,7 @@ export async function installMarketplacePluginThroughAgent(
   pluginName: string,
   marketplace: string,
   workspacePath = DEFAULT_WORKSPACE,
-): Promise<ZCodePluginsInstallResult> {
+): Promise<RaspberryCodePluginsInstallResult> {
   return callPluginTestAction("installPlugin", {
     marketplace,
     pluginName,
@@ -853,7 +853,7 @@ export async function getPluginList(
   workspacePath = DEFAULT_WORKSPACE,
   workspaceIdentity?: string,
   configScope?: "user" | "workspace",
-): Promise<ZCodePluginsListResult> {
+): Promise<RaspberryCodePluginsListResult> {
   return callPluginTestAction("listPlugins", {
     workspacePath,
     ...(workspaceIdentity ? { workspaceIdentity } : {}),
@@ -867,7 +867,7 @@ export async function getPluginReferenceCatalog(
     workspaceIdentity?: string;
     workspacePath?: string;
   } = {},
-): Promise<ZCodePluginsReferenceCatalogResult> {
+): Promise<RaspberryCodePluginsReferenceCatalogResult> {
   return callPluginTestAction("getPluginReferenceCatalog", {
     workspacePath: options.workspacePath ?? DEFAULT_WORKSPACE,
     ...(options.workspaceIdentity ? { workspaceIdentity: options.workspaceIdentity } : {}),
@@ -876,7 +876,7 @@ export async function getPluginReferenceCatalog(
 }
 
 export async function waitUntilPluginOverview(
-  predicate: (overview: ZCodePluginsOverviewResult) => boolean,
+  predicate: (overview: RaspberryCodePluginsOverviewResult) => boolean,
   timeoutMsg: string,
   timeout = 30000,
 ): Promise<void> {
@@ -887,7 +887,7 @@ export async function waitUntilPluginOverview(
 }
 
 export async function waitUntilPluginList(
-  predicate: (list: ZCodePluginsListResult) => boolean,
+  predicate: (list: RaspberryCodePluginsListResult) => boolean,
   timeoutMsg: string,
   timeout = 30000,
 ): Promise<void> {
@@ -906,7 +906,7 @@ export async function waitForPluginDraftRuntimeInvalidation(
       browser.execute((path) => {
         const store = (
           window as typeof window & {
-            __zcodeSessionStoreE2E?: {
+            __raspberrycodeSessionStoreE2E?: {
               getState: () => {
                 getWorkspaceState: (workspacePath: string) => {
                   draftSessionId: string | null;
@@ -914,7 +914,7 @@ export async function waitForPluginDraftRuntimeInvalidation(
               };
             };
           }
-        ).__zcodeSessionStoreE2E;
+        ).__raspberrycodeSessionStoreE2E;
         return store?.getState().getWorkspaceState(path).draftSessionId === null;
       }, workspacePath),
     {
@@ -926,7 +926,7 @@ export async function waitForPluginDraftRuntimeInvalidation(
 
 export async function readPluginConfigOptions(): Promise<Record<string, unknown>> {
   const config = await readJsonRecord(
-    join(getE2EAppDataPaths().homeDir, ".zcode", "cli", "config.json"),
+    join(getE2EAppDataPaths().homeDir, ".raspberrycode", "cli", "config.json"),
   );
   const plugins = isRecord(config.plugins) ? config.plugins : {};
   const options = isRecord(plugins.options) ? plugins.options : {};
@@ -934,7 +934,7 @@ export async function readPluginConfigOptions(): Promise<Record<string, unknown>
 }
 
 export function pluginStoragePath(...segments: string[]): string {
-  return join(getE2EAppDataPaths().homeDir, ".zcode", "cli", "plugins", ...segments);
+  return join(getE2EAppDataPaths().homeDir, ".raspberrycode", "cli", "plugins", ...segments);
 }
 
 export function pluginDataPath(pluginId: string): string {
@@ -1048,7 +1048,7 @@ async function writeLifecyclePlugin(
   version: string,
   withUi = false,
 ): Promise<void> {
-  await writeJson(join(pluginRoot, ".zcode-plugin", "plugin.json"), {
+  await writeJson(join(pluginRoot, ".raspberrycode-plugin", "plugin.json"), {
     name: PLUGIN_LIFECYCLE_NAME,
     version,
     description: `E2E plugin management lifecycle fixture ${version}`,
@@ -1062,7 +1062,7 @@ async function writeLifecyclePlugin(
       lifecycle: {
         type: "stdio",
         command: "node",
-        args: ["${ZCODE_PLUGIN_ROOT}/server.mjs", version],
+        args: ["${RASPBERRYCODE_PLUGIN_ROOT}/server.mjs", version],
       },
     },
     ...(withUi
@@ -1130,7 +1130,7 @@ async function writeLifecyclePlugin(
 }
 
 async function writeSimplePlugin(pluginRoot: string, index: number): Promise<void> {
-  await writeJson(join(pluginRoot, ".zcode-plugin", "plugin.json"), {
+  await writeJson(join(pluginRoot, ".raspberrycode-plugin", "plugin.json"), {
     name: `e2e-lifecycle-extra-${index}`,
     version: "1.0.0",
     description: `E2E lifecycle category expansion plugin ${index}`,
@@ -1179,7 +1179,7 @@ async function writeMarketplaceManifest(marketplaceRoot: string, version: string
 
 function buildDependencyFreeMcpServer(version: string, withUi = false): string {
   const html =
-    '<!doctype html><html><body><h1 id="market-ui-ready">Connecting</h1><script>window.zcode.ready().then(() => { document.getElementById("market-ui-ready").textContent = "PLUGIN_MARKET_UI_READY"; });</script></body></html>';
+    '<!doctype html><html><body><h1 id="market-ui-ready">Connecting</h1><script>window.raspberrycode.ready().then(() => { document.getElementById("market-ui-ready").textContent = "PLUGIN_MARKET_UI_READY"; });</script></body></html>';
   return `#!/usr/bin/env node
 import readline from "node:readline";
 const version = process.argv[2] || ${JSON.stringify(version)};

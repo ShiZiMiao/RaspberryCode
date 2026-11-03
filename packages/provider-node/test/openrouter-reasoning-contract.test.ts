@@ -1,12 +1,12 @@
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { compileModelOptionMaps } from "@zcode/model-option-map";
-import { ModelConfig, ModelOptionSpecsConfig } from "@zcode/provider";
-import { NodeZCodeBuiltinProviderConfigSource } from "../src/index.js";
+import { compileModelOptionMaps } from "@raspberrycode/model-option-map";
+import { ModelConfig, ModelOptionSpecsConfig } from "@raspberrycode/provider";
+import { NodeRaspberryCodeBuiltinProviderConfigSource } from "../src/index.js";
 
-const path = fileURLToPath(new URL("../../../config/provider/zcode-builtin.json", import.meta.url));
-const source = new NodeZCodeBuiltinProviderConfigSource({ bundledFilePath: path, watch: false });
+const path = fileURLToPath(new URL("../../../config/provider/raspberrycode-builtin.json", import.meta.url));
+const source = new NodeRaspberryCodeBuiltinProviderConfigSource({ bundledFilePath: path, watch: false });
 let snapshot: Awaited<ReturnType<typeof source.read>>;
 let modelIds: string[];
 beforeAll(async () => {
@@ -34,7 +34,7 @@ function body(config: ModelConfig, reasoningLevel: string, maxOutputTokens = 500
 }
 
 describe("OpenRouter Messages 推理请求契约", () => {
-  it.each(["zcode-builtin.json", "zcode-builtin.test.json"])(
+  it.each(["raspberrycode-builtin.json", "raspberrycode-builtin.test.json"])(
     "%s 模板仅简化名称，不改变请求协议",
     async (filename) => {
       const release = JSON.parse(

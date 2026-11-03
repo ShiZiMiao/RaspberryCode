@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { Emitter } from "@zcode/rpc";
+import { Emitter } from "@raspberrycode/rpc";
 import type {
   SessionSummary,
   SessionsIndexTopicFrame,
   SessionsIndexTopicWireFrame,
-} from "@zcode/shared/zcode-protocol-v4";
+} from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import { resolveRootWorkspaceShellTarget } from "@/root/rootWorkspaceShellTarget.js";
 import {
   acquireSessionsIndex,

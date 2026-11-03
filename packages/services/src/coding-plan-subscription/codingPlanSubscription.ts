@@ -42,14 +42,14 @@ import type {
   EnterpriseCodingPlanPricingRequest,
   EnterpriseCodingPlanPricingResponse,
   StartPlanPreviewConfig,
-  ZCodeModelContextBudgetStrategy,
+  RaspberryCodeModelContextBudgetStrategy,
   ForceUpdateConfig,
   ManualClaimPlanPreviewSnapshot,
   ManualClaimPlanClaimRequest,
   ManualClaimPlanClaimResult,
   DynamicWorkflowClientConfig,
-} from "@zcode/shared";
-import { ServiceChannels } from "@zcode/shared";
+} from "@raspberrycode/shared";
+import { ServiceChannels } from "@raspberrycode/shared";
 import { createServiceDescriptor } from "../descriptors.js";
 
 export interface ICodingPlanSubscriptionService {
@@ -61,7 +61,7 @@ export interface ICodingPlanSubscriptionService {
     forceRefresh?: boolean;
   }): Promise<DynamicWorkflowClientConfig>;
   /** 兼容接口：固定返回 preflight-v1，不读取远端配置或缓存。 */
-  getModelContextBudgetStrategy(): Promise<ZCodeModelContextBudgetStrategy>;
+  getModelContextBudgetStrategy(): Promise<RaspberryCodeModelContextBudgetStrategy>;
   getRequestVerificationConfig(): Promise<RequestVerificationConfig | null>;
   getForceUpdateConfig(): Promise<ForceUpdateConfig | null>;
 }

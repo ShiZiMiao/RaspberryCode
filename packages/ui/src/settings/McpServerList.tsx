@@ -1,12 +1,12 @@
-import { type McpServerStatus, type ZCodeMcpServer } from "@zcode/shared";
+import { type McpServerStatus, type RaspberryCodeMcpServer } from "@raspberrycode/shared";
 import {
   TID_MCP_OPEN_AUTHORIZATION_BUTTON,
   TID_MCP_SERVER_ROW,
   testId,
-} from "@zcode/shared/test-ids";
+} from "@raspberrycode/shared/test-ids";
 import { Button } from "@/components/ui/button.js";
 import { Switch } from "@/components/ui/switch.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
 import { settingsResourceRowInteraction } from "@/settings/settingsResourceRowInteraction.js";
 import { SettingsScopeBadge } from "@/settings/SettingsScopeBadge.js";
@@ -67,17 +67,17 @@ function McpServerItem({
   onOpenAuthorization,
   hideMetadata,
 }: {
-  server: ZCodeMcpServer;
-  onEdit: (server: ZCodeMcpServer) => void;
+  server: RaspberryCodeMcpServer;
+  onEdit: (server: RaspberryCodeMcpServer) => void;
   onToggle: (id: string, enabled: boolean) => void;
-  onOpenAuthorization?: (server: ZCodeMcpServer) => void;
+  onOpenAuthorization?: (server: RaspberryCodeMcpServer) => void;
   hideMetadata: boolean;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   const typeLabel = server.config.command
     ? "stdio"
     : (server.config.type ?? (server.config.url ? "http" : "?"));
-  const canEdit = !server.location || server.location.source === "zcode";
+  const canEdit = !server.location || server.location.source === "raspberrycode";
   const canOpenAuthorization = Boolean(server.authorization?.authorizationUrl);
   const openAuthorizationLabel = intl.formatMessage({
     id: "settings.mcp.oauth.openAuthorization",
@@ -174,16 +174,16 @@ export function McpServerList({
   emptyDescription,
   hideMetadata = false,
 }: {
-  servers: ZCodeMcpServer[];
+  servers: RaspberryCodeMcpServer[];
   onCreate: () => void;
-  onEdit: (server: ZCodeMcpServer) => void;
+  onEdit: (server: RaspberryCodeMcpServer) => void;
   onToggle: (id: string, enabled: boolean) => void;
-  onOpenAuthorization?: (server: ZCodeMcpServer) => void;
+  onOpenAuthorization?: (server: RaspberryCodeMcpServer) => void;
   emptyTitle: string;
   emptyDescription: string;
   hideMetadata?: boolean;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
 
   if (servers.length === 0) {
     return (

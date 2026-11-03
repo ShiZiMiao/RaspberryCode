@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ZCodeSessionEndedSubagent, ZCodeSessionSubagentsResult } from "@zcode/shared";
+import type { RaspberryCodeSessionEndedSubagent, RaspberryCodeSessionSubagentsResult } from "@raspberrycode/shared";
 import { useServices } from "@/hooks/useServices.js";
 import { logger } from "@/logger.js";
 
@@ -8,7 +8,7 @@ const MAX_PAGE_SIZE = 100;
 
 export interface SessionSubagentsViewState {
   revision: number;
-  ended: ZCodeSessionSubagentsResult["ended"];
+  ended: RaspberryCodeSessionSubagentsResult["ended"];
   error: string | null;
   loading: boolean;
 }
@@ -23,9 +23,9 @@ function emptyState(): SessionSubagentsViewState {
 }
 
 export function mergeEndedSubagentPages(
-  current: readonly ZCodeSessionEndedSubagent[],
-  incoming: readonly ZCodeSessionEndedSubagent[],
-): ZCodeSessionEndedSubagent[] {
+  current: readonly RaspberryCodeSessionEndedSubagent[],
+  incoming: readonly RaspberryCodeSessionEndedSubagent[],
+): RaspberryCodeSessionEndedSubagent[] {
   const currentIds = new Set(current.map((item) => item.childSessionId));
   return [...current, ...incoming.filter((item) => !currentIds.has(item.childSessionId))];
 }
@@ -51,7 +51,7 @@ export function useSessionSubagents(options: {
   workspacePath: string;
 }) {
   const services = useServices();
-  const zcodeAgentService = services.zcodeAgentService;
+  const raspberrycodeAgentService = services.raspberrycodeAgentService;
   const [state, setState] = useState<SessionSubagentsViewState>(emptyState);
   const requestVersionRef = useRef(0);
   const requestInFlightRef = useRef(false);
@@ -61,9 +61,9 @@ export function useSessionSubagents(options: {
   const enabled = options.enabled !== false && Boolean(options.sessionId);
 
   const requestPage = useCallback(
-    (endedLimit: number, endedCursor?: string): Promise<ZCodeSessionSubagentsResult> => {
+    (endedLimit: number, endedCursor?: string): Promise<RaspberryCodeSessionSubagentsResult> => {
       if (!options.sessionId) return Promise.reject(new Error("session_id_missing"));
-      if (typeof zcodeAgentService?.listSessionSubagents !== "function") {
+      if (typeof raspberrycodeAgentService?.listSessionSubagents !== "function") {
         return Promise.resolve({
           revision: 0,
           childSessionIds: [],
@@ -71,7 +71,7 @@ export function useSessionSubagents(options: {
           ended: { total: 0, items: [] },
         });
       }
-      return zcodeAgentService.listSessionSubagents({
+      return raspberrycodeAgentService.listSessionSubagents({
         workspacePath: options.workspacePath,
         ...(options.workspaceIdentity ? { workspaceIdentity: options.workspaceIdentity } : {}),
         ...(options.remoteSessionId ? { remoteSessionId: options.remoteSessionId } : {}),
@@ -85,7 +85,7 @@ export function useSessionSubagents(options: {
       options.sessionId,
       options.workspaceIdentity,
       options.workspacePath,
-      zcodeAgentService,
+      raspberrycodeAgentService,
     ],
   );
 

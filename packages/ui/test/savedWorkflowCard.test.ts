@@ -8,11 +8,11 @@ import {
   TID_WORKFLOW_CARD_MENU,
   TID_WORKFLOW_CARD_RUN,
   TID_WORKFLOW_ACTION_MOVE,
-  type ZCodeSavedWorkflowEntry,
-  type ZCodeSavedWorkflowRun,
-} from "@zcode/shared";
-import { testId } from "@zcode/shared/test-ids";
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+  type RaspberryCodeSavedWorkflowEntry,
+  type RaspberryCodeSavedWorkflowRun,
+} from "@raspberrycode/shared";
+import { testId } from "@raspberrycode/shared/test-ids";
+import { RaspberryCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import {
   SavedWorkflowCard,
   SavedWorkflowLastRunBadge,
@@ -24,17 +24,17 @@ afterEach(() => {
   cleanup();
 });
 
-function entry(overrides: Partial<ZCodeSavedWorkflowEntry> = {}): ZCodeSavedWorkflowEntry {
+function entry(overrides: Partial<RaspberryCodeSavedWorkflowEntry> = {}): RaspberryCodeSavedWorkflowEntry {
   return {
     name: "release-check",
     description: "跑测试、比对 changelog、准备发布说明。",
     scope: "project",
-    path: "/repo/.zcode/workflows/release-check.dwf.ts",
+    path: "/repo/.raspberrycode/workflows/release-check.dwf.ts",
     ...overrides,
   };
 }
 
-function run(overrides: Partial<ZCodeSavedWorkflowRun> = {}): ZCodeSavedWorkflowRun {
+function run(overrides: Partial<RaspberryCodeSavedWorkflowRun> = {}): RaspberryCodeSavedWorkflowRun {
   return {
     runId: "run-1",
     name: "release-check",
@@ -47,7 +47,7 @@ function run(overrides: Partial<ZCodeSavedWorkflowRun> = {}): ZCodeSavedWorkflow
 }
 
 function mount(node: ReactNode) {
-  return render(createElement(ZCodeIntlProvider, { initialLocale: "zh-CN" }, node));
+  return render(createElement(RaspberryCodeIntlProvider, { initialLocale: "zh-CN" }, node));
 }
 
 describe("SavedWorkflowLastRunBadge", () => {

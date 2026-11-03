@@ -1,15 +1,15 @@
-import type { IHooksService } from "@zcode/services";
-import type { Hook } from "@zcode/shared";
+import type { IHooksService } from "@raspberrycode/services";
+import type { Hook } from "@raspberrycode/shared";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it } from "vitest";
 import { TooltipProvider } from "@/components/ui/tooltip.js";
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+import { RaspberryCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import { HooksList, groupHookSections } from "@/settings/HooksList.js";
 import {
   buildPluginHookRows,
   filterPluginHooksByScope,
-  isReadOnlyZCodeHook,
+  isReadOnlyRaspberryCodeHook,
   resolveHookScopeTarget,
   resolveLatestReviewScopeTarget,
 } from "@/settings/HooksSection.js";
@@ -35,14 +35,14 @@ describe("Hooks settings page", () => {
       [],
       [
         {
-          pluginId: "computer-use@zcode-plugins-official",
+          pluginId: "computer-use@raspberrycode-plugins-official",
           pluginName: "computer-use",
           detail: { event: "PreToolUse", type: "command", command: "official" },
           pluginEnabled: true,
         },
         {
-          pluginId: "zcode-cua@custom-marketplace",
-          pluginName: "zcode-cua",
+          pluginId: "raspberrycode-cua@custom-marketplace",
+          pluginName: "raspberrycode-cua",
           detail: { event: "PreToolUse", type: "command", command: "custom" },
           pluginEnabled: true,
         },
@@ -54,7 +54,7 @@ describe("Hooks settings page", () => {
       sections
         .filter((section) => section.kind === "plugin")
         .flatMap((section) => section.hooks.map((hook) => hook.pluginId)),
-    ).toEqual(["computer-use@zcode-plugins-official", "zcode-cua@custom-marketplace"]);
+    ).toEqual(["computer-use@raspberrycode-plugins-official", "raspberrycode-cua@custom-marketplace"]);
   });
 
   it("keeps a selected local workspace scope on the base host while a remote workspace is active", () => {
@@ -241,7 +241,7 @@ describe("Hooks settings page", () => {
         command: "echo legacy",
         enabled: true,
         location: expect.objectContaining({
-          source: "zcode",
+          source: "raspberrycode",
           scope: "project",
         }),
       }),
@@ -287,7 +287,7 @@ describe("Hooks settings page", () => {
 
     const html = renderToStaticMarkup(
       createElement(
-        ZCodeIntlProvider,
+        RaspberryCodeIntlProvider,
         { initialLocale: "en-US" },
         createElement(
           TooltipProvider,
@@ -366,7 +366,7 @@ describe("Hooks settings page", () => {
 
     const html = renderToStaticMarkup(
       createElement(
-        ZCodeIntlProvider,
+        RaspberryCodeIntlProvider,
         { initialLocale: "en-US" },
         createElement(
           TooltipProvider,
@@ -394,7 +394,7 @@ describe("Hooks settings page", () => {
     const untrustedConfiguredOn = workspaceConfiguredHook("pending_trust");
     const html = renderToStaticMarkup(
       createElement(
-        ZCodeIntlProvider,
+        RaspberryCodeIntlProvider,
         { initialLocale: "en-US" },
         createElement(
           TooltipProvider,
@@ -424,7 +424,7 @@ describe("Hooks settings page", () => {
   it("持久信任后隐藏 Trust，并恢复配置开关的真实值与可操作性", () => {
     const html = renderToStaticMarkup(
       createElement(
-        ZCodeIntlProvider,
+        RaspberryCodeIntlProvider,
         { initialLocale: "en-US" },
         createElement(
           TooltipProvider,
@@ -450,25 +450,25 @@ describe("Hooks settings page", () => {
     expect(html).not.toMatch(/role="switch"[^>]*disabled=""/u);
   });
 
-  // P3 回归：editable=false 的上游/祖先 zcode.json Hook 是只读工作区 Hook，必须留在
+  // P3 回归：editable=false 的上游/祖先 raspberrycode.json Hook 是只读工作区 Hook，必须留在
   // Installed 分组走行内 Trust，而不是进 Legacy 显示必然失败的 Import。
-  it("readonly zcode workspace hook stays in installed section with trust, not legacy import", () => {
+  it("readonly raspberrycode workspace hook stays in installed section with trust, not legacy import", () => {
     const readOnlyHook: Hook = {
       ...workspaceConfiguredHook("pending_trust"),
       editable: false,
       location: {
-        source: "zcode",
+        source: "raspberrycode",
         scope: "project",
-        directoryPath: "/ancestor/.zcode",
+        directoryPath: "/ancestor/.raspberrycode",
         projectPath: "/workspace",
       },
     };
-    expect(isReadOnlyZCodeHook(readOnlyHook)).toBe(true);
-    expect(isReadOnlyZCodeHook(workspaceConfiguredHook("pending_trust"))).toBe(false);
+    expect(isReadOnlyRaspberryCodeHook(readOnlyHook)).toBe(true);
+    expect(isReadOnlyRaspberryCodeHook(workspaceConfiguredHook("pending_trust"))).toBe(false);
 
     const html = renderToStaticMarkup(
       createElement(
-        ZCodeIntlProvider,
+        RaspberryCodeIntlProvider,
         { initialLocale: "en-US" },
         createElement(
           TooltipProvider,
@@ -641,9 +641,9 @@ function configuredHook(): Hook {
     args: ["hook.mjs"],
     enabled: true,
     location: {
-      source: "zcode",
+      source: "raspberrycode",
       scope: "project",
-      directoryPath: "/workspace/.zcode",
+      directoryPath: "/workspace/.raspberrycode",
       projectPath: "/workspace",
     },
   };
@@ -664,7 +664,7 @@ function workspaceConfiguredHook(
       declarationEnabled: true,
       runtimeHooksEnabled: true,
       configuredEnabled: true,
-      sourcePath: ".zcode/config.json",
+      sourcePath: ".raspberrycode/config.json",
       trustState,
     },
   };

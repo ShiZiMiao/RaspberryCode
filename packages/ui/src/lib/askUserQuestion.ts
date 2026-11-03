@@ -1,4 +1,4 @@
-type ZCodeUserQuestionAnswers = Record<string, unknown>;
+type RaspberryCodeUserQuestionAnswers = Record<string, unknown>;
 
 type AskUserQuestionType = "single" | "multiple";
 
@@ -20,7 +20,7 @@ interface AskUserQuestionItem {
 
 interface AskUserQuestionData {
   questions: AskUserQuestionItem[];
-  answers?: ZCodeUserQuestionAnswers;
+  answers?: RaspberryCodeUserQuestionAnswers;
 }
 
 interface AskUserQuestionAnswerDraft {
@@ -114,7 +114,7 @@ function readQuestions(input: unknown): unknown[] {
     : [];
 }
 
-function readAnswers(input: unknown): ZCodeUserQuestionAnswers | undefined {
+function readAnswers(input: unknown): RaspberryCodeUserQuestionAnswers | undefined {
   if (!isPlainRecord(input)) {
     return undefined;
   }
@@ -122,12 +122,12 @@ function readAnswers(input: unknown): ZCodeUserQuestionAnswers | undefined {
   return isPlainRecord(answers) ? answers : undefined;
 }
 
-function parseClaudeAskUserQuestionOutput(output: unknown): ZCodeUserQuestionAnswers | undefined {
+function parseClaudeAskUserQuestionOutput(output: unknown): RaspberryCodeUserQuestionAnswers | undefined {
   if (typeof output !== "string" || output.trim().length === 0) {
     return undefined;
   }
 
-  const answers: ZCodeUserQuestionAnswers = {};
+  const answers: RaspberryCodeUserQuestionAnswers = {};
   const answerPattern = /"([^"]+)"="([^"]*)"/g;
   for (const match of output.matchAll(answerPattern)) {
     const question = match[1]?.trim();
@@ -155,7 +155,7 @@ function parseJsonRecord(output: unknown): Record<string, unknown> | undefined {
   }
 }
 
-function readNestedAskUserQuestionAnswers(input: unknown): ZCodeUserQuestionAnswers | undefined {
+function readNestedAskUserQuestionAnswers(input: unknown): RaspberryCodeUserQuestionAnswers | undefined {
   const directTextAnswers = parseClaudeAskUserQuestionOutput(input);
   if (directTextAnswers) {
     return directTextAnswers;
@@ -198,10 +198,10 @@ function readNestedAskUserQuestionAnswers(input: unknown): ZCodeUserQuestionAnsw
   return readNestedAskUserQuestionAnswers(record.output);
 }
 
-function parseZCodeAskUserQuestionOutput(
+function parseRaspberryCodeAskUserQuestionOutput(
   output: unknown,
   input: unknown,
-): ZCodeUserQuestionAnswers | undefined {
+): RaspberryCodeUserQuestionAnswers | undefined {
   const outputRecord = parseJsonRecord(output);
   if (!outputRecord) {
     return undefined;
@@ -318,7 +318,7 @@ export function readAskUserQuestionAnswers(value: {
   input?: unknown;
   output?: unknown;
   raw?: unknown;
-}): ZCodeUserQuestionAnswers | undefined {
+}): RaspberryCodeUserQuestionAnswers | undefined {
   const nestedOutputAnswers = readNestedAskUserQuestionAnswers(value.output);
   if (nestedOutputAnswers) {
     return nestedOutputAnswers;
@@ -330,12 +330,12 @@ export function readAskUserQuestionAnswers(value: {
   if (parsedOutputAnswers) {
     return parsedOutputAnswers;
   }
-  const parsedZCodeOutputAnswers = parseZCodeAskUserQuestionOutput(
+  const parsedRaspberryCodeOutputAnswers = parseRaspberryCodeAskUserQuestionOutput(
     value.output,
     readAskUserQuestionInput(value),
   );
-  if (parsedZCodeOutputAnswers) {
-    return parsedZCodeOutputAnswers;
+  if (parsedRaspberryCodeOutputAnswers) {
+    return parsedRaspberryCodeOutputAnswers;
   }
   if (isPlainRecord(value.input) && isPlainRecord(value.input.answers)) {
     return value.input.answers;
@@ -349,12 +349,12 @@ export function readAskUserQuestionAnswers(value: {
     if (parsedRawOutputAnswers) {
       return parsedRawOutputAnswers;
     }
-    const parsedRawZCodeOutputAnswers = parseZCodeAskUserQuestionOutput(
+    const parsedRawRaspberryCodeOutputAnswers = parseRaspberryCodeAskUserQuestionOutput(
       value.raw.rawOutput,
       readAskUserQuestionInput(value),
     );
-    if (parsedRawZCodeOutputAnswers) {
-      return parsedRawZCodeOutputAnswers;
+    if (parsedRawRaspberryCodeOutputAnswers) {
+      return parsedRawRaspberryCodeOutputAnswers;
     }
     const nestedRawAnswers = readNestedAskUserQuestionAnswers(value.raw.output);
     if (nestedRawAnswers) {
@@ -364,12 +364,12 @@ export function readAskUserQuestionAnswers(value: {
     if (parsedRawAnswers) {
       return parsedRawAnswers;
     }
-    const parsedRawZCodeAnswers = parseZCodeAskUserQuestionOutput(
+    const parsedRawRaspberryCodeAnswers = parseRaspberryCodeAskUserQuestionOutput(
       value.raw.output,
       readAskUserQuestionInput(value),
     );
-    if (parsedRawZCodeAnswers) {
-      return parsedRawZCodeAnswers;
+    if (parsedRawRaspberryCodeAnswers) {
+      return parsedRawRaspberryCodeAnswers;
     }
     const nestedRawContentAnswers = readNestedAskUserQuestionAnswers(value.raw.content);
     if (nestedRawContentAnswers) {
@@ -381,7 +381,7 @@ export function readAskUserQuestionAnswers(value: {
 
 export function getAskUserQuestionAnswerText(
   question: AskUserQuestionItem,
-  answers: ZCodeUserQuestionAnswers | undefined,
+  answers: RaspberryCodeUserQuestionAnswers | undefined,
   noAnswerText: string,
 ) {
   const value = answers?.[question.question] ?? answers?.[question.id];

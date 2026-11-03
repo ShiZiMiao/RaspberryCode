@@ -370,7 +370,7 @@ function createLiveStdioTrafficFrame(sequence: number, timestamp: string): Stdio
       sessionId: "sess_6b6a",
       summary: "provider heartbeat",
       bytes: 96,
-      raw: `[zcode-agent] provider heartbeat seq=${eventSeq} status=streaming`,
+      raw: `[raspberrycode-agent] provider heartbeat seq=${eventSeq} status=streaming`,
     };
   }
 
@@ -1031,7 +1031,7 @@ function ProtocolPanel({
     <section className="rounded-lg border border-card-border bg-card p-3">
       <div className="mb-3 flex items-center gap-2 text-ui-sm font-medium text-brand">
         <Network className="size-4" />
-        @zcode/protocol
+        @raspberrycode/protocol
       </div>
       <div className="space-y-2">
         {protocolSurfaces.map((surface) => (
@@ -1067,7 +1067,7 @@ function StdioTrafficView() {
   const [lastUpdatedAt, setLastUpdatedAt] = useState("--:--:--.---");
   const [realTraffic, setRealTraffic] = useState<RealTrafficState>({
     status: "loading",
-    logDir: "~/.zcode/v2/dev/stdio-traffic",
+    logDir: "~/.raspberrycode/v2/dev/stdio-traffic",
     records: [],
   });
   const liveSequenceRef = useRef(0);
@@ -1243,7 +1243,7 @@ function StdioTrafficView() {
   const sourcePath =
     trafficSourceMode === "mock"
       ? "mock replay"
-      : (realTraffic.filePath ?? realTraffic.logDir ?? "~/.zcode/v2/dev/stdio-traffic");
+      : (realTraffic.filePath ?? realTraffic.logDir ?? "~/.raspberrycode/v2/dev/stdio-traffic");
   const emptyTrafficMessage =
     trafficSourceMode === "mock"
       ? "mock replay 暂无 frame。"

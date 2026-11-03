@@ -1,5 +1,5 @@
 import { Loader2Icon } from "lucide-react";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 
 /** Coding Plan/Start Plan 状态卡已随订阅体系移除（specs/no-login-startup.md 后续裁剪），只保留通用占位卡。 */
 
@@ -21,7 +21,7 @@ export function PresetProviderPlaceholderCard({
   displayName: string;
   messageId?: string;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
 
   return (
     <div className="bg-background/50 rounded-2xl p-3">

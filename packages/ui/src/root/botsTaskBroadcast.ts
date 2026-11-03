@@ -1,9 +1,9 @@
 import {
   BOT_TASK_BROADCAST_CHANNEL,
-  type ZCodeTaskRuntimeStatus,
+  type RaspberryCodeTaskRuntimeStatus,
   type BotTaskBroadcastPayload,
-} from "@zcode/shared";
-import type { BroadcastMessage } from "@zcode/services";
+} from "@raspberrycode/shared";
+import type { BroadcastMessage } from "@raspberrycode/services";
 import { buildTaskWorkspaceKey } from "@/lib/taskQueryCache.js";
 import type { WindowTabState } from "@/store/tabStore.js";
 import { isWorkspaceTab } from "@/store/tabStore.js";
@@ -83,7 +83,7 @@ export function resolveBotTaskBroadcastRefresh(
 
 export function resolveBotTaskBroadcastRuntimeStatus(
   event: BotTaskBroadcastPayload["event"],
-): ZCodeTaskRuntimeStatus {
+): RaspberryCodeTaskRuntimeStatus {
   switch (event) {
     case "created":
       return "creating";

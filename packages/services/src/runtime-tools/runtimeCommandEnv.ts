@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { delimiter } from "node:path";
-import { buildZCodeToolEnvPassthroughEnv, sanitizeZCodeRuntimeEnvInPlace } from "@zcode/shared";
+import { buildRaspberryCodeToolEnvPassthroughEnv, sanitizeRaspberryCodeRuntimeEnvInPlace } from "@raspberrycode/shared";
 import { appendPathEntries, buildRuntimeToolEnvPatch } from "./runtimeToolResolver.js";
 import {
   buildShellBootstrapPath,
@@ -121,7 +121,7 @@ export function buildLoginShellEnvPatch(
 
   return {
     ...patch,
-    ...buildZCodeToolEnvPassthroughEnv(snapshot),
+    ...buildRaspberryCodeToolEnvPassthroughEnv(snapshot),
   };
 }
 
@@ -164,7 +164,7 @@ export function buildRuntimeProcessEnvPatch(
   const normalizedBaseEnv = normalizeRuntimeProcessEnv(baseEnv, platform);
   const loginShellPath = loginShellSnapshot?.PATH?.trim() || null;
   const loginShellEnvPatch = loginShellSnapshot ? buildLoginShellEnvPatch(loginShellSnapshot) : {};
-  const toolEnvPassthroughPatch = buildZCodeToolEnvPassthroughEnv({
+  const toolEnvPassthroughPatch = buildRaspberryCodeToolEnvPassthroughEnv({
     ...normalizedBaseEnv,
     ...loginShellEnvPatch,
   });
@@ -261,7 +261,7 @@ export function initializeRuntimeProcessEnv(
   const runtimeProcessEnvPatch =
     preparedRuntimeProcessEnvPatch ?? buildRuntimeProcessEnvPatch(normalizedProcessEnv);
   // host/agent 运行时不能直接继承用户 shell 里的 NODE_ENV、http_proxy 或证书变量。
-  // 网络变量会先封存为 ZCODE_TOOL_ENV_PASSTHROUGH_JSON，只有 Bash/tool 子进程边界才恢复原名。
-  sanitizeZCodeRuntimeEnvInPlace(process.env);
+  // 网络变量会先封存为 RASPBERRYCODE_TOOL_ENV_PASSTHROUGH_JSON，只有 Bash/tool 子进程边界才恢复原名。
+  sanitizeRaspberryCodeRuntimeEnvInPlace(process.env);
   Object.assign(process.env, runtimeProcessEnvPatch);
 }

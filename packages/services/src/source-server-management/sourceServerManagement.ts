@@ -1,4 +1,4 @@
-import type { Event } from "@zcode/rpc";
+import type { Event } from "@raspberrycode/rpc";
 import type {
   RemoteTarget,
   SourceServerUpdateRequest,
@@ -8,8 +8,8 @@ import type {
   SourceServerManagementDirectoryDelta,
   SourceServerManagementStateDelta,
   SourceServerOperationLog,
-} from "@zcode/shared";
-import { ServiceChannels } from "@zcode/shared";
+} from "@raspberrycode/shared";
+import { ServiceChannels } from "@raspberrycode/shared";
 import { createServiceDescriptor } from "../descriptors.js";
 
 export interface UpdateConnectionProfileInput {

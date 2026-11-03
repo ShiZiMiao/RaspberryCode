@@ -14,15 +14,13 @@ import type {
   SettingsDirectorySource,
   NativeMcpServerRecord,
   SaveCliMcpToUserDirectoryRequest,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import type { McpConfigKeyName } from "./types.js";
 import { isRecord, readJsonObject, writeTextAtomic } from "./utils.js";
-import { migrateLegacyCommonMcp } from "./legacy.js";
 
 // 重新导出类型和函数
 export type { McpConfigKeyName, OpenCodeMcpServerConfig, McpSourceDescriptor } from "./types.js";
 export { MCP_SOURCE_DESCRIPTORS, getSourceDescriptor } from "./types.js";
-export { migrateLegacyCommonMcp } from "./legacy.js";
 
 interface DirectoryMcpDescriptor {
   source: CliMcpSource;
@@ -34,9 +32,9 @@ interface DirectoryMcpDescriptor {
   configKeyName: McpConfigKeyName;
 }
 
-const ZCODE_MCP_DESCRIPTOR: DirectoryMcpDescriptor = {
-  source: "zcodeagentmcp",
-  directorySource: "zcode",
+const RASPBERRYCODE_MCP_DESCRIPTOR: DirectoryMcpDescriptor = {
+  source: "raspberrycodeagentmcp",
+  directorySource: "raspberrycode",
   userConfigDirSegments: [".raspberrycode", "cli"],
   workspaceConfigDirSegments: [".raspberrycode"],
   fileName: "config.json",
@@ -50,7 +48,7 @@ const ENABLED_KEY = "enabled";
 const LEGACY_ENABLE_KEY = "enable";
 
 const AGENTS_MCP_DESCRIPTOR: DirectoryMcpDescriptor = {
-  source: "zcodeagentmcp",
+  source: "raspberrycodeagentmcp",
   directorySource: "agents",
   userConfigDirSegments: [".agents"],
   workspaceConfigDirSegments: [".agents"],
@@ -65,7 +63,7 @@ function resolveUserHomeDir(): string {
 }
 
 const DIRECTORY_MCP_DESCRIPTORS: readonly DirectoryMcpDescriptor[] = [
-  ZCODE_MCP_DESCRIPTOR,
+  RASPBERRYCODE_MCP_DESCRIPTOR,
   AGENTS_MCP_DESCRIPTOR,
 ];
 
@@ -83,7 +81,7 @@ function buildDirectoryConfigPath(
 }
 
 function getUserCliConfigPath(): string {
-  return buildDirectoryConfigPath(ZCODE_MCP_DESCRIPTOR, "user");
+  return buildDirectoryConfigPath(RASPBERRYCODE_MCP_DESCRIPTOR, "user");
 }
 
 function buildDirectoryMcpLocation(
@@ -328,22 +326,22 @@ async function readDirectoryServersFromPreferredSources(
   scope: Exclude<McpScope, "common">,
   workspacePath?: string,
 ): Promise<NativeMcpServerRecord[]> {
-  const zcodeServers = await readDirectoryServersFromFile(ZCODE_MCP_DESCRIPTOR, scope, workspacePath);
+  const raspberrycodeServers = await readDirectoryServersFromFile(RASPBERRYCODE_MCP_DESCRIPTOR, scope, workspacePath);
   // `.raspberrycode` 是强优先级来源；只要读到 MCP server，同 scope 的 `.agents` 就不再参与。
-  if (zcodeServers.length > 0) {
-    return zcodeServers;
+  if (raspberrycodeServers.length > 0) {
+    return raspberrycodeServers;
   }
   return readDirectoryServersFromFile(AGENTS_MCP_DESCRIPTOR, scope, workspacePath);
 }
 
-async function writeZCodeServersToFile(
+async function writeRaspberryCodeServersToFile(
   scope: Exclude<McpScope, "common">,
   servers: Record<string, Record<string, unknown>>,
   workspacePath?: string,
 ): Promise<void> {
-  const filePath = buildDirectoryConfigPath(ZCODE_MCP_DESCRIPTOR, scope, workspacePath);
+  const filePath = buildDirectoryConfigPath(RASPBERRYCODE_MCP_DESCRIPTOR, scope, workspacePath);
   const current = (await readJsonObject(filePath)) ?? {};
-  const next = writeServerMapToJson(current, ZCODE_MCP_DESCRIPTOR.configKeyName, servers);
+  const next = writeServerMapToJson(current, RASPBERRYCODE_MCP_DESCRIPTOR.configKeyName, servers);
   await writeTextAtomic(filePath, `${JSON.stringify(next, null, 2)}\n`);
 }
 
@@ -370,14 +368,14 @@ export async function saveCliMcpToUserDirectory(
       throw new Error("Missing enabled value for MCP set-enabled action");
     }
     const scope: Exclude<McpScope, "common"> = payload.projectPath ? "workspace" : "user";
-    const location = payload.location ?? buildDirectoryMcpLocation(ZCODE_MCP_DESCRIPTOR, scope, payload.projectPath);
+    const location = payload.location ?? buildDirectoryMcpLocation(RASPBERRYCODE_MCP_DESCRIPTOR, scope, payload.projectPath);
     await writeServerEnabledToFile(findDescriptorByLocation(location), location, payload.name, payload.enabled);
     await cleanupLegacyMcpEnabledOverride(location, payload.name);
     return;
   }
 
   const scope: Exclude<McpScope, "common"> = payload.projectPath ? "workspace" : "user";
-  const existingServers = await readDirectoryServersFromFile(ZCODE_MCP_DESCRIPTOR, scope, payload.projectPath);
+  const existingServers = await readDirectoryServersFromFile(RASPBERRYCODE_MCP_DESCRIPTOR, scope, payload.projectPath);
   const nextServers = Object.fromEntries(existingServers.map((server) => [server.name, server.config]));
 
   if (payload.action === "upsert") {
@@ -389,5 +387,5 @@ export async function saveCliMcpToUserDirectory(
     delete nextServers[payload.name];
   }
 
-  await writeZCodeServersToFile(scope, nextServers, payload.projectPath);
+  await writeRaspberryCodeServersToFile(scope, nextServers, payload.projectPath);
 }

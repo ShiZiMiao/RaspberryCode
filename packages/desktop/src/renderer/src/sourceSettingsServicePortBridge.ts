@@ -1,6 +1,6 @@
-import { createMessagePortServiceConnection } from "@zcode/client";
-import { InternalChannels } from "@zcode/shared";
-import { registerSourceSettingsServices } from "@zcode/ui";
+import { createMessagePortServiceConnection } from "@raspberrycode/client";
+import { InternalChannels } from "@raspberrycode/shared";
+import { registerSourceSettingsServices } from "@raspberrycode/ui";
 
 export function handleSourceSettingsServicePortMessage(event: MessageEvent): boolean {
   if (

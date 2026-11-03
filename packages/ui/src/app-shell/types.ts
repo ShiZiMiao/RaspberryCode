@@ -2,10 +2,10 @@ import type { FileManagerTarget } from "@/lib/workspaceSidePane.js";
 import type { ComposerDraftHandoff } from "@/v4/composer/composerDraftWorkspaceTransfer.js";
 import type { RefObject } from "react";
 import type {
-  ZCodeProvider,
+  RaspberryCodeProvider,
   SessionCreateSource,
-  ZCodeTaskRuntimeStatus,
-  ZCodeTaskMeta,
+  RaspberryCodeTaskRuntimeStatus,
+  RaspberryCodeTaskMeta,
   GitChangeSourceId,
   DesktopWindowChromeState,
   IPlatformService,
@@ -13,8 +13,8 @@ import type {
   SourceServerUpdateTarget,
   RemoteWorkspaceSessionEntry,
   UserInfo,
-} from "@zcode/shared";
-import type { IFeedbackService, IServiceAccessor } from "@zcode/services";
+} from "@raspberrycode/shared";
+import type { IFeedbackService, IServiceAccessor } from "@raspberrycode/services";
 import type { SavedWorkflowsOpenTarget } from "@/settings/saved-workflows/SavedWorkflowsSection.js";
 import type { SavedWorkflowHubTarget } from "@/v4/savedWorkflowHubContext.js";
 import type { BrowserNavigationRequest, RecentClosedSidePaneTab } from "@/hooks/useAppPanels.js";
@@ -32,7 +32,7 @@ import type {
   OpenScopedWorkflowWorkspaceSideTabRequest,
   WorkspaceSidePaneState,
 } from "@/lib/workspaceSidePane.js";
-import type { WorkspaceZCodeUIState } from "@/store/zcodeSessionStore.js";
+import type { WorkspaceRaspberryCodeUIState } from "@/store/raspberrycodeSessionStore.js";
 import type { RemoteConnectionLogEntry } from "@/hooks/useRemoteConnectionLogs.js";
 import type { Theme } from "@/useTheme.js";
 import type {
@@ -40,20 +40,20 @@ import type {
   ChatViewSummaryPanelVariant,
   ConversationFindMatchState,
 } from "@/v4/legacyChatViewTypes.js";
-import type { ComposerMentionPrefill } from "@/store/zcodeSessionStoreTypes.js";
+import type { ComposerMentionPrefill } from "@/store/raspberrycodeSessionStoreTypes.js";
 import type { TaskFindDialogProps } from "@/quickpick/TaskFindDialog.js";
 import type { AutomationsNavigationTab, OpenAutomationsMain } from "@/lib/taskNavigationHistory.js";
 import type { SidePaneFullViewController } from "@/side-pane-full-view/contract.js";
 
-export interface WorkspaceShellZCodeState {
-  activeTaskId: WorkspaceZCodeUIState["activeTaskId"];
-  draftFocusVersion: WorkspaceZCodeUIState["draftFocusVersion"];
-  modelSwitchPending: WorkspaceZCodeUIState["modelSwitchPending"];
-  modelSwitchStage: WorkspaceZCodeUIState["modelSwitchStage"];
-  selectedProvider: WorkspaceZCodeUIState["selectedProvider"];
-  optimisticTaskListByTaskId: WorkspaceZCodeUIState["optimisticTaskListByTaskId"];
-  workspaceInit: WorkspaceZCodeUIState["workspaceInit"];
-  taskStatus: ZCodeTaskRuntimeStatus;
+export interface WorkspaceShellRaspberryCodeState {
+  activeTaskId: WorkspaceRaspberryCodeUIState["activeTaskId"];
+  draftFocusVersion: WorkspaceRaspberryCodeUIState["draftFocusVersion"];
+  modelSwitchPending: WorkspaceRaspberryCodeUIState["modelSwitchPending"];
+  modelSwitchStage: WorkspaceRaspberryCodeUIState["modelSwitchStage"];
+  selectedProvider: WorkspaceRaspberryCodeUIState["selectedProvider"];
+  optimisticTaskListByTaskId: WorkspaceRaspberryCodeUIState["optimisticTaskListByTaskId"];
+  workspaceInit: WorkspaceRaspberryCodeUIState["workspaceInit"];
+  taskStatus: RaspberryCodeTaskRuntimeStatus;
   taskError: string | null;
 }
 
@@ -66,7 +66,7 @@ export interface CreateTaskOptions {
   onError?: (error: unknown) => void;
   /** 异步预填只能提交到解析 Skill 时的同一新任务目标。 */
   expectedWorkspaceKey?: string;
-  provider?: ZCodeProvider;
+  provider?: RaspberryCodeProvider;
   projectId?: string | null;
   /** 未归类任务目录准备的幂等身份，不作为 session 身份。 */
   draftId?: string;
@@ -89,7 +89,7 @@ export interface CreateTaskOptions {
   };
 }
 
-export type CreateTaskRequest = ZCodeProvider | CreateTaskOptions;
+export type CreateTaskRequest = RaspberryCodeProvider | CreateTaskOptions;
 
 export interface RemoteWorkspaceRecoveryStatus {
   mode: "automatic" | "manual";
@@ -217,7 +217,7 @@ export interface WorkspaceShellLayoutProps extends Omit<AppProps, "baseFeedbackS
   onOpenAutomationConsumed: () => void;
   handleOpenAutomations: OpenAutomationsMain;
   handleOpenPluginStore: () => void;
-  workspaceShellZCodeState: WorkspaceShellZCodeState;
+  workspaceShellRaspberryCodeState: WorkspaceShellRaspberryCodeState;
   theme: Theme;
   isMacFullscreen: boolean;
   desktopWindowChromeState: DesktopWindowChromeState | null;
@@ -253,9 +253,9 @@ export interface WorkspaceShellLayoutProps extends Omit<AppProps, "baseFeedbackS
     workspacePath: string;
     label: string;
     remoteSessionId?: string;
-    remoteTarget?: import("@zcode/shared").RemoteTarget;
+    remoteTarget?: import("@raspberrycode/shared").RemoteTarget;
     workspaceIdentity?: string;
-    workspacePurpose?: import("@zcode/shared").WorkspacePurpose;
+    workspacePurpose?: import("@raspberrycode/shared").WorkspacePurpose;
     localWorkspacePath?: string;
     availability?: import("@/store/tabStore.js").WorkspaceAvailability;
   }>;
@@ -264,8 +264,8 @@ export interface WorkspaceShellLayoutProps extends Omit<AppProps, "baseFeedbackS
   sidePaneOwnerId: string | null;
   activeTraceId: string | null;
   activeSessionId: string | null;
-  activeTaskProvider: ZCodeProvider | null;
-  resolvedActiveTaskMeta?: ZCodeTaskMeta | null;
+  activeTaskProvider: RaspberryCodeProvider | null;
+  resolvedActiveTaskMeta?: RaspberryCodeTaskMeta | null;
   activeTaskTitle: string;
   activeTaskChangeSummary: ReturnType<
     typeof import("@/lib/taskChangeSummary.js").getTaskChangeSummary
@@ -301,7 +301,7 @@ export interface WorkspaceShellLayoutProps extends Omit<AppProps, "baseFeedbackS
   reloadSessionPending: boolean;
   handleReloadSession: (options?: {
     resumeTaskId?: string | null;
-    provider?: ZCodeProvider | null;
+    provider?: RaspberryCodeProvider | null;
   }) => Promise<void>;
   handleSelectTask: (
     targetWorkspacePath: string,
@@ -314,7 +314,7 @@ export interface WorkspaceShellLayoutProps extends Omit<AppProps, "baseFeedbackS
   handleStartDraftInWorkspace: (
     targetWorkspacePath: string,
     targetWorkspaceIdentity?: string,
-    targetWorkspacePurpose?: import("@zcode/shared").WorkspacePurpose,
+    targetWorkspacePurpose?: import("@raspberrycode/shared").WorkspacePurpose,
     createSource?: SessionCreateSource,
   ) => void;
   handleOpenCommandCenter: () => void;

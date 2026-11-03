@@ -1,28 +1,28 @@
 /* eslint-disable max-lines -- Bot service 的共享测试桩集中维护协议、任务和模型 registry 能力。 */
 import { afterEach, vi } from "vitest";
 import type {
-  ZCodeConfigOption,
+  RaspberryCodeConfigOption,
   BotsConfigFile,
   BotsStateFile,
   Locale,
   ModelSelection,
-  ZCodeTaskMode,
-  ZCodeSessionSettingsState,
-} from "@zcode/shared";
+  RaspberryCodeTaskMode,
+  RaspberryCodeSessionSettingsState,
+} from "@raspberrycode/shared";
 import {
-  ZCODE_MODEL_REASONING_SEPARATOR,
-  ZCODE_PROTOCOL_NAME,
-  ZCODE_PROTOCOL_VERSION,
+  RASPBERRYCODE_MODEL_REASONING_SEPARATOR,
+  RASPBERRYCODE_PROTOCOL_NAME,
+  RASPBERRYCODE_PROTOCOL_VERSION,
   botsConfigFileSchema,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 export { botsConfigFileSchema };
-import type { IZCodeSessionService } from "../src/zcode-session/zcodeSession.js";
-import type { IZCodeTaskService } from "../src/session/zcodeTaskService.js";
+import type { IRaspberryCodeSessionService } from "../src/raspberrycode-session/raspberrycodeSession.js";
+import type { IRaspberryCodeTaskService } from "../src/session/raspberrycodeTaskService.js";
 import type { IBroadcastService } from "../src/broadcast/broadcast.js";
 import type { ICredentialService } from "../src/credential/credential.js";
 import type { ISettingService } from "../src/setting/setting.js";
 import type { VirtualProject } from "../src/project/contract.js";
-import { remoteHostIdFromWorkspaceIdentity } from "@zcode/shared";
+import { remoteHostIdFromWorkspaceIdentity } from "@raspberrycode/shared";
 import { createBotsService as createBotsServiceImpl } from "../src/bots/botsService.js";
 
 afterEach(() => {
@@ -72,7 +72,7 @@ export function createMemoryRepo(config: BotsConfigFile, state?: BotsStateFile) 
   };
 }
 
-export function createLegacyTaskService(): IZCodeTaskService {
+export function createLegacyTaskService(): IRaspberryCodeTaskService {
   return {
     listTasks: vi.fn(async () => []),
     listDeletedTaskIds: vi.fn(async () => []),
@@ -129,7 +129,7 @@ export function createLegacyTaskService(): IZCodeTaskService {
     respondElicitation: vi.fn(async () => true),
     stopGeneration: vi.fn(async () => undefined),
     onDynamicStreamEvent: vi.fn(() => () => ({ dispose() {} })),
-  } as unknown as IZCodeTaskService;
+  } as unknown as IRaspberryCodeTaskService;
 }
 
 export function createCredentialService(values: Record<string, string> = {}): ICredentialService {
@@ -218,7 +218,7 @@ function parseModelSelectionForTest(value: string): ModelSelection {
   }
   const providerId = value.slice(0, separatorIndex);
   const rawModelId = value.slice(separatorIndex + 1);
-  const reasoningSeparatorIndex = rawModelId.indexOf(ZCODE_MODEL_REASONING_SEPARATOR);
+  const reasoningSeparatorIndex = rawModelId.indexOf(RASPBERRYCODE_MODEL_REASONING_SEPARATOR);
   if (reasoningSeparatorIndex <= 0 || reasoningSeparatorIndex >= rawModelId.length - 1) {
     return { providerId, modelId: rawModelId };
   }
@@ -229,7 +229,7 @@ function parseModelSelectionForTest(value: string): ModelSelection {
   };
 }
 
-function normalizeZCodeModeForTest(value: unknown): ZCodeTaskMode {
+function normalizeRaspberryCodeModeForTest(value: unknown): RaspberryCodeTaskMode {
   switch (value) {
     case "plan":
     case "build":
@@ -247,18 +247,18 @@ function normalizeZCodeModeForTest(value: unknown): ZCodeTaskMode {
 }
 
 function readSelectOption(
-  configOptions: readonly ZCodeConfigOption[],
+  configOptions: readonly RaspberryCodeConfigOption[],
   category: string,
-): (ZCodeConfigOption & { type: "select" }) | undefined {
+): (RaspberryCodeConfigOption & { type: "select" }) | undefined {
   return configOptions.find(
-    (option): option is ZCodeConfigOption & { type: "select" } =>
+    (option): option is RaspberryCodeConfigOption & { type: "select" } =>
       option.type === "select" && (option.category === category || option.id === category),
   );
 }
 
-export function createZCodeSessionSettingsFromConfigOptions(
-  configOptions: readonly ZCodeConfigOption[] = [],
-): ZCodeSessionSettingsState {
+export function createRaspberryCodeSessionSettingsFromConfigOptions(
+  configOptions: readonly RaspberryCodeConfigOption[] = [],
+): RaspberryCodeSessionSettingsState {
   const modelOption = readSelectOption(configOptions, "model");
   const currentModelValue =
     typeof modelOption?.currentValue === "string"
@@ -295,17 +295,17 @@ export function createZCodeSessionSettingsFromConfigOptions(
         })) ?? [],
     },
     mode: {
-      current: normalizeZCodeModeForTest(modeOption?.currentValue),
+      current: normalizeRaspberryCodeModeForTest(modeOption?.currentValue),
     },
     permission: {
-      mode: normalizeZCodeModeForTest(modeOption?.currentValue),
+      mode: normalizeRaspberryCodeModeForTest(modeOption?.currentValue),
     },
   };
 }
 
-function createZCodeWorkspaceState(
-  settings: ZCodeSessionSettingsState = createZCodeSessionSettingsFromConfigOptions(),
-): ZCodeWorkspaceStateSnapshot {
+function createRaspberryCodeWorkspaceState(
+  settings: RaspberryCodeSessionSettingsState = createRaspberryCodeSessionSettingsFromConfigOptions(),
+): RaspberryCodeWorkspaceStateSnapshot {
   return {
     workspace: {
       workspacePath: "/tmp/workspace",
@@ -316,16 +316,16 @@ function createZCodeWorkspaceState(
   };
 }
 
-export function createZCodeSessionService(
-  settings: ZCodeSessionSettingsState = createZCodeSessionSettingsFromConfigOptions(),
-): IZCodeSessionService {
-  const workspaceState = createZCodeWorkspaceState(settings);
+export function createRaspberryCodeSessionService(
+  settings: RaspberryCodeSessionSettingsState = createRaspberryCodeSessionSettingsFromConfigOptions(),
+): IRaspberryCodeSessionService {
+  const workspaceState = createRaspberryCodeWorkspaceState(settings);
   return {
     initializeWorkspace: vi.fn(async () => ({
       available: true,
       workspaceKey: workspaceState.workspace.workspaceKey,
-      protocolName: ZCODE_PROTOCOL_NAME,
-      protocolVersion: ZCODE_PROTOCOL_VERSION,
+      protocolName: RASPBERRYCODE_PROTOCOL_NAME,
+      protocolVersion: RASPBERRYCODE_PROTOCOL_VERSION,
       transportKind: "stdio",
     })),
     readWorkspacePresentation: vi.fn(async () => ({
@@ -337,34 +337,34 @@ export function createZCodeSessionService(
       applied: true,
       revision: "test-provider-registry",
     })),
-  } as unknown as IZCodeSessionService;
+  } as unknown as IRaspberryCodeSessionService;
 }
 
 export function createBotsService(
   deps: Omit<
     Parameters<typeof createBotsServiceImpl>[0],
-    "zcodeSessionService" | "zcodeTaskService" | "projectService"
+    "raspberrycodeSessionService" | "raspberrycodeTaskService" | "projectService"
   > & {
-    zcodeTaskService?: IZCodeTaskService;
+    raspberrycodeTaskService?: IRaspberryCodeTaskService;
     /** 旧测试名保留为别名；真实注入的是 RaspberryCode task service。 */
-    legacyTaskService?: IZCodeTaskService;
-    zcodeSessionService?: IZCodeSessionService;
+    legacyTaskService?: IRaspberryCodeTaskService;
+    raspberrycodeSessionService?: IRaspberryCodeSessionService;
     projectService?: Parameters<typeof createBotsServiceImpl>[0]["projectService"];
   },
 ): ReturnType<typeof createBotsServiceImpl> {
   const {
     legacyTaskService,
-    zcodeTaskService: providedZCodeTaskService,
-    zcodeSessionService: _providedZCodeSessionService,
+    raspberrycodeTaskService: providedRaspberryCodeTaskService,
+    raspberrycodeSessionService: _providedRaspberryCodeSessionService,
     ...rest
   } = deps;
-  const zcodeTaskService =
-    providedZCodeTaskService ?? legacyTaskService ?? createLegacyTaskService();
+  const raspberrycodeTaskService =
+    providedRaspberryCodeTaskService ?? legacyTaskService ?? createLegacyTaskService();
   const modelSelectionService =
     deps.modelSelectionService ??
     createModelSelectionService([{ id: "agent", name: "GLM", models: ["default"] }]);
   return createBotsServiceImpl({
-    ...createBotProjectServices(undefined, (target) => zcodeTaskService.listTasks(target)),
+    ...createBotProjectServices(undefined, (target) => raspberrycodeTaskService.listTasks(target)),
     settingService: createSettingService({
       locale: "zh-CN",
       lastWorkspaceSession: [
@@ -378,12 +378,12 @@ export function createBotsService(
     remoteWorkspaceService: {
       isConnected: vi.fn(async () => true),
       ensureConnected: vi.fn(async () => ({ ok: true })),
-      getZCodeTaskService: vi.fn(async () => zcodeTaskService),
+      getRaspberryCodeTaskService: vi.fn(async () => raspberrycodeTaskService),
       getModelSelectionService: vi.fn(async () => modelSelectionService),
     },
     modelSelectionService,
     ...rest,
-    zcodeTaskService,
+    raspberrycodeTaskService,
   });
 }
 
@@ -398,7 +398,7 @@ export function createBotProjectServices(
   readTasks?: (target: {
     workspacePath: string;
     workspaceIdentity?: string;
-  }) => ReturnType<IZCodeTaskService["listTasks"]>,
+  }) => ReturnType<IRaspberryCodeTaskService["listTasks"]>,
 ) {
   const projects: VirtualProject[] = workspaces.map((workspace, index) => ({
     id: `project-${index}`,

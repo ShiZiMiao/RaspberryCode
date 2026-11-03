@@ -1,5 +1,5 @@
-import type { AppSettings, RemoteWorkspaceSessionEntry } from "@zcode/shared";
-import { parseRemoteWorkspaceIdentity } from "@zcode/shared";
+import type { AppSettings, RemoteWorkspaceSessionEntry } from "@raspberrycode/shared";
+import { parseRemoteWorkspaceIdentity } from "@raspberrycode/shared";
 import {
   buildWorkspaceSessionKey,
   readPersistedWorkspaceSessionEntries,

@@ -37,14 +37,14 @@ export async function resolveBuildTimeConfig(
 ) {
   const defaults = await readPrivateDefaults(defaultsPath);
   return {
-    armsRumEndpoint: pickValue(env, defaults, "ZCODE_ARMS_RUM_ENDPOINT"),
-    telemetryReportEndpoint: pickValue(env, defaults, "ZCODE_TELEMETRY_REPORT_ENDPOINT"),
+    armsRumEndpoint: pickValue(env, defaults, "RASPBERRYCODE_ARMS_RUM_ENDPOINT"),
+    telemetryReportEndpoint: pickValue(env, defaults, "RASPBERRYCODE_TELEMETRY_REPORT_ENDPOINT"),
   };
 }
 
 export function createBuildTimeConfigDefines(config) {
   return {
-    __ZCODE_ARMS_RUM_ENDPOINT__: JSON.stringify(config.armsRumEndpoint),
-    __ZCODE_TELEMETRY_REPORT_ENDPOINT__: JSON.stringify(config.telemetryReportEndpoint),
+    __RASPBERRYCODE_ARMS_RUM_ENDPOINT__: JSON.stringify(config.armsRumEndpoint),
+    __RASPBERRYCODE_TELEMETRY_REPORT_ENDPOINT__: JSON.stringify(config.telemetryReportEndpoint),
   };
 }

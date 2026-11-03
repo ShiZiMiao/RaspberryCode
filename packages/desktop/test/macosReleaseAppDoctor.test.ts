@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { HELPER_APP_NAME, HELPER_DISPLAY_NAME } from "@zcode/zcode-cua/broker/helperConstants";
+import { HELPER_APP_NAME, HELPER_DISPLAY_NAME } from "@raspberrycode/raspberrycode-cua/broker/helperConstants";
 import { afterEach, describe, expect, it } from "vitest";
 
 const isWindows = process.platform === "win32";
@@ -39,11 +39,11 @@ for arg in "$@"; do
   printf '\\t%s' "$arg" >> "${logPath}"
 done
 printf '\\n' >> "${logPath}"
-if [[ "${toolName}" == "codesign" && "\${ZCODE_FAKE_CODESIGN_FAIL_HELPER:-0}" == "1" && "$*" == *"${HELPER_APP_NAME}"* ]]; then
+if [[ "${toolName}" == "codesign" && "\${RASPBERRYCODE_FAKE_CODESIGN_FAIL_HELPER:-0}" == "1" && "$*" == *"${HELPER_APP_NAME}"* ]]; then
   echo "fake helper codesign rejection" >&2
   exit 7
 fi
-if [[ "${toolName}" == "xcrun" && "\${ZCODE_FAKE_STAPLER_FAIL_HELPER:-0}" == "1" && "$*" == *"${HELPER_APP_NAME}"* ]]; then
+if [[ "${toolName}" == "xcrun" && "\${RASPBERRYCODE_FAKE_STAPLER_FAIL_HELPER:-0}" == "1" && "$*" == *"${HELPER_APP_NAME}"* ]]; then
   echo "fake helper stapler rejection" >&2
   exit 8
 fi
@@ -59,9 +59,9 @@ function createReleaseApp(rootDir: string, productName = "RaspberryCode") {
   return { appPath };
 }
 
-function createZcodeHomeHelper(zcodeHome: string, variant?: string) {
+function createRaspberrycodeHomeHelper(raspberrycodeHome: string, variant?: string) {
   const helperAppPath = join(
-    zcodeHome,
+    raspberrycodeHome,
     "computer-use",
     ...(variant ? [variant] : []),
     HELPER_APP_NAME,
@@ -75,9 +75,9 @@ function runDoctor(appPath: string, binDir: string, extraEnv: NodeJS.ProcessEnv 
     cwd: REPO_ROOT,
     env: {
       ...process.env,
-      ZCODE_ENV: "production",
+      RASPBERRYCODE_ENV: "production",
       // Test selection must not inherit a developer's active dev/preview helper variant.
-      ZCODE_CUA_HELPER_INSTALL_VARIANT: "",
+      RASPBERRYCODE_CUA_HELPER_INSTALL_VARIANT: "",
       ...extraEnv,
       PATH: `${binDir}:${process.env.PATH ?? ""}`,
     },
@@ -94,12 +94,12 @@ afterEach(() => {
 
 describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
   it("Preview 自动按 bundle 名推导主可执行，并验收 preview Helper 目录", () => {
-    const workspaceDir = makeTempDir("zcode-macos-preview-doctor-");
+    const workspaceDir = makeTempDir("raspberrycode-macos-preview-doctor-");
     const binDir = join(workspaceDir, "bin");
     const toolLog = join(workspaceDir, "tool.log");
     const { appPath } = createReleaseApp(workspaceDir, "RaspberryCode Preview");
-    const zcodeHome = join(workspaceDir, ".zcode");
-    const helperAppPath = createZcodeHomeHelper(zcodeHome, "preview");
+    const raspberrycodeHome = join(workspaceDir, ".raspberrycode");
+    const helperAppPath = createRaspberrycodeHomeHelper(raspberrycodeHome, "preview");
 
     mkdirSync(binDir, { recursive: true });
     writeFakeTool(binDir, "codesign", toolLog);
@@ -107,9 +107,9 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
     writeFakeTool(binDir, "xcrun", toolLog);
 
     const output = runDoctor(appPath, binDir, {
-      ZCODE_ENV: "test",
-      ZCODE_CUA_REQUIRE_HELPER: "1",
-      ZCODE_HOME: zcodeHome,
+      RASPBERRYCODE_ENV: "test",
+      RASPBERRYCODE_CUA_REQUIRE_HELPER: "1",
+      RASPBERRYCODE_HOME: raspberrycodeHome,
     });
 
     expect(output).toContain(`validating RaspberryCode Preview.app: ${appPath}`);
@@ -119,17 +119,17 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
   });
 
   it("默认只验收安装后的 RaspberryCode.app，不强绑 Computer Use Helper 发布", () => {
-    const workspaceDir = makeTempDir("zcode-macos-release-doctor-");
+    const workspaceDir = makeTempDir("raspberrycode-macos-release-doctor-");
     const binDir = join(workspaceDir, "bin");
     const toolLog = join(workspaceDir, "tool.log");
     const { appPath } = createReleaseApp(workspaceDir);
-    const zcodeHome = join(workspaceDir, ".zcode");
+    const raspberrycodeHome = join(workspaceDir, ".raspberrycode");
 
     mkdirSync(binDir, { recursive: true });
     writeFakeTool(binDir, "codesign", toolLog);
     writeFakeTool(binDir, "spctl", toolLog);
 
-    const output = runDoctor(appPath, binDir, { ZCODE_HOME: zcodeHome });
+    const output = runDoctor(appPath, binDir, { RASPBERRYCODE_HOME: raspberrycodeHome });
 
     expect(output).toContain("[macos-release-doctor] done");
     const log = readFileSync(toolLog, "utf-8");
@@ -140,12 +140,12 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
   });
 
   it("CUA release gate 验收外置 RaspberryCode Computer Use.app", () => {
-    const workspaceDir = makeTempDir("zcode-macos-release-doctor-helper-");
+    const workspaceDir = makeTempDir("raspberrycode-macos-release-doctor-helper-");
     const binDir = join(workspaceDir, "bin");
     const toolLog = join(workspaceDir, "tool.log");
     const { appPath } = createReleaseApp(workspaceDir);
-    const zcodeHome = join(workspaceDir, ".zcode");
-    const helperAppPath = createZcodeHomeHelper(zcodeHome);
+    const raspberrycodeHome = join(workspaceDir, ".raspberrycode");
+    const helperAppPath = createRaspberrycodeHomeHelper(raspberrycodeHome);
 
     mkdirSync(binDir, { recursive: true });
     writeFakeTool(binDir, "codesign", toolLog);
@@ -153,8 +153,8 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
     writeFakeTool(binDir, "xcrun", toolLog);
 
     const output = runDoctor(appPath, binDir, {
-      ZCODE_CUA_REQUIRE_HELPER: "1",
-      ZCODE_HOME: zcodeHome,
+      RASPBERRYCODE_CUA_REQUIRE_HELPER: "1",
+      RASPBERRYCODE_HOME: raspberrycodeHome,
     });
 
     expect(output).toContain("[macos-release-doctor] done");
@@ -167,12 +167,12 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
   });
 
   it("CUA release gate 在 Helper staple 无效时应 fail-closed", () => {
-    const workspaceDir = makeTempDir("zcode-macos-release-doctor-stapler-fail-");
+    const workspaceDir = makeTempDir("raspberrycode-macos-release-doctor-stapler-fail-");
     const binDir = join(workspaceDir, "bin");
     const toolLog = join(workspaceDir, "tool.log");
     const { appPath } = createReleaseApp(workspaceDir);
-    const zcodeHome = join(workspaceDir, ".zcode");
-    const helperAppPath = createZcodeHomeHelper(zcodeHome);
+    const raspberrycodeHome = join(workspaceDir, ".raspberrycode");
+    const helperAppPath = createRaspberrycodeHomeHelper(raspberrycodeHome);
 
     mkdirSync(binDir, { recursive: true });
     writeFakeTool(binDir, "codesign", toolLog);
@@ -181,19 +181,19 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
 
     expect(() =>
       runDoctor(appPath, binDir, {
-        ZCODE_CUA_REQUIRE_HELPER: "1",
-        ZCODE_CUA_HELPER_APP_PATH: helperAppPath,
-        ZCODE_FAKE_STAPLER_FAIL_HELPER: "1",
+        RASPBERRYCODE_CUA_REQUIRE_HELPER: "1",
+        RASPBERRYCODE_CUA_HELPER_APP_PATH: helperAppPath,
+        RASPBERRYCODE_FAKE_STAPLER_FAIL_HELPER: "1",
       }),
     ).toThrow(/fake helper stapler rejection/);
   });
 
   it("CUA release gate 缺少外置 Helper.app 时应 fail-closed", () => {
-    const workspaceDir = makeTempDir("zcode-macos-release-doctor-missing-helper-");
+    const workspaceDir = makeTempDir("raspberrycode-macos-release-doctor-missing-helper-");
     const binDir = join(workspaceDir, "bin");
     const toolLog = join(workspaceDir, "tool.log");
     const { appPath } = createReleaseApp(workspaceDir);
-    const zcodeHome = join(workspaceDir, ".zcode");
+    const raspberrycodeHome = join(workspaceDir, ".raspberrycode");
 
     mkdirSync(binDir, { recursive: true });
     writeFakeTool(binDir, "codesign", toolLog);
@@ -201,14 +201,14 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
 
     expect(() =>
       runDoctor(appPath, binDir, {
-        ZCODE_CUA_REQUIRE_HELPER: "1",
-        ZCODE_HOME: zcodeHome,
+        RASPBERRYCODE_CUA_REQUIRE_HELPER: "1",
+        RASPBERRYCODE_HOME: raspberrycodeHome,
       }),
     ).toThrow(/Computer Use Helper\.app missing/);
   });
 
-  it("CUA release gate 在没有 ZCODE_HOME/HOME 时应 fail-closed", () => {
-    const workspaceDir = makeTempDir("zcode-macos-release-doctor-no-home-");
+  it("CUA release gate 在没有 RASPBERRYCODE_HOME/HOME 时应 fail-closed", () => {
+    const workspaceDir = makeTempDir("raspberrycode-macos-release-doctor-no-home-");
     const binDir = join(workspaceDir, "bin");
     const toolLog = join(workspaceDir, "tool.log");
     const { appPath } = createReleaseApp(workspaceDir);
@@ -219,20 +219,20 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
 
     expect(() =>
       runDoctor(appPath, binDir, {
-        ZCODE_CUA_REQUIRE_HELPER: "1",
-        ZCODE_HOME: "",
+        RASPBERRYCODE_CUA_REQUIRE_HELPER: "1",
+        RASPBERRYCODE_HOME: "",
         HOME: "",
       }),
     ).toThrow(/no product helper path/);
   });
 
   it("helper codesign 失败时不应继续判定 release app 验收成功", () => {
-    const workspaceDir = makeTempDir("zcode-macos-release-doctor-fail-helper-");
+    const workspaceDir = makeTempDir("raspberrycode-macos-release-doctor-fail-helper-");
     const binDir = join(workspaceDir, "bin");
     const toolLog = join(workspaceDir, "tool.log");
     const { appPath } = createReleaseApp(workspaceDir);
-    const zcodeHome = join(workspaceDir, ".zcode");
-    const helperAppPath = createZcodeHomeHelper(zcodeHome);
+    const raspberrycodeHome = join(workspaceDir, ".raspberrycode");
+    const helperAppPath = createRaspberrycodeHomeHelper(raspberrycodeHome);
 
     mkdirSync(binDir, { recursive: true });
     writeFakeTool(binDir, "codesign", toolLog);
@@ -240,9 +240,9 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
 
     expect(() =>
       runDoctor(appPath, binDir, {
-        ZCODE_CUA_REQUIRE_HELPER: "1",
-        ZCODE_HOME: zcodeHome,
-        ZCODE_FAKE_CODESIGN_FAIL_HELPER: "1",
+        RASPBERRYCODE_CUA_REQUIRE_HELPER: "1",
+        RASPBERRYCODE_HOME: raspberrycodeHome,
+        RASPBERRYCODE_FAKE_CODESIGN_FAIL_HELPER: "1",
       }),
     ).toThrow(/fake helper codesign rejection/);
 
@@ -252,12 +252,12 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
   });
 
   it("helper 主可执行仍是 shell wrapper 时应 fail-closed", () => {
-    const workspaceDir = makeTempDir("zcode-macos-release-doctor-helper-wrapper-");
+    const workspaceDir = makeTempDir("raspberrycode-macos-release-doctor-helper-wrapper-");
     const binDir = join(workspaceDir, "bin");
     const toolLog = join(workspaceDir, "tool.log");
     const { appPath } = createReleaseApp(workspaceDir);
-    const zcodeHome = join(workspaceDir, ".zcode");
-    const helperAppPath = createZcodeHomeHelper(zcodeHome);
+    const raspberrycodeHome = join(workspaceDir, ".raspberrycode");
+    const helperAppPath = createRaspberrycodeHomeHelper(raspberrycodeHome);
     writeExecutable(join(helperAppPath, "Contents", "MacOS", HELPER_DISPLAY_NAME), "#!/bin/bash\n");
 
     mkdirSync(binDir, { recursive: true });
@@ -266,8 +266,8 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
 
     expect(() =>
       runDoctor(appPath, binDir, {
-        ZCODE_CUA_REQUIRE_HELPER: "1",
-        ZCODE_HOME: zcodeHome,
+        RASPBERRYCODE_CUA_REQUIRE_HELPER: "1",
+        RASPBERRYCODE_HOME: raspberrycodeHome,
       }),
     ).toThrow(/not a Mach-O executable/);
     const log = existsSync(toolLog) ? readFileSync(toolLog, "utf-8") : "";

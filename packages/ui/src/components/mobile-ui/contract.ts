@@ -5,7 +5,7 @@ export interface DevicePlatformIconProps {
   platform?: string;
   className?: string;
 }
-export interface ZCodeAppLogoProps {
+export interface RaspberryCodeAppLogoProps {
   className?: string;
 }
 export type BottomSheetProps = ComponentProps<typeof Dialog.Root>;

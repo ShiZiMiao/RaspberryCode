@@ -1,4 +1,4 @@
-import { getMediaPreviewFormat, ServiceChannels, type MediaPreviewKind } from "@zcode/shared";
+import { getMediaPreviewFormat, ServiceChannels, type MediaPreviewKind } from "@raspberrycode/shared";
 import type { IFileService } from "../file/file.js";
 import { createServiceDescriptor } from "../descriptors.js";
 

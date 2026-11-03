@@ -9,8 +9,6 @@ import type { PluginSandboxPlatformPort } from "./mcp-apps/contract.js";
 import type {
   LoadCliMcpFromUserDirectoryRequest,
   LoadCliMcpFromUserDirectoryResult,
-  MigrateLegacyCommonMcpRequest,
-  MigrateLegacyCommonMcpResult,
   SaveCliMcpToUserDirectoryRequest,
 } from "./mcp.js";
 import type { OAuthStateRegistration } from "./oauth.js";
@@ -56,7 +54,7 @@ export type BrowserTabResidencyState =
   | "restoring";
 
 /** 仅用于创建尚未提交首个 navigation entry 的 residency restore guest。 */
-export const BROWSER_VIEW_RESTORE_BOOTSTRAP_URL = "zcode-browser-restore://pending";
+export const BROWSER_VIEW_RESTORE_BOOTSTRAP_URL = "raspberrycode-browser-restore://pending";
 
 /** Renderer 上报 tab shell 的展示事实；windowId 必须由 main 绑定可信 IPC sender。 */
 export interface BrowserViewResidencyReportPayload {
@@ -94,7 +92,7 @@ export interface BrowserViewCloseTabRequest {
   sessionId: string;
 }
 
-export const LOCAL_MEDIA_PREVIEW_SCHEME = "zcode-media";
+export const LOCAL_MEDIA_PREVIEW_SCHEME = "raspberrycode-media";
 
 export function buildLocalMediaPreviewUrl(path: string): string {
   const url = new URL(`${LOCAL_MEDIA_PREVIEW_SCHEME}://local/preview`);
@@ -343,7 +341,7 @@ export interface SSHConfigAliasOption {
   source?: string;
 }
 
-export interface ZCodeStdioTapDevState {
+export interface RaspberryCodeStdioTapDevState {
   enabled: boolean;
   visible: boolean;
   logDir: string;
@@ -624,7 +622,7 @@ export const DesktopCommandIds = {
   ExportLogs: "exportLogs",
   ToggleDevTools: "toggleDevTools",
   OpenResourceManager: "openResourceManager",
-  ToggleZCodeStdioTapDevProxy: "toggleZCodeStdioTapDevProxy",
+  ToggleRaspberryCodeStdioTapDevProxy: "toggleRaspberryCodeStdioTapDevProxy",
   ClearAllData: "clearAllData",
   GetCuaOsSupport: "getCuaOsSupport",
 } as const;
@@ -645,7 +643,7 @@ export type CuaOsSupport =
   | { kind: "not-applicable" };
 
 /**
- * 平台操作接口 —— 替代直接访问 window.zcode
+ * 平台操作接口 —— 替代直接访问 window.raspberrycode
  *
  * 定义需要宿主环境（Electron main / Web server）参与的操作。
  * Desktop 和 Web 各自提供不同的实现，UI 层通过此接口统一消费。
@@ -786,10 +784,6 @@ export interface IPlatformService {
   saveMcpToUserDirectory?(
     payload: SaveCliMcpToUserDirectoryRequest,
   ): Promise<{ success: boolean; error?: string }>;
-
-  migrateLegacyCommonMcp?(
-    payload?: MigrateLegacyCommonMcpRequest,
-  ): Promise<MigrateLegacyCommonMcpResult>;
 
   /** 打开外部 URL（用于 OAuth 跳转浏览器） */
   openExternal(url: string): void;
@@ -1073,7 +1067,7 @@ export interface IPlatformService {
   }>;
 
   /** 开发环境 stdio tap proxy 开关状态；非桌面平台可不实现 */
-  getZCodeStdioTapDevState?(): Promise<ZCodeStdioTapDevState>;
+  getRaspberryCodeStdioTapDevState?(): Promise<RaspberryCodeStdioTapDevState>;
 
   /** 是否为本地开发运行形态；桌面端用 !app.isPackaged 注入，Web 端可省略。 */
   isLocalDevelopmentRuntime?: boolean;

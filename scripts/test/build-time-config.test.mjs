@@ -6,7 +6,7 @@ import { after, test } from "node:test";
 
 import { createBuildTimeConfigDefines, resolveBuildTimeConfig } from "../build-time-config.mjs";
 
-const dir = await mkdtemp(join(tmpdir(), "zcode-build-time-config-"));
+const dir = await mkdtemp(join(tmpdir(), "raspberrycode-build-time-config-"));
 after(() => rm(dir, { recursive: true, force: true }));
 
 async function writeDefaults(name, content) {
@@ -25,8 +25,8 @@ test("没有私有默认配置也没有环境变量时两项能力都关闭", as
 
 test("私有默认配置启用两项能力", async () => {
   const defaultsPath = await writeDefaults("defaults.json", {
-    ZCODE_ARMS_RUM_ENDPOINT: " https://rum.example.com/x ",
-    ZCODE_TELEMETRY_REPORT_ENDPOINT: "https://report.example.com/event",
+    RASPBERRYCODE_ARMS_RUM_ENDPOINT: " https://rum.example.com/x ",
+    RASPBERRYCODE_TELEMETRY_REPORT_ENDPOINT: "https://report.example.com/event",
   });
   assert.deepEqual(await resolveBuildTimeConfig({}, { defaultsPath }), {
     armsRumEndpoint: "https://rum.example.com/x",
@@ -36,13 +36,13 @@ test("私有默认配置启用两项能力", async () => {
 
 test("环境变量优先于私有默认配置，显式空字符串关闭单项能力", async () => {
   const defaultsPath = await writeDefaults("override.json", {
-    ZCODE_ARMS_RUM_ENDPOINT: "https://rum.example.com/x",
-    ZCODE_TELEMETRY_REPORT_ENDPOINT: "https://report.example.com/event",
+    RASPBERRYCODE_ARMS_RUM_ENDPOINT: "https://rum.example.com/x",
+    RASPBERRYCODE_TELEMETRY_REPORT_ENDPOINT: "https://report.example.com/event",
   });
   const config = await resolveBuildTimeConfig(
     {
-      ZCODE_ARMS_RUM_ENDPOINT: "",
-      ZCODE_TELEMETRY_REPORT_ENDPOINT: "https://other.example.com/event",
+      RASPBERRYCODE_ARMS_RUM_ENDPOINT: "",
+      RASPBERRYCODE_TELEMETRY_REPORT_ENDPOINT: "https://other.example.com/event",
     },
     { defaultsPath },
   );
@@ -64,8 +64,8 @@ test("define 以 JSON 字面量注入", () => {
       telemetryReportEndpoint: "",
     }),
     {
-      __ZCODE_ARMS_RUM_ENDPOINT__: '"https://rum.example.com/x"',
-      __ZCODE_TELEMETRY_REPORT_ENDPOINT__: '""',
+      __RASPBERRYCODE_ARMS_RUM_ENDPOINT__: '"https://rum.example.com/x"',
+      __RASPBERRYCODE_TELEMETRY_REPORT_ENDPOINT__: '""',
     },
   );
 });

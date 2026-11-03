@@ -1,8 +1,8 @@
 /* eslint-disable max-lines -- Model Provider 设置页需要集中编排导航、表单和连接测试，后续整体拆分时再收敛。 */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ProviderSettingsFormProvider } from "@/lib/providerSettingsFormTypes.js";
-import type { ModelConnectivityResult } from "@zcode/shared";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import type { ModelConnectivityResult } from "@raspberrycode/shared";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { Button } from "@/components/ui/button.js";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog.js";
 import { useModelProviders } from "@/hooks/useModelProviders.js";
@@ -47,7 +47,7 @@ export function ModelProviderSection({
   pendingModelProviderTarget?: SettingsModelProviderTarget;
   onConsumePendingModelProviderTarget?: () => void;
 } = {}) {
-  const { intl, locale } = useZCodeIntl();
+  const { intl, locale } = useRaspberryCodeIntl();
   const confirmDialog = useConfirmDialog();
   const platform = usePlatform();
   const {

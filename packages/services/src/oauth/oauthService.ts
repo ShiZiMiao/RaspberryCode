@@ -1,6 +1,6 @@
 /* eslint-disable max-lines -- OAuthService 集中维护 OAuth 会话生命周期和 provider 切换边界，当前 review 修复只收窄后台迁移写入条件。 */
 import { randomBytes } from "node:crypto";
-import { Emitter } from "@zcode/rpc";
+import { Emitter } from "@raspberrycode/rpc";
 import {
   ApiError,
   formatLogPrefix,
@@ -18,7 +18,7 @@ import {
   type UserInfo,
   resolveJwtExpiration,
   isCredentialDecryptError,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import type { ICredentialService } from "../credential/credential.js";
 import { createServiceLogger } from "../logger/serviceLogger.js";
 import { readApiJson } from "../providers/api/apiJson.js";
@@ -33,13 +33,23 @@ import { OAuthCredentialRepo } from "./repo/oauthCredentialRepo.js";
 import { createOAuthRuntimeConfig } from "./runtimeConfig.js";
 import {
   buildDesktopOAuthRedirectUriFromEnv,
-  buildZCodeApiUrlFromEnv,
+  buildRaspberryCodeApiUrlFromEnv,
 } from "./providers/configUtils.js";
 
 /** OAuth 超时时间（5 分钟） */
 const OAUTH_TIMEOUT_MS = 5 * 60 * 1000;
 const COMPLETED_POLLING_STATE_GRACE_MS = 30 * 1000;
-const ZCODE_JWT_TOKEN_KEY = "zcodejwttoken";
+const RASPBERRYCODE_JWT_TOKEN_KEY = "raspberrycodejwttoken";
+// wire 兼容数据（非品牌分支）：各家授权后端的回调透传参数名不同，按 provider 声明。
+const OAUTH_AUTHORIZE_REDIRECT_PARAM_BY_PROVIDER: Partial<Record<OAuthProviderId, string>> = {
+  [BIGMODEL_PROVIDER_ID]: "redirect",
+  [ZAI_PROVIDER_ID]: "redirect_uri",
+};
+// 账号模型数据（非品牌分支）：同屏仅一个活跃 OAuth 账号，另一家即 inactive。
+const OAUTH_PROVIDER_SIBLING: Partial<Record<OAuthProviderId, OAuthProviderId>> = {
+  [ZAI_PROVIDER_ID]: BIGMODEL_PROVIDER_ID,
+  [BIGMODEL_PROVIDER_ID]: ZAI_PROVIDER_ID,
+};
 const log = (...args: unknown[]) =>
   console.log(formatLogPrefix("oauthService", process.pid), ...args);
 const serviceLog = createServiceLogger("oauthService");
@@ -102,13 +112,7 @@ function isSameOAuthProfile(left: OAuthUserProfile, right: OAuthUserProfile): bo
 }
 
 function resolveInactiveOAuthProvider(provider: OAuthProviderId): OAuthProviderId | null {
-  if (provider === ZAI_PROVIDER_ID) {
-    return BIGMODEL_PROVIDER_ID;
-  }
-  if (provider === BIGMODEL_PROVIDER_ID) {
-    return ZAI_PROVIDER_ID;
-  }
-  return null;
+  return OAUTH_PROVIDER_SIBLING[provider] ?? null;
 }
 
 /**
@@ -216,7 +220,7 @@ export class OAuthService implements IOAuthService {
     let tokens: { key: string; value: string }[];
     try {
       tokens = await Promise.all(
-        [ZCODE_JWT_TOKEN_KEY, `oauth:${activeProvider}:access_token`].map(async (key) => ({
+        [RASPBERRYCODE_JWT_TOKEN_KEY, `oauth:${activeProvider}:access_token`].map(async (key) => ({
           key,
           value: (await this.credentialService.load(key))?.trim() ?? "",
         })),
@@ -236,7 +240,7 @@ export class OAuthService implements IOAuthService {
     const expired = tokens.find(
       ({ value }) => value && resolveJwtExpiration(value, this.now()).kind === "expired",
     );
-    const zcodeJwtToken = tokens[0]?.value ?? "";
+    const raspberrycodeJwtToken = tokens[0]?.value ?? "";
     if (expired) {
       serviceLog.info("cached session invalidated because login JWT expired", {
         provider: activeProvider,
@@ -286,10 +290,10 @@ export class OAuthService implements IOAuthService {
     }
 
     if (activeProvider === ZAI_PROVIDER_ID) {
-      if (!zcodeJwtToken) {
-        // sidebar 登录入口之前只看缓存 user_info，会把“缺少 zcodejwttoken”的状态误判成已登录。
-        // 这里补充 zcodejwttoken 门槛，确保没有后端 JWT 时统一按未登录处理。
-        log("restoreCachedSession skipped: missing zcodejwttoken:", activeProvider);
+      if (!raspberrycodeJwtToken) {
+        // sidebar 登录入口之前只看缓存 user_info，会把“缺少 raspberrycodejwttoken”的状态误判成已登录。
+        // 这里补充 raspberrycodejwttoken 门槛，确保没有后端 JWT 时统一按未登录处理。
+        log("restoreCachedSession skipped: missing raspberrycodejwttoken:", activeProvider);
         return { status: "signed-out" };
       }
     }
@@ -303,7 +307,7 @@ export class OAuthService implements IOAuthService {
     expectedProvider: OAuthProviderId,
     expectedProfile: OAuthUserProfile,
     expectedJwt: string,
-    credentialKey = ZCODE_JWT_TOKEN_KEY,
+    credentialKey = RASPBERRYCODE_JWT_TOKEN_KEY,
   ): Promise<boolean> {
     const invalidated = await this.runSessionMutation(async () => {
       const currentProvider = await this.repo.getActiveProvider();
@@ -450,7 +454,7 @@ export class OAuthService implements IOAuthService {
     if (inactiveProvider) {
       await assertCurrent();
       // ZAI 与 BigModel 是互斥身份域。切换 provider 时必须先清旧 provider，
-      // 再保存当前 token；反序会让 clearProvider 误删共享的 zcodejwttoken。
+      // 再保存当前 token；反序会让 clearProvider 误删共享的 raspberrycodejwttoken。
       await this.repo.clearProvider(inactiveProvider);
     }
     await assertCurrent();
@@ -640,7 +644,7 @@ export class OAuthService implements IOAuthService {
     this.oauthFlowStartProvider = provider;
     this.clearPendingState();
     const pollToken = randomBytes(32).toString("hex");
-    const initUrl = buildZCodeApiUrlFromEnv(this.env, "/api/v1/oauth/cli/init");
+    const initUrl = buildRaspberryCodeApiUrlFromEnv(this.env, "/api/v1/oauth/cli/init");
     const envelope = await readApiJson<OAuthFlowEnvelope>(this.apiClient, initUrl, {
       method: "POST",
       headers: {
@@ -675,14 +679,11 @@ export class OAuthService implements IOAuthService {
     } catch {
       throw new Error("OAuth flow 初始化响应无效");
     }
-    if (provider === BIGMODEL_PROVIDER_ID) {
-      // BigModel CLI callback 的失败页会截断原有 Desktop deep link 回调体验。
-      // flow 仍由 Host 轮询，但浏览器回调恢复到官网中转页，再透传到 zcode://oauth/callback。
-      authorizeUrl.searchParams.set("redirect", buildDesktopOAuthRedirectUriFromEnv(this.env));
-    } else if (provider === ZAI_PROVIDER_ID) {
-      // Z.AI 后端 init 仍可能返回 provider-specific callback，导致回跳行为与 BigModel 不一致。
-      // Desktop 统一改写为官网中转页，再由官网透传到 zcode://oauth/callback。
-      authorizeUrl.searchParams.set("redirect_uri", buildDesktopOAuthRedirectUriFromEnv(this.env));
+    // wire 兼容数据（非品牌分支）：各家授权后端的回调参数名不同，按 provider 声明透传，
+    // Desktop 统一改写为官网中转页后再由官网透传到 raspberrycode://oauth/callback。
+    const redirectParam = OAUTH_AUTHORIZE_REDIRECT_PARAM_BY_PROVIDER[provider];
+    if (redirectParam) {
+      authorizeUrl.searchParams.set(redirectParam, buildDesktopOAuthRedirectUriFromEnv(this.env));
     }
     const state = authorizeUrl.searchParams.get("state")?.trim();
     const remainingLifetimeMs = expiresAt - this.now();
@@ -717,7 +718,7 @@ export class OAuthService implements IOAuthService {
         nextPollAt: this.now(),
         pollIntervalMs,
         pollToken,
-        pollUrl: buildZCodeApiUrlFromEnv(
+        pollUrl: buildRaspberryCodeApiUrlFromEnv(
           this.env,
           `/api/v1/oauth/cli/poll/${encodeURIComponent(flowId)}`,
         ),
@@ -815,9 +816,9 @@ export class OAuthService implements IOAuthService {
           pending.provider === ZAI_PROVIDER_ID
             ? readTrimmedString(zai?.access_token)
             : readTrimmedString(bigmodel?.access_token) || readTrimmedString(bigmodel?.accessToken);
-        const zcodeJwtToken = readTrimmedString(ready.token);
+        const raspberrycodeJwtToken = readTrimmedString(ready.token);
         const userId = readTrimmedString(user?.user_id);
-        if (!zcodeJwtToken || !providerAccessToken || !userId) {
+        if (!raspberrycodeJwtToken || !providerAccessToken || !userId) {
           throw new Error("OAuth flow 查询响应无效");
         }
         const username = readTrimmedString(user?.name) || readTrimmedString(user?.email) || userId;
@@ -838,12 +839,12 @@ export class OAuthService implements IOAuthService {
         const tokenSet = adapter.normalizePolledTokenSet
           ? await adapter.normalizePolledTokenSet({
               accessToken: providerAccessToken,
-              zcodeJwtToken,
+              raspberrycodeJwtToken,
               ...(refreshToken ? { refreshToken } : {}),
             })
           : {
               accessToken: providerAccessToken,
-              zcodeJwtToken,
+              raspberrycodeJwtToken,
               ...(refreshToken ? { refreshToken } : {}),
             };
         return { tokenSet, profile };

@@ -13,8 +13,8 @@ describe("codexConfigToml", () => {
           requires_openai_auth: true,
           http_headers: {
             "User-Agent": "RaspberryCode/unknown",
-            "HTTP-Referer": "https://zcode.z.ai",
-            "X-Title": "Z Code@electron",
+            "HTTP-Referer": "https://raspberrycode.example.com",
+            "X-Title": "RaspberryCode@electron",
           },
         },
       },
@@ -31,8 +31,8 @@ describe("codexConfigToml", () => {
         OpenAI: {
           http_headers: {
             "User-Agent": "RaspberryCode/unknown",
-            "HTTP-Referer": "https://zcode.z.ai",
-            "X-Title": "Z Code@electron",
+            "HTTP-Referer": "https://raspberrycode.example.com",
+            "X-Title": "RaspberryCode@electron",
           },
         },
       },
@@ -50,7 +50,7 @@ describe("codexConfigToml", () => {
         "Provider Demo": {
           base_url: "https://example.com/v1",
           http_headers: {
-            "X-Title": "Z Code@electron",
+            "X-Title": "RaspberryCode@electron",
           },
         },
       },
@@ -77,8 +77,8 @@ describe("codexConfigToml", () => {
           },
           http_headers: {
             "User-Agent": "RaspberryCode/unknown",
-            "HTTP-Referer": "https://zcode.z.ai",
-            "X-Title": "Z Code@electron",
+            "HTTP-Referer": "https://raspberrycode.example.com",
+            "X-Title": "RaspberryCode@electron",
           },
         },
       },
@@ -102,8 +102,8 @@ describe("codexConfigToml", () => {
     expect(parsed.model_providers?.custom?.query_params?.http_headers).toBeUndefined();
     expect(parsed.model_providers?.custom?.http_headers).toMatchObject({
       "User-Agent": "RaspberryCode/unknown",
-      "HTTP-Referer": "https://zcode.z.ai",
-      "X-Title": "Z Code@electron",
+      "HTTP-Referer": "https://raspberrycode.example.com",
+      "X-Title": "RaspberryCode@electron",
     });
   });
 });

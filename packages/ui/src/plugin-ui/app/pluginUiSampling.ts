@@ -1,6 +1,6 @@
 import { ProtocolError } from "@modelcontextprotocol/client";
-import type { IPluginUiSamplingService, PluginUiPluginScope } from "@zcode/services";
-import { mcpAppsSamplingParamsSchema } from "@zcode/shared/mcp-apps";
+import type { IPluginUiSamplingService, PluginUiPluginScope } from "@raspberrycode/services";
+import { mcpAppsSamplingParamsSchema } from "@raspberrycode/shared/mcp-apps";
 import type { PluginUiHostBridge } from "./pluginUiHostBridge.js";
 
 export function createPluginUiSampling(deps: {

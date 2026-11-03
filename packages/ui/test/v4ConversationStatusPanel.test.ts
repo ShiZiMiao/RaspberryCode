@@ -3,14 +3,14 @@ import { createElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { act, render } from "@testing-library/react";
-import type { GitRepositorySummary, ZCodeSessionRunningSubagent } from "@zcode/shared";
+import type { GitRepositorySummary, RaspberryCodeSessionRunningSubagent } from "@raspberrycode/shared";
 import type {
   BackgroundWorkSummary,
   GoalState,
   PlanState,
   ToolCallRow,
   WorkflowRunState,
-} from "@zcode/shared/zcode-protocol-v4";
+} from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import { getStatusPanelTodoFocusWindow } from "@/v4/ConversationStatusPanel.js";
 
 const statusPanelCapture = vi.hoisted(() => ({
@@ -145,7 +145,7 @@ vi.mock("@/components/ui/collapsible.js", () => ({
 }));
 
 vi.mock("@/i18n/IntlProvider.js", () => ({
-  useZCodeIntl: () => ({
+  useRaspberryCodeIntl: () => ({
     intl: {
       formatMessage: (descriptor: { id: string }, values?: Record<string, string>) => {
         const durationUnits: Record<string, string> = {
@@ -200,7 +200,7 @@ function planState(overrides: Partial<PlanState> = {}): PlanState {
   return {
     updatedAt: 1_700_000_000_000,
     items: [
-      { id: "1", content: "看 z-code-2", status: "completed" },
+      { id: "1", content: "看 demo-2", status: "completed" },
       { id: "2", content: "复刻浮层", status: "inProgress" },
     ],
     ...overrides,
@@ -272,8 +272,8 @@ function backgroundWork(overrides: Partial<BackgroundWorkSummary> = {}): Backgro
 }
 
 function runningSubagent(
-  overrides: Partial<ZCodeSessionRunningSubagent> = {},
-): ZCodeSessionRunningSubagent {
+  overrides: Partial<RaspberryCodeSessionRunningSubagent> = {},
+): RaspberryCodeSessionRunningSubagent {
   return {
     childSessionId: "child-session",
     subagentType: "Explore",
@@ -513,13 +513,13 @@ describe("ConversationStatusPanel", () => {
         toolCallId: "plan-9",
         markdown: "# 最新计划",
         title: "最新计划",
-        planFilePath: "/repo/.zcode/plans/latest.md",
+        planFilePath: "/repo/.raspberrycode/plans/latest.md",
       }),
     ).toEqual({
       parentSessionId: "parent-session",
       toolCallId: "plan-9",
       markdown: "# 最新计划",
-      planFilePath: "/repo/.zcode/plans/latest.md",
+      planFilePath: "/repo/.raspberrycode/plans/latest.md",
     });
   });
 

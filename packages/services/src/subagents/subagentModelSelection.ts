@@ -1,4 +1,4 @@
-import { modelSelectionSchema, type ModelSelection } from "@zcode/shared";
+import { modelSelectionSchema, type ModelSelection } from "@raspberrycode/shared";
 
 export function normalizeSubagentModelSelection(
   selection: ModelSelection | undefined,

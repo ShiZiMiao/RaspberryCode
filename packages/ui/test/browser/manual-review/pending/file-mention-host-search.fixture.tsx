@@ -8,13 +8,13 @@ import { MentionPlugin } from "@/mentions/MentionPlugin.js";
 import { PromptMentionNode } from "@/mentions/nodes/PromptMentionNode.js";
 import { ServiceProvider } from "@/hooks/useServices.js";
 import { StoreContext } from "@/store/StoreProvider.js";
-import { createZCodeStore } from "@/store/index.js";
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+import { createRaspberryCodeStore } from "@/store/index.js";
+import { RaspberryCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import { TooltipProvider } from "@/components/ui/tooltip.js";
-import type { IBroadcastService, IServiceAccessor } from "@zcode/services";
+import type { IBroadcastService, IServiceAccessor } from "@raspberrycode/services";
 import "@/styles.css";
 const params = new URLSearchParams(location.search);
-const store = createZCodeStore({
+const store = createRaspberryCodeStore({
   send: async () => {},
   onMessage: () => ({ dispose() {} }),
 } as unknown as IBroadcastService);
@@ -56,7 +56,7 @@ function Fixture() {
           <MentionPlugin
             workspacePath={params.get("workspace")!}
             workspaceIdentity="ssh:test-host"
-            provider="zcode"
+            provider="raspberrycode"
             container={container}
           />
         </LexicalComposer>
@@ -67,11 +67,11 @@ function Fixture() {
 createRoot(document.getElementById("root")!).render(
   <ServiceProvider services={services}>
     <StoreContext.Provider value={store}>
-      <ZCodeIntlProvider initialLocale={params.get("locale") === "zh-CN" ? "zh-CN" : "en-US"}>
+      <RaspberryCodeIntlProvider initialLocale={params.get("locale") === "zh-CN" ? "zh-CN" : "en-US"}>
         <TooltipProvider>
           <Fixture />
         </TooltipProvider>
-      </ZCodeIntlProvider>
+      </RaspberryCodeIntlProvider>
     </StoreContext.Provider>
   </ServiceProvider>,
 );

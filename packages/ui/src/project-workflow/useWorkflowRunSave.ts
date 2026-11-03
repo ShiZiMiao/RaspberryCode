@@ -10,9 +10,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   resolveWorkspaceKey,
-  type ZCodeSavedWorkflowEntry,
-  type ZCodeSavedWorkflowScope,
-} from "@zcode/shared";
+  type RaspberryCodeSavedWorkflowEntry,
+  type RaspberryCodeSavedWorkflowScope,
+} from "@raspberrycode/shared";
 import { useWorkspaceServicesResolution } from "@/hooks/useWorkspaceServices.js";
 import {
   selectWorkflowRunSavedState,
@@ -42,7 +42,7 @@ export function useWorkflowRunSave(host: WorkflowRunSaveHost): WorkflowRunSaveCo
     host.workspaceIdentity,
   );
   const { rpcReady, services } = resolution;
-  const agentService = services.zcodeAgentService;
+  const agentService = services.raspberrycodeAgentService;
   const isRemote = resolution.isRemoteTarget;
 
   const target = useMemo<WorkflowRunSaveTarget>(
@@ -117,7 +117,7 @@ export function useWorkflowRunSave(host: WorkflowRunSaveHost): WorkflowRunSaveCo
   );
 
   const checkNameTaken = useCallback(
-    async (name: string, scope: ZCodeSavedWorkflowScope) => {
+    async (name: string, scope: RaspberryCodeSavedWorkflowScope) => {
       try {
         const result = await agentService.getSavedWorkflow({ ...target, name, scope });
         return result.ok;
@@ -135,7 +135,7 @@ export function useWorkflowRunSave(host: WorkflowRunSaveHost): WorkflowRunSaveCo
   });
   const launch = useCallback(
     async (
-      entry: ZCodeSavedWorkflowEntry,
+      entry: RaspberryCodeSavedWorkflowEntry,
       args: Record<string, unknown>,
       launchTarget?: WorkflowRunSaveTarget,
     ) => {

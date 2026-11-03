@@ -3,9 +3,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { PlatformProvider } from "@/hooks/usePlatform.js";
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+import { RaspberryCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import { RemoteConnectionFields } from "@/RemoteConnectionFields.js";
-import type { IPlatformService } from "@zcode/shared";
+import type { IPlatformService } from "@raspberrycode/shared";
 
 const platform: IPlatformService = {
   activateOrSetWorkspace: vi.fn(),
@@ -36,7 +36,7 @@ function renderRemoteConnectionFields() {
       PlatformProvider,
       { platform },
       createElement(
-        ZCodeIntlProvider,
+        RaspberryCodeIntlProvider,
         { initialLocale: "zh-CN" },
         createElement(RemoteConnectionFields, {
           kind: "docker",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ClientSceneConfig } from "@zcode/services";
+import type { ClientSceneConfig } from "@raspberrycode/services";
 import {
   materializeScheduledTemplateDraft,
   mapClientScenesToAutomationTemplates,
@@ -9,7 +9,7 @@ import {
 function createScenes(cronExpr = "0 9 * * 1-5"): ClientSceneConfig[] {
   return [
     {
-      namespace: "zcode",
+      namespace: "raspberrycode",
       scene: "scheduled-task",
       options: {
         prompts: {

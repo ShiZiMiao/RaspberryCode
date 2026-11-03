@@ -68,7 +68,7 @@ export function stageKoffiIntoBundledAgents({ koffiPackageRoot, agentDir, target
 export function verifyStagedKoffi({
   resourcesDir,
   targetPlatform,
-  pluginRelativePath = "packages/zcode-cua-plugin",
+  pluginRelativePath = "packages/raspberrycode-cua-plugin",
 }) {
   const platformKey = koffiPlatformKey(targetPlatform);
   const koffiRoot = resolve(resourcesDir, "agent", pluginRelativePath, "node_modules", "koffi");

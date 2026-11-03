@@ -60,7 +60,7 @@ export type {
   OnboardingRecordServiceFactory,
 } from "./onboarding/onboardingRecord.js";
 // 这里只能导出 descriptor 和类型。根 index 会被 renderer 经 value import 拉进浏览器包，
-// 若 value 导出 createOnboardingRecordService，会连带 fs/atomicFileUtils → @zcode/shared/node →
+// 若 value 导出 createOnboardingRecordService，会连带 fs/atomicFileUtils → @raspberrycode/shared/node →
 // node:timers/promises 整条 Node 链进浏览器，模块加载直接抛错导致整个应用黑屏。
 // 工厂函数由 host 侧（node.ts）与测试从实现文件路径直接导入，与 createSettingService 同惯例。
 export type {
@@ -70,24 +70,24 @@ export type {
 } from "./broadcast/broadcast.js";
 
 // RaspberryCode task wrapper service — task 列表/置顶/归档等 app 侧包装状态入口。
-export { IZCodeTaskService } from "./session/zcodeTaskService.js";
+export { IRaspberryCodeTaskService } from "./session/raspberrycodeTaskService.js";
 export type {
-  ZCodeArchivedTaskDeletionResult,
-  ZCodeModelTrajectory,
-  ZCodeModelTrajectoryCallSource,
-  ZCodeModelTrajectoryCallSourceKind,
-  ZCodeModelTrajectoryContentPart,
-  ZCodeModelTrajectoryMessage,
-  ZCodeModelTrajectoryRecord,
-  ZCodeModelTrajectoryUsage,
-  ZCodeTaskListKind,
-  ZCodeTaskListQuery,
-  ZCodeTaskListResult,
-  ZCodeTaskListSortBy,
-  ZCodeTaskListWorkspaceScope,
-  ZCodeTaskReadyOutcome,
-} from "./session/zcodeTaskService.js";
-export type { ZCodeTaskListItem } from "./session/zcodeTaskListTypes.js";
+  RaspberryCodeArchivedTaskDeletionResult,
+  RaspberryCodeModelTrajectory,
+  RaspberryCodeModelTrajectoryCallSource,
+  RaspberryCodeModelTrajectoryCallSourceKind,
+  RaspberryCodeModelTrajectoryContentPart,
+  RaspberryCodeModelTrajectoryMessage,
+  RaspberryCodeModelTrajectoryRecord,
+  RaspberryCodeModelTrajectoryUsage,
+  RaspberryCodeTaskListKind,
+  RaspberryCodeTaskListQuery,
+  RaspberryCodeTaskListResult,
+  RaspberryCodeTaskListSortBy,
+  RaspberryCodeTaskListWorkspaceScope,
+  RaspberryCodeTaskReadyOutcome,
+} from "./session/raspberrycodeTaskService.js";
+export type { RaspberryCodeTaskListItem } from "./session/raspberrycodeTaskListTypes.js";
 
 export { IWindowControllerService } from "./window-controller/windowController.js";
 export {
@@ -105,69 +105,69 @@ export type {
   WindowHostTaskUnreadSignal,
 } from "./window-controller/windowController.js";
 
-// RaspberryCode agent service — IZCodeAgentService is both a type (interface) and value (descriptor)
+// RaspberryCode agent service — IRaspberryCodeAgentService is both a type (interface) and value (descriptor)
 export {
-  IZCodeAgentService,
-  type ZCodeAgentLocalRuntimeChildProcesses,
-  ZCODE_AGENT_RUNTIME_UNAVAILABLE_CODE,
-} from "./zcode-agent/zcodeAgent.js";
+  IRaspberryCodeAgentService,
+  type RaspberryCodeAgentLocalRuntimeChildProcesses,
+  RASPBERRYCODE_AGENT_RUNTIME_UNAVAILABLE_CODE,
+} from "./raspberrycode-agent/raspberrycodeAgent.js";
 export {
-  isZCodeAgentMcpStatusModeUnsupportedError,
-  ZCODE_AGENT_MCP_STATUS_MODE_UNSUPPORTED_ERROR_CODE,
-  ZCodeAgentMcpStatusModeUnsupportedError,
-} from "./zcode-agent/zcodeAgentErrors.js";
+  isRaspberryCodeAgentMcpStatusModeUnsupportedError,
+  RASPBERRYCODE_AGENT_MCP_STATUS_MODE_UNSUPPORTED_ERROR_CODE,
+  RaspberryCodeAgentMcpStatusModeUnsupportedError,
+} from "./raspberrycode-agent/raspberrycodeAgentErrors.js";
 export {
-  createZCodeAgentConnectionScope,
-  readTrustedZCodeAgentV4Connection,
-} from "./zcode-agent/zcodeAgentConnectionScope.js";
+  createRaspberryCodeAgentConnectionScope,
+  readTrustedRaspberryCodeAgentV4Connection,
+} from "./raspberrycode-agent/raspberrycodeAgentConnectionScope.js";
 export type {
-  ZCodeAgentConnectionScope,
-  ZCodeAgentV4ClientMode,
-  ZCodeAgentV4ConnectionContext,
-} from "./zcode-agent/zcodeAgentConnectionScope.js";
+  RaspberryCodeAgentConnectionScope,
+  RaspberryCodeAgentV4ClientMode,
+  RaspberryCodeAgentV4ConnectionContext,
+} from "./raspberrycode-agent/raspberrycodeAgentConnectionScope.js";
 export type {
-  ZCodeAgentAttachmentBeginParams,
-  ZCodeAgentAttachmentChunkParams,
-  ZCodeAgentAttachmentTerminalParams,
-  ZCodeAgentCreateSessionParams,
-  ZCodeAgentCuaPermissionObservation,
-  ZCodeAgentInitializeResult,
-  ZCodeAgentStorageStartupSnapshot,
-  ZCodeAgentRuntimeLifecycleEvent,
-  ZCodeAgentRuntimePolicy,
-  ZCodeAgentReadSessionParams,
-  ZCodeAgentRespondProviderRuntimeHeadersParams,
-  ZCodeAgentResumeSessionParams,
-  ZCodeAgentRunAutomationNowResult,
-  ZCodeAgentSavedWorkflowTarget,
-  ZCodeAgentSendPromptParams,
-  ZCodeAgentServiceEvent,
-  ZCodeAgentSessionSubscribeParams,
-  ZCodeAgentSessionTarget,
-  ZCodeAgentSetModeParams,
-  ZCodeAgentSetModelParams,
-  ZCodeAgentSetThoughtLevelParams,
-  ZCodeAgentWorkspaceTarget,
-} from "./zcode-agent/zcodeAgent.js";
+  RaspberryCodeAgentAttachmentBeginParams,
+  RaspberryCodeAgentAttachmentChunkParams,
+  RaspberryCodeAgentAttachmentTerminalParams,
+  RaspberryCodeAgentCreateSessionParams,
+  RaspberryCodeAgentCuaPermissionObservation,
+  RaspberryCodeAgentInitializeResult,
+  RaspberryCodeAgentStorageStartupSnapshot,
+  RaspberryCodeAgentRuntimeLifecycleEvent,
+  RaspberryCodeAgentRuntimePolicy,
+  RaspberryCodeAgentReadSessionParams,
+  RaspberryCodeAgentRespondProviderRuntimeHeadersParams,
+  RaspberryCodeAgentResumeSessionParams,
+  RaspberryCodeAgentRunAutomationNowResult,
+  RaspberryCodeAgentSavedWorkflowTarget,
+  RaspberryCodeAgentSendPromptParams,
+  RaspberryCodeAgentServiceEvent,
+  RaspberryCodeAgentSessionSubscribeParams,
+  RaspberryCodeAgentSessionTarget,
+  RaspberryCodeAgentSetModeParams,
+  RaspberryCodeAgentSetModelParams,
+  RaspberryCodeAgentSetThoughtLevelParams,
+  RaspberryCodeAgentWorkspaceTarget,
+} from "./raspberrycode-agent/raspberrycodeAgent.js";
 
 // RaspberryCode session service — app-facing session facade without RaspberryCode Agent naming.
-export { IZCodeSessionService } from "./zcode-session/zcodeSession.js";
+export { IRaspberryCodeSessionService } from "./raspberrycode-session/raspberrycodeSession.js";
 export type {
-  ZCodeSessionCreateParams,
-  ZCodeSessionEventsParams,
-  ZCodeSessionInitializeResult,
-  ZCodeSessionListParams,
-  ZCodeSessionMessagesParams,
-  ZCodeSessionReadParams,
-  ZCodeSessionResumeParams,
-  ZCodeSessionServiceEvent,
-  ZCodeSessionSetModeParams,
-  ZCodeSessionSetModelParams,
-  ZCodeSessionSetThoughtLevelParams,
-  ZCodeSessionSubscribeParams,
-  ZCodeTaskTarget,
-  ZCodeSessionWorkspaceTarget,
-} from "./zcode-session/zcodeSession.js";
+  RaspberryCodeSessionCreateParams,
+  RaspberryCodeSessionEventsParams,
+  RaspberryCodeSessionInitializeResult,
+  RaspberryCodeSessionListParams,
+  RaspberryCodeSessionMessagesParams,
+  RaspberryCodeSessionReadParams,
+  RaspberryCodeSessionResumeParams,
+  RaspberryCodeSessionServiceEvent,
+  RaspberryCodeSessionSetModeParams,
+  RaspberryCodeSessionSetModelParams,
+  RaspberryCodeSessionSetThoughtLevelParams,
+  RaspberryCodeSessionSubscribeParams,
+  RaspberryCodeTaskTarget,
+  RaspberryCodeSessionWorkspaceTarget,
+} from "./raspberrycode-session/raspberrycodeSession.js";
 
 // Bots service — IBotsService is both a type (interface) and value (descriptor).
 export { IBotsService } from "./bots/bots.js";
@@ -205,7 +205,7 @@ export { IOAuthService } from "./oauth/oauth.js";
 // UsageStats service — IUsageStatsService is both a type (interface) and value (descriptor)
 export { IUsageStatsService } from "./usage-stats/usageStats.js";
 
-// Storage（资源管理器「存储」tab）：数据类型在 @zcode/shared；这里只导出服务接口与卷分组纯函数
+// Storage（资源管理器「存储」tab）：数据类型在 @raspberrycode/shared；这里只导出服务接口与卷分组纯函数
 // StorageRootSpec 随契约再导出：desktop 的 Worker 协议按 contract.ts 的口径只从 services 入口取类型。
 export type { IStorageService, StorageRootSpec } from "./storage/contract.js";
 
@@ -243,7 +243,7 @@ export {
 
 // Plugins service — IPluginsService is both a type (interface) and value (descriptor)
 export { IPluginsService } from "./plugins/plugins.js";
-// 设置页插件管理薄服务（UI 平台能力面不再直触 zcodeAgentService）
+// 设置页插件管理薄服务（UI 平台能力面不再直触 raspberrycodeAgentService）
 export { IPluginManagementService, withPluginTelemetry } from "./plugins/pluginManagement.js";
 
 // Subagents service — ISubagentsService is both a type (interface) and value (descriptor)
@@ -279,7 +279,7 @@ export type {
   FeedbackTicketStatus,
   FeedbackTicketSummary,
   FeedbackTicketType,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 
 export { IProjectService, LEGACY_SINGLE_ROOT_PROJECT_PREFIX } from "#src/project/contract.js";
 export type {

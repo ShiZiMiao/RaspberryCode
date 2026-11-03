@@ -3,15 +3,15 @@ import type {
   NetworkCaptureBridge,
   ResourceUsageSnapshot,
   StorageManagementBridge,
-} from "@zcode/shared";
-import "@zcode/ui/styles.css";
+} from "@raspberrycode/shared";
+import "@raspberrycode/ui/styles.css";
 import {
   ResourceManagerApp,
-  ZCodeIntlProvider,
+  RaspberryCodeIntlProvider,
   applyUiFontSizePx,
   loadUiFontSizePx,
   subscribeToUiFontSizeStorageChanges,
-} from "@zcode/ui";
+} from "@raspberrycode/ui";
 
 declare global {
   interface Window {
@@ -34,7 +34,7 @@ function resolveTheme(theme: Theme): "light" | "dark" {
 }
 
 function applyResourceManagerTheme(): void {
-  const savedTheme = (localStorage.getItem("zcode-theme") as Theme | null) ?? "dark";
+  const savedTheme = (localStorage.getItem("raspberrycode-theme") as Theme | null) ?? "dark";
   const resolvedTheme = resolveTheme(savedTheme);
   const appliedTheme =
     savedTheme === "system"
@@ -61,7 +61,7 @@ const root = document.getElementById("root");
 if (root) {
   createRoot(root).render(
     // 语言沿用主窗口写入 localStorage 的偏好；不接 settingService，避免独立窗口再起一份 RPC。
-    <ZCodeIntlProvider>
+    <RaspberryCodeIntlProvider>
       <ResourceManagerApp
         setSamplingActive={window.resourceManager?.setSamplingActive}
         getSnapshot={
@@ -70,6 +70,6 @@ if (root) {
         storage={window.resourceManager?.storage}
         network={window.resourceManager?.network}
       />
-    </ZCodeIntlProvider>,
+    </RaspberryCodeIntlProvider>,
   );
 }

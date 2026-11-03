@@ -1,7 +1,7 @@
 // Sharp native module staging for the shared node_repl runtime.
 //
 // Why this exists: the bundled node_repl server
-// (apps/zcode-cli/packages/browser-use-plugin/dist/mcp/server.js) externalizes `sharp` because it loads a native `.node`
+// (apps/raspberrycode-cli/packages/browser-use-plugin/dist/mcp/server.js) externalizes `sharp` because it loads a native `.node`
 // binary that esbuild cannot inline. In dev the workspace's hoisted
 // `node_modules/sharp` resolves fine. In the installed RaspberryCode.app the server
 // runs from `<Resources>/agent/packages/browser-use-plugin/dist/mcp/server.js` and
@@ -10,7 +10,7 @@
 // server fails at top-level ESM resolution and product CUA never comes up.
 //
 // What we do: copy `sharp` + the per-triplet prebuild packages into each official
-// plugin's `node_modules/` (including `zcode-cua-plugin`, which is CUA's native
+// plugin's `node_modules/` (including `raspberrycode-cua-plugin`, which is CUA's native
 // dependency root and is independent from Browser Use).
 // macOS/Linux split the native `.node` and libvips into `@img/sharp-*` +
 // `@img/sharp-libvips-*`; Windows keeps both the `.node` and libvips DLLs in
@@ -160,13 +160,13 @@ function copyRuntimePackage(sourceRoot, targetRoot) {
  * Must be idempotent and safe to run for every desktop target platform.
  */
 /**
- * sharp 只服务于 Computer Use 截图（由 @zcode/zcode-cua 声明依赖）。
+ * sharp 只服务于 Computer Use 截图（由 @raspberrycode/raspberrycode-cua 声明依赖）。
  * 构建使用不声明 sharp 的 Computer Use 占位包时，不暂存也不校验 sharp，安装包不携带 sharp/libvips。
- * 这里只读当前安装的 @zcode/zcode-cua 清单，不依赖包导出（其 exports 不含 package.json）。
+ * 这里只读当前安装的 @raspberrycode/raspberrycode-cua 清单，不依赖包导出（其 exports 不含 package.json）。
  */
 export function isSharpRequiredByComputerUse({ desktopPackageRoot }) {
   for (let dir = resolve(desktopPackageRoot); ; dir = dirname(dir)) {
-    const manifestPath = resolve(dir, "node_modules", "@zcode", "zcode-cua", "package.json");
+    const manifestPath = resolve(dir, "node_modules", "@raspberrycode", "raspberrycode-cua", "package.json");
     if (existsSync(manifestPath)) {
       const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
       return ["dependencies", "optionalDependencies", "peerDependencies"].some(

@@ -32,16 +32,16 @@ export function buildDesktopRemoteProdEnv(
   homeDir = homedir(),
 ) {
   const cacheDir =
-    baseEnv.ZCODE_REMOTE_ASSET_CACHE_DIR?.trim() ||
+    baseEnv.RASPBERRYCODE_REMOTE_ASSET_CACHE_DIR?.trim() ||
     resolveProductionRemoteAssetCacheDir(baseEnv, platform, homeDir);
 
   return {
     ...baseEnv,
-    // remote CDN 基址现在跟随 ZCODE_ENV 分流；该脚本用于复现生产态下载链路，
+    // remote CDN 基址现在跟随 RASPBERRYCODE_ENV 分流；该脚本用于复现生产态下载链路，
     // 因此需要同时强制 production 和 CDN 开关，避免默认 test 环境落到测试资源 CDN。
-    ZCODE_ENV: "production",
-    ZCODE_DEV_REMOTE_ASSET_USE_CDN: "1",
-    ZCODE_REMOTE_ASSET_CACHE_DIR: cacheDir,
+    RASPBERRYCODE_ENV: "production",
+    RASPBERRYCODE_DEV_REMOTE_ASSET_USE_CDN: "1",
+    RASPBERRYCODE_REMOTE_ASSET_CACHE_DIR: cacheDir,
   };
 }
 
@@ -51,7 +51,7 @@ export function resolvePnpmCommand(platform = process.platform) {
 
 export function runDesktopRemoteProdDev() {
   const repoRoot = resolve(import.meta.dirname, "..");
-  const child = spawn(resolvePnpmCommand(), ["--filter", "@zcode/desktop", "dev"], {
+  const child = spawn(resolvePnpmCommand(), ["--filter", "@raspberrycode/desktop", "dev"], {
     cwd: repoRoot,
     stdio: "inherit",
     env: buildDesktopRemoteProdEnv(),

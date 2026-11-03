@@ -5,10 +5,10 @@ import { readdir, readFile, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { rootCertificates } from "node:tls";
 import {
-  ZCODE_AGENT_CA_CERT_ENV_KEY,
-  ZCODE_HTTP_PROXY_ENV_KEY,
-  ZCODE_NO_PROXY_ENV_KEY,
-} from "@zcode/shared";
+  RASPBERRYCODE_AGENT_CA_CERT_ENV_KEY,
+  RASPBERRYCODE_HTTP_PROXY_ENV_KEY,
+  RASPBERRYCODE_NO_PROXY_ENV_KEY,
+} from "@raspberrycode/shared";
 import { Proxy } from "http-mitm-proxy";
 import type { IContext } from "http-mitm-proxy";
 import { writeE2EJsonFileAtomically } from "./e2e-atomic-json-file.js";
@@ -27,10 +27,10 @@ export const DEFAULT_E2E_NETWORK_CAPTURE_NO_PROXY = [
   "127.0.0.1",
   "::1",
   "js.stripe.com",
-  "zcode.z.ai",
+  "raspberrycode.example.com",
   // Plugin 商店原始图标 CDN 不需要进入模型请求抓包；直连也避免 Electron MITM 证书导致图片回退。
-  "cdn-zcode.z.ai",
-  "cdn.zcode-ai.com",
+  "cdn-raspberrycode.example.com",
+  "cdn.raspberrycode-ai.com",
 ].join(",");
 export interface E2ENetworkCaptureRecord {
   completedAt?: string;
@@ -299,7 +299,7 @@ export async function startE2ENetworkCaptureProxy(
   };
 
   function recordForContext(ctx: IContext): MutableCaptureRecord | undefined {
-    const id = stringValue(ctx.tags?.zcodeCaptureId) ?? ctx.uuid;
+    const id = stringValue(ctx.tags?.raspberrycodeCaptureId) ?? ctx.uuid;
     return records.get(id);
   }
 
@@ -565,8 +565,8 @@ function isSseResponse(record: Pick<E2ENetworkCaptureRecord, "responseHeaders">)
 function tagContext(ctx: IContext, id: string) {
   // 修复原因：http-mitm-proxy 的同一个请求会跨多个回调阶段流转，e2e 需要用
   // 稳定 id 把 request/response 数据合并到同一条 artifact 记录。
-  const tags = (ctx.tags ?? {}) as IContext["tags"] & { zcodeCaptureId?: string };
-  tags.zcodeCaptureId = id;
+  const tags = (ctx.tags ?? {}) as IContext["tags"] & { raspberrycodeCaptureId?: string };
+  tags.raspberrycodeCaptureId = id;
   ctx.tags = tags;
 }
 
@@ -701,9 +701,9 @@ function buildProxyEnv(
     SSL_CERT_FILE: caBundlePath,
     // Bugfix: agent provider fetch 会过滤标准 HTTP_PROXY/HTTPS_PROXY，只认
     // RaspberryCode 显式网络出口配置；否则真实模型请求会直连上游，capture artifact 为空。
-    [ZCODE_AGENT_CA_CERT_ENV_KEY]: caCertPath,
-    [ZCODE_HTTP_PROXY_ENV_KEY]: proxyUrl,
-    [ZCODE_NO_PROXY_ENV_KEY]: noProxy,
+    [RASPBERRYCODE_AGENT_CA_CERT_ENV_KEY]: caCertPath,
+    [RASPBERRYCODE_HTTP_PROXY_ENV_KEY]: proxyUrl,
+    [RASPBERRYCODE_NO_PROXY_ENV_KEY]: noProxy,
   };
 }
 

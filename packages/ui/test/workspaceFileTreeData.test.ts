@@ -1,8 +1,8 @@
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { IServiceAccessor } from "@zcode/services";
-import type { FileEntry, FileWatchEvent, GitRefreshResult } from "@zcode/shared";
+import type { IServiceAccessor } from "@raspberrycode/services";
+import type { FileEntry, FileWatchEvent, GitRefreshResult } from "@raspberrycode/shared";
 import { ServiceProvider } from "@/hooks/useServices.js";
 import { TabStoreProvider } from "@/store/TabStoreProvider.js";
 import {

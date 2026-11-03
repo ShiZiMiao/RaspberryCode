@@ -34,8 +34,8 @@ import {
 } from "react";
 import { cn } from "@/components/lib/utils.js";
 import {
-  type ZCodeProvider,
-} from "@zcode/shared";
+  type RaspberryCodeProvider,
+} from "@raspberrycode/shared";
 import {
   TID_CHAT_ATTACHMENT_BUTTON,
   TID_CHAT_ATTACHMENT_MENU_ITEM,
@@ -50,12 +50,12 @@ import {
   TID_V4_ATTACHMENT_UPLOAD_RETRY,
   TID_V4_STOP,
   testId,
-} from "@zcode/shared/test-ids";
+} from "@raspberrycode/shared/test-ids";
 import type {
   AttachmentRef,
   ConversationSnapshot,
   SessionConfigState,
-} from "@zcode/shared/zcode-protocol-v4";
+} from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import {
   ArrowUpIcon,
   ClipboardPenLineIcon,
@@ -96,14 +96,14 @@ import {
 import type { LexicalChatInputHandle } from "@/LexicalChatInput.js";
 import { ChatPromptEditor } from "@/prompt-editor/ChatPromptEditor.js";
 import { usePromptEditorDragState } from "@/prompt-editor/usePromptEditorDragState.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { advanceComposerDraftRevision } from "@/v4/composer/composerDraftRevision.js";
 import type { AppSlashCommand } from "@/slashCommandHelpers.js";
 import { useOptionalServices } from "@/hooks/useServices.js";
 import { logger } from "@/logger.js";
 import { runUserAction, startUserAction } from "@/lib/userActionTelemetry.js";
-import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
-import type { ComposerMentionPrefill } from "@/store/zcodeSessionStoreTypes.js";
+import { useRaspberryCodeSessionStore } from "@/store/raspberrycodeSessionStore.js";
+import type { ComposerMentionPrefill } from "@/store/raspberrycodeSessionStoreTypes.js";
 import { FileDisplayIcon, resolveFileDisplayDescriptor } from "@/lib/fileDisplay.js";
 import {
   isImageChatComposerAttachment,
@@ -131,12 +131,12 @@ import {
 } from "@/lib/workspaceFileDrag.js";
 import { appendWorkspaceFileMentionToComposer } from "@/lib/workspaceFileComposer.js";
 import { resolveProviderBaseURL } from "@/lib/registryProviderView.js";
-import type { ModelSelectionView } from "@zcode/services";
+import type { ModelSelectionView } from "@raspberrycode/services";
 import type {
   ModelSelectionState,
   ModelSelectionRefreshResult,
 } from "@/hooks/useModelSelectionView.js";
-import type { ZCodeUiError } from "@/lib/zcodeUiError.js";
+import type { RaspberryCodeUiError } from "@/lib/raspberrycodeUiError.js";
 import {
   resolveComposerAutoFocus,
   type ComposerAutoFocusOptions,
@@ -213,7 +213,7 @@ export interface ConversationComposerSendOptions {
   attachments?: AttachmentRef[];
   /** Prompt 文本内携带的上下文附件数量；用于阻止 /goal 等本地命令误消费。 */
   contextAttachmentCount?: number;
-  conversationQuotes?: import("@zcode/shared").ConversationSelectionText[];
+  conversationQuotes?: import("@raspberrycode/shared").ConversationSelectionText[];
   /** renderer-only：ACK accepted 后由 SessionPane 绑定真实 commandId/sessionId。 */
   telemetrySeed?: ConversationPromptTelemetrySeed;
   /** 本次 busy input 的一次性投递覆盖，不改 session 偏好。 */
@@ -221,7 +221,7 @@ export interface ConversationComposerSendOptions {
   /** 提交命令创建后由 Composer 订阅权威 projection，覆盖 ACK 丢失后的收口。 */
   onCommandCreated?: (commandId: string) => void;
   /** 插件 UI 代发：随 sendText 持久化，用户消息卡片显示"来自插件 X"。 */
-  source?: import("@zcode/shared/zcode-protocol-v4").ConversationInputSource;
+  source?: import("@raspberrycode/shared/raspberrycode-protocol-v4").ConversationInputSource;
 }
 
 export type ConversationComposerSendResult = "sent" | "blocked" | "confirmationRequired";
@@ -452,7 +452,7 @@ export interface ConversationComposerProps {
   onRuntimeRestart?: (listener: () => void) => () => void;
   /** 承载 transport 暴露 runtime 存活态时优先用它，替代 onRuntimeRestart。 */
   onRuntimeLifecycle?: (listener: (state: "available" | "unavailable") => void) => () => void;
-  provider?: ZCodeProvider;
+  provider?: RaspberryCodeProvider;
   /** 宿主 pane 与 workspace 遮罩共同裁决的真实可见性，仅用于 visible-only telemetry。 */
   telemetryVisible?: boolean;
   onSendText: (
@@ -490,7 +490,7 @@ export interface ConversationComposerProps {
   /** context usage 面板的 /compact 入口（宿主走 v4 compact 命令）。 */
   onSendCompressionCommand?: (command: string) => void;
   /** v4 会话级错误（snapshot.control.lastError），展示在输入框上方。 */
-  error?: ZCodeUiError | null;
+  error?: RaspberryCodeUiError | null;
   onDismissError?: () => void;
   /** 无可用模型横幅的恢复动作；由 SessionPane 注入壳层导航，组件不直接操作 tab。 */
   onOpenModelSettings?: () => void;
@@ -605,7 +605,7 @@ function ConversationComposerImpl({
     setTargetSelectionPending(pending);
   }, []);
   const disabled = disabledProp || !remoteAvailable || targetSelectionPending;
-  const { intl, locale } = useZCodeIntl();
+  const { intl, locale } = useRaspberryCodeIntl();
   const services = useOptionalServices();
   const conversationTelemetry = useScopedConversationTelemetrySupervisor({
     workspacePath,
@@ -913,7 +913,7 @@ function ConversationComposerImpl({
   // 触发源：startDraft 递增的 draftFocusVersion（覆盖 Cmd/Ctrl+N 与所有「新建任务」入口）、
   // sessionId→draftScopeId 变化（切会话/切草稿）、以及挂载。三者置位聚焦意图；因切到需
   // 连接的会话时 composer 短暂 disabled，聚焦意图暂存，待可编辑时兑现一次。
-  const draftFocusVersion = useZCodeSessionStore(
+  const draftFocusVersion = useRaspberryCodeSessionStore(
     (state) => state.getWorkspaceState(workspacePath, workspaceIdentity).draftFocusVersion,
   );
   useEffect(() => {

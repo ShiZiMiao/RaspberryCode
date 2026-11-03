@@ -4,7 +4,7 @@ import {
   resolveWorkspaceTelemetryDetail,
   buildRemoteWorkspaceIdentity,
   type RemoteTarget,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 
 describe("session_create 手机合同", () => {
   const event = {

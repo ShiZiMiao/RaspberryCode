@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
-import { HostResponseTypes } from "@zcode/shared";
+import { HostResponseTypes } from "@raspberrycode/shared";
 import type {
   BrowserBackendDescriptor,
   BrowserClientMode,
   BrowserCommand,
   BrowserCommandResult,
   BrowserRecordingArtifact,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 
 /**
  * host↔main browser 执行桥。host 侧把一条命令经 parentPort 发给 main（WebContentsView+CDP 执行），
@@ -162,7 +162,7 @@ export function createBrowserControlMainBridge(deps: {
       "BrowserRecordingAPI.cancel": true,
     },
     metadata: {
-      provider: "zcode-desktop-iab",
+      provider: "raspberrycode-desktop-iab",
     },
   };
 

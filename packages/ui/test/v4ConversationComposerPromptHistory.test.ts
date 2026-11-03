@@ -6,7 +6,7 @@ import {
   persistPromptHistoryEntries,
   readPromptHistoryEntries,
 } from "@/lib/promptHistoryStorage.js";
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+import { RaspberryCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import {
   ConversationComposer,
   type ConversationComposerSendResult,
@@ -23,7 +23,7 @@ import type {
   CommandAck,
   CommandEnvelope,
   ConversationSnapshot,
-} from "@zcode/shared/zcode-protocol-v4";
+} from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import type { ComposerSubmissionConfig } from "@/v4/composer/composerSubmissionConfig.js";
 
 const { attachmentState, chatPromptEditorProps, dialogOpenStates, inputClear, inputSetText } =
@@ -319,7 +319,7 @@ function renderComposerElement(
       persistV4ComposerDraft("/workspace", undefined, scopeId, ownedDraft);
     });
   return createElement(
-    ZCodeIntlProvider,
+    RaspberryCodeIntlProvider,
     { initialLocale: "zh-CN" },
     createElement(ConversationComposer, {
       draftMode: sessionId === null,

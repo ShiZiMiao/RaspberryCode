@@ -1,4 +1,4 @@
-import type { ISourceServerManagementService } from "@zcode/services";
+import type { ISourceServerManagementService } from "@raspberrycode/services";
 import { logger } from "@/logger.js";
 
 export interface SourceServerDisplayNameRegistry {

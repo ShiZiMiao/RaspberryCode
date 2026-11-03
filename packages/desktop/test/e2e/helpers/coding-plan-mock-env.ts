@@ -1,13 +1,13 @@
-export const CODING_PLAN_TEAM_MOCK_BASE_URL_ENV = "ZCODE_CODING_PLAN_TEAM_MOCK_BASE_URL";
+export const CODING_PLAN_TEAM_MOCK_BASE_URL_ENV = "RASPBERRYCODE_CODING_PLAN_TEAM_MOCK_BASE_URL";
 
 type MutableEnvironment = Record<string, string | undefined>;
 
 const CODING_PLAN_COMMON_ENV_KEYS = [
-  "ZCODE_BASE_URL",
-  "ZCODE_ENDPOINT_ORIGIN",
-  "ZCODE_TEST_BASE_URL",
+  "RASPBERRYCODE_BASE_URL",
+  "RASPBERRYCODE_ENDPOINT_ORIGIN",
+  "RASPBERRYCODE_TEST_BASE_URL",
   "BIGMODEL_API_BASE_URL",
-  "ZCODE_E2E_CODING_PLAN_MOCK_URL",
+  "RASPBERRYCODE_E2E_CODING_PLAN_MOCK_URL",
 ] as const;
 
 // 正式 CI 在 launcher 阶段传入未展开的目录 glob；遗漏它会让 worker 缺少预启动的 mock。
@@ -62,18 +62,18 @@ export function shouldPrepareCodingPlanTeamMock(specs: readonly string[]) {
 
 export function applyCodingPlanTeamMockEnv(environment: MutableEnvironment, baseUrl: string) {
   environment[CODING_PLAN_TEAM_MOCK_BASE_URL_ENV] = baseUrl;
-  environment.ZCODE_ENV = "test";
+  environment.RASPBERRYCODE_ENV = "test";
   for (const key of CODING_PLAN_COMMON_ENV_KEYS) {
     environment[key] = baseUrl;
   }
-  environment.ZCODE_BIGMODEL_USAGE_QUOTA_URL = `${baseUrl}/api/monitor/usage/quota/limit`;
+  environment.RASPBERRYCODE_BIGMODEL_USAGE_QUOTA_URL = `${baseUrl}/api/monitor/usage/quota/limit`;
   environment.BIGMODEL_USAGE_QUOTA_URL = `${baseUrl}/api/monitor/usage/quota/limit`;
 }
 
 export function clearCodingPlanTeamMockEnv(environment: MutableEnvironment, baseUrl: string) {
   clearOwnedEnvironmentValues(environment, baseUrl, [
     ...CODING_PLAN_COMMON_ENV_KEYS,
-    "ZCODE_BIGMODEL_USAGE_QUOTA_URL",
+    "RASPBERRYCODE_BIGMODEL_USAGE_QUOTA_URL",
     "BIGMODEL_USAGE_QUOTA_URL",
   ]);
   if (environment[CODING_PLAN_TEAM_MOCK_BASE_URL_ENV] === baseUrl) {
@@ -85,7 +85,7 @@ export function shouldReuseDesktopE2EBuild(environment: MutableEnvironment): boo
   // 子 shard 的动态端口晚于父构建；构建决策和源码证据必须共用这个判据。
   // 历史 upgrade mock 的动态端口源已随升级购买场景移除，当前无晚建端口源，
   // 判据等价于只看跳过构建开关。
-  return environment.ZCODE_E2E_SKIP_BUILD === "1";
+  return environment.RASPBERRYCODE_E2E_SKIP_BUILD === "1";
 }
 
 function clearOwnedEnvironmentValues(

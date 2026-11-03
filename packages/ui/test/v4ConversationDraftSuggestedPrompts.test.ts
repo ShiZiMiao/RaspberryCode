@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/i18n/IntlProvider.js", () => ({
-  useZCodeIntl: () => ({
+  useRaspberryCodeIntl: () => ({
     locale: "zh-CN",
   }),
 }));
@@ -27,7 +27,7 @@ const items: DraftSuggestedPromptItem[] = [
       en: "Create a PDF from the workspace.",
     },
     plugin: {
-      stableId: "document-skills@zcode-plugins-official",
+      stableId: "document-skills@raspberrycode-plugins-official",
       label: { cn: "文档技能", en: "Document skills" },
     },
   },
@@ -58,8 +58,8 @@ describe("ConversationDraftSuggestedPrompts", () => {
     render(createElement(ConversationDraftSuggestedPrompts, { items }));
     const rows = screen.getAllByRole("button");
 
-    expect(rows[0]?.style.getPropertyValue("--zcode-draft-prompt-waterfall-delay")).toBe("0ms");
-    expect(rows[1]?.style.getPropertyValue("--zcode-draft-prompt-waterfall-delay")).toBe("65ms");
+    expect(rows[0]?.style.getPropertyValue("--raspberrycode-draft-prompt-waterfall-delay")).toBe("0ms");
+    expect(rows[1]?.style.getPropertyValue("--raspberrycode-draft-prompt-waterfall-delay")).toBe("65ms");
   });
 
   it("loads the configured Lucide name without rendering an image URL", async () => {
@@ -92,7 +92,7 @@ describe("ConversationDraftSuggestedPrompts", () => {
     expect(onSelect).toHaveBeenCalledOnce();
     expect(onSelect).toHaveBeenCalledWith(items[1]);
     expect(items[0]?.plugin).toBeUndefined();
-    expect(items[1]?.plugin?.stableId).toBe("document-skills@zcode-plugins-official");
+    expect(items[1]?.plugin?.stableId).toBe("document-skills@raspberrycode-plugins-official");
 
     view.rerender(createElement(ConversationDraftSuggestedPrompts, { items }));
     expect(() => fireEvent.click(screen.getAllByRole("button")[0]!)).not.toThrow();

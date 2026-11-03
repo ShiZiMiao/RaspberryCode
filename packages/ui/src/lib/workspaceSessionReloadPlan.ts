@@ -1,4 +1,4 @@
-import type { ZCodeProvider, ZCodeError } from "@zcode/shared";
+import type { RaspberryCodeProvider, RaspberryCodeError } from "@raspberrycode/shared";
 import { buildWorkspacePrepareUiError } from "@/lib/chatPrepareError.js";
 
 export const WORKSPACE_SESSION_RELOAD_DEBOUNCE_MS = 1200;
@@ -10,7 +10,7 @@ interface WorkspaceSessionReloadPlan {
 
 interface WorkspaceSessionReloadDraftErrorContext {
   workspacePath: string;
-  provider: ZCodeProvider;
+  provider: RaspberryCodeProvider;
 }
 
 export function buildWorkspaceSessionReloadPlan(activeTaskId: string | null): WorkspaceSessionReloadPlan {
@@ -32,7 +32,7 @@ export function buildWorkspaceSessionReloadPlan(activeTaskId: string | null): Wo
 export function buildWorkspaceSessionReloadDraftError(
   err: unknown,
   context: WorkspaceSessionReloadDraftErrorContext,
-): ZCodeError & { detail?: string } {
+): RaspberryCodeError & { detail?: string } {
   return buildWorkspacePrepareUiError(err, {
     workspacePath: context.workspacePath,
     provider: context.provider,

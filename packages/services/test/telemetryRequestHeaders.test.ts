@@ -35,7 +35,7 @@ it("adds every public header and re-reads authorization on retry and logout", as
     osVersion: "24.0",
     releaseChannel: "test",
     randomUUID: () => "device-1",
-    resolveZCodeEndpointOrigin: () => "https://zcode.z.ai",
+    resolveRaspberryCodeEndpointOrigin: () => "https://raspberrycode.example.com",
     // 构建期上报端点默认为空（遥测默认关闭）；显式注入后 rewrite 到配置端点再出网。
     reportEndpoint: "https://your-server.example/api/v1/event/report",
     sleep: async () => {
@@ -47,7 +47,7 @@ it("adds every public header and re-reads authorization on retry and logout", as
   expect(fetchImpl.mock.calls[0]?.[1]?.headers).toEqual({
     "Content-Type": "application/json",
     "User-Agent": "RaspberryCode/1.2.3",
-    "HTTP-Referer": "https://zcode.z.ai",
+    "HTTP-Referer": "https://raspberrycode.example.com",
     "X-Title": "RaspberryCode@electron",
     "X-RaspberryCode-App-Version": "1.2.3",
     "X-Platform": "darwin-arm64",
@@ -72,18 +72,18 @@ it("adds every public header and re-reads authorization on retry and logout", as
   expect(new Headers(fetchImpl.mock.calls[3]?.[1]?.headers).has("Authorization")).toBe(false);
 });
 
-it.each(["zai", "bigmodel"])(
+it.each(["zai", "bigmodel", "custom-account"])(
   "only reads JWT for active %s, never OAuth/API keys",
   async (provider) => {
     const values: Record<string, string> = {
       "oauth:active_provider": provider,
       [`oauth:${provider}:user_info`]: '{"id":"u1"}',
-      zcodejwttoken: "jwt-1",
+      raspberrycodejwttoken: "jwt-1",
     };
     const load = vi.fn(async (key: string) => values[key] ?? null);
     const authorization = createTelemetryAuthorizationLoader({ load });
     expect(await authorization("u1")).toBe("Bearer jwt-1");
-    values.zcodejwttoken = "jwt-2";
+    values.raspberrycodejwttoken = "jwt-2";
     expect(await authorization("u1")).toBe("Bearer jwt-2");
     expect(await authorization("other-user")).toBeNull();
     delete values["oauth:active_provider"];
@@ -96,12 +96,12 @@ it.each(["zai", "bigmodel"])(
 );
 
 it("drops JWT when the account changes during the read, and fails closed on errors", async () => {
-  let provider = "bigmodel";
+  let provider = "custom-account";
   const authorization = createTelemetryAuthorizationLoader({
     load: async (key) => {
       if (key === "oauth:active_provider") return provider;
       if (key.endsWith(":user_info")) return '{"user_id":"u1"}';
-      provider = "zai";
+      provider = "another-account";
       return "old-jwt";
     },
   });
@@ -117,7 +117,7 @@ it("drops JWT when the account changes during the read, and fails closed on erro
 it.each([null, "", "   ", "bad\r\nheader"])("omits absent or unsafe JWT: %j", async (token) => {
   const authorization = createTelemetryAuthorizationLoader({
     load: async (key) => {
-      if (key === "oauth:active_provider") return "zai";
+      if (key === "oauth:active_provider") return "custom-account";
       if (key.endsWith(":user_info")) return '{"id":"u1"}';
       return token;
     },

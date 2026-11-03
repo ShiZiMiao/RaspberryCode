@@ -8,17 +8,17 @@ import {
   createAccountProviderConfigSnapshot,
   createFailClosedAccountProviderConfigSnapshot,
   type ModelSelectionViewInput,
-} from "@zcode/provider";
-import { NodeProviderRegistryRuntime, createNodeModelSelectionFacade } from "@zcode/provider-node";
+} from "@raspberrycode/provider";
+import { NodeProviderRegistryRuntime, createNodeModelSelectionFacade } from "@raspberrycode/provider-node";
 import {
-  createZCodeAgentService,
-  createZCodeTaskServiceAdapter,
+  createRaspberryCodeAgentService,
+  createRaspberryCodeTaskServiceAdapter,
   getDataBaseDir,
   setDataBaseDir,
-} from "@zcode/services/node";
-import { BUILTIN_MODEL_PROVIDER_IDS } from "@zcode/shared";
+} from "@raspberrycode/services/node";
+import { BUILTIN_MODEL_PROVIDER_IDS } from "@raspberrycode/shared";
 import { TaskIndexRepo } from "../../../../services/src/session/taskIndexRepo.js";
-import { createZCodeTaskIndexSyncer } from "../../../../services/src/zcode-agent/zcodeTaskIndexSyncer.js";
+import { createRaspberryCodeTaskIndexSyncer } from "../../../../services/src/raspberrycode-agent/raspberrycodeTaskIndexSyncer.js";
 import { getE2EAppDataPaths } from "./desktop-app.js";
 
 /** 独立测试 Host + 真实 stdio Worker；仅账号上游和模型 HTTP 使用隔离 fixture。 */
@@ -33,8 +33,8 @@ export async function createWorkerSelectionIntegration() {
   const deliverySource = new MutableAccountProviderConfigSource();
   let deliveryPaused = false;
   const runtimePaths = {
-    zcodeBuiltinFilePath: resolve("../../config/provider/zcode-builtin.json"),
-    personalFilePath: join(home, ".zcode/v2/provider_config.json"),
+    raspberrycodeBuiltinFilePath: resolve("../../config/provider/raspberrycode-builtin.json"),
+    personalFilePath: join(home, ".raspberrycode/v2/provider_config.json"),
   };
   const runtime = new NodeProviderRegistryRuntime({
     ...runtimePaths,
@@ -61,7 +61,7 @@ export async function createWorkerSelectionIntegration() {
     }
     source.replace(
       createAccountProviderConfigSnapshot(
-        config.zcodeBuiltinRevision,
+        config.raspberrycodeBuiltinRevision,
         new ProviderConfigMap([...providers]),
         Object.fromEntries(
           [individual, team].map((id) => [
@@ -86,26 +86,26 @@ export async function createWorkerSelectionIntegration() {
       dispose: facade.onDidChange(listener),
     }),
   };
-  const agent = createZCodeAgentService({
+  const agent = createRaspberryCodeAgentService({
     commandResolver: () => ({
       command: process.execPath,
-      args: [resolve("../../apps/zcode-cli/packages/cli/dist/zcode.cjs"), "app-server", "--stdio"],
+      args: [resolve("../../apps/raspberrycode-cli/packages/cli/dist/raspberrycode.cjs"), "app-server", "--stdio"],
       env: {
         HOME: home,
         USERPROFILE: home,
-        ZCODE_DATA_BASE_DIR: home,
-        ZCODE_RUNTIME_ENV: "development",
-        ZCODE_BUILTIN_PROVIDER_CONFIG_FILE: runtimePaths.zcodeBuiltinFilePath,
-        ZCODE_PERSONAL_PROVIDER_CONFIG_FILE: runtimePaths.personalFilePath,
+        RASPBERRYCODE_DATA_BASE_DIR: home,
+        RASPBERRYCODE_RUNTIME_ENV: "development",
+        RASPBERRYCODE_BUILTIN_PROVIDER_CONFIG_FILE: runtimePaths.raspberrycodeBuiltinFilePath,
+        RASPBERRYCODE_PERSONAL_PROVIDER_CONFIG_FILE: runtimePaths.personalFilePath,
       },
     }),
     modelSelectionReadinessSource: modelSelectionService,
     accountProviderConfigSource: deliverySource,
   });
   const repo = new TaskIndexRepo();
-  const syncer = createZCodeTaskIndexSyncer({ agentService: agent, taskIndexRepo: repo });
-  const task = createZCodeTaskServiceAdapter({
-    zcodeAgentService: agent,
+  const syncer = createRaspberryCodeTaskIndexSyncer({ agentService: agent, taskIndexRepo: repo });
+  const task = createRaspberryCodeTaskServiceAdapter({
+    raspberrycodeAgentService: agent,
     taskIndexRepo: repo,
     taskIndexSyncer: syncer,
   });

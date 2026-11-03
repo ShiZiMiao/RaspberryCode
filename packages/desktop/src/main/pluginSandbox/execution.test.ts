@@ -1,4 +1,4 @@
-import { PlatformChannels } from "@zcode/shared";
+import { PlatformChannels } from "@raspberrycode/shared";
 import { EventEmitter } from "node:events";
 import { beforeEach, expect, it, vi } from "vitest";
 

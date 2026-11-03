@@ -6,12 +6,12 @@ import { basename, join, win32 } from "node:path";
 import { homedir } from "node:os";
 import {
   DATA_BASE_DIR_FORBIDDEN_WINDOWS_INSTALL_DIR_ERROR_CODE,
-  ZCODE_AGENT_RUNTIME,
-} from "@zcode/shared";
+  RASPBERRYCODE_AGENT_RUNTIME,
+} from "@raspberrycode/shared";
 
 let _dataBaseDir: string | null = null;
-export const ZCODE_WINDOWS_APP_INSTALL_DIR_ENV = "ZCODE_WINDOWS_APP_INSTALL_DIR";
-const envDataBaseDir = process.env.ZCODE_DATA_BASE_DIR?.trim() || null;
+export const RASPBERRYCODE_WINDOWS_APP_INSTALL_DIR_ENV = "RASPBERRYCODE_WINDOWS_APP_INSTALL_DIR";
+const envDataBaseDir = process.env.RASPBERRYCODE_DATA_BASE_DIR?.trim() || null;
 const defaultDataBaseDir = process.env.HOME?.trim() || homedir();
 
 export interface DataBaseDirTargetValidationOptions {
@@ -33,7 +33,7 @@ export function setDataBaseDir(dir: string | null): void {
   _dataBaseDir = dir?.trim() || null;
 }
 
-/** Get the current base directory. Priority: setDataBaseDir() > env ZCODE_DATA_BASE_DIR > homedir(). */
+/** Get the current base directory. Priority: setDataBaseDir() > env RASPBERRYCODE_DATA_BASE_DIR > homedir(). */
 export function getDataBaseDir(): string {
   if (_dataBaseDir) return _dataBaseDir;
   if (envDataBaseDir) return envDataBaseDir;
@@ -43,18 +43,18 @@ export function getDataBaseDir(): string {
 }
 
 /** {dataBaseDir}/.raspberrycode */
-export function getZCodeDataRootDir(): string {
+export function getRaspberryCodeDataRootDir(): string {
   return join(getDataBaseDir(), ".raspberrycode");
 }
 
 /** 非项目对话共享的真实工作目录；默认 ~/.raspberrycode/workspace/default。 */
 export function getConversationWorkspaceDir(): string {
-  return join(getZCodeDataRootDir(), "workspace", "default");
+  return join(getRaspberryCodeDataRootDir(), "workspace", "default");
 }
 
 /** {dataBaseDir}/.raspberrycode/v2 */
 export function getAppConfigDir(): string {
-  return join(getZCodeDataRootDir(), "v2");
+  return join(getRaspberryCodeDataRootDir(), "v2");
 }
 
 function readEnvValue(env: Record<string, string | undefined>, key: string): string | undefined {
@@ -116,7 +116,7 @@ function collectWindowsForbiddenAppInstallDirs(
   // Modified for RaspberryCode: 安装目录候选随之改名（RaspberryCode 无历史安装目录需兼容）。
   const candidates = [
     options.appInstallDir,
-    readEnvValue(env, ZCODE_WINDOWS_APP_INSTALL_DIR_ENV),
+    readEnvValue(env, RASPBERRYCODE_WINDOWS_APP_INSTALL_DIR_ENV),
     programFiles ? win32.join(programFiles, "RaspberryCode") : null,
     programFilesX86 ? win32.join(programFilesX86, "RaspberryCode") : null,
     programW6432 ? win32.join(programW6432, "RaspberryCode") : null,
@@ -163,15 +163,15 @@ export function validateDataBaseDirTarget(
 }
 
 export function getExportLogStageDir(): string {
-  return join(getZCodeDataRootDir(), "export-log-stage");
+  return join(getRaspberryCodeDataRootDir(), "export-log-stage");
 }
 
 export function getExportLogDir(): string {
-  return join(getZCodeDataRootDir(), "export-log");
+  return join(getRaspberryCodeDataRootDir(), "export-log");
 }
 
 export function getFeedbackRootDir(): string {
-  return join(getZCodeDataRootDir(), "feedback");
+  return join(getRaspberryCodeDataRootDir(), "feedback");
 }
 
 export function getFeedbackAttachmentDir(): string {
@@ -183,7 +183,7 @@ export function getFeedbackLogArchiveDir(): string {
 }
 
 export function getGitCheckpointIndexRootDir(): string {
-  return join(getZCodeDataRootDir(), "git-checkpoint-index");
+  return join(getRaspberryCodeDataRootDir(), "git-checkpoint-index");
 }
 
 /** ~/.raspberrycode/v2/tasks-index.sqlite */
@@ -229,12 +229,12 @@ export function getLegacyDeletedTaskSessionSnapshotPath(
 
 /**
  * GLM（唯一 agent provider）的配置目录：~/.raspberrycode/cli。
- * Bugfix：GLM 配置改为直接读写新版 zcode-cli 的全局配置目录，不做 workspace 隔离，
+ * Bugfix：GLM 配置改为直接读写新版 raspberrycode-cli 的全局配置目录，不做 workspace 隔离，
  * 避免同机不同工作区配置漂移。
  */
 export function getProviderWorkspaceConfigDir(): string {
-  return ZCODE_AGENT_RUNTIME.nativeConfigDir
-    ? join(getDataBaseDir(), ZCODE_AGENT_RUNTIME.nativeConfigDir)
+  return RASPBERRYCODE_AGENT_RUNTIME.nativeConfigDir
+    ? join(getDataBaseDir(), RASPBERRYCODE_AGENT_RUNTIME.nativeConfigDir)
     : join(getDataBaseDir(), ".raspberrycode", "cli");
 }
 

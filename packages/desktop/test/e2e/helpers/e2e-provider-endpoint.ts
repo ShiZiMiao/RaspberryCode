@@ -1,7 +1,7 @@
 import { requestSecurityEndpointEnv } from "./request-security-edition/index.js";
 
 const LIVE_TEAM_SPEC = "conversation-session-r3-live-bigmodel-team.test.ts";
-const PRODUCTION_E2E_PROVIDER_CONFIG_ORIGIN = "https://zcode.z.ai";
+const PRODUCTION_E2E_PROVIDER_CONFIG_ORIGIN = "https://raspberrycode.example.com";
 
 export function getE2EProviderEndpointEnv(
   specs: readonly string[],
@@ -12,11 +12,11 @@ export function getE2EProviderEndpointEnv(
   // 公共 helper 不再复制 preset 判断，避免两处规则漂移。
   if (!isProductionAccountRun(specs)) return requestSecurityEndpointEnv(providerPreset, httpMode);
   return {
-    ZCODE_BASE_URL: PRODUCTION_E2E_PROVIDER_CONFIG_ORIGIN,
-    ZCODE_ENDPOINT_ORIGIN: PRODUCTION_E2E_PROVIDER_CONFIG_ORIGIN,
-    // 账号校验独立于 RaspberryCode 控制面。SSH 透传 ZCODE_ENV，但不透传 BigModel 地址覆盖；
+    RASPBERRYCODE_BASE_URL: PRODUCTION_E2E_PROVIDER_CONFIG_ORIGIN,
+    RASPBERRYCODE_ENDPOINT_ORIGIN: PRODUCTION_E2E_PROVIDER_CONFIG_ORIGIN,
+    // 账号校验独立于 RaspberryCode 控制面。SSH 透传 RASPBERRYCODE_ENV，但不透传 BigModel 地址覆盖；
     // 仅覆盖本机地址会造成模型已可选、远端却向 bigmodel.cn 重试的半通状态。
-    ZCODE_ENV: "production",
+    RASPBERRYCODE_ENV: "production",
     BIGMODEL_API_BASE_URL: "https://bigmodel.cn",
   };
 }

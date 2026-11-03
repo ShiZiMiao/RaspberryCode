@@ -1,19 +1,19 @@
 import { Check, Download, Loader2, TriangleAlert } from "lucide-react";
 import type {
-  ZCodeImportSessionsResult,
-  ZCodeImportableSessionCandidate,
-  ZCodeImportedSessionSkippedItem,
-} from "@zcode/shared";
+  RaspberryCodeImportSessionsResult,
+  RaspberryCodeImportableSessionCandidate,
+  RaspberryCodeImportedSessionSkippedItem,
+} from "@raspberrycode/shared";
 import type { ClaudeSessionMigrationSupportState } from "@/hooks/useClaudeSessionMigration.js";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert.js";
 import { Badge } from "@/components/ui/badge.js";
 import { Button } from "@/components/ui/button.js";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { cn } from "@/components/lib/utils.js";
 
 function getKnownReasonLabel(
-  intl: ReturnType<typeof useZCodeIntl>["intl"],
+  intl: ReturnType<typeof useRaspberryCodeIntl>["intl"],
   reason: string,
 ): string {
   if (reason === "session_not_found_or_workspace_mismatch") {
@@ -30,9 +30,9 @@ function ImportIssuesList({
   items,
 }: {
   title: string;
-  items: ZCodeImportedSessionSkippedItem[];
+  items: RaspberryCodeImportedSessionSkippedItem[];
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
 
   if (items.length === 0) {
     return null;
@@ -83,11 +83,11 @@ export function MigrationCandidatesCard({
   onImportSelected,
 }: {
   supportState: ClaudeSessionMigrationSupportState;
-  candidates: ZCodeImportableSessionCandidate[];
+  candidates: RaspberryCodeImportableSessionCandidate[];
   selectedSessionIds: string[];
   selectedCount: number;
   importError: string | null;
-  lastImportResult: ZCodeImportSessionsResult | null;
+  lastImportResult: RaspberryCodeImportSessionsResult | null;
   isImporting: boolean;
   dateTimeFormatter: Intl.DateTimeFormat;
   onToggleSelection: (sessionId: string) => void;
@@ -95,7 +95,7 @@ export function MigrationCandidatesCard({
   onClearSelection: () => void;
   onImportSelected: () => void;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
 
   return (
     <Card className="border border-border bg-card py-0 shadow-none">

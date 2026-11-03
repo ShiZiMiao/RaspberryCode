@@ -2,14 +2,14 @@ import { useEffect, useState, useCallback } from "react";
 
 export type Theme = "light" | "dark" | "system";
 export type ResolvedTheme = "light" | "dark";
-// 历史版本（ZCode 时代）localStorage 里存过 zai-* 主题值，读取时映射到中性值，写入只写新值。
+// 历史版本 localStorage 里存过 zai-* 主题旧代号，读取时映射到中性值，写入只写新值。
 const LEGACY_THEME_MAP: Record<string, Theme> = {
   "zai-light": "light",
   "zai-dark": "dark",
 };
 
-const STORAGE_KEY = "zcode-theme";
-const BROWSER_THEME_SURFACE_ATTRIBUTE = "data-zcode-browser-theme-surface";
+const STORAGE_KEY = "raspberrycode-theme";
+const BROWSER_THEME_SURFACE_ATTRIBUTE = "data-raspberrycode-browser-theme-surface";
 
 function getSystemTheme(): ResolvedTheme {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";

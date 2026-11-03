@@ -4,12 +4,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   PlatformChannels,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import {
   TID_WORKSPACE_HELP_MENU_TRIGGER,
   TID_TASK_SETTINGS_BUTTON,
   TID_SETTINGS_PAGE,
-} from "@zcode/shared/test-ids";
+} from "@raspberrycode/shared/test-ids";
 import {
   DEFAULT_WORKSPACE,
   clickTestIdByWebDriver,
@@ -21,9 +21,9 @@ import { startHelpConfigFixture } from "./helpers/help-client-config-fixture.js"
 
 // Node 侧 shared 常量没有 renderer 的编译 define，不能据此跳过 production 分支。
 // 默认正式套件构建 Preview；production 用显式参数独立验证，不能静默跳过。
-const expectedFlavor = process.env.ZCODE_E2E_HELP_MENU_FLAVOR ?? "preview";
+const expectedFlavor = process.env.RASPBERRYCODE_E2E_HELP_MENU_FLAVOR ?? "preview";
 if (expectedFlavor !== "production" && expectedFlavor !== "preview") {
-  throw new Error("请设置 ZCODE_E2E_HELP_MENU_FLAVOR=production 或 preview，并构建对应产品身份");
+  throw new Error("请设置 RASPBERRYCODE_E2E_HELP_MENU_FLAVOR=production 或 preview，并构建对应产品身份");
 }
 const production = expectedFlavor === "production";
 
@@ -91,11 +91,11 @@ async function assertLogExport(label: string, pendingLabel: string) {
       { timeout: 30_000, timeoutMsg: "点击导出日志后未生成归档并请求系统定位" },
     );
     const archivePath = String(reveal.mock.calls[0]?.[0]);
-    expect(archivePath).toMatch(/zcode-logs-[^/\\]+\.zip$/);
+    expect(archivePath).toMatch(/raspberrycode-logs-[^/\\]+\.zip$/);
     const archive = await readFile(archivePath);
     expect(archive.subarray(0, 4).toString("hex")).toBe("504b0304");
     await browser.waitUntil(
-      async () => !(await $("#zcode-toast-host").getText()).includes(pendingLabel),
+      async () => !(await $("#raspberrycode-toast-host").getText()).includes(pendingLabel),
       { timeout: 10_000, timeoutMsg: "日志导出完成后提示未关闭" },
     );
   } finally {
@@ -148,7 +148,7 @@ describe(`问号菜单应用入口（${expectedFlavor}）`, () => {
     await seedSettings({
       locale: "en-US",
       localePreference: "en-US",
-      zcodeEndpointOrigin: helpConfig.origin,
+      raspberrycodeEndpointOrigin: helpConfig.origin,
     });
     await browser.refresh();
     await enterWorkspace();
@@ -179,7 +179,7 @@ describe(`问号菜单应用入口（${expectedFlavor}）`, () => {
       "About RaspberryCode",
     ]);
     expect(await $$('[role="menu"] [role="separator"]')).toHaveLength(1);
-    await browser.saveScreenshot(join(tmpdir(), "zcode-help-export-en-light.png"));
+    await browser.saveScreenshot(join(tmpdir(), "raspberrycode-help-export-en-light.png"));
     await assertLogExport("Export logs", "Exporting logs...");
     await openMenu();
     await $('[role="menuitem"]*=About RaspberryCode').click();
@@ -208,7 +208,7 @@ describe(`问号菜单应用入口（${expectedFlavor}）`, () => {
       "关于 RaspberryCode",
     ]);
     expect(await $$('[role="menu"] [role="separator"]')).toHaveLength(1);
-    await browser.saveScreenshot(join(tmpdir(), "zcode-help-export-zh-dark.png"));
+    await browser.saveScreenshot(join(tmpdir(), "raspberrycode-help-export-zh-dark.png"));
     await assertLogExport("导出日志", "正在导出日志中");
     await openMenu();
     await $('[role="menuitem"]*=关于 RaspberryCode').click();

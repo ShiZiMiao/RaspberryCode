@@ -1,11 +1,11 @@
 /* eslint-disable max-lines -- Provisioning target keeps transaction and rollback invariants together. */
 import { readFile } from "node:fs/promises";
-import { atomicWritePrivateTextFile, withFileLock } from "@zcode/shared/node";
+import { atomicWritePrivateTextFile, withFileLock } from "@raspberrycode/shared/node";
 import {
   type PersonalProviderConfigRepository,
   type ProviderConfigLayerUpdate,
-} from "@zcode/provider";
-import { decodeProviderConfigFile, encodeProviderConfigFile } from "@zcode/provider-node";
+} from "@raspberrycode/provider";
+import { decodeProviderConfigFile, encodeProviderConfigFile } from "@raspberrycode/provider-node";
 import {
   providerProvisioningEnvelopeSchema,
   providerProvisioningResultSchema,
@@ -13,7 +13,7 @@ import {
   type ProviderProvisioningEnvelope,
   type ProviderProvisioningResult,
   type ProviderProvisioningErrorCode,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import type { ICredentialService } from "../credential/credential.js";
 import type { ISettingService } from "../setting/setting.js";
 import type { ProviderRuntime } from "./providerRuntime.js";

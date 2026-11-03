@@ -1,4 +1,4 @@
-import type { UsageEntitlementSnapshot } from "@zcode/shared";
+import type { UsageEntitlementSnapshot } from "@raspberrycode/shared";
 
 export type UsageEntitlementOutcome = "active" | "inactive" | "unknown";
 

@@ -1,4 +1,4 @@
-import type { ProjectTask as ZCodeTaskMeta } from "@/project-sidebar/contract.js";
+import type { ProjectTask as RaspberryCodeTaskMeta } from "@/project-sidebar/contract.js";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
@@ -60,22 +60,22 @@ export function VirtualizedGroupedTaskList({
   activeDragTaskKey,
   tooltipsDisabled,
 }: {
-  tasks: ZCodeTaskMeta[];
+  tasks: RaspberryCodeTaskMeta[];
   groupId: string;
   groups: TaskGroupMenuItem[];
   activeWorkspacePath: string;
   activeWorkspaceIdentity?: string;
   activeTaskId: string | null;
-  getTaskRemoteSessionId: (task: ZCodeTaskMeta) => string | undefined;
-  getTaskWorkspaceLabel: (task: ZCodeTaskMeta) => string;
+  getTaskRemoteSessionId: (task: RaspberryCodeTaskMeta) => string | undefined;
+  getTaskWorkspaceLabel: (task: RaspberryCodeTaskMeta) => string;
   onSelectTask: (workspacePath: string, taskId: string, workspaceIdentity?: string) => void;
-  onCloseTask: (task: ZCodeTaskMeta) => void;
-  onOpenFileTree?: (task: ZCodeTaskMeta) => void;
-  onMoveTaskToGroup: (task: ZCodeTaskMeta, groupId: string | null) => void;
-  onMoveTaskToTop: (task: ZCodeTaskMeta) => void;
-  onStartRenameTask: (task: ZCodeTaskMeta) => void;
-  onArchiveTask: (task: ZCodeTaskMeta) => void;
-  onMarkTaskAsUnread: (task: ZCodeTaskMeta) => void;
+  onCloseTask: (task: RaspberryCodeTaskMeta) => void;
+  onOpenFileTree?: (task: RaspberryCodeTaskMeta) => void;
+  onMoveTaskToGroup: (task: RaspberryCodeTaskMeta, groupId: string | null) => void;
+  onMoveTaskToTop: (task: RaspberryCodeTaskMeta) => void;
+  onStartRenameTask: (task: RaspberryCodeTaskMeta) => void;
+  onArchiveTask: (task: RaspberryCodeTaskMeta) => void;
+  onMarkTaskAsUnread: (task: RaspberryCodeTaskMeta) => void;
   activeDragTaskKey?: string | null;
   tooltipsDisabled?: boolean;
 }) {
@@ -150,7 +150,7 @@ export function VirtualizedGroupedTaskList({
   const measureElement = rowVirtualizer.measureElement;
 
   const renderTask = useCallback(
-    (task: ZCodeTaskMeta) => (
+    (task: RaspberryCodeTaskMeta) => (
       <GroupedTaskItem
         key={taskKey(task)}
         task={task}

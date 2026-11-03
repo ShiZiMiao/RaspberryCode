@@ -8,13 +8,13 @@ import type {
   WebContents,
   WindowOpenHandlerResponse,
 } from "electron";
-import type { DesktopTitleBarTheme, Locale } from "@zcode/shared";
+import type { DesktopTitleBarTheme, Locale } from "@raspberrycode/shared";
 import {
   DEFAULT_LOCALE,
   desktopMenuMessageIds,
   getDesktopMenuMessage,
   PlatformChannels,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import { loadWindow, type WindowBootstrapOptions } from "./desktopHostProcess.js";
 import {
   buildWindowsTitleBarOverlayForZoomLevel,
@@ -45,7 +45,7 @@ const ALLOWED_EMBEDDED_BROWSER_PROTOCOLS = new Set([
   "data:",
   "http:",
   "https:",
-  "zcode-browser-restore:",
+  "raspberrycode-browser-restore:",
 ]);
 const ALLOWED_EMBEDDED_BROWSER_NEW_WINDOW_PROTOCOLS = new Set(["http:", "https:"]);
 const EXTERNAL_BROWSER_DISPOSITIONS = new Set(["background-tab"]);

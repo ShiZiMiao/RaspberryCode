@@ -17,8 +17,8 @@ import type {
   AppUsageHeatmap,
   AppUsageHeatmapCell,
   AppUsageHeatmapWeek,
-} from "@zcode/shared";
-import { ESTIMATED_TOKEN_CHAR_DIVISOR } from "@zcode/shared";
+} from "@raspberrycode/shared";
+import { ESTIMATED_TOKEN_CHAR_DIVISOR } from "@raspberrycode/shared";
 
 // ============================================================================
 // 把 Metered monitor 接口数据(model-usage / tool-usage)转成 RaspberryCode 内部统一

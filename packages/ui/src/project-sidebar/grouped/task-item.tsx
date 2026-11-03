@@ -1,11 +1,11 @@
-import type { ProjectTask as ZCodeTaskMeta } from "@/project-sidebar/contract.js";
+import type { ProjectTask as RaspberryCodeTaskMeta } from "@/project-sidebar/contract.js";
 import { memo } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import type { UniqueIdentifier } from "@dnd-kit/core";
 
 import { MessageCirclePlus } from "lucide-react";
 import { cn } from "@/components/lib/utils.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { GroupedTaskRow } from "@/project-sidebar/grouped/task-row.js";
 import type { TaskGroupMenuItem } from "@/project-sidebar/grouped/shared.js";
 
@@ -16,7 +16,7 @@ export function EmptyGroupDropZone({
   groupId: string;
   onCreateTask: () => void;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   const droppable = useDroppable({
     id: `group-empty-drop:${groupId}`,
     data: {
@@ -70,7 +70,7 @@ function GroupedTaskItemComponent({
   dragOverlay,
   tooltipsDisabled,
 }: {
-  task: ZCodeTaskMeta;
+  task: RaspberryCodeTaskMeta;
   groupId?: string;
   groups: TaskGroupMenuItem[];
   remoteSessionId?: string;
@@ -79,13 +79,13 @@ function GroupedTaskItemComponent({
   activeTaskId: string | null;
   workspaceLabel: string;
   onSelectTask: (workspacePath: string, taskId: string, workspaceIdentity?: string) => void;
-  onCloseTask: (task: ZCodeTaskMeta) => void;
-  onOpenFileTree?: (task: ZCodeTaskMeta) => void;
-  onMoveTaskToGroup: (task: ZCodeTaskMeta, groupId: string | null) => void;
-  onMoveTaskToTop: (task: ZCodeTaskMeta) => void;
-  onStartRenameTask: (task: ZCodeTaskMeta) => void;
-  onArchiveTask: (task: ZCodeTaskMeta) => void;
-  onMarkTaskAsUnread: (task: ZCodeTaskMeta) => void;
+  onCloseTask: (task: RaspberryCodeTaskMeta) => void;
+  onOpenFileTree?: (task: RaspberryCodeTaskMeta) => void;
+  onMoveTaskToGroup: (task: RaspberryCodeTaskMeta, groupId: string | null) => void;
+  onMoveTaskToTop: (task: RaspberryCodeTaskMeta) => void;
+  onStartRenameTask: (task: RaspberryCodeTaskMeta) => void;
+  onArchiveTask: (task: RaspberryCodeTaskMeta) => void;
+  onMarkTaskAsUnread: (task: RaspberryCodeTaskMeta) => void;
   dragId?: UniqueIdentifier;
   dragging?: boolean;
   dragOverlay?: boolean;

@@ -1,10 +1,21 @@
 import { join } from "node:path";
 import { access } from "node:fs/promises";
-import type { StdioStream } from "@zcode/server/remote/backend.js";
-import { quotePosixPathArg } from "@zcode/server/remote/posixShell.js";
-import type { RemoteAssetNetworkPort } from "@zcode/server/remote/remoteAssetNetwork.js";
+import type { StdioStream } from "@raspberrycode/server/remote/backend.js";
+import { quotePosixPathArg } from "@raspberrycode/server/remote/posixShell.js";
+import type { RemoteAssetNetworkPort } from "@raspberrycode/server/remote/remoteAssetNetwork.js";
 
-export const REMOTE_BASE = "~/.zcode/server";
+/**
+ * 远端 server 根（全新独立发行，无历史布局兼容）：
+ * 统一为 `~/.raspberrycode/server`，与 raspberrycode-server-cli 的 getDefaultServerDataRoot、
+ * source-server probe 同一条规则。
+ */
+export const REMOTE_BASE = "~/.raspberrycode/server";
+
+export async function resolveRemoteServerBase(
+  _backend?: Pick<import("@raspberrycode/server/remote/backend.js").IRemoteBackend, "exists">,
+): Promise<string> {
+  return REMOTE_BASE;
+}
 
 export interface RemoteAssetDeployOptions {
   /** 取消当前连接初始化；共享 cache 仍可独立完成，但不得继续写入远端 staging。 */
@@ -18,6 +29,8 @@ export interface RemoteAssetDeployOptions {
   remoteCdnBaseUrl?: string;
   remoteCdnBaseUrls?: string[];
   remoteCacheDir?: string;
+  /** 远端 server 根（见 resolveRemoteServerBase）；缺省时持有 backend 的函数自行解析。 */
+  serverBase?: string;
   manifestRequestTimeoutMs?: number;
   remoteAssetNetwork?: RemoteAssetNetworkPort;
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { BotConfig } from "@zcode/shared";
-import { ALL_BOT_WORKSPACES } from "@zcode/shared";
+import type { BotConfig } from "@raspberrycode/shared";
+import { ALL_BOT_WORKSPACES } from "@raspberrycode/shared";
 import {
   BOT_REPLY_GRANULARITIES,
   getBotReplyGranularitiesForProvider,

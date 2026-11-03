@@ -3,10 +3,10 @@ import { createHash, randomUUID } from "node:crypto";
 import { readFileSync, unlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join, posix } from "node:path";
-import type { RemoteAssetInstallMode } from "@zcode/shared";
-import type { IRemoteBackend, StdioStream } from "@zcode/server/remote/backend.js";
+import type { RemoteAssetInstallMode } from "@raspberrycode/shared";
+import type { IRemoteBackend, StdioStream } from "@raspberrycode/server/remote/backend.js";
 import {
-  REMOTE_BASE,
+  resolveRemoteServerBase,
   buildRemoteExecutableReplaceCommand,
   buildRemoteMoveCommand,
   createRemoteAssetPlaceholderError,
@@ -14,14 +14,14 @@ import {
   type DeployLoggers,
   type RemoteAssetDeployOptions,
   waitForClose,
-} from "@zcode/server/remote/deployShared.js";
-import { quotePosixPathArg, quotePosixShellArg } from "@zcode/server/remote/posixShell.js";
+} from "@raspberrycode/server/remote/deployShared.js";
+import { quotePosixPathArg, quotePosixShellArg } from "@raspberrycode/server/remote/posixShell.js";
 import {
   buildComponentArtifactUrlCandidates,
   buildReleaseAssetUrlCandidates,
   buildReleaseBaseCandidates,
   resolveRemoteCdnBaseUrls,
-} from "@zcode/server/remote/remoteAssetCdn.js";
+} from "@raspberrycode/server/remote/remoteAssetCdn.js";
 import {
   ensureRemoteReleaseDirFromCdn,
   buildRemoteAssetManifestFileCandidates,
@@ -33,17 +33,17 @@ import {
   type RemoteAssetManifest,
   type RemoteAssetManifestComponent,
   type RemoteAssetManifestRef,
-} from "@zcode/server/remote/remoteAssetCache.js";
-import { createTarGzArchive } from "@zcode/server/remote/localTarGz.js";
+} from "@raspberrycode/server/remote/remoteAssetCache.js";
+import { createTarGzArchive } from "@raspberrycode/server/remote/localTarGz.js";
 import type {
   RemoteAssetTools,
   RemoteDownloadTool,
   RemoteSha256Tool,
-} from "@zcode/server/remote/remoteAssetPreflight.js";
+} from "@raspberrycode/server/remote/remoteAssetPreflight.js";
 import {
   resolveRemoteAssetFetch,
   type RemoteAssetNetworkPort,
-} from "@zcode/server/remote/remoteAssetNetwork.js";
+} from "@raspberrycode/server/remote/remoteAssetNetwork.js";
 
 export interface RemoteAssetInstaller {
   readonly mode: RemoteAssetInstallMode;
@@ -433,7 +433,7 @@ export class LocalUploadAssetInstaller implements RemoteAssetInstaller {
     );
     const localTarPath = join(
       tmpdir(),
-      `zcode-remote-${params.componentId}-${Date.now()}-${randomUUID()}.tar.gz`,
+      `raspberrycode-remote-${params.componentId}-${Date.now()}-${randomUUID()}.tar.gz`,
     );
     await createTarGzArchive(localTarPath, [
       { sourcePath: localPath, archivePath: basename(localPath) },
@@ -802,6 +802,7 @@ export class RemoteDownloadAssetInstaller implements RemoteAssetInstaller {
     componentId: string,
     forceRefresh = false,
   ): Promise<RemoteComponentRef> {
+    const serverBase = this.options.serverBase ?? (await resolveRemoteServerBase(this.backend));
     const manifestRef = await this.manifestPromise;
     const component = selectRemoteAssetManifestComponents(manifestRef.manifest, [componentId])[0];
     if (!component) {
@@ -813,7 +814,7 @@ export class RemoteDownloadAssetInstaller implements RemoteAssetInstaller {
     const componentCacheSegment = usesRemoteAssetContentAddressedCacheIdentity(component.id)
       ? component.sha256
       : hashRemoteCacheSegment(resolveRemoteAssetComponentCacheVersion(component.version));
-    const componentDir = `${REMOTE_BASE}/asset-cache/components/${quoteSafeSegment(this.options.platformArch)}/${quoteSafeSegment(component.id)}/${componentCacheSegment}`;
+    const componentDir = `${serverBase}/asset-cache/components/${quoteSafeSegment(this.options.platformArch)}/${quoteSafeSegment(component.id)}/${componentCacheSegment}`;
     const readyPath = `${componentDir}/.ready`;
     if (await this.backend.exists(readyPath)) {
       if (forceRefresh) {
@@ -848,7 +849,7 @@ export class RemoteDownloadAssetInstaller implements RemoteAssetInstaller {
     // HEAD 只服务进度统计，允许其独立收尾；完成后必须重新检查连接生命周期，
     // 禁止取消后的迟到 continuation 使用旧 backend 创建远端下载与 staging。
     throwIfRemoteAssetInstallAborted(this.options.signal);
-    const stagingDir = `${REMOTE_BASE}/asset-cache/staging/${quoteSafeSegment(component.id)}-${Date.now()}-${randomUUID()}`;
+    const stagingDir = `${serverBase}/asset-cache/staging/${quoteSafeSegment(component.id)}-${Date.now()}-${randomUUID()}`;
     const archivePath = `${stagingDir}/component.tar.gz`;
     const extractDir = `${stagingDir}/extract`;
     const componentNewDir = `${componentDir}.new-${Date.now()}-${randomUUID()}`;

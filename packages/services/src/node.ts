@@ -18,11 +18,11 @@ import {
 } from "#src/project/index.js";
 export { createLegacySingleRootProjectService } from "#src/project/index.js";
 export { createRemoteProjectService } from "#src/remote-projects/index.js";
-import { getZCodeDataRootDir as projectDataRoot } from "#src/paths.js";
+import { getRaspberryCodeDataRootDir as projectDataRoot } from "#src/paths.js";
 import { createTaskGroupService, ITaskGroupService, groupTaskKey } from "#src/task-groups/index.js";
 import { IGenUiService } from "./gen-ui/contract.js";
 import { createGenUiService } from "./gen-ui/node.js";
-import { channelReplyHostRequestSchema, channelReplyResultSchema } from "@zcode/shared";
+import { channelReplyHostRequestSchema, channelReplyResultSchema } from "@raspberrycode/shared";
 /* eslint-disable max-lines -- host process 服务注册和启动装配需要集中维护，拆散后会更难追踪依赖注入顺序 */
 // Node.js service implementations — NOT safe to import in browser code
 import { randomBytes } from "node:crypto";
@@ -33,7 +33,7 @@ import {
   createNodeProviderRuntimePathEnv,
   NodeModelSelectionConfigRepository,
   PERSONAL_PROVIDER_CONFIG_FILE_NAME,
-} from "@zcode/provider-node";
+} from "@raspberrycode/provider-node";
 import { getAppConfigDir as resolveAppConfigDir } from "./paths.js";
 import {
   createHasExistingLocalTask,
@@ -44,23 +44,23 @@ import {
   buildLocalMediaPreviewUrl,
   type DynamicWorkflowMode,
   type ProviderProvisioningTrigger,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 
 export {
-  materializeZCodeBuiltinProviderConfig,
-  ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV,
-} from "@zcode/provider-node";
+  materializeRaspberryCodeBuiltinProviderConfig,
+  RASPBERRYCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV,
+} from "@raspberrycode/provider-node";
 import { randomUUID } from "node:crypto";
-import type { IChannel } from "@zcode/rpc";
+import type { IChannel } from "@raspberrycode/rpc";
 import {
   readTopicResourceFromRelay,
   validateTopicResourceFromRelay,
-} from "./zcode-agent/topicResourceRelayClient.js";
+} from "./raspberrycode-agent/topicResourceRelayClient.js";
 export {
   createTopicResourcePeers,
   type TopicResourcePeers,
-} from "./zcode-agent/topicResourcePeers.js";
-export { createTopicResourceRelayChannel } from "./zcode-agent/topicResourceRelayChannel.js";
+} from "./raspberrycode-agent/topicResourcePeers.js";
+export { createTopicResourceRelayChannel } from "./raspberrycode-agent/topicResourceRelayChannel.js";
 
 export { createFileService } from "./file/fileService.js";
 export {
@@ -86,8 +86,8 @@ export {
   parseFsFaultRulesFromEnvValue,
   resetProcessFsFaultInjectorForTests,
   setFsFaultInjectorForTests,
-  ZCODE_E2E_FS_FAULTS_ALLOW_ENV,
-  ZCODE_E2E_FS_FAULTS_ENV,
+  RASPBERRYCODE_E2E_FS_FAULTS_ALLOW_ENV,
+  RASPBERRYCODE_E2E_FS_FAULTS_ENV,
 } from "./fs/fsFaultInjection.js";
 export type {
   FsFaultCheckInput,
@@ -100,7 +100,7 @@ export type {
 export {
   setDataBaseDir,
   getDataBaseDir,
-  getZCodeDataRootDir,
+  getRaspberryCodeDataRootDir,
   getConversationWorkspaceDir,
   getAppConfigDir,
   getExportLogStageDir,
@@ -111,7 +111,7 @@ export {
   getGitCheckpointIndexRootDir,
   copyDataDirectory,
   validateDataBaseDirTarget,
-  ZCODE_WINDOWS_APP_INSTALL_DIR_ENV,
+  RASPBERRYCODE_WINDOWS_APP_INSTALL_DIR_ENV,
 } from "./paths.js";
 export { createGitService } from "./git/gitService.js";
 export { GitCommitMessageGenerator } from "./git/gitCommitMessageGenerator.js";
@@ -125,28 +125,28 @@ export {
 } from "./setting/settingService.js";
 export { createCredentialService } from "./credential/credentialService.js";
 export { createBroadcastService } from "./broadcast/broadcastService.js";
-export { createZCodeAgentService } from "./zcode-agent/zcodeAgentService.js";
-export { createZCodeTaskServiceAdapter } from "./zcode-agent/zcodeTaskServiceAdapter.js";
-export { createZCodeSessionService } from "./zcode-session/zcodeSessionService.js";
+export { createRaspberryCodeAgentService } from "./raspberrycode-agent/raspberrycodeAgentService.js";
+export { createRaspberryCodeTaskServiceAdapter } from "./raspberrycode-agent/raspberrycodeTaskServiceAdapter.js";
+export { createRaspberryCodeSessionService } from "./raspberrycode-session/raspberrycodeSessionService.js";
 export {
-  resolveDefaultZCodeAgentCommand,
-  ZCodeAgentProcessManager,
-} from "./zcode-agent/zcodeAgentProcessManager.js";
+  resolveDefaultRaspberryCodeAgentCommand,
+  RaspberryCodeAgentProcessManager,
+} from "./raspberrycode-agent/raspberrycodeAgentProcessManager.js";
 export type {
-  ZCodeAgentCommand,
-  ZCodeAgentCommandResolver,
-  ZCodeAgentCommandResolverContext,
-  ZCodeAgentProcessManagerOptions,
-} from "./zcode-agent/zcodeAgentProcessManager.js";
-export { ZCodeProtocolClient } from "./zcode-agent/zcodeProtocolClient.js";
-export type { ZCodeProtocolTransport } from "./zcode-agent/zcodeProtocolTransport.js";
-export { ZCodeStdioTransport } from "./zcode-agent/zcodeStdioTransport.js";
+  RaspberryCodeAgentCommand,
+  RaspberryCodeAgentCommandResolver,
+  RaspberryCodeAgentCommandResolverContext,
+  RaspberryCodeAgentProcessManagerOptions,
+} from "./raspberrycode-agent/raspberrycodeAgentProcessManager.js";
+export { RaspberryCodeProtocolClient } from "./raspberrycode-agent/raspberrycodeProtocolClient.js";
+export type { RaspberryCodeProtocolTransport } from "./raspberrycode-agent/raspberrycodeProtocolTransport.js";
+export { RaspberryCodeStdioTransport } from "./raspberrycode-agent/raspberrycodeStdioTransport.js";
 export {
-  getZCodeStdioTapDevLogDir,
-  readZCodeStdioTapDevState,
-  setZCodeStdioTapDevEnabled,
-} from "./zcode-agent/zcodeStdioTapDevConfig.js";
-export type { ZCodeStdioTapDevState } from "@zcode/shared";
+  getRaspberryCodeStdioTapDevLogDir,
+  readRaspberryCodeStdioTapDevState,
+  setRaspberryCodeStdioTapDevEnabled,
+} from "./raspberrycode-agent/raspberrycodeStdioTapDevConfig.js";
+export type { RaspberryCodeStdioTapDevState } from "@raspberrycode/shared";
 export {
   createCuaHelperInstaller,
   requestHelperAccessibilityPermissionViaLaunchServices,
@@ -292,7 +292,7 @@ export {
 import {
   buildServerRemoteWorkspaceIdentity,
   remoteHostIdFromWorkspaceIdentity,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import { SourceServerWorkspaceAliasRepo } from "./session/sourceServerWorkspaceAliasRepo.js";
 import { SourceServerWorkspaceIdentityMapper } from "./source-server-workspace/sourceServerWorkspaceIdentityChannelServer.js";
 import { ServiceCollection } from "./collection.js";
@@ -306,10 +306,10 @@ import { ISettingService } from "./setting/setting.js";
 import { IOnboardingRecordService } from "./onboarding/onboardingRecord.js";
 import { ICredentialService } from "./credential/credential.js";
 import { IBroadcastService } from "./broadcast/broadcast.js";
-import { IZCodeTaskService } from "./session/zcodeTaskService.js";
-import { IZCodeAgentService } from "./zcode-agent/zcodeAgent.js";
-import type { CuaOperationStateReporter } from "./zcode-agent/cuaOperationTurnTracker.js";
-import { IZCodeSessionService } from "./zcode-session/zcodeSession.js";
+import { IRaspberryCodeTaskService } from "./session/raspberrycodeTaskService.js";
+import { IRaspberryCodeAgentService } from "./raspberrycode-agent/raspberrycodeAgent.js";
+import type { CuaOperationStateReporter } from "./raspberrycode-agent/cuaOperationTurnTracker.js";
+import { IRaspberryCodeSessionService } from "./raspberrycode-session/raspberrycodeSession.js";
 import { IBotsService } from "./bots/bots.js";
 import { IFileWatcherService } from "./fileWatcher/fileWatcher.js";
 import { IOAuthService } from "./oauth/oauth.js";
@@ -347,16 +347,16 @@ import { createOnboardingRecordService } from "./onboarding/onboardingRecordServ
 import { createObservableSettingService } from "./setting/observableSettingService.js";
 import { createCredentialService } from "./credential/credentialService.js";
 import { createBroadcastService } from "./broadcast/broadcastService.js";
-import { createZCodeAgentService } from "./zcode-agent/zcodeAgentService.js";
-import type { ZCodeAgentCommandResolver } from "./zcode-agent/zcodeAgentProcessManager.js";
-import { buildAgentTelemetrySpawnEnv } from "./zcode-agent/agentTelemetryEnv.js";
-import { resolveZCodeAgentPresentationSurface } from "./zcode-agent/zcodeAgentPresentationSurface.js";
-import { createZCodeTaskServiceAdapter } from "./zcode-agent/zcodeTaskServiceAdapter.js";
-import { createZCodeSessionService } from "./zcode-session/zcodeSessionService.js";
-import { createZCodeTaskIndexSyncer } from "./zcode-agent/zcodeTaskIndexSyncer.js";
+import { createRaspberryCodeAgentService } from "./raspberrycode-agent/raspberrycodeAgentService.js";
+import type { RaspberryCodeAgentCommandResolver } from "./raspberrycode-agent/raspberrycodeAgentProcessManager.js";
+import { buildAgentTelemetrySpawnEnv } from "./raspberrycode-agent/agentTelemetryEnv.js";
+import { resolveRaspberryCodeAgentPresentationSurface } from "./raspberrycode-agent/raspberrycodeAgentPresentationSurface.js";
+import { createRaspberryCodeTaskServiceAdapter } from "./raspberrycode-agent/raspberrycodeTaskServiceAdapter.js";
+import { createRaspberryCodeSessionService } from "./raspberrycode-session/raspberrycodeSessionService.js";
+import { createRaspberryCodeTaskIndexSyncer } from "./raspberrycode-agent/raspberrycodeTaskIndexSyncer.js";
 import { TaskIndexRepo } from "./session/taskIndexRepo.js";
 import { AutomationRepo } from "#src/session/automationRepo.js";
-import type { AppSettings } from "@zcode/shared";
+import type { AppSettings } from "@raspberrycode/shared";
 import { createBotsService } from "./bots/botsService.js";
 import { BotsRepo } from "#src/bots/repo.js";
 import {
@@ -369,9 +369,9 @@ import { createFileWatcherService } from "./fileWatcher/fileWatcherService.js";
 import { createOAuthService } from "./oauth/oauthService.js";
 import { createOAuthProviderLogoutHandler } from "./oauth/oauthProviderLogout.js";
 import { OAuthCredentialRepo } from "./oauth/repo/oauthCredentialRepo.js";
-import { readLegacyZCodeConfigProviders } from "./model-provider/legacyZCodeConfigProviderReader.js";
+import { readLegacyRaspberryCodeConfigProviders } from "./model-provider/legacyRaspberryCodeConfigProviderReader.js";
 import { createProviderConfigRuntime } from "./model-provider/providerConfigRuntime.js";
-import { fetchZCodeBuiltinRemoteRelease } from "./model-provider/zcodeBuiltinRemoteConfig.js";
+import { fetchRaspberryCodeBuiltinRemoteRelease } from "./model-provider/raspberrycodeBuiltinRemoteConfig.js";
 import {
   createProviderRuntimeFromConfigRuntime,
   type ProviderRuntime,
@@ -408,7 +408,7 @@ import {
   createPluginUiAppToolsService,
   createPluginUiBridgeService,
 } from "./plugin-ui-bridge/index.js";
-import type { PluginSandboxHandle, PluginSandboxRegisterInput } from "@zcode/shared/mcp-apps";
+import type { PluginSandboxHandle, PluginSandboxRegisterInput } from "@raspberrycode/shared/mcp-apps";
 import { createPluginSyncService } from "./plugin-sync/pluginSyncService.js";
 import { createPluginsService } from "./plugins/pluginsService.js";
 import { createPluginManagementService } from "./plugins/pluginManagementService.js";
@@ -438,12 +438,12 @@ import {
   buildAgentRuntimeEnv,
 } from "./runtime-tools/agentProxyEnv.js";
 import { ensureAppCaCert } from "./runtime-tools/appCaCert.js";
-import { buildHelperOpenArgs, isCuaLocalDevelopmentRuntime } from "@zcode/zcode-cua/broker/server";
+import { buildHelperOpenArgs, isCuaLocalDevelopmentRuntime } from "@raspberrycode/raspberrycode-cua/broker/server";
 import { createServiceLogger, type ServiceLogger } from "#src/logger/serviceLogger.js";
 import {
   createOfficialMcpTrustedOriginRegistry,
   OFFICIAL_MCP_DEV_TRUSTED_ORIGINS_ENV,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import {
   BROKER_SOCKET_ENV,
   BROKER_UNAVAILABLE_ENV,
@@ -454,7 +454,7 @@ import {
   ICuaPermissionService,
   ICuaPipSessionService,
   isOfficialCuaPluginEnabledForWorkspace,
-  isPotentialZCodeCuaAgentMcpServer,
+  isPotentialRaspberryCodeCuaAgentMcpServer,
   isScreenCaptureProbeSuccess,
   reapOrphanedHelpers,
   resolveStandaloneStatusLaunchAppPath,
@@ -482,28 +482,28 @@ import {
   getStableCuaPipeName,
   resolveStableCuaWinRecipe,
 } from "#src/cua-permission-broker/stableCuaTransport.js";
-import { HELPER_APP_NAME } from "@zcode/zcode-cua/broker/helperConstants";
-import { resolveBrokerSocketPath } from "@zcode/zcode-cua/broker/socketPath";
+import { HELPER_APP_NAME } from "@raspberrycode/raspberrycode-cua/broker/helperConstants";
+import { resolveBrokerSocketPath } from "@raspberrycode/raspberrycode-cua/broker/socketPath";
 import {
-  DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
+  DEFAULT_RASPBERRYCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
   formatLogPrefix,
   isCredentialDecryptError,
   type ServiceAuthorityMode,
-  resolveRuntimeZCodeEndpointOrigin,
+  resolveRuntimeRaspberryCodeEndpointOrigin,
   type BrowserBackendDescriptor,
   type BrowserClientMode,
   type BrowserCommand,
-  isZCodeCuaMcpCommand,
-  isZCodeCuaMcpPackageArg,
-  isZCodeCuaInternalFeatureEnabled,
-  ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
-  type ZCodeAutomation,
-  type ZCodeAutomationRun,
-  getCapturedZCodeAgentTelemetryEnv,
-  ZCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV,
-  ZCODE_VERSION,
-  ZCODE_ENV,
-} from "@zcode/shared";
+  isRaspberryCodeCuaMcpCommand,
+  isRaspberryCodeCuaMcpPackageArg,
+  isRaspberryCodeCuaInternalFeatureEnabled,
+  RASPBERRYCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
+  type RaspberryCodeAutomation,
+  type RaspberryCodeAutomationRun,
+  getCapturedRaspberryCodeAgentTelemetryEnv,
+  RASPBERRYCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV,
+  RASPBERRYCODE_VERSION,
+  RASPBERRYCODE_ENV,
+} from "@raspberrycode/shared";
 
 import { createPluginUiAccountBindings } from "./plugin-ui-bridge/instanceAccounts.js";
 interface ServiceWithDisposeAll {
@@ -601,10 +601,10 @@ export function shouldEnableDefaultCuaProductHelper(
     env?: NodeJS.ProcessEnv;
   } = {},
 ): boolean {
-  // CUA 已随正式版默认开启（isZCodeCuaInternalFeatureEnabled 默认 ON，仅显式 0/false/off 关闭；2026-08 注释更正——旧注释称默认关闭已过期）。显式开启后 macOS 使用既有产品 Helper，Windows 使用安装包内 runtime；
+  // CUA 已随正式版默认开启（isRaspberryCodeCuaInternalFeatureEnabled 默认 ON，仅显式 0/false/off 关闭；2026-08 注释更正——旧注释称默认关闭已过期）。显式开启后 macOS 使用既有产品 Helper，Windows 使用安装包内 runtime；
   // 两端都保持按需启动。关闭时不创建 host、不探测资源、不产生子进程或权限提示。
   const env = options.env ?? process.env;
-  if (!isZCodeCuaInternalFeatureEnabled(env)) return false;
+  if (!isRaspberryCodeCuaInternalFeatureEnabled(env)) return false;
   const platform = options.platform ?? process.platform;
   return platform === "darwin" || platform === "win32";
 }
@@ -711,14 +711,16 @@ export function createDynamicCuaProductMcpServerResolver(options: {
       // delegate 可能跨过 Helper start/health await；dispose 在等待中置 terminal 时，不能把旧代际
       // 刚注入的 socket/token 交给晚到 Agent。移除 CUA candidate，保持其它 MCP 原样。
       return options.isResolverCurrent?.(resolver, context) === false
-        ? servers?.filter((server) => !isPotentialZCodeCuaAgentMcpServer(server))
+        ? servers?.filter((server) => !isPotentialRaspberryCodeCuaAgentMcpServer(server))
         : resolved;
     },
     async restart() {
       // 委托到底层真实 resolver（由 ICuaPermissionService.restartHelper 经此调用）。
       const resolver = await options.getResolver();
       if (!resolver) {
-        throw new Error("RaspberryCode Computer Use is not enabled (plugin off or not product mode).");
+        throw new Error(
+          "RaspberryCode Computer Use is not enabled (plugin off or not product mode).",
+        );
       }
       await resolver.restart();
     },
@@ -726,7 +728,9 @@ export function createDynamicCuaProductMcpServerResolver(options: {
       // 授权完成后的 restart 必须保留 session id，才能复用底层的幂等与时序保障。
       const resolver = await options.getResolver();
       if (!resolver) {
-        throw new Error("RaspberryCode Computer Use is not enabled (plugin off or not product mode).");
+        throw new Error(
+          "RaspberryCode Computer Use is not enabled (plugin off or not product mode).",
+        );
       }
       await resolver.restartAfterPermissionGrant(onboardingSessionId);
     },
@@ -958,12 +962,12 @@ export function createDefaultCuaProductHelper(
   };
 }
 
-export const ZCODE_CUA_BUNDLED_HELPER_APP_PATH_ENV = "ZCODE_CUA_BUNDLED_HELPER_APP_PATH";
+export const RASPBERRYCODE_CUA_BUNDLED_HELPER_APP_PATH_ENV = "RASPBERRYCODE_CUA_BUNDLED_HELPER_APP_PATH";
 
 export function resolveBundledCuaHelperAppPath(
   env: NodeJS.ProcessEnv = process.env,
 ): string | undefined {
-  const injectedPath = env[ZCODE_CUA_BUNDLED_HELPER_APP_PATH_ENV]?.trim();
+  const injectedPath = env[RASPBERRYCODE_CUA_BUNDLED_HELPER_APP_PATH_ENV]?.trim();
   if (injectedPath) {
     return injectedPath;
   }
@@ -975,7 +979,7 @@ export function resolveBundledCuaHelperAppPath(
 
 export { isOfficialCuaPluginEnabledForWorkspace };
 
-export function hasGlobalCliZCodeCuaServer(env: NodeJS.ProcessEnv = process.env): boolean {
+export function hasGlobalCliRaspberryCodeCuaServer(env: NodeJS.ProcessEnv = process.env): boolean {
   const home = env.HOME?.trim() || homedir();
   const configPath = join(home, ".raspberrycode", "cli", "config.json");
   let parsed: unknown;
@@ -988,24 +992,24 @@ export function hasGlobalCliZCodeCuaServer(env: NodeJS.ProcessEnv = process.env)
   if (isRecord(parsed.features) && parsed.features.mcp === false) return false;
   if (!isRecord(parsed.mcp) || !isRecord(parsed.mcp.servers)) return false;
   return Object.entries(parsed.mcp.servers).some(([name, config]) =>
-    isGlobalCliZCodeCuaServer(name, config),
+    isGlobalCliRaspberryCodeCuaServer(name, config),
   );
 }
 
-function isGlobalCliZCodeCuaServer(name: string, config: unknown): boolean {
+function isGlobalCliRaspberryCodeCuaServer(name: string, config: unknown): boolean {
   if (!isRecord(config)) return false;
   if (config.enabled === false) return false;
   if (typeof config.type === "string" && config.type !== "stdio") return false;
   if (name === "computer-use") return true;
-  // 与 desktop/services resolver 和 CLI bootstrap 共用 @zcode/shared 的单一事实源，避免第三处
-  // 判定漂移：git/.git/本地路径形态的 zcode-cua 若这里漏判，全局 CLI env 注入不会带 broker
+  // 与 desktop/services resolver 和 CLI bootstrap 共用 @raspberrycode/shared 的单一事实源，避免第三处
+  // 判定漂移：git/.git/本地路径形态的 raspberrycode-cua 若这里漏判，全局 CLI env 注入不会带 broker
   // socket/token，agent 会回退成 Python/uvx 自己持有 macOS TCC（违反 product broker 边界）。
-  if (typeof config.command === "string" && isZCodeCuaMcpCommand(config.command)) {
+  if (typeof config.command === "string" && isRaspberryCodeCuaMcpCommand(config.command)) {
     return true;
   }
   return (
     Array.isArray(config.args) &&
-    config.args.some((arg) => typeof arg === "string" && isZCodeCuaMcpPackageArg(arg))
+    config.args.some((arg) => typeof arg === "string" && isRaspberryCodeCuaMcpPackageArg(arg))
   );
 }
 
@@ -1050,7 +1054,7 @@ export function createLocalServices(options: {
     Omit<CreateFeedbackServiceOptions, "apiClient" | "credentialService" | "oauthService">
   >;
   reportPluginTelemetryEvent?: (
-    event: import("@zcode/shared").RendererTelemetryEventPayload,
+    event: import("@raspberrycode/shared").RendererTelemetryEventPayload,
   ) => void | Promise<void>;
   processLifecycleReporter?: RuntimeProcessLifecycleReporter;
   taskRuntimeReporter?: RuntimeTaskReporter;
@@ -1061,23 +1065,23 @@ export function createLocalServices(options: {
   ) => Promise<void> | void;
   /** desktop local host 在 manual run 落库后直接派发，不经过 scheduler 正常路径。 */
   onAutomationManualRunRequested?: (params: {
-    automation: ZCodeAutomation;
-    run: ZCodeAutomationRun;
+    automation: RaspberryCodeAutomation;
+    run: RaspberryCodeAutomationRun;
   }) => Promise<void>;
   // 注入点：默认 resolver 已能覆盖 dev/桌面/SSH 远端三类形态；
   // 测试或特殊宿主想强制走自定义 binary/参数时从这里注入。
-  zcodeAgentCommandResolver?: ZCodeAgentCommandResolver;
+  raspberrycodeAgentCommandResolver?: RaspberryCodeAgentCommandResolver;
   /** Desktop Main 提前异步采集的本机 runtime 环境；Local Host 注入后不再同步启动 login shell。 */
   runtimeProcessEnvPatch?: Record<string, string>;
   /** 本地桌面上次 workspace 缺失时，仅用于 Agent 子进程 spawn.cwd 兜底。 */
-  zcodeAgentSpawnFallbackCwd?: string;
+  raspberrycodeAgentSpawnFallbackCwd?: string;
   /** desktop-attached remote server 从 Desktop Host 收到的一次性 Agent 网络配置。 */
   remoteAgentNetwork?: {
     httpProxy?: string;
     noProxy?: string;
   };
   /** 所属 Environment 的 RaspberryCode Built-in Provider Config 物理路径。 */
-  zcodeBuiltinProviderConfigFilePath: string;
+  raspberrycodeBuiltinProviderConfigFilePath: string;
   /** HTTP Server 只有在调用方明确配置认证时才暴露跨 Environment Provisioning target。 */
   providerProvisioningTargetEnabled?: boolean;
   /** Desktop Host 私有通知；只在 Source 成功持久化后请求 Main 调度远端镜像。 */
@@ -1140,7 +1144,7 @@ export function createLocalServices(options: {
   initializeRuntimeProcessEnv(options?.runtimeProcessEnvPatch);
 
   const desktopContextPromptEnabledRaw =
-    process.env[ZCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV]?.trim();
+    process.env[RASPBERRYCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV]?.trim();
   const desktopContextPromptEnabled =
     desktopContextPromptEnabledRaw === "1"
       ? true
@@ -1160,9 +1164,9 @@ export function createLocalServices(options: {
   const settingService = createObservableSettingService(
     options?.settingService ?? localSettings!.service,
   );
-  const resolveCurrentZCodeEndpointOrigin = async () =>
-    resolveRuntimeZCodeEndpointOrigin(process.env, {
-      overrideOrigin: (await settingService.get()).zcodeEndpointOrigin,
+  const resolveCurrentRaspberryCodeEndpointOrigin = async () =>
+    resolveRuntimeRaspberryCodeEndpointOrigin(process.env, {
+      overrideOrigin: (await settingService.get()).raspberrycodeEndpointOrigin,
     });
   let invalidateProjectTokens = () => {};
   let invalidatePluginUiAccounts: (() => void) | undefined;
@@ -1189,10 +1193,10 @@ export function createLocalServices(options: {
         caCertPath: settings.httpProxyCaCertPath,
       };
     });
-  // 登录体系移除后无 zcode JWT 登录态，401 清理链路（isZcodeJwtRequest 等钩子）随之删除。
+  // 登录体系移除后无 raspberrycode JWT 登录态，401 清理链路（isRaspberrycodeJwtRequest 等钩子）随之删除。
   const apiClient = createNodeApiClient({
     fetchImpl: hostApiNetworkTransport.fetch,
-    resolveZCodeEndpointOrigin: resolveCurrentZCodeEndpointOrigin,
+    resolveRaspberryCodeEndpointOrigin: resolveCurrentRaspberryCodeEndpointOrigin,
     resolveClientLanguage: options?.resolveClientLanguage,
   });
   const systemService = createSystemService();
@@ -1235,27 +1239,27 @@ export function createLocalServices(options: {
   const providerConfigLog = createServiceLogger("provider-config");
   const clientConfigPlatform = resolveClientConfigPlatform();
   const providerConfigRuntime = createProviderConfigRuntime({
-    zcodeBuiltinFilePath: options.zcodeBuiltinProviderConfigFilePath,
-    zcodeBuiltinEnvironment: {
+    raspberrycodeBuiltinFilePath: options.raspberrycodeBuiltinProviderConfigFilePath,
+    raspberrycodeBuiltinEnvironment: {
       environmentConfigRoot: resolveAppConfigDir(),
       platform: clientConfigPlatform,
-      appVersion: ZCODE_VERSION,
-      resolveEndpointOrigin: resolveCurrentZCodeEndpointOrigin,
+      appVersion: RASPBERRYCODE_VERSION,
+      resolveEndpointOrigin: resolveCurrentRaspberryCodeEndpointOrigin,
       onRefreshResult: (event) => {
         if (event.result === "updated")
           providerConfigLog.info(undefined, "RaspberryCode Built-in CDN 配置已更新", event);
         else providerConfigLog.debug(undefined, "RaspberryCode Built-in 刷新检查", event);
       },
       fetchRelease: (endpointOrigin, signal) =>
-        fetchZCodeBuiltinRemoteRelease({
+        fetchRaspberryCodeBuiltinRemoteRelease({
           apiClient,
           endpointOrigin,
           signal,
-          appVersion: ZCODE_VERSION,
+          appVersion: RASPBERRYCODE_VERSION,
           platform: clientConfigPlatform,
         }),
     },
-    onZCodeBuiltinRefreshError: (error) => {
+    onRaspberryCodeBuiltinRefreshError: (error) => {
       providerConfigLog.warn(undefined, "RaspberryCode Built-in Config 远端刷新失败", { error });
     },
     onPersonalConfigRecovery: (event) => {
@@ -1275,7 +1279,7 @@ export function createLocalServices(options: {
     },
     // 已发布 config.json 保存的是 RaspberryCode 用户配置；清理第三方 ACP 不能移除这条升级路径。
     // Repository 仅在新 Personal 配置不存在时导入，并保留旧文件以便回滚。
-    readLegacyProviders: () => readLegacyZCodeConfigProviders(),
+    readLegacyProviders: () => readLegacyRaspberryCodeConfigProviders(),
   });
   const modelSelectionConfiguredDefaultSource = new NodeModelSelectionConfigRepository({
     personalRepository: providerConfigRuntime.personalRepository,
@@ -1296,7 +1300,7 @@ export function createLocalServices(options: {
     }),
   ];
   let providerConnectivityAgentService:
-    | Pick<IZCodeAgentService, "testModelConnectivity">
+    | Pick<IRaspberryCodeAgentService, "testModelConnectivity">
     | undefined;
   const providerRuntime = createProviderRuntimeFromConfigRuntime({
     configRuntime: providerConfigRuntime,
@@ -1314,11 +1318,11 @@ export function createLocalServices(options: {
   });
   const sourceServerWorkspaceService =
     options.sourceServerWorkspaceService ?? createSourceServerWorkspaceService();
-  // mcpSync/hooks 里引用 zcodeAgentService 的闭包是惰性调用，声明顺序不影响初始化。
+  // mcpSync/hooks 里引用 raspberrycodeAgentService 的闭包是惰性调用，声明顺序不影响初始化。
   const skillsService = createSkillsService({ isDesktopRuntime: true });
   const mcpSyncService = createMcpSyncService({
     // mcp/list 的 host 消费点收拢到 mcpSync 服务；真实状态检查仍在 agent 进程。
-    listMcpServerStatuses: (params) => zcodeAgentService.listMcpServerStatuses(params),
+    listMcpServerStatuses: (params) => raspberrycodeAgentService.listMcpServerStatuses(params),
   });
   const pluginSyncService = createPluginSyncService();
   const pluginUiAccounts = createPluginUiAccountBindings({
@@ -1327,46 +1331,46 @@ export function createLocalServices(options: {
       const profile = provider ? await oauthCredentialRepo.loadUserProfile(provider) : null;
       return [provider, profile?.id ?? null];
     },
-    open: (params) => zcodeAgentService.openMcpUiInstance(params),
-    close: (params) => zcodeAgentService.closeMcpUiInstance(params),
+    open: (params) => raspberrycodeAgentService.openMcpUiInstance(params),
+    close: (params) => raspberrycodeAgentService.closeMcpUiInstance(params),
   });
   invalidatePluginUiAccounts = () => pluginUiAccounts.invalidate();
   const pluginUiBridgeService = createPluginUiBridgeService({
     reportTelemetryEvent: options?.reportPluginTelemetryEvent,
     openInstance: (params) => pluginUiAccounts.open(params),
     closeInstance: (params) => pluginUiAccounts.close(params),
-    validateInstance: (params) => zcodeAgentService.validateMcpUiInstance(params),
-    recycleInstance: (params) => zcodeAgentService.recycleMcpUiInstance(params),
+    validateInstance: (params) => raspberrycodeAgentService.validateMcpUiInstance(params),
+    recycleInstance: (params) => raspberrycodeAgentService.recycleMcpUiInstance(params),
     // 插件 UI：资源读取与 UI 工具调用都发生在 session 所在的 agent 进程；host 只做校验与登记。
-    readMcpResource: (params) => zcodeAgentService.readMcpResource(params),
-    callMcpToolForUi: (params) => zcodeAgentService.callMcpToolForUi(params),
-    cancelMcpToolCallForUi: (params) => zcodeAgentService.cancelMcpToolCallForUi(params),
-    readMcpResourceForUi: (params) => zcodeAgentService.readMcpResourceForUi(params),
-    listMcpResourcesForUi: (params) => zcodeAgentService.listMcpResourcesForUi(params),
+    readMcpResource: (params) => raspberrycodeAgentService.readMcpResource(params),
+    callMcpToolForUi: (params) => raspberrycodeAgentService.callMcpToolForUi(params),
+    cancelMcpToolCallForUi: (params) => raspberrycodeAgentService.cancelMcpToolCallForUi(params),
+    readMcpResourceForUi: (params) => raspberrycodeAgentService.readMcpResourceForUi(params),
+    listMcpResourcesForUi: (params) => raspberrycodeAgentService.listMcpResourcesForUi(params),
     listMcpResourceTemplatesForUi: (params) =>
-      zcodeAgentService.listMcpResourceTemplatesForUi(params),
-    subscribeMcpResourceForUi: (params) => zcodeAgentService.subscribeMcpResourceForUi(params),
-    unsubscribeMcpResourceForUi: (params) => zcodeAgentService.unsubscribeMcpResourceForUi(params),
-    listPluginUiSurfaces: (params) => zcodeAgentService.listPluginUiSurfaces(params),
+      raspberrycodeAgentService.listMcpResourceTemplatesForUi(params),
+    subscribeMcpResourceForUi: (params) => raspberrycodeAgentService.subscribeMcpResourceForUi(params),
+    unsubscribeMcpResourceForUi: (params) => raspberrycodeAgentService.unsubscribeMcpResourceForUi(params),
+    listPluginUiSurfaces: (params) => raspberrycodeAgentService.listPluginUiSurfaces(params),
     registerSandbox: options?.registerPluginSandbox,
   });
   // App-Provided Tools：页面工具登记与模型调用的认领 / 回传都发生在 session 所在的 agent 进程。
   const pluginUiSamplingService = createPluginUiSamplingService({
-    sample: (params) => zcodeAgentService.sampleMcpApp(params),
-    cancelSampling: (params) => zcodeAgentService.cancelMcpAppSampling(params),
+    sample: (params) => raspberrycodeAgentService.sampleMcpApp(params),
+    cancelSampling: (params) => raspberrycodeAgentService.cancelMcpAppSampling(params),
   });
   const pluginUiAppToolsService = createPluginUiAppToolsService({
-    registerAppToolsForUi: (params) => zcodeAgentService.registerAppToolsForUi(params),
-    unregisterAppToolsForUi: (params) => zcodeAgentService.unregisterAppToolsForUi(params),
-    claimAppToolCallForUi: (params) => zcodeAgentService.claimAppToolCallForUi(params),
-    resolveAppToolCallForUi: (params) => zcodeAgentService.resolveAppToolCallForUi(params),
+    registerAppToolsForUi: (params) => raspberrycodeAgentService.registerAppToolsForUi(params),
+    unregisterAppToolsForUi: (params) => raspberrycodeAgentService.unregisterAppToolsForUi(params),
+    claimAppToolCallForUi: (params) => raspberrycodeAgentService.claimAppToolCallForUi(params),
+    resolveAppToolCallForUi: (params) => raspberrycodeAgentService.resolveAppToolCallForUi(params),
   });
   const subagentsService = createSubagentsService({
     isDesktopRuntime: true,
   });
   const commandsService = createCommandsService({ isDesktopRuntime: true });
   const hooksService = createHooksService({
-    grantWorkspaceHookTrust: (params) => zcodeAgentService.grantWorkspaceHookTrust(params),
+    grantWorkspaceHookTrust: (params) => raspberrycodeAgentService.grantWorkspaceHookTrust(params),
   });
   const memoryService = createMemoryService();
   // 只要当前进程已经装配 Provider Runtime，就由该 Environment 自己的 Selection View
@@ -1376,18 +1380,18 @@ export function createLocalServices(options: {
   // 约束：lifecycle coordinator 懒获取 + 代际 fence（dispose 仅来自显式 workspace 生命周期）；
   // 不创建定时健康探测；Helper restart 尽可能复用 host transport，既有 Agent 的 session、
   // 进程与 MCP stream 保持不变。
-  // P1-a mitigation：createDefaultCuaProductHelper() 在 zcodeAgentService 存在之前就要组装 resolver，
-  // 但"是否有活跃 turn"这个信号只有 zcodeAgentService 建好之后才能查询。用前向引用占位——resolver 真正
+  // P1-a mitigation：createDefaultCuaProductHelper() 在 raspberrycodeAgentService 存在之前就要组装 resolver，
+  // 但"是否有活跃 turn"这个信号只有 raspberrycodeAgentService 建好之后才能查询。用前向引用占位——resolver 真正
   // 调用 hasActiveTurn() 发生在后续某次 resolveMcpServers（异步），那时 hasActiveTurnRef 早已被赋值。
   // 先用前向引用连接 agent service 的 CUA turn tracker，避免在活跃 CUA 请求中途重启 Helper；
   // service 创建完成后再赋值。Helper recovery 始终不能回收 Agent。
   let hasActiveTurnRef: (() => boolean) | undefined;
   const isCuaEnabledForContext = (context?: CuaProductMcpServerResolverContext): boolean =>
-    // 保留 main 原有 gate 行为（避免回归）：dev/internal 特性开启时（ZCODE_CUA_DEV_MODE=1 或
-    // ZCODE_CUA_PRODUCT_HELPER=1）即视为启用，不依赖 config.json 显式 enable——main 的 bootstrap
-    // 用 isZCodeCuaInternalFeatureEnabled 门控 bundled plugin，与 feat 的 workspace enablement 不同。
+    // 保留 main 原有 gate 行为（避免回归）：dev/internal 特性开启时（RASPBERRYCODE_CUA_DEV_MODE=1 或
+    // RASPBERRYCODE_CUA_PRODUCT_HELPER=1）即视为启用，不依赖 config.json 显式 enable——main 的 bootstrap
+    // 用 isRaspberryCodeCuaInternalFeatureEnabled 门控 bundled plugin，与 feat 的 workspace enablement 不同。
     // 生产路径（dev mode off）回落到官方插件 workspace enablement 判定（与 feat 一致）。
-    isZCodeCuaInternalFeatureEnabled(process.env) ||
+    isRaspberryCodeCuaInternalFeatureEnabled(process.env) ||
     isOfficialCuaPluginEnabledForWorkspace({
       env: process.env,
       workingDirectory: context?.workspacePath,
@@ -1400,7 +1404,7 @@ export function createLocalServices(options: {
     context?: CuaProductMcpServerResolverContext,
   ): ManagedDefaultCuaProductHelper | undefined => {
     const helper = createDefaultCuaProductHelper({
-      // 转发活跃-turn 查询（前向引用，zcodeAgentService 建好后赋值）。
+      // 转发活跃-turn 查询（前向引用，raspberrycodeAgentService 建好后赋值）。
       hasActiveTurn: () => hasActiveTurnRef?.() ?? false,
     });
     if (!helper) return undefined;
@@ -1478,17 +1482,17 @@ export function createLocalServices(options: {
   // 签名门查询；产品 Helper 不嵌 dev policy，这对 argv 无效（产品签名天然过 Team 门）。
   // 拉起后轮询 ping（5s/100ms），就绪返回 socket 路径，否则 null。
   //
-  // dev 判定直接用上游的 isCuaLocalDevelopmentRuntime（@zcode/zcode-cua/broker/server，
+  // dev 判定直接用上游的 isCuaLocalDevelopmentRuntime（@raspberrycode/raspberrycode-cua/broker/server，
   // 即本文件已经用来 import buildHelperOpenArgs 的那个 subpath，可正常导入）。
   //
   // 行为等价性（别误读成安全加固）：上游是 `COMPILED_LOCAL_DEVELOPMENT_RUNTIME &&
-  // ZCODE_RUNTIME_ENV!=="production"`，而那个编译期常量只有 scripts/build-cua-helper-app.mjs
+  // RASPBERRYCODE_RUNTIME_ENV!=="production"`，而那个编译期常量只有 scripts/build-cua-helper-app.mjs
   // 会用 define 折叠（Helper bundle）；desktop host bundle 没有该 define，于是回退成
   // `process.env.NODE_ENV !== "production"` —— 正是复制品写的那一项。所以在**当前**打包形态下
-  // 两者逐字等价，关门靠的是 ZCODE_RUNTIME_ENV=production（打包态显式注入且不传 NODE_ENV）。
+  // 两者逐字等价，关门靠的是 RASPBERRYCODE_RUNTIME_ENV=production（打包态显式注入且不传 NODE_ENV）。
   //
   // 换成上游的收益是消除漂移面：折叠点、因子个数与 fail-closed 方向都由上游一处决定，
-  // 哪天 host bundle 也补上 __ZCODE_LOCAL_DEVELOPMENT_RUNTIME__ define（Helper 侧已经有），
+  // 哪天 host bundle 也补上 __RASPBERRYCODE_LOCAL_DEVELOPMENT_RUNTIME__ define（Helper 侧已经有），
   // 编译期门自动生效，不需要再回来改这里。
 
   const cuaStatusLaunchLog = createServiceLogger("cua-status-launch");
@@ -1637,7 +1641,7 @@ export function createLocalServices(options: {
         }
         // standalone Helper 上直接查权限真值（身份模式，无 token）。
         try {
-          const { callBrokerMethod } = await import("@zcode/zcode-cua/broker/helperHealth");
+          const { callBrokerMethod } = await import("@raspberrycode/raspberrycode-cua/broker/helperHealth");
           const report = await callBrokerMethod<{
             grant_owner: string;
             owner?: { display_name?: string };
@@ -1779,7 +1783,7 @@ export function createLocalServices(options: {
   };
   // 动态工作流的用户选择（docs/dynamic-workflow/launch.md「The user's choice」）：本机设置文件是唯一来源，
   // 每次使用时读取。desktop-attached remote Host 读不到桌面的设置，选择由 desktop 推送
-  // （zcodeAgentService.syncDynamicWorkflowUserMode），这里不注入。读取失败按「跟随」处理。
+  // （raspberrycodeAgentService.syncDynamicWorkflowUserMode），这里不注入。读取失败按「跟随」处理。
   const resolveDynamicWorkflowUserMode = isDesktopAttachedRemote
     ? undefined
     : async () => (await settingService.get()).dynamicWorkflowMode;
@@ -1866,7 +1870,7 @@ export function createLocalServices(options: {
     hostId: options?.projectStorageHostId ?? "local",
     workspaceIdentity: undefined,
   });
-  const zcodeAgentService = createZCodeAgentService({
+  const raspberrycodeAgentService = createRaspberryCodeAgentService({
     prepareProjectExecution,
     prepareSessionCreation: async (target) =>
       (await taskIndexRepo.getProjectRepository()).reserveCreatedTask({
@@ -1885,18 +1889,18 @@ export function createLocalServices(options: {
       codingPlanSubscriptionService.getDynamicWorkflowClientConfig(),
     ...(resolveDynamicWorkflowUserMode ? { resolveDynamicWorkflowUserMode } : {}),
     forwardDynamicWorkflowUserMode: options?.forwardDynamicWorkflowUserMode,
-    commandResolver: options?.zcodeAgentCommandResolver,
-    presentationSurface: resolveZCodeAgentPresentationSurface({
+    commandResolver: options?.raspberrycodeAgentCommandResolver,
+    presentationSurface: resolveRaspberryCodeAgentPresentationSurface({
       runtimeSurface: options?.agentTelemetry?.runtimeSurface,
       serviceAuthorityMode: options?.serviceAuthorityMode,
       desktopContextPromptEnabled,
     }),
     onAutomationManualRunRequested: options?.onAutomationManualRunRequested,
     // createLocalServices 虽然暴露了 reporter 注入点，旧装配却没有继续传给
-    // ZCodeAgentProcessManager，导致 host 永远不向 main 上报 Agent spawn/exit，进程监控器
+    // RaspberryCodeAgentProcessManager，导致 host 永远不向 main 上报 Agent spawn/exit，进程监控器
     // 因而看不到实际运行的 Agent，也无法验证只读到可写升级是否复用同一进程。
     processLifecycleReporter: options?.processLifecycleReporter,
-    spawnFallbackCwd: options?.zcodeAgentSpawnFallbackCwd,
+    spawnFallbackCwd: options?.raspberrycodeAgentSpawnFallbackCwd,
     // browser-use：host→main 执行桥透传给 agent service 的 onRequest browserExecute 路由。
     browserControlExecutor: options?.browserControlExecutor,
     // 机器人凭据只归属于授权 Host；远端独立服务不能借用本机配置扩大读取范围。
@@ -1946,13 +1950,13 @@ export function createLocalServices(options: {
       return bots.validateTopicResource({ ...request, signal });
     },
     // host 是身份权威边界：provenance/origin 必须在这里再校验一次，不能只依赖 agent
-    // adapter 的 fetch wrapper。判定实现与 CLI 侧共用 @zcode/shared 的同一份，避免分叉。
-    // origin 解析复用 resolveCurrentZCodeEndpointOrigin——与闲时任务同口径（含 settings
+    // adapter 的 fetch wrapper。判定实现与 CLI 侧共用 @raspberrycode/shared 的同一份，避免分叉。
+    // origin 解析复用 resolveCurrentRaspberryCodeEndpointOrigin——与闲时任务同口径（含 settings
     // 覆盖），否则会出现"闲时任务能连、官方 MCP 连不上"。
     // dev 开关必须同样传入，否则本地自测会被 host 单方面拒绝。
     officialMcpTrustedOrigins: createOfficialMcpTrustedOriginRegistry({
       devTrustedOriginsRaw: process.env[OFFICIAL_MCP_DEV_TRUSTED_ORIGINS_ENV],
-      resolveZCodeApiOrigin: resolveCurrentZCodeEndpointOrigin,
+      resolveRaspberryCodeApiOrigin: resolveCurrentRaspberryCodeEndpointOrigin,
     }),
     cuaOperationStateReporter: shouldEnableCuaOperationStateReporter({
       serviceAuthorityMode: options?.serviceAuthorityMode,
@@ -1988,12 +1992,12 @@ export function createLocalServices(options: {
           process.platform === "win32" ? getStableCuaPipeName() : resolveBrokerSocketPath();
         cuaProductHelperEnv = {
           [BROKER_SOCKET_ENV]: brokerSocket,
-          [ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY]: randomBytes(16).toString("hex"),
+          [RASPBERRYCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY]: randomBytes(16).toString("hex"),
         };
         if (process.platform === "win32") {
           const recipe = await resolveStableCuaWinRecipe();
           if (recipe) {
-            cuaProductHelperEnv["ZCODE_CUA_WIN_HELPER_RECIPE"] = JSON.stringify({
+            cuaProductHelperEnv["RASPBERRYCODE_CUA_WIN_HELPER_RECIPE"] = JSON.stringify({
               ...recipe,
               hostPid: process.pid,
             });
@@ -2005,7 +2009,7 @@ export function createLocalServices(options: {
           }
         }
       }
-      const telemetryEnv = getCapturedZCodeAgentTelemetryEnv();
+      const telemetryEnv = getCapturedRaspberryCodeAgentTelemetryEnv();
       const telemetryConfigured = Boolean(
         telemetryEnv.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT || telemetryEnv.OTEL_EXPORTER_OTLP_ENDPOINT,
       );
@@ -2026,9 +2030,9 @@ export function createLocalServices(options: {
         }),
         // 把 host 解析出的权威 origin（含 settings 覆盖）下发给 agent，否则 agent 侧只按
         // env 推导，test env + 自定义端点时两侧信任判定的输入分叉、官方 MCP 整体 fail closed。
-        ...buildAgentEndpointOriginEnv(await resolveCurrentZCodeEndpointOrigin()),
-        // broker 凭据（socket/token）注入 agent spawn env，让内置 zcode-cua plugin 的
-        // computer-use MCP server 经 __zcode-plugin-host 恢复 token 后连上 broker。
+        ...buildAgentEndpointOriginEnv(await resolveCurrentRaspberryCodeEndpointOrigin()),
+        // broker 凭据（socket/token）注入 agent spawn env，让内置 raspberrycode-cua plugin 的
+        // computer-use MCP server 经 __raspberrycode-plugin-host 恢复 token 后连上 broker。
         ...cuaProductHelperEnv,
         ...buildAgentTelemetrySpawnEnv({
           deviceMid: telemetryDeviceMid,
@@ -2039,7 +2043,7 @@ export function createLocalServices(options: {
         ...createNodeProviderRuntimePathEnv({
           // Built-in Active 路径按当前 Endpoint 隔离，不能通过同步的固定路径
           // getter 读取；Agent spawn 必须等待本轮 Endpoint Source 完成解析和物化。
-          zcodeBuiltinFilePath: await providerConfigRuntime.resolveZCodeBuiltinActiveFilePath(),
+          raspberrycodeBuiltinFilePath: await providerConfigRuntime.resolveRaspberryCodeBuiltinActiveFilePath(),
           personalFilePath: join(resolveAppConfigDir(), PERSONAL_PROVIDER_CONFIG_FILE_NAME),
         }),
       };
@@ -2054,7 +2058,7 @@ export function createLocalServices(options: {
           resolveSessionRuntimePreferences: async (scope) => {
             // 预算已统一，不能把可选远端配置作为本地/手机 shared-host 建会话的前置条件。
             const settings = await settingService.get();
-            const modelContextBudgetStrategy = DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY;
+            const modelContextBudgetStrategy = DEFAULT_RASPBERRYCODE_MODEL_CONTEXT_BUDGET_STRATEGY;
             return {
               askUserQuestionAutoResolutionEnabled:
                 settings.askUserQuestionAutoResolutionEnabled !== false,
@@ -2071,16 +2075,16 @@ export function createLocalServices(options: {
           },
         }),
   });
-  providerConnectivityAgentService = zcodeAgentService;
+  providerConnectivityAgentService = raspberrycodeAgentService;
   // Helper health probe 短暂超时不应在 Computer Use turn 中途回收 Agent。resolver 会把 restart
   // 推迟到下一个 request/turn 边界；若 broker 确实已失效，当前 turn 会自然失败并由下一次请求恢复。
-  hasActiveTurnRef = () => zcodeAgentService.hasActiveCuaOperationTurn();
-  // desktop-continuous UI 直接订阅 zcodeSessionService，绕开 RaspberryCode task adapter 的
+  hasActiveTurnRef = () => raspberrycodeAgentService.hasActiveCuaOperationTurn();
+  // desktop-continuous UI 直接订阅 raspberrycodeSessionService，绕开 RaspberryCode task adapter 的
   // mapServiceEvent 路径，导致 task_complete 永远不会写回 sqlite，侧边栏 spinner 不停。
   // 在 services 层装配一个共享的 taskIndexRepo + syncer，session 任意入口都会唤醒
   // shadow 订阅，把 runtime 终态收敛进 sqlite。
-  const zcodeTaskIndexSyncer = createZCodeTaskIndexSyncer({
-    agentService: zcodeAgentService,
+  const raspberrycodeTaskIndexSyncer = createRaspberryCodeTaskIndexSyncer({
+    agentService: raspberrycodeAgentService,
     taskIndexRepo,
   });
   // 自动归档只由这里的定时扫描触发（启动首轮 + 每小时 + 设置变更补扫）；readTree 与任务点击
@@ -2092,7 +2096,7 @@ export function createLocalServices(options: {
       const days = Math.max(1, Math.floor(settings.taskAutoArchiveOlderThanDays ?? 30));
       return {
         cutoff: Date.now() - days * 86_400_000,
-        activeTasks: zcodeTaskIndexSyncer.activeTaskRefs(),
+        activeTasks: raspberrycodeTaskIndexSyncer.activeTaskRefs(),
       };
     },
     repository: () => taskIndexRepo.getProjectRepository(),
@@ -2115,9 +2119,9 @@ export function createLocalServices(options: {
   });
   const cuaProductMcpServerResolver =
     options?.cuaProductMcpServerResolver ?? defaultCuaProductMcpServerResolver;
-  const zcodeSessionService = createZCodeSessionService({
-    agentService: zcodeAgentService,
-    taskIndexSyncer: zcodeTaskIndexSyncer,
+  const raspberrycodeSessionService = createRaspberryCodeSessionService({
+    agentService: raspberrycodeAgentService,
+    taskIndexSyncer: raspberrycodeTaskIndexSyncer,
     cuaProductMcpServerResolver,
   });
   const gitCommitMessageGenerator = new GitCommitMessageGenerator({
@@ -2130,7 +2134,7 @@ export function createLocalServices(options: {
     },
     textGenerator: {
       async generateText(params) {
-        return await zcodeAgentService.generateWorkspaceText({
+        return await raspberrycodeAgentService.generateWorkspaceText({
           workspacePath: params.workspacePath,
           ...(params.workspaceIdentity ? { workspaceIdentity: params.workspaceIdentity } : {}),
           selection: params.selection,
@@ -2145,10 +2149,10 @@ export function createLocalServices(options: {
     commitMessageGenerator: gitCommitMessageGenerator,
   });
   // task wrapper 由 RaspberryCode task service adapter 提供；核心 session 状态由 RaspberryCode agent server 维护。
-  const zcodeTaskService = createZCodeTaskServiceAdapter({
-    zcodeAgentService,
+  const raspberrycodeTaskService = createRaspberryCodeTaskServiceAdapter({
+    raspberrycodeAgentService,
     taskIndexRepo,
-    taskIndexSyncer: zcodeTaskIndexSyncer,
+    taskIndexSyncer: raspberrycodeTaskIndexSyncer,
     settingService,
     cuaProductMcpServerResolver,
   });
@@ -2208,9 +2212,9 @@ export function createLocalServices(options: {
     .register(IOnboardingRecordService, onboardingRecordService)
     .register(ICredentialService, credentialService)
     .register(IBroadcastService, broadcastService)
-    .register(IZCodeTaskService, zcodeTaskService)
-    .register(IZCodeAgentService, zcodeAgentService)
-    .register(IZCodeSessionService, zcodeSessionService)
+    .register(IRaspberryCodeTaskService, raspberrycodeTaskService)
+    .register(IRaspberryCodeAgentService, raspberrycodeAgentService)
+    .register(IRaspberryCodeSessionService, raspberrycodeSessionService)
     .register(IProjectService, projectService)
     .register(ITaskGroupService, taskGroupService)
     .register(IRemoteProjectService, remoteProjectService)
@@ -2224,7 +2228,7 @@ export function createLocalServices(options: {
         remoteProjectService,
         ownerHostId: options?.projectStorageHostId ?? "local",
         credentialService,
-        zcodeTaskService,
+        raspberrycodeTaskService,
         broadcastService,
         settingService,
         modelSelectionService: providerRuntime.modelSelection,
@@ -2244,7 +2248,7 @@ export function createLocalServices(options: {
       createUsageStatsService({
         apiClient,
         credentialService,
-        zcodeAgentService,
+        raspberrycodeAgentService,
       }),
     )
     .register(ICodingPlanSubscriptionService, codingPlanSubscriptionService)
@@ -2253,8 +2257,8 @@ export function createLocalServices(options: {
       createClientConfigService({
         apiClient,
         resolveRequestContext: async () => ({
-          endpointOrigin: await resolveCurrentZCodeEndpointOrigin(),
-          appVersion: ZCODE_VERSION,
+          endpointOrigin: await resolveCurrentRaspberryCodeEndpointOrigin(),
+          appVersion: RASPBERRYCODE_VERSION,
           platform: `${process.platform}-${process.arch}`,
         }),
       }),
@@ -2278,7 +2282,7 @@ export function createLocalServices(options: {
     .register(
       IPluginManagementService,
       createPluginManagementService({
-        zcodeAgentService,
+        raspberrycodeAgentService,
         reportTelemetryEvent: options?.reportPluginTelemetryEvent,
       }),
     )
@@ -2287,7 +2291,7 @@ export function createLocalServices(options: {
     .register(
       IHooksService,
       createHooksService({
-        grantWorkspaceHookTrust: (params) => zcodeAgentService.grantWorkspaceHookTrust(params),
+        grantWorkspaceHookTrust: (params) => raspberrycodeAgentService.grantWorkspaceHookTrust(params),
       }),
     )
     .register(IMemoryService, createMemoryService())
@@ -2405,11 +2409,14 @@ export function createTelemetryAuthorizationLoader(
     if (!userId) return null;
     try {
       const provider = (await credentialService.load("oauth:active_provider"))?.trim();
-      if (provider !== "zai" && provider !== "bigmodel") return null;
+      // 中立化（specs/provider-neutrality.md 规则 1）：不再按品牌名单（zai/bigmodel）门控，
+      // 改按凭据形状判定——只读 active provider 的 user_info 与 raspberrycodejwttoken（MaaS JWT），
+      // 拿不到或不匹配一律不附加。raspberrycodejwttoken 只由历史账号链写入，单机无登录下恒为空，属读兼容。
+      if (!provider) return null;
       const readUserId = async () =>
         readTelemetryOAuthUserId(await credentialService.load(`oauth:${provider}:user_info`));
       if ((await readUserId()) !== userId) return null;
-      const jwt = (await credentialService.load("zcodejwttoken"))?.trim();
+      const jwt = (await credentialService.load("raspberrycodejwttoken"))?.trim();
       // 退出/切账号可能发生在异步读取期间；禁止将旧身份的 token 附到其他账号事件上。
       if (
         (await credentialService.load("oauth:active_provider"))?.trim() !== provider ||
@@ -2450,9 +2457,9 @@ export function disposeServiceResources(services: ServiceCollection): void {
   // 这里集中调用各服务的本地 disposeAll 钩子，把“退出 app = 回收所有托管资源”落成机械动作。
   const disposableServices = [
     services.getOptional(ITerminalService),
-    services.getOptional(IZCodeTaskService),
-    services.getOptional(IZCodeAgentService),
-    services.getOptional(IZCodeSessionService),
+    services.getOptional(IRaspberryCodeTaskService),
+    services.getOptional(IRaspberryCodeAgentService),
+    services.getOptional(IRaspberryCodeSessionService),
     services.getOptional(IBotsService),
     services.getOptional(IFileWatcherService),
     services.getOptional(ISubagentsService),
@@ -2486,12 +2493,12 @@ export async function disposeServiceResourcesAndWait(services: ServiceCollection
     services.getOptional(IGenUiService) as (IGenUiService & { dispose?(): void }) | undefined
   )?.dispose?.();
   // app 关闭时 host 需要等 agent 进程树完成 graceful + force 清理。
-  // 旧的同步 dispose 会在 host 退出时丢掉强杀 timer，导致 zcode-cli/app-server 变成孤儿进程。
+  // 旧的同步 dispose 会在 host 退出时丢掉强杀 timer，导致 raspberrycode-cli/app-server 变成孤儿进程。
   const disposableServices = [
     services.getOptional(ITerminalService),
-    services.getOptional(IZCodeTaskService),
-    services.getOptional(IZCodeAgentService),
-    services.getOptional(IZCodeSessionService),
+    services.getOptional(IRaspberryCodeTaskService),
+    services.getOptional(IRaspberryCodeAgentService),
+    services.getOptional(IRaspberryCodeSessionService),
     services.getOptional(IBotsService),
     services.getOptional(IFileWatcherService),
     services.getOptional(ISubagentsService),
@@ -2555,7 +2562,7 @@ export async function createServerHostServices(options: {
     Parameters<typeof createLocalServices>[0]
   >["topicResourceRelayChannel"];
   sourceServerId: string;
-  zcodeBuiltinProviderConfigFilePath: string;
+  raspberrycodeBuiltinProviderConfigFilePath: string;
   providerProvisioningTargetEnabled?: boolean;
 }) {
   const projectStorageHostId = remoteHostIdFromWorkspaceIdentity(
@@ -2580,7 +2587,7 @@ export async function createServerHostServices(options: {
   });
   const migrationFailedPathCount = await workspaceAliasRepo.getFailedPathCount();
   const services = createLocalServices({
-    zcodeBuiltinProviderConfigFilePath: options.zcodeBuiltinProviderConfigFilePath,
+    raspberrycodeBuiltinProviderConfigFilePath: options.raspberrycodeBuiltinProviderConfigFilePath,
     providerProvisioningTargetEnabled: options.providerProvisioningTargetEnabled,
     serviceAuthorityMode: "standalone-server",
     topicResourceRelayChannel: options.topicResourceRelayChannel,
@@ -2590,4 +2597,4 @@ export async function createServerHostServices(options: {
   return { services, workspaceIdentityMapper, migrationFailedPathCount };
 }
 
-export { localRuntimeNetworkCapture } from "./zcode-agent/localRuntimeNetworkCapture.js";
+export { localRuntimeNetworkCapture } from "./raspberrycode-agent/localRuntimeNetworkCapture.js";

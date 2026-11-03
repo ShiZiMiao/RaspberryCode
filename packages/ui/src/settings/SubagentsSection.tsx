@@ -3,9 +3,9 @@ import { SettingsUserScopeProvider } from "@/settings/SettingsMachine.js";
 /* eslint-disable max-lines -- 子智能体管理页集中维护作用域列表、表单和启用状态，避免状态分散 */
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Bot, Check, Plus, Trash2 } from "lucide-react";
-import { completeNewModelSelection } from "@zcode/provider";
+import { completeNewModelSelection } from "@raspberrycode/provider";
 import {
-  ZCODE_AGENT_PROVIDER,
+  RASPBERRYCODE_AGENT_PROVIDER,
   type AgentColor,
   type AgentsCapability,
   type AgentsListResult,
@@ -13,13 +13,13 @@ import {
   type BuiltInSubagentName,
   type ModelSelection,
   type SubAgentConfig,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import {
   TID_SUBAGENT_BUILT_IN_MODEL_TRIGGER,
   TID_SUBAGENT_ROW,
   testId,
-} from "@zcode/shared/test-ids";
-import type { ModelSelectionView } from "@zcode/services";
+} from "@raspberrycode/shared/test-ids";
+import type { ModelSelectionView } from "@raspberrycode/services";
 import { Button } from "@/components/ui/button.js";
 import { Input } from "@/components/ui/input.js";
 import {
@@ -46,14 +46,14 @@ import { useServices } from "@/hooks/useServices.js";
 import { useModelSelectionServiceView } from "@/hooks/useModelSelectionView.js";
 import { useConfigWorkspaceServicesResolution as useWorkspaceServicesResolution } from "@/workspace-config-catalog/index.js";
 import { useBaseWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import {
   buildRegistryModelSelectGroups,
   resolveModelDisplayName,
 } from "@/lib/modelSelectionGroups.js";
 import { resolveModelThoughtOption } from "@/lib/modelThoughtOption.js";
-import { parseModelPickerValue } from "@/lib/zcodeSessionProjection.js";
-import { encodeCustomModelValue } from "@/lib/zcodeCustomModelValue.js";
+import { parseModelPickerValue } from "@/lib/raspberrycodeSessionProjection.js";
+import { encodeCustomModelValue } from "@/lib/raspberrycodeCustomModelValue.js";
 import { SUBAGENT_COLORS, SUBAGENT_COLOR_CLASS } from "@/lib/subagentColors.js";
 import { SettingsResourceGroupHeader } from "@/settings/SettingsResourceGroupHeader.js";
 import { SettingsResourceHeaderActions } from "@/settings/SettingsResourceHeaderActions.js";
@@ -473,7 +473,7 @@ function AgentListRow({
   onEdit: (agent: AgentSummary) => void;
   onToggle: (agent: AgentSummary, enabled: boolean) => void;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   const editable = isEditableUserAgent(agent);
   const showEnabledToggle = supportsEnabledToggle(agent);
   const rowEditable = editable && !isOperating;
@@ -607,7 +607,7 @@ function SubagentModelOverrideControl({
     config: { model?: string; thoughtLevel?: string },
   ) => Promise<void>;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   const [pending, setPending] = useState(false);
   const [config, setConfig] = useState<{
     model?: string;
@@ -814,7 +814,7 @@ function SubagentForm({
   workspaceTabs: ConfigWorkspaceTarget[];
   onScopeKeyChange: (scopeKey: string) => void;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   const initialFormStateKey = createSubagentFormInitialStateKey(initial);
   const initialFormState = useMemo(
     () => createSubagentFormInitialState(initial),
@@ -1265,7 +1265,7 @@ export function SubagentsSection({
   workspaceIdentity,
   settingsSourceServerId,
 }: SubagentsSectionProps) {
-  const { intl, locale } = useZCodeIntl();
+  const { intl, locale } = useRaspberryCodeIntl();
   const confirmDialog = useConfirmDialog();
   const plugins = usePluginManagementStore((state) => state.plugins);
   const availablePlugins = usePluginManagementStore((state) => state.availablePlugins);
@@ -1346,7 +1346,7 @@ export function SubagentsSection({
   const pluginInventoryWorkspacePath = targetWorkspacePath;
   const chatModelSelectGroups = useMemo(() => {
     if (!modelSelectionView) return [];
-    return buildRegistryModelSelectGroups(ZCODE_AGENT_PROVIDER, modelSelectionView, {
+    return buildRegistryModelSelectGroups(RASPBERRYCODE_AGENT_PROVIDER, modelSelectionView, {
       startPlanBadgeLabel: intl.formatMessage({
         id: "settings.modelProvider.connectionMode.startPlanBadge",
       }),
@@ -1371,7 +1371,7 @@ export function SubagentsSection({
         const result = await subagentsService.list({
           workspacePath: targetWorkspacePath ?? "",
           workspaceIdentity: targetWorkspaceIdentity,
-          provider: ZCODE_AGENT_PROVIDER,
+          provider: RASPBERRYCODE_AGENT_PROVIDER,
           mode: activeScope === "user" ? "settingsUserOnly" : "allRuntimeScopes",
         });
         if (requestId !== latestRequestIdRef.current) {
@@ -1470,7 +1470,7 @@ export function SubagentsSection({
             agentId: editingAgent.id,
             config,
             oldFilePath: editingAgent.path,
-            provider: ZCODE_AGENT_PROVIDER,
+            provider: RASPBERRYCODE_AGENT_PROVIDER,
             scope: editingAgent.scope === "workspace" ? "workspace" : "user",
             workspacePath: editingAgent.projectPath ?? targetWorkspacePath ?? undefined,
             workspaceIdentity: targetWorkspaceIdentity,
@@ -1478,7 +1478,7 @@ export function SubagentsSection({
         } else {
           await subagentsService.createAgent({
             config,
-            provider: ZCODE_AGENT_PROVIDER,
+            provider: RASPBERRYCODE_AGENT_PROVIDER,
             scope: activeScope,
             workspacePath: targetWorkspacePath ?? undefined,
             workspaceIdentity: targetWorkspaceIdentity,

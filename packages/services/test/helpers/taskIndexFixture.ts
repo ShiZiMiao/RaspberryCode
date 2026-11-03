@@ -1,18 +1,18 @@
-import type { ZCodeTaskMeta } from "@zcode/shared";
+import type { RaspberryCodeTaskMeta } from "@raspberrycode/shared";
 import type { TaskIndexRepo } from "#src/session/taskIndexRepo.js";
 
 /** 测试分别设置 CLI 事实和 Host 组织态，不为夹具保留生产环境的整行写入入口。 */
 export async function seedTaskIndex(
   repo: TaskIndexRepo,
   input: {
-    meta: ZCodeTaskMeta;
+    meta: RaspberryCodeTaskMeta;
     pinned?: boolean;
     archived?: boolean;
     deleted?: boolean;
     titleOverridden?: boolean;
     searchableText?: string;
   },
-): Promise<ZCodeTaskMeta> {
+): Promise<RaspberryCodeTaskMeta> {
   const { meta } = input;
   await repo.applyCliFacts({
     meta,

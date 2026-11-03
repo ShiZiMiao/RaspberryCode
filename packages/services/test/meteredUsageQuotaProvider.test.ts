@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { BUILTIN_MODEL_PROVIDER_IDS, type ApiClient } from "@zcode/shared";
+import { BUILTIN_MODEL_PROVIDER_IDS, type ApiClient } from "@raspberrycode/shared";
 import { MeteredUsageQuotaProvider } from "../src/usage-stats/providers/meteredUsageQuotaProvider.js";
 
 const TEST_BIGMODEL_PROVIDER_ID = "test-bigmodel-api-provider";

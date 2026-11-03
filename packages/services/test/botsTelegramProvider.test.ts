@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { BotConfig } from "@zcode/shared";
+import type { BotConfig } from "@raspberrycode/shared";
 import { createTelegramBotProvider } from "../src/bots/providers/telegramProvider.js";
 
 const bot: BotConfig = {
@@ -230,7 +230,7 @@ describe("telegram bot provider", () => {
     const fetchMock = vi.fn(
       async () =>
         new Response(
-          JSON.stringify({ ok: true, result: { first_name: "RaspberryCode Bot", username: "zcode_bot" } }),
+          JSON.stringify({ ok: true, result: { first_name: "RaspberryCode Bot", username: "raspberrycode_bot" } }),
         ),
     );
     vi.stubGlobal("fetch", fetchMock);

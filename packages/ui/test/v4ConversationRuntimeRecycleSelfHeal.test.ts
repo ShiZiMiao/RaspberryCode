@@ -15,16 +15,16 @@
 //   2. connect() 的 catch 除 initialFrameStagingOverflow 外一律定格 status="error"，
 //      没有 sessionsIndexStore 那样的有界退避。
 //
-// 自愈成立的前提（zcodeAgentService.ts:5581）：subscribeConversationV4 走
+// 自愈成立的前提（raspberrycodeAgentService.ts:5581）：subscribeConversationV4 走
 // getReadOnlyClient(params) 默认 start-if-needed，重订阅本身会把 agent 拉起来——这与侧栏
 // subscribeSessionsIndexV4 显式用 existing-only + dormant 的策略差异是故意设计的。
-import { Emitter } from "@zcode/rpc";
-import type { CommandEnvelope, ConversationTopicWireFrame } from "@zcode/shared/zcode-protocol-v4";
+import { Emitter } from "@raspberrycode/rpc";
+import type { CommandEnvelope, ConversationTopicWireFrame } from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import {
-  createZCodeAgentConnectionScope,
-  readTrustedZCodeAgentV4Connection,
-  type IZCodeAgentService,
-} from "@zcode/services";
+  createRaspberryCodeAgentConnectionScope,
+  readTrustedRaspberryCodeAgentV4Connection,
+  type IRaspberryCodeAgentService,
+} from "@raspberrycode/services";
 import { describe, expect, it, vi } from "vitest";
 import { createAgentConversationTransport } from "@/v4/agentConversationTransport.js";
 import { ConversationProjectionStore } from "@/v4/conversationProjectionStore.js";
@@ -55,7 +55,7 @@ function lifecycleEvent(state: "available" | "unavailable", generation: number):
   };
 }
 
-/** workspace-dispose 打断在途 subscribe 时，ZCodeProtocolClient.rejectAll 抛出的真实文案。 */
+/** workspace-dispose 打断在途 subscribe 时，RaspberryCodeProtocolClient.rejectAll 抛出的真实文案。 */
 const TRANSPORT_CLOSED = "RaspberryCode agent transport closed";
 
 /** 与实现的 RUNTIME_RECYCLE_RETRY_DELAYS_MS 长度一致（250/1000/3000ms）。 */
@@ -67,7 +67,7 @@ function setupBase(options: { withLifecycle?: boolean } = {}) {
   const runtimeLifecycle = new Emitter<LifecycleEvent>();
   const nextSerialByConnection = new Map<string, number>();
   const nextId = (params: unknown) => {
-    const connection = readTrustedZCodeAgentV4Connection(params);
+    const connection = readTrustedRaspberryCodeAgentV4Connection(params);
     if (!connection) throw new Error("missing trusted connection");
     const serial = (nextSerialByConnection.get(connection.connectionId) ?? 0) + 1;
     nextSerialByConnection.set(connection.connectionId, serial);
@@ -116,7 +116,7 @@ function setupBase(options: { withLifecycle?: boolean } = {}) {
       : {}),
   };
   return {
-    base: mocks as unknown as IZCodeAgentService,
+    base: mocks as unknown as IRaspberryCodeAgentService,
     mocks,
     runtimeLifecycle,
     runtimeRestarts,
@@ -125,11 +125,11 @@ function setupBase(options: { withLifecycle?: boolean } = {}) {
 }
 
 function createStore(
-  base: IZCodeAgentService,
+  base: IRaspberryCodeAgentService,
   connectionId: string,
   clientMode: "desktop-continuous" | "web-remote-replayable" = "desktop-continuous",
 ) {
-  const scope = createZCodeAgentConnectionScope(base, {
+  const scope = createRaspberryCodeAgentConnectionScope(base, {
     connectionId,
     clientMode,
   });
@@ -299,7 +299,7 @@ describe("conversation projection 在 CUA Helper 回收 agent runtime 后自愈"
   // 退订旧 proxy 上的订阅，store 却停在 live + 旧 subscriptionId，帧流静默中断且不自愈。
   it("lifecycle 模式下仍接收 proxy 换代（transportReplaced），携原水位重订阅", async () => {
     const { base, mocks } = setupBase({ withLifecycle: true });
-    const scope = createZCodeAgentConnectionScope(base, {
+    const scope = createRaspberryCodeAgentConnectionScope(base, {
       connectionId: "conn-proxy-1",
       clientMode: "desktop-continuous",
     });
@@ -315,7 +315,7 @@ describe("conversation projection 在 CUA Helper 回收 agent runtime 后自愈"
     expect(mocks.subscribeConversationV4).toHaveBeenCalledTimes(1);
 
     // activateRemoteService() → replace()：新 proxy 接管，旧订阅已被退订。
-    const nextScope = createZCodeAgentConnectionScope(base, {
+    const nextScope = createRaspberryCodeAgentConnectionScope(base, {
       connectionId: "conn-proxy-2",
       clientMode: "desktop-continuous",
     });

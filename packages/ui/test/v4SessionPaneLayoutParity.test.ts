@@ -6,9 +6,9 @@ import type {
   PendingInteraction,
   SubagentRow,
   UserInputRow,
-} from "@zcode/shared/zcode-protocol-v4";
+} from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import { SessionPane } from "@/v4/SessionPane.js";
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+import { RaspberryCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import type {
   OpenScopedSubagentSideTabRequest,
   OpenScopedWorkflowRunSideTabRequest,
@@ -69,12 +69,12 @@ vi.mock("@/v4/V4ConversationContext.js", () => ({
 }));
 
 vi.mock("@/store/StoreProvider.js", () => ({
-  useZCodeStoreWithDefault: (_selector: unknown, fallback: unknown) => fallback,
+  useRaspberryCodeStoreWithDefault: (_selector: unknown, fallback: unknown) => fallback,
 }));
 
 vi.mock("@/hooks/useSettingService.js", () => ({
   useSettings: () => ({
-    settings: { zcodeInteractionBehavior: "queue" },
+    settings: { raspberrycodeInteractionBehavior: "queue" },
     loading: false,
     error: null,
     update: vi.fn(async () => {}),
@@ -86,8 +86,8 @@ vi.mock("@/hooks/useServices.js", () => ({
   useComposerClientNamespace: () => "desktop",
   useOptionalServices: () => null,
   useServices: () => ({
-    zcodeSessionService: {},
-    zcodeTaskService: {
+    raspberrycodeSessionService: {},
+    raspberrycodeTaskService: {
       restartWorkspaceProcess: vi.fn(),
     },
   }),
@@ -344,7 +344,7 @@ function renderPane({
 
   return renderToStaticMarkup(
     createElement(
-      ZCodeIntlProvider,
+      RaspberryCodeIntlProvider,
       { initialLocale: "zh-CN" },
       createElement(SessionPane, {
         paneId: "workspace-main",

@@ -1,8 +1,8 @@
 /* oxlint-disable eslint(max-lines) -- 平台事件共用同一生命周期。 */
 import { useEffect, useRef } from "react";
-import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
+import { useRaspberryCodeSessionStore } from "@/store/raspberrycodeSessionStore.js";
 import type { CreateTaskOptions } from "@/app-shell/types.js";
-import type { IPlatformService } from "@zcode/shared";
+import type { IPlatformService } from "@raspberrycode/shared";
 import { readComposerWorkspaceScope } from "@/v4/composer/composerDraftStore.js";
 import { useComposerClientNamespace } from "@/hooks/useServices.js";
 import { isWorkspaceTab, type TabStoreState, type WindowTabState } from "@/store/tabStore.js";
@@ -40,7 +40,7 @@ export function useRootPlatformEffects({
 }: {
   initialWorkspaceAbsPath?: string;
   initialWorkspaceIdentity?: string;
-  initialWorkspacePurpose?: import("@zcode/shared").WorkspacePurpose;
+  initialWorkspacePurpose?: import("@raspberrycode/shared").WorkspacePurpose;
   initialTaskId?: string;
   initialTaskDraft?: CreateTaskOptions;
   canBootstrapInitialWorkspace?: boolean;
@@ -48,7 +48,7 @@ export function useRootPlatformEffects({
     workspacePath: string,
     options?: {
       workspaceIdentity?: string;
-      workspacePurpose?: import("@zcode/shared").WorkspacePurpose;
+      workspacePurpose?: import("@raspberrycode/shared").WorkspacePurpose;
     },
   ) => void;
   setIsBootstrappingInitialWorkspace: (value: boolean) => void;
@@ -65,12 +65,12 @@ export function useRootPlatformEffects({
   setWorkspaceActionError: (message: string | null) => void;
   allowOpenWorkspace?: boolean;
   isDesktop?: boolean;
-  locale: ReturnType<typeof import("@/i18n/IntlProvider.js").useZCodeIntl>["locale"];
+  locale: ReturnType<typeof import("@/i18n/IntlProvider.js").useRaspberryCodeIntl>["locale"];
   tabs: WindowTabState[];
   activeWorkspacePath?: string | null;
   activeWorkspaceIdentity?: string | null;
   hasCompletedFullTabRestore?: boolean;
-  intl: ReturnType<typeof import("@/i18n/IntlProvider.js").useZCodeIntl>["intl"];
+  intl: ReturnType<typeof import("@/i18n/IntlProvider.js").useRaspberryCodeIntl>["intl"];
 }) {
   const didBootstrapInitialWorkspaceRef = useRef(false);
   const composerClientNamespace = useComposerClientNamespace();
@@ -101,7 +101,7 @@ export function useRootPlatformEffects({
           : undefined,
       );
       if (initialTaskId) {
-        useZCodeSessionStore
+        useRaspberryCodeSessionStore
           .getState()
           .setActiveTaskId(initialWorkspaceAbsPath, initialTaskId, initialWorkspaceIdentity);
       } else if (draftIntent || !isRendererReloadNavigation()) {
@@ -169,7 +169,7 @@ export function useRootPlatformEffects({
     const disposeNotificationClick = platform.onTaskNotificationClick((taskId: string) => {
       logger.info("[Root] onTaskNotificationClick:", taskId);
       // 遍历所有 workspace 找到 taskId 所属的 workspace，然后激活对应 tab 并切换任务
-      const workspaces = useZCodeSessionStore.getState().workspaces;
+      const workspaces = useRaspberryCodeSessionStore.getState().workspaces;
       for (const [workspacePath, workspaceState] of Object.entries(workspaces)) {
         const taskMeta = workspaceState.taskListCache?.find((task) => task.taskId === taskId);
         const hasTask = workspaceState.activeTaskId === taskId || Boolean(taskMeta);
@@ -182,7 +182,7 @@ export function useRootPlatformEffects({
             targetWorkspacePath,
             targetWorkspaceIdentity ? { workspaceIdentity: targetWorkspaceIdentity } : undefined,
           );
-          useZCodeSessionStore
+          useRaspberryCodeSessionStore
             .getState()
             .setActiveTaskId(targetWorkspacePath, taskId, targetWorkspaceIdentity);
           return;
@@ -287,7 +287,7 @@ export function useRootPlatformEffects({
     const workspaceIdentity = activeTab?.workspaceIdentity;
     const syncActiveSession = (): void => {
       const nextSessionId = workspacePath
-        ? (useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
+        ? (useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
             .activeTaskId ?? null)
         : null;
       if (nextSessionId === lastSyncedSessionIdRef.current) return;
@@ -295,6 +295,6 @@ export function useRootPlatformEffects({
       platform.syncActiveTaskSession(nextSessionId);
     };
     syncActiveSession();
-    return useZCodeSessionStore.subscribe(syncActiveSession);
+    return useRaspberryCodeSessionStore.subscribe(syncActiveSession);
   }, [activeTab, activeTabId, isDesktop, platform]);
 }

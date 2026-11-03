@@ -1,10 +1,10 @@
 /* eslint-disable max-lines -- context 面板保留完整上下文计量展示（token 明细/缓存命中/压缩入口）。 */
 import { useCallback, useMemo, useState, type CSSProperties } from "react";
 import {
-  type ZCodeContextUsageBreakdownItem,
-  type ZCodeProvider,
-} from "@zcode/shared";
-import { TID_CHAT_CONTEXT_USAGE_TRIGGER } from "@zcode/shared/test-ids";
+  type RaspberryCodeContextUsageBreakdownItem,
+  type RaspberryCodeProvider,
+} from "@raspberrycode/shared";
+import { TID_CHAT_CONTEXT_USAGE_TRIGGER } from "@raspberrycode/shared/test-ids";
 import {
   Context,
   ContextContentBody,
@@ -14,10 +14,10 @@ import {
 import { cn } from "@/components/lib/utils.js";
 import { Progress } from "@/components/ui/progress.js";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { formatCompactTokenNumber } from "@/lib/tokenNumberFormat.js";
 
-type ContextUsageBreakdownSource = ZCodeContextUsageBreakdownItem["source"];
+type ContextUsageBreakdownSource = RaspberryCodeContextUsageBreakdownItem["source"];
 
 interface ContextUsageBreakdownSegment {
   chars: number;
@@ -121,7 +121,7 @@ const BREAKDOWN_SOURCE_ORDER: Record<ContextUsageBreakdownSource, number> = {
 };
 
 export function buildContextUsageBreakdownSegments(
-  breakdown: readonly ZCodeContextUsageBreakdownItem[] | undefined,
+  breakdown: readonly RaspberryCodeContextUsageBreakdownItem[] | undefined,
 ): ContextUsageBreakdownSegment[] {
   const charsBySource = new Map<ContextUsageBreakdownSource, number>();
   for (const item of breakdown ?? []) {
@@ -187,7 +187,7 @@ export function getRenderableTaskUsage<
   return taskUsage;
 }
 
-export function getContextCompressionCommand(_provider: ZCodeProvider): string {
+export function getContextCompressionCommand(_provider: RaspberryCodeProvider): string {
   return "/compact";
 }
 
@@ -210,10 +210,10 @@ export function ChatContextUsage({
     used: number;
     size: number;
     cache?: { hitRate: number | null };
-    breakdown?: ZCodeContextUsageBreakdownItem[];
+    breakdown?: RaspberryCodeContextUsageBreakdownItem[];
   } | null;
-  selectedProvider: ZCodeProvider;
-  intl: ReturnType<typeof useZCodeIntl>["intl"];
+  selectedProvider: RaspberryCodeProvider;
+  intl: ReturnType<typeof useRaspberryCodeIntl>["intl"];
   locale: string;
   onSendCompressionCommand?: (command: string) => void;
   compressionDisabled?: boolean;

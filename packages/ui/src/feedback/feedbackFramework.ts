@@ -1,11 +1,11 @@
 import {
   DEFAULT_FEEDBACK_TICKET_FRAMEWORK,
-  type ZCodeProvider,
+  type RaspberryCodeProvider,
   type FeedbackTicketFramework,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 
 export function inferFeedbackFrameworkFromAgentProvider(
-  _provider: ZCodeProvider | null | undefined,
+  _provider: RaspberryCodeProvider | null | undefined,
 ): FeedbackTicketFramework {
   return DEFAULT_FEEDBACK_TICKET_FRAMEWORK;
 }

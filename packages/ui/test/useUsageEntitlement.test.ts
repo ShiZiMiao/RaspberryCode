@@ -1,7 +1,7 @@
 import { MeteredUsageQuotaProvider } from "../../services/src/usage-stats/providers/meteredUsageQuotaProvider.js";
 import type { ReactElement } from "react";
 import type { Root } from "react-dom/client";
-import type { UsageEntitlementSnapshot, ZCodeAccountAccess } from "@zcode/shared";
+import type { UsageEntitlementSnapshot, RaspberryCodeAccountAccess } from "@raspberrycode/shared";
 import { readCachedUsageEntitlementSnapshot } from "@/lib/usageEntitlementCache.js";
 import {
   buildEntitlementFreshnessKey,
@@ -9,7 +9,7 @@ import {
   shouldDeferSharedEntitlementRefresh,
   readSharedEntitlementSnapshot,
 } from "@/lib/usageEntitlementRefreshPolicy.js";
-import type { IUsageStatsService, IServiceAccessor } from "@zcode/services";
+import type { IUsageStatsService, IServiceAccessor } from "@raspberrycode/services";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -28,7 +28,7 @@ const auth = vi.hoisted(() => ({
   state: undefined as undefined | { user: { id: string } | null; authSessionSeq: number },
 }));
 vi.mock("@/store/StoreProvider.js", () => ({
-  useZCodeStoreWithDefault: (
+  useRaspberryCodeStoreWithDefault: (
     selector: (state: NonNullable<typeof auth.state>) => unknown,
     fallback: unknown,
   ) => (auth.state ? selector(auth.state) : fallback),
@@ -245,12 +245,12 @@ describe("useUsageEntitlement team context refresh", () => {
       usageStatsService,
     } as unknown as IServiceAccessor;
 
-    const accountAccessByProject = new Map<string, ZCodeAccountAccess>();
-    function getTeamAccess(organizationId: string, projectId: string): ZCodeAccountAccess {
+    const accountAccessByProject = new Map<string, RaspberryCodeAccountAccess>();
+    function getTeamAccess(organizationId: string, projectId: string): RaspberryCodeAccountAccess {
       const key = `${organizationId}:${projectId}`;
       const existing = accountAccessByProject.get(key);
       if (existing) return existing;
-      const access: ZCodeAccountAccess = {
+      const access: RaspberryCodeAccountAccess = {
         type: "zhipu-account",
         family: "bigmodel",
         planKind: "team-coding-plan",

@@ -130,12 +130,12 @@ export function projectAssistantCodeComments(
     } else {
       const prefixStart = findAssistantDirectivePrefixStart(
         content,
-        [CODE_COMMENT_DIRECTIVE_NAME, "zcode-file-citation"],
+        [CODE_COMMENT_DIRECTIVE_NAME, "raspberrycode-file-citation"],
         protectedRanges,
         {
-          minimumSingleColonPrefixLength: ":zcode".length,
-          singleColonDirectiveNames: ["zcode-file-citation"],
-          tripleColonDirectiveNames: ["zcode-file-citation"],
+          minimumSingleColonPrefixLength: ":raspberrycode".length,
+          singleColonDirectiveNames: ["raspberrycode-file-citation"],
+          tripleColonDirectiveNames: ["raspberrycode-file-citation"],
         },
       );
       if (prefixStart !== null) {

@@ -30,13 +30,13 @@ describe("desktop Linux deep link registration helpers", () => {
 
     const command = resolveLinuxDeepLinkCommand({
       env: { APPIMAGE: "/home/alice/Downloads/RaspberryCode-2.8.0-linux-x64.AppImage" },
-      executablePath: "/tmp/.mount_ZCode/zcode",
+      executablePath: "/tmp/.mount_RaspberryCode/raspberrycode",
     });
     const entry = createLinuxDeepLinkDesktopEntry(command);
 
     expect(command.executablePath).toBe("/home/alice/Downloads/RaspberryCode-2.8.0-linux-x64.AppImage");
     expect(entry).toContain('Exec="/home/alice/Downloads/RaspberryCode-2.8.0-linux-x64.AppImage" %U');
-    expect(entry).toContain("MimeType=x-scheme-handler/zcode;");
+    expect(entry).toContain("MimeType=x-scheme-handler/raspberrycode;");
   });
 
   it("keeps AppImage sandbox and GPU launch switches for protocol callbacks", async () => {
@@ -45,15 +45,15 @@ describe("desktop Linux deep link registration helpers", () => {
 
     const command = resolveLinuxDeepLinkCommand({
       env: { APPIMAGE: "/home/alice/Applications/RaspberryCode.AppImage" },
-      executablePath: "/tmp/.mount_ZCode/zcode",
+      executablePath: "/tmp/.mount_RaspberryCode/raspberrycode",
       argv: [
-        "/tmp/.mount_ZCode/zcode",
+        "/tmp/.mount_RaspberryCode/raspberrycode",
         "--no-sandbox",
         "--disable-gpu",
         "--disable-software-rasterizer",
         "--use-gl=swiftshader",
         "--remote-debugging-port=9229",
-        "zcode://oauth/callback?code=1&state=s",
+        "raspberrycode://oauth/callback?code=1&state=s",
         "/home/alice/project",
       ],
     });
@@ -79,13 +79,13 @@ describe("desktop Linux deep link registration helpers", () => {
 
     const command = resolveLinuxDeepLinkCommand({
       env: {},
-      executablePath: "/opt/RaspberryCode/zcode",
-      argv: ["/opt/RaspberryCode/zcode", "--no-sandbox", "--disable-gpu"],
+      executablePath: "/opt/RaspberryCode/raspberrycode",
+      argv: ["/opt/RaspberryCode/raspberrycode", "--no-sandbox", "--disable-gpu"],
     });
     const entry = createLinuxDeepLinkDesktopEntry(command);
 
-    expect(command).toEqual({ executablePath: "/opt/RaspberryCode/zcode", args: [] });
-    expect(entry).toContain('Exec="/opt/RaspberryCode/zcode" %U');
+    expect(command).toEqual({ executablePath: "/opt/RaspberryCode/raspberrycode", args: [] });
+    expect(entry).toContain('Exec="/opt/RaspberryCode/raspberrycode" %U');
   });
 
   it("escapes desktop Exec paths before writing user-level handlers", async () => {
@@ -104,14 +104,14 @@ describe("desktop Linux deep link registration helpers", () => {
       await import("../src/main/desktopLinuxDeepLinkRegistration.js");
 
     const entry = createLinuxDeepLinkDesktopEntry({
-      executablePath: "/opt/RaspberryCode Preview/zcode-preview",
+      executablePath: "/opt/RaspberryCode Preview/raspberrycode-preview",
       productName: "RaspberryCode Preview",
     });
 
     expect(entry).toContain("Name=RaspberryCode Preview");
     expect(entry).toContain("StartupWMClass=RaspberryCode Preview");
-    expect(entry).toContain('Exec="/opt/RaspberryCode Preview/zcode-preview" %U');
-    expect(entry).toContain("MimeType=x-scheme-handler/zcode;");
+    expect(entry).toContain('Exec="/opt/RaspberryCode Preview/raspberrycode-preview" %U');
+    expect(entry).toContain("MimeType=x-scheme-handler/raspberrycode;");
   });
 
   it("escapes AppImage callback switches before writing desktop Exec", async () => {
@@ -133,7 +133,7 @@ describe("desktop Linux deep link registration helpers", () => {
       await import("../src/main/desktopLinuxDeepLinkRegistration.js");
     const { installLinuxAppImageDesktopIcon, shouldInstallAppImageDesktopIcon } =
       await import("../src/main/desktopLinuxAppImageIcon.js");
-    const tempRoot = mkdtempSync(join(tmpdir(), "zcode-linux-icon-"));
+    const tempRoot = mkdtempSync(join(tmpdir(), "raspberrycode-linux-icon-"));
     const iconSourcePath = join(import.meta.dirname, "..", "build", "icons", "512x512.png");
     const homeDir = join(tempRoot, "home");
     const dataDir = resolveLinuxUserDataDir({ homeDir });
@@ -161,7 +161,7 @@ describe("desktop Linux deep link registration helpers", () => {
       });
 
       expect(result).toEqual({
-        iconFilePath: join(dataDir, "icons", "hicolor", "512x512", "apps", "zcode.png"),
+        iconFilePath: join(dataDir, "icons", "hicolor", "512x512", "apps", "raspberrycode.png"),
         installed: true,
         changed: true,
       });
@@ -196,7 +196,7 @@ describe("desktop Linux deep link registration helpers", () => {
   it("keeps desktop entry registration when optional AppImage icon install fails", async () => {
     const { registerLinuxDeepLinkProtocol } =
       await import("../src/main/desktopLinuxDeepLinkRegistration.js");
-    const tempRoot = mkdtempSync(join(tmpdir(), "zcode-linux-registration-"));
+    const tempRoot = mkdtempSync(join(tmpdir(), "raspberrycode-linux-registration-"));
     const homeDir = join(tempRoot, "home");
     const badIconSourcePath = join(tempRoot, "icon-source-directory");
     const warnings: unknown[][] = [];
@@ -205,7 +205,7 @@ describe("desktop Linux deep link registration helpers", () => {
     try {
       mkdirSync(badIconSourcePath, { recursive: true });
       registerLinuxDeepLinkProtocol({
-        executablePath: "/tmp/.mount_ZCode/zcode",
+        executablePath: "/tmp/.mount_RaspberryCode/raspberrycode",
         homeDir,
         iconSourcePath: badIconSourcePath,
         env: { APPIMAGE: "/home/alice/Applications/RaspberryCode.AppImage" },
@@ -221,7 +221,7 @@ describe("desktop Linux deep link registration helpers", () => {
         },
       });
 
-      const desktopFilePath = join(homeDir, ".local", "share", "applications", "zcode.desktop");
+      const desktopFilePath = join(homeDir, ".local", "share", "applications", "raspberrycode.desktop");
       expect(existsSync(desktopFilePath)).toBe(true);
       expect(readFileSync(desktopFilePath, "utf8")).toContain(
         'Exec="/home/alice/Applications/RaspberryCode.AppImage" %U',
@@ -236,7 +236,7 @@ describe("desktop Linux deep link registration helpers", () => {
         },
         {
           command: "xdg-mime",
-          args: ["default", "zcode.desktop", "x-scheme-handler/zcode"],
+          args: ["default", "raspberrycode.desktop", "x-scheme-handler/raspberrycode"],
         },
       ]);
     } finally {
@@ -266,19 +266,19 @@ describe("desktop Linux deep link registration helpers", () => {
   it("removes the stale owned user-level entry when a system-level entry exists", async () => {
     const { registerLinuxDeepLinkProtocol } =
       await import("../src/main/desktopLinuxDeepLinkRegistration.js");
-    const tempRoot = mkdtempSync(join(tmpdir(), "zcode-linux-system-entry-"));
+    const tempRoot = mkdtempSync(join(tmpdir(), "raspberrycode-linux-system-entry-"));
     const homeDir = join(tempRoot, "home");
     const systemApplicationsDir = join(tempRoot, "system", "applications");
-    const desktopFilePath = join(homeDir, ".local", "share", "applications", "zcode.desktop");
+    const desktopFilePath = join(homeDir, ".local", "share", "applications", "raspberrycode.desktop");
     const infos: unknown[][] = [];
     const commandCalls: CommandCall[] = [];
 
     try {
-      // 模拟 rpm/deb 安装产物：/usr/share/applications/zcode.desktop。
+      // 模拟 rpm/deb 安装产物：/usr/share/applications/raspberrycode.desktop。
       mkdirSync(systemApplicationsDir, { recursive: true });
       writeFileSync(
-        join(systemApplicationsDir, "zcode.desktop"),
-        "[Desktop Entry]\nName=RaspberryCode\nExec=/opt/RaspberryCode/zcode %U\n",
+        join(systemApplicationsDir, "raspberrycode.desktop"),
+        "[Desktop Entry]\nName=RaspberryCode\nExec=/opt/RaspberryCode/raspberrycode %U\n",
         "utf8",
       );
       // 模拟旧 AppImage 时代遗留的用户级条目（含归属标记 Comment 行）。
@@ -290,14 +290,14 @@ describe("desktop Linux deep link registration helpers", () => {
           "Name=RaspberryCode",
           "Comment=RaspberryCode Desktop App",
           'Exec="/home/alice/Downloads/RaspberryCode-2.8.0-linux-x64.AppImage" %U',
-          "MimeType=x-scheme-handler/zcode;",
+          "MimeType=x-scheme-handler/raspberrycode;",
           "",
         ].join("\n"),
         "utf8",
       );
 
       registerLinuxDeepLinkProtocol({
-        executablePath: "/opt/RaspberryCode/zcode",
+        executablePath: "/opt/RaspberryCode/raspberrycode",
         homeDir,
         env: {},
         systemApplicationDirs: [systemApplicationsDir],
@@ -320,7 +320,7 @@ describe("desktop Linux deep link registration helpers", () => {
         },
         {
           command: "xdg-mime",
-          args: ["default", "zcode.desktop", "x-scheme-handler/zcode"],
+          args: ["default", "raspberrycode.desktop", "x-scheme-handler/raspberrycode"],
         },
       ]);
       expect(
@@ -334,17 +334,17 @@ describe("desktop Linux deep link registration helpers", () => {
   it("keeps a custom user-level entry untouched when a system-level entry exists", async () => {
     const { registerLinuxDeepLinkProtocol } =
       await import("../src/main/desktopLinuxDeepLinkRegistration.js");
-    const tempRoot = mkdtempSync(join(tmpdir(), "zcode-linux-custom-entry-"));
+    const tempRoot = mkdtempSync(join(tmpdir(), "raspberrycode-linux-custom-entry-"));
     const homeDir = join(tempRoot, "home");
     const systemApplicationsDir = join(tempRoot, "system", "applications");
-    const desktopFilePath = join(homeDir, ".local", "share", "applications", "zcode.desktop");
+    const desktopFilePath = join(homeDir, ".local", "share", "applications", "raspberrycode.desktop");
     const warnings: unknown[][] = [];
 
     try {
       mkdirSync(systemApplicationsDir, { recursive: true });
       writeFileSync(
-        join(systemApplicationsDir, "zcode.desktop"),
-        "[Desktop Entry]\nName=RaspberryCode\nExec=/opt/RaspberryCode/zcode %U\n",
+        join(systemApplicationsDir, "raspberrycode.desktop"),
+        "[Desktop Entry]\nName=RaspberryCode\nExec=/opt/RaspberryCode/raspberrycode %U\n",
         "utf8",
       );
       // 用户手写的自定义条目：没有我们的归属标记，不应被静默删除。
@@ -354,7 +354,7 @@ describe("desktop Linux deep link registration helpers", () => {
       writeFileSync(desktopFilePath, customEntry, "utf8");
 
       registerLinuxDeepLinkProtocol({
-        executablePath: "/opt/RaspberryCode/zcode",
+        executablePath: "/opt/RaspberryCode/raspberrycode",
         homeDir,
         env: {},
         systemApplicationDirs: [systemApplicationsDir],
@@ -370,7 +370,7 @@ describe("desktop Linux deep link registration helpers", () => {
       expect(
         warnings.some(
           ([message]) =>
-            message === "[deep-link] Linux 用户级 zcode.desktop 非本应用写入，保留不清理",
+            message === "[deep-link] Linux 用户级 raspberrycode.desktop 非本应用写入，保留不清理",
         ),
       ).toBe(true);
     } finally {
@@ -381,23 +381,23 @@ describe("desktop Linux deep link registration helpers", () => {
   it("does not shadow a system-level entry for AppImage launches", async () => {
     const { registerLinuxDeepLinkProtocol } =
       await import("../src/main/desktopLinuxDeepLinkRegistration.js");
-    const tempRoot = mkdtempSync(join(tmpdir(), "zcode-linux-appimage-system-"));
+    const tempRoot = mkdtempSync(join(tmpdir(), "raspberrycode-linux-appimage-system-"));
     const homeDir = join(tempRoot, "home");
     const systemApplicationsDir = join(tempRoot, "system", "applications");
-    const desktopFilePath = join(homeDir, ".local", "share", "applications", "zcode.desktop");
+    const desktopFilePath = join(homeDir, ".local", "share", "applications", "raspberrycode.desktop");
     const iconSourcePath = join(import.meta.dirname, "..", "build", "icons", "512x512.png");
     const commandCalls: CommandCall[] = [];
 
     try {
       mkdirSync(systemApplicationsDir, { recursive: true });
       writeFileSync(
-        join(systemApplicationsDir, "zcode.desktop"),
-        "[Desktop Entry]\nName=RaspberryCode\nExec=/opt/RaspberryCode/zcode %U\n",
+        join(systemApplicationsDir, "raspberrycode.desktop"),
+        "[Desktop Entry]\nName=RaspberryCode\nExec=/opt/RaspberryCode/raspberrycode %U\n",
         "utf8",
       );
 
       registerLinuxDeepLinkProtocol({
-        executablePath: "/tmp/.mount_ZCode/zcode",
+        executablePath: "/tmp/.mount_RaspberryCode/raspberrycode",
         homeDir,
         iconSourcePath,
         env: { APPIMAGE: "/home/alice/Applications/RaspberryCode.AppImage" },
@@ -413,7 +413,7 @@ describe("desktop Linux deep link registration helpers", () => {
       expect(existsSync(desktopFilePath)).toBe(false);
       expect(
         existsSync(
-          join(homeDir, ".local", "share", "icons", "hicolor", "512x512", "apps", "zcode.png"),
+          join(homeDir, ".local", "share", "icons", "hicolor", "512x512", "apps", "raspberrycode.png"),
         ),
       ).toBe(false);
       expect(commandCalls).toEqual([
@@ -423,7 +423,7 @@ describe("desktop Linux deep link registration helpers", () => {
         },
         {
           command: "xdg-mime",
-          args: ["default", "zcode.desktop", "x-scheme-handler/zcode"],
+          args: ["default", "raspberrycode.desktop", "x-scheme-handler/raspberrycode"],
         },
       ]);
     } finally {
@@ -434,13 +434,13 @@ describe("desktop Linux deep link registration helpers", () => {
   it("still writes the user-level entry when no system-level entry exists", async () => {
     const { registerLinuxDeepLinkProtocol } =
       await import("../src/main/desktopLinuxDeepLinkRegistration.js");
-    const tempRoot = mkdtempSync(join(tmpdir(), "zcode-linux-no-system-"));
+    const tempRoot = mkdtempSync(join(tmpdir(), "raspberrycode-linux-no-system-"));
     const homeDir = join(tempRoot, "home");
-    const desktopFilePath = join(homeDir, ".local", "share", "applications", "zcode.desktop");
+    const desktopFilePath = join(homeDir, ".local", "share", "applications", "raspberrycode.desktop");
 
     try {
       registerLinuxDeepLinkProtocol({
-        executablePath: "/opt/RaspberryCode/zcode",
+        executablePath: "/opt/RaspberryCode/raspberrycode",
         homeDir,
         env: {},
         systemApplicationDirs: [join(tempRoot, "empty-system-applications")],
@@ -449,7 +449,7 @@ describe("desktop Linux deep link registration helpers", () => {
       });
 
       expect(existsSync(desktopFilePath)).toBe(true);
-      expect(readFileSync(desktopFilePath, "utf8")).toContain('Exec="/opt/RaspberryCode/zcode" %U');
+      expect(readFileSync(desktopFilePath, "utf8")).toContain('Exec="/opt/RaspberryCode/raspberrycode" %U');
     } finally {
       rmSync(tempRoot, { force: true, recursive: true });
     }
@@ -458,16 +458,16 @@ describe("desktop Linux deep link registration helpers", () => {
   it("ignores non-regular system-level paths when probing for shadow entries", async () => {
     const { registerLinuxDeepLinkProtocol } =
       await import("../src/main/desktopLinuxDeepLinkRegistration.js");
-    const tempRoot = mkdtempSync(join(tmpdir(), "zcode-linux-dir-system-"));
+    const tempRoot = mkdtempSync(join(tmpdir(), "raspberrycode-linux-dir-system-"));
     const homeDir = join(tempRoot, "home");
-    // 系统目录下的 zcode.desktop 是一个目录而非普通文件，不得视为有效系统条目。
+    // 系统目录下的 raspberrycode.desktop 是一个目录而非普通文件，不得视为有效系统条目。
     const systemApplicationsDir = join(tempRoot, "system", "applications");
-    const desktopFilePath = join(homeDir, ".local", "share", "applications", "zcode.desktop");
+    const desktopFilePath = join(homeDir, ".local", "share", "applications", "raspberrycode.desktop");
 
     try {
-      mkdirSync(join(systemApplicationsDir, "zcode.desktop"), { recursive: true });
+      mkdirSync(join(systemApplicationsDir, "raspberrycode.desktop"), { recursive: true });
       registerLinuxDeepLinkProtocol({
-        executablePath: "/opt/RaspberryCode/zcode",
+        executablePath: "/opt/RaspberryCode/raspberrycode",
         homeDir,
         env: {},
         systemApplicationDirs: [systemApplicationsDir],
@@ -485,18 +485,18 @@ describe("desktop Linux deep link registration helpers", () => {
   it("keeps an unreadable user-level entry and continues protocol registration", async () => {
     const { registerLinuxDeepLinkProtocol } =
       await import("../src/main/desktopLinuxDeepLinkRegistration.js");
-    const tempRoot = mkdtempSync(join(tmpdir(), "zcode-linux-unreadable-"));
+    const tempRoot = mkdtempSync(join(tmpdir(), "raspberrycode-linux-unreadable-"));
     const homeDir = join(tempRoot, "home");
     const systemApplicationsDir = join(tempRoot, "system", "applications");
-    const desktopFilePath = join(homeDir, ".local", "share", "applications", "zcode.desktop");
+    const desktopFilePath = join(homeDir, ".local", "share", "applications", "raspberrycode.desktop");
     const warnings: unknown[][] = [];
     const commandCalls: CommandCall[] = [];
 
     try {
       mkdirSync(systemApplicationsDir, { recursive: true });
       writeFileSync(
-        join(systemApplicationsDir, "zcode.desktop"),
-        "[Desktop Entry]\nName=RaspberryCode\nExec=/opt/RaspberryCode/zcode %U\n",
+        join(systemApplicationsDir, "raspberrycode.desktop"),
+        "[Desktop Entry]\nName=RaspberryCode\nExec=/opt/RaspberryCode/raspberrycode %U\n",
         "utf8",
       );
       mkdirSync(dirname(desktopFilePath), { recursive: true });
@@ -505,7 +505,7 @@ describe("desktop Linux deep link registration helpers", () => {
       chmodSync(desktopFilePath, 0o000);
 
       registerLinuxDeepLinkProtocol({
-        executablePath: "/opt/RaspberryCode/zcode",
+        executablePath: "/opt/RaspberryCode/raspberrycode",
         homeDir,
         env: {},
         systemApplicationDirs: [systemApplicationsDir],
@@ -523,7 +523,7 @@ describe("desktop Linux deep link registration helpers", () => {
       expect(
         warnings.some(
           ([message]) =>
-            message === "[deep-link] Linux 用户级 zcode.desktop 非本应用写入，保留不清理",
+            message === "[deep-link] Linux 用户级 raspberrycode.desktop 非本应用写入，保留不清理",
         ),
       ).toBe(true);
       // 归属识别失败只降级，协议注册命令仍完整执行。
@@ -534,7 +534,7 @@ describe("desktop Linux deep link registration helpers", () => {
         },
         {
           command: "xdg-mime",
-          args: ["default", "zcode.desktop", "x-scheme-handler/zcode"],
+          args: ["default", "raspberrycode.desktop", "x-scheme-handler/raspberrycode"],
         },
       ]);
     } finally {
@@ -546,17 +546,17 @@ describe("desktop Linux deep link registration helpers", () => {
   it("recognizes ownership markers with CRLF line endings", async () => {
     const { registerLinuxDeepLinkProtocol } =
       await import("../src/main/desktopLinuxDeepLinkRegistration.js");
-    const tempRoot = mkdtempSync(join(tmpdir(), "zcode-linux-crlf-"));
+    const tempRoot = mkdtempSync(join(tmpdir(), "raspberrycode-linux-crlf-"));
     const homeDir = join(tempRoot, "home");
     const systemApplicationsDir = join(tempRoot, "system", "applications");
-    const desktopFilePath = join(homeDir, ".local", "share", "applications", "zcode.desktop");
+    const desktopFilePath = join(homeDir, ".local", "share", "applications", "raspberrycode.desktop");
     const infos: unknown[][] = [];
 
     try {
       mkdirSync(systemApplicationsDir, { recursive: true });
       writeFileSync(
-        join(systemApplicationsDir, "zcode.desktop"),
-        "[Desktop Entry]\nName=RaspberryCode\nExec=/opt/RaspberryCode/zcode %U\n",
+        join(systemApplicationsDir, "raspberrycode.desktop"),
+        "[Desktop Entry]\nName=RaspberryCode\nExec=/opt/RaspberryCode/raspberrycode %U\n",
         "utf8",
       );
       // 旧版本写出的 LF 条目被 Windows 风格工具改写为 CRLF 后仍应识别为可清理。
@@ -568,14 +568,14 @@ describe("desktop Linux deep link registration helpers", () => {
           "Name=RaspberryCode",
           "Comment=RaspberryCode Desktop App",
           'Exec="/home/alice/Downloads/RaspberryCode.AppImage" %U',
-          "MimeType=x-scheme-handler/zcode;",
+          "MimeType=x-scheme-handler/raspberrycode;",
           "",
         ].join("\r\n"),
         "utf8",
       );
 
       registerLinuxDeepLinkProtocol({
-        executablePath: "/opt/RaspberryCode/zcode",
+        executablePath: "/opt/RaspberryCode/raspberrycode",
         homeDir,
         env: {},
         systemApplicationDirs: [systemApplicationsDir],
@@ -589,7 +589,7 @@ describe("desktop Linux deep link registration helpers", () => {
       expect(existsSync(desktopFilePath)).toBe(false);
       expect(
         infos.some(
-          ([message]) => message === "[deep-link] 已清理遗留的用户级 zcode.desktop，恢复系统级条目",
+          ([message]) => message === "[deep-link] 已清理遗留的用户级 raspberrycode.desktop，恢复系统级条目",
         ),
       ).toBe(true);
     } finally {
@@ -605,19 +605,19 @@ describe("desktop Linux deep link registration helpers", () => {
     async () => {
       const { registerLinuxDeepLinkProtocol } =
         await import("../src/main/desktopLinuxDeepLinkRegistration.js");
-      const tempRoot = mkdtempSync(join(tmpdir(), "zcode-linux-rm-fail-"));
+      const tempRoot = mkdtempSync(join(tmpdir(), "raspberrycode-linux-rm-fail-"));
       const homeDir = join(tempRoot, "home");
       const systemApplicationsDir = join(tempRoot, "system", "applications");
       const applicationsDir = join(homeDir, ".local", "share", "applications");
-      const desktopFilePath = join(applicationsDir, "zcode.desktop");
+      const desktopFilePath = join(applicationsDir, "raspberrycode.desktop");
       const warnings: unknown[][] = [];
       const commandCalls: CommandCall[] = [];
 
       try {
         mkdirSync(systemApplicationsDir, { recursive: true });
         writeFileSync(
-          join(systemApplicationsDir, "zcode.desktop"),
-          "[Desktop Entry]\nName=RaspberryCode\nExec=/opt/RaspberryCode/zcode %U\n",
+          join(systemApplicationsDir, "raspberrycode.desktop"),
+          "[Desktop Entry]\nName=RaspberryCode\nExec=/opt/RaspberryCode/raspberrycode %U\n",
           "utf8",
         );
         mkdirSync(applicationsDir, { recursive: true });
@@ -630,7 +630,7 @@ describe("desktop Linux deep link registration helpers", () => {
         chmodSync(applicationsDir, 0o500);
 
         registerLinuxDeepLinkProtocol({
-          executablePath: "/opt/RaspberryCode/zcode",
+          executablePath: "/opt/RaspberryCode/raspberrycode",
           homeDir,
           env: {},
           systemApplicationDirs: [systemApplicationsDir],
@@ -646,7 +646,7 @@ describe("desktop Linux deep link registration helpers", () => {
 
         expect(existsSync(desktopFilePath)).toBe(true);
         expect(
-          warnings.some(([message]) => message === "[deep-link] 清理遗留用户级 zcode.desktop 失败"),
+          warnings.some(([message]) => message === "[deep-link] 清理遗留用户级 raspberrycode.desktop 失败"),
         ).toBe(true);
         expect(commandCalls).toEqual([
           {
@@ -655,7 +655,7 @@ describe("desktop Linux deep link registration helpers", () => {
           },
           {
             command: "xdg-mime",
-            args: ["default", "zcode.desktop", "x-scheme-handler/zcode"],
+            args: ["default", "raspberrycode.desktop", "x-scheme-handler/raspberrycode"],
           },
         ]);
       } finally {

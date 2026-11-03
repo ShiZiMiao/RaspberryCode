@@ -1,4 +1,4 @@
-import type { GitRepositorySummary } from "@zcode/shared";
+import type { GitRepositorySummary } from "@raspberrycode/shared";
 
 type GitActionMenuPrimaryActionId = "commit" | "push";
 

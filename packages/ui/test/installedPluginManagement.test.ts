@@ -2,11 +2,11 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type {
-  ZCodePluginDiagnostic,
-  ZCodePluginInfo,
-  ZCodePluginUserConfigOption,
-} from "@zcode/shared";
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+  RaspberryCodePluginDiagnostic,
+  RaspberryCodePluginInfo,
+  RaspberryCodePluginUserConfigOption,
+} from "@raspberrycode/shared";
+import { RaspberryCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import { InstalledPluginDetailPanel } from "../src/settings/InstalledPluginManagement.js";
 
 describe("InstalledPluginDetailPanel", () => {
@@ -19,13 +19,13 @@ describe("InstalledPluginDetailPanel", () => {
     }));
 
     for (const enabled of [true, false]) {
-      const plugin: ZCodePluginInfo = {
-        id: "superpowers@zcode-plugins-official",
+      const plugin: RaspberryCodePluginInfo = {
+        id: "superpowers@raspberrycode-plugins-official",
         name: "superpowers",
         version: "5.1.0",
         enabled,
         source: "official",
-        marketplace: "zcode-plugins-official",
+        marketplace: "raspberrycode-plugins-official",
         // 停用时 CLI 的 skillCount 为 0，但 components 仍完整。
         skillCount: enabled ? 14 : 0,
         skillRootCount: enabled ? 1 : 0,
@@ -39,18 +39,18 @@ describe("InstalledPluginDetailPanel", () => {
 
       const html = renderToStaticMarkup(
         createElement(
-          ZCodeIntlProvider,
+          RaspberryCodeIntlProvider,
           { initialLocale: "zh-CN" },
           createElement(InstalledPluginDetailPanel, {
             getPluginOptionValue: (
-              _plugin: ZCodePluginInfo,
+              _plugin: RaspberryCodePluginInfo,
               _key: string,
-              option: ZCodePluginUserConfigOption,
+              option: RaspberryCodePluginUserConfigOption,
             ) => option.default ?? "",
             onSavePluginOptions: () => {},
             activeOperations: [],
             plugin,
-            renderPluginSource: (target: ZCodePluginInfo) => target.marketplace,
+            renderPluginSource: (target: RaspberryCodePluginInfo) => target.marketplace,
             setPluginOptionDraft: () => {},
           }),
         ),
@@ -68,7 +68,7 @@ describe("InstalledPluginDetailPanel", () => {
 
   it("renders warning diagnostics scoped to the plugin and hides them when none match", () => {
     // Bugfix（静默失败）回归：声明的技能路径扫描为空等 warning 此前在 UI 无渲染位置。
-    const plugin: ZCodePluginInfo = {
+    const plugin: RaspberryCodePluginInfo = {
       id: "mattpocock-skills@claude-plugins-official",
       name: "mattpocock-skills",
       enabled: true,
@@ -84,22 +84,22 @@ describe("InstalledPluginDetailPanel", () => {
       components: [],
     };
 
-    const renderPanel = (diagnostics: ZCodePluginDiagnostic[]) =>
+    const renderPanel = (diagnostics: RaspberryCodePluginDiagnostic[]) =>
       renderToStaticMarkup(
         createElement(
-          ZCodeIntlProvider,
+          RaspberryCodeIntlProvider,
           { initialLocale: "zh-CN" },
           createElement(InstalledPluginDetailPanel, {
             diagnostics,
             getPluginOptionValue: (
-              _plugin: ZCodePluginInfo,
+              _plugin: RaspberryCodePluginInfo,
               _key: string,
-              option: ZCodePluginUserConfigOption,
+              option: RaspberryCodePluginUserConfigOption,
             ) => option.default ?? "",
             onSavePluginOptions: () => {},
             activeOperations: [],
             plugin,
-            renderPluginSource: (target: ZCodePluginInfo) => target.marketplace,
+            renderPluginSource: (target: RaspberryCodePluginInfo) => target.marketplace,
             setPluginOptionDraft: () => {},
           }),
         ),
@@ -137,13 +137,13 @@ describe("InstalledPluginDetailPanel", () => {
 
   it("renders a details empty state for a plugin that declares no components", () => {
     // 真正无组件的插件给出诚实空态，不留白。
-    const plugin: ZCodePluginInfo = {
-      id: "empty-plugin@zcode-plugins-official",
+    const plugin: RaspberryCodePluginInfo = {
+      id: "empty-plugin@raspberrycode-plugins-official",
       name: "empty-plugin",
       version: "0.1.0",
       enabled: false,
       source: "cache",
-      marketplace: "zcode-plugins-official",
+      marketplace: "raspberrycode-plugins-official",
       skillCount: 0,
       skillRootCount: 0,
       commandRootCount: 0,
@@ -156,18 +156,18 @@ describe("InstalledPluginDetailPanel", () => {
 
     const html = renderToStaticMarkup(
       createElement(
-        ZCodeIntlProvider,
+        RaspberryCodeIntlProvider,
         { initialLocale: "zh-CN" },
         createElement(InstalledPluginDetailPanel, {
           getPluginOptionValue: (
-            _plugin: ZCodePluginInfo,
+            _plugin: RaspberryCodePluginInfo,
             _key: string,
-            option: ZCodePluginUserConfigOption,
+            option: RaspberryCodePluginUserConfigOption,
           ) => option.default ?? "",
           onSavePluginOptions: () => {},
           activeOperations: [],
           plugin,
-          renderPluginSource: (target: ZCodePluginInfo) => target.marketplace,
+          renderPluginSource: (target: RaspberryCodePluginInfo) => target.marketplace,
           setPluginOptionDraft: () => {},
         }),
       ),

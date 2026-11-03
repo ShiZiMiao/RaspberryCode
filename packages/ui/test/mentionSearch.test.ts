@@ -352,30 +352,30 @@ describe("filterMentionItems", () => {
 describe("filterMentionItems CJK queries", () => {
   const pluginItems: MentionItem[] = [
     {
-      id: "plugin:browser-use@zcode-plugins-official",
+      id: "plugin:browser-use@raspberrycode-plugins-official",
       category: "plugins",
       label: "浏览器操作",
-      description: "zcode-plugins-official · 2 skills · 1 MCP",
-      value: "browser-use@zcode-plugins-official",
-      markdown: "[@browser-use](plugin://browser-use@zcode-plugins-official)",
+      description: "raspberrycode-plugins-official · 2 skills · 1 MCP",
+      value: "browser-use@raspberrycode-plugins-official",
+      markdown: "[@browser-use](plugin://browser-use@raspberrycode-plugins-official)",
       keywords: [
         "browser-use",
-        "browser-use@zcode-plugins-official",
-        "zcode-plugins-official",
+        "browser-use@raspberrycode-plugins-official",
+        "raspberrycode-plugins-official",
         "浏览器操作",
       ],
     },
     {
-      id: "plugin:zcode-cua@zcode-plugins-official",
+      id: "plugin:raspberrycode-cua@raspberrycode-plugins-official",
       category: "plugins",
       label: "电脑控制",
-      description: "zcode-plugins-official · 1 skills · 1 MCP",
-      value: "zcode-cua@zcode-plugins-official",
-      markdown: "[@zcode-cua](plugin://zcode-cua@zcode-plugins-official)",
+      description: "raspberrycode-plugins-official · 1 skills · 1 MCP",
+      value: "raspberrycode-cua@raspberrycode-plugins-official",
+      markdown: "[@raspberrycode-cua](plugin://raspberrycode-cua@raspberrycode-plugins-official)",
       keywords: [
-        "zcode-cua",
-        "zcode-cua@zcode-plugins-official",
-        "zcode-plugins-official",
+        "raspberrycode-cua",
+        "raspberrycode-cua@raspberrycode-plugins-official",
+        "raspberrycode-plugins-official",
         "电脑控制",
       ],
     },
@@ -383,13 +383,13 @@ describe("filterMentionItems CJK queries", () => {
 
   it("matches Chinese display names by prefix and substring", () => {
     expect(filterMentionItems(pluginItems, "浏览").map((item) => item.id)).toEqual([
-      "plugin:browser-use@zcode-plugins-official",
+      "plugin:browser-use@raspberrycode-plugins-official",
     ]);
     expect(filterMentionItems(pluginItems, "览器").map((item) => item.id)).toEqual([
-      "plugin:browser-use@zcode-plugins-official",
+      "plugin:browser-use@raspberrycode-plugins-official",
     ]);
     expect(filterMentionItems(pluginItems, "控制").map((item) => item.id)).toEqual([
-      "plugin:zcode-cua@zcode-plugins-official",
+      "plugin:raspberrycode-cua@raspberrycode-plugins-official",
     ]);
   });
 
@@ -400,7 +400,7 @@ describe("filterMentionItems CJK queries", () => {
 
   it("keeps subsequence matching for ASCII queries", () => {
     expect(filterMentionItems(pluginItems, "bru").map((item) => item.id)).toEqual([
-      "plugin:browser-use@zcode-plugins-official",
+      "plugin:browser-use@raspberrycode-plugins-official",
     ]);
   });
 });

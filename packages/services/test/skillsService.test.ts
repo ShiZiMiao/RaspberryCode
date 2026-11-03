@@ -11,15 +11,15 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { MAX_SKILL_SCAN_DEPTH } from "@zcode/shared";
+import { MAX_SKILL_SCAN_DEPTH } from "@raspberrycode/shared";
 import type { ISkillsService } from "../src/skills/skills.js";
 
 const originalHome = process.env.HOME;
-const originalProcessLabel = process.env.ZCODE_PROCESS_LABEL;
+const originalProcessLabel = process.env.RASPBERRYCODE_PROCESS_LABEL;
 const tempHomes: string[] = [];
 
 function makeTempHome(): string {
-  const home = mkdtempSync(join(tmpdir(), "zcode-skills-home-"));
+  const home = mkdtempSync(join(tmpdir(), "raspberrycode-skills-home-"));
   tempHomes.push(home);
   return home;
 }
@@ -65,7 +65,7 @@ function officialPluginRoot(home: string, pluginName: string, version = "0.1.0")
     "cli",
     "plugins",
     "cache",
-    "zcode-plugins-official",
+    "raspberrycode-plugins-official",
     pluginName,
     version,
   );
@@ -81,9 +81,9 @@ function marketplacePluginRoot(
 }
 
 function writePluginManifest(pluginRoot: string, manifest: Record<string, unknown>): void {
-  mkdirSync(join(pluginRoot, ".zcode-plugin"), { recursive: true });
+  mkdirSync(join(pluginRoot, ".raspberrycode-plugin"), { recursive: true });
   writeFileSync(
-    join(pluginRoot, ".zcode-plugin", "plugin.json"),
+    join(pluginRoot, ".raspberrycode-plugin", "plugin.json"),
     JSON.stringify(manifest, null, 2),
     "utf-8",
   );
@@ -143,7 +143,7 @@ function writeCliConfig(home: string, config: Record<string, unknown>): void {
 
 afterEach(() => {
   process.env.HOME = originalHome;
-  process.env.ZCODE_PROCESS_LABEL = originalProcessLabel;
+  process.env.RASPBERRYCODE_PROCESS_LABEL = originalProcessLabel;
   vi.doUnmock("node:fs/promises");
   vi.resetModules();
   while (tempHomes.length > 0) {
@@ -163,9 +163,9 @@ describe("skillsService", () => {
       "repo-review",
       `---
 name: repo-review
-description: from zcode
+description: from raspberrycode
 ---
-zcode-body`,
+raspberrycode-body`,
     );
     writeSkill(
       join(workspacePath, ".raspberrycode", "cli", "skills"),
@@ -205,7 +205,7 @@ claude-body`,
       enabled: true,
     });
     expect(result.skills.find((skill) => skill.name === "repo-review")).toMatchObject({
-      description: "from zcode",
+      description: "from raspberrycode",
       scope: "workspace",
       enabled: true,
     });
@@ -421,10 +421,10 @@ body`,
     const workspacePath = join(home, "workspace");
     writeSkill(
       userSkillRoot(home),
-      "zcode-global",
+      "raspberrycode-global",
       `---
-name: zcode-global
-description: user zcode
+name: raspberrycode-global
+description: user raspberrycode
 ---
 body`,
     );
@@ -442,9 +442,9 @@ body`,
       "copied-global",
       `---
 name: copied-global
-description: copied into zcode
+description: copied into raspberrycode
 ---
-zcode-body`,
+raspberrycode-body`,
     );
     writeSkill(
       userAgentsSkillRoot(home),
@@ -460,9 +460,9 @@ agents-body`,
       "current-review",
       `---
 name: shared-review
-description: zcode version
+description: raspberrycode version
 ---
-zcode-review-body`,
+raspberrycode-review-body`,
     );
     writeSkill(
       userAgentsSkillRoot(home),
@@ -491,7 +491,7 @@ body`,
       "agents-global",
       "copied-global",
       "shared-review",
-      "zcode-global",
+      "raspberrycode-global",
     ]);
     expect(result.skills.find((skill) => skill.name === "copied-global")?.path).toContain(
       join(home, ".raspberrycode", "skills", "copied-global"),
@@ -527,7 +527,7 @@ body`,
     const workspacePath = join(home, "workspace");
     const browserUsePluginRoot = officialPluginRoot(home, "browser-use");
     const documentPluginRoot = officialPluginRoot(home, "documents");
-    const zcodeGuidePluginRoot = officialPluginRoot(home, "zcode-guide");
+    const raspberrycodeGuidePluginRoot = officialPluginRoot(home, "raspberrycode-guide");
     const iosPluginRoot = officialPluginRoot(home, "ios-simulator");
     const androidPluginRoot = officialPluginRoot(home, "android-emulator");
     writePluginManifest(browserUsePluginRoot, {
@@ -540,8 +540,8 @@ body`,
       skills: "skills",
       version: "0.1.0",
     });
-    writePluginManifest(zcodeGuidePluginRoot, {
-      name: "zcode-guide",
+    writePluginManifest(raspberrycodeGuidePluginRoot, {
+      name: "raspberrycode-guide",
       skills: "skills",
       version: "0.1.0",
     });
@@ -583,7 +583,7 @@ description: pdf skill
 pdf-body`,
     );
     writeSkill(
-      join(zcodeGuidePluginRoot, "skills"),
+      join(raspberrycodeGuidePluginRoot, "skills"),
       "diagnosing-plugins",
       `---
 name: diagnosing-plugins
@@ -612,9 +612,9 @@ android-body`,
     writeCliConfig(home, {
       plugins: {
         enabledPlugins: {
-          "ios-simulator@zcode-plugins-official": true,
-          // zcode-guide 已移出默认启用（产品中立化），这里显式开启以验证启用插件的技能读取。
-          "zcode-guide@zcode-plugins-official": true,
+          "ios-simulator@raspberrycode-plugins-official": true,
+          // raspberrycode-guide 已移出默认启用（产品中立化），这里显式开启以验证启用插件的技能读取。
+          "raspberrycode-guide@raspberrycode-plugins-official": true,
         },
       },
     });
@@ -641,7 +641,7 @@ android-body`,
       "documents",
       "documents",
       "ios-simulator",
-      "zcode-guide",
+      "raspberrycode-guide",
     ]);
   });
 
@@ -651,7 +651,7 @@ android-body`,
     const browserUsePluginRoot = officialPluginRoot(home, "browser-use");
     const documentPluginRoot = officialPluginRoot(home, "documents");
     const skillCreatorPluginRoot = officialPluginRoot(home, "skill-creator");
-    const zcodeGuidePluginRoot = officialPluginRoot(home, "zcode-guide");
+    const raspberrycodeGuidePluginRoot = officialPluginRoot(home, "raspberrycode-guide");
     writePluginManifest(browserUsePluginRoot, {
       name: "browser-use",
       skills: "skills",
@@ -667,8 +667,8 @@ android-body`,
       skills: "skills",
       version: "0.1.0",
     });
-    writePluginManifest(zcodeGuidePluginRoot, {
-      name: "zcode-guide",
+    writePluginManifest(raspberrycodeGuidePluginRoot, {
+      name: "raspberrycode-guide",
       skills: "skills",
       version: "0.1.0",
     });
@@ -700,7 +700,7 @@ description: skill creator skill
 creator-body`,
     );
     writeSkill(
-      join(zcodeGuidePluginRoot, "skills"),
+      join(raspberrycodeGuidePluginRoot, "skills"),
       "diagnosing-plugins",
       `---
 name: diagnosing-plugins
@@ -708,13 +708,13 @@ description: Diagnose plugin discovery and enablement problems
 ---
 diagnosing-body`,
     );
-    // browser、documents 和 zcode-guide 被卸载（suppressed），skill-creator 保持默认启用。
+    // browser、documents 和 raspberrycode-guide 被卸载（suppressed），skill-creator 保持默认启用。
     writeCliConfig(home, {
       plugins: {
         suppressedBuiltins: [
-          "browser-use@zcode-plugins-official",
-          "documents@zcode-plugins-official",
-          "zcode-guide@zcode-plugins-official",
+          "browser-use@raspberrycode-plugins-official",
+          "documents@raspberrycode-plugins-official",
+          "raspberrycode-guide@raspberrycode-plugins-official",
         ],
       },
     });
@@ -725,7 +725,7 @@ diagnosing-body`,
     expect(result.skills.map((skill) => skill.name)).toEqual(["skill-creator"]);
     expect(result.skills.find((skill) => skill.pluginName === "browser")).toBeUndefined();
     expect(result.skills.find((skill) => skill.pluginName === "documents")).toBeUndefined();
-    expect(result.skills.find((skill) => skill.pluginName === "zcode-guide")).toBeUndefined();
+    expect(result.skills.find((skill) => skill.pluginName === "raspberrycode-guide")).toBeUndefined();
   });
 
   it("读取已安装 marketplace plugin 声明的技能目录", async () => {
@@ -849,10 +849,10 @@ bundle-root-body`,
     const workspacePath = join(home, "workspace");
     writeSkill(
       userSkillRoot(home),
-      "zcode-global",
+      "raspberrycode-global",
       `---
-name: zcode-global
-description: user zcode
+name: raspberrycode-global
+description: user raspberrycode
 ---
 body`,
     );

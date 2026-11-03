@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ProviderConfigObject } from "@zcode/provider";
+import type { ProviderConfigObject } from "@raspberrycode/provider";
 import { shouldShowModelVisionBadge } from "@/lib/modelVisionBadge.js";
 
 type Access = NonNullable<ProviderConfigObject["access"]>;

@@ -1,4 +1,4 @@
-import { resolveWorkspaceKey } from "@zcode/shared";
+import { resolveWorkspaceKey } from "@raspberrycode/shared";
 
 export interface HostWorkspaceTaskContext {
   workspacePath: string;

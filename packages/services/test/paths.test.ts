@@ -16,7 +16,7 @@ const originalHome = process.env.HOME;
 const tempHomes: string[] = [];
 
 function makeTempHome(): string {
-  const home = mkdtempSync(join(tmpdir(), "zcode-paths-home-"));
+  const home = mkdtempSync(join(tmpdir(), "raspberrycode-paths-home-"));
   tempHomes.push(home);
   return home;
 }
@@ -93,7 +93,7 @@ describe("paths", () => {
     const env = {
       ProgramFiles: "C:\\Program Files",
       LOCALAPPDATA: "C:\\Users\\tester\\AppData\\Local",
-      ZCODE_WINDOWS_APP_INSTALL_DIR: "C:\\Users\\tester\\AppData\\Local\\Programs\\RaspberryCode",
+      RASPBERRYCODE_WINDOWS_APP_INSTALL_DIR: "C:\\Users\\tester\\AppData\\Local\\Programs\\RaspberryCode",
     };
 
     expect(
@@ -116,7 +116,7 @@ describe("paths", () => {
     const { validateDataBaseDirTarget } = await import("../src/paths.js");
     const env = {
       LOCALAPPDATA: "C:\\Users\\tester\\AppData\\Local",
-      ZCODE_WINDOWS_APP_INSTALL_DIR: "C:\\Users\\tester\\AppData\\Local\\Programs\\RaspberryCode",
+      RASPBERRYCODE_WINDOWS_APP_INSTALL_DIR: "C:\\Users\\tester\\AppData\\Local\\Programs\\RaspberryCode",
     };
 
     expect(

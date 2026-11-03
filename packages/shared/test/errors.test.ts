@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   isOpenCodeRuntimeCrashError,
-  isZCodeFileLockTimeoutError,
+  isRaspberryCodeFileLockTimeoutError,
   normalizeUnknownError,
-  ZCODE_FILE_LOCK_TIMEOUT_ERROR_CODE,
+  RASPBERRYCODE_FILE_LOCK_TIMEOUT_ERROR_CODE,
 } from "../src/errors.js";
 
 describe("normalizeUnknownError", () => {
@@ -46,17 +46,17 @@ describe("isOpenCodeRuntimeCrashError", () => {
   });
 });
 
-describe("isZCodeFileLockTimeoutError", () => {
+describe("isRaspberryCodeFileLockTimeoutError", () => {
   it("matches direct and RPC-wrapped timeout codes", () => {
-    expect(isZCodeFileLockTimeoutError({ code: ZCODE_FILE_LOCK_TIMEOUT_ERROR_CODE })).toBe(true);
+    expect(isRaspberryCodeFileLockTimeoutError({ code: RASPBERRYCODE_FILE_LOCK_TIMEOUT_ERROR_CODE })).toBe(true);
     expect(
-      isZCodeFileLockTimeoutError({
-        error: { code: ZCODE_FILE_LOCK_TIMEOUT_ERROR_CODE, message: "lock timeout" },
+      isRaspberryCodeFileLockTimeoutError({
+        error: { code: RASPBERRYCODE_FILE_LOCK_TIMEOUT_ERROR_CODE, message: "lock timeout" },
       }),
     ).toBe(true);
   });
 
   it("does not classify legacy EEXIST as the explicit timeout code", () => {
-    expect(isZCodeFileLockTimeoutError({ code: "EEXIST" })).toBe(false);
+    expect(isRaspberryCodeFileLockTimeoutError({ code: "EEXIST" })).toBe(false);
   });
 });

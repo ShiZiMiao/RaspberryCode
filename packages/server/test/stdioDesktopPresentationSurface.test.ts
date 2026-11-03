@@ -1,28 +1,28 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { IModelSelectionService, IZCodeAgentService } from "@zcode/services";
+import { IModelSelectionService, IRaspberryCodeAgentService } from "@raspberrycode/services";
 import {
   disposeServiceResourcesAndWait,
-  resolveDefaultZCodeAgentCommand,
+  resolveDefaultRaspberryCodeAgentCommand,
   setDataBaseDir,
-  type ZCodeAgentCommand,
-  type ZCodeAgentCommandResolverContext,
-} from "@zcode/services/node";
+  type RaspberryCodeAgentCommand,
+  type RaspberryCodeAgentCommandResolverContext,
+} from "@raspberrycode/services/node";
 import {
   SERVICE_AUTHORITY_MODE_ENV,
-  ZCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV,
-  ZCODE_REMOTE_HTTP_PROXY_ENV_KEY,
-  ZCODE_REMOTE_NO_PROXY_ENV_KEY,
-  ZCODE_REMOTE_RUNTIME_NETWORK_AUTHORITY_ENV_KEY,
-} from "@zcode/shared";
+  RASPBERRYCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV,
+  RASPBERRYCODE_REMOTE_HTTP_PROXY_ENV_KEY,
+  RASPBERRYCODE_REMOTE_NO_PROXY_ENV_KEY,
+  RASPBERRYCODE_REMOTE_RUNTIME_NETWORK_AUTHORITY_ENV_KEY,
+} from "@raspberrycode/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createStdioServices, resolveRemoteAgentNetworkFromEnv } from "../src/stdioServices.js";
 
 const originalHome = process.env.HOME;
-const originalCommand = process.env.ZCODE_AGENT_SERVER_COMMAND;
-const originalArgsJson = process.env.ZCODE_AGENT_SERVER_ARGS_JSON;
-const originalDesktopContextPromptEnabled = process.env[ZCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV];
+const originalCommand = process.env.RASPBERRYCODE_AGENT_SERVER_COMMAND;
+const originalArgsJson = process.env.RASPBERRYCODE_AGENT_SERVER_ARGS_JSON;
+const originalDesktopContextPromptEnabled = process.env[RASPBERRYCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV];
 
 function restoreEnv(name: string, value: string | undefined): void {
   if (value === undefined) {
@@ -38,9 +38,9 @@ describe("stdio Desktop presentation surface", () => {
   afterEach(async () => {
     setDataBaseDir(null);
     restoreEnv("HOME", originalHome);
-    restoreEnv("ZCODE_AGENT_SERVER_COMMAND", originalCommand);
-    restoreEnv("ZCODE_AGENT_SERVER_ARGS_JSON", originalArgsJson);
-    restoreEnv(ZCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV, originalDesktopContextPromptEnabled);
+    restoreEnv("RASPBERRYCODE_AGENT_SERVER_COMMAND", originalCommand);
+    restoreEnv("RASPBERRYCODE_AGENT_SERVER_ARGS_JSON", originalArgsJson);
+    restoreEnv(RASPBERRYCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV, originalDesktopContextPromptEnabled);
     vi.restoreAllMocks();
     await Promise.all(
       tempHomes.splice(0).map((home) => rm(home, { recursive: true, force: true })),
@@ -50,15 +50,15 @@ describe("stdio Desktop presentation surface", () => {
   it("只从 Host 权威标记读取一次性 WSL Agent 网络配置", () => {
     expect(
       resolveRemoteAgentNetworkFromEnv({
-        [ZCODE_REMOTE_HTTP_PROXY_ENV_KEY]: " http://172.21.240.1:7890 ",
-        [ZCODE_REMOTE_NO_PROXY_ENV_KEY]: " localhost,127.0.0.1 ",
+        [RASPBERRYCODE_REMOTE_HTTP_PROXY_ENV_KEY]: " http://172.21.240.1:7890 ",
+        [RASPBERRYCODE_REMOTE_NO_PROXY_ENV_KEY]: " localhost,127.0.0.1 ",
       }),
     ).toBeUndefined();
     expect(
       resolveRemoteAgentNetworkFromEnv({
-        [ZCODE_REMOTE_RUNTIME_NETWORK_AUTHORITY_ENV_KEY]: "1",
-        [ZCODE_REMOTE_HTTP_PROXY_ENV_KEY]: " http://172.21.240.1:7890 ",
-        [ZCODE_REMOTE_NO_PROXY_ENV_KEY]: " localhost,127.0.0.1 ",
+        [RASPBERRYCODE_REMOTE_RUNTIME_NETWORK_AUTHORITY_ENV_KEY]: "1",
+        [RASPBERRYCODE_REMOTE_HTTP_PROXY_ENV_KEY]: " http://172.21.240.1:7890 ",
+        [RASPBERRYCODE_REMOTE_NO_PROXY_ENV_KEY]: " localhost,127.0.0.1 ",
       }),
     ).toEqual({
       httpProxy: "http://172.21.240.1:7890",
@@ -67,21 +67,21 @@ describe("stdio Desktop presentation surface", () => {
   });
 
   it("让 Desktop attached remote authority 贯穿 stdio 装配并生成 Desktop Agent 命令", async () => {
-    const home = await mkdtemp(join(tmpdir(), "zcode-stdio-desktop-surface-"));
+    const home = await mkdtemp(join(tmpdir(), "raspberrycode-stdio-desktop-surface-"));
     tempHomes.push(home);
     process.env.HOME = home;
     setDataBaseDir(home);
-    // Bugfix: 开发机可能导出 ZCODE_DESKTOP_CONTEXT_PROMPT_ENABLED=0（如本机 RaspberryCode 安装的 shell 集成），
+    // Bugfix: 开发机可能导出 RASPBERRYCODE_DESKTOP_CONTEXT_PROMPT_ENABLED=0（如本机 RaspberryCode 安装的 shell 集成），
     // 会把 desktop-attached-remote 推导出的 presentationSurface 灭成 undefined，
     // 让「surface 贯穿装配」断言变成环境敏感；显式置 1 恢复用例封闭性。
-    process.env[ZCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV] = "1";
-    process.env.ZCODE_AGENT_SERVER_COMMAND = process.execPath;
-    process.env.ZCODE_AGENT_SERVER_ARGS_JSON = JSON.stringify([
-      "zcode.cjs",
+    process.env[RASPBERRYCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV] = "1";
+    process.env.RASPBERRYCODE_AGENT_SERVER_COMMAND = process.execPath;
+    process.env.RASPBERRYCODE_AGENT_SERVER_ARGS_JSON = JSON.stringify([
+      "raspberrycode.cjs",
       "app-server",
       "--stdio",
     ]);
-    const zcodeBuiltinProviderConfigFilePath = join(home, "zcode-builtin.json");
+    const raspberrycodeBuiltinProviderConfigFilePath = join(home, "raspberrycode-builtin.json");
     const personalConfigFilePath = join(home, ".raspberrycode", "v2", "provider_config.json");
     await mkdir(join(home, ".raspberrycode", "v2"), { recursive: true });
     await writeFile(
@@ -110,7 +110,7 @@ describe("stdio Desktop presentation surface", () => {
       "utf8",
     );
     await writeFile(
-      zcodeBuiltinProviderConfigFilePath,
+      raspberrycodeBuiltinProviderConfigFilePath,
       JSON.stringify({
         schemaVersion: 1,
         revision: 1,
@@ -179,9 +179,9 @@ describe("stdio Desktop presentation surface", () => {
       "utf8",
     );
 
-    let resolvedCommand: ZCodeAgentCommand | null = null;
-    const commandResolver = vi.fn((context: ZCodeAgentCommandResolverContext) => {
-      resolvedCommand = resolveDefaultZCodeAgentCommand(context);
+    let resolvedCommand: RaspberryCodeAgentCommand | null = null;
+    const commandResolver = vi.fn((context: RaspberryCodeAgentCommandResolverContext) => {
+      resolvedCommand = resolveDefaultRaspberryCodeAgentCommand(context);
       // 集成测试只验证入口装配与最终命令，不启动长驻 Agent 子进程。
       return null;
     });
@@ -189,8 +189,8 @@ describe("stdio Desktop presentation surface", () => {
       env: {
         [SERVICE_AUTHORITY_MODE_ENV]: "desktop-attached-remote",
       },
-      zcodeBuiltinProviderConfigFilePath,
-      zcodeAgentCommandResolver: commandResolver,
+      raspberrycodeBuiltinProviderConfigFilePath,
+      raspberrycodeAgentCommandResolver: commandResolver,
     });
 
     try {
@@ -206,7 +206,7 @@ describe("stdio Desktop presentation surface", () => {
         },
       );
       await expect(
-        bootstrap.services.get(IZCodeAgentService).initialize({
+        bootstrap.services.get(IRaspberryCodeAgentService).initialize({
           workspaceIdentity: "ssh://host/workspace/project",
           workspacePath: "/workspace/project",
         }),
@@ -225,7 +225,7 @@ describe("stdio Desktop presentation surface", () => {
         }),
       );
       expect(resolvedCommand).toEqual({
-        args: ["zcode.cjs", "app-server", "--stdio", "--surface", "desktop"],
+        args: ["raspberrycode.cjs", "app-server", "--stdio", "--surface", "desktop"],
         command: process.execPath,
         cwd: "/workspace/project",
       });

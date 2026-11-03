@@ -126,7 +126,7 @@ vi.mock("@/components/ui/switch.js", () => ({
 }));
 
 vi.mock("@/i18n/IntlProvider.js", () => ({
-  useZCodeIntl: () => ({
+  useRaspberryCodeIntl: () => ({
     intl: {
       formatMessage: ({ id }: { id: string }, values?: Record<string, string | number>) => {
         const messages: Record<string, string> = {
@@ -173,7 +173,7 @@ vi.mock("@/i18n/IntlProvider.js", () => ({
           "settings.skills.agent.agents": "Codex",
           "settings.skills.agent.opencode": "OpenCode",
           "settings.skills.agent.gemini": "Gemini",
-          "settings.modelProvider.testModel.agentName.zcode_agent": "RaspberryCode Agent",
+          "settings.modelProvider.testModel.agentName.raspberrycode_agent": "RaspberryCode Agent",
           "settings.skills.empty": "No skills found",
           "settings.skills.noDescription": "No description",
           "settings.skills.detail.description": "Description",
@@ -202,7 +202,7 @@ vi.mock("@/i18n/IntlProvider.js", () => ({
           "settings.skills.removeFromCommon": "Remove from Common",
           "settingsSync.action.skip": "Not now",
           "settingsSync.action.rescan": "Scan again",
-          "settingsSync.agent.zcode": "RaspberryCode Agent",
+          "settingsSync.agent.raspberrycode": "RaspberryCode Agent",
           "settingsSync.agent.claudeCode": "Claude Code",
           "settingsSync.agent.codexCli": "Codex CLI",
           "settingsSync.agent.openCode": "OpenCode",
@@ -241,8 +241,8 @@ vi.mock("@/store/TabStoreProvider.js", () => ({
   },
 }));
 
-vi.mock("@/store/zcodeSessionStore.js", () => ({
-  useZCodeSessionStore: Object.assign(
+vi.mock("@/store/raspberrycodeSessionStore.js", () => ({
+  useRaspberryCodeSessionStore: Object.assign(
     (selector: (state: Record<string, unknown>) => unknown) =>
       selector({
         getWorkspaceState: () => ({
@@ -346,7 +346,7 @@ vi.mock("@/hooks/useWorkspaceServices.js", () => ({
     rpcReady: true,
   }),
   useWorkspaceServices: () => ({
-    zcodeTaskService: {
+    raspberrycodeTaskService: {
       createTask: vi.fn(async () => ({
         taskId: "task-1",
         provider: "claude",

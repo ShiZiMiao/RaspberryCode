@@ -1,7 +1,7 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { ZCODE_AGENT_PROVIDER } from "@zcode/shared";
-import { TID_V4_COMPOSER_INPUT } from "@zcode/shared/test-ids";
+import { RASPBERRYCODE_AGENT_PROVIDER } from "@raspberrycode/shared";
+import { TID_V4_COMPOSER_INPUT } from "@raspberrycode/shared/test-ids";
 import { DEFAULT_WORKSPACE } from "../../../helpers/desktop-app.js";
 import {
   prepareConversationE2E,
@@ -102,7 +102,7 @@ describe("会话区 Composer 前缀提示路由 E2E", () => {
     assertPanelExcludesSections(atPluginPanel, ["commands", "subagents", "skills"]);
     await browser.keys("Enter");
     await waitForComposerMarkdownContaining(
-      "plugin://skill-creator@zcode-plugins-official",
+      "plugin://skill-creator@raspberrycode-plugins-official",
       "@ plugin 候选 Enter 后没有写入 canonical plugin mention markdown",
     );
 
@@ -188,7 +188,7 @@ async function seedRendererPromptSources(seed: {
             }) => void;
           };
         };
-        __zcodeSessionStoreE2E?: {
+        __raspberrycodeSessionStoreE2E?: {
           getState: () => {
             setSlashCommands: (
               workspacePath: string,
@@ -202,7 +202,7 @@ async function seedRendererPromptSources(seed: {
           };
         };
       };
-      const sessionStore = e2eWindow.__zcodeSessionStoreE2E;
+      const sessionStore = e2eWindow.__raspberrycodeSessionStoreE2E;
       const skillStore = e2eWindow.__skillStoreE2E;
       const subagentsStore = e2eWindow.__subagentsStoreE2E;
       const whiteboardStore = e2eWindow.__whiteboardStoreE2E;
@@ -244,7 +244,7 @@ async function seedRendererPromptSources(seed: {
             name: currentSeed.skillName,
             description: "E2E skill for composer prefix routing",
             body: "Use this skill only for E2E prefix routing.",
-            path: `${workspacePath}/.zcode/skills/${currentSeed.skillName}/SKILL.md`,
+            path: `${workspacePath}/.raspberrycode/skills/${currentSeed.skillName}/SKILL.md`,
             scope: "workspace",
             enabled: true,
           },
@@ -267,7 +267,7 @@ async function seedRendererPromptSources(seed: {
             name: currentSeed.subagentName,
             description: "E2E subagent for composer prefix routing",
             systemPrompt: "You are only used by an E2E composer suggestion case.",
-            path: `${workspacePath}/.zcode/agents/${currentSeed.subagentName}.md`,
+            path: `${workspacePath}/.raspberrycode/agents/${currentSeed.subagentName}.md`,
             scope: "workspace",
             source: "user",
             enabled: true,
@@ -288,7 +288,7 @@ async function seedRendererPromptSources(seed: {
       return { ok: true, boardId: board.id };
     },
     DEFAULT_WORKSPACE,
-    ZCODE_AGENT_PROVIDER,
+    RASPBERRYCODE_AGENT_PROVIDER,
     seed,
   )) as { ok: boolean; reason?: string; bridges?: Record<string, boolean> };
 
@@ -304,12 +304,12 @@ async function setComposerText(text: string) {
         const input = document.querySelector<HTMLElement>(
           `[data-testid="${inputTestId}"]`,
         ) as (HTMLElement & {
-          __zcodeLexicalInputE2E?: {
+          __raspberrycodeLexicalInputE2E?: {
             focus: () => void;
             setText: (value: string) => void;
           };
         }) | null;
-        const bridge = input?.__zcodeLexicalInputE2E;
+        const bridge = input?.__raspberrycodeLexicalInputE2E;
         if (!bridge) {
           return false;
         }
@@ -427,8 +427,8 @@ function getComposerMarkdown(): Promise<string> {
     const input = document.querySelector<HTMLElement>(
       `[data-testid="${inputTestId}"]`,
     ) as (HTMLElement & {
-      __zcodeLexicalInputE2E?: { getText: () => string };
+      __raspberrycodeLexicalInputE2E?: { getText: () => string };
     }) | null;
-    return input?.__zcodeLexicalInputE2E?.getText() ?? "";
+    return input?.__raspberrycodeLexicalInputE2E?.getText() ?? "";
   }, TID_V4_COMPOSER_INPUT);
 }

@@ -30,7 +30,7 @@ export const SOURCE_SERVER_REMOVE_CALLBACK_FAILED_ERROR_CODE =
 export const SOURCE_SERVER_REMOVE_PERSIST_FAILED_ERROR_CODE =
   "source-server-remove-persist-failed" as const;
 
-export const PUBLIC_ZCODE_ERROR_CODES = [
+export const PUBLIC_RASPBERRYCODE_ERROR_CODES = [
   "remote-authentication-failed",
   "remote-host-unreachable",
   "remote-connection-timeout",
@@ -61,14 +61,14 @@ export const PUBLIC_ZCODE_ERROR_CODES = [
   SOURCE_SERVER_REMOVE_PERSIST_FAILED_ERROR_CODE,
 ] as const;
 
-export type PublicZCodeErrorCode = (typeof PUBLIC_ZCODE_ERROR_CODES)[number];
+export type PublicRaspberryCodeErrorCode = (typeof PUBLIC_RASPBERRYCODE_ERROR_CODES)[number];
 
-export const publicZCodeErrorCodeSchema = z.enum(PUBLIC_ZCODE_ERROR_CODES);
+export const publicRaspberryCodeErrorCodeSchema = z.enum(PUBLIC_RASPBERRYCODE_ERROR_CODES);
 
-const publicZCodeErrorCodeSet = new Set<string>(PUBLIC_ZCODE_ERROR_CODES);
+const publicRaspberryCodeErrorCodeSet = new Set<string>(PUBLIC_RASPBERRYCODE_ERROR_CODES);
 
-export function isPublicZCodeErrorCode(
+export function isPublicRaspberryCodeErrorCode(
   value: unknown,
-): value is PublicZCodeErrorCode {
-  return typeof value === "string" && publicZCodeErrorCodeSet.has(value);
+): value is PublicRaspberryCodeErrorCode {
+  return typeof value === "string" && publicRaspberryCodeErrorCodeSet.has(value);
 }

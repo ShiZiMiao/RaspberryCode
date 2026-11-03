@@ -5,20 +5,16 @@ import { readdir, readFile } from "node:fs/promises";
 import { dirname, resolve, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadPolicy } from "./architecture/policy.mjs";
-import { pristineUpstreamFiles } from "./architecture/upstream-admission.mjs";
 import { classifyLintDiagnostics, parseLintCommand } from "./cli-lint-admission.mjs";
 
 const exec = promisify(execFile);
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const cli = resolve(root, "apps/zcode-cli");
+const cli = resolve(root, "apps/raspberrycode-cli");
 
 async function main() {
-  const policy = await loadPolicy(root);
-  const pristine = await pristineUpstreamFiles(
-    root,
-    policy.global.acceptedUpstreamCommits,
-    policy.global.acceptedUpstreamSnapshot,
-  );
+  await loadPolicy(root);
+  // 全新独立发行后不再有「未改动的 upstream 原文」概念，全部文件都按现行 lint 规则计数。
+  const pristine = new Set();
   let errors = 0,
     warnings = 0,
     accepted = 0;

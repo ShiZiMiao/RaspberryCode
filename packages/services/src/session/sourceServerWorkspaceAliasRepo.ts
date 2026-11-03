@@ -1,5 +1,5 @@
 import { runTasksDatabaseMigrations } from "#src/session/tasksDatabase/migrations.js";
-import { runSessionDatabaseIdentityMigration } from "@zcode/shared/sqlite-migrations";
+import { runSessionDatabaseIdentityMigration } from "@raspberrycode/shared/sqlite-migrations";
 /* eslint-disable max-lines -- R3 canonical alias、双库备份、ledger 与幂等合并属于同一迁移事务边界。 */
 import { createHash, randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
@@ -14,7 +14,7 @@ import {
   WORKSPACE_TASK_IDENTITY_CONFLICT_ERROR_CODE,
   type SourceServerMigrationReport,
   type SourceServerMigrationReportRow,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import { getDataBaseDir, getTasksIndexDatabasePath, getWorkspaceHash } from "#src/paths.js";
 
 type Database = InstanceType<typeof DatabaseSync>;
@@ -922,9 +922,9 @@ export class SourceServerWorkspaceAliasRepo {
   }
 
   private readSessionDatabaseGeneration(db: Database): string | null {
-    if (!hasTable(db, "zcode_database_identity")) return null;
+    if (!hasTable(db, "raspberrycode_database_identity")) return null;
     const row = db
-      .prepare("SELECT identity FROM zcode_database_identity WHERE scope = 'session' LIMIT 1")
+      .prepare("SELECT identity FROM raspberrycode_database_identity WHERE scope = 'session' LIMIT 1")
       .get() as { identity: string } | undefined;
     return row?.identity?.trim() || null;
   }
@@ -1008,7 +1008,7 @@ export class SourceServerWorkspaceAliasRepo {
     runSessionDatabaseIdentityMigration(db);
     const existing = this.readSessionDatabaseGeneration(db);
     if (existing) return existing;
-    db.prepare("INSERT INTO zcode_database_identity (scope, identity) VALUES ('session', ?)").run(
+    db.prepare("INSERT INTO raspberrycode_database_identity (scope, identity) VALUES ('session', ?)").run(
       identity,
     );
     return identity;

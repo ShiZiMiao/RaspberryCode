@@ -5,8 +5,8 @@
  * 广播频道前缀 "state:" 表示状态同步类消息。
  */
 import { create } from "zustand";
-import type { IBroadcastService, BroadcastMessage } from "@zcode/services";
-import type { UserInfo } from "@zcode/shared";
+import type { IBroadcastService, BroadcastMessage } from "@raspberrycode/services";
+import type { UserInfo } from "@raspberrycode/shared";
 import type { CodePreviewSettings } from "@/lib/codePreviewSettings.js";
 import { DEFAULT_CODE_PREVIEW_SETTINGS } from "@/lib/codePreviewSettings.js";
 import { readSafeLocalStorage, writeSafeLocalStorage } from "@/lib/browserEnvironment.js";
@@ -37,10 +37,10 @@ import { logger } from "@/logger.js";
 export type { CodePreviewSettings } from "@/lib/codePreviewSettings.js";
 export { DEFAULT_CODE_PREVIEW_SETTINGS } from "@/lib/codePreviewSettings.js";
 
-const CODE_PREVIEW_SETTINGS_KEY = "zcode-code-preview-settings";
-const PERFORMANCE_MODE_STORAGE_KEY = "zcode-performance-mode";
+const CODE_PREVIEW_SETTINGS_KEY = "raspberrycode-code-preview-settings";
+const PERFORMANCE_MODE_STORAGE_KEY = "raspberrycode-performance-mode";
 export const FILE_MANAGER_NAVIGATION_PREFERENCES_STORAGE_KEY =
-  "zcode-file-manager-navigation-preferences";
+  "raspberrycode-file-manager-navigation-preferences";
 
 function loadFileManagerNavigationPreferences(): Record<string, boolean> {
   try {
@@ -89,7 +89,7 @@ function loadPerformanceMode(): boolean {
 // State 定义
 // ============================================================================
 
-export interface ZCodeState {
+export interface RaspberryCodeState {
   /** 展示详情偏好，不改变 Agent 权限或执行能力。 */
   interfaceMode: InterfaceMode;
   setInterfaceMode: (mode: InterfaceMode) => void;
@@ -181,7 +181,7 @@ const STATE_CHANNEL_PREFIX = "state:";
  *
  * @param broadcastService - 广播服务。Desktop 走 RPC，Web 可传 no-op 实现
  */
-export function createZCodeStore(
+export function createRaspberryCodeStore(
   broadcastService: IBroadcastService,
   options: {
     initialIsRestoringOAuthSession?: boolean;
@@ -192,7 +192,7 @@ export function createZCodeStore(
   let cleanupSystemThemeListener: (() => void) | null = null;
   let syncSystemThemeListener = (_theme: Theme) => {};
 
-  const useStore = create<ZCodeState>()((set, get) => ({
+  const useStore = create<RaspberryCodeState>()((set, get) => ({
     interfaceMode: normalizeInterfaceMode(readSafeLocalStorage(INTERFACE_MODE_STORAGE_KEY)),
     setInterfaceMode: (mode) => {
       const interfaceMode = normalizeInterfaceMode(mode);
@@ -205,21 +205,21 @@ export function createZCodeStore(
       writeSafeLocalStorage(INTERFACE_MODE_STORAGE_KEY, interfaceMode);
       set({ interfaceMode });
     },
-    // 默认主题统一收敛到 Zai dark，避免首次启动时 store 与其他主题入口表现不一致。
+    // 默认主题统一收敛到深色，避免首次启动时 store 与其他主题入口表现不一致。
     // 仍然优先尊重 localStorage 中已保存的用户选择，不覆盖已有偏好。
-    theme: normalizeThemePreference((readSafeLocalStorage("zcode-theme") as Theme) || "dark"),
+    theme: normalizeThemePreference((readSafeLocalStorage("raspberrycode-theme") as Theme) || "dark"),
     setTheme: (theme: Theme) => {
       const normalizedTheme = normalizeThemePreference(theme);
-      writeSafeLocalStorage("zcode-theme", normalizedTheme);
+      writeSafeLocalStorage("raspberrycode-theme", normalizedTheme);
       syncSystemThemeListener(normalizedTheme);
       applyTheme(normalizedTheme);
 
       set({ theme: normalizedTheme });
     },
 
-    locale: readSafeLocalStorage("zcode-locale") || "zh-CN",
+    locale: readSafeLocalStorage("raspberrycode-locale") || "zh-CN",
     setLocale: (locale: string) => {
-      writeSafeLocalStorage("zcode-locale", locale);
+      writeSafeLocalStorage("raspberrycode-locale", locale);
       set({ locale });
     },
 
@@ -399,4 +399,4 @@ export function createZCodeStore(
   return useStore;
 }
 
-export type ZCodeStore = ReturnType<typeof createZCodeStore>;
+export type RaspberryCodeStore = ReturnType<typeof createRaspberryCodeStore>;

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import type { DynamicWorkflowMode, WindowHostAttachmentScope } from "@zcode/shared";
-import type { IServerChannel } from "@zcode/rpc";
-import { ServiceCollection, IZCodeAgentService, type IBotsService } from "@zcode/services";
+import type { DynamicWorkflowMode, WindowHostAttachmentScope } from "@raspberrycode/shared";
+import type { IServerChannel } from "@raspberrycode/rpc";
+import { ServiceCollection, IRaspberryCodeAgentService, type IBotsService } from "@raspberrycode/services";
 import type {
   ServerRemoteConnection,
   ServerRemoteDuplexConnectionOptions,
@@ -10,9 +10,9 @@ import { connectDesktopSourceServer } from "../src/host/connectDesktopSourceServ
 
 function setup() {
   const sync = vi.fn(async (): Promise<void> => undefined);
-  const agent = { syncDynamicWorkflowUserMode: sync } as unknown as IZCodeAgentService;
-  const logicalA = new ServiceCollection().register(IZCodeAgentService, agent);
-  const logicalB = new ServiceCollection().register(IZCodeAgentService, agent);
+  const agent = { syncDynamicWorkflowUserMode: sync } as unknown as IRaspberryCodeAgentService;
+  const logicalA = new ServiceCollection().register(IRaspberryCodeAgentService, agent);
+  const logicalB = new ServiceCollection().register(IRaspberryCodeAgentService, agent);
   const scopes = new Map([
     ["a", logicalA],
     ["b", logicalB],
@@ -21,7 +21,7 @@ function setup() {
   const dispose = vi.fn();
   let captured: ServerRemoteDuplexConnectionOptions | undefined;
   const connection = {
-    services: { zcodeAgentService: agent },
+    services: { raspberrycodeAgentService: agent },
     dispose,
   } as unknown as ServerRemoteConnection;
   const connectServer = vi.fn(async (options: ServerRemoteDuplexConnectionOptions) => {
@@ -82,7 +82,7 @@ describe("Desktop Source physical connection capabilities", () => {
     expect(state.dependencies.connectServer).toHaveBeenCalledOnce();
     expect(await state.channel().call("host", "validate", request("a"))).toEqual({ valid: true });
     expect(await state.channel().call("host", "validate", request("b"))).toEqual({ valid: true });
-    state.scopes.set("b", new ServiceCollection().register(IZCodeAgentService, {} as never));
+    state.scopes.set("b", new ServiceCollection().register(IRaspberryCodeAgentService, {} as never));
     await expect(state.channel().call("host", "validate", request("b"))).rejects.toThrow(
       "connection mismatch",
     );

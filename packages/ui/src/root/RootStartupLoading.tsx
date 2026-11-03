@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "@/components/lib/utils.js";
-import { ZCodeAboutLogo } from "@/components/ui/ZCodeAboutLogo.js";
+import { RaspberryCodeAboutLogo } from "@/components/ui/RaspberryCodeAboutLogo.js";
 
 interface RootStartupLoadingProps {
   label: string;
@@ -19,14 +19,14 @@ export function RootStartupLoading({ label, children, busy = true }: RootStartup
       aria-label={label}
       data-testid="root-startup-loading"
     >
-      <ZCodeStartupLogoBadge />
+      <RaspberryCodeStartupLogoBadge />
       {children}
     </div>
   );
 }
 
 /** 初始化与引导共用品牌图标，保持底色、描边、圆角和标志比例一致。 */
-export function ZCodeStartupLogoBadge({
+export function RaspberryCodeStartupLogoBadge({
   animated = true,
   size = "default",
 }: {
@@ -44,7 +44,7 @@ export function ZCodeStartupLogoBadge({
       )}
     >
       {/* Button 会给 SVG 默认尺寸；紧凑 Logo 显式恢复自动高度，保持标志原始比例。 */}
-      <ZCodeStartupLogo
+      <RaspberryCodeStartupLogo
         className={size === "titlebar" ? "size-auto w-3.25" : "h-auto w-14"}
         animated={animated}
       />
@@ -52,14 +52,14 @@ export function ZCodeStartupLogoBadge({
   );
 }
 
-export function ZCodeStartupLogo({
+export function RaspberryCodeStartupLogo({
   className,
   animated = true,
 }: {
   className?: string;
   animated?: boolean;
 }) {
-  // Modified for RaspberryCode: 品牌标记改用 RaspberryCode 资产，复用 ZCodeAboutLogo；
+  // Modified for RaspberryCode: 品牌标记改用 RaspberryCode 资产，复用 RaspberryCodeAboutLogo；
   // 呼吸动画由 SVG <animate> 改为 CSS 动画（animate-pulse），语义保持一致。
-  return <ZCodeAboutLogo className={cn(className, animated && "animate-pulse")} />;
+  return <RaspberryCodeAboutLogo className={cn(className, animated && "animate-pulse")} />;
 }

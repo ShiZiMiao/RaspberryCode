@@ -7,13 +7,13 @@ import {
   browserSnapshotSchema,
 } from "../src/browser-use/index.js";
 import {
-  zcodeBrowserExecuteParamsSchema,
-  zcodeBrowserExecuteResultSchema,
-  zcodeBrowserListParamsSchema,
-  zcodeBrowserListResultSchema,
-  zcodeProtocolMethods,
-  zcodeProtocolSessionMethodContracts,
-} from "../src/zcode-protocol/index.js";
+  raspberrycodeBrowserExecuteParamsSchema,
+  raspberrycodeBrowserExecuteResultSchema,
+  raspberrycodeBrowserListParamsSchema,
+  raspberrycodeBrowserListResultSchema,
+  raspberrycodeProtocolMethods,
+  raspberrycodeProtocolSessionMethodContracts,
+} from "../src/raspberrycode-protocol/index.js";
 
 const IAB_DESCRIPTOR = {
   id: "iab-runtime-1",
@@ -55,7 +55,7 @@ describe("browser command schema", () => {
       method: "closeSession",
     });
     expect(
-      zcodeBrowserExecuteParamsSchema.parse({
+      raspberrycodeBrowserExecuteParamsSchema.parse({
         requestId: "req-close",
         sessionId: "sess_dwf-dwfrun-1-actor_1_1",
         command: { method: "closeSession", closeTabs: true },
@@ -421,14 +421,14 @@ describe("browser backend descriptor schema", () => {
 
 describe("interaction/browserList protocol", () => {
   it("注册严格 method contract", () => {
-    expect(zcodeProtocolMethods.interactionBrowserList).toBe("interaction/browserList");
-    const entry = zcodeProtocolSessionMethodContracts[zcodeProtocolMethods.interactionBrowserList];
-    expect(entry?.params).toBe(zcodeBrowserListParamsSchema);
-    expect(entry?.result).toBe(zcodeBrowserListResultSchema);
+    expect(raspberrycodeProtocolMethods.interactionBrowserList).toBe("interaction/browserList");
+    const entry = raspberrycodeProtocolSessionMethodContracts[raspberrycodeProtocolMethods.interactionBrowserList];
+    expect(entry?.params).toBe(raspberrycodeBrowserListParamsSchema);
+    expect(entry?.result).toBe(raspberrycodeBrowserListResultSchema);
   });
 
   it("round-trips 完整 discovery context", () => {
-    const parsed = zcodeBrowserListParamsSchema.parse({
+    const parsed = raspberrycodeBrowserListParamsSchema.parse({
       requestId: "req-list-1",
       sessionId: "sess-1",
       turnId: "turn-1",
@@ -445,13 +445,13 @@ describe("interaction/browserList protocol", () => {
 
   it("拒绝缺失隔离 context 或多余字段", () => {
     expect(() =>
-      zcodeBrowserListParamsSchema.parse({
+      raspberrycodeBrowserListParamsSchema.parse({
         requestId: "req-list-1",
         sessionId: "sess-1",
       }),
     ).toThrow();
     expect(() =>
-      zcodeBrowserListParamsSchema.parse({
+      raspberrycodeBrowserListParamsSchema.parse({
         requestId: "req-list-1",
         sessionId: "sess-1",
         workspaceKey: "/repo",
@@ -465,19 +465,19 @@ describe("interaction/browserList protocol", () => {
 
   it("result 使用统一 descriptor list schema", () => {
     expect(
-      zcodeBrowserListResultSchema.parse({ browsers: [IAB_DESCRIPTOR] }).browsers[0]?.type,
+      raspberrycodeBrowserListResultSchema.parse({ browsers: [IAB_DESCRIPTOR] }).browsers[0]?.type,
     ).toBe("iab");
   });
 });
 
 describe("interaction/browserExecute protocol", () => {
   it("registers the method", () => {
-    expect(zcodeProtocolMethods.interactionBrowserExecute).toBe("interaction/browserExecute");
+    expect(raspberrycodeProtocolMethods.interactionBrowserExecute).toBe("interaction/browserExecute");
   });
 
   it("has a contract entry with params/result schemas", () => {
     const entry =
-      zcodeProtocolSessionMethodContracts[zcodeProtocolMethods.interactionBrowserExecute];
+      raspberrycodeProtocolSessionMethodContracts[raspberrycodeProtocolMethods.interactionBrowserExecute];
     expect(entry).toBeDefined();
     expect(entry?.params).toBeDefined();
     expect(entry?.result).toBeDefined();
@@ -489,13 +489,13 @@ describe("interaction/browserExecute protocol", () => {
       sessionId: "sess-1",
       command: { method: "navigate", url: "https://example.com" } as const,
     };
-    const parsed = zcodeBrowserExecuteParamsSchema.parse(params);
+    const parsed = raspberrycodeBrowserExecuteParamsSchema.parse(params);
     expect(parsed.command.method).toBe("navigate");
     expect(parsed.sessionId).toBe("sess-1");
   });
 
   it("params round-trips browserId + workspace/session context", () => {
-    const parsed = zcodeBrowserExecuteParamsSchema.parse({
+    const parsed = raspberrycodeBrowserExecuteParamsSchema.parse({
       requestId: "req-2",
       sessionId: "sess-1",
       turnId: "turn-1",
@@ -515,14 +515,14 @@ describe("interaction/browserExecute protocol", () => {
 
   it("兼容旧 execute params，但继续拒绝未知字段", () => {
     expect(
-      zcodeBrowserExecuteParamsSchema.parse({
+      raspberrycodeBrowserExecuteParamsSchema.parse({
         requestId: "legacy-req",
         sessionId: "legacy-session",
         command: { method: "getState" },
       }).browserId,
     ).toBeUndefined();
     expect(() =>
-      zcodeBrowserExecuteParamsSchema.parse({
+      raspberrycodeBrowserExecuteParamsSchema.parse({
         requestId: "legacy-req",
         sessionId: "legacy-session",
         command: { method: "getState" },
@@ -537,7 +537,7 @@ describe("interaction/browserExecute protocol", () => {
       image: { base64: "iVBOR", mimeType: "image/png" as const },
       elapsedMs: 12,
     };
-    const parsed = zcodeBrowserExecuteResultSchema.parse(result);
+    const parsed = raspberrycodeBrowserExecuteResultSchema.parse(result);
     expect(parsed.ok).toBe(true);
     expect(parsed.image?.base64).toBe("iVBOR");
   });
@@ -552,7 +552,7 @@ describe("interaction/browserExecute protocol", () => {
   });
 
   it("result round-trips duplicate request id errors", () => {
-    const parsed = zcodeBrowserExecuteResultSchema.parse({
+    const parsed = raspberrycodeBrowserExecuteResultSchema.parse({
       ok: false,
       error: {
         code: "duplicate_request_id",

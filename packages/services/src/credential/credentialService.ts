@@ -1,13 +1,13 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { atomicWritePrivateTextFile, backupCorruptFile, withFileLock } from "@zcode/shared/node";
+import { atomicWritePrivateTextFile, backupCorruptFile, withFileLock } from "@raspberrycode/shared/node";
 import {
   credentialKeySchema,
   credentialRecordSchema,
   credentialValueSchema,
   formatZodError,
   isCredentialDecryptError,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import type { ICredentialService } from "./credential.js";
 import {
   createCredentialCipherProvider,

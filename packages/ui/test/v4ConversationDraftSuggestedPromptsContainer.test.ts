@@ -11,7 +11,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
+import { useRaspberryCodeSessionStore } from "@/store/raspberrycodeSessionStore.js";
 import { ConversationDraftSuggestedPromptsContainer } from "@/v4/ConversationDraftSuggestedPromptsContainer.js";
 import { advanceComposerDraftRevision } from "@/v4/composer/composerDraftRevision.js";
 
@@ -69,7 +69,7 @@ vi.mock("@/hooks/usePlatform.js", () => ({
   usePlatform: () => ({ reportTelemetryEvent }),
 }));
 
-vi.mock("@/lib/zcodeDraftSkillInvalidation.js", () => ({
+vi.mock("@/lib/raspberrycodeDraftSkillInvalidation.js", () => ({
   invalidateDeferredDraftSessionForSkillChange: invalidateDraftSession,
 }));
 
@@ -91,7 +91,7 @@ vi.mock("@/hooks/useWorkspaceServices.js", () => {
       resolveSuggestedPluginReference,
       setPluginEnabled,
     },
-    zcodeSessionService: {},
+    raspberrycodeSessionService: {},
   };
   return {
     useWorkspaceServicesResolution: (
@@ -108,7 +108,7 @@ vi.mock("@/hooks/useWorkspaceServices.js", () => {
 });
 
 vi.mock("@/i18n/IntlProvider.js", () => ({
-  useZCodeIntl: () => ({
+  useRaspberryCodeIntl: () => ({
     locale: "zh-CN",
     intl: {
       formatMessage: ({ id }: { id: string }, values?: { pluginLabel?: string; error?: string }) =>
@@ -145,14 +145,14 @@ const offPeakLabel = "闲时任务";
 
 async function applyPendingComposerTextInsert(workspacePath: string, workspaceIdentity?: string) {
   const request = await waitFor(() => {
-    const current = useZCodeSessionStore
+    const current = useRaspberryCodeSessionStore
       .getState()
       .getWorkspaceState(workspacePath, workspaceIdentity).composerTextInsertRequest;
     if (!current) throw new Error("Composer insert request is not ready");
     return current;
   });
   act(() => {
-    useZCodeSessionStore
+    useRaspberryCodeSessionStore
       .getState()
       .clearComposerTextInsertRequest(workspacePath, request.requestId, workspaceIdentity);
   });
@@ -164,7 +164,7 @@ const clientScenesResponse = {
   msg: "",
   data: [
     {
-      namespace: "zcode",
+      namespace: "raspberrycode",
       scene: "draft-suggestion",
       options: {
         prompts: {
@@ -237,8 +237,8 @@ const clientScenesResponse = {
               id: "document-skills",
               type: "plugin",
               contents: {
-                cn: "document-skills@zcode-plugins-official",
-                en: "document-skills@zcode-plugins-official",
+                cn: "document-skills@raspberrycode-plugins-official",
+                en: "document-skills@raspberrycode-plugins-official",
               },
               descs: { cn: "", en: "" },
               labels: { cn: "文档技能", en: "Document skills" },
@@ -263,18 +263,18 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
     getPluginReferenceCatalog.mockResolvedValue({ authority: "workspace", plugins: [] });
     resolveSuggestedPluginReference.mockReset();
     resolveSuggestedPluginReference.mockResolvedValue({
-      stableId: "document-skills@zcode-plugins-official",
+      stableId: "document-skills@raspberrycode-plugins-official",
       status: "unavailable",
       diagnostics: [],
     });
     installPlugin.mockReset();
     installPlugin.mockResolvedValue({
-      dependencyClosure: ["document-skills@zcode-plugins-official"],
+      dependencyClosure: ["document-skills@raspberrycode-plugins-official"],
       installedPlugins: [
         {
-          id: "document-skills@zcode-plugins-official",
+          id: "document-skills@raspberrycode-plugins-official",
           name: "document-skills",
-          marketplace: "zcode-plugins-official",
+          marketplace: "raspberrycode-plugins-official",
           enabled: true,
           scope: "user",
         },
@@ -404,7 +404,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
 
     expect(onOpenAutomations).toHaveBeenCalledOnce();
     expect(
-      useZCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
+      useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
     ).toBeNull();
     expect(getPluginReferenceCatalog).not.toHaveBeenCalled();
   });
@@ -449,7 +449,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
     expect(reportTelemetryEvent).not.toHaveBeenCalled();
     await waitFor(() =>
       expect(
-        useZCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest
+        useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest
           ?.text,
       ).toBe(plainPrompt),
     );
@@ -468,7 +468,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
 
     await waitFor(() =>
       expect(
-        useZCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
+        useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
       ).toEqual({
         requestId: 1,
         text: plainPrompt,
@@ -486,7 +486,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
         settleResolution = resolve;
       }),
     );
-    const insertSpy = vi.spyOn(useZCodeSessionStore.getState(), "requestComposerTextInsert");
+    const insertSpy = vi.spyOn(useRaspberryCodeSessionStore.getState(), "requestComposerTextInsert");
     render(
       createElement(ConversationDraftSuggestedPromptsContainer, {
         workspacePath,
@@ -499,7 +499,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
 
     await waitFor(() => expect(resolveSuggestedPluginReference).toHaveBeenCalledOnce());
     expect(
-      useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
+      useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
         .composerTextInsertRequest,
     ).toBeNull();
     expect(insertSpy).not.toHaveBeenCalled();
@@ -509,9 +509,9 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
 
     act(() => {
       settleResolution({
-        stableId: "document-skills@zcode-plugins-official",
+        stableId: "document-skills@raspberrycode-plugins-official",
         status: "ready",
-        marketplace: "zcode-plugins-official",
+        marketplace: "raspberrycode-plugins-official",
         pluginName: "document-skills",
         sourceTrust: "official",
         icon: "https://cdn.example/document-skills.svg",
@@ -521,17 +521,17 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
 
     await waitFor(() =>
       expect(
-        useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
+        useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
           .composerTextInsertRequest,
       ).toEqual({
         requestId: 1,
-        text: `[@文档技能](plugin://document-skills@zcode-plugins-official) ${pluginPrompt}`,
+        text: `[@文档技能](plugin://document-skills@raspberrycode-plugins-official) ${pluginPrompt}`,
         mention: expect.objectContaining({
-          id: "plugin:document-skills@zcode-plugins-official",
+          id: "plugin:document-skills@raspberrycode-plugins-official",
           category: "plugins",
-          value: "document-skills@zcode-plugins-official",
+          value: "document-skills@raspberrycode-plugins-official",
           data: {
-            pluginId: "document-skills@zcode-plugins-official",
+            pluginId: "document-skills@raspberrycode-plugins-official",
             icon: "https://cdn.example/document-skills.svg",
           },
         }),
@@ -542,7 +542,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
       workspacePath,
       workspaceIdentity,
       remoteSessionId: "remote-runtime",
-      stableId: "document-skills@zcode-plugins-official",
+      stableId: "document-skills@raspberrycode-plugins-official",
       operationId: expect.any(String),
       clientMode: "desktop-continuous",
       deliveryKind: "desktop-continuous",
@@ -556,9 +556,9 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
   it("uses the default Plugin icon when trusted resolution has no listing icon", async () => {
     const workspacePath = "/tmp/suggested-prompt-plugin-icon-fallback";
     resolveSuggestedPluginReference.mockResolvedValue({
-      stableId: "document-skills@zcode-plugins-official",
+      stableId: "document-skills@raspberrycode-plugins-official",
       status: "ready",
-      marketplace: "zcode-plugins-official",
+      marketplace: "raspberrycode-plugins-official",
       pluginName: "document-skills",
       sourceTrust: "official",
       diagnostics: [],
@@ -569,9 +569,9 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
 
     await waitFor(() =>
       expect(
-        useZCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest
+        useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest
           ?.mention?.data,
-      ).toEqual({ pluginId: "document-skills@zcode-plugins-official" }),
+      ).toEqual({ pluginId: "document-skills@raspberrycode-plugins-official" }),
     );
     expect(getPluginReferenceCatalog).not.toHaveBeenCalled();
   });
@@ -589,7 +589,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
 
     await waitFor(() =>
       expect(
-        useZCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
+        useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
       ).toEqual({
         requestId: 1,
         text: pluginPrompt,
@@ -601,7 +601,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
   it("rejects an actionable result that does not attest the canonical official source", async () => {
     const workspacePath = "/tmp/suggested-prompt-untrusted-result";
     resolveSuggestedPluginReference.mockResolvedValue({
-      stableId: "document-skills@zcode-plugins-official",
+      stableId: "document-skills@raspberrycode-plugins-official",
       status: "ready",
       marketplace: "personal",
       pluginName: "document-skills",
@@ -618,7 +618,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
     await waitFor(() => expect(resolveSuggestedPluginReference).toHaveBeenCalledOnce());
     expect(getPluginReferenceCatalog).not.toHaveBeenCalled();
     expect(
-      useZCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
+      useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
     ).toEqual({ requestId: 1, text: pluginPrompt });
     expect(toast).not.toHaveBeenCalled();
   });
@@ -639,9 +639,9 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
     await act(async () => {
       advanceComposerDraftRevision(workspacePath);
       settleResolution({
-        stableId: "document-skills@zcode-plugins-official",
+        stableId: "document-skills@raspberrycode-plugins-official",
         status: "missing",
-        marketplace: "zcode-plugins-official",
+        marketplace: "raspberrycode-plugins-official",
         pluginName: "document-skills",
         sourceTrust: "official",
         diagnostics: [],
@@ -649,7 +649,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
     });
 
     expect(
-      useZCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
+      useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
     ).toBeNull();
     expect(toast).not.toHaveBeenCalled();
     expect(dismissToast).not.toHaveBeenCalled();
@@ -660,17 +660,17 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
     const workspaceIdentity = "ssh://host/tmp/suggested-prompt-missing";
     resolveSuggestedPluginReference
       .mockResolvedValueOnce({
-        stableId: "document-skills@zcode-plugins-official",
+        stableId: "document-skills@raspberrycode-plugins-official",
         status: "missing",
-        marketplace: "zcode-plugins-official",
+        marketplace: "raspberrycode-plugins-official",
         pluginName: "document-skills",
         sourceTrust: "official",
         diagnostics: [],
       })
       .mockResolvedValueOnce({
-        stableId: "document-skills@zcode-plugins-official",
+        stableId: "document-skills@raspberrycode-plugins-official",
         status: "ready",
-        marketplace: "zcode-plugins-official",
+        marketplace: "raspberrycode-plugins-official",
         pluginName: "document-skills",
         sourceTrust: "official",
         icon: "https://cdn.example/document-skills.svg",
@@ -686,7 +686,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: pluginLabel }));
     expect(
-      useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
+      useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
         .composerTextInsertRequest,
     ).toBeNull();
 
@@ -712,7 +712,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
         workspaceIdentity,
         remoteSessionId: "remote-runtime",
         pluginName: "document-skills",
-        marketplace: "zcode-plugins-official",
+        marketplace: "raspberrycode-plugins-official",
         scope: "user",
         operationId: expect.any(String),
       }),
@@ -723,7 +723,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
     ).not.toBeNull();
     await waitFor(() =>
       expect(
-        useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
+        useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
           .composerTextInsertRequest,
       ).toEqual(
         expect.objectContaining({
@@ -733,17 +733,17 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
       ),
     );
     expect(
-      useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
+      useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
         .composerTextInsertRequest?.mention?.data,
     ).toEqual({
-      pluginId: "document-skills@zcode-plugins-official",
+      pluginId: "document-skills@raspberrycode-plugins-official",
       icon: "https://cdn.example/document-skills.svg",
     });
     expect(screen.queryByText("安装成功")).toBeNull();
     vi.useFakeTimers();
     try {
       await act(async () => {
-        useZCodeSessionStore
+        useRaspberryCodeSessionStore
           .getState()
           .clearComposerTextInsertRequest(workspacePath, 2, workspaceIdentity);
         await Promise.resolve();
@@ -801,9 +801,9 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
 
     act(() => {
       settleResolution({
-        stableId: "document-skills@zcode-plugins-official",
+        stableId: "document-skills@raspberrycode-plugins-official",
         status: "missing",
-        marketplace: "zcode-plugins-official",
+        marketplace: "raspberrycode-plugins-official",
         pluginName: "document-skills",
         sourceTrust: "official",
         diagnostics: [],
@@ -811,13 +811,13 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
     });
     await waitFor(() =>
       expect(
-        useZCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
+        useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
       ).toEqual({ requestId: 1, text: pluginPrompt }),
     );
     expect(screen.queryByRole("button", { name: "确认" })).toBeNull();
 
     act(() => {
-      useZCodeSessionStore.getState().clearComposerTextInsertRequest(workspacePath, 1);
+      useRaspberryCodeSessionStore.getState().clearComposerTextInsertRequest(workspacePath, 1);
     });
     expect(await screen.findByRole("button", { name: "确认" })).not.toBeNull();
     const confirmationPopover = document.querySelector<HTMLElement>(
@@ -831,17 +831,17 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
     const workspacePath = "/tmp/suggested-prompt-disabled";
     resolveSuggestedPluginReference
       .mockResolvedValueOnce({
-        stableId: "document-skills@zcode-plugins-official",
+        stableId: "document-skills@raspberrycode-plugins-official",
         status: "disabled",
-        marketplace: "zcode-plugins-official",
+        marketplace: "raspberrycode-plugins-official",
         pluginName: "document-skills",
         sourceTrust: "official",
         diagnostics: [],
       })
       .mockResolvedValueOnce({
-        stableId: "document-skills@zcode-plugins-official",
+        stableId: "document-skills@raspberrycode-plugins-official",
         status: "ready",
-        marketplace: "zcode-plugins-official",
+        marketplace: "raspberrycode-plugins-official",
         pluginName: "document-skills",
         sourceTrust: "official",
         icon: "https://cdn.example/document-skills.svg",
@@ -856,7 +856,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
     fireEvent.click(await screen.findByRole("button", { name: pluginLabel }));
     await waitFor(() =>
       expect(
-        useZCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
+        useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
       ).toEqual({ requestId: 1, text: pluginPrompt }),
     );
     expect(await screen.findByText("正在检查插件状态…")).not.toBeNull();
@@ -866,7 +866,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
     expect(document.querySelectorAll("[data-draft-suggested-plugin-popover]")).toHaveLength(1);
     expect(screen.queryByRole("button", { name: "确认" })).toBeNull();
     act(() => {
-      useZCodeSessionStore.getState().clearComposerTextInsertRequest(workspacePath, 1);
+      useRaspberryCodeSessionStore.getState().clearComposerTextInsertRequest(workspacePath, 1);
     });
     const enableAction = await screen.findByRole("button", { name: "确认" });
     const confirmationPopover = document.querySelector<HTMLElement>(
@@ -882,7 +882,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
       expect(setPluginEnabled).toHaveBeenCalledWith({
         telemetry: { entry: "recommended_prompt", client_kind: "desktop" },
         workspacePath,
-        pluginId: "document-skills@zcode-plugins-official",
+        pluginId: "document-skills@raspberrycode-plugins-official",
         enabled: true,
         operationId: expect.any(String),
       }),
@@ -893,13 +893,13 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
     ).not.toBeNull();
     await waitFor(() =>
       expect(
-        useZCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest
+        useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest
           ?.requestId,
       ).toBe(2),
     );
     expect(screen.queryByText("安装成功")).toBeNull();
     act(() => {
-      useZCodeSessionStore.getState().clearComposerTextInsertRequest(workspacePath, 2);
+      useRaspberryCodeSessionStore.getState().clearComposerTextInsertRequest(workspacePath, 2);
     });
     expect(screen.queryByText("安装成功")).toBeNull();
     expect(await screen.findByText("开启成功")).not.toBeNull();
@@ -913,9 +913,9 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
   it("replaces the persistent enablement Popover with failure and never calls toast", async () => {
     const workspacePath = "/tmp/suggested-prompt-enable-failed";
     resolveSuggestedPluginReference.mockResolvedValue({
-      stableId: "document-skills@zcode-plugins-official",
+      stableId: "document-skills@raspberrycode-plugins-official",
       status: "disabled",
-      marketplace: "zcode-plugins-official",
+      marketplace: "raspberrycode-plugins-official",
       pluginName: "document-skills",
       sourceTrust: "official",
       diagnostics: [],
@@ -938,9 +938,9 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
     async (status) => {
       const workspacePath = `/tmp/suggested-prompt-${status}-confirmation-outside`;
       resolveSuggestedPluginReference.mockResolvedValue({
-        stableId: "document-skills@zcode-plugins-official",
+        stableId: "document-skills@raspberrycode-plugins-official",
         status,
-        marketplace: "zcode-plugins-official",
+        marketplace: "raspberrycode-plugins-official",
         pluginName: "document-skills",
         sourceTrust: "official",
         diagnostics: [],
@@ -958,12 +958,12 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
           await Promise.resolve();
           await Promise.resolve();
         });
-        const plainRequest = useZCodeSessionStore
+        const plainRequest = useRaspberryCodeSessionStore
           .getState()
           .getWorkspaceState(workspacePath).composerTextInsertRequest;
         expect(plainRequest).toEqual({ requestId: 1, text: pluginPrompt });
         act(() => {
-          useZCodeSessionStore
+          useRaspberryCodeSessionStore
             .getState()
             .clearComposerTextInsertRequest(workspacePath, plainRequest!.requestId);
         });
@@ -993,7 +993,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
         expect(screen.queryByRole("button", { name: "确认" })).toBeNull();
         expect(toast).not.toHaveBeenCalled();
         expect(
-          useZCodeSessionStore.getState().getWorkspaceState(workspacePath)
+          useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath)
             .composerTextInsertRequest,
         ).toBeNull();
       } finally {
@@ -1005,9 +1005,9 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
   it("closes a confirmation and still applies the recommendation clicked outside it", async () => {
     const workspacePath = "/tmp/suggested-prompt-confirmation-outside-recommendation";
     resolveSuggestedPluginReference.mockResolvedValue({
-      stableId: "document-skills@zcode-plugins-official",
+      stableId: "document-skills@raspberrycode-plugins-official",
       status: "missing",
-      marketplace: "zcode-plugins-official",
+      marketplace: "raspberrycode-plugins-official",
       pluginName: "document-skills",
       sourceTrust: "official",
       diagnostics: [],
@@ -1025,7 +1025,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
     await waitFor(() => expect(cancelPluginOperation).toHaveBeenCalledOnce());
     await waitFor(() =>
       expect(
-        useZCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
+        useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
       ).toEqual({ requestId: 2, text: plainPrompt }),
     );
     expect(screen.queryByRole("button", { name: "确认" })).toBeNull();
@@ -1036,9 +1036,9 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
     const workspacePath = "/tmp/suggested-prompt-install-failed";
     let settleInstall!: (value: Record<string, unknown>) => void;
     resolveSuggestedPluginReference.mockResolvedValue({
-      stableId: "document-skills@zcode-plugins-official",
+      stableId: "document-skills@raspberrycode-plugins-official",
       status: "missing",
-      marketplace: "zcode-plugins-official",
+      marketplace: "raspberrycode-plugins-official",
       pluginName: "document-skills",
       sourceTrust: "official",
       diagnostics: [],
@@ -1093,7 +1093,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
       expect.objectContaining({
         error: "offline",
         operationId: expect.any(String),
-        pluginId: "document-skills@zcode-plugins-official",
+        pluginId: "document-skills@raspberrycode-plugins-official",
         workspaceKey: workspacePath,
       }),
     );
@@ -1104,7 +1104,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
     expect(await screen.findByText("正在安装插件…")).not.toBeNull();
     expect(getPluginReferenceCatalog).not.toHaveBeenCalled();
     expect(
-      useZCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
+      useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
     ).toBeNull();
   });
 
@@ -1112,9 +1112,9 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
     const workspacePath = "/tmp/suggested-prompt-install-timeout";
     let settleLateInstall!: (value: Record<string, unknown>) => void;
     resolveSuggestedPluginReference.mockResolvedValue({
-      stableId: "document-skills@zcode-plugins-official",
+      stableId: "document-skills@raspberrycode-plugins-official",
       status: "missing",
-      marketplace: "zcode-plugins-official",
+      marketplace: "raspberrycode-plugins-official",
       pluginName: "document-skills",
       sourceTrust: "official",
       diagnostics: [],
@@ -1138,12 +1138,12 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
         await Promise.resolve();
         await Promise.resolve();
       });
-      const plainRequest = useZCodeSessionStore
+      const plainRequest = useRaspberryCodeSessionStore
         .getState()
         .getWorkspaceState(workspacePath).composerTextInsertRequest;
       expect(plainRequest).toEqual({ requestId: 1, text: pluginPrompt });
       act(() => {
-        useZCodeSessionStore
+        useRaspberryCodeSessionStore
           .getState()
           .clearComposerTextInsertRequest(workspacePath, plainRequest!.requestId);
       });
@@ -1184,22 +1184,22 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
         expect.objectContaining({
           error: "安装超时",
           operationId: expect.any(String),
-          pluginId: "document-skills@zcode-plugins-official",
+          pluginId: "document-skills@raspberrycode-plugins-official",
           workspaceKey: workspacePath,
         }),
       );
       expect(
-        useZCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
+        useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
       ).toBeNull();
 
       await act(async () => {
         settleLateInstall({
-          dependencyClosure: ["document-skills@zcode-plugins-official"],
+          dependencyClosure: ["document-skills@raspberrycode-plugins-official"],
           installedPlugins: [
             {
-              id: "document-skills@zcode-plugins-official",
+              id: "document-skills@raspberrycode-plugins-official",
               name: "document-skills",
-              marketplace: "zcode-plugins-official",
+              marketplace: "raspberrycode-plugins-official",
               enabled: true,
               scope: "user",
             },
@@ -1211,7 +1211,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
       });
       expect(resolveSuggestedPluginReference).toHaveBeenCalledOnce();
       expect(
-        useZCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
+        useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
       ).toBeNull();
       expect(screen.queryByText("安装成功")).toBeNull();
       expect(screen.getByRole("button", { name: "确认" })).not.toBeNull();
@@ -1223,7 +1223,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
   it("keeps the pure prompt and does not offer installation when refresh fails closed", async () => {
     const workspacePath = "/tmp/suggested-prompt-refresh-failed";
     resolveSuggestedPluginReference.mockResolvedValue({
-      stableId: "document-skills@zcode-plugins-official",
+      stableId: "document-skills@raspberrycode-plugins-official",
       status: "unavailable",
       diagnostics: [
         {
@@ -1244,7 +1244,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
 
     await waitFor(() => expect(resolveSuggestedPluginReference).toHaveBeenCalledOnce());
     expect(
-      useZCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
+      useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
     ).toEqual({ requestId: 1, text: pluginPrompt });
     expect(toast).not.toHaveBeenCalled();
     expect(resolveSuggestedPluginReference).toHaveBeenCalledWith(
@@ -1260,9 +1260,9 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
     let resolveOld!: (value: Record<string, unknown>) => void;
     let resolveCancel!: (value: Record<string, unknown>) => void;
     resolveSuggestedPluginReference.mockResolvedValue({
-      stableId: "document-skills@zcode-plugins-official",
+      stableId: "document-skills@raspberrycode-plugins-official",
       status: "missing",
-      marketplace: "zcode-plugins-official",
+      marketplace: "raspberrycode-plugins-official",
       pluginName: "document-skills",
       sourceTrust: "official",
       diagnostics: [],
@@ -1299,7 +1299,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
 
     await waitFor(() =>
       expect(
-        useZCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest
+        useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest
           ?.text,
       ).toBe(plainPrompt),
     );
@@ -1325,12 +1325,12 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
 
     await act(async () => {
       resolveOld({
-        dependencyClosure: ["document-skills@zcode-plugins-official"],
+        dependencyClosure: ["document-skills@raspberrycode-plugins-official"],
         installedPlugins: [
           {
-            id: "document-skills@zcode-plugins-official",
+            id: "document-skills@raspberrycode-plugins-official",
             name: "document-skills",
-            marketplace: "zcode-plugins-official",
+            marketplace: "raspberrycode-plugins-official",
             enabled: true,
             scope: "user",
           },
@@ -1345,7 +1345,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
       ).toBe(false),
     );
     expect(
-      useZCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
+      useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
     ).toEqual({
       requestId: 2,
       text: plainPrompt,
@@ -1384,7 +1384,7 @@ describe("ConversationDraftSuggestedPromptsContainer", () => {
       await Promise.resolve();
     });
     expect(
-      useZCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
+      useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath).composerTextInsertRequest,
     ).toBeNull();
     expect(toast).not.toHaveBeenCalled();
   });

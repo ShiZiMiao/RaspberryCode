@@ -7,7 +7,7 @@ import { ensureDesktopDeviceMidSync } from "../src/main/desktopDeviceMid.js";
 const tempDirs: string[] = [];
 
 function makeTempDir(): string {
-  const dir = mkdtempSync(join(tmpdir(), "zcode-device-mid-"));
+  const dir = mkdtempSync(join(tmpdir(), "raspberrycode-device-mid-"));
   tempDirs.push(dir);
   return dir;
 }
@@ -93,7 +93,7 @@ describe("ensureDesktopDeviceMidSync", () => {
       "utf-8",
     );
 
-    const { createTelemetryCore } = await import("@zcode/services/node");
+    const { createTelemetryCore } = await import("@raspberrycode/services/node");
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 204 }));
     const service = createTelemetryCore({
       homeDir: home,

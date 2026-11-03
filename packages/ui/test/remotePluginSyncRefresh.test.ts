@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { CommandsListResult, ZCodeCommand } from "@zcode/shared";
-import { ZCODE_AGENT_PROVIDER } from "@zcode/shared";
+import type { CommandsListResult, RaspberryCodeCommand } from "@raspberrycode/shared";
+import { RASPBERRYCODE_AGENT_PROVIDER } from "@raspberrycode/shared";
 import { refreshWorkspacePluginCapabilitiesAfterRemoteSync } from "../src/lib/remotePluginSyncRefresh.js";
 import { useCommandsStore } from "../src/store/commandsStore.js";
 import { useSkillStore } from "../src/store/skillStore.js";
-import { useZCodeSessionStore } from "../src/store/zcodeSessionStore.js";
+import { useRaspberryCodeSessionStore } from "../src/store/raspberrycodeSessionStore.js";
 
 function makePluginCommand(
-  overrides: Partial<Extract<ZCodeCommand, { source: "plugin" }>>,
-): Extract<ZCodeCommand, { source: "plugin" }> {
+  overrides: Partial<Extract<RaspberryCodeCommand, { source: "plugin" }>>,
+): Extract<RaspberryCodeCommand, { source: "plugin" }> {
   return {
     id: "plugin:team-market:hello-world:hello:/remote/commands/hello.md",
     name: "hello",
@@ -26,7 +26,7 @@ function makePluginCommand(
 }
 
 beforeEach(() => {
-  useZCodeSessionStore.setState((state) => ({
+  useRaspberryCodeSessionStore.setState((state) => ({
     ...state,
     workspaces: {},
   }));
@@ -48,7 +48,7 @@ beforeEach(() => {
     workspaceIdentity: null,
     loadedWorkspacePath: null,
     loadedWorkspaceIdentity: null,
-    provider: ZCODE_AGENT_PROVIDER,
+    provider: RASPBERRYCODE_AGENT_PROVIDER,
     loadedProvider: null,
     skills: [],
     capability: null,
@@ -61,7 +61,7 @@ describe("refreshWorkspacePluginCapabilitiesAfterRemoteSync", () => {
   it("refreshes slash commands even when commands settings store was not loaded", async () => {
     const workspacePath = "/Users/dev";
     const workspaceIdentity = "remote:ssh:intranet.example.invalid:22:dev:/Users/dev";
-    useZCodeSessionStore.getState().setSlashCommands(
+    useRaspberryCodeSessionStore.getState().setSlashCommands(
       workspacePath,
       [
         {
@@ -97,7 +97,7 @@ describe("refreshWorkspacePluginCapabilitiesAfterRemoteSync", () => {
       workspacePath,
       workspaceIdentity,
       reason: "sidebar-remote-plugin-sync",
-      zcodeAgentService: {} as never,
+      raspberrycodeAgentService: {} as never,
       skillsService: { list: vi.fn() } as never,
       commandsService: commandsService as never,
       mcpSyncService: {
@@ -110,7 +110,7 @@ describe("refreshWorkspacePluginCapabilitiesAfterRemoteSync", () => {
       workspaceIdentity,
     });
     expect(
-      useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
+      useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
         .slashCommands,
     ).toEqual([
       {

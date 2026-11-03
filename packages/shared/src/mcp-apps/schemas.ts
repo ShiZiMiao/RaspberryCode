@@ -31,7 +31,7 @@ export const mcpToolUiCspSchema = z
   })
   .strict();
 
-/** 资源级 `_meta["zcode/csp"]` 归一化后的形状（只有为 true 的键）。 */
+/** 资源级 `_meta["raspberrycode/csp"]` 归一化后的形状（只有为 true 的键）。 */
 export const mcpAppCspRelaxationsSchema = z
   .object({ unsafeEval: z.boolean().optional(), wasmUnsafeEval: z.boolean().optional() })
   .strict();
@@ -50,7 +50,7 @@ export const mcpToolUiDescriptorSchema = z
 
 /**
  * `display.ui`：agent 投影到 ToolCallRow.display 的插件 UI 元数据。
- * contracts 与 zcode-protocol-v4 两处 strict schema 都从这里复用，避免三份手写不同步。
+ * contracts 与 raspberrycode-protocol-v4 两处 strict schema 都从这里复用，避免三份手写不同步。
  */
 export const mcpToolDisplayUiSchema = z
   .object({

@@ -17,7 +17,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { collectRuntimeModuleClosureEntries } from "./runtime-dependency-closure.mjs";
 import { resolveSharpRuntimePackageNames } from "./sharp-package-assets.mjs";
 
-const EXPECTED_PACKAGE_NAME = "@zcode/zcode-cua";
+const EXPECTED_PACKAGE_NAME = "@raspberrycode/raspberrycode-cua";
 const RUNTIME_MANIFEST = "runtime-manifest.json";
 const MODULE_TYPE_PACKAGE_JSON = "package.json";
 const REMOVE_DIRECTORY_OPTIONS = {
@@ -279,9 +279,9 @@ function resolveCanonicalPackagedArtifact(root, artifact, label) {
 }
 
 // 2026-08-18：把「契约不满足」拆成逐条可读的判定。原来十一个条件挤在一个 if 里、只抛一句
-// "invalid zcodeCuaRuntime Windows artifact path contract"，看不出是 producer 少给了契约、
+// "invalid raspberrycodeCuaRuntime Windows artifact path contract"，看不出是 producer 少给了契约、
 // 还是仓库读错了目录。本次审计正是被这条报错误导：node_modules 停在改 pin 之前的旧提交
-// （git 依赖改 pin 不会自动重装），旧包没有 zcodeCuaRuntime，于是被误读成 producer 回归。
+// （git 依赖改 pin 不会自动重装），旧包没有 raspberrycodeCuaRuntime，于是被误读成 producer 回归。
 // 报错必须自证：谁（包名@版本）、在哪（源目录）、缺哪一条。
 function describeRuntimeContractViolation(packageJson) {
   if (!isPlainRecord(packageJson)) return "source package.json is not a JSON object";
@@ -291,30 +291,30 @@ function describeRuntimeContractViolation(packageJson) {
   if (!isNonEmptyTrimmedString(packageJson.version)) {
     return `invalid package version ${JSON.stringify(packageJson.version)}`;
   }
-  const contract = packageJson.zcodeCuaRuntime;
+  const contract = packageJson.raspberrycodeCuaRuntime;
   if (contract === undefined) {
-    return "zcodeCuaRuntime is missing — the producer package does not publish a Windows runtime contract";
+    return "raspberrycodeCuaRuntime is missing — the producer package does not publish a Windows runtime contract";
   }
-  if (!isPlainRecord(contract)) return "zcodeCuaRuntime is not a JSON object";
+  if (!isPlainRecord(contract)) return "raspberrycodeCuaRuntime is not a JSON object";
   if (!hasExactKeys(contract, ["schema", "windows"])) {
-    return `zcodeCuaRuntime must have exactly the keys {schema, windows}, got {${Object.keys(contract).join(", ")}}`;
+    return `raspberrycodeCuaRuntime must have exactly the keys {schema, windows}, got {${Object.keys(contract).join(", ")}}`;
   }
   if (contract.schema !== 1) {
-    return `zcodeCuaRuntime.schema must be 1, got ${JSON.stringify(contract.schema)}`;
+    return `raspberrycodeCuaRuntime.schema must be 1, got ${JSON.stringify(contract.schema)}`;
   }
   const windowsContract = contract.windows;
-  if (!isPlainRecord(windowsContract)) return "zcodeCuaRuntime.windows is not a JSON object";
+  if (!isPlainRecord(windowsContract)) return "raspberrycodeCuaRuntime.windows is not a JSON object";
   if (!hasExactKeys(windowsContract, ["entry", "nativeAddon"])) {
-    return `zcodeCuaRuntime.windows must have exactly the keys {entry, nativeAddon}, got {${Object.keys(windowsContract).join(", ")}}`;
+    return `raspberrycodeCuaRuntime.windows must have exactly the keys {entry, nativeAddon}, got {${Object.keys(windowsContract).join(", ")}}`;
   }
   if (!isCanonicalRelativeArtifactPath(windowsContract.entry)) {
-    return `zcodeCuaRuntime.windows.entry is not a canonical relative artifact path: ${JSON.stringify(windowsContract.entry)}`;
+    return `raspberrycodeCuaRuntime.windows.entry is not a canonical relative artifact path: ${JSON.stringify(windowsContract.entry)}`;
   }
   if (!isCanonicalRelativeArtifactPath(windowsContract.nativeAddon)) {
-    return `zcodeCuaRuntime.windows.nativeAddon is not a canonical relative artifact path: ${JSON.stringify(windowsContract.nativeAddon)}`;
+    return `raspberrycodeCuaRuntime.windows.nativeAddon is not a canonical relative artifact path: ${JSON.stringify(windowsContract.nativeAddon)}`;
   }
   if (windowsContract.entry === windowsContract.nativeAddon) {
-    return "zcodeCuaRuntime.windows.entry and zcodeCuaRuntime.windows.nativeAddon must differ";
+    return "raspberrycodeCuaRuntime.windows.entry and raspberrycodeCuaRuntime.windows.nativeAddon must differ";
   }
   return undefined;
 }
@@ -326,10 +326,10 @@ function readProducerRuntimeContract(packageJson, sourceRoot) {
       ? `${String(packageJson.name)}@${String(packageJson.version)}`
       : "<unreadable package.json>";
     throw new Error(
-      `[windows-cua-helper-assets] invalid zcodeCuaRuntime Windows artifact path contract in ${identity} (${sourceRoot}): ${violation}`,
+      `[windows-cua-helper-assets] invalid raspberrycodeCuaRuntime Windows artifact path contract in ${identity} (${sourceRoot}): ${violation}`,
     );
   }
-  const windowsContract = packageJson.zcodeCuaRuntime.windows;
+  const windowsContract = packageJson.raspberrycodeCuaRuntime.windows;
   return {
     packageVersion: packageJson.version,
     entry: windowsContract.entry,
@@ -727,8 +727,8 @@ export async function resolveWindowsCuaHelperSourceRoot({
   if (explicitRoot) {
     if (!isAbsolute(explicitRoot)) {
       const variableName = explicitRuntimePackageDir
-        ? "ZCODE_CUA_HELPER_RUNTIME_PACKAGE_DIR"
-        : "ZCODE_CUA_DEV_ROOT";
+        ? "RASPBERRYCODE_CUA_HELPER_RUNTIME_PACKAGE_DIR"
+        : "RASPBERRYCODE_CUA_DEV_ROOT";
       throw new Error(`[windows-cua-helper-assets] ${variableName} must be absolute`);
     }
     return realpath(explicitRoot);
@@ -738,7 +738,7 @@ export async function resolveWindowsCuaHelperSourceRoot({
     throw new Error("[windows-cua-helper-assets] servicesPackageRoot must be absolute");
   }
   // servicesPackageRoot 固定对应当前仓库的 packages/services；CUA producer 是同一 workspace 的
-  // packages/zcode-cua，禁止向上扫描到用户目录或另一个仓库。
+  // packages/raspberrycode-cua，禁止向上扫描到用户目录或另一个仓库。
   const workspaceRoot = resolve(servicesPackageRoot, "..", "..");
   const workspaceMarkerPath = resolve(workspaceRoot, "pnpm-workspace.yaml");
   let markerStats;
@@ -756,7 +756,7 @@ export async function resolveWindowsCuaHelperSourceRoot({
     );
   }
 
-  const packageRoot = resolve(workspaceRoot, "packages", "zcode-cua");
+  const packageRoot = resolve(workspaceRoot, "packages", "raspberrycode-cua");
   try {
     return await realpath(packageRoot);
   } catch (error) {
@@ -838,12 +838,12 @@ export async function prepareWindowsCuaHelperAssets({
   const entryPath = resolveCanonicalPackagedArtifact(
     sourceRoot,
     producerContract.entry,
-    "zcodeCuaRuntime.windows.entry",
+    "raspberrycodeCuaRuntime.windows.entry",
   );
   const addonPath = resolveCanonicalPackagedArtifact(
     sourceRoot,
     producerContract.addon,
-    "zcodeCuaRuntime.windows.nativeAddon",
+    "raspberrycodeCuaRuntime.windows.nativeAddon",
   );
   const [entryBytes, addonBytes] = await Promise.all([
     readRegularFileSnapshot(entryPath, "entry", {
@@ -957,7 +957,7 @@ export async function prepareWindowsCuaHelperAssets({
     // package.json 都会禁用探测，fork 将以 SyntaxError exit 1 变成 broker_unavailable。
     // 在运行时根落一份显式 module 声明，让 entry 的模块类型不依赖探测、不受外部目录影响。
     const moduleTypePackageJson = {
-      name: "@zcode/zcode-cua-helper-runtime",
+      name: "@raspberrycode/raspberrycode-cua-helper-runtime",
       version: producerContract.packageVersion,
       type: "module",
       private: true,

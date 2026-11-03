@@ -19,11 +19,11 @@ const demoSkills = [
     path: "/tmp/workspace/.raspberrycode/skills/glm-only/SKILL.md",
   },
   {
-    id: "glm:workspace:zcode-common:abc123",
+    id: "glm:workspace:raspberrycode-common:abc123",
     path: "/tmp/workspace/.raspberrycode/skills/common/SKILL.md",
   },
   {
-    id: "claude:workspace:zcode-common:abc123",
+    id: "claude:workspace:raspberrycode-common:abc123",
     path: "/tmp/workspace/.raspberrycode/skills/common-from-legacy-list/SKILL.md",
   },
   {
@@ -32,21 +32,21 @@ const demoSkills = [
   },
   {
     id: "skill-plugin-by-scope",
-    path: "/tmp/home/.raspberrycode/cli/plugins/cache/zcode-plugins-official/document-skills/0.1.0/skills/pdf/SKILL.md",
+    path: "/tmp/home/.raspberrycode/cli/plugins/cache/raspberrycode-plugins-official/document-skills/0.1.0/skills/pdf/SKILL.md",
     scope: "plugin",
   },
   {
     id: "skill-plugin-by-path",
-    path: "/tmp/home/.raspberrycode/cli/plugins/cache/zcode-plugins-official/document-skills/0.1.0/skills/docx/SKILL.md",
+    path: "/tmp/home/.raspberrycode/cli/plugins/cache/raspberrycode-plugins-official/document-skills/0.1.0/skills/docx/SKILL.md",
   },
 ];
 
 describe("skillSourceFilter", () => {
-  it("把 .zcode/skills 和官方 plugin cache 识别为 RaspberryCode Agent 技能来源", () => {
+  it("把 .raspberrycode/skills 和官方 plugin cache 识别为 RaspberryCode Agent 技能来源", () => {
     expect(resolveSkillSourceType("/tmp/workspace/.raspberrycode/skills/my-skill/SKILL.md")).toBe("agent");
     expect(
       resolveSkillSourceType(
-        "/tmp/home/.raspberrycode/cli/plugins/cache/zcode-plugins-official/document-skills/0.1.0/skills/pdf/SKILL.md",
+        "/tmp/home/.raspberrycode/cli/plugins/cache/raspberrycode-plugins-official/document-skills/0.1.0/skills/pdf/SKILL.md",
       ),
     ).toBe("agent");
     expect(resolveSkillSourceType("/tmp/workspace/.raspberrycode/cli/skills/my-skill/SKILL.md")).toBe(
@@ -60,8 +60,8 @@ describe("skillSourceFilter", () => {
   it("过滤混合来源时保留 RaspberryCode Agent 技能", () => {
     const expectedIds = [
       "skill-glm-by-path",
-      "glm:workspace:zcode-common:abc123",
-      "claude:workspace:zcode-common:abc123",
+      "glm:workspace:raspberrycode-common:abc123",
+      "claude:workspace:raspberrycode-common:abc123",
       "glm:user:mirrored:abc123",
       "skill-plugin-by-scope",
       "skill-plugin-by-path",

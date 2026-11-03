@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import type { ZCodeTaskMeta } from "@zcode/shared";
+import type { RaspberryCodeTaskMeta } from "@raspberrycode/shared";
 import { MemoTaskItem as TaskItem } from "@/TaskListItem.js";
 import { TooltipProvider } from "@/components/ui/tooltip.js";
 
@@ -9,13 +9,13 @@ const { workspaceStateByPath } = vi.hoisted(() => ({
   workspaceStateByPath: new Map<string, unknown>(),
 }));
 
-vi.mock("@/store/zcodeSessionStore.js", async () => {
-  const actual = await vi.importActual<typeof import("@/store/zcodeSessionStore.js")>(
-    "@/store/zcodeSessionStore.js",
+vi.mock("@/store/raspberrycodeSessionStore.js", async () => {
+  const actual = await vi.importActual<typeof import("@/store/raspberrycodeSessionStore.js")>(
+    "@/store/raspberrycodeSessionStore.js",
   );
   return {
     ...actual,
-    useZCodeSessionStore: (selector: (state: { workspaces: Record<string, unknown> }) => unknown) =>
+    useRaspberryCodeSessionStore: (selector: (state: { workspaces: Record<string, unknown> }) => unknown) =>
       selector({ workspaces: Object.fromEntries(workspaceStateByPath) }),
   };
 });
@@ -37,7 +37,7 @@ beforeEach(() => {
   workspaceStateByPath.clear();
 });
 
-function createTaskMeta(overrides: Partial<ZCodeTaskMeta> = {}): ZCodeTaskMeta {
+function createTaskMeta(overrides: Partial<RaspberryCodeTaskMeta> = {}): RaspberryCodeTaskMeta {
   return {
     taskId: "task-change-summary",
     traceId: "trace-change-summary",
@@ -82,7 +82,7 @@ function renderWithTooltipProvider(element: ReactElement) {
 }
 
 function renderTaskItem(
-  task: ZCodeTaskMeta = createTaskMeta({
+  task: RaspberryCodeTaskMeta = createTaskMeta({
     changeSummary: {
       fileCount: 2,
       added: 8,

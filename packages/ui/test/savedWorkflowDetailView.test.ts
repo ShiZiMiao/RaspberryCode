@@ -15,12 +15,12 @@ import {
   TID_WORKFLOW_META_SAVE,
   TID_WORKFLOW_ARTIFACT_CHIP,
   TID_WORKFLOW_RUN_ROW,
-  type ZCodeSavedWorkflowEntry,
-  type ZCodeSavedWorkflowRun,
-  type ZCodeWorkflowsGetResult,
-} from "@zcode/shared";
-import { testId } from "@zcode/shared/test-ids";
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+  type RaspberryCodeSavedWorkflowEntry,
+  type RaspberryCodeSavedWorkflowRun,
+  type RaspberryCodeWorkflowsGetResult,
+} from "@raspberrycode/shared";
+import { testId } from "@raspberrycode/shared/test-ids";
+import { RaspberryCodeIntlProvider } from "@/i18n/IntlProvider.js";
 
 const toastMock = vi.fn();
 vi.mock("@/components/ui/toast.js", () => ({ toast: (...args: unknown[]) => toastMock(...args) }));
@@ -41,15 +41,15 @@ const { SavedWorkflowDetailView } =
   await import("@/settings/saved-workflows/SavedWorkflowDetailView.js");
 
 const SCRIPT = 'export default async ({ agent }) => {\n  await agent("检查发布");\n};\n';
-const ENTRY: ZCodeSavedWorkflowEntry = {
+const ENTRY: RaspberryCodeSavedWorkflowEntry = {
   name: "release-check",
   description: "发布前检查",
   whenToUse: "发版前",
   scope: "project",
-  path: "/repo/.zcode/workflows/release-check.dwf.ts",
+  path: "/repo/.raspberrycode/workflows/release-check.dwf.ts",
   args: { branch: { type: "string", required: true } },
 };
-const detailResult: { current: ZCodeWorkflowsGetResult } = {
+const detailResult: { current: RaspberryCodeWorkflowsGetResult } = {
   current: {
     ok: true,
     name: "release-check",
@@ -69,7 +69,7 @@ const agentService = {
 };
 
 const NOW = 1_700_000_000_000;
-const RUNS: ZCodeSavedWorkflowRun[] = [
+const RUNS: RaspberryCodeSavedWorkflowRun[] = [
   {
     runId: "r-open",
     name: "release-check",
@@ -116,7 +116,7 @@ function mount(overrides: Partial<Parameters<typeof SavedWorkflowDetailView>[0]>
   };
   render(
     createElement(
-      ZCodeIntlProvider,
+      RaspberryCodeIntlProvider,
       { initialLocale: "zh-CN" },
       createElement(SavedWorkflowDetailView, props),
     ),
@@ -280,7 +280,7 @@ describe("SavedWorkflowDetailView", () => {
   });
 
   it("resolveRunProject 在每行渲染项目列，并按行 canOpen 控制「查看实例」", async () => {
-    const resolveRunProject = vi.fn((run: ZCodeSavedWorkflowRun) =>
+    const resolveRunProject = vi.fn((run: RaspberryCodeSavedWorkflowRun) =>
       run.runId === "r-open"
         ? { label: "Alpha", title: "/repo/alpha", canOpen: true }
         : { label: "Beta", title: "/repo/beta", canOpen: false },
@@ -319,7 +319,7 @@ describe("SavedWorkflowDetailView", () => {
 
   // ── 产物（docs/dynamic-workflow/authoring.md「How the user sees them」）──
   // ⚠ 术语：这里的「产物」是脚本经 `artifact.*` 交付给用户的产出，不是脚本的顶层返回值。
-  const ARTIFACT_RUNS: ZCodeSavedWorkflowRun[] = [
+  const ARTIFACT_RUNS: RaspberryCodeSavedWorkflowRun[] = [
     {
       runId: "r-latest",
       name: "release-check",

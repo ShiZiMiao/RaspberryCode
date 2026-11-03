@@ -71,7 +71,7 @@ describe("chatPrepareError", () => {
           code: "model_config_missing",
         },
         message:
-          "Model config is missing. Create ~/.zcode/cli/config.json with an explicit model provider before running RaspberryCode.",
+          "Model config is missing. Create ~/.raspberrycode/cli/config.json with an explicit model provider before running RaspberryCode.",
       },
       {
         workspacePath: "/repo/demo",
@@ -80,20 +80,20 @@ describe("chatPrepareError", () => {
         attempt: 5,
         maxAttempts: 5,
         displayMessage:
-          "Model config is missing. Create ~/.zcode/cli/config.json with an explicit model provider before running RaspberryCode.",
+          "Model config is missing. Create ~/.raspberrycode/cli/config.json with an explicit model provider before running RaspberryCode.",
       },
     );
 
     expect(uiError).toMatchObject({
       code: "model_config_missing",
       message:
-        "Model config is missing. Create ~/.zcode/cli/config.json with an explicit model provider before running RaspberryCode.",
+        "Model config is missing. Create ~/.raspberrycode/cli/config.json with an explicit model provider before running RaspberryCode.",
     });
   });
 
   it("workspace failed 缓存短路时复用结构化错误 code", () => {
     const message =
-      "Model config is missing. Create ~/.zcode/cli/config.json with an explicit model provider before running RaspberryCode.";
+      "Model config is missing. Create ~/.raspberrycode/cli/config.json with an explicit model provider before running RaspberryCode.";
     const cachedError = buildWorkspacePrepareUiError(
       {
         code: -32603,

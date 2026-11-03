@@ -1,5 +1,5 @@
 import { dirname } from "node:path";
-import { TID_V4_COMPOSER_INPUT } from "@zcode/shared/test-ids";
+import { TID_V4_COMPOSER_INPUT } from "@raspberrycode/shared/test-ids";
 import {
   DEFAULT_WORKSPACE,
   clearAppData,

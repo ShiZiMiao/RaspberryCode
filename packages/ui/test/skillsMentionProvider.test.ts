@@ -62,7 +62,7 @@ describe("skills mention provider", () => {
       id: "builtin-pdf",
       name: "pdf",
       description: "专业 PDF 工具集",
-      path: "/cache/zcode-plugins-official/document-skills/0.1.0/skills/pdf/SKILL.md",
+      path: "/cache/raspberrycode-plugins-official/document-skills/0.1.0/skills/pdf/SKILL.md",
       scope: "plugin" as const,
       pluginName: "document-skills",
     };

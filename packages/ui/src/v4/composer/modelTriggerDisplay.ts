@@ -1,4 +1,4 @@
-import { BUILTIN_MODEL_PROVIDER_IDS, isBuiltinModelProviderId } from "@zcode/shared";
+import { BUILTIN_MODEL_PROVIDER_IDS, isBuiltinModelProviderId } from "@raspberrycode/shared";
 import type { IntlInstance } from "@/i18n/IntlProvider.js";
 import type { ModelSelectGroup } from "@/ModelConfigSelect.js";
 

@@ -74,8 +74,6 @@ if (args.includes("--changed")) {
     addedFilesFromGit(cwd, {
       base,
       since: global.newFilesEnforcedSince,
-      acceptedUpstreamCommits: global.acceptedUpstreamCommits,
-      acceptedUpstreamSnapshot: global.acceptedUpstreamSnapshot,
     }),
   ]);
 }

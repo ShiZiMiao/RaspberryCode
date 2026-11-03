@@ -2,7 +2,7 @@ import { z } from "zod";
 import { projectTokenSuccessCodeSchema } from "./project-access-token-response.js";
 import { API_KEY_USAGE_SCENE } from "./api-key-usage-scene.js";
 import { ProjectAccessTokenCache, ProjectAccessTokenError } from "./project-access-token.js";
-import { ZCODE_VERSION } from "./version.js";
+import { RASPBERRYCODE_VERSION } from "./version.js";
 import { isCredentialDecryptError } from "./oauth.js";
 
 const DEFAULT_ORGANIZATION_NAME = "默认机构";
@@ -56,6 +56,19 @@ export interface ProjectAccessTokenMaterial {
   readonly organizationId: string;
   readonly projectId: string;
 }
+
+/**
+ * wire 格式数据事实（specs/provider-neutrality.md 第 6 条例外）：各 family 的个人 Key 管理
+ * 接口对 Authorization 头的格式要求不同（有的要求 Bearer 前缀、有的要求裸 token）。
+ * 以声明数据表达格式差异，品牌名只作 wire 事实保留，不作为能力分支条件。
+ */
+const PERSONAL_KEY_AUTHORIZATION_STYLE: Record<
+  ProjectAccessTokenInput["family"],
+  "bearer" | "raw"
+> = {
+  zai: "bearer",
+  bigmodel: "raw",
+};
 
 const locationSchema = z.object({
   organizationId: z.string().min(1),
@@ -211,8 +224,8 @@ export class ProjectAccessTokenClient {
               method: "POST",
               headers,
               body: JSON.stringify({
-                clientType: "zcode",
-                clientVersion: ZCODE_VERSION,
+                clientType: "raspberrycode",
+                clientVersion: RASPBERRYCODE_VERSION,
               }),
             },
           );
@@ -301,7 +314,7 @@ export class ProjectAccessTokenClient {
       };
     }
     const url = keyListUrl(origin, location);
-    const name = input.team ? "zcode-team-api-key" : "zcode-api-key";
+    const name = input.team ? "raspberrycode-team-api-key" : "raspberrycode-api-key";
     const keyHeaders = input.team
       ? {
           ...headers,
@@ -312,7 +325,10 @@ export class ProjectAccessTokenClient {
       : {
           ...headers,
           // 个人 Key 管理保留既有格式，不能套用 customerInfo 的鉴权约定。
-          Authorization: input.family === "zai" ? `Bearer ${loginToken}` : loginToken,
+          Authorization:
+            PERSONAL_KEY_AUTHORIZATION_STYLE[input.family] === "bearer"
+              ? `Bearer ${loginToken}`
+              : loginToken,
         };
     const list = z
       .array(z.unknown())

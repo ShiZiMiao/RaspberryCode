@@ -3,8 +3,8 @@ import type {
   SourceServerResolveWorkspaceResult,
   SourceServerMigrationPathAction,
   SourceServerMigrationReport,
-} from "@zcode/shared";
-import { ServiceChannels } from "@zcode/shared";
+} from "@raspberrycode/shared";
+import { ServiceChannels } from "@raspberrycode/shared";
 import { createServiceDescriptor } from "../descriptors.js";
 
 export interface ISourceServerWorkspaceService {

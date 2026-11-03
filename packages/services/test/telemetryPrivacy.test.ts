@@ -29,7 +29,7 @@ describe("TelemetryCore final HTTP privacy boundary", () => {
       homes.push(homeDir);
       const core = createTelemetryCore({
         homeDir,
-        resolveZCodeEndpointOrigin: () => `http://127.0.0.1:${address.port}`,
+        resolveRaspberryCodeEndpointOrigin: () => `http://127.0.0.1:${address.port}`,
         // 构建期上报端点默认为空（遥测默认关闭）；测试显式注入占位端点，rewrite 到本机接收器。
         reportEndpoint: "https://your-server.example/api/v1/event/report",
       });

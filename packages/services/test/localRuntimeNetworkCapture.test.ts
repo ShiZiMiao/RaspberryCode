@@ -1,13 +1,13 @@
-import { Emitter } from "@zcode/rpc";
+import { Emitter } from "@raspberrycode/rpc";
 import { expect, it, vi } from "vitest";
-import { LocalRuntimeNetworkCapture } from "../src/zcode-agent/localRuntimeNetworkCapture.js";
-import type { ZCodeProtocolClient } from "../src/zcode-agent/zcodeProtocolClient.js";
-import type { ZCodeProtocolNotification } from "@zcode/shared";
+import { LocalRuntimeNetworkCapture } from "../src/raspberrycode-agent/localRuntimeNetworkCapture.js";
+import type { RaspberryCodeProtocolClient } from "../src/raspberrycode-agent/raspberrycodeProtocolClient.js";
+import type { RaspberryCodeProtocolNotification } from "@raspberrycode/shared";
 
 it("已有和新本地 CLI 继承启停，旧批次隔离，不注册的 remote 不控制", () => {
   const registry = new LocalRuntimeNetworkCapture();
   const makeClient = () => {
-    const events = new Emitter<ZCodeProtocolNotification>();
+    const events = new Emitter<RaspberryCodeProtocolNotification>();
     const notify = vi.fn(async () => {});
     return {
       events,
@@ -16,7 +16,7 @@ it("已有和新本地 CLI 继承启停，旧批次隔离，不注册的 remote 
         onNotification: events.event,
         notify,
         isDisposed: false,
-      } as unknown as ZCodeProtocolClient,
+      } as unknown as RaspberryCodeProtocolClient,
     };
   };
   const a = makeClient(),

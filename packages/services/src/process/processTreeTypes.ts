@@ -1,4 +1,4 @@
-import type { TraceId } from "@zcode/shared";
+import type { TraceId } from "@raspberrycode/shared";
 
 export interface ProcessTreeTerminatorLogger {
   debug?: (traceId: TraceId | undefined, ...args: unknown[]) => void;

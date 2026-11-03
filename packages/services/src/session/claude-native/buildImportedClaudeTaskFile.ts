@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import type { ZCodeTaskMeta } from "@zcode/shared";
-import { generateTraceId } from "@zcode/shared";
+import type { RaspberryCodeTaskMeta } from "@raspberrycode/shared";
+import { generateTraceId } from "@raspberrycode/shared";
 import { deriveSessionTitle } from "#src/session/sessionTitle.js";
 import type { ClaudeNativeImportedSessionSource } from "#src/session/claude-native/claudeNativeImportedSessionTypes.js";
 import type { LegacyTaskSessionFile } from "#src/session/legacyTaskSessionFile.js";
@@ -47,7 +47,7 @@ export function buildImportedClaudeTaskFile(
   const createdAt = Number.isFinite(source.createdAt) ? source.createdAt : source.updatedAt;
   const updatedAt = Number.isFinite(source.updatedAt) ? source.updatedAt : createdAt;
 
-  const meta: ZCodeTaskMeta = {
+  const meta: RaspberryCodeTaskMeta = {
     taskId,
     traceId,
     title: deriveImportedTaskTitle(source.title, source.messages),

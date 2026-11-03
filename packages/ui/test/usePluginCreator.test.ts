@@ -41,7 +41,7 @@ vi.mock("@/conversation-workspace-target/workbenchTarget.js", () => ({
 }));
 vi.mock("@/components/ui/toast.js", () => ({ toast: mocks.toast }));
 vi.mock("@/i18n/IntlProvider.js", () => ({
-  useZCodeIntl: () => ({ intl: { formatMessage: ({ id }: { id: string }) => id } }),
+  useRaspberryCodeIntl: () => ({ intl: { formatMessage: ({ id }: { id: string }) => id } }),
 }));
 vi.mock("@/logger.js", () => ({ logger: { info: vi.fn(), warn: vi.fn() } }));
 import { usePluginCreator } from "@/conversation-workspace-target/usePluginCreator.js";
@@ -51,7 +51,7 @@ const skill = {
   scope: "plugin",
   enabled: true,
   path: "/workspace/creator/SKILL.md",
-  pluginId: "plugin-creator@zcode-plugins-official",
+  pluginId: "plugin-creator@raspberrycode-plugins-official",
   description: "Create",
   body: "",
 };

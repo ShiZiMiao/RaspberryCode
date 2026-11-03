@@ -23,14 +23,14 @@ import type {
   SourceServerConnectionState,
   SourceServerManagementSnapshot,
   RemoteWorkspaceSessionEntry,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import {
   buildSshRemoteHostKey,
   createUuid,
   parseRemoteWorkspaceIdentity,
   stripRemoteTargetSecrets,
-} from "@zcode/shared";
-import type { IServiceAccessor } from "@zcode/services";
+} from "@raspberrycode/shared";
+import type { IServiceAccessor } from "@raspberrycode/services";
 import {
   bindRemoteWorkspaceIdentity,
   bindRemoteWorkspacePath,
@@ -75,7 +75,7 @@ import { useRemoteConnectionEntryVisibility } from "@/hooks/useRemoteConnectionE
 import { createRemoteWorkspaceController } from "@/remote/remoteWorkspaceController.js";
 import type { RemoteWorkspaceController } from "@/remote/remoteWorkspaceController.js";
 import { buildRemoteTargetFromProfile } from "@/lib/remoteConnectionWizard.js";
-import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
+import { useRaspberryCodeSessionStore } from "@/store/raspberrycodeSessionStore.js";
 import { loadConnectionProfileCredentials } from "@/root/reconnectRemoteWorkspaceHistoryEntry.js";
 import type { WorkspacePersistenceGate } from "@/hooks/useTabPersistence.js";
 
@@ -1062,7 +1062,7 @@ export function useRemoteWorkspaceHistory({
   onOpenRemoteConnection,
   manuallyOpeningWorkspaceTabId,
 }: {
-  intl: ReturnType<typeof import("@/i18n/IntlProvider.js").useZCodeIntl>["intl"];
+  intl: ReturnType<typeof import("@/i18n/IntlProvider.js").useRaspberryCodeIntl>["intl"];
   services: IServiceAccessor;
   platform: IPlatformService;
   supportsSettings: boolean;
@@ -1817,7 +1817,7 @@ export function useRemoteWorkspaceHistory({
             (draftProjectId === undefined
               ? undefined
               : ({ workspacePath, workspaceIdentity }) => {
-                  useZCodeSessionStore
+                  useRaspberryCodeSessionStore
                     .getState()
                     .startDraft(workspacePath, undefined, workspaceIdentity, {
                       projectId: draftProjectId,

@@ -12,7 +12,7 @@ describe("server remote target", () => {
       url: "https://intranet.example.invalid:3030",
       name: "Studio",
       token: "secret",
-      workspacePath: "/Users/dev/ZCodeProject",
+      workspacePath: "/Users/dev/RaspberryCodeProject",
       serverId: "studio",
     });
 
@@ -32,12 +32,12 @@ describe("server remote target", () => {
       target: {
         kind: "server",
         url: "https://intranet.example.invalid:3030",
-        workspacePath: "/Users/dev/ZCodeProject",
+        workspacePath: "/Users/dev/RaspberryCodeProject",
         serverId: "studio",
       },
       remoteAssets: {},
-      workspacePath: "/Users/dev/ZCodeProject",
-      workspaceIdentity: "remote:server:studio:/Users/dev/ZCodeProject",
+      workspacePath: "/Users/dev/RaspberryCodeProject",
+      workspaceIdentity: "remote:server:studio:/Users/dev/RaspberryCodeProject",
     });
 
     expect(parsed.success).toBe(true);
@@ -46,14 +46,14 @@ describe("server remote target", () => {
   it("builds and parses server workspace identities", () => {
     const identity = buildServerRemoteWorkspaceIdentity({
       serverId: "Studio Server 01",
-      workspacePath: "\\Users\\dev\\ZCodeProject\\",
+      workspacePath: "\\Users\\dev\\RaspberryCodeProject\\",
     });
 
-    expect(identity).toBe("remote:server:studio-server-01:/Users/dev/ZCodeProject");
+    expect(identity).toBe("remote:server:studio-server-01:/Users/dev/RaspberryCodeProject");
     expect(parseRemoteWorkspaceIdentity(identity)).toEqual({
       kind: "server",
       sourceServerId: "studio-server-01",
-      workspacePath: "/Users/dev/ZCodeProject",
+      workspacePath: "/Users/dev/RaspberryCodeProject",
     });
   });
 

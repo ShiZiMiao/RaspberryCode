@@ -1,5 +1,5 @@
-import type { IServiceAccessor } from "@zcode/services";
-import { createUuid } from "@zcode/shared";
+import type { IServiceAccessor } from "@raspberrycode/services";
+import { createUuid } from "@raspberrycode/shared";
 
 export interface TerminalSessionDescriptor {
   id: string;

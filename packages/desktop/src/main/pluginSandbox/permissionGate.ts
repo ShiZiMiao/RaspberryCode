@@ -1,4 +1,4 @@
-import type { McpAppsResourcePermission } from "@zcode/shared/mcp-apps";
+import type { McpAppsResourcePermission } from "@raspberrycode/shared/mcp-apps";
 import type { PluginSandboxRecord, PluginSandboxRegistryPort } from "./contract.js";
 import {
   decidePluginSandboxPermission,
@@ -52,13 +52,13 @@ export function createPluginSandboxPermissionGate(deps: {
     try {
       if (!url || !guestUrl) return null;
       const guest = new URL(guestUrl);
-      if (guest.protocol !== "zcode-sandbox:" || !guest.hostname.startsWith("shell-")) return null;
+      if (guest.protocol !== "raspberrycode-sandbox:" || !guest.hostname.startsWith("shell-")) return null;
       const record = deps.registry.get(guest.pathname.split("/")[2] ?? "");
       if (
         !record ||
         guestUrl !== record.shellUrl ||
         `${new URL(url).protocol}//${new URL(url).host}` !==
-          `zcode-sandbox://plugin-${record.instance.appIdentity}`
+          `raspberrycode-sandbox://plugin-${record.instance.appIdentity}`
       )
         return null;
       return record;

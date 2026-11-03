@@ -5,7 +5,7 @@ const restoredOAuthCredentials = {
   "oauth:active_provider": "zai",
   "oauth:zai:access_token": "fake-access-token",
   "oauth:zai:user_info": "{}",
-  zcodejwttoken: "fake-zcode-jwt",
+  raspberrycodejwttoken: "fake-raspberrycode-jwt",
 };
 
 describe("desktop e2e startup credentials", () => {
@@ -42,7 +42,7 @@ describe("desktop e2e startup credentials", () => {
       "oauth:zai:access_token": "fake-access-token",
       "oauth:zai:user_info": "{}",
     });
-    expect(fixture.zcodejwttoken).toBe("fake-zcode-jwt");
+    expect(fixture.raspberrycodejwttoken).toBe("fake-raspberrycode-jwt");
   });
 
   it("远程回放优先保持匿名，不采用本地账号 mock", () => {
@@ -108,8 +108,8 @@ describe("desktop e2e startup credentials", () => {
         specs: ["/repo/packages/desktop/test/e2e/provider-family-responsive.test.ts"],
         legacyAuthToken: "fake-auth-token",
         restoredOAuthCredentials,
-      }).zcodejwttoken,
-    ).toBe("fake-zcode-jwt");
+      }).raspberrycodejwttoken,
+    ).toBe("fake-raspberrycode-jwt");
   });
   it("纯 Provider 冷恢复 spec 不播种会访问账号控制面的假登录态", () => {
     expect(
@@ -183,7 +183,7 @@ describe("desktop e2e startup credentials", () => {
     ).toEqual({});
   });
 
-  it("Start Plan 手动领取 spec 保留调用 claim API 所需的 zcode JWT", () => {
+  it("Start Plan 手动领取 spec 保留调用 claim API 所需的 raspberrycode JWT", () => {
     expect(
       createE2EStartupCredentialSeed({
         specs: ["/repo/packages/desktop/test/e2e/start-plan-manual-claim-experience.test.ts"],

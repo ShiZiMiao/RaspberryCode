@@ -1,7 +1,7 @@
-import type { ZCodeTaskChangeSummary } from "@zcode/shared";
+import type { RaspberryCodeTaskChangeSummary } from "@raspberrycode/shared";
 
 export function formatGroupedTaskHoverChangeParts(
-  summary: ZCodeTaskChangeSummary | null,
+  summary: RaspberryCodeTaskChangeSummary | null,
 ): string[] {
   if (!summary) {
     return [];

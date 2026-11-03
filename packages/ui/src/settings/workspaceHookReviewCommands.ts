@@ -2,8 +2,8 @@ import type {
   CommandPayloadMap,
   CommandType,
   WorkspaceHookReviewRequestPayload,
-} from "@zcode/shared/zcode-protocol-v4";
-import type { Hook } from "@zcode/shared";
+} from "@raspberrycode/shared/raspberrycode-protocol-v4";
+import type { Hook } from "@raspberrycode/shared";
 import {
   findWorkspaceHookCommandBinding,
   findWorkspaceHookReviewBindingForItem,

@@ -61,31 +61,31 @@ import {
   captureLoginShellEnvSnapshot,
   getConversationWorkspaceDir,
   getDataBaseDir,
-  getZCodeDataRootDir,
+  getRaspberryCodeDataRootDir,
   normalizeRuntimeProcessEnv,
   setDataBaseDir,
   migrateApplicationStorage,
-  resolveDefaultZCodeAgentCommand,
+  resolveDefaultRaspberryCodeAgentCommand,
   startupStorage,
-} from "@zcode/services/node";
+} from "@raspberrycode/services/node";
 import {
   desktopMenuMessageIds,
   type Locale,
   type AppSettings,
   type appSettingsPatchSchema,
   PlatformChannels,
-  ZCODE_ENV,
-  ZCODE_PRODUCT_FLAVOR,
-  DEFAULT_ZCODE_ENDPOINT_ORIGIN,
+  RASPBERRYCODE_ENV,
+  RASPBERRYCODE_PRODUCT_FLAVOR,
+  DEFAULT_RASPBERRYCODE_ENDPOINT_ORIGIN,
   DEFAULT_LOCALE,
-  TEST_ZCODE_ENDPOINT_ORIGIN,
-  ZCODE_VERSION,
-  resolveZCodeEndpointOrigin,
+  TEST_RASPBERRYCODE_ENDPOINT_ORIGIN,
+  RASPBERRYCODE_VERSION,
+  resolveRaspberryCodeEndpointOrigin,
   shouldEnableE2ETestBridge,
   type TelemetryEventPayload,
   HostMessageTypes,
   InternalChannels,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import { logger } from "./logger.js";
 import { markMainLaunchAppReady } from "./desktopLaunchMarks.js";
 import { createCuaPipFocusRouter, resolveCuaPipWindowKey } from "./cuaPipFocusRouter.js";
@@ -118,7 +118,7 @@ import {
   getDesktopMenuLabel as getDesktopMenuLabelByLocale,
   rebuildApplicationMenu,
   resolveSystemApplicationLocale,
-  updateZCodeStdioTapDevMenuState,
+  updateRaspberryCodeStdioTapDevMenuState,
 } from "./desktopApplicationMenu.js";
 import { applyAppIcon } from "./desktopWindowChrome.js";
 import { resolveWindowsAppUserModelIdForFlavor } from "../../scripts/desktop-product-identity.mjs";
@@ -140,7 +140,7 @@ import {
   syncApplicationUnreadBadge,
   handleDesktopWindowCloseRequest,
 } from "./desktopWindowLifecycle.js";
-import { resolveZCodeBuiltinProviderConfigFilePath } from "./desktopProviderConfig.js";
+import { resolveRaspberryCodeBuiltinProviderConfigFilePath } from "./desktopProviderConfig.js";
 import {
   getCredentialsDir,
   isDockerDaemonAvailable,
@@ -150,7 +150,7 @@ import {
   loadHostProcessEnvFromLocalFiles,
   resolveBundledAgentBinaryPath,
   resolveRemoteAssetDirs,
-  resolveZCodeEndpointEnvBaseOrigin,
+  resolveRaspberryCodeEndpointEnvBaseOrigin,
   desktopRuntimeEnv,
   runtimeApplicationName,
   runtimeHomePath,
@@ -219,9 +219,9 @@ import {
 } from "./desktopResourceTelemetry.js";
 import { registerRendererHeapSampleIpc } from "./processResourceRendererHeapSource.js";
 import {
-  registerDesktopZCodeDataSizeTelemetry,
-  stopDesktopZCodeDataSizeTelemetry,
-} from "./desktopZCodeDataSizeTelemetry.js";
+  registerDesktopRaspberryCodeDataSizeTelemetry,
+  stopDesktopRaspberryCodeDataSizeTelemetry,
+} from "./desktopRaspberryCodeDataSizeTelemetry.js";
 import { configureDesktopMcpTelemetry, reportMcpTelemetryToArms } from "./desktopMcpTelemetry.js";
 import {
   configureDesktopNetworkTelemetry,
@@ -235,7 +235,7 @@ import {
   createEmbeddedBrowserPermissionUiBridge,
   setActiveEmbeddedBrowserPermissionUiBridge,
 } from "./embeddedBrowserPermissionUiBridge.js";
-import { mapZCodeEnvToArmsRumEnv } from "@zcode/shared";
+import { mapRaspberryCodeEnvToArmsRumEnv } from "@raspberrycode/shared";
 import {
   findWindowsProcessesReferencingResourceMarkers,
   probeWindowsPackagedResourceWritable,
@@ -257,7 +257,7 @@ const localMediaPreviewPathRegistry = createLocalMediaPreviewPathRegistry();
 // e2e 由 Chromedriver 管理远程调试端口；如果这里继续固定到 9229，
 // 会和开发态已打开的 RaspberryCode Dev 抢端口，导致 WebDriver session 创建前白屏超时。
 // 仅本地开发运行默认开启远程调试端口，并允许 e2e 通过环境变量交给 Chromedriver 接管。
-if (!app.isPackaged && process.env.ZCODE_DISABLE_FIXED_REMOTE_DEBUGGING_PORT !== "1") {
+if (!app.isPackaged && process.env.RASPBERRYCODE_DISABLE_FIXED_REMOTE_DEBUGGING_PORT !== "1") {
   app.commandLine.appendSwitch("remote-debugging-port", "9229");
 }
 
@@ -669,11 +669,11 @@ const mainSettingService = createSettingService();
 const appLaunchGate = createAppLaunchGate();
 const appLaunchCoordinator = createAppLaunchCoordinator(appLaunchGate);
 const appTelemetryCredentialService = createCredentialService();
-async function resolveCurrentZCodeEndpointOrigin() {
-  return resolveZCodeEndpointOrigin({
-    env: ZCODE_ENV,
-    envBaseOrigin: resolveZCodeEndpointEnvBaseOrigin(hostProcessLocalEnv),
-    overrideOrigin: (await mainSettingService.get()).zcodeEndpointOrigin,
+async function resolveCurrentRaspberryCodeEndpointOrigin() {
+  return resolveRaspberryCodeEndpointOrigin({
+    env: RASPBERRYCODE_ENV,
+    envBaseOrigin: resolveRaspberryCodeEndpointEnvBaseOrigin(hostProcessLocalEnv),
+    overrideOrigin: (await mainSettingService.get()).raspberrycodeEndpointOrigin,
   });
 }
 let desktopContextPromptRollout: ReturnType<typeof createDesktopContextPromptRollout> | undefined;
@@ -725,7 +725,7 @@ function awaitFirstHostSpawnDecision(): Promise<void> {
 const appTelemetryCore = createTelemetryCore({
   loadUserId: createTelemetryUserIdLoader(appTelemetryCredentialService),
   loadAuthorization: createTelemetryAuthorizationLoader(appTelemetryCredentialService),
-  resolveZCodeEndpointOrigin: resolveCurrentZCodeEndpointOrigin,
+  resolveRaspberryCodeEndpointOrigin: resolveCurrentRaspberryCodeEndpointOrigin,
   fetchImpl: createDesktopTelemetryFetch({
     fetch: (input, init) => net.fetch(input instanceof URL ? input.toString() : input, init),
   }),
@@ -779,8 +779,7 @@ app.on("browser-window-created", (_event, win) => {
 const remoteSessionManager = createRemoteWorkspaceSessionManager({
   logger,
   windowHostProcessMap,
-  resolveRemoteAssetDirs: () =>
-    resolveRemoteAssetDirs({ locale: currentApplicationLocale }, hostProcessLocalEnv),
+  resolveRemoteAssetDirs: () => resolveRemoteAssetDirs({}, hostProcessLocalEnv),
   resolveWslTarget: resolveCanonicalWslTarget,
   reportRemoteConnectionStateChanged: reportRemoteConnectionStateChangedToArms,
   reportRemoteDisconnect: reportRemoteDisconnectToArms,
@@ -789,18 +788,18 @@ const remoteSessionManager = createRemoteWorkspaceSessionManager({
 const deviceMid = ensureDesktopDeviceMidSync();
 // 帮助配置是公开读取，不能复用下面附带账号鉴权的灰度响应缓存。
 const readHelpConfig = createDesktopHelpConfigReader({
-  appVersion: ZCODE_VERSION || app.getVersion(),
+  appVersion: RASPBERRYCODE_VERSION || app.getVersion(),
   deviceMid,
   getClientLanguage: () => currentApplicationLocale,
-  resolveEndpointOrigin: resolveCurrentZCodeEndpointOrigin,
+  resolveEndpointOrigin: resolveCurrentRaspberryCodeEndpointOrigin,
 });
 // 同一个 /api/v1/client/configs fetcher 供两个灰度 rollout 共用（请求参数与鉴权完全一致，
 // 各自独立缓存/去重，服务端按 data.configs.<key> 区分功能）。
 const electronClientConfigsFetcher = createElectronDesktopContextPromptConfigFetcher({
-  appVersion: ZCODE_VERSION || app.getVersion(),
+  appVersion: RASPBERRYCODE_VERSION || app.getVersion(),
   deviceMid,
   getClientLanguage: () => currentApplicationLocale,
-  resolveEndpointOrigin: resolveCurrentZCodeEndpointOrigin,
+  resolveEndpointOrigin: resolveCurrentRaspberryCodeEndpointOrigin,
 });
 desktopContextPromptRollout = createDesktopContextPromptRollout({
   fetchConfig: electronClientConfigsFetcher,
@@ -812,7 +811,7 @@ const rendererActionTraceRollout = createRendererActionTraceRollout({
 });
 const localTtftExporter = createLocalTtftExporter({
   env: { ...hostProcessLocalEnv, ...process.env },
-  version: ZCODE_VERSION || app.getVersion(),
+  version: RASPBERRYCODE_VERSION || app.getVersion(),
   logger,
 });
 ipcMain.on(PlatformChannels.ReportLocalTtftBatch, (_event, batch: unknown) =>
@@ -853,7 +852,6 @@ let startupOpenWorkspaceRequest: ExplicitStartupWorkspaceRequest | null =
       ? { path: startupDeepLinkWorkspacePath, source: "deep-link" }
       : null;
 
-
 function resolveExternalWorkspaceConfirmationCopy() {
   const effectiveLocale =
     currentApplicationLocale === DEFAULT_LOCALE && app.isReady()
@@ -861,7 +859,6 @@ function resolveExternalWorkspaceConfirmationCopy() {
       : currentApplicationLocale;
   return resolveExternalWorkspaceOpenDialogCopy(effectiveLocale);
 }
-
 
 const primaryWindowCoordinator = createPrimaryWindowCoordinator({
   listWindows: getApplicationWindowsExcludingCuaIndicator,
@@ -962,7 +959,7 @@ async function prepareAppQuit(reason: string, kind: AppShutdownKind = "normal"):
   // Bug 根因：资源样本改为 5 分钟窗口后，退出仍直接 stop 会清空未满窗口的数据。
   // 退出时只排空已存在的角色 / Agent 内存窗口，不启动新采样、目录扫描或外部探针。
   stopDesktopResourceTelemetry({ flushPendingWindows: true });
-  stopDesktopZCodeDataSizeTelemetry();
+  stopDesktopRaspberryCodeDataSizeTelemetry();
   stopDesktopNetworkTelemetry();
   stopRemoteUsageArmsPeriodicSampling();
   disposeRendererActionTraceIpc?.();
@@ -1026,7 +1023,7 @@ async function prepareAppQuit(reason: string, kind: AppShutdownKind = "normal"):
     })
     .finally(() => {
       // before-quit 是同步事件。只发 Dispose 就继续退出 main 的话，
-      // host 还没等到 agent 进程树的 SIGTERM/SIGKILL 兜底完成就被带走，zcode-cli 会被 init 接管成残留进程。
+      // host 还没等到 agent 进程树的 SIGTERM/SIGKILL 兜底完成就被带走，raspberrycode-cli 会被 init 接管成残留进程。
       // 这里先拦截第一次退出，等待 host 清理完成后再放行第二次 app.quit。
       hasPreparedAppQuit = true;
       appQuitPreparationInFlight = null;
@@ -1037,7 +1034,7 @@ async function prepareAppQuit(reason: string, kind: AppShutdownKind = "normal"):
 
 function exitPreparedApp(reason: string): never | void {
   logger.info(`[app-quit] exiting prepared app (${reason})`);
-  if (process.env.ZCODE_E2E_RUN_ID?.trim()) {
+  if (process.env.RASPBERRYCODE_E2E_RUN_ID?.trim()) {
     flushMainE2ECoverage((error) => {
       logger.warn("[e2e-coverage] main coverage flush failed", error);
     });
@@ -1192,12 +1189,12 @@ function logWindowsBundledRuntimeIntegrityDiagnostic() {
 
 function shouldConfirmAppQuit() {
   // 开发环境里的普通会话经常需要重启 Electron，只在 production 下拦截，避免打断调试。
-  return ZCODE_ENV === "production" && getRunningAgentSessionCount() > 0;
+  return RASPBERRYCODE_ENV === "production" && getRunningAgentSessionCount() > 0;
 }
 
 function confirmAppQuit(originWindow?: BrowserWindow | null) {
   if (!shouldConfirmAppQuit()) {
-    logger.info(`[app-quit] quit confirmation skipped in ${ZCODE_ENV}`);
+    logger.info(`[app-quit] quit confirmation skipped in ${RASPBERRYCODE_ENV}`);
     return true;
   }
 
@@ -1222,7 +1219,7 @@ function confirmAppQuit(originWindow?: BrowserWindow | null) {
     defaultId: 1,
     cancelId: 1,
     title: isZh ? "退出确认" : "Confirm Quit",
-    message: isZh ? "确认退出 Z Code?" : "Quit Z Code?",
+    message: isZh ? "确认退出 RaspberryCode?" : "Quit RaspberryCode?",
     detail: detailLines.join("\n"),
     icon: nativeImage.createFromPath(iconPath),
   };
@@ -1242,13 +1239,13 @@ async function executeDesktopCommandForApp(
     command,
     senderWindow,
     logger,
-    updateZCodeStdioTapDevMenuState,
+    updateRaspberryCodeStdioTapDevMenuState,
     onDesktopZoomChanged: (zoomLevel) => {
       currentDesktopZoomLevel = clampDesktopZoomLevel(zoomLevel);
       rebuildMenu();
     },
     settingService: mainSettingService,
-    zcodeEndpointEnvBaseOrigin: resolveZCodeEndpointEnvBaseOrigin(hostProcessLocalEnv),
+    raspberrycodeEndpointEnvBaseOrigin: resolveRaspberryCodeEndpointEnvBaseOrigin(hostProcessLocalEnv),
     onRelaunchApp: async () => {
       await prepareAppQuit("desktop-command-relaunch");
       app.relaunch();
@@ -1258,8 +1255,6 @@ async function executeDesktopCommandForApp(
     currentApplicationLocale,
   });
 }
-
-
 
 /** 快捷键设置页录制态（renderer 经 SetShortcutRecordingActive 同步）；true 时菜单摘除可配置 accelerator。 */
 let shortcutRecordingActive = false;
@@ -1296,20 +1291,18 @@ function resetShortcutRecordingForWebContents(webContentsId: number) {
 }
 
 function rebuildMenu() {
-  void mainSettingService.get().then(
-    (settings) => {
-      rebuildApplicationMenu({
-        currentApplicationLocale,
-        executeDesktopCommand: executeDesktopCommandForApp,
-        currentZoomLevel: resolveFocusedDesktopZoomLevel(),
-        // 菜单 accelerator 跟随用户快捷键设置（shortcutBindings 用户覆盖）
-        shortcutBindings: settings.shortcutBindings,
-        // 快捷键录制态：摘掉可配置 accelerator，防止录制 menu 通道命令时按键直接触发原命令
-        // （macOS 系统菜单先于 renderer 吃掉按键，renderer 侧 preventDefault 拦不住）。
-        disableShortcutAccelerators: shortcutRecordingActive,
-      });
-    },
-  );
+  void mainSettingService.get().then((settings) => {
+    rebuildApplicationMenu({
+      currentApplicationLocale,
+      executeDesktopCommand: executeDesktopCommandForApp,
+      currentZoomLevel: resolveFocusedDesktopZoomLevel(),
+      // 菜单 accelerator 跟随用户快捷键设置（shortcutBindings 用户覆盖）
+      shortcutBindings: settings.shortcutBindings,
+      // 快捷键录制态：摘掉可配置 accelerator，防止录制 menu 通道命令时按键直接触发原命令
+      // （macOS 系统菜单先于 renderer 吃掉按键，renderer 侧 preventDefault 拦不住）。
+      disableShortcutAccelerators: shortcutRecordingActive,
+    });
+  });
   updateWindowsDesktopTrayMenu();
 }
 
@@ -1367,7 +1360,7 @@ function createWindowInstance(startupBootstrap: StartupWindowBootstrap = {}) {
         label,
         {
           ...initMessage,
-          zcodeBuiltinProviderConfigFilePath: resolveZCodeBuiltinProviderConfigFilePath(),
+          raspberrycodeBuiltinProviderConfigFilePath: resolveRaspberryCodeBuiltinProviderConfigFilePath(),
         },
         {
           hostProcessLocalEnv,
@@ -1441,7 +1434,7 @@ function createWindowInstance(startupBootstrap: StartupWindowBootstrap = {}) {
     // 已恢复 workspace 建立后台索引。始终注入 canonical fallback，才能覆盖非 active 历史目录已删除的情况。
     agentSpawnFallbackCwd: getConversationWorkspaceDir(),
     deviceMid,
-    remoteAssets: resolveRemoteAssetDirs({ locale: currentApplicationLocale }, hostProcessLocalEnv),
+    remoteAssets: resolveRemoteAssetDirs({}, hostProcessLocalEnv),
     runtimeProcessEnvPatchPromise: runtimeProcessEnvPreparation.patchPromise,
     runtimeProcessEnvFallbackPatch: runtimeProcessEnvPreparation.fallbackPatch,
     initialDesktopZoomLevel: currentDesktopZoomLevel,
@@ -1520,7 +1513,7 @@ app.whenReady().then(async () => {
   installLocalMediaPreviewProtocol(session.defaultSession.protocol, {
     isPathAuthorized: localMediaPreviewPathRegistry.isAuthorized,
   });
-  // 插件 UI 沙箱：注册表 + renderer 可调 IPC；scheme 的 privileged 注册已随 zcode-media 在 ready 前完成。
+  // 插件 UI 沙箱：注册表 + renderer 可调 IPC；scheme 的 privileged 注册已随 raspberrycode-media 在 ready 前完成。
   installPluginSandboxHost({
     preloadPath: join(import.meta.dirname, "../preload/pluginSandbox.cjs"),
     rendererDir: join(import.meta.dirname, "../renderer"),
@@ -1531,10 +1524,10 @@ app.whenReady().then(async () => {
       : {}),
     logger: console,
     // e2e L05（配额）：只在 e2e run 里允许缩小注册表容量。
-    ...(process.env.ZCODE_E2E_RUN_ID?.trim() &&
-    Number.isInteger(Number(process.env.ZCODE_E2E_PLUGIN_SANDBOX_MAX_ENTRIES)) &&
-    Number(process.env.ZCODE_E2E_PLUGIN_SANDBOX_MAX_ENTRIES) > 0
-      ? { registryMaxEntries: Number(process.env.ZCODE_E2E_PLUGIN_SANDBOX_MAX_ENTRIES) }
+    ...(process.env.RASPBERRYCODE_E2E_RUN_ID?.trim() &&
+    Number.isInteger(Number(process.env.RASPBERRYCODE_E2E_PLUGIN_SANDBOX_MAX_ENTRIES)) &&
+    Number(process.env.RASPBERRYCODE_E2E_PLUGIN_SANDBOX_MAX_ENTRIES) > 0
+      ? { registryMaxEntries: Number(process.env.RASPBERRYCODE_E2E_PLUGIN_SANDBOX_MAX_ENTRIES) }
       : {}),
   });
   installBrowserRestoreBootstrapProtocol(
@@ -1613,7 +1606,7 @@ app.whenReady().then(async () => {
     // 打包态必须与 NSIS 快捷方式使用同一 AUMID，否则 Shell 把它们当成不同应用。
     // 使用构建期产品身份，不依赖用户机器环境；开发态继续保持独立身份。
     app.setAppUserModelId(
-      resolveWindowsAppUserModelIdForFlavor(ZCODE_PRODUCT_FLAVOR, { isPackaged: app.isPackaged }),
+      resolveWindowsAppUserModelIdForFlavor(RASPBERRYCODE_PRODUCT_FLAVOR, { isPackaged: app.isPackaged }),
     );
   }
 
@@ -1665,7 +1658,6 @@ app.whenReady().then(async () => {
   }
 
   logWindowsBundledRuntimeIntegrityDiagnostic();
-
 
   if (process.platform === "darwin" || process.platform === "win32") {
     app.clearRecentDocuments();
@@ -1853,8 +1845,8 @@ app.whenReady().then(async () => {
     armsCustomContext: {
       deviceMid,
       platform: process.platform,
-      appVersion: ZCODE_VERSION,
-      armsEnv: mapZCodeEnvToArmsRumEnv(desktopRuntimeEnv),
+      appVersion: RASPBERRYCODE_VERSION,
+      armsEnv: mapRaspberryCodeEnvToArmsRumEnv(desktopRuntimeEnv),
     },
     finalArmsCustomEventE2EEnabled: shouldEnableE2ETestBridge(process.env),
     createRemoteWorkspaceSession: remoteSessionManager.createRemoteWorkspaceSession,
@@ -1901,35 +1893,35 @@ app.whenReady().then(async () => {
   configureDesktopStabilityTelemetry({
     deviceMid,
     platform: process.platform,
-    appVersion: ZCODE_VERSION,
-    armsEnv: mapZCodeEnvToArmsRumEnv(desktopRuntimeEnv),
+    appVersion: RASPBERRYCODE_VERSION,
+    armsEnv: mapRaspberryCodeEnvToArmsRumEnv(desktopRuntimeEnv),
   });
   configureDesktopResourceTelemetry({
     deviceMid,
     platform: process.platform,
-    appVersion: ZCODE_VERSION,
-    armsEnv: mapZCodeEnvToArmsRumEnv(desktopRuntimeEnv),
+    appVersion: RASPBERRYCODE_VERSION,
+    armsEnv: mapRaspberryCodeEnvToArmsRumEnv(desktopRuntimeEnv),
   });
   configureDesktopMcpTelemetry({
     deviceMid,
-    appVersion: ZCODE_VERSION,
-    armsEnv: mapZCodeEnvToArmsRumEnv(desktopRuntimeEnv),
+    appVersion: RASPBERRYCODE_VERSION,
+    armsEnv: mapRaspberryCodeEnvToArmsRumEnv(desktopRuntimeEnv),
   });
   configureDesktopNetworkTelemetry({
     deviceMid,
     platform: process.platform,
-    appVersion: ZCODE_VERSION,
-    armsEnv: mapZCodeEnvToArmsRumEnv(desktopRuntimeEnv),
+    appVersion: RASPBERRYCODE_VERSION,
+    armsEnv: mapRaspberryCodeEnvToArmsRumEnv(desktopRuntimeEnv),
   });
   registerDesktopStabilityMonitors(logger, crashCapturePaths);
   registerDesktopResourceTelemetry(logger);
   // 主窗口 renderer 的 60 秒 heap 样本入口；随 App 生命周期常驻，只注册一次。
   registerRendererHeapSampleIpc();
   const defaultDataBaseDir = process.env.HOME?.trim() || homedir();
-  registerDesktopZCodeDataSizeTelemetry({
+  registerDesktopRaspberryCodeDataSizeTelemetry({
     context: {
-      appVersion: ZCODE_VERSION,
-      armsEnv: mapZCodeEnvToArmsRumEnv(desktopRuntimeEnv),
+      appVersion: RASPBERRYCODE_VERSION,
+      armsEnv: mapRaspberryCodeEnvToArmsRumEnv(desktopRuntimeEnv),
       dataRootKind:
         resolve(getDataBaseDir()) === resolve(defaultDataBaseDir) ? "default" : "custom",
       deviceMid,
@@ -1937,13 +1929,12 @@ app.whenReady().then(async () => {
     },
     getSystemIdleTimeSeconds: () => powerMonitor.getSystemIdleTime(),
     isAppBackground: () => resolveResourceUsageScene() === "background",
-    isZCodeBusy: () => getRunningAgentSessionCount() > 0,
+    isRaspberryCodeBusy: () => getRunningAgentSessionCount() > 0,
     logger,
-    rootPath: getZCodeDataRootDir(),
-    stateFile: join(app.getPath("userData"), "zcode-data-size-telemetry.json"),
+    rootPath: getRaspberryCodeDataRootDir(),
+    stateFile: join(app.getPath("userData"), "raspberrycode-data-size-telemetry.json"),
   });
   registerDesktopNetworkTelemetry(logger);
-
 
   logger.info("[startup] 创建主窗口");
   await primaryWindowCoordinator.ensurePrimaryWindow("app-ready");

@@ -1,7 +1,7 @@
 /* oxlint-disable eslint(max-lines) -- Browser Plugin、Chrome 数据导入与清理共享同一平台状态机，拆分会扩大 pending/失败回收边界。 */
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { LoaderCircle } from "lucide-react";
-import type { ChromeBrowserDataImportResult } from "@zcode/shared";
+import type { ChromeBrowserDataImportResult } from "@raspberrycode/shared";
 import { Button } from "@/components/ui/button.js";
 import {
   AlertDialog,
@@ -17,8 +17,8 @@ import { Switch } from "@/components/ui/switch.js";
 import { toast } from "@/components/ui/toast.js";
 import { usePlatform } from "@/hooks/usePlatform.js";
 import { useServices } from "@/hooks/useServices.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
-import { invalidateDeferredDraftSessionForSkillChange } from "@/lib/zcodeDraftSkillInvalidation.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
+import { invalidateDeferredDraftSessionForSkillChange } from "@/lib/raspberrycodeDraftSkillInvalidation.js";
 import { logger } from "@/logger.js";
 import { startUserAction } from "@/lib/userActionTelemetry.js";
 import { SettingsGroupCard, SettingsRow } from "@/settings/SettingsPageParts.js";
@@ -26,7 +26,7 @@ import { usePluginManagementStore } from "@/store/pluginManagementStore.js";
 import { useSkillStore } from "@/store/skillStore.js";
 import { formatImportSummary } from "./browserImportSummary.js";
 
-const OFFICIAL_BROWSER_USE_PLUGIN_ID = "browser-use@zcode-plugins-official";
+const OFFICIAL_BROWSER_USE_PLUGIN_ID = "browser-use@raspberrycode-plugins-official";
 
 interface BrowserSettingsSectionProps {
   isDesktop: boolean;
@@ -78,7 +78,7 @@ export function BrowserSettingsSection({
   embeddedBrowserAllowInsecureCertificates = false,
   onEmbeddedBrowserAllowInsecureCertificatesChange = async () => {},
 }: BrowserSettingsSectionProps) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   const platform = usePlatform();
   const { pluginManagementService, skillsService } = useServices();
   const browserUsePlugin = usePluginManagementStore((state) =>

@@ -1,6 +1,6 @@
 import { cp, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { TID_V4_COMPOSER_INPUT } from "@zcode/shared/test-ids";
+import { TID_V4_COMPOSER_INPUT } from "@raspberrycode/shared/test-ids";
 import {
   clearAppData,
   setInputValueByTestIdDom,
@@ -220,13 +220,13 @@ async function seedLifecycleMarketplaceCache(
           {
             addedAt: "2026-07-31T00:00:00.000Z",
             description: "Deterministic offline RaspberryCode marketplace marker",
-            id: "zcode-plugins-official",
+            id: "raspberrycode-plugins-official",
             lastUpdated: "2099-01-01T00:00:00.000Z",
-            name: "zcode-plugins-official",
+            name: "raspberrycode-plugins-official",
             pluginCount: 1,
             source: {
               source: "url",
-              url: "https://cdn-zcode.z.ai/zcode/official-plugin/marketplace.json",
+              url: "https://cdn-raspberrycode.example.com/raspberrycode/official-plugin/marketplace.json",
             },
           },
           {

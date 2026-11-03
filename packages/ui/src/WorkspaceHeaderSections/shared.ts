@@ -1,22 +1,22 @@
 import type {
-  ZCodeTaskMeta,
-  ZCodeProvider,
-  ZCodeTaskChangeSummary,
+  RaspberryCodeTaskMeta,
+  RaspberryCodeProvider,
+  RaspberryCodeTaskChangeSummary,
   EditorInfo,
   GitRepositorySummary,
   RemoteTarget,
   UserInfo,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 
 export interface WorkspaceHeaderState {
-  selectedProvider: ZCodeProvider;
+  selectedProvider: RaspberryCodeProvider;
 }
 
 export type WorkspaceHeaderVariant = "task" | "draft";
 
 export interface WorkspaceHeaderReloadSessionOptions {
   resumeTaskId?: string | null;
-  provider?: ZCodeProvider | null;
+  provider?: RaspberryCodeProvider | null;
 }
 
 export interface WorkspaceHeaderTitleSectionProps {
@@ -29,16 +29,16 @@ export interface WorkspaceHeaderTitleSectionProps {
   localWorkspacePath?: string;
   projectName: string;
   activeTaskTitle: string;
-  activeTaskChangeSummary?: ZCodeTaskChangeSummary | null;
+  activeTaskChangeSummary?: RaspberryCodeTaskChangeSummary | null;
   activeTaskId: string | null;
   activeTraceId: string | null;
   activeSessionId: string | null;
-  activeTaskProvider: ZCodeProvider | null;
-  resolvedActiveTaskMeta?: ZCodeTaskMeta | null;
+  activeTaskProvider: RaspberryCodeProvider | null;
+  resolvedActiveTaskMeta?: RaspberryCodeTaskMeta | null;
   gitSummary: GitRepositorySummary;
   gitDirtyFileCount: number;
   sessionLogPath: string | null;
-  nativeSessionLogProvider: ZCodeProvider | null;
+  nativeSessionLogProvider: RaspberryCodeProvider | null;
   nativeSessionLogPath: string | null;
   nativeSessionLogExists: boolean;
   nativeSessionLogLoading: boolean;

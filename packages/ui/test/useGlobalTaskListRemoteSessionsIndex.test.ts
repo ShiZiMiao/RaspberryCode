@@ -3,21 +3,21 @@
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { Emitter } from "@zcode/rpc";
-import type { IServiceAccessor } from "@zcode/services";
-import type { ZCodeTaskMeta } from "@zcode/shared";
+import { Emitter } from "@raspberrycode/rpc";
+import type { IServiceAccessor } from "@raspberrycode/services";
+import type { RaspberryCodeTaskMeta } from "@raspberrycode/shared";
 import type {
   SessionsIndexTopicFrame,
   SessionsIndexTopicWireFrame,
   SessionSummary,
-} from "@zcode/shared/zcode-protocol-v4";
+} from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import { ServiceProvider } from "@/hooks/useServices.js";
 import { useGlobalTaskList } from "@/hooks/useGlobalTaskList.js";
 import { useSessionsMentionProvider } from "@/mentions/providers/sessionsMentionProvider.js";
 import { useRemoteWorkspaceSessionStore } from "@/store/remoteWorkspaceSessionStore.js";
 import { TabStoreProvider } from "@/store/TabStoreProvider.js";
 import { useTaskQueryCacheStore } from "@/store/taskQueryCacheStore.js";
-import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
+import { useRaspberryCodeSessionStore } from "@/store/raspberrycodeSessionStore.js";
 import type { WorkspaceTabState } from "@/store/tabStore.js";
 import {
   buildWorkspaceSessionsIndexSourceKey,
@@ -42,7 +42,7 @@ function createSession(overrides: Partial<SessionSummary> = {}): SessionSummary 
   };
 }
 
-function createTaskMeta(taskId: string, overrides: Partial<ZCodeTaskMeta> = {}): ZCodeTaskMeta {
+function createTaskMeta(taskId: string, overrides: Partial<RaspberryCodeTaskMeta> = {}): RaspberryCodeTaskMeta {
   return {
     taskId,
     traceId: `trace-${taskId}`,
@@ -52,7 +52,7 @@ function createTaskMeta(taskId: string, overrides: Partial<ZCodeTaskMeta> = {}):
     updatedAt: 2,
     mode: "default",
     ...overrides,
-  } as ZCodeTaskMeta;
+  } as RaspberryCodeTaskMeta;
 }
 
 function createMinimalElement(ownerDocument: Document, tagName = "div") {
@@ -170,8 +170,8 @@ interface EndpointMockOptions {
   sessionsByWorkspaceKey?: Record<string, SessionSummary[]>;
   pinnedTaskIds?: string[];
   /** listTasks 返回的 tasks-index 持久行。 */
-  activeTaskMetas?: ZCodeTaskMeta[];
-  pinnedTaskMetas?: ZCodeTaskMeta[];
+  activeTaskMetas?: RaspberryCodeTaskMeta[];
+  pinnedTaskMetas?: RaspberryCodeTaskMeta[];
   /** 用于覆盖 ACK 延迟期间 scope 集合变化的竞态。 */
   subscribeGate?: Promise<void>;
   subscribeGatesByWorkspaceKey?: Record<string, Promise<void>>;
@@ -250,7 +250,7 @@ function createEndpointServices(options: EndpointMockOptions) {
   const defaultTaskMetasForScope = (params: {
     workspacePath: string;
     workspaceIdentity?: string;
-  }): ZCodeTaskMeta[] => {
+  }): RaspberryCodeTaskMeta[] => {
     const workspaceKey = params.workspaceIdentity?.trim() || params.workspacePath;
     const sessions = options.sessionsByWorkspaceKey?.[workspaceKey] ?? options.sessions;
     return sessions.map((session) =>
@@ -307,10 +307,10 @@ function createEndpointServices(options: EndpointMockOptions) {
       unsubscribeControllerV4: vi.fn(async () => {}),
       onDynamicControllerFrame: () => controllerFrames.event,
     },
-    zcodeTaskService: {
+    raspberrycodeTaskService: {
       listTaskList,
       listPinnedTaskIds: vi.fn(async (): Promise<string[]> => options.pinnedTaskIds ?? []),
-      listArchivedTasks: vi.fn(async (): Promise<ZCodeTaskMeta[]> => []),
+      listArchivedTasks: vi.fn(async (): Promise<RaspberryCodeTaskMeta[]> => []),
       listTasks: vi.fn(
         async (params: { workspacePath: string; workspaceIdentity?: string }) =>
           options.activeTaskMetas ??
@@ -323,7 +323,7 @@ function createEndpointServices(options: EndpointMockOptions) {
       ),
       onDynamicWorkspaceEvent: () => () => ({ dispose() {} }),
     },
-    zcodeAgentService: {
+    raspberrycodeAgentService: {
       ...v4Handshake(`connection-${options.workspaceId}`),
       subscribeSessionsIndexV4,
       unsubscribeSessionsIndexV4,
@@ -441,20 +441,20 @@ describe("useGlobalTaskList remote shard tasks-index 行 + sessions-index detail
       sessionIdByWorkspaceIdentity: {},
       sessionIdByWorkspacePath: {},
     });
-    useZCodeSessionStore.setState({ workspaces: {} });
+    useRaspberryCodeSessionStore.setState({ workspaces: {} });
     delete (globalThis as { document?: unknown }).document;
     delete (globalThis as { window?: unknown }).window;
     delete (globalThis as { IS_REACT_ACT_ENVIRONMENT?: unknown }).IS_REACT_ACT_ENVIRONMENT;
   });
 
   it("remote A 已就绪后分步追加并移除 ACK 延迟的 remote B，不重启 A", async () => {
-    const zcodeAck = createDeferred();
+    const raspberrycodeAck = createDeferred();
     const base = createEndpointServices({
       workspaceId: "ws-base",
       sessions: [],
     });
     const macIdentity = "remote:ssh:mac:/Users/dev";
-    const macProjectIdentity = "remote:ssh:mac:/Users/dev/ZCodeProject";
+    const macProjectIdentity = "remote:ssh:mac:/Users/dev/RaspberryCodeProject";
     const mac = createEndpointServices({
       workspaceId: "ws-mac",
       sessions: [],
@@ -475,52 +475,52 @@ describe("useGlobalTaskList remote shard tasks-index 行 + sessions-index detail
         ],
       },
     });
-    const zcodeIdentity = "remote:ssh:zcode:/root";
-    const zcodeProjectIdentity = "remote:ssh:zcode:/root/demo-project";
-    const zcode = createEndpointServices({
-      workspaceId: "ws-zcode",
+    const raspberrycodeIdentity = "remote:ssh:raspberrycode:/root";
+    const raspberrycodeProjectIdentity = "remote:ssh:raspberrycode:/root/demo-project";
+    const raspberrycode = createEndpointServices({
+      workspaceId: "ws-raspberrycode",
       sessions: [],
       sessionsByWorkspaceKey: {
-        [zcodeIdentity]: [
+        [raspberrycodeIdentity]: [
           createSession({
-            sessionId: "s-zcode",
-            workspaceId: zcodeIdentity,
+            sessionId: "s-raspberrycode",
+            workspaceId: raspberrycodeIdentity,
             lastActivityAt: 30,
           }),
         ],
-        [zcodeProjectIdentity]: [
+        [raspberrycodeProjectIdentity]: [
           createSession({
-            sessionId: "s-zcode-project",
-            workspaceId: zcodeProjectIdentity,
+            sessionId: "s-raspberrycode-project",
+            workspaceId: raspberrycodeProjectIdentity,
             lastActivityAt: 40,
           }),
         ],
       },
-      subscribeGate: zcodeAck.promise,
+      subscribeGate: raspberrycodeAck.promise,
     });
     const macScope: WorkspaceSessionsIndexScope = {
       endpointKey: "remote-mac",
       workspacePath: "/Users/dev",
       workspaceIdentity: macIdentity,
-      agentService: mac.services.zcodeAgentService,
+      agentService: mac.services.raspberrycodeAgentService,
     };
     const macProjectScope: WorkspaceSessionsIndexScope = {
       endpointKey: "remote-mac",
-      workspacePath: "/Users/dev/ZCodeProject",
+      workspacePath: "/Users/dev/RaspberryCodeProject",
       workspaceIdentity: macProjectIdentity,
-      agentService: mac.services.zcodeAgentService,
+      agentService: mac.services.raspberrycodeAgentService,
     };
-    const zcodeScope: WorkspaceSessionsIndexScope = {
-      endpointKey: "remote-zcode",
+    const raspberrycodeScope: WorkspaceSessionsIndexScope = {
+      endpointKey: "remote-raspberrycode",
       workspacePath: "/root",
-      workspaceIdentity: zcodeIdentity,
-      agentService: zcode.services.zcodeAgentService,
+      workspaceIdentity: raspberrycodeIdentity,
+      agentService: raspberrycode.services.raspberrycodeAgentService,
     };
-    const zcodeProjectScope: WorkspaceSessionsIndexScope = {
-      endpointKey: "remote-zcode",
+    const raspberrycodeProjectScope: WorkspaceSessionsIndexScope = {
+      endpointKey: "remote-raspberrycode",
       workspacePath: "/root/demo-project",
-      workspaceIdentity: zcodeProjectIdentity,
-      agentService: zcode.services.zcodeAgentService,
+      workspaceIdentity: raspberrycodeProjectIdentity,
+      agentService: raspberrycode.services.raspberrycodeAgentService,
     };
     let scopes: WorkspaceSessionsIndexScope[] = [macScope, macProjectScope];
     let latest: ReturnType<typeof useWorkspaceSessionsIndexItems> | null = null;
@@ -571,7 +571,7 @@ describe("useGlobalTaskList remote shard tasks-index 行 + sessions-index detail
     expect(latest?.sourceRevisionByScopeKey[macSourceKey]).not.toBe(macRevisionBefore);
     expect(latest?.sourceRevisionByScopeKey[macProjectSourceKey]).toBe(macProjectRevisionBefore);
 
-    scopes = [macScope, macProjectScope, zcodeScope];
+    scopes = [macScope, macProjectScope, raspberrycodeScope];
     await act(async () => {
       root.render(
         createElement(ServiceProvider, { services: base.services }, createElement(Probe)),
@@ -581,11 +581,11 @@ describe("useGlobalTaskList remote shard tasks-index 行 + sessions-index detail
 
     expect(mac.subscribeSessionsIndexV4).toHaveBeenCalledTimes(2);
     expect(mac.unsubscribeSessionsIndexV4).not.toHaveBeenCalled();
-    expect(zcode.subscribeSessionsIndexV4).toHaveBeenCalledTimes(1);
-    expect(latest?.hydratingEndpointKeys).toEqual(["remote-zcode"]);
+    expect(raspberrycode.subscribeSessionsIndexV4).toHaveBeenCalledTimes(1);
+    expect(latest?.hydratingEndpointKeys).toEqual(["remote-raspberrycode"]);
     expect((latest?.items ?? []).map((item) => item.taskId)).toEqual(["s-mac-project", "s-mac"]);
 
-    scopes = [macScope, macProjectScope, zcodeScope, zcodeProjectScope];
+    scopes = [macScope, macProjectScope, raspberrycodeScope, raspberrycodeProjectScope];
     await act(async () => {
       root.render(
         createElement(ServiceProvider, { services: base.services }, createElement(Probe)),
@@ -594,15 +594,15 @@ describe("useGlobalTaskList remote shard tasks-index 行 + sessions-index detail
     });
     expect(mac.subscribeSessionsIndexV4).toHaveBeenCalledTimes(2);
     expect(mac.unsubscribeSessionsIndexV4).not.toHaveBeenCalled();
-    expect(zcode.subscribeSessionsIndexV4).toHaveBeenCalledTimes(2);
+    expect(raspberrycode.subscribeSessionsIndexV4).toHaveBeenCalledTimes(2);
 
     await act(async () => {
-      zcodeAck.resolve();
+      raspberrycodeAck.resolve();
       await flushMicrotasks();
     });
     expect((latest?.items ?? []).map((item) => item.taskId)).toEqual([
-      "s-zcode-project",
-      "s-zcode",
+      "s-raspberrycode-project",
+      "s-raspberrycode",
       "s-mac-project",
       "s-mac",
     ]);
@@ -614,7 +614,7 @@ describe("useGlobalTaskList remote shard tasks-index 行 + sessions-index detail
       );
       await flushMicrotasks();
     });
-    expect(zcode.unsubscribeSessionsIndexV4).toHaveBeenCalledTimes(2);
+    expect(raspberrycode.unsubscribeSessionsIndexV4).toHaveBeenCalledTimes(2);
     expect(mac.unsubscribeSessionsIndexV4).not.toHaveBeenCalled();
     expect((latest?.items ?? []).map((item) => item.taskId)).toEqual(["s-mac-project", "s-mac"]);
 
@@ -648,13 +648,13 @@ describe("useGlobalTaskList remote shard tasks-index 行 + sessions-index detail
     });
     const localScope: WorkspaceSessionsIndexScope = {
       workspacePath: "/workspace",
-      agentService: local.services.zcodeAgentService,
+      agentService: local.services.raspberrycodeAgentService,
     };
     const remoteScope: WorkspaceSessionsIndexScope = {
       endpointKey: "remote-added",
       workspacePath: "/remote-added",
       workspaceIdentity: "remote:ssh:added:/remote-added",
-      agentService: remote.services.zcodeAgentService,
+      agentService: remote.services.raspberrycodeAgentService,
     };
     let scopes: WorkspaceSessionsIndexScope[] = [localScope];
     let latest: ReturnType<typeof useWorkspaceSessionsIndexItems> | null = null;
@@ -832,7 +832,7 @@ describe("useGlobalTaskList remote shard tasks-index 行 + sessions-index detail
     });
     const localScope: WorkspaceSessionsIndexScope = {
       workspacePath: "/workspace-generation",
-      agentService: local.services.zcodeAgentService,
+      agentService: local.services.raspberrycodeAgentService,
     };
     const remoteScopeBase = {
       endpointKey: "remote-generation",
@@ -843,7 +843,7 @@ describe("useGlobalTaskList remote shard tasks-index 行 + sessions-index detail
       localScope,
       {
         ...remoteScopeBase,
-        agentService: remoteOld.services.zcodeAgentService,
+        agentService: remoteOld.services.raspberrycodeAgentService,
       },
     ];
     let latest: ReturnType<typeof useWorkspaceSessionsIndexItems> | null = null;
@@ -865,7 +865,7 @@ describe("useGlobalTaskList remote shard tasks-index 行 + sessions-index detail
       localScope,
       {
         ...remoteScopeBase,
-        agentService: remoteNew.services.zcodeAgentService,
+        agentService: remoteNew.services.raspberrycodeAgentService,
       },
     ];
     await act(async () => {

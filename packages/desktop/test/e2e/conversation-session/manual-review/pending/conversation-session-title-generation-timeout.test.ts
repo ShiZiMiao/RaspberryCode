@@ -1,4 +1,4 @@
-import { TID_TASK_ITEM, TID_WORKSPACE_TITLE, testId } from "@zcode/shared/test-ids";
+import { TID_TASK_ITEM, TID_WORKSPACE_TITLE, testId } from "@raspberrycode/shared/test-ids";
 import { clearAppData } from "../../../helpers/desktop-app.js";
 import {
   getTaskStoreSnapshot,
@@ -12,7 +12,7 @@ import {
 
 const PROMPT_MARKER = "E2E_TITLE_SIDECAR_TIMEOUT";
 const SKILL_LINK =
-  "[$e2e-case-lifecycle](/Users/dev/workspace/z-code/.agents/skills/e2e-case-lifecycle/SKILL.md)";
+  "[$e2e-case-lifecycle](/Users/dev/workspace/demo/.agents/skills/e2e-case-lifecycle/SKILL.md)";
 const FINAL_TOKEN = "e2e-title-timeout-ok";
 const GENERATED_TITLE = "e2e-case-lifecycle 技能说明";
 

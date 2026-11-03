@@ -1,15 +1,17 @@
-import { getRemoteRuntimeToolsForPlatform, type RemoteResourcePackageId } from "@zcode/shared";
-import type { IRemoteBackend, RemoteEnvironment } from "@zcode/server/remote/backend.js";
+import { getRemoteRuntimeToolsForPlatform, type RemoteResourcePackageId } from "@raspberrycode/shared";
+import type { IRemoteBackend, RemoteEnvironment } from "@raspberrycode/server/remote/backend.js";
 import {
-  REMOTE_BASE,
+  resolveRemoteServerBase,
   type DeployLoggers,
   type RemoteAssetDeployOptions,
   waitForClose,
-} from "@zcode/server/remote/deployShared.js";
-import type { RemoteAssetInstaller } from "@zcode/server/remote/remoteAssetInstaller.js";
-import { buildWriteLiteralFileCommand } from "@zcode/server/remote/posixShell.js";
+} from "@raspberrycode/server/remote/deployShared.js";
+import type { RemoteAssetInstaller } from "@raspberrycode/server/remote/remoteAssetInstaller.js";
+import { buildWriteLiteralFileCommand } from "@raspberrycode/server/remote/posixShell.js";
 
-const REMOTE_TOOLS_BASE = `${REMOTE_BASE}/tools`;
+function remoteToolsBase(serverBase: string): string {
+  return `${serverBase}/tools`;
+}
 
 export interface DeployRuntimeToolOptions extends RemoteAssetDeployOptions {
   platformArch: string;
@@ -24,6 +26,7 @@ export async function deployRuntimeTools(
   loggers: DeployLoggers,
 ): Promise<void> {
   const platformArch = options.platformArch;
+  const serverBase = options.serverBase ?? (await resolveRemoteServerBase(backend));
 
   for (const { toolId, runtime, version } of getRemoteRuntimeToolsForPlatform(env.platform)) {
     const componentId = runtime.bundledResourceDir as RemoteResourcePackageId;
@@ -42,7 +45,7 @@ export async function deployRuntimeTools(
       continue;
     }
 
-    const remoteToolDir = `${REMOTE_TOOLS_BASE}/${runtime.bundledResourceDir}`;
+    const remoteToolDir = `${remoteToolsBase(serverBase)}/${runtime.bundledResourceDir}`;
     const remoteVersionFile = `${remoteToolDir}/.version`;
     const remoteBinaryPath = `${remoteToolDir}/${binaryName}`;
 

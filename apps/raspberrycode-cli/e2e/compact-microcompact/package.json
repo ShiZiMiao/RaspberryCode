@@ -1,0 +1,11 @@
+{
+  "name": "raspberrycode-compact-microcompact-e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dry-run": "node run.mjs --dry-run",
+    "e2e": "node run.mjs",
+    "docker:build": "docker build -f Dockerfile -t raspberrycode-compact-microcompact ../..",
+    "docker:e2e": "docker run --rm -e RASPBERRYCODE_API_KEY raspberrycode-compact-microcompact"
+  }
+}

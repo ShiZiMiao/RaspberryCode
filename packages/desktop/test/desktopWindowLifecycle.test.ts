@@ -59,7 +59,7 @@ describe("desktopWindowLifecycle createWindow", () => {
     vi.mocked(createBrowserWindow).mockReturnValue(win as never);
     const child = { pid: 1234 };
     const spawnHostProcess = vi.fn(() => child as never);
-    const fallbackCwd = "/Users/demo/.zcode/workspace/default";
+    const fallbackCwd = "/Users/demo/.raspberrycode/workspace/default";
 
     createWindow({
       iconPath: "/tmp/icon.png",
@@ -130,7 +130,7 @@ describe("desktopWindowLifecycle createWindow", () => {
       disposeHostProcess: vi.fn(),
       disposeRemoteWorkspaceSessionsForWindow: vi.fn(),
       reattachRemoteWorkspaceSessionsForWindow: vi.fn(),
-      agentSpawnFallbackCwd: "/Users/dev/.zcode/workspace/default",
+      agentSpawnFallbackCwd: "/Users/dev/.raspberrycode/workspace/default",
       deviceMid: "device-mid",
       runtimeProcessEnvFallbackPatch: {},
       currentApplicationLocale: () => locale,
@@ -179,7 +179,7 @@ describe("desktopWindowLifecycle createWindow", () => {
       disposeHostProcess: vi.fn(),
       disposeRemoteWorkspaceSessionsForWindow: vi.fn(),
       reattachRemoteWorkspaceSessionsForWindow: vi.fn(),
-      agentSpawnFallbackCwd: "/Users/demo/.zcode/workspace/default",
+      agentSpawnFallbackCwd: "/Users/demo/.raspberrycode/workspace/default",
       deviceMid: "device-mid",
       runtimeProcessEnvPatchPromise,
       runtimeProcessEnvFallbackPatch: {},
@@ -236,7 +236,7 @@ describe("desktopWindowLifecycle createWindow", () => {
       disposeHostProcess: vi.fn(),
       disposeRemoteWorkspaceSessionsForWindow: vi.fn(),
       reattachRemoteWorkspaceSessionsForWindow,
-      agentSpawnFallbackCwd: "/Users/demo/.zcode/workspace/default",
+      agentSpawnFallbackCwd: "/Users/demo/.raspberrycode/workspace/default",
       deviceMid: "device-mid",
       runtimeProcessEnvPatchPromise: new Promise(() => {}),
       runtimeProcessEnvFallbackPatch: {},
@@ -249,7 +249,7 @@ describe("desktopWindowLifecycle createWindow", () => {
       [expect.objectContaining({ id: "port-2" })],
     );
     expect(webContents.postMessage).toHaveBeenCalledWith(
-      "zcode:service-port",
+      "raspberrycode:service-port",
       { databaseStartupId: "window-host-test" },
       [expect.objectContaining({ id: "port-1" })],
     );
@@ -295,7 +295,7 @@ describe("desktopWindowLifecycle createWindow", () => {
       disposeHostProcess: vi.fn(),
       disposeRemoteWorkspaceSessionsForWindow: vi.fn(),
       reattachRemoteWorkspaceSessionsForWindow: vi.fn(),
-      agentSpawnFallbackCwd: "/Users/demo/.zcode/workspace/default",
+      agentSpawnFallbackCwd: "/Users/demo/.raspberrycode/workspace/default",
       deviceMid: "device-mid",
       runtimeProcessEnvPatchPromise,
       runtimeProcessEnvFallbackPatch: fallbackPatch,
@@ -349,7 +349,7 @@ describe("desktopWindowLifecycle createWindow", () => {
       disposeHostProcess: vi.fn(),
       disposeRemoteWorkspaceSessionsForWindow: vi.fn(),
       reattachRemoteWorkspaceSessionsForWindow: vi.fn(),
-      agentSpawnFallbackCwd: "/Users/demo/.zcode/workspace/default",
+      agentSpawnFallbackCwd: "/Users/demo/.raspberrycode/workspace/default",
       deviceMid: "device-mid",
       runtimeProcessEnvPatchPromise: Promise.reject(new Error("profile failed")),
       runtimeProcessEnvFallbackPatch: fallbackPatch,
@@ -404,7 +404,7 @@ describe("desktopWindowLifecycle createWindow", () => {
       disposeHostProcess: vi.fn(),
       disposeRemoteWorkspaceSessionsForWindow: vi.fn(),
       reattachRemoteWorkspaceSessionsForWindow: vi.fn(),
-      agentSpawnFallbackCwd: "/Users/demo/.zcode/workspace/default",
+      agentSpawnFallbackCwd: "/Users/demo/.raspberrycode/workspace/default",
       deviceMid: "device-mid",
       runtimeProcessEnvFallbackPatch: {},
       awaitFirstHostSpawnDecision,

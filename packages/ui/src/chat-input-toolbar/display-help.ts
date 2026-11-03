@@ -1,23 +1,23 @@
-import type { ZCodeProvider } from "@zcode/shared";
+import type { RaspberryCodeProvider } from "@raspberrycode/shared";
 
-export const ZCODE_MODE_OPTION_LABEL_IDS: Record<ZCodeProvider, Record<string, string>> = {
+export const RASPBERRYCODE_MODE_OPTION_LABEL_IDS: Record<RaspberryCodeProvider, Record<string, string>> = {
   agent: {
-    default: "mode.label.glm.default",
-    build: "mode.label.glm.build",
-    edit: "mode.label.glm.edit",
-    plan: "mode.label.glm.plan",
-    yolo: "mode.label.glm.yolo",
-    guarded: "mode.label.glm.guarded",
+    default: "mode.label.agent.default",
+    build: "mode.label.agent.build",
+    edit: "mode.label.agent.edit",
+    plan: "mode.label.agent.plan",
+    yolo: "mode.label.agent.yolo",
+    guarded: "mode.label.agent.guarded",
   },
 };
 
-export const ZCODE_MODE_OPTION_DESCRIPTION_IDS: Record<ZCodeProvider, Record<string, string>> = {
+export const RASPBERRYCODE_MODE_OPTION_DESCRIPTION_IDS: Record<RaspberryCodeProvider, Record<string, string>> = {
   agent: {
-    default: "mode.description.glm.default",
-    build: "mode.description.glm.build",
-    edit: "mode.description.glm.edit",
-    plan: "mode.description.glm.plan",
-    yolo: "mode.description.glm.yolo",
-    guarded: "mode.description.glm.guarded",
+    default: "mode.description.agent.default",
+    build: "mode.description.agent.build",
+    edit: "mode.description.agent.edit",
+    plan: "mode.description.agent.plan",
+    yolo: "mode.description.agent.yolo",
+    guarded: "mode.description.agent.guarded",
   },
 };

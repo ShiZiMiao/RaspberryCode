@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ChannelClient, ChannelServer, createQueuePair } from "@zcode/rpc";
+import { ChannelClient, ChannelServer, createQueuePair } from "@raspberrycode/rpc";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const originalHome = process.env.HOME;
@@ -9,13 +9,13 @@ const tempHomes: string[] = [];
 const RETIRED_ZAPI_PROVIDER_ID = "builtin:zapi";
 
 function makeTempHome(): string {
-  const home = mkdtempSync(join(tmpdir(), "zcode-local-services-remote-authority-"));
+  const home = mkdtempSync(join(tmpdir(), "raspberrycode-local-services-remote-authority-"));
   tempHomes.push(home);
   return home;
 }
 
 function writeLegacyZapiConfig(home: string): void {
-  const configDir = join(home, ".zcode", "v2");
+  const configDir = join(home, ".raspberrycode", "v2");
   mkdirSync(configDir, { recursive: true });
   writeFileSync(
     join(configDir, "config.json"),
@@ -48,10 +48,10 @@ function writeLegacyZapiConfig(home: string): void {
   );
 }
 
-function writeZCodeBuiltinProviderConfig(home: string): string {
-  const configDir = join(home, ".zcode", "provider-test");
+function writeRaspberryCodeBuiltinProviderConfig(home: string): string {
+  const configDir = join(home, ".raspberrycode", "provider-test");
   mkdirSync(configDir, { recursive: true });
-  const filePath = join(configDir, "zcodeBuiltin.json");
+  const filePath = join(configDir, "raspberrycodeBuiltin.json");
   writeFileSync(
     filePath,
     JSON.stringify({
@@ -108,7 +108,7 @@ describe("createLocalServices remote authority", () => {
     const [{ createLocalServices, disposeServiceResources }, { IModelSelectionService }] =
       await Promise.all([import("../src/node.js"), import("../src/index.js")]);
     const services = createLocalServices({
-      zcodeBuiltinProviderConfigFilePath: writeZCodeBuiltinProviderConfig(home),
+      raspberrycodeBuiltinProviderConfigFilePath: writeRaspberryCodeBuiltinProviderConfig(home),
       serviceAuthorityMode: "desktop-attached-remote",
     });
 
@@ -132,7 +132,7 @@ describe("createLocalServices remote authority", () => {
 
     const { createLocalServices, disposeServiceResources } = await import("../src/node.js");
     const services = createLocalServices({
-      zcodeBuiltinProviderConfigFilePath: writeZCodeBuiltinProviderConfig(home),
+      raspberrycodeBuiltinProviderConfigFilePath: writeRaspberryCodeBuiltinProviderConfig(home),
       serviceAuthorityMode: "desktop-attached-remote",
     });
 
@@ -150,7 +150,7 @@ describe("createLocalServices remote authority", () => {
   it("provider runtime services do not refresh legacy model presets on startup", async () => {
     const home = makeTempHome();
     process.env.HOME = home;
-    const zcodeBuiltinProviderConfigFilePath = writeZCodeBuiltinProviderConfig(home);
+    const raspberrycodeBuiltinProviderConfigFilePath = writeRaspberryCodeBuiltinProviderConfig(home);
     const fetchImpl = vi.fn(
       async () =>
         new Response(JSON.stringify({ code: 0, data: { configs: {} } }), {
@@ -161,7 +161,7 @@ describe("createLocalServices remote authority", () => {
     vi.spyOn(globalThis, "fetch").mockImplementation(fetchImpl);
 
     const { createLocalServices, disposeServiceResources } = await import("../src/node.js");
-    const services = createLocalServices({ zcodeBuiltinProviderConfigFilePath });
+    const services = createLocalServices({ raspberrycodeBuiltinProviderConfigFilePath });
 
     try {
       await new Promise((resolve) => setTimeout(resolve, 50));
@@ -176,19 +176,19 @@ describe("createLocalServices remote authority", () => {
   it("desktop-attached remote 使用远端 Registry 的就绪状态，不等待 Desktop 推送", async () => {
     const home = makeTempHome();
     process.env.HOME = home;
-    const zcodeBuiltinProviderConfigFilePath = writeZCodeBuiltinProviderConfig(home);
+    const raspberrycodeBuiltinProviderConfigFilePath = writeRaspberryCodeBuiltinProviderConfig(home);
     const commandResolver = vi.fn(() => null);
-    const [{ createLocalServices, disposeServiceResources }, { IZCodeAgentService }] =
+    const [{ createLocalServices, disposeServiceResources }, { IRaspberryCodeAgentService }] =
       await Promise.all([import("../src/node.js"), import("../src/index.js")]);
     const services = createLocalServices({
-      zcodeBuiltinProviderConfigFilePath,
+      raspberrycodeBuiltinProviderConfigFilePath,
       serviceAuthorityMode: "desktop-attached-remote",
-      zcodeAgentCommandResolver: commandResolver,
+      raspberrycodeAgentCommandResolver: commandResolver,
     });
 
     try {
       await expect(
-        services.get(IZCodeAgentService).initialize({ workspacePath: "/remote/workspace" }),
+        services.get(IRaspberryCodeAgentService).initialize({ workspacePath: "/remote/workspace" }),
       ).resolves.toMatchObject({ available: false });
       expect(commandResolver).not.toHaveBeenCalled();
     } finally {
@@ -202,11 +202,11 @@ describe("createLocalServices remote authority", () => {
     const { createLocalServices, disposeServiceResources } = await import("../src/node.js");
     const { IProviderProvisioningTargetService } = await import("../src/index.js");
     const remoteServices = createLocalServices({
-      zcodeBuiltinProviderConfigFilePath: writeZCodeBuiltinProviderConfig(home),
+      raspberrycodeBuiltinProviderConfigFilePath: writeRaspberryCodeBuiltinProviderConfig(home),
       serviceAuthorityMode: "desktop-attached-remote",
     });
     const localServices = createLocalServices({
-      zcodeBuiltinProviderConfigFilePath: writeZCodeBuiltinProviderConfig(home),
+      raspberrycodeBuiltinProviderConfigFilePath: writeRaspberryCodeBuiltinProviderConfig(home),
       serviceAuthorityMode: "desktop-local",
     });
 
@@ -222,12 +222,12 @@ describe("createLocalServices remote authority", () => {
   it("只在本进程成功持久化 Provisioning Source 事实后通知 Host", async () => {
     const home = makeTempHome();
     process.env.HOME = home;
-    mkdirSync(join(home, ".zcode", "v2"), { recursive: true });
+    mkdirSync(join(home, ".raspberrycode", "v2"), { recursive: true });
     const onProviderProvisioningSourceChanged = vi.fn();
     const [{ createLocalServices, disposeServiceResources }, serviceDescriptors] =
       await Promise.all([import("../src/node.js"), import("../src/index.js")]);
     const services = createLocalServices({
-      zcodeBuiltinProviderConfigFilePath: writeZCodeBuiltinProviderConfig(home),
+      raspberrycodeBuiltinProviderConfigFilePath: writeRaspberryCodeBuiltinProviderConfig(home),
       onProviderProvisioningSourceChanged,
     });
 
@@ -298,7 +298,7 @@ describe("createLocalServices remote authority", () => {
     const [{ createLocalServices, disposeServiceResources }, { IPluginSyncService }] =
       await Promise.all([import("../src/node.js"), import("../src/index.js")]);
     const services = createLocalServices({
-      zcodeBuiltinProviderConfigFilePath: writeZCodeBuiltinProviderConfig(home),
+      raspberrycodeBuiltinProviderConfigFilePath: writeRaspberryCodeBuiltinProviderConfig(home),
       serviceAuthorityMode: "desktop-attached-remote",
     });
     const [clientProtocol, serverProtocol] = createQueuePair();

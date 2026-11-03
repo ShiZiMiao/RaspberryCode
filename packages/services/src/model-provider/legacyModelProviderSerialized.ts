@@ -40,7 +40,7 @@ export type ModelProviderApiFormat =
   | "openai-chat-completions"
   | "openai-responses";
 
-export type ModelProviderCatalogSourceId = "china-llm-zcode-dev";
+export type ModelProviderCatalogSourceId = "china-llm-raspberrycode-dev";
 
 export type ModelProviderKind = "anthropic" | "openai" | "openai-compatible";
 
@@ -93,7 +93,7 @@ export interface ModelProviderCatalogProvider {
 }
 
 export interface ModelProviderCatalogFile {
-  schemaVersion: "zcode.model-providers.v1";
+  schemaVersion: "raspberrycode.model-providers.v1";
   providers: ModelProviderCatalogProvider[];
 }
 
@@ -149,7 +149,7 @@ export interface ModelProviderConfig {
 }
 
 export interface ModelProviderStoreFile {
-  schemaVersion: "zcode.model-providers.v2";
+  schemaVersion: "raspberrycode.model-providers.v2";
   providers: ModelProviderConfig[];
 }
 
@@ -176,7 +176,7 @@ export const modelProviderApiFormatSchema = z.enum([
 
 export const modelProviderKindSchema = z.enum(["anthropic", "openai", "openai-compatible"]);
 
-export const modelProviderCatalogSourceIdSchema = z.enum(["china-llm-zcode-dev"]);
+export const modelProviderCatalogSourceIdSchema = z.enum(["china-llm-raspberrycode-dev"]);
 
 export const modelProviderModalitySchema = z.enum(["text", "image", "video", "audio", "pdf"]);
 
@@ -232,7 +232,7 @@ export const modelProviderCatalogProviderSchema = z.object({
 });
 
 export const modelProviderCatalogFileSchema = z.object({
-  schemaVersion: z.literal("zcode.model-providers.v1"),
+  schemaVersion: z.literal("raspberrycode.model-providers.v1"),
   providers: z.array(modelProviderCatalogProviderSchema),
 });
 
@@ -320,7 +320,7 @@ export const modelProviderConfigSchema = z.object({
 export const modelProviderListSchema = z.array(modelProviderConfigSchema);
 
 export const modelProviderStoreFileSchema = z.object({
-  schemaVersion: z.literal("zcode.model-providers.v2"),
+  schemaVersion: z.literal("raspberrycode.model-providers.v2"),
   providers: modelProviderListSchema,
 });
 
@@ -746,7 +746,7 @@ export function migrateLegacyModelProviderConfig(
     );
     const disabledReason =
       kinds.length === 0 && formats.includes("gemini")
-        ? "legacy gemini format is not supported by zcode.model-providers.v2"
+        ? "legacy gemini format is not supported by raspberrycode.model-providers.v2"
         : undefined;
 
     return createModelProviderModelConfig({
@@ -785,7 +785,7 @@ export function migrateLegacyModelProviderConfig(
 export function migrateLegacyModelProviderListToStoreFile(raw: unknown): ModelProviderStoreFile {
   const providers = legacyModelProviderListSchema.parse(raw);
   return {
-    schemaVersion: "zcode.model-providers.v2",
+    schemaVersion: "raspberrycode.model-providers.v2",
     providers: providers.map(migrateLegacyModelProviderConfig),
   };
 }

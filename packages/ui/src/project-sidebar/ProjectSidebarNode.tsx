@@ -14,7 +14,7 @@ import type { ProjectNodeProps } from "@/project-sidebar/ProjectNodeContent.js";
 import { projectSourceServerId } from "@/project-sidebar/view.js";
 import { useTabStoreApi } from "@/store/TabStoreProvider.js";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { setPendingSettingsSectionIntent } from "@/lib/settingsNavigation.js";
 import { toast } from "@/components/ui/toast.js";
 import { logger } from "@/logger.js";
@@ -68,7 +68,7 @@ export const ProjectSidebarNode = memo(
     remoteActions,
     ...display
   }: Props) {
-    const { intl } = useZCodeIntl();
+    const { intl } = useRaspberryCodeIntl();
     const confirm = useConfirmDialog();
     const tabStore = useTabStoreApi();
     const msg = (id: string) => intl.formatMessage({ id: `project.${id}` });

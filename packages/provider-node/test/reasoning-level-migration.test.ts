@@ -13,14 +13,14 @@ import {
   createRegistryProviderConfig,
   type ModelSelection,
   type ProviderRegistryServiceSnapshot,
-} from "@zcode/provider";
-import { NodeZCodeBuiltinProviderConfigSource } from "../src/index.js";
+} from "@raspberrycode/provider";
+import { NodeRaspberryCodeBuiltinProviderConfigSource } from "../src/index.js";
 import { createNodeModelSelectionFacade } from "../src/model-selection-facade.js";
 import { legacyReasoningLevelRenames } from "../src/legacy-reasoning-level-renames.js";
 
-const source = new NodeZCodeBuiltinProviderConfigSource({
+const source = new NodeRaspberryCodeBuiltinProviderConfigSource({
   bundledFilePath: fileURLToPath(
-    new URL("../../../config/provider/zcode-builtin.json", import.meta.url),
+    new URL("../../../config/provider/raspberrycode-builtin.json", import.meta.url),
   ),
   watch: false,
 });
@@ -41,10 +41,10 @@ function view(
   const providerId = "personal:reasoning-migration-fixture";
   const config = {
     revision: "c",
-    zcodeBuiltinRevision: "b",
+    raspberrycodeBuiltinRevision: "b",
     personalRevision: "p",
-    zcodeBuiltinProviders: builtin.providers,
-    zcodeBuiltinProviderTemplates: builtin.templates,
+    raspberrycodeBuiltinProviders: builtin.providers,
+    raspberrycodeBuiltinProviderTemplates: builtin.templates,
     personalProviders: new ProviderConfigMap([
       [
         providerId,
@@ -58,12 +58,12 @@ function view(
         }),
       ],
     ]),
-    zcodeBuiltinModelRules: modelRules,
+    raspberrycodeBuiltinModelRules: modelRules,
     personalModels,
   };
   const account = {
     revision: "a",
-    basedOnZCodeBuiltinRevision: "b",
+    basedOnRaspberryCodeBuiltinRevision: "b",
     providers: ProviderConfigMap.empty(),
     states: {},
   };

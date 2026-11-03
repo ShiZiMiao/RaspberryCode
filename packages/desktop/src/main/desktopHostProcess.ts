@@ -14,21 +14,21 @@ import {
   type RemoteTarget,
   type TaskRealtimeHostDeliveryKind,
   type WorkspacePurpose,
-  formatZCodeHostProcessName,
+  formatRaspberryCodeHostProcessName,
   HostMessageTypes,
   hostResponseMessageSchema,
   HostResponseTypes,
   InternalChannels,
   LAUNCH_MARKS_QUERY_KEY,
-  RUNTIME_ZCODE_DEBUG,
+  RUNTIME_RASPBERRYCODE_DEBUG,
   serializeLaunchMarks,
-  ZCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV,
-} from "@zcode/shared";
+  RASPBERRYCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV,
+} from "@raspberrycode/shared";
 import type {
   PluginSandboxHandle,
   PluginSandboxRegisterRequestPayload,
   PluginSandboxRegisterResultPayload,
-} from "@zcode/shared/mcp-apps";
+} from "@raspberrycode/shared/mcp-apps";
 import type { UtilityProcess as ElectronUtilityProcess, MessagePortMain } from "electron";
 import {
   app,
@@ -89,7 +89,7 @@ export interface HostInitMessage {
   agentSpawnFallbackCwd?: string;
   remoteAssets?: RemoteAssetDirs;
   /** Main 解析后的 RaspberryCode Built-in Provider Config 路径；Host/Services 不感知 Electron 安装布局。 */
-  zcodeBuiltinProviderConfigFilePath: string;
+  raspberrycodeBuiltinProviderConfigFilePath: string;
   /** Main 提前异步采集并过滤的本机 runtime 环境；只允许传给 InitLocal。 */
   runtimeProcessEnvPatch?: Record<string, string>;
 }
@@ -233,26 +233,26 @@ export function spawnHostProcess(
   const hostId = randomUUID();
   const agentBinaryPath = resolveBundledAgentBinaryPath();
   const execArgv = [
-    ...(RUNTIME_ZCODE_DEBUG ? [`--inspect-brk=${RUNTIME_ZCODE_DEBUG}`] : []),
+    ...(RUNTIME_RASPBERRYCODE_DEBUG ? [`--inspect-brk=${RUNTIME_RASPBERRYCODE_DEBUG}`] : []),
     "--no-warnings",
   ];
   const child = electronUtilityProcess.fork(hostModulePath, [], {
-    serviceName: formatZCodeHostProcessName(label),
+    serviceName: formatRaspberryCodeHostProcessName(label),
     execArgv,
     env: {
       ...buildHostProcessEnv(dependencies.hostProcessLocalEnv),
       ...buildHostE2ECoverageEnv(),
-      ZCODE_PROCESS_LABEL: label,
+      RASPBERRYCODE_PROCESS_LABEL: label,
       // macOS-only: the Computer Use Helper launcher runs inside this forked host utilityProcess, whose
       // code-signing identity is a nested Electron helper (NOT dev.raspberrycode.app). Publish THIS (main
       // Electron) process's pid — which IS dev.raspberrycode.app — so helperLauncher passes it as
       // `--launcher-pid` and the Helper's signature/peer verification succeeds instead of
       // health-timing out. Env-name mirror of services' LAUNCHER_PID_ENV. Not set on
       // Windows/Linux (CUA is macOS-only; nothing reads it there) to keep the host env pristine.
-      ...(process.platform === "darwin" ? { ZCODE_CUA_LAUNCHER_PID: String(process.pid) } : {}),
+      ...(process.platform === "darwin" ? { RASPBERRYCODE_CUA_LAUNCHER_PID: String(process.pid) } : {}),
       ...(dependencies.desktopContextPromptEnabled
         ? {
-            [ZCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV]: dependencies.desktopContextPromptEnabled()
+            [RASPBERRYCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV]: dependencies.desktopContextPromptEnabled()
               ? "1"
               : "0",
           }
@@ -265,9 +265,6 @@ export function spawnHostProcess(
   );
   dependencies.logger.info(`[spawnHostProcess] host module path: ${hostModulePath}`);
   dependencies.logger.info(`[spawnHostProcess] agent binary path: ${agentBinaryPath ?? "<not found>"}`);
-  dependencies.logger.info(
-    `[spawnHostProcess] BIGMODEL_OAUTH_APP_SECRET source: ${process.env.BIGMODEL_OAUTH_APP_SECRET ? "process" : dependencies.hostProcessLocalEnv.BIGMODEL_OAUTH_APP_SECRET ? "dotenv" : "fallback"}`,
-  );
 
   // 远程连接与本地服务共享 window Host，进程级 stdout 没有请求身份。
   // 连接进度改由 HostResponseTypes.RemoteWorkspaceConnectionLog 按 requestId 上报。
@@ -662,7 +659,7 @@ export function disposeHostProcess(
   }
 
   // host 收到 Dispose 后需要等待 agent 进程树的 SIGTERM/SIGKILL 兜底完成。
-  // 如果 main 仍按 150/300ms 强杀 host，host 会先退出，zcode-cli/app-server 子进程就可能被 init 接管成孤儿。
+  // 如果 main 仍按 150/300ms 强杀 host，host 会先退出，raspberrycode-cli/app-server 子进程就可能被 init 接管成孤儿。
   const effectiveForceKillDelayMs = Math.max(forceKillDelayMs, 3_500);
   const killTimer = setTimeout(() => {
     disposingHostProcessTimers.delete(child);

@@ -40,8 +40,8 @@ plain paragraph
       },
       {
         host: "https://git.example.invalid",
-        owner: "codegeex",
-        repository: "z-code",
+        owner: "demo-org",
+        repository: "demo",
       },
     );
 
@@ -62,8 +62,8 @@ plain paragraph
       {
         version: "1.10.0",
         host: "https://git.example.invalid",
-        owner: "codegeex",
-        repository: "z-code",
+        owner: "demo-org",
+        repository: "demo",
         commit: "commit",
         linkCompare: false,
         linkReferences: true,
@@ -111,11 +111,11 @@ plain paragraph
 
     expect(output).toContain(
       "* **ci:** resolve Linux build images via CI_REGISTRY_IMAGE " +
-        "([5e136a9](https://git.example.invalid/codegeex/z-code/commit/5e136a9a0c9c5bb3db1d75972d956d6626a3fcef))",
+        "([5e136a9](https://git.example.invalid/demo-org/demo/commit/5e136a9a0c9c5bb3db1d75972d956d6626a3fcef))",
     );
     expect(output).toContain(
       "* **web-remote:** harden mobile reconnect flow " +
-        "([38dd68b](https://git.example.invalid/codegeex/z-code/commit/38dd68bc37234cdecb2e11276b7f715a56bf3e06))\n" +
+        "([38dd68b](https://git.example.invalid/demo-org/demo/commit/38dd68bc37234cdecb2e11276b7f715a56bf3e06))\n" +
         "  * add safe home-only services\n" +
         "  * extend workspace reconnect timeout\n" +
         "  * bump package version to 1.10.0\n",

@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
-import type { Locale } from "@zcode/shared";
+import type { Locale } from "@raspberrycode/shared";
 
 const WORKFLOW_NAME = "Open in RaspberryCode.workflow";
 const WORKFLOW_BUNDLE_ID = "dev.raspberrycode.app.finder-open-workflow";
@@ -22,7 +22,7 @@ done
 
 if [ -n "$first" ]; then
   encoded=$(/usr/bin/osascript -l JavaScript -e 'function run(argv) { return encodeURIComponent(argv[0]); }' "$first")
-  /usr/bin/open "zcode://workspace/open?path=\${encoded}"
+  /usr/bin/open "raspberrycode://workspace/open?path=\${encoded}"
 fi
 `;
 

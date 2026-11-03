@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { TEST_ZCODE_ENDPOINT_ORIGIN } from "@zcode/shared";
-import { ZCODE_CLIENT_SCENES_URL } from "../src/providers/api/apiEndpoints.js";
+import { TEST_RASPBERRYCODE_ENDPOINT_ORIGIN } from "@raspberrycode/shared";
+import { RASPBERRYCODE_CLIENT_SCENES_URL } from "../src/providers/api/apiEndpoints.js";
 import { createNodeApiClient } from "../src/providers/api/nodeApiClient.js";
 
 describe("RaspberryCode API endpoints", () => {
@@ -15,15 +15,15 @@ describe("RaspberryCode API endpoints", () => {
         });
         return new Response('{"code":0,"msg":"","data":[]}', { status: 200 });
       },
-      resolveZCodeEndpointOrigin: () => TEST_ZCODE_ENDPOINT_ORIGIN,
+      resolveRaspberryCodeEndpointOrigin: () => TEST_RASPBERRYCODE_ENDPOINT_ORIGIN,
     });
 
-    await client.request(ZCODE_CLIENT_SCENES_URL, { method: "GET" });
+    await client.request(RASPBERRYCODE_CLIENT_SCENES_URL, { method: "GET" });
 
     expect(requests).toHaveLength(1);
     expect(requests[0]).toMatchObject({
       method: "GET",
-      url: `${TEST_ZCODE_ENDPOINT_ORIGIN}/api/v1/client/scenes`,
+      url: `${TEST_RASPBERRYCODE_ENDPOINT_ORIGIN}/api/v1/client/scenes`,
     });
     expect(requests[0]?.headers.get("X-RaspberryCode-App-Version")).toBeTruthy();
     expect(requests[0]?.headers.get("X-Platform")).toBe(`${process.platform}-${process.arch}`);

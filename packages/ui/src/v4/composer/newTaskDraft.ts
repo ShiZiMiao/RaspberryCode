@@ -1,5 +1,5 @@
-import type { ComposerInitialConfig } from "@/store/zcodeSessionStoreTypes.js";
-import type { ModelSelectionView } from "@zcode/services";
+import type { ComposerInitialConfig } from "@/store/raspberrycodeSessionStoreTypes.js";
+import type { ModelSelectionView } from "@raspberrycode/services";
 import { readComposerRecent, resolveDraftInitialModelSelection } from "@/lib/composerRecent.js";
 import {
   readV4ComposerDraft,

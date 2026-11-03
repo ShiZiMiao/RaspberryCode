@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { PlatformChannels } from "@zcode/shared";
+import { PlatformChannels } from "@raspberrycode/shared";
 
 const electronMocks = vi.hoisted(() => ({
   appShow: vi.fn(),
@@ -239,7 +239,7 @@ async function importHarness() {
 }
 
 function createTempWorkspace(): string {
-  const dir = mkdtempSync(join(tmpdir(), "zcode-second-instance-deep-link-"));
+  const dir = mkdtempSync(join(tmpdir(), "raspberrycode-second-instance-deep-link-"));
   tempDirs.push(dir);
   return dir;
 }
@@ -259,5 +259,5 @@ function createMockWindow(webContentsId: number) {
 }
 
 function buildWorkspaceOpenUrl(workspacePath: string): string {
-  return `zcode://workspace/open?path=${encodeURIComponent(workspacePath)}`;
+  return `raspberrycode://workspace/open?path=${encodeURIComponent(workspacePath)}`;
 }

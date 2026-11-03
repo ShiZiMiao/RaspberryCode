@@ -1,11 +1,11 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { RootStartupLoading, ZCodeStartupLogoBadge } from "@/root/RootStartupLoading.js";
+import { RootStartupLoading, RaspberryCodeStartupLogoBadge } from "@/root/RootStartupLoading.js";
 
 describe("RootStartupLoading", () => {
   it("静态品牌图标不渲染呼吸动画", () => {
-    const html = renderToStaticMarkup(createElement(ZCodeStartupLogoBadge, { animated: false }));
+    const html = renderToStaticMarkup(createElement(RaspberryCodeStartupLogoBadge, { animated: false }));
     // 品牌中立化后启动 Logo 是外置 SVG 文件（<img> 载体），动画语义由 animate-pulse 表达。
     expect(html).toContain("brand-mark-white.svg");
     expect(html).not.toContain("animate-pulse");

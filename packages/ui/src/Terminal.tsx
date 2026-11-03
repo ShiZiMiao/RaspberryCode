@@ -1,8 +1,8 @@
 import { Plus, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { IServiceAccessor } from "@zcode/services";
-import { TID_TERMINAL, TID_TERMINAL_CLOSE_BUTTON } from "@zcode/shared/test-ids";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import type { IServiceAccessor } from "@raspberrycode/services";
+import { TID_TERMINAL, TID_TERMINAL_CLOSE_BUTTON } from "@raspberrycode/shared/test-ids";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { useIsOfficeMode } from "@/hooks/useInterfaceMode.js";
 import { logger } from "@/logger.js";
 import { Button } from "@/components/ui/button.js";
@@ -44,7 +44,7 @@ export function Terminal({
   onClose: () => void;
   onOpenBrowserUrl: (url: string) => void;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   const isOfficeMode = useIsOfficeMode();
   const workspaceKey = workspaceIdentity?.trim() || cwd || "__default__";
   const [panelState, setPanelState] = useState<TerminalPanelState>(() => {

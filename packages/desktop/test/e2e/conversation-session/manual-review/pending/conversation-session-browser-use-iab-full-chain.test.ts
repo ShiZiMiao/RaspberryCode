@@ -1,6 +1,6 @@
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import { PlatformChannels } from "@zcode/shared";
+import { PlatformChannels } from "@raspberrycode/shared";
 import {
   TID_BROWSER_RESPONSIVE_HEIGHT_INPUT,
   TID_BROWSER_RESPONSIVE_SCALED_FRAME,
@@ -11,7 +11,7 @@ import {
   TID_BROWSER_WEBVIEW,
   TID_V4_COMPOSER_INPUT,
   TID_V4_TIMELINE,
-} from "@zcode/shared/test-ids";
+} from "@raspberrycode/shared/test-ids";
 import {
   clearAppData,
   clickTestIdByWebDriver,
@@ -615,13 +615,13 @@ function readV4ComposerSnapshot() {
     const bridge = (
       element as
         | (HTMLElement & {
-            __zcodeLexicalInputE2E?: {
+            __raspberrycodeLexicalInputE2E?: {
               focus: () => void;
               getText: () => string;
             };
           })
         | null
-    )?.__zcodeLexicalInputE2E;
+    )?.__raspberrycodeLexicalInputE2E;
     return {
       focused: Boolean(
         element &&
@@ -644,13 +644,13 @@ async function focusEmptyV4Composer(timeout = 10000) {
         const bridge = (
           element as
             | (HTMLElement & {
-                __zcodeLexicalInputE2E?: {
+                __raspberrycodeLexicalInputE2E?: {
                   focus: () => void;
                   getText: () => string;
                 };
               })
             | null
-        )?.__zcodeLexicalInputE2E;
+        )?.__raspberrycodeLexicalInputE2E;
         bridge?.focus();
         return {
           focused: Boolean(

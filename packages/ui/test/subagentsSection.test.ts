@@ -8,10 +8,10 @@ import {
   TID_SUBAGENT_BUILT_IN_MODEL_TRIGGER,
   TID_SUBAGENT_ROW,
   testId,
-} from "@zcode/shared/test-ids";
-import type { IServiceAccessor } from "@zcode/services";
+} from "@raspberrycode/shared/test-ids";
+import type { IServiceAccessor } from "@raspberrycode/services";
 import { useRemoteWorkspaceSessionStore } from "@/store/remoteWorkspaceSessionStore.js";
-import { encodeCustomModelValue } from "../src/lib/zcodeCustomModelValue.js";
+import { encodeCustomModelValue } from "../src/lib/raspberrycodeCustomModelValue.js";
 
 const capturedButtons: Array<Record<string, unknown>> = [];
 const capturedModelConfigSelects: Array<Record<string, unknown>> = [];
@@ -357,7 +357,7 @@ vi.mock("@/hooks/useModelSelectionView.js", () => {
   };
 });
 
-vi.mock("@/hooks/useZCodeConfig.js", () => ({
+vi.mock("@/hooks/useRaspberryCodeConfig.js", () => ({
   useToolbarConfigOptions: () => ({
     configOptions: mockToolbarConfigState.configOptions,
     loading: mockToolbarConfigState.status === "loading",
@@ -376,7 +376,7 @@ vi.mock("@/settings/model-provider-section/useEnterpriseCodingPlanProducts.js", 
 }));
 
 vi.mock("@/i18n/IntlProvider.js", () => ({
-  useZCodeIntl: () => ({
+  useRaspberryCodeIntl: () => ({
     intl: {
       formatMessage: ({ id }: { id: string }, values?: Record<string, string | number>) => {
         const messages: Record<string, string> = {
@@ -717,7 +717,7 @@ describe("SubagentsSection", () => {
         scope: "workspace",
         source: "plugin",
         enabled: true,
-        pluginId: "computer-use@zcode-plugins-official",
+        pluginId: "computer-use@raspberrycode-plugins-official",
         pluginName: "computer-use",
       },
       {
@@ -729,14 +729,14 @@ describe("SubagentsSection", () => {
         scope: "workspace",
         source: "plugin",
         enabled: true,
-        pluginId: "zcode-cua@custom-marketplace",
-        pluginName: "zcode-cua",
+        pluginId: "raspberrycode-cua@custom-marketplace",
+        pluginName: "raspberrycode-cua",
       },
     ]);
 
     expect(groups.map(([key, items]) => [key, items[0]?.id])).toEqual([
-      ["computer-use@zcode-plugins-official", "official-agent"],
-      ["zcode-cua@custom-marketplace", "custom-agent"],
+      ["computer-use@raspberrycode-plugins-official", "official-agent"],
+      ["raspberrycode-cua@custom-marketplace", "custom-agent"],
     ]);
   });
 
@@ -1130,14 +1130,14 @@ describe("SubagentsSection", () => {
       options: { reasoningLevel: "high" },
     };
     const pluginAgent = {
-      id: "plugin:document-skills@zcode-plugins-official:judge",
+      id: "plugin:document-skills@raspberrycode-plugins-official:judge",
       name: "document-skills:judge",
       description: "Visual acceptance reviewer",
       systemPrompt: "Judge.",
       path: "/cache/document-skills/0.1.4/agents/judge.md",
       scope: "user",
       source: "plugin",
-      pluginId: "document-skills@zcode-plugins-official",
+      pluginId: "document-skills@raspberrycode-plugins-official",
       pluginName: "document-skills",
       enabled: true,
       readOnly: true,

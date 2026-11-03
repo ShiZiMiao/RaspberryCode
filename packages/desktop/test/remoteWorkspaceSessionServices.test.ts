@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { IHooksService, type IServiceAccessor } from "@zcode/services";
-import { ChannelClient, ChannelServer, ProxyChannel, createQueuePair } from "@zcode/rpc";
+import { IHooksService, type IServiceAccessor } from "@raspberrycode/services";
+import { ChannelClient, ChannelServer, ProxyChannel, createQueuePair } from "@raspberrycode/rpc";
 import {
   buildRemoteWorkspaceSessionServices,
   buildRemoteWorkspaceSessionServicesForRegistration,
@@ -15,9 +15,9 @@ function makeServices(id: string): IServiceAccessor {
     systemService: { id, service: "system" },
     terminalService: { id, service: "terminal" },
     promptAttachmentTransferService: { id, service: "prompt-attachment-transfer" },
-    zcodeAgentService: { id, service: "zcode-agent" },
-    zcodeTaskService: { id, service: "zcode-task" },
-    zcodeSessionService: { id, service: "zcode-session" },
+    raspberrycodeAgentService: { id, service: "raspberrycode-agent" },
+    raspberrycodeTaskService: { id, service: "raspberrycode-task" },
+    raspberrycodeSessionService: { id, service: "raspberrycode-session" },
     fileWatcherService: { id, service: "fileWatcher" },
     skillsService: { id, service: "skills" },
     skillSyncService: { id, service: "skill-sync" },
@@ -51,9 +51,9 @@ describe("buildRemoteWorkspaceSessionServices", () => {
     expect(merged.promptAttachmentTransferService).toBe(
       remoteServices.promptAttachmentTransferService,
     );
-    expect(merged.zcodeAgentService).toBe(remoteServices.zcodeAgentService);
-    expect(merged.zcodeTaskService).toBe(remoteServices.zcodeTaskService);
-    expect(merged.zcodeSessionService).toBe(remoteServices.zcodeSessionService);
+    expect(merged.raspberrycodeAgentService).toBe(remoteServices.raspberrycodeAgentService);
+    expect(merged.raspberrycodeTaskService).toBe(remoteServices.raspberrycodeTaskService);
+    expect(merged.raspberrycodeSessionService).toBe(remoteServices.raspberrycodeSessionService);
     expect(merged.fileWatcherService).toBe(remoteServices.fileWatcherService);
     // Provider/Model View 属于目标 Remote Environment；不能随 ...baseServices 回落到本地。
     expect(merged.modelSelectionService).toBe(remoteServices.modelSelectionService);
@@ -83,7 +83,7 @@ describe("buildRemoteWorkspaceSessionServices", () => {
     const merged = buildServerRemoteWorkspaceSessionServices(baseServices, remoteServices);
 
     expect(merged.fileService).toBe(remoteServices.fileService);
-    expect(merged.zcodeTaskService).toBe(remoteServices.zcodeTaskService);
+    expect(merged.raspberrycodeTaskService).toBe(remoteServices.raspberrycodeTaskService);
     expect(merged.promptAttachmentTransferService).toBe(
       remoteServices.promptAttachmentTransferService,
     );

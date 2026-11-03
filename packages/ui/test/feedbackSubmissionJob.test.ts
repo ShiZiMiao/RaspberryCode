@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { FeedbackTicketDetail, FeedbackTicketSummary } from "@zcode/shared";
-import type { FeedbackUploadProgress, IFeedbackService } from "@zcode/services";
+import type { FeedbackTicketDetail, FeedbackTicketSummary } from "@raspberrycode/shared";
+import type { FeedbackUploadProgress, IFeedbackService } from "@raspberrycode/services";
 import {
   cancelFeedbackCreateSubmissionJob,
   dismissFeedbackSubmissionJob,

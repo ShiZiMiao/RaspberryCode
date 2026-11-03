@@ -44,9 +44,9 @@ describe("telemetry service registration", () => {
     ]);
 
     const services = createLocalServices({
-      zcodeBuiltinProviderConfigFilePath: resolve(
+      raspberrycodeBuiltinProviderConfigFilePath: resolve(
         import.meta.dirname,
-        "../../../config/provider/zcode-builtin.json",
+        "../../../config/provider/raspberrycode-builtin.json",
       ),
     });
     const telemetryDescriptor = createServiceDescriptor<{

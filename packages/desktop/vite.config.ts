@@ -5,7 +5,7 @@ import { pathToFileURL } from "node:url";
 import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import { resolveZCodeEndpointOrigin } from "@zcode/shared/zcodeEndpoint";
+import { resolveRaspberryCodeEndpointOrigin } from "@raspberrycode/shared/raspberrycodeEndpoint";
 import { pdfJsCMapsPlugin } from "../ui/vite/pdfJsCMapsPlugin.js";
 import { getBuildMetadata } from "./scripts/build-metadata.mjs";
 import { resolveDesktopProductFlavor } from "./scripts/desktop-product-identity.mjs";
@@ -56,7 +56,7 @@ export const desktopRendererDependencyAliases = {
   "lucide-react": resolveInstalledPackageRoot("lucide-react"),
 } as const;
 
-function resolveZCodeEnv(value: string | undefined): "test" | "production" {
+function resolveRaspberryCodeEnv(value: string | undefined): "test" | "production" {
   return value?.trim().toLowerCase() === "production" ? "production" : "test";
 }
 
@@ -82,7 +82,7 @@ function createE2EUIRendererCoveragePlugin(repoRoot: string): Plugin {
   );
 
   return {
-    name: "zcode:e2e-ui-source-coverage",
+    name: "raspberrycode:e2e-ui-source-coverage",
     enforce: "pre",
     transform(sourceCode, id, options) {
       if (options?.ssr || id.startsWith("\0")) {
@@ -151,26 +151,26 @@ function stripViteRequestQuery(id: string) {
 }
 
 export default defineConfig(({ mode }) => {
-  // `.env*` 只提供链接常量；当前产品环境由启动脚本或 CI 注入 ZCODE_ENV。
+  // `.env*` 只提供链接常量；当前产品环境由启动脚本或 CI 注入 RASPBERRYCODE_ENV。
   const env = loadEnv(mode, "../..", "");
   const repoRoot = resolve(__dirname, "../..");
-  const zcodeEnv = resolveZCodeEnv(env.ZCODE_ENV);
+  const raspberrycodeEnv = resolveRaspberryCodeEnv(env.RASPBERRYCODE_ENV);
   // 安装包身份与后端环境分轴；renderer 用它决定是否展示更新入口。
-  const zcodeProductFlavor = resolveDesktopProductFlavor({
+  const raspberrycodeProductFlavor = resolveDesktopProductFlavor({
     ...process.env,
     ...env,
-    ZCODE_ENV: zcodeEnv,
+    RASPBERRYCODE_ENV: raspberrycodeEnv,
   });
   const e2eCoverageEnabled =
-    env.ZCODE_E2E_COVERAGE === "1" || process.env.ZCODE_E2E_COVERAGE === "1";
+    env.RASPBERRYCODE_E2E_COVERAGE === "1" || process.env.RASPBERRYCODE_E2E_COVERAGE === "1";
   const e2eStoreBridgeEnabled =
-    env.VITE_ZCODE_E2E_STORE_BRIDGE === "1" || process.env.VITE_ZCODE_E2E_STORE_BRIDGE === "1";
-  const zcodeEndpointOrigin = resolveZCodeEndpointOrigin({
-    env: zcodeEnv,
+    env.VITE_RASPBERRYCODE_E2E_STORE_BRIDGE === "1" || process.env.VITE_RASPBERRYCODE_E2E_STORE_BRIDGE === "1";
+  const raspberrycodeEndpointOrigin = resolveRaspberryCodeEndpointOrigin({
+    env: raspberrycodeEnv,
     envBaseOrigin:
-      env.ZCODE_BASE_URL ??
-      env.ZCODE_ENDPOINT_ORIGIN ??
-      (zcodeEnv === "production" ? env.ZCODE_PRODUCTION_BASE_URL : env.ZCODE_TEST_BASE_URL),
+      env.RASPBERRYCODE_BASE_URL ??
+      env.RASPBERRYCODE_ENDPOINT_ORIGIN ??
+      (raspberrycodeEnv === "production" ? env.RASPBERRYCODE_PRODUCTION_BASE_URL : env.RASPBERRYCODE_TEST_BASE_URL),
   });
   const plugins = [
     ...(e2eCoverageEnabled ? [createE2EUIRendererCoveragePlugin(repoRoot)] : []),
@@ -199,19 +199,19 @@ export default defineConfig(({ mode }) => {
     },
     server: { port: 5174, strictPort: true },
     define: {
-      __ZCODE_VERSION__: JSON.stringify(buildMetadata.appVersion),
-      __ZCODE_MIN_COMPATIBLE_VERSION__: JSON.stringify(buildMetadata.minCompatibleVersion),
-      __ZCODE_COMMIT__: JSON.stringify(buildMetadata.buildCommitId),
-      __ZCODE_BUILD_TIME__: JSON.stringify(buildMetadata.buildTime),
-      __ZCODE_ENV__: JSON.stringify(zcodeEnv),
-      __ZCODE_PRODUCT_FLAVOR__: JSON.stringify(zcodeProductFlavor),
+      __RASPBERRYCODE_VERSION__: JSON.stringify(buildMetadata.appVersion),
+      __RASPBERRYCODE_MIN_COMPATIBLE_VERSION__: JSON.stringify(buildMetadata.minCompatibleVersion),
+      __RASPBERRYCODE_COMMIT__: JSON.stringify(buildMetadata.buildCommitId),
+      __RASPBERRYCODE_BUILD_TIME__: JSON.stringify(buildMetadata.buildTime),
+      __RASPBERRYCODE_ENV__: JSON.stringify(raspberrycodeEnv),
+      __RASPBERRYCODE_PRODUCT_FLAVOR__: JSON.stringify(raspberrycodeProductFlavor),
       ...buildTimeConfigDefines,
-      __ZCODE_LOCAL_DEVELOPMENT_RUNTIME__: JSON.stringify(mode !== "production"),
-      "import.meta.env.VITE_ZCODE_BASE_URL": JSON.stringify(zcodeEndpointOrigin),
-      // 兼容旧 renderer 读取名；新代码统一读 VITE_ZCODE_BASE_URL。
-      "import.meta.env.VITE_ZCODE_ENDPOINT_ORIGIN": JSON.stringify(zcodeEndpointOrigin),
-      // Bugfix: E2E store bridge 只能由 WDIO 专用变量打开，避免把 ZCODE_ENV=test 产品环境误当成测试运行态。
-      "import.meta.env.VITE_ZCODE_E2E_STORE_BRIDGE": JSON.stringify(
+      __RASPBERRYCODE_LOCAL_DEVELOPMENT_RUNTIME__: JSON.stringify(mode !== "production"),
+      "import.meta.env.VITE_RASPBERRYCODE_BASE_URL": JSON.stringify(raspberrycodeEndpointOrigin),
+      // 兼容旧 renderer 读取名；新代码统一读 VITE_RASPBERRYCODE_BASE_URL。
+      "import.meta.env.VITE_RASPBERRYCODE_ENDPOINT_ORIGIN": JSON.stringify(raspberrycodeEndpointOrigin),
+      // Bugfix: E2E store bridge 只能由 WDIO 专用变量打开，避免把 RASPBERRYCODE_ENV=test 产品环境误当成测试运行态。
+      "import.meta.env.VITE_RASPBERRYCODE_E2E_STORE_BRIDGE": JSON.stringify(
         e2eStoreBridgeEnabled ? "1" : "",
       ),
     },
@@ -237,7 +237,7 @@ export default defineConfig(({ mode }) => {
           index: resolve(__dirname, "src/renderer/index.html"),
           "resource-manager": resolve(__dirname, "src/renderer/resource-manager.html"),
           "cua-permission-panel": resolve(__dirname, "src/renderer/cua-permission-panel.html"),
-          // 插件 UI 沙箱的受信 shell，经 zcode-sandbox:// 提供
+          // 插件 UI 沙箱的受信 shell，经 raspberrycode-sandbox:// 提供
           "plugin-sandbox": resolve(__dirname, "src/renderer/plugin-sandbox.html"),
         },
       },

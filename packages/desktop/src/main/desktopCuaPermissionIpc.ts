@@ -3,7 +3,7 @@ import { execFile } from "node:child_process";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { app, BrowserWindow, ipcMain, nativeImage, screen } from "electron";
-import { PlatformChannels, type CuaPermissionKind, type Locale } from "@zcode/shared";
+import { PlatformChannels, type CuaPermissionKind, type Locale } from "@raspberrycode/shared";
 import {
   cuaHelperBundleFingerprintUnchanged,
   openCuaPermissionOnboarding,
@@ -32,18 +32,18 @@ const CUA_DRAG_ICON_SIZE = 64;
  * 图标，dev 下宿主是 Electron.app，于是拖拽时显示 Electron 默认图标。
  * 改为显式读随包的 RaspberryCode 图标（electron-builder 已把 build/icon.png 打进 resources/icon.png）。
  */
-let cachedZCodeIcon: Electron.NativeImage | null = null;
+let cachedRaspberryCodeIcon: Electron.NativeImage | null = null;
 
-function resolveZCodeIcon(): Electron.NativeImage {
-  if (cachedZCodeIcon && !cachedZCodeIcon.isEmpty()) return cachedZCodeIcon;
+function resolveRaspberryCodeIcon(): Electron.NativeImage {
+  if (cachedRaspberryCodeIcon && !cachedRaspberryCodeIcon.isEmpty()) return cachedRaspberryCodeIcon;
   const iconPath = app.isPackaged
     ? join(process.resourcesPath, "icon.png")
     : join(import.meta.dirname, "..", "..", "build", "icon.png");
   const image = nativeImage.createFromPath(iconPath);
-  cachedZCodeIcon = image.isEmpty()
+  cachedRaspberryCodeIcon = image.isEmpty()
     ? nativeImage.createFromDataURL(CUA_HELPER_DRAG_ICON_DATA_URL)
     : image;
-  return cachedZCodeIcon;
+  return cachedRaspberryCodeIcon;
 }
 
 interface CuaApplicationReturnOptions {
@@ -86,7 +86,7 @@ function waitForCuaApplicationReturn({
     // 后续 focus，既不丢失真实返回，也不复活 BrowserWindow.isFocused() 的旧快照。
     let applicationEventSequence = 0;
     let latestBlurSequence = 0;
-    let latestZCodeReturnSequence = 0;
+    let latestRaspberryCodeReturnSequence = 0;
     let observedSystemSettingsAfterSequence: number | null = null;
     let activeInspections = 0;
     let inspectionTimer: ReturnType<typeof setTimeout> | undefined;
@@ -111,7 +111,7 @@ function waitForCuaApplicationReturn({
       if (
         settingsOpened &&
         observedSystemSettingsAfterSequence !== null &&
-        latestZCodeReturnSequence > observedSystemSettingsAfterSequence
+        latestRaspberryCodeReturnSequence > observedSystemSettingsAfterSequence
       )
         finish();
     };
@@ -135,7 +135,7 @@ function waitForCuaApplicationReturn({
       // 只有在“最近一次应用事件是 blur、且尚未看到 return focus”的离开区间内启动的采样，
       // 才能为本次 System Settings round-trip 建立证据。由 return focus 自己触发的查询即使稍后
       // 读到 LaunchServices 的滞后 Settings 值，也不能与同一 focus 配对或清除超时。
-      const inspectionStartedWhileAway = latestBlurSequence > latestZCodeReturnSequence;
+      const inspectionStartedWhileAway = latestBlurSequence > latestRaspberryCodeReturnSequence;
       activeInspections += 1;
       void readFrontmostBundleId().then(
         (bundleId) => {
@@ -186,7 +186,7 @@ function waitForCuaApplicationReturn({
       // 前台探针完成时直接读取这个 stale 快照会把「刚打开设置页」误判成「用户已返回」。
       // focus/activate 总是先记序号；若对应的 Settings 探针还在飞行，它延迟返回后
       // 仍能用 inspection-start snapshot 证明这是后续边沿。边沿也可早于 openExternal resolve。
-      latestZCodeReturnSequence = ++applicationEventSequence;
+      latestRaspberryCodeReturnSequence = ++applicationEventSequence;
       inspectFrontmost();
       maybeFinishReturn();
     };
@@ -275,7 +275,7 @@ function createDragPanelForSession(
     // tile 用真实 RaspberryCode 图标，与系统设置权限列表里那一行的图标对得上，用户才能把
     // 「要拖的东西」和「要出现在列表里的条目」对应起来。
     getIconDataUrl: () =>
-      resolveZCodeIcon()
+      resolveRaspberryCodeIcon()
         .resize({ width: CUA_DRAG_ICON_SIZE, height: CUA_DRAG_ICON_SIZE })
         .toDataURL(),
     logger,
@@ -284,7 +284,7 @@ function createDragPanelForSession(
 
 /** 生产走签名包内的 extraResources；dev 走 checkout 里的构建产物。 */
 function resolveWindowBoundsBinaryPath(): string {
-  const relative = join("macos-window-bounds", "zcode-window-bounds");
+  const relative = join("macos-window-bounds", "raspberrycode-window-bounds");
   return app.isPackaged
     ? join(process.resourcesPath, relative)
     : join(import.meta.dirname, "..", "..", "resources", relative);
@@ -382,7 +382,7 @@ export function registerCuaPermissionIpcHandlers(options: {
       void refreshVerifiedHelperAppPath();
       return;
     }
-    const icon = resolveZCodeIcon().resize({
+    const icon = resolveRaspberryCodeIcon().resize({
       width: CUA_DRAG_ICON_SIZE,
       height: CUA_DRAG_ICON_SIZE,
     });

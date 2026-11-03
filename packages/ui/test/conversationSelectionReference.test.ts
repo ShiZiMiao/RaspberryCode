@@ -156,7 +156,7 @@ describe("conversation selection references", () => {
       "Explain legacy",
       "",
       "# Conversation selections:",
-      "```zcode-conversation-selections",
+      "```raspberrycode-conversation-selections",
       JSON.stringify(references),
       "```",
     ].join("\n");

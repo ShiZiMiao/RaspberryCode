@@ -1,4 +1,4 @@
-import type { CuaPermissionKind, Locale } from "@zcode/shared";
+import type { CuaPermissionKind, Locale } from "@raspberrycode/shared";
 
 export interface CuaPermissionPanelMessages {
   documentTitle: string;

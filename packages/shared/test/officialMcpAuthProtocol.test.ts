@@ -2,33 +2,33 @@
    请求侧不得携带任何秘密；响应侧失败原因必须可枚举且无自由文本。 */
 import { describe, expect, it } from "vitest";
 import {
-  zcodeOfficialMcpAuthHeadersRequestParamsSchema,
-  zcodeOfficialMcpAuthHeadersResponseSchema,
-  zcodeProtocolMethods,
-} from "../src/zcode-protocol/index.js";
+  raspberrycodeOfficialMcpAuthHeadersRequestParamsSchema,
+  raspberrycodeOfficialMcpAuthHeadersResponseSchema,
+  raspberrycodeProtocolMethods,
+} from "../src/raspberrycode-protocol/index.js";
 
 const VALID_REQUEST = {
   mcpKey: "image-search",
-  pluginId: "zcode-tools@zcode-plugins-official",
+  pluginId: "raspberrycode-tools@raspberrycode-plugins-official",
   requestId: "mcp-auth-1",
-  targetOrigin: "https://mcp.zcode.example",
+  targetOrigin: "https://mcp.raspberrycode.example",
   workspace: { workspaceKey: "local:/repo", workspacePath: "/repo" },
 };
 
 describe("official mcp auth headers protocol", () => {
   it("registers the reverse request under the interaction namespace", () => {
-    expect(zcodeProtocolMethods.interactionRequestOfficialMcpAuthHeaders).toBe(
+    expect(raspberrycodeProtocolMethods.interactionRequestOfficialMcpAuthHeaders).toBe(
       "interaction/requestOfficialMcpAuthHeaders",
     );
   });
 
   it("accepts a minimal request and a remote workspace identity", () => {
-    expect(zcodeOfficialMcpAuthHeadersRequestParamsSchema.parse(VALID_REQUEST)).toMatchObject({
+    expect(raspberrycodeOfficialMcpAuthHeadersRequestParamsSchema.parse(VALID_REQUEST)).toMatchObject({
       mcpKey: "image-search",
-      targetOrigin: "https://mcp.zcode.example",
+      targetOrigin: "https://mcp.raspberrycode.example",
     });
     expect(
-      zcodeOfficialMcpAuthHeadersRequestParamsSchema.safeParse({
+      raspberrycodeOfficialMcpAuthHeadersRequestParamsSchema.safeParse({
         ...VALID_REQUEST,
         workspace: {
           workspaceIdentity: "ssh:host/repo",
@@ -46,7 +46,7 @@ describe("official mcp auth headers protocol", () => {
       { codingPlanApiKey: "leaked" },
     ]) {
       expect(
-        zcodeOfficialMcpAuthHeadersRequestParamsSchema.safeParse({ ...VALID_REQUEST, ...extra })
+        raspberrycodeOfficialMcpAuthHeadersRequestParamsSchema.safeParse({ ...VALID_REQUEST, ...extra })
           .success,
       ).toBe(false);
     }
@@ -55,7 +55,7 @@ describe("official mcp auth headers protocol", () => {
   it("requires every identifying field to be a non-empty string", () => {
     for (const field of ["mcpKey", "pluginId", "requestId", "targetOrigin"]) {
       expect(
-        zcodeOfficialMcpAuthHeadersRequestParamsSchema.safeParse({
+        raspberrycodeOfficialMcpAuthHeadersRequestParamsSchema.safeParse({
           ...VALID_REQUEST,
           [field]: "",
         }).success,
@@ -65,14 +65,14 @@ describe("official mcp auth headers protocol", () => {
 
   it("accepts both response branches", () => {
     expect(
-      zcodeOfficialMcpAuthHeadersResponseSchema.parse({
+      raspberrycodeOfficialMcpAuthHeadersResponseSchema.parse({
         headers: { Authorization: "Bearer jwt", "Bigmodel-Target-Type": "TEAM" },
         ok: true,
       }),
     ).toMatchObject({ ok: true });
     for (const reason of ["official_auth_unavailable", "official_auth_plan_required"]) {
       expect(
-        zcodeOfficialMcpAuthHeadersResponseSchema.parse({ ok: false, reason }),
+        raspberrycodeOfficialMcpAuthHeadersResponseSchema.parse({ ok: false, reason }),
       ).toMatchObject({ ok: false, reason });
     }
   });
@@ -87,7 +87,7 @@ describe("official mcp auth headers protocol", () => {
       { ok: true },
     ];
     for (const value of invalid) {
-      expect(zcodeOfficialMcpAuthHeadersResponseSchema.safeParse(value).success).toBe(false);
+      expect(raspberrycodeOfficialMcpAuthHeadersResponseSchema.safeParse(value).success).toBe(false);
     }
   });
 });

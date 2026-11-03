@@ -117,7 +117,7 @@ vi.mock("@/ControlHintTooltip.js", () => ({
 }));
 
 vi.mock("@/i18n/IntlProvider.js", () => ({
-  useZCodeIntl: () => ({
+  useRaspberryCodeIntl: () => ({
     intl: {
       formatMessage: ({ id }: { id: string }) => id,
     },

@@ -11,9 +11,9 @@ import {
   IOnboardingRecordService,
   ICredentialService,
   IBroadcastService,
-  IZCodeTaskService,
-  IZCodeAgentService,
-  IZCodeSessionService,
+  IRaspberryCodeTaskService,
+  IRaspberryCodeAgentService,
+  IRaspberryCodeSessionService,
   IBotsService,
   IFileWatcherService,
   IOAuthService,
@@ -42,7 +42,7 @@ import {
   IPromptAttachmentTransferService,
   type ServiceDescriptor,
   type IServiceAccessor,
-} from "@zcode/services";
+} from "@raspberrycode/services";
 import {
   REMOTE_WORKSPACE_RPC_CHANNELS,
   assertRemoteWorkspaceRpcContract,
@@ -50,12 +50,12 @@ import {
 import {
   createLegacySingleRootProjectService,
   createRemoteProjectService,
-} from "@zcode/services/node";
+} from "@raspberrycode/services/node";
 import {
   buildServerRemoteWorkspaceIdentity,
   remoteHostIdFromWorkspaceIdentity,
-} from "@zcode/shared";
-import type { RemoteTarget } from "@zcode/shared";
+} from "@raspberrycode/shared";
+import type { RemoteTarget } from "@raspberrycode/shared";
 import {
   createRemoteProviderProvisioningExecutorFromWorkspace,
   registerRemoteProviderProvisioningExecutor,
@@ -73,9 +73,9 @@ export const REMOTE_WORKSPACE_RPC_REGISTRATIONS = [
   ["onboardingRecordService", IOnboardingRecordService],
   ["credentialService", ICredentialService],
   ["broadcastService", IBroadcastService],
-  ["zcodeTaskService", IZCodeTaskService],
-  ["zcodeAgentService", IZCodeAgentService],
-  ["zcodeSessionService", IZCodeSessionService],
+  ["raspberrycodeTaskService", IRaspberryCodeTaskService],
+  ["raspberrycodeAgentService", IRaspberryCodeAgentService],
+  ["raspberrycodeSessionService", IRaspberryCodeSessionService],
   ["botsService", IBotsService],
   ["fileWatcherService", IFileWatcherService],
   ["oauthService", IOAuthService],
@@ -141,7 +141,7 @@ export function resolveServerProjectService(params: {
         );
     },
     readTasks: ({ workspacePath, kind }) => {
-      const tasks = params.connectionServices.zcodeTaskService;
+      const tasks = params.connectionServices.raspberrycodeTaskService;
       const scope = { workspacePath };
       return kind === "pinned"
         ? tasks.listPinnedTasks(scope)
@@ -185,9 +185,9 @@ export function createServerRemoteWorkspaceServiceCollection(params: {
     .register(IOnboardingRecordService, params.connectionServices.onboardingRecordService)
     .register(ICredentialService, params.connectionServices.credentialService)
     .register(IBroadcastService, params.connectionServices.broadcastService)
-    .register(IZCodeTaskService, params.connectionServices.zcodeTaskService)
-    .register(IZCodeAgentService, params.connectionServices.zcodeAgentService)
-    .register(IZCodeSessionService, params.connectionServices.zcodeSessionService)
+    .register(IRaspberryCodeTaskService, params.connectionServices.raspberrycodeTaskService)
+    .register(IRaspberryCodeAgentService, params.connectionServices.raspberrycodeAgentService)
+    .register(IRaspberryCodeSessionService, params.connectionServices.raspberrycodeSessionService)
     .register(IBotsService, params.connectionServices.botsService)
     .register(IFileWatcherService, params.connectionServices.fileWatcherService)
     .register(IOAuthService, params.connectionServices.oauthService)

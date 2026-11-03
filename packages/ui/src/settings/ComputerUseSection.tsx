@@ -1,6 +1,6 @@
 /* eslint-disable max-lines -- CUA 设置页同时编排插件总开关、双权限状态与授权返回恢复链；后续单独拆分组件。 */
 // 设置页「电脑控制 (Computer Use)」分区：
-//  - 顶部一个总开关：开/关 zcode-cua 插件（连带其 MCP server 与 skill 一起启用/禁用）。
+//  - 顶部一个总开关：开/关 raspberrycode-cua 插件（连带其 MCP server 与 skill 一起启用/禁用）。
 //  - macOS 下再展示 Accessibility / Screen Recording 两个权限行（含授权引导与 stale 恢复链）。
 // UI 复用 SettingsGroupCard / SettingsRow / SettingsBadge / Switch，与其它设置分区保持一致。
 //
@@ -8,19 +8,19 @@
 // 各查一次，不再定时轮询；状态存在共享缓存里，与输入框常驻入口读同一份。
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useSettings } from "@/hooks/useSettingService.js";
-import type { CuaOsSupport, CuaPermissionKind, RemoteTarget } from "@zcode/shared";
+import type { CuaOsSupport, CuaPermissionKind, RemoteTarget } from "@raspberrycode/shared";
 import {
   DesktopCommandIds,
   isRemoteWorkspaceIdentity,
-  ZCODE_CUA_OFFICIAL_PLUGIN_ID,
-} from "@zcode/shared";
-import { isCuaPermissionStatusAvailable, type CuaPermissionRestartOptions } from "@zcode/services";
+  RASPBERRYCODE_CUA_OFFICIAL_PLUGIN_ID,
+} from "@raspberrycode/shared";
+import { isCuaPermissionStatusAvailable, type CuaPermissionRestartOptions } from "@raspberrycode/services";
 import { Button } from "@/components/ui/button.js";
 import { toast } from "@/components/ui/toast.js";
 import { Switch } from "@/components/ui/switch.js";
 import { usePlatform } from "@/hooks/usePlatform.js";
 import { useServices } from "@/hooks/useServices.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { useCuaPermissionStatus } from "@/hooks/useCuaPermissionStatus.js";
 import {
   claimCuaPermissionReturnRecovery,
@@ -68,7 +68,7 @@ export function ComputerUseSection({
   remoteTarget,
   localWorkspacePath,
 }: ComputerUseSectionProps) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   const services = useServices();
   const platform = usePlatform();
   const pluginManagementService = services.pluginManagementService;
@@ -122,14 +122,14 @@ export function ComputerUseSection({
 
   const macOsBelowCuaFloor = osSupport?.kind === "macos-below-minimum";
 
-  // 总开关 = zcode-cua 插件启用态（读自插件管理 store；切换即同步启用/禁用插件及其 MCP + skill）。
+  // 总开关 = raspberrycode-cua 插件启用态（读自插件管理 store；切换即同步启用/禁用插件及其 MCP + skill）。
   const plugins = usePluginManagementStore((state) => state.plugins);
   const setPluginEnabled = usePluginManagementStore((state) => state.setEnabled);
   const initializePlugins = usePluginManagementStore((state) => state.initialize);
   const togglingPluginId = usePluginManagementStore((state) => state.togglingPluginId);
-  const cuaPlugin = plugins.find((plugin) => plugin.id === ZCODE_CUA_OFFICIAL_PLUGIN_ID);
+  const cuaPlugin = plugins.find((plugin) => plugin.id === RASPBERRYCODE_CUA_OFFICIAL_PLUGIN_ID);
   const cuaEnabled = cuaPlugin?.enabled ?? false;
-  const cuaToggling = togglingPluginId === ZCODE_CUA_OFFICIAL_PLUGIN_ID;
+  const cuaToggling = togglingPluginId === RASPBERRYCODE_CUA_OFFICIAL_PLUGIN_ID;
 
   const initRef = useRef(false);
   useEffect(() => {
@@ -141,7 +141,7 @@ export function ComputerUseSection({
     )
       return;
     initRef.current = true;
-    // 复用 Plugins 分区同一条初始化路径，确保 store 已加载 zcode-cua 的 enabled 态。
+    // 复用 Plugins 分区同一条初始化路径，确保 store 已加载 raspberrycode-cua 的 enabled 态。
     void initializePlugins({
       workspacePath,
       workspaceIdentity,
@@ -329,9 +329,9 @@ export function ComputerUseSection({
       if (!pluginManagementService) return;
       const operationGeneration = ++pluginToggleGenerationRef.current;
       const operationContextKey = pluginToggleContextKey;
-      // 切换 zcode-cua 插件 = 同步其 MCP server + skill 一起启用/禁用。
+      // 切换 raspberrycode-cua 插件 = 同步其 MCP server + skill 一起启用/禁用。
       const completed = await runAfterSuccessfulPluginEnabledChange({
-        submit: () => setPluginEnabled(ZCODE_CUA_OFFICIAL_PLUGIN_ID, next, pluginManagementService),
+        submit: () => setPluginEnabled(RASPBERRYCODE_CUA_OFFICIAL_PLUGIN_ID, next, pluginManagementService),
         isCurrent: () =>
           mountedRef.current &&
           pluginToggleGenerationRef.current === operationGeneration &&
@@ -703,7 +703,7 @@ export function ComputerUseSection({
 
   return (
     <div className="space-y-4">
-      {/* 总开关：开/关 zcode-cua 插件（同步其 MCP + skill） */}
+      {/* 总开关：开/关 raspberrycode-cua 插件（同步其 MCP + skill） */}
       <SettingsGroupCard>
         <SettingsRow
           label={intl.formatMessage({ id: "settings.computerUse.toggleLabel" })}

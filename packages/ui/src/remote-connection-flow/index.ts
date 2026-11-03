@@ -17,11 +17,11 @@ import {
   isSameSourceServerUpdateTarget,
   DEFAULT_REMOTE_ASSET_INSTALL_MODE,
   resolveWorkspaceKey,
-  ZCODE_VERSION,
+  RASPBERRYCODE_VERSION,
   type ConnectionProfile,
   type SourceServerRunningTask,
   type RemoteTarget,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import { useCancelPendingRemoteConnection } from "@/hooks/useCancelPendingRemoteConnection.js";
 import { useConfirmDialogStore } from "@/store/confirmDialogStore.js";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog.js";
@@ -29,7 +29,7 @@ import { useRemoteConnectionForm } from "@/hooks/useRemoteConnectionForm.js";
 import { useRemoteConnectionLogs } from "@/hooks/useRemoteConnectionLogs.js";
 import { useSourceServerManagementSnapshot } from "@/hooks/useSourceServerManagementSnapshot.js";
 import { useSourceServerOperationLogs } from "@/hooks/useSourceServerOperationLogs.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { getErrorMessage } from "@/lib/errorMessage.js";
 import { formatTaskRelativeTime } from "@/lib/taskListItemPresentation.js";
 import {
@@ -117,7 +117,7 @@ export function useRemoteConnectionFlow(options: RemoteConnectionFlowOptions) {
     !preferredSourceServerId &&
     !preferredProfileId &&
     !preferredTarget;
-  const { intl, locale } = useZCodeIntl();
+  const { intl, locale } = useRaspberryCodeIntl();
   const confirmDialog = useConfirmDialog();
   const acknowledgeBoundary = useRemoteBoundaryAcknowledgement();
   const cancelPendingRemoteConnection = useCancelPendingRemoteConnection();
@@ -2049,7 +2049,7 @@ export function useRemoteConnectionFlow(options: RemoteConnectionFlowOptions) {
       recognizedDeviceName: recognizedDeviceName,
       profileName: activeProfileName,
       recognizedDeviceMeta: recognizedServer ? formatDeviceCardMeta(recognizedServer) : undefined,
-      localVersion: ZCODE_VERSION,
+      localVersion: RASPBERRYCODE_VERSION,
       onUseRemoteDownload:
         pendingRemoteTarget?.kind === "ssh"
           ? () => {
@@ -2145,8 +2145,8 @@ export function useRemoteConnectionFlow(options: RemoteConnectionFlowOptions) {
       remoteMcpSyncService: directoryBrowserServices?.mcpSyncService ?? null,
       localPluginSyncService: baseServices.pluginSyncService,
       remotePluginSyncService: directoryBrowserServices?.pluginSyncService ?? null,
-      localZCodeAgentService: baseServices.zcodeAgentService,
-      remoteZCodeAgentService: directoryBrowserServices?.zcodeAgentService ?? null,
+      localRaspberryCodeAgentService: baseServices.raspberrycodeAgentService,
+      remoteRaspberryCodeAgentService: directoryBrowserServices?.raspberrycodeAgentService ?? null,
       localWorkspacePath: localWorkspacePath,
       selecting: selectingDirectory,
       onSelect: (path) => {

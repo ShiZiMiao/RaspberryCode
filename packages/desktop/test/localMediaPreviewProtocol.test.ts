@@ -12,15 +12,15 @@ describe("localMediaPreviewProtocol", () => {
     registerLocalMediaPreviewScheme(protocol);
     expect(protocol.registerSchemesAsPrivileged).toHaveBeenCalledWith([
       {
-        scheme: "zcode-media",
+        scheme: "raspberrycode-media",
         privileges: { standard: true, secure: true, stream: true },
       },
     ]);
   });
 
   it.each([
-    "/Users/test/.zcode/cli/video-cache/session/demo.mov",
-    "C:\\Users\\test\\.zcode\\cli\\video-cache\\session\\demo.mp4",
+    "/Users/test/.raspberrycode/cli/video-cache/session/demo.mov",
+    "C:\\Users\\test\\.raspberrycode\\cli\\video-cache\\session\\demo.mp4",
     "\\\\server\\share\\demo.avi",
   ])("passes an exactly authorized media path to Electron's file loader: %s", async (path) => {
     let handler:
@@ -84,9 +84,9 @@ describe("localMediaPreviewProtocol", () => {
     installLocalMediaPreviewProtocol(protocol, { isPathAuthorized: () => false });
 
     for (const url of [
-      "zcode-media://local/not-absolute",
+      "raspberrycode-media://local/not-absolute",
       buildLocalMediaPreviewUrl("/etc/passwd"),
-      "zcode-media://other/value",
+      "raspberrycode-media://other/value",
     ]) {
       const callback = vi.fn();
       handler?.({ url }, callback);

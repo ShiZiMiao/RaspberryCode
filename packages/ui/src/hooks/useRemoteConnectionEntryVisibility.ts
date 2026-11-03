@@ -1,7 +1,7 @@
-import type { ZCodeEnv } from "@zcode/shared";
+import type { RaspberryCodeEnv } from "@raspberrycode/shared";
 
 export function shouldShowRemoteConnectionEntry(params: {
-  env: ZCodeEnv;
+  env: RaspberryCodeEnv;
   isIntranet: boolean;
 }): boolean {
   void params;

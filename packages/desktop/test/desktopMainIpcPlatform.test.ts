@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { DesktopCommandIds, PlatformChannels } from "@zcode/shared";
+import { DesktopCommandIds, PlatformChannels } from "@raspberrycode/shared";
 
 type IpcHandler = (...args: unknown[]) => unknown;
 
@@ -86,7 +86,6 @@ vi.mock("../src/main/desktopWindowButtonPosition.js", () => ({
 
 vi.mock("../src/main/mcpUserDirectory/index.js", () => ({
   loadCliMcpFromUserDirectory: vi.fn(),
-  migrateLegacyCommonMcp: vi.fn(),
   saveCliMcpToUserDirectory: vi.fn(),
 }));
 

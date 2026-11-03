@@ -5,7 +5,7 @@ import {
   InternalChannels,
   databaseStartupControlSchema,
   type DatabaseStartupState,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import { reportDatabaseStartupState } from "./databaseStartupTelemetry.js";
 
 let localStorageReady = false;

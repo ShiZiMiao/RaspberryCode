@@ -34,12 +34,9 @@ export function useAuthToken() {
     }
 
     // 升级多 provider 前的老账号只写了 auth_token。
-    // 这里补一个只针对 bigmodel 的兜底读取，避免升级后 token 读取瞬时失效。
-    if (activeProvider === "bigmodel") {
-      return credentialService.load("auth_token");
-    }
-
-    return null;
+    // 读兼容泛化（specs/provider-neutrality.md 规则 7）：不按品牌特判，任意 provider
+    // 取不到命名空间 token 时都兜底读一次历史键，避免升级后 token 读取瞬时失效。
+    return credentialService.load("auth_token");
   }, [credentialService, oauthService]);
   const setToken = useCallback(
     async (token: string) => {
@@ -57,9 +54,8 @@ export function useAuthToken() {
       return;
     }
     await credentialService.delete(`oauth:${activeProvider}:access_token`);
-    if (activeProvider === "bigmodel") {
-      await credentialService.delete("auth_token");
-    }
+    // 与读取同口径：历史 auth_token 键的清理不再按品牌特判（读兼容泛化）。
+    await credentialService.delete("auth_token");
   }, [credentialService, oauthService]);
 
   return { getToken, setToken, clearToken };

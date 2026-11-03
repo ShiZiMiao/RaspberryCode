@@ -1,5 +1,5 @@
 import { computeAggregateStats, type AggregateStats } from "./resourceMetricsStats.js";
-import type { NetworkObservation, NetworkTransportKind } from "@zcode/rpc";
+import type { NetworkObservation, NetworkTransportKind } from "@raspberrycode/rpc";
 
 export type NetworkErrorKind =
   | "timeout"
@@ -124,7 +124,7 @@ const STATIC_HTTP_PATH_SEGMENTS = new Set([
   "v4",
   "windows",
   "workspace-bridge",
-  "zcode-plan",
+  "raspberrycode-plan",
 ]);
 
 function normalizeErrorKind(value: string | undefined): NetworkErrorKind {

@@ -17,7 +17,7 @@ const originalHome = process.env.HOME;
 const tempHomes: string[] = [];
 
 function makeTempHome(): string {
-  const home = mkdtempSync(join(tmpdir(), "zcode-settings-sync-home-"));
+  const home = mkdtempSync(join(tmpdir(), "raspberrycode-settings-sync-home-"));
   tempHomes.push(home);
   return home;
 }
@@ -38,7 +38,7 @@ function writePlugin(
   rootPath: string,
   folder: string,
   manifest: Record<string, unknown>,
-  manifestDir = ".zcode-plugin",
+  manifestDir = ".raspberrycode-plugin",
 ): string {
   const pluginDir = join(rootPath, folder);
   mkdirSync(join(pluginDir, manifestDir), { recursive: true });
@@ -123,7 +123,7 @@ describe("settingsSyncService Claude AGENTS.md migration", () => {
       supported: true,
     });
     await expect(
-      service.copyClaudeAgentsFileToZcodeAgentsFile({
+      service.copyClaudeAgentsFileToRaspberrycodeAgentsFile({
         workspacePath,
         overwrite: false,
       }),
@@ -157,7 +157,7 @@ describe("settingsSyncService Claude AGENTS.md migration", () => {
     });
 
     await expect(
-      service.copyClaudeAgentsFileToZcodeAgentsFile({
+      service.copyClaudeAgentsFileToRaspberrycodeAgentsFile({
         workspacePath,
         overwrite: false,
       }),
@@ -171,7 +171,7 @@ describe("settingsSyncService Claude AGENTS.md migration", () => {
     expect(readFileSync(join(home, ".raspberrycode", "AGENTS.md"), "utf-8")).toBe("existing agents");
 
     await expect(
-      service.copyClaudeAgentsFileToZcodeAgentsFile({
+      service.copyClaudeAgentsFileToRaspberrycodeAgentsFile({
         workspacePath,
         overwrite: true,
       }),
@@ -201,7 +201,7 @@ describe("settingsSyncService Claude AGENTS.md migration", () => {
       unavailableReason: "missingSource",
     });
     await expect(
-      service.copyClaudeAgentsFileToZcodeAgentsFile({
+      service.copyClaudeAgentsFileToRaspberrycodeAgentsFile({
         workspacePath,
         overwrite: true,
       }),
@@ -597,7 +597,7 @@ describe("settingsSyncService plugins import", () => {
         version: "1.2.3",
       },
     ]);
-    expect(existsSync(join(importedPath, ".zcode-plugin", "plugin.json"))).toBe(true);
+    expect(existsSync(join(importedPath, ".raspberrycode-plugin", "plugin.json"))).toBe(true);
     expect(lstatSync(importedPath).isSymbolicLink()).toBe(true);
     expect(config.plugins?.dirs).toEqual([importedPath]);
   });

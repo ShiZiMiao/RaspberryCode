@@ -6,13 +6,13 @@ import {
 } from "@/lib/providerTelemetryIdentity.js";
 import type {
   InputId,
-  ZCodeContextCompactionTimelineMeta,
-  ZCodePersistedFileChange,
-  ZCodeProvider,
-  ZCodeStreamEvent,
-  ZCodeTimelineStatus,
-  ZCodeUsage,
-} from "@zcode/shared";
+  RaspberryCodeContextCompactionTimelineMeta,
+  RaspberryCodePersistedFileChange,
+  RaspberryCodeProvider,
+  RaspberryCodeStreamEvent,
+  RaspberryCodeTimelineStatus,
+  RaspberryCodeUsage,
+} from "@raspberrycode/shared";
 import {
   CUSTOM_SUPPLIER_KEY_PREFIX,
   GHOST_SUPPLIER_KEY_PREFIX,
@@ -21,7 +21,7 @@ import {
   computeLineChangeStat,
   sanitizeTelemetrySkillName,
   decodeCustomModelValue,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 interface ComposerInputTimingState {
   inputStartTime: number;
   inputFirstCharTime: number;
@@ -38,7 +38,7 @@ interface PromptTelemetryState {
   waitingMs: number;
   permissionWaitsByRequestId: Map<string, PermissionWaitState>;
   firstTokenAt: number | null;
-  usage: ZCodeUsage | null;
+  usage: RaspberryCodeUsage | null;
   usageEventKeys: Set<string>;
   finalizedAgentStepCount: number;
   toolCallTotal: number;
@@ -55,8 +55,8 @@ interface FinalizePromptTelemetryInput {
   taskId: string;
   status: string;
   finishedAt: number;
-  fileChanges?: readonly ZCodePersistedFileChange[];
-  usage?: ZCodeUsage;
+  fileChanges?: readonly RaspberryCodePersistedFileChange[];
+  usage?: RaspberryCodeUsage;
   errorType?: string;
   errorMsg?: string;
   messageSource?: PromptMessageSource;
@@ -125,7 +125,7 @@ interface AgentStepSkillMetadata {
   name?: string;
   qualifiedName?: string;
   pluginId?: string;
-  source?: "agents" | "zcode" | "bundled" | "plugin" | "remote";
+  source?: "agents" | "raspberrycode" | "bundled" | "plugin" | "remote";
 }
 
 interface AgentStepModelIdentity {
@@ -139,7 +139,7 @@ interface AgentStepUsageAttribution {
   requestIds: string[];
   requestCount: number;
   scope: "model_request" | "subagent_requests";
-  usage: ZCodeUsage;
+  usage: RaspberryCodeUsage;
 }
 
 interface AgentStepToolAttribution {
@@ -178,7 +178,7 @@ const agentStepTelemetryByTask = new Map<string, AgentStepTelemetryState>();
 
 function resolvePromptTelemetryModelProvider(params: {
   modelName?: string | null;
-  provider?: ZCodeProvider;
+  provider?: RaspberryCodeProvider;
   selectedSupplierKey?: string | null;
 }): string {
   const { modelName, provider, selectedSupplierKey } = params;
@@ -596,7 +596,7 @@ function closeToolSteps(
 export function buildPromptTelemetryExtraDetail(params: {
   askMode?: string | null;
   modelName?: string | null;
-  provider?: ZCodeProvider;
+  provider?: RaspberryCodeProvider;
   selectedSupplierKey?: string | null;
   providerBaseURL?: string | null;
 }): Record<string, string> {
@@ -620,13 +620,13 @@ export function buildPromptTelemetryExtraDetail(params: {
   };
 }
 
-const COMPACTION_TERMINAL_STATUSES: readonly ZCodeTimelineStatus[] = [
+const COMPACTION_TERMINAL_STATUSES: readonly RaspberryCodeTimelineStatus[] = [
   "completed",
   "failed",
   "interrupted",
 ];
 
-function isCompactionTerminalStatus(status: ZCodeTimelineStatus): boolean {
+function isCompactionTerminalStatus(status: RaspberryCodeTimelineStatus): boolean {
   return COMPACTION_TERMINAL_STATUSES.includes(status);
 }
 
@@ -637,8 +637,8 @@ function isCompactionTerminalStatus(status: ZCodeTimelineStatus): boolean {
  * provider/model 维度复用 buildPromptTelemetryExtraDetail，version 由后端 reportEvent 注入。
  */
 export function buildCompactionTelemetryExtraDetail(params: {
-  timeline: ZCodeContextCompactionTimelineMeta;
-  provider?: ZCodeProvider;
+  timeline: RaspberryCodeContextCompactionTimelineMeta;
+  provider?: RaspberryCodeProvider;
   /** V4 fact 已从真实模型请求归一化出的 provider；优先于旧 UI supplier 推导。 */
   modelProvider?: string | null;
   modelName?: string | null;
@@ -685,7 +685,7 @@ export function buildCompactionTelemetryExtraDetail(params: {
 }
 
 function buildPromptUsageTelemetryExtraDetail(
-  usage: ZCodeUsage | undefined,
+  usage: RaspberryCodeUsage | undefined,
   tokenSource?: string,
 ): Record<string, string> {
   if (!usage) {
@@ -705,7 +705,7 @@ function buildPromptUsageTelemetryExtraDetail(
   };
 }
 
-function mergePromptUsage(left: ZCodeUsage | null, right: ZCodeUsage): ZCodeUsage {
+function mergePromptUsage(left: RaspberryCodeUsage | null, right: RaspberryCodeUsage): RaspberryCodeUsage {
   if (!left) {
     return {
       inputTokens: right.inputTokens,
@@ -758,7 +758,7 @@ function consumeComposerInputTiming(workspacePath: string, sendTime: number) {
   };
 }
 
-function collectFileChangeMetrics(fileChanges: readonly ZCodePersistedFileChange[] | undefined) {
+function collectFileChangeMetrics(fileChanges: readonly RaspberryCodePersistedFileChange[] | undefined) {
   if (!fileChanges || fileChanges.length === 0) {
     return {
       changedFileCount: 0,
@@ -961,7 +961,7 @@ export function rekeyQueuedPromptTelemetry(
 
 export function recordPromptModelRequestStarted(
   taskId: string,
-  event: Extract<ZCodeStreamEvent, { type: "task_network_debug_status" }>,
+  event: Extract<RaspberryCodeStreamEvent, { type: "task_network_debug_status" }>,
   activeInputId?: string,
 ): void {
   if (event.statusType !== "model_request_started") {
@@ -1042,7 +1042,7 @@ export function recordSubagentToolAttribution(input: {
   providerName: string;
   agentId: string;
   agentRole?: AgentStepRole;
-  usage?: ZCodeUsage;
+  usage?: RaspberryCodeUsage;
 }): void {
   const state = agentStepTelemetryByTask.get(input.taskId);
   const step = state?.toolStepsById.get(input.toolCallId);
@@ -1143,7 +1143,7 @@ function materializePendingModelUsageBeforeTool(input: {
 
 export function recordAgentStepTelemetryEvent(input: {
   taskId: string;
-  event: ZCodeStreamEvent;
+  event: RaspberryCodeStreamEvent;
   activeInputId?: string;
   clientMode?: AgentStepTelemetryClientMode;
   toolAttribution?: AgentStepToolAttribution;
@@ -1187,7 +1187,7 @@ export function recordAgentStepTelemetryEvent(input: {
       return finalized;
 
     case "agent_message_chunk":
-      if (input.event.zcodeTimeline) {
+      if (input.event.raspberrycodeTimeline) {
         return finalized;
       }
       if (input.event.parentToolUseId) {
@@ -1391,7 +1391,7 @@ export function getActivePromptMessageId(taskId: string): string | undefined {
 export function recordPromptTokenUsageDelta(input: {
   taskId: string;
   eventKey: string;
-  usage: ZCodeUsage;
+  usage: RaspberryCodeUsage;
   requestId?: string;
   modelName?: string;
   modelProvider?: string;

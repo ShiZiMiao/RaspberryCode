@@ -3,7 +3,7 @@ import {
   sourceServerResolveWorkspaceResultSchema,
   sourceServerMigrationPathActionSchema,
   sourceServerMigrationReportSchema,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import { SourceServerWorkspaceAliasRepo } from "../session/sourceServerWorkspaceAliasRepo.js";
 import type { ISourceServerWorkspaceService } from "./sourceServerWorkspace.js";
 

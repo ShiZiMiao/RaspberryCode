@@ -1,11 +1,11 @@
-import { ChannelClient, ChannelServer, createQueuePair, Emitter } from "@zcode/rpc";
+import { ChannelClient, ChannelServer, createQueuePair, Emitter } from "@raspberrycode/rpc";
 import {
   IBroadcastService,
   IProjectService,
   IRemoteProjectService,
   ServiceCollection,
-} from "@zcode/services";
-import { RemoteServiceAccess } from "@zcode/client";
+} from "@raspberrycode/services";
+import { RemoteServiceAccess } from "@raspberrycode/client";
 import { exposeWindowHostAttachmentServices } from "@desktop/host/windowHostAttachmentRpcPolicy.js";
 import { expect, it, vi } from "vitest";
 

@@ -2,32 +2,32 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { compileModelOptionMap } from "@zcode/model-option-map";
+import { compileModelOptionMap } from "@raspberrycode/model-option-map";
 import {
   ApiKeyAccessConfig,
   ModelConfigRules,
   ProviderConfig,
   ProviderConfigMap,
   type ProviderConfigLayerUpdate,
-} from "@zcode/provider";
+} from "@raspberrycode/provider";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  NodeZCodeBuiltinProviderConfigSource,
+  NodeRaspberryCodeBuiltinProviderConfigSource,
   NodePersonalProviderConfigRepository,
   NodeProviderConfigRuntime,
   NodeProviderRegistryRuntime,
   createNodeProviderRuntimePathEnv,
-  materializeZCodeBuiltinProviderConfig,
+  materializeRaspberryCodeBuiltinProviderConfig,
   encodeProviderConfigFile,
-  resolveZCodeBuiltinCachePaths,
+  resolveRaspberryCodeBuiltinCachePaths,
   resolveNodeProviderRuntimePaths,
-  ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV,
-  ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV,
+  RASPBERRYCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV,
+  RASPBERRYCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV,
 } from "../src/index.js";
 
 const temporaryDirectories: string[] = [];
-const zcodeBuiltinProviderConfigFilePath = fileURLToPath(
-  new URL("../../../config/provider/zcode-builtin.json", import.meta.url),
+const raspberrycodeBuiltinProviderConfigFilePath = fileURLToPath(
+  new URL("../../../config/provider/raspberrycode-builtin.json", import.meta.url),
 );
 
 afterEach(async () => {
@@ -41,10 +41,10 @@ afterEach(async () => {
   );
 });
 
-describe("@zcode/provider-node", () => {
+describe("@raspberrycode/provider-node", () => {
   it("从 Built-in Model Config Rules 解析 ox-alpha 同策略别名和 API-specific reasoning", async () => {
-    const source = new NodeZCodeBuiltinProviderConfigSource({
-      bundledFilePath: zcodeBuiltinProviderConfigFilePath,
+    const source = new NodeRaspberryCodeBuiltinProviderConfigSource({
+      bundledFilePath: raspberrycodeBuiltinProviderConfigFilePath,
       watch: false,
     });
     const snapshot = await source.read();
@@ -109,8 +109,8 @@ describe("@zcode/provider-node", () => {
   });
 
   it("从 Built-in Config 解析模型能力、Access 协议和 Tool Schema 兼容事实", async () => {
-    const source = new NodeZCodeBuiltinProviderConfigSource({
-      bundledFilePath: zcodeBuiltinProviderConfigFilePath,
+    const source = new NodeRaspberryCodeBuiltinProviderConfigSource({
+      bundledFilePath: raspberrycodeBuiltinProviderConfigFilePath,
       watch: false,
     });
     const snapshot = await source.read();
@@ -181,7 +181,7 @@ describe("@zcode/provider-node", () => {
         providerConfigRules: {
           providerRules: [
             {
-              providerId: "zcodeBuiltin",
+              providerId: "raspberrycodeBuiltin",
               config: {
                 group: "zai-family",
                 access: {
@@ -205,25 +205,25 @@ describe("@zcode/provider-node", () => {
       },
     });
 
-    const firstPath = await materializeZCodeBuiltinProviderConfig({
+    const firstPath = await materializeRaspberryCodeBuiltinProviderConfig({
       environmentConfigRoot: root,
       content: firstContent,
     });
-    const repeatedPath = await materializeZCodeBuiltinProviderConfig({
+    const repeatedPath = await materializeRaspberryCodeBuiltinProviderConfig({
       environmentConfigRoot: root,
       content: firstContent,
     });
-    const secondPath = await materializeZCodeBuiltinProviderConfig({
+    const secondPath = await materializeRaspberryCodeBuiltinProviderConfig({
       environmentConfigRoot: root,
       content: secondContent,
     });
 
     expect(repeatedPath).toBe(firstPath);
-    expect(firstPath).toBe(join(root, "runtime", "provider", "bundled", "zcode-builtin.json"));
+    expect(firstPath).toBe(join(root, "runtime", "provider", "bundled", "raspberrycode-builtin.json"));
     expect(secondPath).toBe(firstPath);
     expect(JSON.parse(await readFile(secondPath, "utf8"))).toEqual(JSON.parse(secondContent));
     expect(await readdir(join(root, "runtime", "provider", "bundled"))).toEqual([
-      "zcode-builtin.json",
+      "raspberrycode-builtin.json",
     ]);
   });
 
@@ -231,67 +231,67 @@ describe("@zcode/provider-node", () => {
     expect(resolveNodeProviderRuntimePaths({})).toBeNull();
     expect(() =>
       resolveNodeProviderRuntimePaths({
-        [ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: "/zcodeBuiltin.json",
+        [RASPBERRYCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: "/raspberrycodeBuiltin.json",
       }),
     ).toThrow("必须同时提供");
     expect(
       resolveNodeProviderRuntimePaths({
-        [ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: " /zcodeBuiltin.json ",
-        [ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: " /personal.json ",
+        [RASPBERRYCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: " /raspberrycodeBuiltin.json ",
+        [RASPBERRYCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: " /personal.json ",
       }),
     ).toEqual({
-      zcodeBuiltinFilePath: "/zcodeBuiltin.json",
+      raspberrycodeBuiltinFilePath: "/raspberrycodeBuiltin.json",
       personalFilePath: "/personal.json",
     });
     expect(
       createNodeProviderRuntimePathEnv({
-        zcodeBuiltinFilePath: "/zcodeBuiltin.json",
+        raspberrycodeBuiltinFilePath: "/raspberrycodeBuiltin.json",
         personalFilePath: "/personal.json",
       }),
     ).toEqual({
-      [ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: "/zcodeBuiltin.json",
-      [ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: "/personal.json",
+      [RASPBERRYCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: "/raspberrycodeBuiltin.json",
+      [RASPBERRYCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: "/personal.json",
     });
   });
 
   it("RaspberryCode Built-in Source 每次读取当前版本化文件，revision 随内容改变", async () => {
     const root = await temporaryDirectory();
-    const filePath = join(root, "zcodeBuiltin.json");
-    await writeZCodeBuiltin(filePath, "model-a");
-    const source = new NodeZCodeBuiltinProviderConfigSource({
+    const filePath = join(root, "raspberrycodeBuiltin.json");
+    await writeRaspberryCodeBuiltin(filePath, "model-a");
+    const source = new NodeRaspberryCodeBuiltinProviderConfigSource({
       bundledFilePath: filePath,
       watch: false,
     });
 
     const first = await source.read();
-    await writeZCodeBuiltin(filePath, "model-b");
+    await writeRaspberryCodeBuiltin(filePath, "model-b");
     const second = await source.read();
 
-    expect(first.providers.get("zcodeBuiltin")?.builtinModelIds).toEqual(["model-a"]);
-    expect(second.providers.get("zcodeBuiltin")?.builtinModelIds).toEqual(["model-b"]);
+    expect(first.providers.get("raspberrycodeBuiltin")?.builtinModelIds).toEqual(["model-a"]);
+    expect(second.providers.get("raspberrycodeBuiltin")?.builtinModelIds).toEqual(["model-b"]);
     expect(second.revision).not.toBe(first.revision);
     source.dispose();
   });
 
   it("RaspberryCode Built-in Source 只为新的 content revision 发布一次变化", async () => {
     const root = await temporaryDirectory();
-    const filePath = join(root, "zcodeBuiltin.json");
-    await writeZCodeBuiltin(filePath, "model-a");
-    const source = new NodeZCodeBuiltinProviderConfigSource({ bundledFilePath: filePath });
+    const filePath = join(root, "raspberrycodeBuiltin.json");
+    await writeRaspberryCodeBuiltin(filePath, "model-a");
+    const source = new NodeRaspberryCodeBuiltinProviderConfigSource({ bundledFilePath: filePath });
     const reasons: string[] = [];
     source.onDidChange((reason) => reasons.push(reason));
     await source.read();
 
-    await writeZCodeBuiltin(filePath, "model-a");
+    await writeRaspberryCodeBuiltin(filePath, "model-a");
     await settleFileWatcher();
     expect(reasons).toEqual([]);
 
-    await writeZCodeBuiltin(filePath, "model-b");
+    await writeRaspberryCodeBuiltin(filePath, "model-b");
     await vi.waitFor(() => expect(reasons).toContain("file-changed"), { timeout: 10_000 });
     await settleFileWatcher();
 
     expect(reasons).toEqual(["file-changed"]);
-    expect((await source.read()).providers.get("zcodeBuiltin")?.builtinModelIds).toEqual([
+    expect((await source.read()).providers.get("raspberrycodeBuiltin")?.builtinModelIds).toEqual([
       "model-b",
     ]);
     source.dispose();
@@ -426,9 +426,9 @@ describe("@zcode/provider-node", () => {
 
   it("Node Config Runtime 在新目标缺失时调用外部 Legacy Importer 并不产生备份", async () => {
     const root = await temporaryDirectory();
-    const zcodeBuiltinFilePath = join(root, "zcodeBuiltin.json");
+    const raspberrycodeBuiltinFilePath = join(root, "raspberrycodeBuiltin.json");
     const personalFilePath = join(root, "provider_config.json");
-    await writeZCodeBuiltin(zcodeBuiltinFilePath, "zcodeBuiltin-model");
+    await writeRaspberryCodeBuiltin(raspberrycodeBuiltinFilePath, "raspberrycodeBuiltin-model");
     const importLegacy = vi.fn(async () => {
       return Object.freeze({
         providers: new ProviderConfigMap([["legacy", personalProviderConfig(false)]]),
@@ -436,7 +436,7 @@ describe("@zcode/provider-node", () => {
       });
     });
     const runtime = new NodeProviderConfigRuntime({
-      zcodeBuiltinFilePath,
+      raspberrycodeBuiltinFilePath,
       personalFilePath,
       importLegacy,
       watch: false,
@@ -462,7 +462,7 @@ describe("@zcode/provider-node", () => {
       throw new Error("已有 Personal Config 时不应再次导入旧 Provider Store");
     });
     const restartedRuntime = new NodeProviderConfigRuntime({
-      zcodeBuiltinFilePath,
+      raspberrycodeBuiltinFilePath,
       personalFilePath,
       importLegacy: repeatedImport,
       watch: false,
@@ -509,15 +509,15 @@ describe("@zcode/provider-node", () => {
 
   it("Endpoint-scoped Config Runtime 向 Agent 暴露当前 Endpoint 的 Active 路径", async () => {
     const root = await temporaryDirectory();
-    const zcodeBuiltinFilePath = join(root, "zcodeBuiltin.json");
+    const raspberrycodeBuiltinFilePath = join(root, "raspberrycodeBuiltin.json");
     const environmentConfigRoot = join(root, "environment");
     const personalFilePath = join(root, "config.json");
     const endpointOrigin = "https://api.example.com";
-    await writeZCodeBuiltin(zcodeBuiltinFilePath, "zcodeBuiltin-model");
+    await writeRaspberryCodeBuiltin(raspberrycodeBuiltinFilePath, "raspberrycodeBuiltin-model");
     const runtime = new NodeProviderConfigRuntime({
-      zcodeBuiltinFilePath,
+      raspberrycodeBuiltinFilePath,
       personalFilePath,
-      zcodeBuiltinEnvironment: {
+      raspberrycodeBuiltinEnvironment: {
         environmentConfigRoot,
         platform: "darwin-aarch64",
         appVersion: "3.9.2",
@@ -530,29 +530,29 @@ describe("@zcode/provider-node", () => {
 
     await runtime.start();
 
-    await expect(runtime.resolveZCodeBuiltinActiveFilePath()).resolves.toBe(
-      resolveZCodeBuiltinCachePaths({
+    await expect(runtime.resolveRaspberryCodeBuiltinActiveFilePath()).resolves.toBe(
+      resolveRaspberryCodeBuiltinCachePaths({
         environmentConfigRoot,
         platform: "darwin-aarch64",
         appVersion: "3.9.2",
-        zcodeEndpointOrigin: endpointOrigin,
+        raspberrycodeEndpointOrigin: endpointOrigin,
       }).activeFilePath,
     );
     // start 不等待后台下载；释放临时目录前等待首轮控制文件 lease 收尾，不能和 rm 竞态。
-    await runtime.refreshZCodeBuiltin();
+    await runtime.refreshRaspberryCodeBuiltin();
     runtime.dispose();
   });
 
   it("正式 Personal Config 损坏时保留原文件且不误调 Legacy Importer", async () => {
     const root = await temporaryDirectory();
-    const zcodeBuiltinFilePath = join(root, "zcodeBuiltin.json");
+    const raspberrycodeBuiltinFilePath = join(root, "raspberrycodeBuiltin.json");
     const personalFilePath = join(root, "provider_config.json");
     const invalidText = JSON.stringify({ provider: { unsupported: {} } }, null, 2);
-    await writeZCodeBuiltin(zcodeBuiltinFilePath, "zcodeBuiltin-model");
+    await writeRaspberryCodeBuiltin(raspberrycodeBuiltinFilePath, "raspberrycodeBuiltin-model");
     await writeFile(personalFilePath, invalidText, "utf8");
     const importLegacy = vi.fn(async () => emptyUpdate());
     const runtime = new NodeProviderConfigRuntime({
-      zcodeBuiltinFilePath,
+      raspberrycodeBuiltinFilePath,
       personalFilePath,
       importLegacy,
       watch: false,
@@ -569,16 +569,16 @@ describe("@zcode/provider-node", () => {
 
   it("Node Registry Runtime 在进程级聚合 Config，并只发布完整 API Provider", async () => {
     const root = await temporaryDirectory();
-    const zcodeBuiltinFilePath = join(root, "zcodeBuiltin.json");
+    const raspberrycodeBuiltinFilePath = join(root, "raspberrycodeBuiltin.json");
     const personalFilePath = join(root, "personal.json");
-    await writeCompleteZCodeBuiltin(zcodeBuiltinFilePath);
+    await writeCompleteRaspberryCodeBuiltin(raspberrycodeBuiltinFilePath);
     await writeFile(
       personalFilePath,
       JSON.stringify(
         storedConfig({
           providers: new ProviderConfigMap([
             {
-              providerId: "zcodeBuiltin",
+              providerId: "raspberrycodeBuiltin",
               templateId: "test-api",
               config: new ProviderConfig({
                 group: "standard-personal",
@@ -592,7 +592,7 @@ describe("@zcode/provider-node", () => {
       "utf8",
     );
     const runtime = new NodeProviderRegistryRuntime({
-      zcodeBuiltinFilePath,
+      raspberrycodeBuiltinFilePath,
       personalFilePath,
       watch: false,
     });
@@ -602,7 +602,7 @@ describe("@zcode/provider-node", () => {
 
     expect(snapshot.registry.providers).toHaveLength(1);
     expect(
-      runtime.registryService.getModel("zcodeBuiltin", "model-a")?.config.properties,
+      runtime.registryService.getModel("raspberrycodeBuiltin", "model-a")?.config.properties,
     ).toMatchObject({
       contextWindow: 200_000,
       inputFormat: expect.objectContaining({ supportsVideo: false }),
@@ -612,7 +612,7 @@ describe("@zcode/provider-node", () => {
 });
 
 async function temporaryDirectory(): Promise<string> {
-  const directory = await mkdtemp(join(tmpdir(), "zcode-provider-node-"));
+  const directory = await mkdtemp(join(tmpdir(), "raspberrycode-provider-node-"));
   temporaryDirectories.push(directory);
   return directory;
 }
@@ -639,7 +639,7 @@ function storedConfig(update: ProviderConfigLayerUpdate): object {
   return encodeProviderConfigFile(update);
 }
 
-async function writeZCodeBuiltin(filePath: string, modelId: string): Promise<void> {
+async function writeRaspberryCodeBuiltin(filePath: string, modelId: string): Promise<void> {
   await writeFile(
     filePath,
     JSON.stringify({
@@ -649,7 +649,7 @@ async function writeZCodeBuiltin(filePath: string, modelId: string): Promise<voi
         providerConfigRules: {
           providerRules: [
             {
-              providerId: "zcodeBuiltin",
+              providerId: "raspberrycodeBuiltin",
               config: {
                 group: "zai-family",
                 access: {
@@ -676,7 +676,7 @@ async function writeZCodeBuiltin(filePath: string, modelId: string): Promise<voi
   );
 }
 
-async function writeCompleteZCodeBuiltin(filePath: string): Promise<void> {
+async function writeCompleteRaspberryCodeBuiltin(filePath: string): Promise<void> {
   await writeFile(
     filePath,
     JSON.stringify({

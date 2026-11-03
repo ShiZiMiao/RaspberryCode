@@ -1,8 +1,8 @@
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { Emitter } from "@zcode/rpc";
+import { Emitter } from "@raspberrycode/rpc";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { IServiceAccessor } from "@zcode/services";
+import type { IServiceAccessor } from "@raspberrycode/services";
 import { useEnsureWorkspaceMcpLoaded } from "@/hooks/useEnsureWorkspaceMcpLoaded.js";
 import { ServiceProvider } from "@/hooks/useServices.js";
 import { useWorkspaceTerminalTaskNotifications } from "@/hooks/useTaskNotifications.js";
@@ -94,7 +94,7 @@ function makeServices() {
   }));
   const loadMcpFromUserDirectory = vi.fn(async () => ({ servers: [] }));
   const services = {
-    zcodeAgentService: {
+    raspberrycodeAgentService: {
       helloConversationV4: vi.fn(async () => ({
         kind: "hello" as const,
         protocolVersion: 3 as const,
@@ -228,12 +228,6 @@ describe("workspace startup RPC effects", () => {
     const platformLoadMcpFromUserDirectory = vi.fn(async () => ({ servers: [] }));
     setMcpStorePlatform({
       loadMcpFromUserDirectory: platformLoadMcpFromUserDirectory,
-      migrateLegacyCommonMcp: vi.fn(async () => ({
-        importedCount: 0,
-        servers: {},
-        skippedCount: 0,
-        totalCount: 0,
-      })),
       saveMcpToUserDirectory: vi.fn(async () => ({ success: true })),
     });
 

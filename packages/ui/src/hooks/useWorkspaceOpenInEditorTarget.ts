@@ -1,4 +1,4 @@
-import { createOpenInEditorRemoteTarget } from "@zcode/shared";
+import { createOpenInEditorRemoteTarget } from "@raspberrycode/shared";
 import { useMemo } from "react";
 import { useOptionalTabStore } from "@/store/TabStoreProvider.js";
 import {

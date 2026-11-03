@@ -1,10 +1,10 @@
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { DesktopWindowChromeState, IPlatformService } from "@zcode/shared";
+import type { DesktopWindowChromeState, IPlatformService } from "@raspberrycode/shared";
 
 vi.mock("@/i18n/IntlProvider.js", () => ({
-  useZCodeIntl: () => ({
+  useRaspberryCodeIntl: () => ({
     intl: {
       formatMessage: ({ id }: { id: string }) => id,
     },

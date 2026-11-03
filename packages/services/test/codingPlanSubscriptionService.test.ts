@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { BUILTIN_MODEL_PROVIDER_IDS, CODING_PLAN_SYSTEM_BUSY, type ApiClient } from "@zcode/shared";
+import { BUILTIN_MODEL_PROVIDER_IDS, CODING_PLAN_SYSTEM_BUSY, type ApiClient } from "@raspberrycode/shared";
 import {
   BigModelCodingPlanSubscriptionProvider,
   resolveCodingPlanClientConfigUrl,
@@ -105,18 +105,18 @@ describe("BigModelCodingPlanSubscriptionProvider", () => {
 
 
 
-  it("client configs 根据 ZCODE_ENV 选择测试或生产环境", () => {
+  it("client configs 根据 RASPBERRYCODE_ENV 选择测试或生产环境", () => {
     expect(
       resolveCodingPlanClientConfigUrl({
-        ZCODE_ENV: "test",
+        RASPBERRYCODE_ENV: "test",
         // 显式传 scoped 端点：测环境选择逻辑，不锚定默认占位域。
-        ZCODE_TEST_BASE_URL: "https://zcode.z.ai",
+        RASPBERRYCODE_TEST_BASE_URL: "https://raspberrycode.example.com",
       }).toString(),
-    ).toBe("https://zcode.z.ai/api/v1/client/configs");
+    ).toBe("https://raspberrycode.example.com/api/v1/client/configs");
     expect(
       resolveCodingPlanClientConfigUrl({
-        ZCODE_ENV: "production",
-        ZCODE_PRODUCTION_BASE_URL: "https://runtime.example.com",
+        RASPBERRYCODE_ENV: "production",
+        RASPBERRYCODE_PRODUCTION_BASE_URL: "https://runtime.example.com",
       }).toString(),
     ).toBe("https://runtime.example.com/api/v1/client/configs");
   });

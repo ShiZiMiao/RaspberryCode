@@ -5,83 +5,83 @@ describe("desktop deep link url helpers", () => {
   it("recognizes only the unified OAuth callback url", async () => {
     const { isOAuthCallbackUrl } = await import("../src/main/desktopDeepLinkUrl.js");
 
-    expect(isOAuthCallbackUrl(new URL("zcode://oauth/callback?code=1&state=s"))).toBe(true);
-    expect(isOAuthCallbackUrl(new URL("zcode://bigmodel-auth/callback?authCode=1&state=s"))).toBe(
+    expect(isOAuthCallbackUrl(new URL("raspberrycode://oauth/callback?code=1&state=s"))).toBe(true);
+    expect(isOAuthCallbackUrl(new URL("raspberrycode://bigmodel-auth/callback?authCode=1&state=s"))).toBe(
       false,
     );
-    expect(isOAuthCallbackUrl(new URL("zcode://zai-auth/callback?code=1&state=s"))).toBe(false);
-    expect(isOAuthCallbackUrl(new URL("zcode://oauth/other?code=1&state=s"))).toBe(false);
+    expect(isOAuthCallbackUrl(new URL("raspberrycode://zai-auth/callback?code=1&state=s"))).toBe(false);
+    expect(isOAuthCallbackUrl(new URL("raspberrycode://oauth/other?code=1&state=s"))).toBe(false);
     expect(isOAuthCallbackUrl(new URL("https://oauth/callback?code=1&state=s"))).toBe(false);
   });
 
   it("accepts Linux one-slash callback urls", async () => {
     const { isOAuthCallbackUrl } = await import("../src/main/desktopDeepLinkUrl.js");
 
-    expect(isOAuthCallbackUrl(new URL("zcode:/oauth/callback?code=1&state=s"))).toBe(true);
-    expect(isOAuthCallbackUrl(new URL("zcode:oauth/callback?code=1&state=s"))).toBe(true);
+    expect(isOAuthCallbackUrl(new URL("raspberrycode:/oauth/callback?code=1&state=s"))).toBe(true);
+    expect(isOAuthCallbackUrl(new URL("raspberrycode:oauth/callback?code=1&state=s"))).toBe(true);
   });
 
   it("recognizes workspace open urls and extracts the encoded folder path", async () => {
     const { extractWorkspaceOpenPath, isWorkspaceOpenUrl } =
       await import("../src/main/desktopDeepLinkUrl.js");
 
-    const workspaceUrl = new URL("zcode://workspace/open?path=%2FUsers%2Fdemo%2FProject%20A%26B");
+    const workspaceUrl = new URL("raspberrycode://workspace/open?path=%2FUsers%2Fdemo%2FProject%20A%26B");
     expect(isWorkspaceOpenUrl(workspaceUrl)).toBe(true);
     expect(extractWorkspaceOpenPath(workspaceUrl)).toBe("/Users/demo/Project A&B");
-    expect(isWorkspaceOpenUrl(new URL("zcode://workspace/other?path=%2Ftmp"))).toBe(false);
-    expect(extractWorkspaceOpenPath(new URL("zcode://workspace/open"))).toBeNull();
+    expect(isWorkspaceOpenUrl(new URL("raspberrycode://workspace/other?path=%2Ftmp"))).toBe(false);
+    expect(extractWorkspaceOpenPath(new URL("raspberrycode://workspace/open"))).toBeNull();
   });
 
   it("extracts protocol urls from desktop argv variants", async () => {
     const { extractDeepLinkUrlFromArgs } = await import("../src/main/desktopDeepLinkUrl.js");
 
     expect(
-      extractDeepLinkUrlFromArgs(["/opt/RaspberryCode/zcode", "zcode://oauth/callback?code=1&state=s"]),
-    ).toBe("zcode://oauth/callback?code=1&state=s");
+      extractDeepLinkUrlFromArgs(["/opt/RaspberryCode/raspberrycode", "raspberrycode://oauth/callback?code=1&state=s"]),
+    ).toBe("raspberrycode://oauth/callback?code=1&state=s");
     expect(
       extractDeepLinkUrlFromArgs([
-        "/opt/RaspberryCode/zcode",
-        "--open-url=zcode://oauth/callback?code=1&state=s",
+        "/opt/RaspberryCode/raspberrycode",
+        "--open-url=raspberrycode://oauth/callback?code=1&state=s",
       ]),
-    ).toBe("zcode://oauth/callback?code=1&state=s");
+    ).toBe("raspberrycode://oauth/callback?code=1&state=s");
     expect(
       extractDeepLinkUrlFromArgs([
-        "/opt/RaspberryCode/zcode",
-        "zcode%3A%2F%2Foauth%2Fcallback%3Fcode%3D1%26state%3Ds",
+        "/opt/RaspberryCode/raspberrycode",
+        "raspberrycode%3A%2F%2Foauth%2Fcallback%3Fcode%3D1%26state%3Ds",
       ]),
-    ).toBe("zcode://oauth/callback?code=1&state=s");
+    ).toBe("raspberrycode://oauth/callback?code=1&state=s");
     expect(
       extractDeepLinkUrlFromArgs([
-        "/opt/RaspberryCode/zcode",
-        "zcode%253A%252F%252Foauth%252Fcallback%253Fcode%253D1%2526state%253Ds",
+        "/opt/RaspberryCode/raspberrycode",
+        "raspberrycode%253A%252F%252Foauth%252Fcallback%253Fcode%253D1%2526state%253Ds",
       ]),
-    ).toBe("zcode://oauth/callback?code=1&state=s");
+    ).toBe("raspberrycode://oauth/callback?code=1&state=s");
     expect(
-      extractDeepLinkUrlFromArgs(["/opt/RaspberryCode/zcode", "zcode://oauth/callback?code=1", "&state=s"]),
-    ).toBe("zcode://oauth/callback?code=1&state=s");
+      extractDeepLinkUrlFromArgs(["/opt/RaspberryCode/raspberrycode", "raspberrycode://oauth/callback?code=1", "&state=s"]),
+    ).toBe("raspberrycode://oauth/callback?code=1&state=s");
     expect(
-      extractDeepLinkUrlFromArgs(["/opt/RaspberryCode/zcode", "zcode://oauth/callback?code=1&amp;state=s"]),
-    ).toBe("zcode://oauth/callback?code=1&state=s");
+      extractDeepLinkUrlFromArgs(["/opt/RaspberryCode/raspberrycode", "raspberrycode://oauth/callback?code=1&amp;state=s"]),
+    ).toBe("raspberrycode://oauth/callback?code=1&state=s");
     expect(
       extractDeepLinkUrlFromArgs([
-        "/opt/RaspberryCode/zcode",
-        "zcode://oauth/callback",
+        "/opt/RaspberryCode/raspberrycode",
+        "raspberrycode://oauth/callback",
         "?code=1",
         "&state=s",
       ]),
-    ).toBe("zcode://oauth/callback?code=1&state=s");
+    ).toBe("raspberrycode://oauth/callback?code=1&state=s");
     expect(
       extractDeepLinkUrlFromArgs([
         "/Applications/RaspberryCode.app/Contents/MacOS/RaspberryCode",
-        "zcode://workspace/open?path=%2FUsers%2Fdemo%2FProject%2520A",
+        "raspberrycode://workspace/open?path=%2FUsers%2Fdemo%2FProject%2520A",
       ]),
-    ).toBe("zcode://workspace/open?path=%2FUsers%2Fdemo%2FProject%2520A");
+    ).toBe("raspberrycode://workspace/open?path=%2FUsers%2Fdemo%2FProject%2520A");
   });
 
   it("returns null when argv does not contain a deep link", async () => {
     const { extractDeepLinkUrlFromArgs } = await import("../src/main/desktopDeepLinkUrl.js");
 
-    expect(extractDeepLinkUrlFromArgs(["/opt/RaspberryCode/zcode", "--no-sandbox"])).toBeNull();
+    expect(extractDeepLinkUrlFromArgs(["/opt/RaspberryCode/raspberrycode", "--no-sandbox"])).toBeNull();
   });
 
   it("extracts Windows open workspace argv without URL decoding", async () => {
@@ -115,13 +115,13 @@ describe("desktop deep link url helpers", () => {
     } = await import("../src/main/desktopDeepLinkUrl.js");
 
     const additionalData = createDeepLinkSingleInstanceData([
-      "/opt/RaspberryCode/zcode",
-      "zcode%253A%252F%252Foauth%252Fcallback%253Fcode%253D1%2526state%253Ds",
+      "/opt/RaspberryCode/raspberrycode",
+      "raspberrycode%253A%252F%252Foauth%252Fcallback%253Fcode%253D1%2526state%253Ds",
       "--open-workspace=C:\\Users\\demo\\Project A",
     ]);
 
     expect(extractDeepLinkUrlFromSingleInstanceData(additionalData)).toBe(
-      "zcode://oauth/callback?code=1&state=s",
+      "raspberrycode://oauth/callback?code=1&state=s",
     );
     expect(extractOpenWorkspacePathFromSingleInstanceData(additionalData)).toBe(
       "C:\\Users\\demo\\Project A",

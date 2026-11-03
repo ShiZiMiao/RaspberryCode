@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getMediaPreviewFormat } from "@zcode/shared";
+import { getMediaPreviewFormat } from "@raspberrycode/shared";
 
 describe("media preview formats", () => {
   it.each([

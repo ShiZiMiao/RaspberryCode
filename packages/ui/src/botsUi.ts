@@ -1,5 +1,5 @@
-import type { BotConfig, BotProvider, BotReplyGranularity } from "@zcode/shared";
-import { getSupportedBotReplyGranularities } from "@zcode/shared";
+import type { BotConfig, BotProvider, BotReplyGranularity } from "@raspberrycode/shared";
+import { getSupportedBotReplyGranularities } from "@raspberrycode/shared";
 
 export type BotProviderEntryId = BotProvider | "dingding";
 
@@ -69,9 +69,9 @@ export function getBotReplyGranularityEntryForProvider(
 export function getBotProviderRegionTagLabelId(provider: BotProviderEntryId): string | null {
   switch (provider) {
     case "lark":
-      return "login.oauth.regionTag.zai";
+      return "bots.regionTag.global";
     case "feishu":
-      return "login.oauth.regionTag.bigmodel";
+      return "bots.regionTag.cn";
     default:
       return null;
   }

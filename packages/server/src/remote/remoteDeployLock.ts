@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { posix } from "node:path";
-import type { IRemoteBackend, StdioStream } from "@zcode/server/remote/backend.js";
-import { REMOTE_BASE } from "@zcode/server/remote/deployShared.js";
-import { quotePosixPathArg, quotePosixShellArg } from "@zcode/server/remote/posixShell.js";
+import type { IRemoteBackend, StdioStream } from "@raspberrycode/server/remote/backend.js";
+import { resolveRemoteServerBase } from "@raspberrycode/server/remote/deployShared.js";
+import { quotePosixPathArg, quotePosixShellArg } from "@raspberrycode/server/remote/posixShell.js";
 
 const DEPLOY_LOCK_HEARTBEAT_SECONDS = 30;
 const DEPLOY_LOCK_STALE_SECONDS = 600;
@@ -17,6 +17,8 @@ export interface RemoteDeployLockHandle {
 
 export interface AcquireRemoteDeployLockOptions {
   lockDir?: string;
+  /** 远端 server 根（见 resolveRemoteServerBase）；缺省时按旧根标记探测解析。 */
+  serverBase?: string;
   ownerToken?: string;
   acquireTimeoutMs?: number;
   releaseTimeoutMs?: number;
@@ -37,8 +39,8 @@ function destroyLockStreamBestEffort(stream: StdioStream): void {
 }
 
 function buildRemoteDeployLockScript(lockDir: string, ownerToken: string): string {
-  const acquiredMarker = `zcode-deploy-lock-acquired:${ownerToken}`;
-  const releaseMarker = `zcode-deploy-lock-release:${ownerToken}`;
+  const acquiredMarker = `raspberrycode-deploy-lock-acquired:${ownerToken}`;
+  const releaseMarker = `raspberrycode-deploy-lock-release:${ownerToken}`;
   return [
     "set -eu",
     `lock_dir=${quotePosixPathArg(lockDir)}`,
@@ -116,7 +118,9 @@ export async function acquireRemoteDeployLock(
   options: AcquireRemoteDeployLockOptions = {},
 ): Promise<RemoteDeployLockHandle> {
   const ownerToken = options.ownerToken?.trim() || randomUUID();
-  const lockDir = options.lockDir?.trim() || `${REMOTE_BASE}/.deploy.lock`;
+  const lockDir =
+    options.lockDir?.trim() ||
+    `${options.serverBase ?? (await resolveRemoteServerBase(backend))}/.deploy.lock`;
   const acquireTimeoutMs = Math.max(
     1,
     Math.floor(options.acquireTimeoutMs ?? DEFAULT_ACQUIRE_TIMEOUT_MS),
@@ -125,8 +129,8 @@ export async function acquireRemoteDeployLock(
     1,
     Math.floor(options.releaseTimeoutMs ?? DEFAULT_RELEASE_TIMEOUT_MS),
   );
-  const acquiredMarker = `zcode-deploy-lock-acquired:${ownerToken}`;
-  const releaseMarker = `zcode-deploy-lock-release:${ownerToken}`;
+  const acquiredMarker = `raspberrycode-deploy-lock-acquired:${ownerToken}`;
+  const releaseMarker = `raspberrycode-deploy-lock-release:${ownerToken}`;
   const stream = await backend.exec(buildRemoteDeployLockCommand(lockDir, ownerToken));
   const close = createStreamClosePromise(stream);
   let stderrText = "";

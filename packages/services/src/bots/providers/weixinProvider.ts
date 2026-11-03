@@ -6,7 +6,7 @@ import type {
   BotConfig,
   BotInboundMessage,
   BotOutboundMessage,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import type { BotProviderAdapter, BotTypingTarget } from "./types.js";
 import { fetchBotProviderJson } from "#src/bots/providers/providerRequest.js";
 
@@ -476,7 +476,7 @@ function readWeixinContextToken(message: Record<string, unknown>): string | unde
 }
 
 function buildWeixinClientId(): string {
-  return `zcode-weixin-${randomUUID()}`;
+  return `raspberrycode-weixin-${randomUUID()}`;
 }
 
 function buildWeixinText(message: BotOutboundMessage): string {

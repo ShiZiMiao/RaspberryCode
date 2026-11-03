@@ -19,7 +19,7 @@ import {
   TID_PROMPT_SUGGESTION_OPTION,
   TID_V4_COMPOSER_INPUT,
   testId,
-} from "@zcode/shared/test-ids";
+} from "@raspberrycode/shared/test-ids";
 import {
   clickV4SlashOption,
   getV4ComposerText,
@@ -36,10 +36,10 @@ import {
   openPluginSettings,
 } from "../helpers/plugin-management-lifecycle.js";
 
-const PLUGIN_STABLE_ID = "skill-creator@zcode-plugins-official";
-const STORE_TRY_PLUGIN_STABLE_ID = "zcode-guide@zcode-plugins-official";
+const PLUGIN_STABLE_ID = "skill-creator@raspberrycode-plugins-official";
+const STORE_TRY_PLUGIN_STABLE_ID = "raspberrycode-guide@raspberrycode-plugins-official";
 const STORE_TRY_PLUGIN_ICON =
-  "https://cdn-zcode.z.ai/zcode/official-plugin/assets/zcode-guide/icon.png";
+  "https://cdn-raspberrycode.example.com/raspberrycode/official-plugin/assets/raspberrycode-guide/icon.png";
 const PROMPT_MARKER = "E2E_PLUGIN_REFERENCE";
 const REPLY_MARKER = "PLUGIN_REFERENCE_REPLY_OK";
 const NOTE_RELATIVE_PATH = "plugin-reference-e2e/note.md";
@@ -81,9 +81,9 @@ async function readPluginMentionPresentation(pluginId: string): Promise<{
 async function focusV4Composer(): Promise<void> {
   await browser.execute((inputTestId) => {
     const input = document.querySelector<
-      HTMLElement & { __zcodeLexicalInputE2E?: { focus: () => void } }
+      HTMLElement & { __raspberrycodeLexicalInputE2E?: { focus: () => void } }
     >(`[data-testid="${inputTestId}"]`);
-    input?.__zcodeLexicalInputE2E?.focus();
+    input?.__raspberrycodeLexicalInputE2E?.focus();
   }, TID_V4_COMPOSER_INPUT);
 }
 
@@ -98,7 +98,7 @@ describe("PLG plugin 引用：@ 面板 plugins 分组与 plugin_reference remind
   });
 
   it("@ 面板展示 plugins 分组候选，选中后插入 canonical plugin:// markdown", async () => {
-    await setInputValueByTestIdDom(TID_V4_COMPOSER_INPUT, "@zcode-guide", {
+    await setInputValueByTestIdDom(TID_V4_COMPOSER_INPUT, "@raspberrycode-guide", {
       timeout: 15000,
       timeoutMsg: "v4 composer 输入框没有出现或不可输入",
     });
@@ -129,7 +129,7 @@ describe("PLG plugin 引用：@ 面板 plugins 分组与 plugin_reference remind
     expect(await readPluginMentionPresentation(STORE_TRY_PLUGIN_STABLE_ID)).toEqual({
       found: true,
       iconSrc: STORE_TRY_PLUGIN_ICON,
-      label: "zcode-guide",
+      label: "raspberrycode-guide",
     });
     await captureEvidence("02-composer-plugin-chip");
 
@@ -258,7 +258,7 @@ describe("PLG plugin 引用：@ 面板 plugins 分组与 plugin_reference remind
     expect(serialized).toContain(PLUGIN_STABLE_ID);
     expect((serialized.match(/<plugin_reference>/g) ?? []).length).toBe(1);
     // identifiers-only：禁injected 字段（路径、插件环境变量、rootPath 字段名）不得进入 provider 输入。
-    expect(serialized).not.toContain("ZCODE_PLUGIN_ROOT");
+    expect(serialized).not.toContain("RASPBERRYCODE_PLUGIN_ROOT");
     expect(serialized).not.toContain('"rootPath"');
 
     // reminder 是 model-only：用户可见时间线不得渲染 plugin_reference 标签。

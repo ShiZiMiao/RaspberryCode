@@ -6,7 +6,7 @@
 import { createElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+import { RaspberryCodeIntlProvider } from "@/i18n/IntlProvider.js";
 
 // CodeBlock 依赖 shiki / CodeViewer 根 provider，静态渲染跑不动；照 submit-result / escalation
 // 的先例替换为桩，好让 json result 分支可断言。
@@ -29,7 +29,7 @@ function render(
 ): string {
   return renderToStaticMarkup(
     createElement(
-      ZCodeIntlProvider,
+      RaspberryCodeIntlProvider,
       { initialLocale: locale },
       createElement(WorkflowNotificationToolRow, {
         runName: "flaky-test-triage",
@@ -78,11 +78,11 @@ describe("WorkflowNotificationToolRow — terminal", () => {
         status: "stopped",
         stopReason: "provider",
         summary: "s",
-        error: "Sign-in to BigModel expired.",
+        error: "Sign-in expired.",
       },
       forceOpen: true,
     });
-    expect(html).toContain("Sign-in to BigModel expired.");
+    expect(html).toContain("Sign-in expired.");
     expect(html).toContain("border-destructive/40");
   });
 

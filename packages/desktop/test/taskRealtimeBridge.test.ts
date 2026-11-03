@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events";
 import { describe, expect, it, vi } from "vitest";
-import { HostMessageTypes } from "@zcode/shared";
+import { HostMessageTypes } from "@raspberrycode/shared";
 import {
   createTaskRealtimeBridge,
   createTaskRealtimeBridgeForHostInit,
@@ -138,7 +138,7 @@ describe("taskRealtimeBridge", () => {
         {
           type: HostMessageTypes.InitLocal,
           hostId: "host-b",
-          zcodeBuiltinProviderConfigFilePath: "/repo/config/provider/zcode-builtin.json",
+          raspberrycodeBuiltinProviderConfigFilePath: "/repo/config/provider/raspberrycode-builtin.json",
         },
         parentPort,
       )?.hostId,
@@ -152,7 +152,7 @@ describe("taskRealtimeBridge", () => {
         type: HostMessageTypes.InitLocal,
         hostId: "host-relay",
         deliveryKind: "relay_bridge",
-        zcodeBuiltinProviderConfigFilePath: "/repo/config/provider/zcode-builtin.json",
+        raspberrycodeBuiltinProviderConfigFilePath: "/repo/config/provider/raspberrycode-builtin.json",
       },
       parentPort,
     );

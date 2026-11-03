@@ -1,11 +1,11 @@
 import {
   type ModelConnectivityResult,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import {
   getProviderFormApiKeyManagementUrl,
   type ProviderSettingsFormProvider,
 } from "@/lib/providerSettingsFormTypes.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import type { ModelProviderNavItem } from "./constants.js";
 import { InlineEditableProviderCard } from "./InlineEditableProviderCard.js";
 import {
@@ -13,8 +13,8 @@ import {
   PresetProviderPlaceholderCard,
 } from "./StatusCards.js";
 import { useProviderSettingsView } from "@/hooks/useProviderSettingsView.js";
-import type { ProviderSettingsView } from "@zcode/services";
-import type { SavePersonalModelDraftInput } from "@zcode/provider";
+import type { ProviderSettingsView } from "@raspberrycode/services";
+import type { SavePersonalModelDraftInput } from "@raspberrycode/provider";
 
 export function ModelProviderSectionDetail({
   selectedNavItem,
@@ -52,7 +52,7 @@ export function ModelProviderSectionDetail({
   onOpenApiKeyUrl: (url: string) => void;
   providerSettingsView?: ProviderSettingsView | null;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   const loadingLabel = intl.formatMessage({ id: "common.loading" });
   const rootProviderSettingsRead = useProviderSettingsView();
   const rootProviderSettingsView =

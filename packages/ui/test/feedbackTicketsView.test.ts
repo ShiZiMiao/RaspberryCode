@@ -2,10 +2,10 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-import type { IFeedbackService } from "@zcode/services";
-import type { FeedbackTicketSummary } from "@zcode/shared";
+import type { IFeedbackService } from "@raspberrycode/services";
+import type { FeedbackTicketSummary } from "@raspberrycode/shared";
 import { FeedbackTicketList, TicketsView } from "@/feedback/TicketsView.js";
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+import { RaspberryCodeIntlProvider } from "@/i18n/IntlProvider.js";
 
 function createFeedbackService(): IFeedbackService {
   return {
@@ -28,7 +28,7 @@ function createFeedbackService(): IFeedbackService {
 function renderTicketsView(locale: "zh-CN" | "en-US") {
   return renderToStaticMarkup(
     createElement(
-      ZCodeIntlProvider,
+      RaspberryCodeIntlProvider,
       { initialLocale: locale },
       createElement(TicketsView, {
         feedbackService: createFeedbackService(),
@@ -58,7 +58,7 @@ describe("TicketsView", () => {
     };
     const html = renderToStaticMarkup(
       createElement(
-        ZCodeIntlProvider,
+        RaspberryCodeIntlProvider,
         { initialLocale: "en-US" },
         createElement(FeedbackTicketList, {
           items: [ticket],

@@ -13,7 +13,7 @@ describe("ensureAppCaCert", () => {
   });
 
   it("generates a self-signed CA certificate and private key on first run", () => {
-    setDataBaseDir(mkdtempSync(join(tmpdir(), "zcode-ca-")));
+    setDataBaseDir(mkdtempSync(join(tmpdir(), "raspberrycode-ca-")));
     const certPath = ensureAppCaCert();
     const { keyPath } = getAppCaCertPaths();
 
@@ -32,7 +32,7 @@ describe("ensureAppCaCert", () => {
   });
 
   it("is idempotent: reuses the existing certificate", () => {
-    setDataBaseDir(mkdtempSync(join(tmpdir(), "zcode-ca-")));
+    setDataBaseDir(mkdtempSync(join(tmpdir(), "raspberrycode-ca-")));
     const certPath = ensureAppCaCert();
     const firstPem = readFileSync(certPath, "utf8");
     const secondPath = ensureAppCaCert();

@@ -1,5 +1,5 @@
-import { IGenUiService } from "@zcode/services";
-import { ProxyChannel, type IChannelClient } from "@zcode/rpc";
+import { IGenUiService } from "@raspberrycode/services";
+import { ProxyChannel, type IChannelClient } from "@raspberrycode/rpc";
 import {
   IFileService,
   IMediaPreviewService,
@@ -11,9 +11,9 @@ import {
   IOnboardingRecordService,
   ICredentialService,
   IBroadcastService,
-  IZCodeTaskService,
-  IZCodeAgentService,
-  IZCodeSessionService,
+  IRaspberryCodeTaskService,
+  IRaspberryCodeAgentService,
+  IRaspberryCodeSessionService,
   IProjectService,
   ITaskGroupService,
   IRemoteProjectService,
@@ -53,7 +53,7 @@ import {
   IWindowProjectChangesService,
   type WindowProjectDirectoryServices,
   type IServiceAccessor,
-} from "@zcode/services";
+} from "@raspberrycode/services";
 
 /**
  * RemoteServiceAccess — 通过 ChannelClient 自动创建类型安全的服务代理
@@ -72,10 +72,10 @@ export class RemoteServiceAccess implements IServiceAccessor {
   readonly onboardingRecordService: IOnboardingRecordService;
   readonly credentialService: ICredentialService;
   readonly broadcastService: IBroadcastService;
-  readonly zcodeTaskService: IZCodeTaskService;
+  readonly raspberrycodeTaskService: IRaspberryCodeTaskService;
   readonly windowControllerService: IWindowControllerService;
-  readonly zcodeAgentService: IZCodeAgentService;
-  readonly zcodeSessionService: IZCodeSessionService;
+  readonly raspberrycodeAgentService: IRaspberryCodeAgentService;
+  readonly raspberrycodeSessionService: IRaspberryCodeSessionService;
   readonly taskGroupService: ITaskGroupService;
   readonly projectService: IProjectService;
   readonly remoteProjectService: IRemoteProjectService;
@@ -165,14 +165,14 @@ export class RemoteServiceAccess implements IServiceAccessor {
     this.broadcastService = ProxyChannel.toService<IBroadcastService>(
       channelClient.getChannel(IBroadcastService.channelName),
     );
-    this.zcodeTaskService = ProxyChannel.toService<IZCodeTaskService>(
-      channelClient.getChannel(IZCodeTaskService.channelName),
+    this.raspberrycodeTaskService = ProxyChannel.toService<IRaspberryCodeTaskService>(
+      channelClient.getChannel(IRaspberryCodeTaskService.channelName),
     );
     this.windowControllerService = ProxyChannel.toService<IWindowControllerService>(
       channelClient.getChannel(IWindowControllerService.channelName),
     );
-    this.zcodeAgentService = ProxyChannel.toService<IZCodeAgentService>(
-      channelClient.getChannel(IZCodeAgentService.channelName),
+    this.raspberrycodeAgentService = ProxyChannel.toService<IRaspberryCodeAgentService>(
+      channelClient.getChannel(IRaspberryCodeAgentService.channelName),
     );
     this.remoteProjectService = ProxyChannel.toService<IRemoteProjectService>(
       channelClient.getChannel(IRemoteProjectService.channelName),
@@ -183,8 +183,8 @@ export class RemoteServiceAccess implements IServiceAccessor {
     this.projectService = ProxyChannel.toService<IProjectService>(
       channelClient.getChannel(IProjectService.channelName),
     );
-    this.zcodeSessionService = ProxyChannel.toService<IZCodeSessionService>(
-      channelClient.getChannel(IZCodeSessionService.channelName),
+    this.raspberrycodeSessionService = ProxyChannel.toService<IRaspberryCodeSessionService>(
+      channelClient.getChannel(IRaspberryCodeSessionService.channelName),
     );
     this.cuaPermissionService = ProxyChannel.toService<ICuaPermissionService>(
       channelClient.getChannel(ICuaPermissionService.channelName),

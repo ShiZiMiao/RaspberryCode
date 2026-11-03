@@ -5,7 +5,7 @@ import {
   resolveTelemetryProviderScope,
   resolveTelemetryModelId,
   sanitizeTelemetryModelValue,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 
 describe("redactTelemetryText", () => {
   it("把 POSIX 绝对路径归一为占位符，不保留用户名", () => {
@@ -19,14 +19,14 @@ describe("redactTelemetryText", () => {
 
   it("覆盖 /home、/root 与 macOS 临时目录", () => {
     const redacted = redactTelemetryText(
-      "read /home/bob/.zcode failed; tmp /var/folders/xy/zz/T/zcode-123 missing",
+      "read /home/bob/.raspberrycode failed; tmp /var/folders/xy/zz/T/raspberrycode-123 missing",
     );
     expect(redacted).not.toContain("bob");
     expect(redacted).not.toContain("/var/folders");
   });
 
   it("把 Windows 盘符路径归一为占位符", () => {
-    const redacted = redactTelemetryText(String.raw`EPERM C:\Users\carol\AppData\zcode\db.sqlite`);
+    const redacted = redactTelemetryText(String.raw`EPERM C:\Users\carol\AppData\raspberrycode\db.sqlite`);
     expect(redacted).not.toContain("carol");
     expect(redacted).toContain("{path}");
   });
@@ -83,8 +83,8 @@ describe("redactTelemetryText", () => {
 
 describe("redactTelemetryUrl", () => {
   it("丢弃 query 与 fragment", () => {
-    expect(redactTelemetryUrl("https://zcode.z.ai/api/v1/event/report?a=1&b=2#x")).toBe(
-      "https://zcode.z.ai/api/v1/event/report",
+    expect(redactTelemetryUrl("https://raspberrycode.example.com/api/v1/event/report?a=1&b=2#x")).toBe(
+      "https://raspberrycode.example.com/api/v1/event/report",
     );
   });
 

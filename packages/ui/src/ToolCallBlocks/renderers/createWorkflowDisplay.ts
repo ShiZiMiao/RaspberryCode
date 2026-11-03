@@ -1,7 +1,7 @@
 import {
   toolCallCreateWorkflowDisplaySchema,
   type ToolCallCreateWorkflowDisplay,
-} from "@zcode/shared/zcode-protocol-v4";
+} from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import { isPlainRecord } from "@/ToolCallBlocks/renderers/createWorkflowInput.js";
 
 /**

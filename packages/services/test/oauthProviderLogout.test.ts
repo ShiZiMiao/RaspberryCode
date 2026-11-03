@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { ZAI_PROVIDER_ID } from "@zcode/shared";
+import { ZAI_PROVIDER_ID } from "@raspberrycode/shared";
 import { createOAuthProviderLogoutHandler } from "../src/oauth/oauthProviderLogout.js";
 
 describe("oauthProviderLogout", () => {

@@ -6,9 +6,9 @@ import type {
   OAuthSessionState,
   OAuthStartResponse,
   UserInfo,
-} from "@zcode/shared";
-import { ServiceChannels } from "@zcode/shared";
-import type { Event } from "@zcode/rpc";
+} from "@raspberrycode/shared";
+import { ServiceChannels } from "@raspberrycode/shared";
+import type { Event } from "@raspberrycode/rpc";
 import { createServiceDescriptor } from "../descriptors.js";
 
 /**
@@ -42,7 +42,7 @@ export interface IOAuthService {
    */
   startOAuth(provider: OAuthProviderId): Promise<OAuthStartResponse>;
 
-  /** 使用后端短期 flow 发起 OAuth；当前仅 Z.AI 支持，其他 provider 保持原流程。 */
+  /** 使用后端短期 flow 发起 OAuth；仅后端声明支持该流程的 provider 可用（wire 能力差异），其他 provider 保持原流程。 */
   startOAuthWithPolling(provider: OAuthProviderId): Promise<OAuthStartResponse>;
 
   /** 查询当前后端 OAuth flow；未到查询时间、仍 pending 或没有 flow 时返回 null。 */

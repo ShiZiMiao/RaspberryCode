@@ -6,14 +6,14 @@ import {
   TID_V4_SPLIT_CLOSE,
   TID_V4_SPLIT_DOWN,
   TID_V4_SPLIT_OPEN,
-} from "@zcode/shared/test-ids";
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+} from "@raspberrycode/shared/test-ids";
+import { RaspberryCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import { ConversationHeader } from "@/v4/ConversationHeader.js";
 
 function renderHeader(overrides: Record<string, unknown> = {}): string {
   return renderToStaticMarkup(
     createElement(
-      ZCodeIntlProvider,
+      RaspberryCodeIntlProvider,
       { initialLocale: "zh-CN" },
       createElement(ConversationHeader, {
         title: "这是个啥项目",

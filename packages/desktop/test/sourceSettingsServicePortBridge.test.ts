@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { InternalChannels } from "@zcode/shared";
-import { getSourceSettingsServices } from "@zcode/ui";
+import { InternalChannels } from "@raspberrycode/shared";
+import { getSourceSettingsServices } from "@raspberrycode/ui";
 import { describe, expect, it, vi } from "vitest";
 import { handleSourceSettingsServicePortMessage } from "../src/renderer/src/sourceSettingsServicePortBridge.js";
 

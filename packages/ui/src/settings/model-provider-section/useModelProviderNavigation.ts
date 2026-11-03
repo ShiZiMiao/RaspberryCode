@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 import type { ProviderSettingsFormProvider } from "@/lib/providerSettingsFormTypes.js";
 import { getProviderFormLabel } from "@/lib/providerSettingsFormTypes.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import type { ModelProviderNavGroup } from "@/settings/model-provider-section/constants.js";
 import { createCustomProviderNodeKey } from "@/settings/model-provider-section/utils.js";
 import {
@@ -15,7 +15,7 @@ interface UseModelProviderNavigationOptions {
   displayOrder?: ProviderOrderView;
   selectedNodeKey: string | null;
   setSelectedNodeKey: (key: string | null) => void;
-  intl: ReturnType<typeof useZCodeIntl>["intl"];
+  intl: ReturnType<typeof useRaspberryCodeIntl>["intl"];
 }
 
 export function useModelProviderNavigation({

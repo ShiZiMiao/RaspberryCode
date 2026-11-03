@@ -11,7 +11,7 @@ test(
   { timeout: 120_000 },
   async () => {
     const connection = await chromium.connectOverCDP(
-      process.env.ZCODE_E2E_CDP_URL ?? "http://localhost:9229",
+      process.env.RASPBERRYCODE_E2E_CDP_URL ?? "http://localhost:9229",
     );
     const page = connection
       .contexts()[0]

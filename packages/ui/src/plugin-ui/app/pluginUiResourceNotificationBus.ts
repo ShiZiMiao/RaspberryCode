@@ -1,5 +1,5 @@
-import type { McpAppInstance } from "@zcode/shared/mcp-apps";
-import type { PluginUiInstanceDelta } from "@zcode/shared/zcode-protocol-v4";
+import type { McpAppInstance } from "@raspberrycode/shared/mcp-apps";
+import type { PluginUiInstanceDelta } from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import type { PluginUiResourceNotificationTarget } from "../contract.js";
 import { buildPluginUiSessionKey } from "../contract.js";
 import type { PluginUiHostControllerDeps, PluginUiHostScope } from "./pluginUiHostController.js";

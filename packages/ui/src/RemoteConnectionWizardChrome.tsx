@@ -1,10 +1,10 @@
 import { CheckIcon, MinusIcon, XIcon } from "lucide-react";
-import type { RemoteTarget } from "@zcode/shared";
-import { TID_REMOTE_NEW_CONNECTION_PREVIEW } from "@zcode/shared/test-ids";
+import type { RemoteTarget } from "@raspberrycode/shared";
+import { TID_REMOTE_NEW_CONNECTION_PREVIEW } from "@raspberrycode/shared/test-ids";
 import { cn } from "@/components/lib/utils.js";
 import { DialogDescription, DialogTitle } from "@/components/ui/dialog.js";
 import { Button } from "@/components/ui/button.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { RemoteConnectionKindTag } from "@/remote-connection/RemoteConnectionTags.js";
 
 export type RemoteWizardStep = "device" | "settings" | "connecting" | "directory";
@@ -26,7 +26,7 @@ export function RemoteConnectionWizardSidebar({
   currentStep: RemoteWizardStep;
   deviceManagement?: boolean;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   if (deviceManagement) return null;
   const currentIndex = currentStep === "directory" ? 2 : currentStep === "connecting" ? 1 : 0;
   return (
@@ -63,7 +63,7 @@ export function RemoteConnectionWizardSidebar({
 }
 
 function SettingsPreviewText({ preview }: { preview: RemoteSettingsPreview }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   const placeholder =
     preview.kind === "ssh"
       ? "user@host:22"
@@ -107,7 +107,7 @@ export function RemoteConnectionWizardHeader({
   hideHeading?: boolean;
   deviceManagement?: boolean;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   const controls = (
     <div className="flex shrink-0 items-center gap-1">
       {onMinimize ? (

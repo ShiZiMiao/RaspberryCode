@@ -1,5 +1,5 @@
 import { createSourceServerMigrationCounts } from "./sourceServerMigrationCounts.js";
-import { Emitter, type Event } from "@zcode/rpc";
+import { Emitter, type Event } from "@raspberrycode/rpc";
 import {
   sourceServerManagementSnapshotSchema,
   sourceServerUpdateRequestSchema,
@@ -19,14 +19,14 @@ import {
   type SourceServerManagementSnapshot,
   type SourceServerManagementStateDelta,
   type SourceServerOperationLog,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import type { SourceServerDirectorySnapshot } from "./sourceServerDirectory.js";
 import type {
   ManagedSourceServerConnection,
   SourceServerConnectionManagerOptions,
   ConnectSourceServerOptions,
 } from "./sourceServerConnectionManager.js";
-import type { ISourceServerManagementService, UpdateConnectionProfileInput } from "@zcode/services";
+import type { ISourceServerManagementService, UpdateConnectionProfileInput } from "@raspberrycode/services";
 
 interface SourceServerManagementDirectory {
   readonly onDidChange?: Event<void>;

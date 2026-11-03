@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { Emitter } from "@zcode/rpc";
-import type { IModelSelectionService, ModelSelectionView } from "@zcode/services";
+import { Emitter } from "@raspberrycode/rpc";
+import type { IModelSelectionService, ModelSelectionView } from "@raspberrycode/services";
 import { describe, expect, it, vi } from "vitest";
 import { useDraftModelReadinessGate } from "@/v4/composer/useDraftModelReadinessGate.js";
 

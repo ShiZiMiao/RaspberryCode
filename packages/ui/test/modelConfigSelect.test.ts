@@ -2,10 +2,10 @@
 import { createElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { cleanup, render, screen } from "@testing-library/react";
-import type { Locale } from "@zcode/shared";
+import type { Locale } from "@raspberrycode/shared";
 import { afterEach, describe, expect, it } from "vitest";
 import { TooltipProvider } from "@/components/ui/tooltip.js";
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+import { RaspberryCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import {
   isModelSelectGroupSelected,
   ModelConfigSelect,
@@ -32,7 +32,7 @@ function createGroup(key: string): ModelSelectGroup {
 function renderWithTooltipProvider(element: ReactElement, locale: Locale = "zh-CN") {
   return renderToStaticMarkup(
     createElement(
-      ZCodeIntlProvider,
+      RaspberryCodeIntlProvider,
       { initialLocale: locale },
       createElement(TooltipProvider, null, element),
     ),
@@ -42,7 +42,7 @@ function renderWithTooltipProvider(element: ReactElement, locale: Locale = "zh-C
 function renderInteractive(element: ReactElement, locale: Locale) {
   return render(
     createElement(
-      ZCodeIntlProvider,
+      RaspberryCodeIntlProvider,
       { initialLocale: locale },
       createElement(TooltipProvider, null, element),
     ),

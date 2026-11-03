@@ -16,32 +16,32 @@ import {
   ChannelClient,
   LoggingChannelServer,
   type ISocket,
-} from "@zcode/rpc";
-import type { TopicResourcePeers } from "@zcode/services/node";
-import { TOPIC_RESOURCE_RELAY_CHANNEL } from "@zcode/shared";
+} from "@raspberrycode/rpc";
+import type { TopicResourcePeers } from "@raspberrycode/services/node";
+import { TOPIC_RESOURCE_RELAY_CHANNEL } from "@raspberrycode/shared";
 import {
   ServiceCollection,
-  IZCodeAgentService,
-  createZCodeAgentConnectionScope,
+  IRaspberryCodeAgentService,
+  createRaspberryCodeAgentConnectionScope,
   IBotsService,
   IProviderProvisioningTargetService,
-} from "@zcode/services";
+} from "@raspberrycode/services";
 import {
   botProviders,
   formatLogPrefix,
   serverRemoteInfoOutputSchema,
   SERVER_REMOTE_PROTOCOL_VERSION,
-  ZCODE_RPC_HOST_CAPABILITY_HEADER,
-  ZCODE_COMPATIBILITY_MANIFEST,
-  ZCODE_VERSION,
+  RASPBERRYCODE_RPC_HOST_CAPABILITY_HEADER,
+  RASPBERRYCODE_COMPATIBILITY_MANIFEST,
+  RASPBERRYCODE_VERSION,
   type BotProvider,
   type ServerRemoteInfo,
   type ServerRemoteWorkspaceInfo,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import {
   SourceServerWorkspaceIdentityChannelServer,
   type SourceServerWorkspaceIdentityMapper,
-} from "@zcode/services/node";
+} from "@raspberrycode/services/node";
 import { createHostCapabilityStore } from "./hostCapability.js";
 
 function wrapWebSocket(ws: WebSocket): ISocket {
@@ -84,7 +84,7 @@ function wrapWebSocket(ws: WebSocket): ISocket {
 }
 
 const log = (...args: unknown[]) =>
-  console.log(formatLogPrefix("zcode-server:http", process.pid), ...args);
+  console.log(formatLogPrefix("raspberrycode-server:http", process.pid), ...args);
 
 function setupChannelServer(
   ws: WebSocket,
@@ -101,14 +101,14 @@ function setupChannelServer(
   const server = workspaceIdentityMapper
     ? new SourceServerWorkspaceIdentityChannelServer(loggedServer, workspaceIdentityMapper)
     : loggedServer;
-  const agentService = services.getOptional(IZCodeAgentService);
+  const agentService = services.getOptional(IRaspberryCodeAgentService);
   const reverseClient =
     clientMode === "desktop-continuous" && resourcePeers ? new ChannelClient(protocol) : undefined;
   const peer = reverseClient
     ? resourcePeers?.attach(reverseClient.getChannel(TOPIC_RESOURCE_RELAY_CHANNEL))
     : undefined;
   const connectionScope = agentService
-    ? createZCodeAgentConnectionScope(peer ? peer.wrapAgent(agentService) : agentService, {
+    ? createRaspberryCodeAgentConnectionScope(peer ? peer.wrapAgent(agentService) : agentService, {
         connectionId: `server-ws-${randomUUID()}`,
         clientMode,
         role: clientMode === "desktop-continuous" ? "trusted-host-relay" : "terminal-client",
@@ -116,7 +116,7 @@ function setupChannelServer(
     : undefined;
   const overrides = new Map<string, unknown>();
   if (connectionScope) {
-    overrides.set(IZCodeAgentService.channelName, connectionScope.service);
+    overrides.set(IRaspberryCodeAgentService.channelName, connectionScope.service);
   }
   // Provisioning 携带跨 Environment 凭据，只允许 Desktop trusted host 使用；普通 Web
   // remote/replayable 客户端即使知道频道名，也不能获得 target 写入接口。
@@ -161,7 +161,7 @@ function readTrimmedEnv(name: string): string | undefined {
 
 export function resolveHttpServerId(options: HttpServerOptions = {}): string {
   return (
-    options.serverId?.trim() || readTrimmedEnv("ZCODE_SERVER_ID") || hostname() || "zcode-server"
+    options.serverId?.trim() || readTrimmedEnv("RASPBERRYCODE_SERVER_ID") || hostname() || "raspberrycode-server"
   );
 }
 
@@ -169,7 +169,7 @@ function resolveServerWorkspaces(options: HttpServerOptions): ServerRemoteWorksp
   if (options.workspaces) {
     return options.workspaces;
   }
-  const workspacePath = readTrimmedEnv("ZCODE_SERVER_WORKSPACE") || process.cwd();
+  const workspacePath = readTrimmedEnv("RASPBERRYCODE_SERVER_WORKSPACE") || process.cwd();
   return [
     {
       path: workspacePath,
@@ -181,14 +181,14 @@ function resolveServerWorkspaces(options: HttpServerOptions): ServerRemoteWorksp
 function createServerInfo(options: HttpServerOptions): ServerRemoteInfo {
   return serverRemoteInfoOutputSchema.parse({
     serverId: resolveHttpServerId(options),
-    ...(options.name?.trim() || readTrimmedEnv("ZCODE_SERVER_NAME")
-      ? { name: options.name?.trim() || readTrimmedEnv("ZCODE_SERVER_NAME") }
+    ...(options.name?.trim() || readTrimmedEnv("RASPBERRYCODE_SERVER_NAME")
+      ? { name: options.name?.trim() || readTrimmedEnv("RASPBERRYCODE_SERVER_NAME") }
       : {}),
-    version: ZCODE_VERSION,
+    version: RASPBERRYCODE_VERSION,
     protocolVersion: SERVER_REMOTE_PROTOCOL_VERSION,
-    authRequired: options.authRequired ?? Boolean(readTrimmedEnv("ZCODE_SERVER_TOKEN")),
+    authRequired: options.authRequired ?? Boolean(readTrimmedEnv("RASPBERRYCODE_SERVER_TOKEN")),
     workspaces: resolveServerWorkspaces(options),
-    compatibility: ZCODE_COMPATIBILITY_MANIFEST,
+    compatibility: RASPBERRYCODE_COMPATIBILITY_MANIFEST,
     migration: { failedPathCount: options.migrationFailedPathCount ?? 0 },
     identity: { osUser: userInfo().username, hostname: hostname() },
     capabilities: {
@@ -200,7 +200,7 @@ function createServerInfo(options: HttpServerOptions): ServerRemoteInfo {
   });
 }
 
-const zcodeLiteTokenCookieName = "zcode_lite_token";
+const raspberrycodeLiteTokenCookieName = "raspberrycode_lite_token";
 
 const staticMimeTypes: Record<string, string> = {
   ".css": "text/css; charset=utf-8",
@@ -252,11 +252,11 @@ function hasValidLiteToken(c: Context, token: string): boolean {
   if (url.searchParams.get("token") === token) {
     c.header(
       "Set-Cookie",
-      `${zcodeLiteTokenCookieName}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax`,
+      `${raspberrycodeLiteTokenCookieName}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax`,
     );
     return true;
   }
-  return parseCookieHeader(c.req.header("cookie")).get(zcodeLiteTokenCookieName) === token;
+  return parseCookieHeader(c.req.header("cookie")).get(raspberrycodeLiteTokenCookieName) === token;
 }
 
 function isTokenProtectedPath(pathname: string): boolean {
@@ -392,7 +392,7 @@ export function createHttpServer(
     },
   }));
   app.use("/ws/host", async (c, next) => {
-    const capability = c.req.header(ZCODE_RPC_HOST_CAPABILITY_HEADER);
+    const capability = c.req.header(RASPBERRYCODE_RPC_HOST_CAPABILITY_HEADER);
     if (!hostCapabilities.consume(capability)) {
       return c.json({ error: "Invalid or expired host capability" }, 401);
     }
@@ -421,7 +421,7 @@ export function createHttpServer(
         rawBody = { payload: rawBodyText };
       }
     }
-    const webhookSecret = c.req.header("x-zcode-bot-secret");
+    const webhookSecret = c.req.header("x-raspberrycode-bot-secret");
     const botId = c.req.param("botId");
     const result = await botsService.handleProviderCallbackResponse(provider, {
       ...(typeof rawBody === "object" && rawBody !== null ? rawBody : { payload: rawBody }),

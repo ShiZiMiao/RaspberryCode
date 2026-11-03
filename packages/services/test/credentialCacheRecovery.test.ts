@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { atomicWritePrivateTextFile, withFileLock } from "@zcode/shared/node";
+import { atomicWritePrivateTextFile, withFileLock } from "@raspberrycode/shared/node";
 import { createCredentialService } from "#src/credential/credentialService.js";
 import { setDataBaseDir } from "#src/paths.js";
 
@@ -19,9 +19,9 @@ const deferred = () => {
 };
 
 beforeEach(async () => {
-  root = await mkdtemp(join(tmpdir(), "zcode-cache-recovery-"));
+  root = await mkdtemp(join(tmpdir(), "raspberrycode-cache-recovery-"));
   setDataBaseDir(root);
-  file = join(root, ".zcode", "v2", "credentials.json");
+  file = join(root, ".raspberrycode", "v2", "credentials.json");
 });
 afterEach(async () => {
   setDataBaseDir(null);

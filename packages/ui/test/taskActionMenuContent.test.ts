@@ -87,7 +87,7 @@ describe("TaskActionMenuContent", () => {
     const { itemStates } = renderMenu({
       taskNativeSessionLogFile: {
         loading: false,
-        path: "/tmp/task/zcode-log.jsonl",
+        path: "/tmp/task/raspberrycode-log.jsonl",
         exists: false,
       },
     });

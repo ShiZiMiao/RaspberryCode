@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BUILTIN_MODEL_PROVIDER_IDS, type UsageEntitlementSnapshot } from "@zcode/shared";
+import { BUILTIN_MODEL_PROVIDER_IDS, type UsageEntitlementSnapshot } from "@raspberrycode/shared";
 import {
   hasActiveCodingPlanSnapshot,
   resolveUsageEntitlementOutcome,
@@ -57,6 +57,6 @@ describe("所有入口使用订阅权益", () => {
         providerId: "provider",
         providerFingerprint: "account/project",
       }),
-    ).toBe("zcode:usage-entitlement:subscription-v2:provider:account/project");
+    ).toBe("raspberrycode:usage-entitlement:subscription-v2:provider:account/project");
   });
 });

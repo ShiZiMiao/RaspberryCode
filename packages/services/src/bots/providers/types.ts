@@ -6,7 +6,7 @@ import type {
   BotOutboundMessage,
   BotProviderCallbackResult,
   Locale,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 
 export interface BotTypingTarget {
   providerUserId: string;
@@ -60,8 +60,8 @@ export interface BotProviderAdapter {
   ): Promise<{ threadId: string; rootMessageId: string; topicTitle: string; topicUrl?: string }>;
   readTopicHistory?(
     bot: BotConfig,
-    request: import("@zcode/shared").BotTopicHistoryRequest,
-  ): Promise<import("@zcode/shared").BotTopicHistoryBatch>;
+    request: import("@raspberrycode/shared").BotTopicHistoryRequest,
+  ): Promise<import("@raspberrycode/shared").BotTopicHistoryBatch>;
   getGroupMemberNames?(bot: BotConfig, chatId: string): Promise<Record<string, string>>;
   getGroupInfo?(
     bot: BotConfig,

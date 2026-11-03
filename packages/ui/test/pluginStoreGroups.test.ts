@@ -2,14 +2,14 @@
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID } from "@zcode/shared";
+import { RASPBERRYCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID } from "@raspberrycode/shared";
 import type { PluginStoreActions } from "../src/settings/PluginStoreCard.js";
 import type { StorePluginItem } from "../src/settings/pluginStoreListing.js";
 
 const state = vi.hoisted(() => ({ locale: "zh-CN" }));
 vi.mock("@/hooks/useInterfaceMode.js", () => ({ useIsOfficeMode: () => false }));
 vi.mock("@/i18n/IntlProvider.js", () => ({
-  useZCodeIntl: () => ({
+  useRaspberryCodeIntl: () => ({
     locale: state.locale,
     intl: { formatMessage: ({ id }: { id: string }) => id },
   }),
@@ -32,7 +32,7 @@ describe.each(["zh-CN", "en-US"])("plugin groups in %s", (locale) => {
     "expands UI plugins inline in %s and preserves the group during search",
     async (segment) => {
       state.locale = locale;
-      const marketplace = segment === "personal" ? "custom" : ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID;
+      const marketplace = segment === "personal" ? "custom" : RASPBERRYCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID;
       const items: StorePluginItem[] = Array.from({ length: 9 }, (_, index) => {
         const name = index < 8 ? `panel-${index}` : "panel-regular";
         return {
@@ -100,9 +100,9 @@ describe.each(["zh-CN", "en-US"])("plugin groups in %s", (locale) => {
     "limits %s search to its publisher/source segment",
     async (segment) => {
       const items: StorePluginItem[] = ["public", "community", "personal"].map((source) => ({
-        id: `${source}@${source === "personal" ? "custom" : ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID}`,
+        id: `${source}@${source === "personal" ? "custom" : RASPBERRYCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID}`,
         name: source,
-        marketplace: source === "personal" ? "custom" : ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID,
+        marketplace: source === "personal" ? "custom" : RASPBERRYCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID,
         installed: false,
         restorable: false,
         orphaned: false,
@@ -138,7 +138,7 @@ describe.each(["zh-CN", "en-US"])("plugin groups in %s", (locale) => {
     "shows all %s cards by default and retains manual toggling",
     async (segment) => {
       state.locale = locale;
-      const marketplace = segment === "public" ? ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID : "my-market";
+      const marketplace = segment === "public" ? RASPBERRYCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID : "my-market";
       const items: StorePluginItem[] = Array.from({ length: 8 }, (_, index) => ({
         id: `item-${index}@${marketplace}`,
         name: `item-${index}`,

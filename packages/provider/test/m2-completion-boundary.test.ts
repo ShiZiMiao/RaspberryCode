@@ -11,29 +11,29 @@ const productionRoots = [
   "packages/ui/src",
   "packages/desktop/src",
   "packages/shared/src",
-  "apps/zcode-cli/packages/adapters/src",
-  "apps/zcode-cli/packages/bootstrap/src",
-  "apps/zcode-cli/packages/cli/src",
-  "apps/zcode-cli/packages/contracts/src",
-  "apps/zcode-cli/packages/core/src",
-  "apps/zcode-cli/packages/tui/src",
+  "apps/raspberrycode-cli/packages/adapters/src",
+  "apps/raspberrycode-cli/packages/bootstrap/src",
+  "apps/raspberrycode-cli/packages/cli/src",
+  "apps/raspberrycode-cli/packages/contracts/src",
+  "apps/raspberrycode-cli/packages/core/src",
+  "apps/raspberrycode-cli/packages/tui/src",
 ] as const;
 
 const legacyDtoOwners = new Set([
   "packages/services/src/model-provider/legacyModelProviderSerialized.ts",
-  "packages/services/src/model-provider/legacyZCodeConfigProviderReader.ts",
+  "packages/services/src/model-provider/legacyRaspberryCodeConfigProviderReader.ts",
   "packages/services/src/model-provider/legacyPersonalProviderConfigImporter.ts",
   "packages/services/src/model-provider/providerConfigRuntime.ts",
 ]);
 const legacyDtoTestOwners = new Set([
-  "packages/services/test/legacyZCodeConfigProviderReader.test.ts",
+  "packages/services/test/legacyRaspberryCodeConfigProviderReader.test.ts",
   "packages/services/test/legacyPersonalProviderConfigImporter.test.ts",
   "packages/services/test/providerConfigRuntime.test.ts",
   "packages/ui/test/providerSettingsFormBoundary.test.ts",
 ]);
 const legacyApiFormatOwners = new Set([
   "packages/services/src/model-provider/legacyModelProviderSerialized.ts",
-  "packages/services/src/model-provider/legacyZCodeConfigProviderReader.ts",
+  "packages/services/src/model-provider/legacyRaspberryCodeConfigProviderReader.ts",
 ]);
 const testRoots = [
   "packages/desktop/test",

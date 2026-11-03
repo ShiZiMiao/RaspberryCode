@@ -1,4 +1,4 @@
-import { resolveWorkspaceKey, type RemoteTarget, type WorkspacePurpose } from "@zcode/shared";
+import { resolveWorkspaceKey, type RemoteTarget, type WorkspacePurpose } from "@raspberrycode/shared";
 
 export interface AutomationWorkspaceOption {
   projectId?: string | null;

@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { DesktopCommandIds } from "@zcode/shared";
+import { DesktopCommandIds } from "@raspberrycode/shared";
 import {
   TID_WORKSPACE_HELP_MENU_RESOURCE_MANAGER,
   TID_WORKSPACE_HELP_MENU_TRIGGER,
-} from "@zcode/shared/test-ids";
+} from "@raspberrycode/shared/test-ids";
 import {
   ActivityIcon,
   CircleHelpIcon,
@@ -29,7 +29,7 @@ import { ControlHintTooltip } from "@/ControlHintTooltip.js";
 import { useFeedbackStore } from "@/feedback/feedbackStore.js";
 import { usePlatform } from "@/hooks/usePlatform.js";
 import { useVulnerabilityReportUrl } from "@/hooks/useVulnerabilityReportUrl.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { createHelpMenuActionHandlers } from "@/lib/helpMenuActions.js";
 
 export function WorkspaceHelpMenuButton({
@@ -43,7 +43,7 @@ export function WorkspaceHelpMenuButton({
    */
   isDesktop?: boolean;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   const platform = usePlatform();
   const [open, setOpen] = useState(false);
   const { url: vulnerabilityReportUrl, loading: vulnerabilityReportLoading } =

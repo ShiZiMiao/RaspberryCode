@@ -1,7 +1,7 @@
 import { SidebarNativeTooltip, ControlHintTooltip } from "@/ControlHintTooltip.js";
 import type {
-  ZCodeGroupedTaskViewNode,
-  ZCodeTaskGroupColor,
+  RaspberryCodeGroupedTaskViewNode,
+  RaspberryCodeTaskGroupColor,
 } from "@/project-sidebar/grouped/types.js";
 
 import { ChevronDownIcon, ChevronRightIcon, MessageCirclePlus } from "lucide-react";
@@ -25,8 +25,8 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.js";
-import { CRON_DEFAULT_GROUP_ID } from "@zcode/shared";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { CRON_DEFAULT_GROUP_ID } from "@raspberrycode/shared";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { getTaskGroupDisplayTitle } from "@/project-sidebar/grouped/group-title.js";
 import {
   TASK_GROUP_COLORS,
@@ -34,7 +34,7 @@ import {
   TaskGroupColorMark,
 } from "@/project-sidebar/grouped/shared.js";
 
-type StickyGroupNode = Extract<ZCodeGroupedTaskViewNode, { type: "group" }>;
+type StickyGroupNode = Extract<RaspberryCodeGroupedTaskViewNode, { type: "group" }>;
 
 export function StickyGroupHeader({
   node,
@@ -50,10 +50,10 @@ export function StickyGroupHeader({
   tooltipsDisabled?: boolean;
   onCreateTask: () => void;
   onToggleCollapsed: (groupId: string) => void;
-  onUpdateGroupColor: (groupId: string, color: ZCodeTaskGroupColor) => void;
+  onUpdateGroupColor: (groupId: string, color: RaspberryCodeTaskGroupColor) => void;
   onUngroupGroup: (groupId: string) => void;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   const taskCount = node.tasks.length;
   // 系统分组（cron）标题按语言环境本地化展示，与 GroupItem 保持一致。
   const displayTitle = getTaskGroupDisplayTitle(node.group, {
@@ -64,7 +64,7 @@ export function StickyGroupHeader({
   const isSystemGroup = node.group.id === CRON_DEFAULT_GROUP_ID;
   const handleToggle = () => onToggleCollapsed(node.group.id);
   const handleGroupColorChange = (color: string) => {
-    onUpdateGroupColor(node.group.id, color as ZCodeTaskGroupColor);
+    onUpdateGroupColor(node.group.id, color as RaspberryCodeTaskGroupColor);
   };
   const newTaskButton = (
     <Button

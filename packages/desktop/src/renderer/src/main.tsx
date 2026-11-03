@@ -7,7 +7,7 @@ import {
   AppErrorBoundary,
   Root,
   GlobalDatabaseStartupLoading,
-  ZCodeIntlProvider,
+  RaspberryCodeIntlProvider,
   registerBaseWorkspaceServices,
   registerRemoteWorkspaceSession,
   createRemoteWorkspaceDisconnectedError,
@@ -15,9 +15,10 @@ import {
   playTaskNotificationSound,
   setStreamClientId,
   setReactErrorArmsReporter,
-} from "@zcode/ui";
-import "@zcode/ui/styles.css";
-import { connectViaMessagePort, createMessagePortServiceConnection } from "@zcode/client";
+} from "@raspberrycode/ui";
+import "@raspberrycode/ui/styles.css";
+import { normalizeThemePreference } from "@raspberrycode/ui/useTheme";
+import { connectViaMessagePort, createMessagePortServiceConnection } from "@raspberrycode/client";
 import {
   InternalChannels,
   databaseStartupStateSchema,
@@ -27,9 +28,9 @@ import {
   LAUNCH_MARKS_QUERY_KEY,
   type LaunchMarks,
   DEFAULT_LOCALE,
-} from "@zcode/shared";
-import type { Locale } from "@zcode/shared";
-import type { IServiceAccessor } from "@zcode/services";
+} from "@raspberrycode/shared";
+import type { Locale } from "@raspberrycode/shared";
+import type { IServiceAccessor } from "@raspberrycode/services";
 import { syncAppTelemetryContext } from "../appTelemetryBridge.js";
 import { createDesktopPlatform } from "./desktopPlatform.js";
 import { startPerformanceTimelineCleanup } from "./performanceTimelineCleanup.js";
@@ -43,7 +44,7 @@ import {
 } from "./remoteWorkspaceServicePortBridge.js";
 
 type DesktopRendererImportMetaEnv = {
-  VITE_ZCODE_E2E_STORE_BRIDGE?: string;
+  VITE_RASPBERRYCODE_E2E_STORE_BRIDGE?: string;
 };
 
 startPerformanceTimelineCleanup();
@@ -55,35 +56,37 @@ const launchMarks: LaunchMarks | null = parseLaunchMarks(
 );
 (
   window as Window & {
-    __ZCODE_RENDERER_START__?: number;
-    __ZCODE_LAUNCH_MARKS__?: LaunchMarks | null;
+    __RASPBERRYCODE_RENDERER_START__?: number;
+    __RASPBERRYCODE_LAUNCH_MARKS__?: LaunchMarks | null;
   }
-).__ZCODE_RENDERER_START__ = rendererStartedAt;
-(window as Window & { __ZCODE_LAUNCH_MARKS__?: LaunchMarks | null }).__ZCODE_LAUNCH_MARKS__ =
+).__RASPBERRYCODE_RENDERER_START__ = rendererStartedAt;
+(window as Window & { __RASPBERRYCODE_LAUNCH_MARKS__?: LaunchMarks | null }).__RASPBERRYCODE_LAUNCH_MARKS__ =
   launchMarks;
 registerE2EStoreBridgesIfEnabled();
 
 function registerE2EStoreBridgesIfEnabled() {
   const env = ((import.meta as ImportMeta & { env?: DesktopRendererImportMetaEnv }).env ??
     {}) as DesktopRendererImportMetaEnv;
-  if (env.VITE_ZCODE_E2E_STORE_BRIDGE !== "1") {
+  if (env.VITE_RASPBERRYCODE_E2E_STORE_BRIDGE !== "1") {
     return;
   }
 
-  void import("@zcode/ui/e2e-store-bridge").then(({ registerE2EStoreBridges }) => {
+  void import("@raspberrycode/ui/e2e-store-bridge").then(({ registerE2EStoreBridges }) => {
     registerE2EStoreBridges();
   });
 }
 
-// 初始化主题：默认 Zai dark，后续由 useTheme hook 接管
+// 初始化主题：默认深色，后续由 useTheme hook 接管
 {
-  const saved = localStorage.getItem("zcode-theme") || "dark";
+  // 旧值归一复用 useTheme 的 normalizeThemePreference（含 zai-* 旧代号读兼容），
+  // 保证初始化分支与 hook/store 使用同一套迁移规则，避免旧值用户首帧错亮主题。
+  const saved = normalizeThemePreference(localStorage.getItem("raspberrycode-theme") || "dark");
   const resolved =
     saved === "system"
       ? window.matchMedia("(prefers-color-scheme: dark)").matches
         ? "dark"
         : "light"
-      : saved === "dark" || saved === "dark"
+      : saved === "dark"
         ? "dark"
         : "light";
   const appliedTheme =
@@ -116,9 +119,9 @@ document.documentElement.classList.toggle("platform-linux-desktop", isLinuxDeskt
 const isLocalDevelopmentRuntime =
   (
     globalThis as typeof globalThis & {
-      __ZCODE_LOCAL_DEVELOPMENT_RUNTIME__?: boolean;
+      __RASPBERRYCODE_LOCAL_DEVELOPMENT_RUNTIME__?: boolean;
     }
-  ).__ZCODE_LOCAL_DEVELOPMENT_RUNTIME__ === true;
+  ).__RASPBERRYCODE_LOCAL_DEVELOPMENT_RUNTIME__ === true;
 
 function readBooleanFlag(name: string, defaultValue: boolean): boolean {
   const value = new URLSearchParams(window.location.search).get(name);
@@ -170,7 +173,7 @@ const sendStartupControl = (control: DatabaseStartupControl) =>
 function renderDatabaseStartup(): void {
   appRoot?.render(
     <AppErrorBoundary isDesktop isMacDesktop={isMacDesktop} isWindowsDesktop={isWindowsDesktop}>
-      <ZCodeIntlProvider
+      <RaspberryCodeIntlProvider
         initialLocale={initialLocaleFlag ? initialLocale : undefined}
         resolveSystemLocale={desktopPlatform.getSystemLocale}
       >
@@ -187,7 +190,7 @@ function renderDatabaseStartup(): void {
           onCopy={(details) => navigator.clipboard.writeText(details)}
           onExit={() => sendStartupControl({ action: "exit" })}
         />
-      </ZCodeIntlProvider>
+      </RaspberryCodeIntlProvider>
     </AppErrorBoundary>,
   );
 }
@@ -256,11 +259,11 @@ function flushPendingRemoteWorkspaceServicePorts(): void {
 function StartupReadyNotifier() {
   useEffect(() => {
     // T5:React 首次 commit。供启动分阶段耗时计算 react_commit 段。
-    (window as Window & { __ZCODE_REACT_COMMIT_AT__?: number }).__ZCODE_REACT_COMMIT_AT__ =
+    (window as Window & { __RASPBERRYCODE_REACT_COMMIT_AT__?: number }).__RASPBERRYCODE_REACT_COMMIT_AT__ =
       Date.now();
     // HTML 启动壳的弹出动画结束时，React 首屏可能还没 commit，直接移除壳会露出空白。
     // 这里在 React commit 后通知 index.html，再由启动壳统一判断动画和 React ready 两个条件后退场。
-    window.dispatchEvent(new Event("zcode-react-startup-ready"));
+    window.dispatchEvent(new Event("raspberrycode-react-startup-ready"));
   }, []);
 
   return null;
@@ -322,7 +325,7 @@ function initializeBusinessRoot(port: MessagePort): void {
 
   syncAppTelemetryContext({
     bridge: {
-      syncTelemetryContext: (context) => window.zcode.syncTelemetryContext(context),
+      syncTelemetryContext: (context) => window.raspberrycode.syncTelemetryContext(context),
     },
     createRendererContext: collectTelemetryRendererContext,
   });
@@ -337,7 +340,7 @@ function initializeBusinessRoot(port: MessagePort): void {
 
   appRoot?.render(
     <AppErrorBoundary isDesktop isMacDesktop={isMacDesktop} isWindowsDesktop={isWindowsDesktop}>
-      <ZCodeIntlProvider
+      <RaspberryCodeIntlProvider
         settingService={settingService}
         broadcastService={services.broadcastService}
         resolveSystemLocale={desktopPlatform.getSystemLocale}
@@ -358,7 +361,7 @@ function initializeBusinessRoot(port: MessagePort): void {
           }
           unavailableWorkspacePath={unavailableWorkspacePath}
         />
-      </ZCodeIntlProvider>
+      </RaspberryCodeIntlProvider>
     </AppErrorBoundary>,
   );
 }

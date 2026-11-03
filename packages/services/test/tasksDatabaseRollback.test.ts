@@ -11,7 +11,7 @@ import {
 } from "./fixtures/staging-backup-task-readers.mjs";
 
 it("DB109-01/09/10/13：各表内容保留，旧版读取新增/更新任务无需模型双写，再升级不补迁", async () => {
-  const root = await mkdtemp(join(tmpdir(), "zcode-db109-rollback-"));
+  const root = await mkdtemp(join(tmpdir(), "raspberrycode-db109-rollback-"));
   const path = join(root, "tasks.sqlite");
   const automation = new AutomationRepo(path);
   const db = new DatabaseSync(path);
@@ -25,7 +25,7 @@ it("DB109-01/09/10/13：各表内容保留，旧版读取新增/更新任务无�
       INSERT INTO task_group_view_node_orders VALUES('task','session',1,1,2);
       INSERT INTO task_group_workspace_bootstraps VALUES('ssh:a:/same','group',1,2);
       INSERT INTO automations(automation_id,cron_expr,prompt,workspace_key,workspace_path,created_at,updated_at,model,provider,thought_level)
-      VALUES('old','* * * * *','定时正文','ssh:a:/same','/same',1,2,'custom:proxy:old','zcode','high');
+      VALUES('old','* * * * *','定时正文','ssh:a:/same','/same',1,2,'custom:proxy:old','raspberrycode','high');
       INSERT INTO automation_runs(run_id,automation_id,workspace_key,created_at,updated_at,session_id) VALUES('run','old','ssh:a:/same',1,2,'session');`);
 
     const preservedTables = [

@@ -22,8 +22,8 @@ import { dirname, join, resolve, sep } from "node:path";
 import { Readable, Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { setTimeout as sleep } from "node:timers/promises";
-import { fileExists } from "@zcode/server/remote/deployShared.js";
-import { extractTarGzArchive } from "@zcode/server/remote/localTarGz.js";
+import { fileExists } from "@raspberrycode/server/remote/deployShared.js";
+import { extractTarGzArchive } from "@raspberrycode/server/remote/localTarGz.js";
 import {
   assertRemoteCdnBaseVersionMatches,
   buildComponentArtifactUrlCandidates,
@@ -31,11 +31,11 @@ import {
   buildReleaseBaseCandidates,
   normalizeRemoteAssetRelativePath,
   resolveRemoteCdnBaseUrls,
-} from "@zcode/server/remote/remoteAssetCdn.js";
+} from "@raspberrycode/server/remote/remoteAssetCdn.js";
 import {
   resolveRemoteAssetFetch,
   type RemoteAssetNetworkPort,
-} from "@zcode/server/remote/remoteAssetNetwork.js";
+} from "@raspberrycode/server/remote/remoteAssetNetwork.js";
 
 const MANIFEST_FILE_NAME_PREFIX = "manifest-";
 const REMOTE_ASSET_READY_MARKER = ".ready";
@@ -873,7 +873,7 @@ async function ensureRemoteComponentDirFromCdnInternal(
   }
   if (!forceRefresh && initialMissingPaths) {
     // 旧版本只用 .ready 判断 component cache 可用。用户先部署过只含
-    // zcode.cjs 的 agent cache 后，再补传 packages 会一直复用残缺 cache。
+    // raspberrycode.cjs 的 agent cache 后，再补传 packages 会一直复用残缺 cache。
     // 这里按调用方声明的关键路径校验，缺失时清掉旧 cache 并从 CDN 重下完整组件。
     loggers.logWarn(
       `[remote-assets] local component cache incomplete: component=${component.id} missing=${initialMissingPaths.join(",")}; redownloading`,
@@ -1840,7 +1840,7 @@ async function isValidReleaseDir(releaseDir: string, platformArch: string): Prom
     return false;
   }
 
-  if (!(await fileExists(releaseDir, "server", "zcode-server.cjs"))) {
+  if (!(await fileExists(releaseDir, "server", "raspberrycode-server.cjs"))) {
     return false;
   }
 
@@ -1892,7 +1892,7 @@ export async function readCachedRemoteAssetMarker(cacheDir: string): Promise<str
 }
 
 export function resolveFallbackRemoteAssetCacheDir(): string {
-  return join(tmpdir(), "zcode-remote-assets-cache");
+  return join(tmpdir(), "raspberrycode-remote-assets-cache");
 }
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {

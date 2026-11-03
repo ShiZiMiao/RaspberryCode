@@ -17,7 +17,7 @@ export interface DesktopProductIdentity {
   readonly cuaHelperInstallVariant: "preview" | null;
 }
 
-export const ZCODE_PREVIEW_IDENTITY_ENV: "ZCODE_PREVIEW_IDENTITY";
+export const RASPBERRYCODE_PREVIEW_IDENTITY_ENV: "RASPBERRYCODE_PREVIEW_IDENTITY";
 
 export function isPreviewIdentityRequested(env?: Record<string, string | undefined>): boolean;
 export function resolveDesktopProductFlavor(

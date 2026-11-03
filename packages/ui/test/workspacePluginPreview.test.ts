@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
-import type { ZCodePluginReferenceCatalogEntry } from "@zcode/shared";
+import type { RaspberryCodePluginReferenceCatalogEntry } from "@raspberrycode/shared";
 import {
   buildWorkspacePluginMention,
   isWorkspacePluginReferenceable,
 } from "../src/workspace-plugin-preview/index.js";
 
 function entry(
-  overrides: Partial<ZCodePluginReferenceCatalogEntry> = {},
-): ZCodePluginReferenceCatalogEntry {
+  overrides: Partial<RaspberryCodePluginReferenceCatalogEntry> = {},
+): RaspberryCodePluginReferenceCatalogEntry {
   return {
-    pluginId: "pdf@zcode-plugins-official",
+    pluginId: "pdf@raspberrycode-plugins-official",
     name: "pdf",
-    marketplace: "zcode-plugins-official",
+    marketplace: "raspberrycode-plugins-official",
     icon: "https://cdn.example.com/pdf.png",
     enabled: true,
     conflictingPluginIds: [],
@@ -33,13 +33,13 @@ describe("workspace plugin preview", () => {
 
   it("构造与 Composer @ Picker 相同的 canonical 插件引用", () => {
     expect(buildWorkspacePluginMention(entry())).toEqual({
-      id: "plugin:pdf@zcode-plugins-official",
+      id: "plugin:pdf@raspberrycode-plugins-official",
       category: "plugins",
       label: "pdf",
-      value: "pdf@zcode-plugins-official",
-      markdown: "[@pdf](plugin://pdf@zcode-plugins-official)",
+      value: "pdf@raspberrycode-plugins-official",
+      markdown: "[@pdf](plugin://pdf@raspberrycode-plugins-official)",
       data: {
-        pluginId: "pdf@zcode-plugins-official",
+        pluginId: "pdf@raspberrycode-plugins-official",
         icon: "https://cdn.example.com/pdf.png",
       },
     });

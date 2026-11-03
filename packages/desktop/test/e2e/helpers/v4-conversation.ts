@@ -4,7 +4,7 @@ import { selectCombinedComposerThoughtLevel } from "./composer-model-picker.js";
 // 与旧 conversation-session.ts 的区别：所有定位走 TID_V4_* 常量（testid contract v2，
 // 带 paneId 维度），状态断言读 v4 pane 的 data-* 投影属性，不再依赖旧 ChatView DOM。
 // 旧 helper 的登录/工作区/provider 部分继续复用（desktop-app.ts / upstream-provider.ts）。
-import { encodeCustomModelValue } from "@zcode/shared";
+import { encodeCustomModelValue } from "@raspberrycode/shared";
 import {
   TID_CHAT_MODE_SELECT_ITEM,
   TID_CHAT_MODE_SELECT_TRIGGER,
@@ -55,7 +55,7 @@ import {
   TID_V4_TURN_NAVIGATOR_ITEM,
   TID_V4_TURN_NAVIGATOR_TOOLTIP,
   testId,
-} from "@zcode/shared/test-ids";
+} from "@raspberrycode/shared/test-ids";
 import {
   clickTestIdByDom,
   DEFAULT_WORKSPACE,
@@ -81,8 +81,8 @@ export const E2E_REPLY_TOKEN = "upstream-e2e-ok";
 interface PrepareV4ConversationE2EOptions {
   resetDraftBeforeProvider?: boolean;
   skipProvider?: boolean;
-  /** 跳过 ensureV4ShellReady 的 ZCodeProject 等待。已登录冷启（真实凭据 seed 后 reloadSession）
-   * 的 app 按 startupWorkspace 语义落在 conversation backing workspace，ZCodeProject 永远不出现；
+  /** 跳过 ensureV4ShellReady 的 RaspberryCodeProject 等待。已登录冷启（真实凭据 seed 后 reloadSession）
+   * 的 app 按 startupWorkspace 语义落在 conversation backing workspace，RaspberryCodeProject 永远不出现；
    * 调用方需自行等待 v4 shell 就绪（如侧栏新任务按钮）。见 ANALYSIS r3-rerun §46。 */
   skipShellReady?: boolean;
 }
@@ -173,9 +173,9 @@ async function ensureV4PreparationDraft(options: PrepareV4ConversationE2EOptions
       const input = pane?.querySelector<HTMLElement>(`[data-testid="${inputId}"]`);
       const activePath = (
         window as Window & {
-          __zcodeTabStoreE2E?: { getState(): { activeWorkspacePath?: string | null } };
+          __raspberrycodeTabStoreE2E?: { getState(): { activeWorkspacePath?: string | null } };
         }
-      ).__zcodeTabStoreE2E?.getState().activeWorkspacePath;
+      ).__raspberrycodeTabStoreE2E?.getState().activeWorkspacePath;
       return Boolean(
         pane?.dataset.sessionId === "draft" &&
         input?.getClientRects().length &&
@@ -357,7 +357,7 @@ export async function getV4ConversationState(): Promise<V4ConversationStateSnaps
 
 /**
  * v4 composer 输入（M5 起为 Lexical contenteditable）：写入走
- * setInputValueByTestIdDom 的 __zcodeLexicalInputE2E bridge 分支（驱动真实 editor state）。
+ * setInputValueByTestIdDom 的 __raspberrycodeLexicalInputE2E bridge 分支（驱动真实 editor state）。
  */
 export async function sendV4Prompt(prompt: string) {
   await setV4ComposerText(prompt);
@@ -472,7 +472,7 @@ export async function sendV4PromptAndWaitAccepted(
       (paneTestId, inputTestId, sendTestId, timelineTestId, marker) => {
         const pane = document.querySelector<HTMLElement>(`[data-testid="${paneTestId}"]`);
         const input = pane?.querySelector<
-          HTMLElement & { __zcodeLexicalInputE2E?: { getText: () => string } }
+          HTMLElement & { __raspberrycodeLexicalInputE2E?: { getText: () => string } }
         >(`[data-testid="${inputTestId}"]`);
         const send = pane?.querySelector<HTMLButtonElement>(`[data-testid="${sendTestId}"]`);
         const timeline = pane?.querySelector<HTMLElement>(`[data-testid="${timelineTestId}"]`);
@@ -484,7 +484,7 @@ export async function sendV4PromptAndWaitAccepted(
             (row.innerText || row.textContent || "").includes(marker),
         );
         return {
-          composerText: input?.__zcodeLexicalInputE2E?.getText() ?? null,
+          composerText: input?.__raspberrycodeLexicalInputE2E?.getText() ?? null,
           paneExists: Boolean(pane),
           sendDisabled: send?.disabled ?? null,
           sessionId: pane?.getAttribute("data-session-id") ?? null,
@@ -1033,13 +1033,13 @@ export function getLatestV4CommandAck(type: string): Promise<{
     const entries =
       (
         window as Window & {
-          __zcodeV4CommandAcksE2E?: Array<{
+          __raspberrycodeV4CommandAcksE2E?: Array<{
             type: string;
             status: string;
             reasonCode?: string;
           }>;
         }
-      ).__zcodeV4CommandAcksE2E ?? [];
+      ).__raspberrycodeV4CommandAcksE2E ?? [];
     return [...entries].reverse().find((entry) => entry.type === commandType) ?? null;
   }, type);
 }
@@ -1125,7 +1125,7 @@ export function getV4DraftThoughtState(workspacePath: string): Promise<{
   return browser.execute(
     (path, modelTestId) => {
       const e2eWindow = window as Window & {
-        __zcodeSessionStoreE2E?: {
+        __raspberrycodeSessionStoreE2E?: {
           getState: () => {
             getWorkspaceState?: (workspacePath: string) => {
               configOptions?: Array<{
@@ -1138,7 +1138,7 @@ export function getV4DraftThoughtState(workspacePath: string): Promise<{
         };
       };
       const options =
-        e2eWindow.__zcodeSessionStoreE2E?.getState().getWorkspaceState?.(path).configOptions ?? [];
+        e2eWindow.__raspberrycodeSessionStoreE2E?.getState().getWorkspaceState?.(path).configOptions ?? [];
       const model = options.find((option) => option.category === "model");
       const thought = options.find((option) => option.category === "thought_level");
       const v4Config = document.querySelector<HTMLElement>(`[data-testid="${modelTestId}"]`);
@@ -1992,7 +1992,7 @@ export async function waitForV4PaneById(
 /** pane 作用域内写 composer 文本并点发送（同 sendV4Prompt，但按 paneId 收口）。 */
 export async function sendV4PromptInPane(paneId: string, prompt: string) {
   const paneShellTestId = testId(TID_V4_PANE_SHELL, paneId);
-  // M5：composer 为 Lexical contenteditable——写入走编辑器挂载的 __zcodeLexicalInputE2E
+  // M5：composer 为 Lexical contenteditable——写入走编辑器挂载的 __raspberrycodeLexicalInputE2E
   // bridge（驱动真实 editor state）；bridge.focus() 同时驱动 Focus 层 → composer 归属该 pane。
   await browser.waitUntil(
     async () =>
@@ -2003,13 +2003,13 @@ export async function sendV4PromptInPane(paneId: string, prompt: string) {
           if (!element) return false;
           const bridge = (
             element as HTMLElement & {
-              __zcodeLexicalInputE2E?: {
+              __raspberrycodeLexicalInputE2E?: {
                 focus: () => void;
                 getText: () => string;
                 setText: (text: string) => void;
               };
             }
-          ).__zcodeLexicalInputE2E;
+          ).__raspberrycodeLexicalInputE2E;
           if (!bridge) return false;
           bridge.focus();
           bridge.setText(nextValue);
@@ -2321,8 +2321,8 @@ export function getV4ComposerText(): Promise<string | null> {
   return browser.execute((inputTestId) => {
     const element = document.querySelector<HTMLElement>(`[data-testid="${inputTestId}"]`);
     const bridge = (
-      element as (HTMLElement & { __zcodeLexicalInputE2E?: { getText: () => string } }) | null
-    )?.__zcodeLexicalInputE2E;
+      element as (HTMLElement & { __raspberrycodeLexicalInputE2E?: { getText: () => string } }) | null
+    )?.__raspberrycodeLexicalInputE2E;
     return bridge ? bridge.getText() : null;
   }, TID_V4_COMPOSER_INPUT);
 }

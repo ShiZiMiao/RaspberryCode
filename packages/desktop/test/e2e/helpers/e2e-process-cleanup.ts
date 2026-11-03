@@ -1,7 +1,7 @@
 import { execFile, execFileSync } from "node:child_process";
 
-const E2E_RUN_ID_ARG_NAME = "--zcode-e2e-run-id";
-const E2E_HOME_ARG_NAME = "--zcode-e2e-home";
+const E2E_RUN_ID_ARG_NAME = "--raspberrycode-e2e-run-id";
+const E2E_HOME_ARG_NAME = "--raspberrycode-e2e-home";
 const E2E_PROCESS_SCAN_MAX_BUFFER_BYTES = 20 * 1024 * 1024;
 
 export interface E2EProcessInfo {
@@ -171,7 +171,7 @@ function isE2EProcessAncestorCandidate(command: string, includeChromeDriverAnces
     (includeChromeDriverAncestors &&
       /(?:^|\/)chromedriver(?:\.exe)?(?:\s|$)/u.test(normalizedCommand)) ||
     /(?:^|\/)electron(?:\.exe)?(?:\s|$)/u.test(normalizedCommand) ||
-    /(?:^|\/)zcode e2e(?:\.exe)?(?:\s|$)/u.test(normalizedCommand)
+    /(?:^|\/)raspberrycode e2e(?:\.exe)?(?:\s|$)/u.test(normalizedCommand)
   );
 }
 

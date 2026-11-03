@@ -20,7 +20,7 @@ import {
   TID_SSH_SUCCESS,
   TID_TASK_SETTINGS_BUTTON,
   testId,
-} from "@zcode/shared/test-ids";
+} from "@raspberrycode/shared/test-ids";
 import {
   clearAppData,
   clickTestIdByDom,
@@ -53,7 +53,7 @@ import {
  */
 const MARKER = "E2E_REMOTE_UI_WALKTHROUGH";
 const artifact = resolve(
-  process.env.ZCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/remote-ui-walkthrough",
+  process.env.RASPBERRYCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/remote-ui-walkthrough",
 );
 const dialog = `[data-testid="${TID_SSH_DIALOG}"]`;
 const run = promisify(execFile);
@@ -299,13 +299,13 @@ async function startStallServer() {
 
 /** 只允许操作本用例专属、带 r3-server 标签的目标容器，绝不碰共享的开发容器。 */
 async function ownedContainer(): Promise<string | null> {
-  const name = process.env.ZCODE_E2E_SSH_CONTAINER?.trim();
-  if (!name || !/^zcode-r3-server-[a-z0-9-]+$/u.test(name)) return null;
+  const name = process.env.RASPBERRYCODE_E2E_SSH_CONTAINER?.trim();
+  if (!name || !/^raspberrycode-r3-server-[a-z0-9-]+$/u.test(name)) return null;
   try {
     const { stdout } = await run("docker", [
       "inspect",
       "--format",
-      '{{index .Config.Labels "zcode.e2e.run"}}',
+      '{{index .Config.Labels "raspberrycode.e2e.run"}}',
       name,
     ]);
     return stdout.trim() === "r3-server" ? name : null;

@@ -1,18 +1,18 @@
 import type {
-  ZCodeTaskListKind,
-  ZCodeTaskListSortBy,
-  ZCodeTaskListWorkspaceScope,
-} from "@zcode/services";
-import type { ZCodeTaskMeta } from "@zcode/shared";
-import { resolveWorkspaceStateKey } from "@/store/zcodeSessionStoreSelectors.js";
+  RaspberryCodeTaskListKind,
+  RaspberryCodeTaskListSortBy,
+  RaspberryCodeTaskListWorkspaceScope,
+} from "@raspberrycode/services";
+import type { RaspberryCodeTaskMeta } from "@raspberrycode/shared";
+import { resolveWorkspaceStateKey } from "@/store/raspberrycodeSessionStoreSelectors.js";
 
 export type TaskEntityKey = string;
 export type TaskListCacheKey = string;
-export type TaskListQueryKind = ZCodeTaskListKind | "workspace";
+export type TaskListQueryKind = RaspberryCodeTaskListKind | "workspace";
 
 export interface TaskListCacheDescriptor {
   kind: TaskListQueryKind;
-  sortBy: ZCodeTaskListSortBy;
+  sortBy: RaspberryCodeTaskListSortBy;
   search: string;
   expanded: boolean;
   visibleLimit: number | null;
@@ -41,14 +41,14 @@ export function buildTaskWorkspaceKey(workspacePath: string, workspaceIdentity?:
   return resolveWorkspaceStateKey(workspacePath, workspaceIdentity);
 }
 
-export function buildTaskEntityKey(task: Pick<ZCodeTaskMeta, "taskId" | "workspacePath" | "workspaceIdentity">): TaskEntityKey {
+export function buildTaskEntityKey(task: Pick<RaspberryCodeTaskMeta, "taskId" | "workspacePath" | "workspaceIdentity">): TaskEntityKey {
   return `${buildTaskWorkspaceKey(task.workspacePath, task.workspaceIdentity)}::${task.taskId}`;
 }
 
 export function normalizeTaskListWorkspaceScopes(
-  scopes: ZCodeTaskListWorkspaceScope[],
-): ZCodeTaskListWorkspaceScope[] {
-  const uniqueScopes = new Map<string, ZCodeTaskListWorkspaceScope>();
+  scopes: RaspberryCodeTaskListWorkspaceScope[],
+): RaspberryCodeTaskListWorkspaceScope[] {
+  const uniqueScopes = new Map<string, RaspberryCodeTaskListWorkspaceScope>();
 
   for (const scope of scopes) {
     const workspaceKey = buildTaskWorkspaceKey(scope.workspacePath, scope.workspaceIdentity);
@@ -69,8 +69,8 @@ function normalizeTaskListSearch(search?: string): string {
 
 export function buildTaskListCacheDescriptor(params: {
   kind: TaskListQueryKind;
-  workspaceScopes: ZCodeTaskListWorkspaceScope[];
-  sortBy: ZCodeTaskListSortBy;
+  workspaceScopes: RaspberryCodeTaskListWorkspaceScope[];
+  sortBy: RaspberryCodeTaskListSortBy;
   search?: string;
   expanded: boolean;
   visibleLimit?: number | null;

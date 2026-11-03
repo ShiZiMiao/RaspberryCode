@@ -1,14 +1,14 @@
-import { completeNewModelSelection } from "@zcode/provider";
+import { completeNewModelSelection } from "@raspberrycode/provider";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   useBaseWorkspaceServices,
   useWorkspaceServicesResolution,
 } from "@/hooks/useWorkspaceServices.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { buildRegistryModelSelectGroups } from "@/lib/modelSelectionGroups.js";
-import { decodeCustomModelValue } from "@/lib/zcodeCustomModelValue.js";
+import { decodeCustomModelValue } from "@/lib/raspberrycodeCustomModelValue.js";
 import { logger } from "@/logger.js";
-import type { ZCodeProvider } from "@zcode/shared";
+import type { RaspberryCodeProvider } from "@raspberrycode/shared";
 import type { ModelSelectGroupItem } from "@/ModelConfigSelect.js";
 
 /** 模型切换主干使用的连接单元：一组同供应商可选模型，无套餐/账号语义。 */
@@ -38,7 +38,7 @@ export function useComposerConnectionSwitch({
 }: {
   workspacePath: string;
   workspaceIdentity?: string;
-  agentProvider: ZCodeProvider;
+  agentProvider: RaspberryCodeProvider;
   normalizedValue: string;
   onSelectModel: (value: string, reasoningLevel?: string) => void;
   waitForPresentation?: boolean;
@@ -53,7 +53,7 @@ export function useComposerConnectionSwitch({
     undefined,
     workspaceIdentity,
   );
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   const workspaceKey = workspaceIdentity?.trim() || workspacePath;
   const token = useMemo(() => ({}), [target, base, workspaceKey]);
   const owner = useRef({ token, mounted: true });

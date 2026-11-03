@@ -18,16 +18,16 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/components/lib/utils.js";
 import {
-  ZCODE_AGENT_PROVIDER,
-  type ZCodeConfigOption,
-  type ZCodeProvider,
-} from "@zcode/shared";
-import { TID_V4_MODEL_CONFIG, TID_V4_COMPOSER_INPUT } from "@zcode/shared/test-ids";
+  RASPBERRYCODE_AGENT_PROVIDER,
+  type RaspberryCodeConfigOption,
+  type RaspberryCodeProvider,
+} from "@raspberrycode/shared";
+import { TID_V4_MODEL_CONFIG, TID_V4_COMPOSER_INPUT } from "@raspberrycode/shared/test-ids";
 import type {
   SessionConfigState,
   SessionPhase,
   SessionUsageState,
-} from "@zcode/shared/zcode-protocol-v4";
+} from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import { ModelConfigSelect, type ModelSelectGroup } from "@/ModelConfigSelect.js";
 import type { ComposerModelOptions } from "@/chat-input-toolbar/ComposerModelMenu.js";
 import { Button } from "@/components/ui/button.js";
@@ -47,7 +47,7 @@ import {
   setPendingSettingsSectionIntent,
 } from "@/lib/settingsNavigation.js";
 import { useTabStore } from "@/store/TabStoreProvider.js";
-import type { ModelSelectionView } from "@zcode/services";
+import type { ModelSelectionView } from "@raspberrycode/services";
 import type {
   ModelSelectionState,
   ModelSelectionRefreshResult,
@@ -57,11 +57,11 @@ import {
   chooseConnectionModel,
   useComposerConnectionSwitch,
 } from "@/hooks/useComposerConnectionSwitch.js";
-import { useToolbarConfigOptions } from "@/hooks/useZCodeConfig.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useToolbarConfigOptions } from "@/hooks/useRaspberryCodeConfig.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { useShortcutCommandLabel } from "@/shortcuts/useShortcutBindings.js";
 import { logger } from "@/logger.js";
-import { decodeCustomModelValue, encodeCustomModelValue } from "@/lib/zcodeCustomModelValue.js";
+import { decodeCustomModelValue, encodeCustomModelValue } from "@/lib/raspberrycodeCustomModelValue.js";
 import { buildRegistryModelSelectGroups } from "@/lib/modelSelectionGroups.js";
 import {
   resolveDraftDisplayedConfig,
@@ -93,7 +93,7 @@ export interface V4ComposerToolbarProps {
   modelSelectionRefresh?: () => Promise<ModelSelectionRefreshResult>;
   sessionId: string | null;
   phase: SessionPhase | null;
-  provider?: ZCodeProvider;
+  provider?: RaspberryCodeProvider;
   /** 当前工具条是否运行在 Web 远控壳中。 */
   isMobileOverlay?: boolean;
   /** 当前视口是否为手机输入布局。 */
@@ -149,8 +149,8 @@ function V4ComposerModelControlsImpl({
   onSendCompressionCommand,
   onRecoverCustomModelSelection,
 }: V4ComposerToolbarProps) {
-  const { intl, locale } = useZCodeIntl();
-  const displayProvider = provider ?? ZCODE_AGENT_PROVIDER;
+  const { intl, locale } = useRaspberryCodeIntl();
+  const displayProvider = provider ?? RASPBERRYCODE_AGENT_PROVIDER;
   // 配置面读取：workspace 缺省目录（taskId=null），不读旧会话态。
   const { error: configOptionsError } = useToolbarConfigOptions(
     workspacePath,
@@ -182,7 +182,7 @@ function V4ComposerModelControlsImpl({
         type: "select",
         currentValue: "",
         options: [],
-      } satisfies ZCodeConfigOption)
+      } satisfies RaspberryCodeConfigOption)
     : undefined;
 
   // 空模型/档位曾被 Session 旧值补回，界面显示与实际不可提交状态矛盾。
@@ -382,7 +382,7 @@ function V4ComposerModelControlsImpl({
   );
 
   // 候选档位只来自目标 Host 的 ModelSelectionView，已选档位只来自 Composer。
-  const thoughtOption = useMemo<ZCodeConfigOption | null>(() => {
+  const thoughtOption = useMemo<RaspberryCodeConfigOption | null>(() => {
     if (!effectiveConfig) return null;
     if (!draftModelThoughtOption) return null;
     return {
@@ -639,4 +639,4 @@ function V4ComposerModelControlsImpl({
 }
 
 export const V4ComposerModelControls = memo(V4ComposerModelControlsImpl);
-import { isApiKeyAccess } from "@zcode/provider";
+import { isApiKeyAccess } from "@raspberrycode/provider";

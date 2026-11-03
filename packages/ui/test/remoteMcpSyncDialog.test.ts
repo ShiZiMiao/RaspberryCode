@@ -1,7 +1,7 @@
 import { createElement, isValidElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import type { IMcpSyncService } from "@zcode/services";
+import type { IMcpSyncService } from "@raspberrycode/services";
 import {
   buildRemoteMcpSyncRows,
   buildRemoteMcpSyncImportParams,
@@ -75,7 +75,7 @@ vi.mock("@/components/ui/dialog.js", () => ({
 }));
 
 vi.mock("@/i18n/IntlProvider.js", () => ({
-  useZCodeIntl: () => ({
+  useRaspberryCodeIntl: () => ({
     intl: {
       formatMessage: ({ id }: { id: string }, values?: Record<string, string | number>) => {
         const messages: Record<string, string> = {
@@ -121,7 +121,7 @@ function createMcpSyncServiceStub(): IMcpSyncService {
     })),
     checkRemoteUserMcpWriteAccess: vi.fn(async () => ({
       ok: true,
-      path: "/home/dev/.zcode/cli",
+      path: "/home/dev/.raspberrycode/cli",
     })),
     importMcpServers: vi.fn(async () => ({ results: [] })),
   };
@@ -139,8 +139,8 @@ describe("RemoteMcpSyncDialog helpers", () => {
               name: "filesystem",
               config: { type: "stdio", command: "npx" },
               enabled: true,
-              source: "zcode",
-              path: "/Users/alice/.zcode/cli/config.json",
+              source: "raspberrycode",
+              path: "/Users/alice/.raspberrycode/cli/config.json",
             },
           ],
         },
@@ -164,16 +164,16 @@ describe("RemoteMcpSyncDialog helpers", () => {
           name: "context7",
           config: { type: "stdio", command: "npx" },
           enabled: true,
-          source: "zcode",
-          path: "/Users/me/.zcode/cli/config.json",
+          source: "raspberrycode",
+          path: "/Users/me/.raspberrycode/cli/config.json",
         },
         {
           id: "docs-id",
           name: "docs",
           config: { type: "http", url: "https://mcp.example.com/mcp" },
           enabled: true,
-          source: "zcode",
-          path: "/Users/me/.zcode/cli/config.json",
+          source: "raspberrycode",
+          path: "/Users/me/.raspberrycode/cli/config.json",
         },
       ],
       [{ name: "docs", exists: true }],
@@ -260,8 +260,8 @@ describe("RemoteMcpSyncDialog", () => {
           name: "filesystem",
           config: { type: "stdio", command: "npx" },
           enabled: true,
-          source: "zcode",
-          path: "/Users/me/.zcode/cli/config.json",
+          source: "raspberrycode",
+          path: "/Users/me/.raspberrycode/cli/config.json",
         },
       ],
       [],
@@ -276,6 +276,6 @@ describe("RemoteMcpSyncDialog", () => {
     );
 
     expect(html).toContain('aria-labelledby="remote-mcp-sync-filesystem-id-label"');
-    expect(html).toContain("/Users/me/.zcode/cli/config.json");
+    expect(html).toContain("/Users/me/.raspberrycode/cli/config.json");
   });
 });

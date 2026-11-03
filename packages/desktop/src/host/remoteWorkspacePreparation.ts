@@ -1,5 +1,5 @@
-import type { IFileService } from "@zcode/services";
-import { REMOTE_WORKSPACE_DIRECTORY_UNAVAILABLE_ERROR_CODE } from "@zcode/shared";
+import type { IFileService } from "@raspberrycode/services";
+import { REMOTE_WORKSPACE_DIRECTORY_UNAVAILABLE_ERROR_CODE } from "@raspberrycode/shared";
 
 interface RemoteWorkspaceIdentityInput {
   workspacePath: string;

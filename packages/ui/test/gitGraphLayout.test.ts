@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+import { RaspberryCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import { GitGraphPane } from "../src/git-graph/GitGraphPane.js";
 import type { GitGraphCommit } from "../src/git-graph/layout.js";
 import { layoutGitGraph } from "../src/git-graph/layout.js";
@@ -157,7 +157,7 @@ describe("GitGraphPane", () => {
 
     const html = renderToStaticMarkup(
       createElement(
-        ZCodeIntlProvider,
+        RaspberryCodeIntlProvider,
         { initialLocale: "en-US" },
         createElement(GitGraphPane, {
           commits,
@@ -180,7 +180,7 @@ describe("GitGraphPane", () => {
   it("keeps the graph column wide enough for the Graph header", () => {
     const html = renderToStaticMarkup(
       createElement(
-        ZCodeIntlProvider,
+        RaspberryCodeIntlProvider,
         { initialLocale: "en-US" },
         createElement(GitGraphPane, {
           commits: [commit("head")],

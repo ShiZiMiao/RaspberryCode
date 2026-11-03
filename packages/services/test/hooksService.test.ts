@@ -9,7 +9,7 @@ const originalHome = process.env.HOME;
 const tempRoots: string[] = [];
 
 function makeTempRoot(): string {
-  const root = mkdtempSync(join(tmpdir(), "zcode-hooks-"));
+  const root = mkdtempSync(join(tmpdir(), "raspberrycode-hooks-"));
   tempRoots.push(root);
   return root;
 }
@@ -54,7 +54,7 @@ describe("hooksService", () => {
               {
                 matcher: "startup",
                 hooks: [
-                  { type: "process", command: "node", args: ["user-zcode.mjs"], customFlag: true },
+                  { type: "process", command: "node", args: ["user-raspberrycode.mjs"], customFlag: true },
                 ],
               },
             ],
@@ -76,7 +76,7 @@ describe("hooksService", () => {
                   {
                     type: "process",
                     command: "node",
-                    args: ["project-zcode.mjs"],
+                    args: ["project-raspberrycode.mjs"],
                     timeoutMs: 5000,
                   },
                 ],
@@ -115,15 +115,15 @@ describe("hooksService", () => {
         (hook) => `${hook.location?.source}:${hook.location?.scope}:${hook.command}`,
       ),
     ).toEqual([
-      "zcode:project:node",
+      "raspberrycode:project:node",
       "claude:project:echo claude",
-      "zcode:user:node",
+      "raspberrycode:user:node",
       "agents:user:echo agents",
     ]);
     expect(result.hooks[0]).toEqual(expect.objectContaining({ timeout: 5 }));
     expect(result.hooks[0]?.location?.directoryPath).toBe(join(workspacePath, ".raspberrycode"));
     expect(result.hooks[2]).toEqual(
-      expect.objectContaining({ args: ["user-zcode.mjs"], custom: { customFlag: true } }),
+      expect.objectContaining({ args: ["user-raspberrycode.mjs"], custom: { customFlag: true } }),
     );
   });
 
@@ -154,7 +154,7 @@ describe("hooksService", () => {
     expect(result.hooks.map((hook) => hook.location?.scope)).toEqual(["project", "user"]);
   });
 
-  it("saves zcode hooks to user and workspace config files", async () => {
+  it("saves raspberrycode hooks to user and workspace config files", async () => {
     const home = makeTempRoot();
     const workspacePath = join(makeTempRoot(), "workspace");
     mkdirSync(join(home, ".raspberrycode", "cli"), { recursive: true });
@@ -177,7 +177,7 @@ describe("hooksService", () => {
           enabled: true,
           custom: { extra: "user" },
           location: {
-            source: "zcode",
+            source: "raspberrycode",
             scope: "user",
             directoryPath: join(home, ".raspberrycode", "cli"),
           },
@@ -189,7 +189,7 @@ describe("hooksService", () => {
           command: "node",
           enabled: true,
           location: {
-            source: "zcode",
+            source: "raspberrycode",
             scope: "project",
             directoryPath: join(workspacePath, ".raspberrycode"),
             projectPath: workspacePath,
@@ -257,7 +257,7 @@ describe("hooksService", () => {
           type: "command",
           command: "echo user",
           enabled: true,
-          location: { source: "zcode", scope: "user", directoryPath: "" },
+          location: { source: "raspberrycode", scope: "user", directoryPath: "" },
         },
       ],
     });
@@ -288,7 +288,7 @@ describe("hooksService", () => {
           timeout: 12,
           enabled: true,
           location: {
-            source: "zcode",
+            source: "raspberrycode",
             scope: "project",
             directoryPath: join(workspacePath, ".raspberrycode"),
             projectPath: workspacePath,

@@ -1,22 +1,23 @@
 /* eslint-disable max-lines -- Source Server transport 在同一适配器内汇合安装、daemon、channel 与 target 生命周期，继续拆分会割裂取消边界。 */
 import { Duplex } from "node:stream";
 import {
-  isPublicZCodeErrorCode,
+  isPublicRaspberryCodeErrorCode,
   normalizeRemoteConnectionError,
   normalizeRemoteAssetInstallMode,
   sourceServerInstallProgressSchema,
   type SourceServerInstallProgress,
-  type PublicZCodeErrorCode,
+  type PublicRaspberryCodeErrorCode,
   type RemoteTarget,
-} from "@zcode/shared";
-import type { IRemoteBackend } from "@zcode/server/remote/backend.js";
-import { createRemoteBackend } from "@zcode/server/remote/create-backend.js";
-import { detectRemoteTarTool } from "@zcode/server/remote/remoteAssetPreflight.js";
+} from "@raspberrycode/shared";
+import type { IRemoteBackend } from "@raspberrycode/server/remote/backend.js";
+import { createRemoteBackend } from "@raspberrycode/server/remote/create-backend.js";
+import { resolveRemoteServerBase } from "@raspberrycode/server/remote/deployShared.js";
+import { detectRemoteTarTool } from "@raspberrycode/server/remote/remoteAssetPreflight.js";
 import {
   probeSourceServer,
   SourceServerProbeEnvironmentError,
-} from "@zcode/server/source-server/sourceServerProbe.js";
-import { buildSourceServerReleaseDownloadCommand } from "@zcode/server/source-server/sourceServerReleaseDownload.js";
+} from "@raspberrycode/server/source-server/sourceServerProbe.js";
+import { buildSourceServerReleaseDownloadCommand } from "@raspberrycode/server/source-server/sourceServerReleaseDownload.js";
 import {
   collectCommand,
   duplexFromStdio,
@@ -25,9 +26,9 @@ import {
   readStructuredCommandError,
   throwIfAborted,
   type RemoteExecResult,
-} from "@zcode/server/source-server/sourceServerTransportRuntime.js";
+} from "@raspberrycode/server/source-server/sourceServerTransportRuntime.js";
 
-export type { RemoteExecResult } from "@zcode/server/source-server/sourceServerTransportRuntime.js";
+export type { RemoteExecResult } from "@raspberrycode/server/source-server/sourceServerTransportRuntime.js";
 
 export interface SourceServerProbeResult {
   platform: string;
@@ -78,7 +79,7 @@ export interface SourceServerEnsureDaemonOptions {
 export class SourceServerTransportOperationError extends Error {
   public constructor(
     message: string,
-    public readonly code: PublicZCodeErrorCode,
+    public readonly code: PublicRaspberryCodeErrorCode,
     public readonly retryable?: boolean,
   ) {
     super(message);
@@ -123,9 +124,11 @@ export interface CreateSourceServerTransportAdapterOptions {
   createBackend?: (target: RemoteTarget) => Promise<IRemoteBackend>;
 }
 
-const SERVER_ROOT_READ_PATH = "~/.zcode/server";
-const SERVER_ROOT_SHELL = '"$HOME/.zcode/server"';
-const SERVER_BIN_SHELL = '"$HOME/.zcode/server/bin/zcode"';
+// 远端 server 根按机器布局解析（新装 ~/.raspberrycode/server，旧布局机器续用 ~/.raspberrycode/server，
+// 见 deployShared.resolveRemoteServerBase）；这里把解析结果转成 shell/上传用的两种形态。
+function toQuotedShellRoot(serverRoot: string): string {
+  return `"${serverRoot.replace(/^~\//u, "$HOME/")}"`;
+}
 const STALE_BOOTSTRAP_AGE_MS = 30 * 60 * 1_000;
 const INSTALL_PROGRESS_MESSAGES: Record<SourceServerInstallProgress["phase"], string> = {
   "verify-archive": "Verifying Source Server archive",
@@ -213,14 +216,16 @@ class BackendSourceServerTransportAdapter implements SourceServerTransportAdapte
     throwIfAborted(context.signal);
     const backend = await this.getBackend(target);
     const operationId = `${process.pid}-${Date.now()}`;
-    const bootstrapRootShell = `${SERVER_ROOT_SHELL}/.bootstrap-${operationId}`;
+    const serverRoot = await resolveRemoteServerBase(backend);
+    const rootShell = toQuotedShellRoot(serverRoot);
+    const bootstrapRootShell = `${rootShell}/.bootstrap-${operationId}`;
     const bootstrapDirShell = `${bootstrapRootShell}/extract`;
-    const remoteArchive = `~/.zcode/server/.bootstrap-${operationId}/zcode-server.tar.gz`;
-    const remoteArchiveShell = `${bootstrapRootShell}/zcode-server.tar.gz`;
+    const remoteArchive = `${serverRoot}/.bootstrap-${operationId}/raspberrycode-server.tar.gz`;
+    const remoteArchiveShell = `${bootstrapRootShell}/raspberrycode-server.tar.gz`;
     const cleanupCommand = `rm -rf ${bootstrapRootShell}`;
     const cleanupStaleBootstrapRootsCommand =
       "now_ms=$(($(date +%s) * 1000)); " +
-      `for candidate in ${SERVER_ROOT_SHELL}/.bootstrap-*; do ` +
+      `for candidate in ${rootShell}/.bootstrap-*; do ` +
       '[ -d "$candidate" ] || continue; ' +
       "name=${candidate##*/}; " +
       "created_ms=${name##*-}; " +
@@ -319,7 +324,7 @@ class BackendSourceServerTransportAdapter implements SourceServerTransportAdapte
       `tar -xzf ${remoteArchiveShell} -C ${bootstrapDirShell} --strip-components=1`,
       // Bug 原因：update 现在会重启完整 daemon；若不把既有 transport 能力边界传给目标
       // bootstrap CLI，WSL/Docker 会在 handoff 时误尝试注册不可用的 systemd user service。
-      `${this.kind === "ssh" ? "" : "ZCODE_SERVER_SKIP_SERVICE_REGISTRATION=1 "}${bootstrapDirShell}/bin/zcode update --from-archive ${remoteArchiveShell}${options.force ? " --force" : ""} --server-root ${SERVER_ROOT_SHELL} --json --progress`,
+      `${this.kind === "ssh" ? "" : "RASPBERRYCODE_SERVER_SKIP_SERVICE_REGISTRATION=1 "}${bootstrapDirShell}/bin/raspberrycode update --from-archive ${remoteArchiveShell}${options.force ? " --force" : ""} --server-root ${rootShell} --json --progress`,
     ].join(" && ");
     // 上传完成后命令仍需解压、整树校验和 daemon 换代；必须实时消费阶段，不能等退出才显示。
     const result = await collectCommand(await backend.exec(command), (line) => {
@@ -331,13 +336,16 @@ class BackendSourceServerTransportAdapter implements SourceServerTransportAdapte
       }
       const event = sourceServerInstallProgressSchema.safeParse(value);
       if (event.success) {
-        context.onLog?.({ phase: event.data.phase, message: INSTALL_PROGRESS_MESSAGES[event.data.phase] });
+        context.onLog?.({
+          phase: event.data.phase,
+          message: INSTALL_PROGRESS_MESSAGES[event.data.phase],
+        });
       }
     });
     if (result.exitCode !== 0) {
       try {
         const response = readLastJsonLine(result.stdout);
-        if (isPublicZCodeErrorCode(response.code)) {
+        if (isPublicRaspberryCodeErrorCode(response.code)) {
           throw new SourceServerTransportOperationError(
             typeof response.error === "string" && response.error.trim()
               ? response.error
@@ -407,9 +415,8 @@ class BackendSourceServerTransportAdapter implements SourceServerTransportAdapte
       });
     }
     const backend = await this.getBackend(target);
-    const ingressToken = (
-      await backend.readFile(`${SERVER_ROOT_READ_PATH}/run/ingress-token`)
-    ).trim();
+    const serverRoot = await resolveRemoteServerBase(backend);
+    const ingressToken = (await backend.readFile(`${serverRoot}/run/ingress-token`)).trim();
     if (!ingressToken) throw new Error("Source Server ingress token is missing");
     return { port: port as number, ingressToken };
   }
@@ -421,6 +428,8 @@ class BackendSourceServerTransportAdapter implements SourceServerTransportAdapte
   ): Promise<Duplex> {
     throwIfAborted(context.signal);
     const backend = (await this.getBackend(target)) as DirectChannelBackend;
+    const serverRoot = await resolveRemoteServerBase(backend);
+    const rootShell = toQuotedShellRoot(serverRoot);
     if (this.kind === "ssh" && backend.openDirectTcpChannel) {
       try {
         return await backend.openDirectTcpChannel(ingress.port);
@@ -432,9 +441,7 @@ class BackendSourceServerTransportAdapter implements SourceServerTransportAdapte
       }
     }
     return duplexFromStdio(
-      await backend.exec(
-        `${SERVER_BIN_SHELL} server proxy-stdio --server-root ${SERVER_ROOT_SHELL}`,
-      ),
+      await backend.exec(`${rootShell}/bin/raspberrycode server proxy-stdio --server-root ${rootShell}`),
     );
   }
 
@@ -445,17 +452,19 @@ class BackendSourceServerTransportAdapter implements SourceServerTransportAdapte
   ): Promise<RemoteExecResult> {
     throwIfAborted(context.signal);
     const backend = await this.getBackend(target);
+    const serverRoot = await resolveRemoteServerBase(backend);
+    const rootShell = toQuotedShellRoot(serverRoot);
     const hasServerRoot = argv.includes("--server-root");
     const daemonEnvironment =
       this.kind !== "ssh" && argv[0] === "serve" && argv.includes("--daemon")
-        ? "ZCODE_SERVER_SKIP_SERVICE_REGISTRATION=1 "
+        ? "RASPBERRYCODE_SERVER_SKIP_SERVICE_REGISTRATION=1 "
         : "";
     const command = [
       // Bug 原因：WSL/Docker 没有稳定的用户级服务管理器；若沿用 SSH 命令会尝试
       // 注册 systemd user service 并在常见环境中失败。两者必须显式进入 detached fallback。
-      `${daemonEnvironment}${SERVER_BIN_SHELL}`,
+      `${daemonEnvironment}${rootShell}/bin/raspberrycode`,
       ...argv.map(quoteShellArg),
-      ...(hasServerRoot ? [] : ["--server-root", SERVER_ROOT_SHELL]),
+      ...(hasServerRoot ? [] : ["--server-root", rootShell]),
     ].join(" ");
     return await collectCommand(await backend.exec(command));
   }

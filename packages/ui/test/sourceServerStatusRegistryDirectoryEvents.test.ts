@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { Emitter } from "@zcode/rpc";
-import type { ISourceServerManagementService } from "@zcode/services";
+import { Emitter } from "@raspberrycode/rpc";
+import type { ISourceServerManagementService } from "@raspberrycode/services";
 import { getSourceServerStatusRegistry } from "@/store/sourceServerStatusRegistry.js";
 
 /**

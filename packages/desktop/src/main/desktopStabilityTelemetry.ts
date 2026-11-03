@@ -3,13 +3,13 @@ import { createHash, randomUUID } from "node:crypto";
 import armsRum from "@arms/rum-electron";
 import { BrowserWindow, type WebContents } from "electron";
 import {
-  mapZCodeEnvToArmsRumEnv,
+  mapRaspberryCodeEnvToArmsRumEnv,
   type HostAgentProcessErrorResponse,
   type HostAgentProcessExceptionResponse,
   type HostAgentProcessExitedResponse,
   type HostAgentProcessReadyResponse,
   type HostAgentProcessSpawnedResponse,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import type { CrashCapturePaths } from "./desktopCrashCapture.js";
 import { registerCrashEventMonitor as registerBaseCrashEventMonitor } from "./desktopCrashCapture.js";
 import { getResourceManagerWindowId } from "./resourceManagerWindow.js";
@@ -93,7 +93,7 @@ interface StabilityGlobalContext {
   deviceMid: string;
   platform: NodeJS.Platform;
   appVersion: string;
-  armsEnv: ReturnType<typeof mapZCodeEnvToArmsRumEnv>;
+  armsEnv: ReturnType<typeof mapRaspberryCodeEnvToArmsRumEnv>;
 }
 
 interface UnresponsiveWatchState {
@@ -187,14 +187,14 @@ function redactRemainingAbsolutePaths(value: string): string {
   const protectedPaths: string[] = [];
   const protectedValue = value.replace(AGENT_CRASH_KNOWN_PATH_PLACEHOLDER_PATTERN, (match) => {
     const index = protectedPaths.push(match) - 1;
-    return `ZCODE_REDACTED_PATH_${index}_TOKEN`;
+    return `RASPBERRYCODE_REDACTED_PATH_${index}_TOKEN`;
   });
   const redacted = protectedValue
     .replace(AGENT_CRASH_WINDOWS_ABSOLUTE_PATH_PATTERN, "<path>")
     .replace(AGENT_CRASH_POSIX_ABSOLUTE_PATH_PATTERN, "<path>");
   return protectedPaths.reduce(
     (result, protectedPath, index) =>
-      result.replace(`ZCODE_REDACTED_PATH_${index}_TOKEN`, protectedPath),
+      result.replace(`RASPBERRYCODE_REDACTED_PATH_${index}_TOKEN`, protectedPath),
     redacted,
   );
 }
@@ -714,10 +714,10 @@ function mapChildProcessGoneToProcessRoleWithName(
   type: string,
   processName?: string,
 ): StabilityProcessRole {
-  if (processName?.startsWith("zcode-host")) {
+  if (processName?.startsWith("raspberrycode-host")) {
     return "host";
   }
-  if (processName?.startsWith("zcode-agent")) {
+  if (processName?.startsWith("raspberrycode-agent")) {
     return "agent";
   }
   switch (type) {

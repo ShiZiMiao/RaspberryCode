@@ -9,30 +9,30 @@ import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import {
   isRemoteWorkspaceIdentity,
-  normalizeAgentProviderToZCodeAgent,
-  zcodeTaskMetaSchema,
+  normalizeAgentProviderToRaspberryCodeAgent,
+  raspberrycodeTaskMetaSchema,
   resolveWorkspaceKey,
-  type ZCodeProvider,
-  type ZCodeTaskMeta,
-} from "@zcode/shared";
+  type RaspberryCodeProvider,
+  type RaspberryCodeTaskMeta,
+} from "@raspberrycode/shared";
 import type {
-  ZCodeTaskListQuery,
-  ZCodeTaskListResult,
-  ZCodeTaskListItem,
-} from "#src/session/zcodeTaskListTypes.js";
+  RaspberryCodeTaskListQuery,
+  RaspberryCodeTaskListResult,
+  RaspberryCodeTaskListItem,
+} from "#src/session/raspberrycodeTaskListTypes.js";
 
 import { createServiceLogger } from "#src/logger/serviceLogger.js";
-import { getTasksIndexDatabasePath, getZCodeDataRootDir } from "#src/paths.js";
+import { getTasksIndexDatabasePath, getRaspberryCodeDataRootDir } from "#src/paths.js";
 import { projectStorage, type ProjectMigrationContext } from "#src/project-storage/index.js";
 import { runTasksDatabaseMigrations } from "#src/session/tasksDatabase/migrations.js";
 
 const require = createRequire(import.meta.url);
 const { DatabaseSync } = require("node:sqlite") as typeof import("node:sqlite");
 
-function appendZCodeAgentIndexedProviderFilter(
+function appendRaspberryCodeAgentIndexedProviderFilter(
   where: string[],
   args: Array<string | number>,
-  provider: ZCodeProvider,
+  provider: RaspberryCodeProvider,
 ): void {
   // Bugfix: RaspberryCode Agent 列表入口只展示 agent runtime 产生的 task。
   // 旧 Claude Code 导入也不再例外，否则非 agent 历史数据仍会混入项目树与任务区。
@@ -86,7 +86,7 @@ interface LegacyAcpTaskIndexRow extends TaskIndexRow {
 }
 
 interface TaskIndexWriteRecord {
-  meta: ZCodeTaskMeta;
+  meta: RaspberryCodeTaskMeta;
   pinned: boolean;
   archived: boolean;
   deleted: boolean;
@@ -126,7 +126,7 @@ function resolveTaskIndexRowWorkspaceIdentity(row: TaskIndexRow): string | undef
   return undefined;
 }
 
-function rowToMeta(row: TaskIndexRow): ZCodeTaskMeta {
+function rowToMeta(row: TaskIndexRow): RaspberryCodeTaskMeta {
   const meta = readPresentation(row);
   return {
     ...meta,
@@ -139,13 +139,13 @@ function rowToMeta(row: TaskIndexRow): ZCodeTaskMeta {
   };
 }
 
-function readPresentation(row: TaskIndexRow): ZCodeTaskMeta {
+function readPresentation(row: TaskIndexRow): RaspberryCodeTaskMeta {
   const workspaceIdentity = resolveTaskIndexRowWorkspaceIdentity(row);
   try {
-    const parsed = zcodeTaskMetaSchema.safeParse(JSON.parse(row.meta_json));
+    const parsed = raspberrycodeTaskMetaSchema.safeParse(JSON.parse(row.meta_json));
     if (parsed.success) {
       return {
-        ...(parsed.data as ZCodeTaskMeta),
+        ...(parsed.data as RaspberryCodeTaskMeta),
         // SQLite 使用这些字段查询并隔离实体，旧 meta_json 里的 identity
         // 可能缺失或属于旧远端。读取时必须与行主键投影一致，sessions-index 才能
         // 按 workspaceKey + taskId 附加 running activity。
@@ -172,20 +172,20 @@ function readPresentation(row: TaskIndexRow): ZCodeTaskMeta {
 
   return {
     taskId: row.task_id,
-    traceId: `zcode-${row.task_id}`,
+    traceId: `raspberrycode-${row.task_id}`,
     title: "",
     titleOverridden: row.title_overridden === 1,
     workspacePath: row.workspace_path,
     workspaceIdentity,
     createdAt: 0,
     updatedAt: 0,
-    mode: row.mode as ZCodeTaskMeta["mode"],
+    mode: row.mode as RaspberryCodeTaskMeta["mode"],
     model: row.model ?? undefined,
     // 旧行 provider 列可能残留三方 CLI 值；meta 回退投影时统一归一为 glm。
     provider: row.provider
-      ? normalizeAgentProviderToZCodeAgent(row.provider as ZCodeTaskMeta["provider"])
+      ? normalizeAgentProviderToRaspberryCodeAgent(row.provider as RaspberryCodeTaskMeta["provider"])
       : undefined,
-    migrationSource: (row.migration_source as ZCodeTaskMeta["migrationSource"]) ?? undefined,
+    migrationSource: (row.migration_source as RaspberryCodeTaskMeta["migrationSource"]) ?? undefined,
     forkedFromTaskId: row.forked_from_task_id ?? undefined,
     cronAutomationId: row.cron_automation_id ?? undefined,
     unreadAt: row.unread_at ?? undefined,
@@ -193,7 +193,7 @@ function readPresentation(row: TaskIndexRow): ZCodeTaskMeta {
 }
 
 /** 序列化 meta 到 meta_json。cron 身份随 meta 一起写入（单一来源），另在 writeRecord 投影到 cron_automation_id 索引列。 */
-function serializeMetaJson(meta: ZCodeTaskMeta): string {
+function serializeMetaJson(meta: RaspberryCodeTaskMeta): string {
   return JSON.stringify(meta);
 }
 
@@ -265,7 +265,7 @@ function buildSearchSnippets(searchableText: string, search: string | null): str
   return snippets;
 }
 
-function rowToTaskListItem(row: TaskIndexRow, search: string | null): ZCodeTaskListItem {
+function rowToTaskListItem(row: TaskIndexRow, search: string | null): RaspberryCodeTaskListItem {
   const meta = rowToMeta(row);
   const snippets = buildSearchSnippets(row.searchable_text, search);
   if (snippets.length === 0) {
@@ -286,9 +286,9 @@ function migrateLegacyTaskMetaJson(
     mode: string;
     provider?: string;
     model?: string;
-    status?: ZCodeTaskMeta["status"];
+    status?: RaspberryCodeTaskMeta["status"];
   },
-): ZCodeTaskMeta {
+): RaspberryCodeTaskMeta {
   let parsed: Record<string, unknown> = {};
   try {
     const raw = JSON.parse(rawMetaJson) as unknown;
@@ -304,7 +304,7 @@ function migrateLegacyTaskMetaJson(
     traceId:
       typeof parsed.traceId === "string" && parsed.traceId
         ? parsed.traceId
-        : `zcode-${fallback.taskId}`,
+        : `raspberrycode-${fallback.taskId}`,
     title: fallback.title,
     workspacePath: fallback.workspacePath,
     workspaceIdentity: fallback.workspaceIdentity,
@@ -316,7 +316,7 @@ function migrateLegacyTaskMetaJson(
     status: typeof parsed.status === "string" ? parsed.status : fallback.status,
     migrationSource: undefined,
   };
-  return zcodeTaskMetaSchema.parse(meta) as ZCodeTaskMeta;
+  return raspberrycodeTaskMetaSchema.parse(meta) as RaspberryCodeTaskMeta;
 }
 
 export class TaskIndexRepo {
@@ -335,7 +335,7 @@ export class TaskIndexRepo {
   ) {}
 
   /** Host 装配层共用迁移后的组织库；UI 只能通过 project/remote-projects 服务访问。 */
-  private admitTaskGroup(meta: ZCodeTaskMeta, archived: boolean, deleted: boolean) {
+  private admitTaskGroup(meta: RaspberryCodeTaskMeta, archived: boolean, deleted: boolean) {
     if (this.storageHostId && this.storageHostId !== "local") return;
     // 本机只登记本机事实；远程成员由控制端服务验证远端投影后写入。
     if (meta.workspaceIdentity?.trim()) return;
@@ -399,11 +399,11 @@ export class TaskIndexRepo {
     const migration = await projectStorage.migrate(this.getDatabase(), {
       settings: this.migrationSettings,
       hostId: this.storageHostId,
-      backupDirectories: [join(getZCodeDataRootDir(), "backup")],
+      backupDirectories: [join(getRaspberryCodeDataRootDir(), "backup")],
       warn: (message, details) => createServiceLogger("project-migration").warn(message, details),
     });
     this.migrationBackupSkipped = taskMigration.backupSkipped || migration.backupSkipped;
-    // Bugfix: z-code-2 早期列表 task_id 是 wrapper id，真实 RaspberryCode session id 在旧列
+    // Bugfix: demo-2 早期列表 task_id 是 wrapper id，真实 RaspberryCode session id 在旧列
     // acp_session_id。直接运行时映射会让 read/send/subscribe 到处变成双 ID 兜底；
     // 初始化时把索引行迁到真实 session id，后续统一走新协议正常路径。
     this.migrateLegacyAcpTaskIds();
@@ -575,7 +575,7 @@ export class TaskIndexRepo {
       mode: source.mode,
       provider: source.provider ?? undefined,
       model: source.model ?? undefined,
-      status: source.task_status ? (source.task_status as ZCodeTaskMeta["status"]) : undefined,
+      status: source.task_status ? (source.task_status as RaspberryCodeTaskMeta["status"]) : undefined,
     });
     if (!target) {
       return {
@@ -613,9 +613,9 @@ export class TaskIndexRepo {
       provider: target.provider ?? source.provider ?? undefined,
       model: target.model ?? source.model ?? undefined,
       status: target.task_status
-        ? (target.task_status as ZCodeTaskMeta["status"])
+        ? (target.task_status as RaspberryCodeTaskMeta["status"])
         : source.task_status
-          ? (source.task_status as ZCodeTaskMeta["status"])
+          ? (source.task_status as RaspberryCodeTaskMeta["status"])
           : undefined,
     });
     const title = source.title_overridden === 1 ? source.title : target.title || source.title;
@@ -726,7 +726,7 @@ export class TaskIndexRepo {
     return row ?? null;
   }
 
-  private writeRecord(record: TaskIndexWriteRecord): ZCodeTaskMeta {
+  private writeRecord(record: TaskIndexWriteRecord): RaspberryCodeTaskMeta {
     const database = this.getDatabase();
     const ownTransaction = !database.isTransaction;
     if (ownTransaction) database.exec("BEGIN IMMEDIATE");
@@ -862,7 +862,7 @@ export class TaskIndexRepo {
   async listReconciliationRows(target: {
     workspacePath: string;
     workspaceIdentity?: string;
-  }): Promise<Array<{ meta: ZCodeTaskMeta; handoffPending: number }>> {
+  }): Promise<Array<{ meta: RaspberryCodeTaskMeta; handoffPending: number }>> {
     await this.ensureReady();
     const rows = this.getDatabase()
       .prepare("SELECT * FROM tasks WHERE workspace_key=?")
@@ -925,11 +925,11 @@ export class TaskIndexRepo {
 
   /** 仅 syncer 调用：CLI 事实是唯一来源，组织态写者不得合成这些值。 */
   async applyCliFacts(params: {
-    meta: ZCodeTaskMeta;
+    meta: RaspberryCodeTaskMeta;
     titleSource?: string;
     lastOutcome?: "completed" | "interrupted" | "error";
     deleted?: boolean;
-  }): Promise<ZCodeTaskMeta> {
+  }): Promise<RaspberryCodeTaskMeta> {
     await this.ensureReady();
     return this.enqueueWrite(params.meta, () => {
       const db = this.getDatabase();
@@ -1000,7 +1000,7 @@ export class TaskIndexRepo {
     workspaceIdentity?: string;
     taskId: string;
     expectedUnreadAt: number;
-  }): Promise<{ meta: ZCodeTaskMeta; cleared: boolean }> {
+  }): Promise<{ meta: RaspberryCodeTaskMeta; cleared: boolean }> {
     await this.ensureReady();
     return this.enqueueWrite(params, () => {
       const db = this.getDatabase();
@@ -1028,7 +1028,7 @@ export class TaskIndexRepo {
     workspacePath: string;
     workspaceIdentity?: string;
     taskId: string;
-  }): Promise<ZCodeTaskMeta | null> {
+  }): Promise<RaspberryCodeTaskMeta | null> {
     await this.ensureReady();
     return this.enqueueWrite(params, () => {
       const database = this.getDatabase();
@@ -1068,7 +1068,7 @@ export class TaskIndexRepo {
     workspaceIdentity?: string;
     taskId: string;
     patch: TaskIndexStatePatch;
-  }): Promise<ZCodeTaskMeta> {
+  }): Promise<RaspberryCodeTaskMeta> {
     await this.ensureReady();
     return this.enqueueWrite(params, () => {
       const db = this.getDatabase();
@@ -1112,7 +1112,7 @@ export class TaskIndexRepo {
     taskId: string;
     presentation: Partial<
       Pick<
-        ZCodeTaskMeta,
+        RaspberryCodeTaskMeta,
         | "mode"
         | "model"
         | "thoughtLevel"
@@ -1123,7 +1123,7 @@ export class TaskIndexRepo {
       >
     >;
     searchableText?: string;
-  }): Promise<ZCodeTaskMeta | null> {
+  }): Promise<RaspberryCodeTaskMeta | null> {
     await this.ensureReady();
     return this.enqueueWrite(params, () => {
       const db = this.getDatabase();
@@ -1163,11 +1163,11 @@ export class TaskIndexRepo {
   async listTaskMetas(params: {
     workspacePath?: string;
     workspaceIdentity?: string;
-    provider?: ZCodeProvider;
+    provider?: RaspberryCodeProvider;
     pinned?: boolean;
     archived?: boolean;
     includeDeleted?: boolean;
-  }): Promise<ZCodeTaskMeta[]> {
+  }): Promise<RaspberryCodeTaskMeta[]> {
     await this.ensureReady();
     // listTaskMetas 支持不传 workspacePath 查询全部任务，但 workspaceKey 只接受必填路径。
     // 先把可选入参收窄成明确的 workspace target，避免类型层把全量查询和 workspace 查询混在一起。
@@ -1232,7 +1232,7 @@ export class TaskIndexRepo {
   async listDeletedTaskIds(params: {
     workspacePath: string;
     workspaceIdentity?: string;
-    provider?: ZCodeProvider;
+    provider?: RaspberryCodeProvider;
   }): Promise<string[]> {
     await this.ensureReady();
     const workspaceKeyValue = workspaceKey({
@@ -1256,8 +1256,8 @@ export class TaskIndexRepo {
   }
 
   async queryTaskList(
-    params: ZCodeTaskListQuery & { provider?: ZCodeProvider },
-  ): Promise<ZCodeTaskListResult> {
+    params: RaspberryCodeTaskListQuery & { provider?: RaspberryCodeProvider },
+  ): Promise<RaspberryCodeTaskListResult> {
     await this.ensureReady();
     const workspaceKeys = normalizeWorkspaceKeys(params.workspaceScopes);
     if (workspaceKeys.length === 0) {
@@ -1275,7 +1275,7 @@ export class TaskIndexRepo {
     ];
     const args: Array<string | number> = [...workspaceKeys];
     if (params.provider) {
-      appendZCodeAgentIndexedProviderFilter(where, args, params.provider);
+      appendRaspberryCodeAgentIndexedProviderFilter(where, args, params.provider);
     }
     if (params.kind === "pinned") {
       where.push("pinned = 1", "archived = 0");
@@ -1361,7 +1361,7 @@ export class TaskIndexRepo {
     workspacePath: string;
     workspaceIdentity?: string;
     taskId: string;
-  }): Promise<ZCodeTaskMeta | null> {
+  }): Promise<RaspberryCodeTaskMeta | null> {
     await this.ensureReady();
     const row = this.getTaskRow(params);
     if (!row || row.deleted === 1) {

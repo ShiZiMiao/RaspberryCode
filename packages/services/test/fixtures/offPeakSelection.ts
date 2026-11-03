@@ -1,4 +1,4 @@
-import type { ModelSelectionView } from "@zcode/provider";
+import type { ModelSelectionView } from "@raspberrycode/provider";
 
 // 闲时/加速卡下线后 OFF_PEAK_PROVIDER_IDS 已移除；夹具改用合成账号 provider id，
 // 保留「两个域同时存在，工具只能选择当前账号域」的语义。

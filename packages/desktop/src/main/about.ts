@@ -9,11 +9,11 @@ import { join } from "node:path";
 import {
   DEFAULT_LOCALE,
   type Locale,
-  ZCODE_BUILD_TIME,
-  ZCODE_COMMIT,
-  ZCODE_ENV,
-  ZCODE_VERSION,
-} from "@zcode/shared";
+  RASPBERRYCODE_BUILD_TIME,
+  RASPBERRYCODE_COMMIT,
+  RASPBERRYCODE_ENV,
+  RASPBERRYCODE_VERSION,
+} from "@raspberrycode/shared";
 import { createCustomAboutDialogHtml } from "./aboutWindow.js";
 
 interface DesktopBuildMetadata {
@@ -154,10 +154,10 @@ export function createAboutSnapshot(options: AboutSnapshotOptions = {}): AboutSn
   };
 
   return {
-    appVersion: normalizeValue(options.appVersion ?? buildMetadata?.appVersion ?? ZCODE_VERSION),
-    buildCommitId: normalizeValue(buildMetadata?.buildCommitId ?? ZCODE_COMMIT),
-    buildTime: normalizeValue(buildMetadata?.buildTime ?? ZCODE_BUILD_TIME),
-    environment: normalizeValue(options.environment ?? ZCODE_ENV),
+    appVersion: normalizeValue(options.appVersion ?? buildMetadata?.appVersion ?? RASPBERRYCODE_VERSION),
+    buildCommitId: normalizeValue(buildMetadata?.buildCommitId ?? RASPBERRYCODE_COMMIT),
+    buildTime: normalizeValue(buildMetadata?.buildTime ?? RASPBERRYCODE_BUILD_TIME),
+    environment: normalizeValue(options.environment ?? RASPBERRYCODE_ENV),
     electronVersion: normalizeValue(runtimeVersions.electron),
     electronBuilderVersion: resolveElectronBuilderVersion(buildMetadata),
     chromiumVersion: normalizeValue(runtimeVersions.chrome),

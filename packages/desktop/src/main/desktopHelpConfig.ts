@@ -1,10 +1,10 @@
 import { net } from "electron";
 import {
   buildHelpAppConfigUrl,
-  buildZCodeSourceHeadersFromContext,
+  buildRaspberryCodeSourceHeadersFromContext,
   createHelpAppConfigReader,
-  ZCODE_ENV,
-} from "@zcode/shared";
+  RASPBERRYCODE_ENV,
+} from "@raspberrycode/shared";
 
 export function createDesktopHelpConfigReader(options: {
   resolveEndpointOrigin: () => Promise<string>;
@@ -24,14 +24,14 @@ export function createDesktopHelpConfigReader(options: {
         options.appVersion,
         `${process.platform}-${process.arch}`,
       ),
-      buildZCodeSourceHeadersFromContext({
+      buildRaspberryCodeSourceHeadersFromContext({
         endpointOrigin,
         appVersion: options.appVersion,
         clientLanguage: options.getClientLanguage(),
         deviceMid: options.deviceMid,
         platform: process.platform,
         arch: process.arch,
-        releaseChannel: ZCODE_ENV,
+        releaseChannel: RASPBERRYCODE_ENV,
         sourceTitle: "electron",
       }),
     );

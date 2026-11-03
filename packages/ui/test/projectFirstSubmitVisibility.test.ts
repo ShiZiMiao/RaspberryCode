@@ -17,8 +17,8 @@ vi.mock("@/store/TabStoreProvider.js", () => ({
   useTabStore: () => mocks.tabs,
   useTabStoreApi: () => ({ subscribe: () => () => {} }),
 }));
-vi.mock("@/store/zcodeSessionStore.js", () => ({
-  useZCodeSessionStore: Object.assign(() => 0, { subscribe: () => () => {} }),
+vi.mock("@/store/raspberrycodeSessionStore.js", () => ({
+  useRaspberryCodeSessionStore: Object.assign(() => 0, { subscribe: () => () => {} }),
 }));
 vi.mock("@/v4/useWorkspaceSessionsIndexItems.js", () => ({
   useWorkspaceSessionsIndexItems: () => ({ items: [] }),
@@ -66,7 +66,7 @@ beforeEach(() => {
   mocks.read.mockReset();
   mocks.services = {
     projectService: {},
-    zcodeTaskService: { onDynamicWorkspaceEvent: () => () => ({ dispose() {} }) },
+    raspberrycodeTaskService: { onDynamicWorkspaceEvent: () => () => ({ dispose() {} }) },
     broadcastService: { onMessage: () => ({ dispose() {} }) },
   };
   frames.length = 0;

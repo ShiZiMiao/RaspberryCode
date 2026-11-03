@@ -3,7 +3,7 @@
  * 纯函数、单一事实源。
  * 匹配顺序：根级特例 → 文件规则（精确）→ 前缀规则（最长前缀优先）→ 其他。
  */
-import type { StorageCategoryId, StorageCleanability, StorageRootId } from "@zcode/shared";
+import type { StorageCategoryId, StorageCleanability, StorageRootId } from "@raspberrycode/shared";
 
 export interface StorageCatalogContext {
   rootId: StorageRootId;
@@ -139,7 +139,7 @@ const PROTECTED_BASENAMES = new Set([
   "credentials.json",
   ".credentials.json",
   ".tokens",
-  "zcode-stdio-tap.json",
+  "raspberrycode-stdio-tap.json",
 ]);
 const PROTECTED_PREFIXES = ["v2/crash/live"];
 

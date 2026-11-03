@@ -10,7 +10,7 @@
  * **响应通道**，不是 per-workspace 的不同凭证。
  */
 import { describe, expect, it, vi } from "vitest";
-import { zcodeProtocolMethods } from "@zcode/shared";
+import { raspberrycodeProtocolMethods } from "@raspberrycode/shared";
 
 const LOCAL_WORKSPACE = {
   workspaceKey: "/workspace/app",
@@ -59,8 +59,8 @@ async function createServiceWithClients(options: {
   const clients = new Map<string, FakeClient>();
 
   vi.resetModules();
-  vi.doMock("../src/zcode-agent/zcodeAgentProcessManager.js", () => ({
-    ZCodeAgentProcessManager: class {
+  vi.doMock("../src/raspberrycode-agent/raspberrycodeAgentProcessManager.js", () => ({
+    RaspberryCodeAgentProcessManager: class {
       onRuntimeRestarted() {
         return { dispose() {} };
       }
@@ -101,7 +101,7 @@ async function createServiceWithClients(options: {
         return { dispose() {} };
       },
       request: async (method: string) => {
-        if (method === zcodeProtocolMethods.initialize) {
+        if (method === raspberrycodeProtocolMethods.initialize) {
           return {
             available: true,
             protocolName: "RaspberryCode Protocol",
@@ -117,8 +117,8 @@ async function createServiceWithClients(options: {
     };
   }
 
-  const { createZCodeAgentService } = await import("../src/zcode-agent/zcodeAgentService.js");
-  const service = createZCodeAgentService({
+  const { createRaspberryCodeAgentService } = await import("../src/raspberrycode-agent/raspberrycodeAgentService.js");
+  const service = createRaspberryCodeAgentService({
     // initialize 会先确认当前模型选择 View 中存在可执行模型，否则以
     // provider_not_ready 提前返回、不建 client。
     modelSelectionReadinessSource: {
@@ -131,7 +131,7 @@ async function createServiceWithClients(options: {
                 kind: "account" as const,
                 api: {
                   type: "anthropic-messages" as const,
-                  baseUrl: "https://zcode.z.ai/api/v1/zcode-plan",
+                  baseUrl: "https://raspberrycode.example.com/api/v1/raspberrycode-plan",
                 },
                 models: ["GLM-5.2"],
               },
@@ -172,12 +172,12 @@ function officialMcpAuthRequest(
 ): Record<string, unknown> {
   return {
     id,
-    method: zcodeProtocolMethods.interactionRequestOfficialMcpAuthHeaders,
+    method: raspberrycodeProtocolMethods.interactionRequestOfficialMcpAuthHeaders,
     params: {
       mcpKey: "image-search",
-      pluginId: "zcode-tools@zcode-plugins-official",
+      pluginId: "raspberrycode-tools@raspberrycode-plugins-official",
       requestId: `official-mcp-auth:${id}`,
-      targetOrigin: "https://mcp.zcode.example",
+      targetOrigin: "https://mcp.raspberrycode.example",
       workspace,
     },
   };
@@ -362,9 +362,9 @@ describe("official mcp auth headers over desktop-attached remote", () => {
           seen.push(input);
           return {
             trusted:
-              input.pluginId === "zcode-tools@zcode-plugins-official" &&
+              input.pluginId === "raspberrycode-tools@raspberrycode-plugins-official" &&
               input.mcpKey === "image-search" &&
-              input.origin === "https://mcp.zcode.example",
+              input.origin === "https://mcp.raspberrycode.example",
           };
         },
       },
@@ -419,8 +419,8 @@ describe("official mcp auth headers over desktop-attached remote", () => {
       expect(resolveHeaders).toHaveBeenCalledWith(
         expect.objectContaining({
           mcpKey: "image-search",
-          pluginId: "zcode-tools@zcode-plugins-official",
-          targetOrigin: "https://mcp.zcode.example",
+          pluginId: "raspberrycode-tools@raspberrycode-plugins-official",
+          targetOrigin: "https://mcp.raspberrycode.example",
           workspace: expect.objectContaining({
             workspaceIdentity: REMOTE_WORKSPACE.workspaceIdentity,
           }),
@@ -445,12 +445,12 @@ describe("official mcp auth headers over desktop-attached remote", () => {
       const remote = harness.clients.get(REMOTE_WORKSPACE.workspaceIdentity);
       remote?.onRequestListener?.({
         id: "remote-bad",
-        method: zcodeProtocolMethods.interactionRequestOfficialMcpAuthHeaders,
+        method: raspberrycodeProtocolMethods.interactionRequestOfficialMcpAuthHeaders,
         // 走私凭证字段 + 缺 targetOrigin：strict schema 必须拒绝
         params: {
           jwt: "leaked",
           mcpKey: "image-search",
-          pluginId: "zcode-tools@zcode-plugins-official",
+          pluginId: "raspberrycode-tools@raspberrycode-plugins-official",
           requestId: "official-mcp-auth:bad",
           workspace: REMOTE_WORKSPACE,
         },

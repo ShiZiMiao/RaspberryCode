@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { setDataBaseDir } from "@zcode/services/node";
+import { setDataBaseDir } from "@raspberrycode/services/node";
 import { createTempTextAttachment } from "../src/main/tempTextAttachment.js";
 
 let tempRoot: string | null = null;
@@ -16,8 +16,8 @@ afterEach(async () => {
 });
 
 describe("createTempTextAttachment", () => {
-  it("writes pasted text under the zcode temp attachment directory", async () => {
-    tempRoot = await mkdtemp(join(tmpdir(), "zcode-temp-text-"));
+  it("writes pasted text under the raspberrycode temp attachment directory", async () => {
+    tempRoot = await mkdtemp(join(tmpdir(), "raspberrycode-temp-text-"));
     setDataBaseDir(tempRoot);
 
     const result = await createTempTextAttachment({

@@ -14,7 +14,7 @@ export {
   REQUEST_VERIFICATION_REJECTED_MESSAGE,
 } from "@/request-security-edition/errors.js";
 /**
- * zcode-plan / Coding Plan 业务错误码与前端处理约定。
+ * raspberrycode-plan / Coding Plan 业务错误码与前端处理约定。
  *
  * | 场景           | code | HTTP | 前端处理 |
  * |----------------|------|------|----------|
@@ -53,17 +53,17 @@ export type ProviderBusinessErrorUiAction =
   | "upgrade";
 
 export const PROVIDER_BUSINESS_ERROR_MESSAGE_IDS: Record<ProviderBusinessErrorCode, string> = {
-  "1006": "zcode.error.providerBusiness.1006",
-  "1005": "zcode.error.providerBusiness.1005",
-  "3006": "zcode.error.providerBusiness.3006",
-  "3002": "zcode.error.providerBusiness.3002",
-  "3001": "zcode.error.providerBusiness.3001",
-  "3007": "zcode.error.providerBusiness.3007",
-  "3008": "zcode.error.providerBusiness.3008",
-  "3009": "zcode.error.providerBusiness.3009",
-  "3010": "zcode.error.providerBusiness.3010",
-  "2007": "zcode.error.providerBusiness.2007",
-  "429": "zcode.error.providerBusiness.429",
+  "1006": "raspberrycode.error.providerBusiness.1006",
+  "1005": "raspberrycode.error.providerBusiness.1005",
+  "3006": "raspberrycode.error.providerBusiness.3006",
+  "3002": "raspberrycode.error.providerBusiness.3002",
+  "3001": "raspberrycode.error.providerBusiness.3001",
+  "3007": "raspberrycode.error.providerBusiness.3007",
+  "3008": "raspberrycode.error.providerBusiness.3008",
+  "3009": "raspberrycode.error.providerBusiness.3009",
+  "3010": "raspberrycode.error.providerBusiness.3010",
+  "2007": "raspberrycode.error.providerBusiness.2007",
+  "429": "raspberrycode.error.providerBusiness.429",
 };
 
 export const PROVIDER_BUSINESS_ERROR_ACTION_MESSAGE_IDS: Record<

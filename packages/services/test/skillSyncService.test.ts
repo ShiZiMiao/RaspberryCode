@@ -3,7 +3,7 @@ import { mkdir, readFile, symlink, writeFile } from "node:fs/promises";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { MAX_SKILL_SCAN_DEPTH, SKILL_SYNC_SIZE_LIMIT_ERROR_CODE } from "@zcode/shared";
+import { MAX_SKILL_SCAN_DEPTH, SKILL_SYNC_SIZE_LIMIT_ERROR_CODE } from "@raspberrycode/shared";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createSkillSyncService } from "../src/skill-sync/skillSyncService.js";
 
@@ -14,7 +14,7 @@ async function symlinkSkillDirectory(target: string, linkPath: string) {
 }
 
 function makeHome() {
-  return mkdtempSync(join(tmpdir(), "zcode-skill-sync-home-"));
+  return mkdtempSync(join(tmpdir(), "raspberrycode-skill-sync-home-"));
 }
 
 async function writeSkill(
@@ -54,7 +54,7 @@ describe("skill sync service", () => {
     process.env.HOME = originalHome;
   });
 
-  it("lists local user zcode skills as candidates", async () => {
+  it("lists local user raspberrycode skills as candidates", async () => {
     const home = makeHome();
     process.env.HOME = home;
     await writeSkill(home, "review");
@@ -98,7 +98,7 @@ describe("skill sync service", () => {
     expect(result.error).toBeTruthy();
   });
 
-  it("lists local user agents skills as candidates when zcode skills are empty", async () => {
+  it("lists local user agents skills as candidates when raspberrycode skills are empty", async () => {
     const home = makeHome();
     process.env.HOME = home;
     await writeSkill(home, "lark-doc", "lark-doc", ".agents");
@@ -133,27 +133,27 @@ describe("skill sync service", () => {
     );
   });
 
-  it("deduplicates agents skills already covered by zcode skills", async () => {
+  it("deduplicates agents skills already covered by raspberrycode skills", async () => {
     const home = makeHome();
     process.env.HOME = home;
-    await writeSkill(home, "review-zcode", "review", ".raspberrycode");
+    await writeSkill(home, "review-raspberrycode", "review", ".raspberrycode");
     await writeSkill(home, "review-agents", "review", ".agents");
     const service = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
 
     const result = await service.listLocalUserSkillCandidates();
 
     expect(result.candidates.map((candidate) => candidate.directoryName)).toEqual([
-      "review-zcode",
+      "review-raspberrycode",
     ]);
   });
 
-  it("deduplicates agents skills already covered by zcode symlink realpath", async () => {
+  it("deduplicates agents skills already covered by raspberrycode symlink realpath", async () => {
     const home = makeHome();
     process.env.HOME = home;
     const sourceDir = await writeBareSkill(home, "external-source", ".agents");
-    const zcodeRoot = join(home, ".raspberrycode", "skills");
-    await mkdir(zcodeRoot, { recursive: true });
-    await symlinkSkillDirectory(sourceDir, join(zcodeRoot, "linked-external"));
+    const raspberrycodeRoot = join(home, ".raspberrycode", "skills");
+    await mkdir(raspberrycodeRoot, { recursive: true });
+    await symlinkSkillDirectory(sourceDir, join(raspberrycodeRoot, "linked-external"));
     const service = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
 
     const result = await service.listLocalUserSkillCandidates();
@@ -163,16 +163,16 @@ describe("skill sync service", () => {
     ]);
   });
 
-  it("deduplicates agents skills covered by raw zcode directory names before realpath de-dupe", async () => {
+  it("deduplicates agents skills covered by raw raspberrycode directory names before realpath de-dupe", async () => {
     const home = makeHome();
     process.env.HOME = home;
     const sourceDir = join(home, "external-source");
     await mkdir(sourceDir, { recursive: true });
     await writeFile(join(sourceDir, "SKILL.md"), "Body");
-    const zcodeRoot = join(home, ".raspberrycode", "skills");
-    await mkdir(zcodeRoot, { recursive: true });
-    await symlinkSkillDirectory(sourceDir, join(zcodeRoot, "aaa-link"));
-    await symlinkSkillDirectory(sourceDir, join(zcodeRoot, "agents-only"));
+    const raspberrycodeRoot = join(home, ".raspberrycode", "skills");
+    await mkdir(raspberrycodeRoot, { recursive: true });
+    await symlinkSkillDirectory(sourceDir, join(raspberrycodeRoot, "aaa-link"));
+    await symlinkSkillDirectory(sourceDir, join(raspberrycodeRoot, "agents-only"));
     await writeBareSkill(home, "agents-only", ".agents");
     const service = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
 
@@ -212,13 +212,13 @@ describe("skill sync service", () => {
     ).resolves.toContain("name: review");
   });
 
-  it("exports zcode skill directory symlinks as regular remote skill directories", async () => {
+  it("exports raspberrycode skill directory symlinks as regular remote skill directories", async () => {
     const localHome = makeHome();
     process.env.HOME = localHome;
     const sourceDir = await writeSkill(localHome, "external-source", "external", ".agents");
-    const zcodeRoot = join(localHome, ".raspberrycode", "skills");
-    await mkdir(zcodeRoot, { recursive: true });
-    await symlinkSkillDirectory(sourceDir, join(zcodeRoot, "linked-external"));
+    const raspberrycodeRoot = join(localHome, ".raspberrycode", "skills");
+    await mkdir(raspberrycodeRoot, { recursive: true });
+    await symlinkSkillDirectory(sourceDir, join(raspberrycodeRoot, "linked-external"));
     const localService = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
     const candidates = await localService.listLocalUserSkillCandidates();
 
@@ -226,7 +226,7 @@ describe("skill sync service", () => {
       {
         name: "external",
         directoryName: "linked-external",
-        path: join(zcodeRoot, "linked-external", "SKILL.md"),
+        path: join(raspberrycodeRoot, "linked-external", "SKILL.md"),
       },
     ]);
 

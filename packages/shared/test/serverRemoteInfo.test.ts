@@ -3,7 +3,7 @@ import {
   SERVER_REMOTE_PROTOCOL_VERSION,
   serverRemoteInfoSchema,
   serverRemoteInfoOutputSchema,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 
 const serverInfo = {
   serverId: "remote-server",

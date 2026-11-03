@@ -7,7 +7,7 @@ import type {
   HookEvent,
   SettingsDirectoryLocation,
   SettingsDirectorySource,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import {
   buildWorkspaceHookBundleSnapshot,
   createWorkspaceHookSourceInput,
@@ -17,22 +17,22 @@ import {
   type WorkspaceHookBundleSnapshotData,
   type WorkspaceHookSourceInput,
   type WorkspaceHooksConfig,
-} from "@zcode/shared/workspace-hook-discovery";
-import { parseWorkspaceHookTrustStoreContent } from "@zcode/shared/workspace-hook-trust-store-file";
+} from "@raspberrycode/shared/workspace-hook-discovery";
+import { parseWorkspaceHookTrustStoreContent } from "@raspberrycode/shared/workspace-hook-trust-store-file";
 import { createServiceLogger, type ServiceLogger } from "#src/logger/serviceLogger.js";
 import type { IHooksService } from "./hooks.js";
 import { atomicWriteWorkspaceHookConfig } from "./workspaceHookConfigMutation.js";
 import {
   fromLegacyHooksConfig,
   fromProjectSnapshot,
-  fromUserZCodeSource,
+  fromUserRaspberryCodeSource,
   resolveNextRootEnabled,
-  toZCodeHooksEvents,
+  toRaspberryCodeHooksEvents,
   type LegacyHooksConfig,
 } from "./workspaceHookSettingsModel.js";
 
 const SETTINGS_FILE = "settings.json";
-const ZCODE_CONFIG_FILE = "config.json";
+const RASPBERRYCODE_CONFIG_FILE = "config.json";
 const HOOK_EVENTS: readonly HookEvent[] = [
   "SessionStart",
   "UserPromptSubmit",
@@ -43,7 +43,7 @@ const HOOK_EVENTS: readonly HookEvent[] = [
   "Stop",
 ];
 
-interface ZCodeConfigFile {
+interface RaspberryCodeConfigFile {
   hooks?: WorkspaceHooksConfig;
   [key: string]: unknown;
 }
@@ -55,7 +55,7 @@ function resolveUserHomeDir(): string {
 
 function getRootDir(source: SettingsDirectorySource, workspacePath?: string): string {
   const baseDir = workspacePath ?? resolveUserHomeDir();
-  if (source === "zcode") {
+  if (source === "raspberrycode") {
     return workspacePath ? join(baseDir, ".raspberrycode") : join(baseDir, ".raspberrycode", "cli");
   }
   return join(baseDir, source === "agents" ? ".agents" : ".claude");
@@ -64,7 +64,7 @@ function getRootDir(source: SettingsDirectorySource, workspacePath?: string): st
 function getConfigPath(source: SettingsDirectorySource, workspacePath?: string): string {
   return join(
     getRootDir(source, workspacePath),
-    source === "zcode" ? ZCODE_CONFIG_FILE : SETTINGS_FILE,
+    source === "raspberrycode" ? RASPBERRYCODE_CONFIG_FILE : SETTINGS_FILE,
   );
 }
 
@@ -102,8 +102,8 @@ async function readJsonFile<T>(filePath: string): Promise<T | null> {
   }
 }
 
-async function readUserZCodeSource(): Promise<WorkspaceHookSourceInput | undefined> {
-  const path = getConfigPath("zcode");
+async function readUserRaspberryCodeSource(): Promise<WorkspaceHookSourceInput | undefined> {
+  const path = getConfigPath("raspberrycode");
   const config = await readJsonFile<Record<string, unknown>>(path);
   const parsed = workspaceHooksConfigSchema.safeParse(config?.hooks);
   if (!parsed.success) return undefined;
@@ -155,7 +155,7 @@ async function readPersistentWorkspaceHookTrustDigests(
   workspaceIdentity: string,
   logger: ServiceLogger,
 ): Promise<{ digests: Set<string>; corrupt: boolean }> {
-  const userConfig = (await readJsonFile<Record<string, unknown>>(getConfigPath("zcode"))) ?? {};
+  const userConfig = (await readJsonFile<Record<string, unknown>>(getConfigPath("raspberrycode"))) ?? {};
   const storage = isRecord(userConfig.storage) ? userConfig.storage : {};
   const configured = typeof storage.dir === "string" ? storage.dir.trim() : "";
   const home = resolveUserHomeDir();
@@ -225,14 +225,14 @@ async function loadHooksImpl(
 }> {
   const workspacePath = resolve(params.workspacePath);
   if (params.scope === "user") {
-    const userSource = await readUserZCodeSource();
+    const userSource = await readUserRaspberryCodeSource();
     const runtimeRoot = resolveWorkspaceHookRuntimeRoot([userSource?.hooks]);
     const hooks = [
-      ...fromUserZCodeSource({
+      ...fromUserRaspberryCodeSource({
         source: userSource,
         runtimeRoot,
         workspacePath,
-        location: buildLocation("zcode"),
+        location: buildLocation("raspberrycode"),
       }),
       ...(await loadLegacyHooksFromLocation("agents")),
       ...(await loadLegacyHooksFromLocation("claude")),
@@ -242,7 +242,7 @@ async function loadHooksImpl(
   const workspaceIdentity = params.workspaceIdentity?.trim() || workspacePath;
   const [{ sources: projectSources }, userSource] = await Promise.all([
     readWorkspaceHookProjectSources({ workingDirectory: workspacePath }),
-    readUserZCodeSource(),
+    readUserRaspberryCodeSource(),
   ]);
   const runtimeRoot = resolveWorkspaceHookRuntimeRoot([
     userSource?.hooks,
@@ -266,11 +266,11 @@ async function loadHooksImpl(
     }),
     ...(await loadLegacyHooksFromLocation("agents", workspacePath)),
     ...(await loadLegacyHooksFromLocation("claude", workspacePath)),
-    ...fromUserZCodeSource({
+    ...fromUserRaspberryCodeSource({
       source: userSource,
       runtimeRoot,
       workspacePath,
-      location: buildLocation("zcode"),
+      location: buildLocation("raspberrycode"),
     }),
     ...(await loadLegacyHooksFromLocation("agents")),
     ...(await loadLegacyHooksFromLocation("claude")),
@@ -283,19 +283,19 @@ async function loadHooksImpl(
   };
 }
 
-async function writeZCodeHooksConfig(
+async function writeRaspberryCodeHooksConfig(
   workspacePath: string | undefined,
   hooks: Hook[],
 ): Promise<void> {
-  const configPath = getConfigPath("zcode", workspacePath);
-  const existingConfig = (await readJsonFile<ZCodeConfigFile>(configPath)) ?? {};
+  const configPath = getConfigPath("raspberrycode", workspacePath);
+  const existingConfig = (await readJsonFile<RaspberryCodeConfigFile>(configPath)) ?? {};
   const enabled = resolveNextRootEnabled(existingConfig.hooks?.enabled, hooks);
   await atomicWriteWorkspaceHookConfig(configPath, {
     ...existingConfig,
     hooks: {
       ...existingConfig.hooks,
       ...(enabled !== undefined ? { enabled } : {}),
-      events: toZCodeHooksEvents(hooks),
+      events: toRaspberryCodeHooksEvents(hooks),
     },
   });
 }
@@ -310,19 +310,19 @@ async function saveHooksImpl(params: {
   const userHooks = params.hooks.filter(
     (hook) =>
       hook.editable !== false &&
-      (!hook.location || (hook.location.source === "zcode" && hook.location.scope === "user")),
+      (!hook.location || (hook.location.source === "raspberrycode" && hook.location.scope === "user")),
   );
   const projectHooks = params.hooks.filter(
     (hook) =>
       hook.editable !== false &&
-      hook.location?.source === "zcode" &&
+      hook.location?.source === "raspberrycode" &&
       hook.location.scope === "project" &&
       (!hook.configuredState ||
         resolve(hook.configuredState.sourcePath) === currentProjectConfigPath),
   );
-  await writeZCodeHooksConfig(undefined, userHooks);
+  await writeRaspberryCodeHooksConfig(undefined, userHooks);
   if (params.scope !== "user") {
-    await writeZCodeHooksConfig(params.workspacePath, projectHooks);
+    await writeRaspberryCodeHooksConfig(params.workspacePath, projectHooks);
   }
 }
 

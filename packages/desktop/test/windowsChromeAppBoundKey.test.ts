@@ -19,7 +19,7 @@ const execFileAsync = promisify(execFile);
 let tempRoot = "";
 
 beforeEach(async () => {
-  tempRoot = await mkdtemp(join(tmpdir(), "zcode-app-bound-test-"));
+  tempRoot = await mkdtemp(join(tmpdir(), "raspberrycode-app-bound-test-"));
   vi.clearAllMocks();
 });
 
@@ -29,7 +29,7 @@ afterEach(async () => {
 
 async function createFixture(): Promise<{ helperPath: string; userDataDir: string }> {
   const helperRoot = join(tempRoot, "browser-import");
-  const helperPath = join(helperRoot, "zcode-browser-import-helper.exe");
+  const helperPath = join(helperRoot, "raspberrycode-browser-import-helper.exe");
   const userDataDir = join(tempRoot, "User Data");
   await mkdir(helperRoot, { recursive: true });
   await mkdir(userDataDir, { recursive: true });
@@ -70,11 +70,11 @@ describe("windowsChromeAppBoundKey", () => {
       "powershell.exe",
     );
     const commandPath = process.env.COMSPEC ?? "C:\\Windows\\System32\\cmd.exe";
-    const marker = "zcode-native-helper-ok";
+    const marker = "raspberrycode-native-helper-ok";
     const { stdout } = await execFileAsync(
       powershellPath,
       createEncodedPowerShellArgs(
-        "$response=& $zcodeArg0 /d /c $zcodeArg1;[Console]::Out.Write(($response -join ''))",
+        "$response=& $raspberrycodeArg0 /d /c $raspberrycodeArg1;[Console]::Out.Write(($response -join ''))",
         [commandPath, `echo ${marker}`],
       ),
       { env, windowsHide: true },
@@ -111,7 +111,7 @@ describe("windowsChromeAppBoundKey", () => {
     );
     expect(source).toContain("VerifyProcessImagePathHandle(brokerProcess, GetSelfPath())");
     expect(source).toContain("VerifyPipeClient(pipe.SafePipeHandle, GetSelfPath(), brokerPid)");
-    expect(buildSource).toContain('targetArch === "arm64" && !process.env.ZCODE_CSC_PATH');
+    expect(buildSource).toContain('targetArch === "arm64" && !process.env.RASPBERRYCODE_CSC_PATH');
     expect(buildSource).toContain('`/platform:${targetArch}`');
   });
 
@@ -140,15 +140,15 @@ describe("windowsChromeAppBoundKey", () => {
       if (args[0] === "--version") {
         return {
           exitCode: 0,
-          stdout: "ZCODE_BROWSER_IMPORT_HELPER\t2\tx64\t3.4.0\ttest",
+          stdout: "RASPBERRYCODE_BROWSER_IMPORT_HELPER\t2\tx64\t3.4.0\ttest",
         };
       }
       expect(args).toEqual(["--broker", "--parent-pid", String(process.pid)]);
-      expect(input).toMatch(/^ZCODE_BROWSER_IMPORT_V1\t/);
+      expect(input).toMatch(/^RASPBERRYCODE_BROWSER_IMPORT_V1\t/);
       expect(input).not.toContain("chrome.exe\t");
       return {
         exitCode: 0,
-        stdout: `ZCODE_BROWSER_IMPORT_V1\tOK\t${Buffer.alloc(32, 7).toString("base64")}`,
+        stdout: `RASPBERRYCODE_BROWSER_IMPORT_V1\tOK\t${Buffer.alloc(32, 7).toString("base64")}`,
       };
     });
 
@@ -172,9 +172,9 @@ describe("windowsChromeAppBoundKey", () => {
       args[0] === "--version"
         ? {
             exitCode: 0,
-            stdout: "ZCODE_BROWSER_IMPORT_HELPER\t2\tx64\t3.4.0\ttest",
+            stdout: "RASPBERRYCODE_BROWSER_IMPORT_HELPER\t2\tx64\t3.4.0\ttest",
           }
-        : { exitCode: 0, stdout: "ZCODE_BROWSER_IMPORT_V1\tERR\televation_cancelled" },
+        : { exitCode: 0, stdout: "RASPBERRYCODE_BROWSER_IMPORT_V1\tERR\televation_cancelled" },
     );
 
     await expect(
@@ -196,9 +196,9 @@ describe("windowsChromeAppBoundKey", () => {
       args[0] === "--version"
         ? {
             exitCode: 0,
-            stdout: "ZCODE_BROWSER_IMPORT_HELPER\t2\tx64\t3.4.0\ttest",
+            stdout: "RASPBERRYCODE_BROWSER_IMPORT_HELPER\t2\tx64\t3.4.0\ttest",
           }
-        : { exitCode: 0, stdout: "ZCODE_BROWSER_IMPORT_V1\tERR\tcng_failed" },
+        : { exitCode: 0, stdout: "RASPBERRYCODE_BROWSER_IMPORT_V1\tERR\tcng_failed" },
     );
 
     await expect(
@@ -224,9 +224,9 @@ describe("windowsChromeAppBoundKey", () => {
       args[0] === "--version"
         ? {
             exitCode: 0,
-            stdout: "ZCODE_BROWSER_IMPORT_HELPER\t2\tx64\t3.4.0\ttest",
+            stdout: "RASPBERRYCODE_BROWSER_IMPORT_HELPER\t2\tx64\t3.4.0\ttest",
           }
-        : { exitCode: 0, stdout: "ZCODE_BROWSER_IMPORT_V1\tERR\tservice_channel_failed" },
+        : { exitCode: 0, stdout: "RASPBERRYCODE_BROWSER_IMPORT_V1\tERR\tservice_channel_failed" },
     );
 
     await expect(
@@ -253,11 +253,11 @@ describe("windowsChromeAppBoundKey", () => {
       args[0] === "--version"
         ? {
             exitCode: 0,
-            stdout: "ZCODE_BROWSER_IMPORT_HELPER\t2\tx64\t3.4.0\ttest",
+            stdout: "RASPBERRYCODE_BROWSER_IMPORT_HELPER\t2\tx64\t3.4.0\ttest",
           }
         : {
             exitCode: 0,
-            stdout: `ZCODE_BROWSER_IMPORT_V1\tERR\t${secretMarker}`,
+            stdout: `RASPBERRYCODE_BROWSER_IMPORT_V1\tERR\t${secretMarker}`,
           },
     );
 
@@ -286,7 +286,7 @@ describe("windowsChromeAppBoundKey", () => {
       args[0] === "--version"
         ? {
             exitCode: 0,
-            stdout: "ZCODE_BROWSER_IMPORT_HELPER\t2\tx64\t3.4.0\ttest",
+            stdout: "RASPBERRYCODE_BROWSER_IMPORT_HELPER\t2\tx64\t3.4.0\ttest",
           }
         : { exitCode: 1, stdout: rawResponse },
     );
@@ -360,7 +360,7 @@ describe("windowsChromeAppBoundKey", () => {
       if (command.includes("--version")) {
         return {
           exitCode: 0,
-          stdout: "ZCODE_BROWSER_IMPORT_HELPER\t2\tx64\t3.4.0\ttest",
+          stdout: "RASPBERRYCODE_BROWSER_IMPORT_HELPER\t2\tx64\t3.4.0\ttest",
         };
       }
       expect(executablePath).toBe("C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe");
@@ -368,7 +368,7 @@ describe("windowsChromeAppBoundKey", () => {
       await writeFile(fixture.helperPath, "replaced after verification");
       return {
         exitCode: 23,
-        stdout: "ZCODE_BROWSER_IMPORT_V1\tERR\thelper_verification_failed",
+        stdout: "RASPBERRYCODE_BROWSER_IMPORT_V1\tERR\thelper_verification_failed",
       };
     });
 
@@ -398,11 +398,11 @@ describe("windowsChromeAppBoundKey", () => {
       decodeEncodedPowerShellCommand(args).includes("--version")
         ? {
             exitCode: 0,
-            stdout: "ZCODE_BROWSER_IMPORT_HELPER\t2\tx64\t3.4.0\tbuild-a",
+            stdout: "RASPBERRYCODE_BROWSER_IMPORT_HELPER\t2\tx64\t3.4.0\tbuild-a",
           }
         : {
             exitCode: 0,
-            stdout: `ZCODE_BROWSER_IMPORT_V1\tOK\t${Buffer.alloc(32, 7).toString("base64")}`,
+            stdout: `RASPBERRYCODE_BROWSER_IMPORT_V1\tOK\t${Buffer.alloc(32, 7).toString("base64")}`,
           },
     );
 
@@ -443,7 +443,7 @@ describe("windowsChromeAppBoundKey", () => {
           expect(command).toContain("FileShare]::Read");
           return {
             exitCode: 0,
-            stdout: "ZCODE_BROWSER_IMPORT_HELPER\t2\tx64\t3.4.0\tbuild-a",
+            stdout: "RASPBERRYCODE_BROWSER_IMPORT_HELPER\t2\tx64\t3.4.0\tbuild-a",
           };
         }
         expect(executablePath).toBe(trustedPowerShellPath);
@@ -453,7 +453,7 @@ describe("windowsChromeAppBoundKey", () => {
         await beforeInput?.();
         return {
           exitCode: 0,
-          stdout: `ZCODE_BROWSER_IMPORT_V1\tOK\t${Buffer.alloc(32, 7).toString("base64")}`,
+          stdout: `RASPBERRYCODE_BROWSER_IMPORT_V1\tOK\t${Buffer.alloc(32, 7).toString("base64")}`,
         };
       },
     );

@@ -2,8 +2,8 @@
 import { createElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ConversationSnapshot } from "@zcode/shared/zcode-protocol-v4";
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+import type { ConversationSnapshot } from "@raspberrycode/shared/raspberrycode-protocol-v4";
+import { RaspberryCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import { SessionPane } from "@/v4/SessionPane.js";
 import type { ConversationShareSelectionDraft } from "@/store/conversationShareSelectionStore.js";
 import type { ConversationRowRenderContext } from "@/v4/conversationRowContext.js";
@@ -73,7 +73,7 @@ vi.mock("@/v4/V4ConversationContext.js", () => ({
 }));
 
 vi.mock("@/store/StoreProvider.js", () => ({
-  useZCodeStoreWithDefault: (_selector: unknown, fallback: unknown) => fallback,
+  useRaspberryCodeStoreWithDefault: (_selector: unknown, fallback: unknown) => fallback,
 }));
 
 vi.mock("@/hooks/useSettingService.js", () => ({
@@ -81,7 +81,7 @@ vi.mock("@/hooks/useSettingService.js", () => ({
     error: null,
     loading: false,
     refresh: vi.fn(async () => {}),
-    settings: { zcodeInteractionBehavior: "queue" },
+    settings: { raspberrycodeInteractionBehavior: "queue" },
     update: vi.fn(async () => {}),
   }),
 }));
@@ -90,10 +90,10 @@ vi.mock("@/hooks/useServices.js", () => ({
   useComposerClientNamespace: () => "desktop",
   useOptionalServices: () => null,
   useServices: () => ({
-    zcodeSessionService: {
+    raspberrycodeSessionService: {
       updateProviderRegistry: vi.fn(),
     },
-    zcodeTaskService: {
+    raspberrycodeTaskService: {
       restartWorkspaceProcess: vi.fn(),
     },
   }),
@@ -264,7 +264,7 @@ function renderReadOnlyPane({
 
   return renderToStaticMarkup(
     createElement(
-      ZCodeIntlProvider,
+      RaspberryCodeIntlProvider,
       { initialLocale: "zh-CN" },
       createElement(SessionPane, {
         allowWorkspaceFileRewind,
@@ -378,7 +378,7 @@ describe("SessionPane 分享模式接线", () => {
     };
     return renderToStaticMarkup(
       createElement(
-        ZCodeIntlProvider,
+        RaspberryCodeIntlProvider,
         { initialLocale: "zh-CN" },
         createElement(SessionPane, {
           paneId: "pane-1",

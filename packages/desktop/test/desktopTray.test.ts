@@ -1,6 +1,6 @@
 // Modified for RaspberryCode: 菜单标签断言随产品名同步
 import type { MenuItemConstructorOptions } from "electron";
-import { DesktopCommandIds, type Locale } from "@zcode/shared";
+import { DesktopCommandIds, type Locale } from "@raspberrycode/shared";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const captured = vi.hoisted(() => ({

@@ -5,7 +5,7 @@ import {
   type DragOverEvent,
   type DropAnimation,
 } from "@dnd-kit/core";
-import type { ZCodeGroupedTaskView } from "@/project-sidebar/grouped/types.js";
+import type { RaspberryCodeGroupedTaskView } from "@/project-sidebar/grouped/types.js";
 import { taskKey } from "@/project-sidebar/grouped/ids.js";
 import {
   moveGroupAroundTopLevelNode,
@@ -122,10 +122,10 @@ export const groupedTaskCollisionDetection: CollisionDetection = (args) => {
 };
 
 export function getGroupedTaskOverTaskPreviewView(
-  view: ZCodeGroupedTaskView,
+  view: RaspberryCodeGroupedTaskView,
   event: DragOverEvent,
   position: GroupedTaskDragDirectionPosition,
-): ZCodeGroupedTaskView {
+): RaspberryCodeGroupedTaskView {
   const activeTaskKey = getGroupedTaskDragTaskKey(event.active.data.current);
   const overTaskKey = getGroupedTaskDragTaskKey(event.over?.data.current);
   if (!activeTaskKey || !overTaskKey || activeTaskKey === overTaskKey) {
@@ -139,10 +139,10 @@ export function getGroupedTaskOverTaskPreviewView(
 }
 
 export function getGroupedTaskOverCollapsedGroupPreviewView(
-  view: ZCodeGroupedTaskView,
+  view: RaspberryCodeGroupedTaskView,
   event: DragOverEvent,
   position: GroupedTaskDragDirectionPosition,
-): ZCodeGroupedTaskView {
+): RaspberryCodeGroupedTaskView {
   const activeTaskKey = getGroupedTaskDragTaskKey(event.active.data.current);
   const overGroupId = getGroupedTaskCollapsedOverGroupId(event.over?.data.current);
   if (!activeTaskKey || !overGroupId) {
@@ -156,10 +156,10 @@ export function getGroupedTaskOverCollapsedGroupPreviewView(
 }
 
 export function getGroupedTaskOverGroupHeaderPreviewView(
-  view: ZCodeGroupedTaskView,
+  view: RaspberryCodeGroupedTaskView,
   event: DragOverEvent,
   position: GroupedTaskDragDirectionPosition,
-): ZCodeGroupedTaskView {
+): RaspberryCodeGroupedTaskView {
   const activeTaskKey = getGroupedTaskDragTaskKey(event.active.data.current);
   const overGroupId = getGroupedTaskHeaderOverGroupId(event.over?.data.current);
   if (!activeTaskKey || !overGroupId) {
@@ -179,10 +179,10 @@ export function getGroupedTaskOverGroupHeaderPreviewView(
 }
 
 export function getGroupedTaskOverGroupFooterPreviewView(
-  view: ZCodeGroupedTaskView,
+  view: RaspberryCodeGroupedTaskView,
   event: DragOverEvent,
   position: GroupedTaskDragDirectionPosition,
-): ZCodeGroupedTaskView {
+): RaspberryCodeGroupedTaskView {
   const activeTaskKey = getGroupedTaskDragTaskKey(event.active.data.current);
   const overGroupId = getGroupedTaskFooterOverGroupId(event.over?.data.current);
   if (!activeTaskKey || !overGroupId) {
@@ -202,9 +202,9 @@ export function getGroupedTaskOverGroupFooterPreviewView(
 }
 
 export function getGroupedTaskOverEmptyDropZonePreviewView(
-  view: ZCodeGroupedTaskView,
+  view: RaspberryCodeGroupedTaskView,
   event: DragOverEvent,
-): ZCodeGroupedTaskView {
+): RaspberryCodeGroupedTaskView {
   const activeTaskKey = getGroupedTaskDragTaskKey(event.active.data.current);
   const overGroupId = getGroupedTaskEmptyOverGroupId(event.over?.data.current);
   if (!activeTaskKey || !overGroupId) {
@@ -217,10 +217,10 @@ export function getGroupedTaskOverEmptyDropZonePreviewView(
 }
 
 export function getGroupedGroupOverGroupPreviewView(
-  view: ZCodeGroupedTaskView,
+  view: RaspberryCodeGroupedTaskView,
   event: DragOverEvent,
   position: GroupedTaskDragDirectionPosition,
-): ZCodeGroupedTaskView {
+): RaspberryCodeGroupedTaskView {
   const activeGroupId = getGroupedTaskDragGroupId(event.active.data.current);
   const overGroupId = getGroupedGroupOverGroupId(event.over?.data.current);
   if (!activeGroupId || !overGroupId || activeGroupId === overGroupId) {
@@ -234,10 +234,10 @@ export function getGroupedGroupOverGroupPreviewView(
 }
 
 export function getGroupedGroupOverTaskPreviewView(
-  view: ZCodeGroupedTaskView,
+  view: RaspberryCodeGroupedTaskView,
   event: DragOverEvent,
   position: GroupedTaskDragDirectionPosition,
-): ZCodeGroupedTaskView {
+): RaspberryCodeGroupedTaskView {
   const activeGroupId = getGroupedTaskDragGroupId(event.active.data.current);
   const overTaskKey = getGroupedTaskDragTaskKey(event.over?.data.current);
   if (!activeGroupId || !overTaskKey) {
@@ -250,7 +250,7 @@ export function getGroupedGroupOverTaskPreviewView(
   });
 }
 
-export function getGroupedTaskViewSignature(view: ZCodeGroupedTaskView): string {
+export function getGroupedTaskViewSignature(view: RaspberryCodeGroupedTaskView): string {
   return view.nodes
     .map((node) =>
       node.type === "task"

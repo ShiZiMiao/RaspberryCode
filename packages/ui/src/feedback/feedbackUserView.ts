@@ -1,4 +1,4 @@
-import type { FeedbackComment, FeedbackTicketStatus } from "@zcode/shared";
+import type { FeedbackComment, FeedbackTicketStatus } from "@raspberrycode/shared";
 
 type MessageFormatter = (
   descriptor: { id: string },

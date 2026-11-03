@@ -20,20 +20,20 @@ import type {
   Locale,
   UsageEntitlementSnapshot,
   UserInfo,
-  ZCodeInteractionBehavior,
-} from "@zcode/shared";
-import { BUILTIN_MODEL_PROVIDER_IDS } from "@zcode/shared";
+  RaspberryCodeInteractionBehavior,
+} from "@raspberrycode/shared";
+import { BUILTIN_MODEL_PROVIDER_IDS } from "@raspberrycode/shared";
 import {
   TID_SETTINGS_BACK_BUTTON,
   TID_SETTINGS_PAGE,
   TID_SETTINGS_SECTION_NAV,
   TID_SETTINGS_USAGE_TAB,
   testId,
-} from "@zcode/shared/test-ids";
+} from "@raspberrycode/shared/test-ids";
 import { Button } from "@/components/ui/button.js";
 import { toast } from "@/components/ui/toast.js";
 import { DesktopWindowFrame } from "@/DesktopWindowFrame.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { usePlatform } from "@/hooks/usePlatform.js";
 import { logger } from "@/logger.js";
 import { getPathLeaf } from "@/lib/path.js";
@@ -82,7 +82,7 @@ import {
   SettingsHeaderBreadcrumb,
   type SettingsBreadcrumbItem,
 } from "@/settings/SettingsHeaderBreadcrumb.js";
-import { useZCodeStore } from "@/store/StoreProvider.js";
+import { useRaspberryCodeStore } from "@/store/StoreProvider.js";
 import { useTabStore } from "@/store/TabStoreProvider.js";
 import { isWorkspaceTab } from "@/store/tabStore.js";
 import type { Theme } from "@/useTheme.js";
@@ -95,7 +95,7 @@ import { ControlHintTooltip } from "@/ControlHintTooltip.js";
 import { cn } from "@/components/lib/utils.js";
 import { useSelectDirectory } from "@/hooks/usePlatform.js";
 import { ServiceProvider, useServices } from "@/hooks/useServices.js";
-import type { AppToolSearchMode } from "@zcode/shared";
+import type { AppToolSearchMode } from "@raspberrycode/shared";
 import { useSettings } from "@/hooks/useSettingService.js";
 import type { CreateTaskRequest, RemoteConnectionOpenPreference } from "@/app-shell/types.js";
 import { useBaseWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
@@ -149,7 +149,7 @@ function SettingsUsageProviderTabs({
   codingPlanSources: never[];
   onTabChange: (tab: UsageStatsSectionTab) => void;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   // Coding Plan 用量页签已随订阅体系移除，用量统计只保留 App 用量。
   return (
     <div className="flex items-center gap-1.5">
@@ -233,7 +233,7 @@ export function SettingsPage({
   onLogout?: () => void;
   user?: UserInfo | null;
 }) {
-  const { intl, localePreference, setLocalePreference } = useZCodeIntl();
+  const { intl, localePreference, setLocalePreference } = useRaspberryCodeIntl();
   const { settingsSectionGroups, settingsSections } = useMemo(
     () =>
       createSettingsPageConfig({
@@ -313,18 +313,18 @@ export function SettingsPage({
   const [settingsBreadcrumbItems, setSettingsBreadcrumbItems] = useState<
     readonly SettingsBreadcrumbItem[]
   >([]);
-  const interfaceMode = useZCodeStore((state) => state.interfaceMode);
-  const setInterfaceMode = useZCodeStore((state) => state.setInterfaceMode);
-  const theme = useZCodeStore((state) => state.theme);
-  const setTheme = useZCodeStore((state) => state.setTheme);
-  const codePreviewSettings = useZCodeStore((state) => state.codePreviewSettings);
-  const setCodePreviewSettings = useZCodeStore((state) => state.setCodePreviewSettings);
-  const uiFontSizePx = useZCodeStore((state) => state.uiFontSizePx);
-  const setUiFontSizePx = useZCodeStore((state) => state.setUiFontSizePx);
-  const notificationEnabled = useZCodeStore((state) => state.notificationEnabled);
-  const setNotificationEnabled = useZCodeStore((state) => state.setNotificationEnabled);
-  const notificationSoundEnabled = useZCodeStore((state) => state.notificationSoundEnabled);
-  const setNotificationSoundEnabled = useZCodeStore((state) => state.setNotificationSoundEnabled);
+  const interfaceMode = useRaspberryCodeStore((state) => state.interfaceMode);
+  const setInterfaceMode = useRaspberryCodeStore((state) => state.setInterfaceMode);
+  const theme = useRaspberryCodeStore((state) => state.theme);
+  const setTheme = useRaspberryCodeStore((state) => state.setTheme);
+  const codePreviewSettings = useRaspberryCodeStore((state) => state.codePreviewSettings);
+  const setCodePreviewSettings = useRaspberryCodeStore((state) => state.setCodePreviewSettings);
+  const uiFontSizePx = useRaspberryCodeStore((state) => state.uiFontSizePx);
+  const setUiFontSizePx = useRaspberryCodeStore((state) => state.setUiFontSizePx);
+  const notificationEnabled = useRaspberryCodeStore((state) => state.notificationEnabled);
+  const setNotificationEnabled = useRaspberryCodeStore((state) => state.setNotificationEnabled);
+  const notificationSoundEnabled = useRaspberryCodeStore((state) => state.notificationSoundEnabled);
+  const setNotificationSoundEnabled = useRaspberryCodeStore((state) => state.setNotificationSoundEnabled);
   const usageProviderSettingsRead = useProviderSettingsView();
   const usageProviderSettingsView =
     usageProviderSettingsRead.state.status === "ready"
@@ -375,7 +375,7 @@ export function SettingsPage({
   const handleUsageTabSelect = useCallback((tab: UsageStatsSectionTab) => {
     setUsageActiveTab(tab);
   }, []);
-  const setNewUserOnboardingOpen = useZCodeStore((state) => state.setNewUserOnboardingOpen);
+  const setNewUserOnboardingOpen = useRaspberryCodeStore((state) => state.setNewUserOnboardingOpen);
   const requestOnboardingDialog = () => setNewUserOnboardingOpen(true);
   const setActiveSettingsSection = useCallback(
     (section: SettingsSectionId, fallbackSection: SettingsSectionId = activeSection) => {
@@ -509,8 +509,8 @@ export function SettingsPage({
   const [toolGroupingExploreEnabled, setToolGroupingExploreEnabled] = useState(true);
   const [toolGroupingTerminalEnabled, setToolGroupingTerminalEnabled] = useState(true);
   const [toolGroupingChangesEnabled, setToolGroupingChangesEnabled] = useState(false);
-  const [zcodeInteractionBehavior, setZCodeInteractionBehavior] =
-    useState<ZCodeInteractionBehavior>("queue");
+  const [raspberrycodeInteractionBehavior, setRaspberryCodeInteractionBehavior] =
+    useState<RaspberryCodeInteractionBehavior>("queue");
   const [defaultHomeDir, setDefaultHomeDir] = useState("");
   const [hostPlatform, setHostPlatform] = useState("");
 
@@ -621,7 +621,7 @@ export function SettingsPage({
     setToolGroupingExploreEnabled(sharedSettings.toolGroupingExploreEnabled ?? true);
     setToolGroupingTerminalEnabled(sharedSettings.toolGroupingTerminalEnabled ?? true);
     setToolGroupingChangesEnabled(sharedSettings.toolGroupingChangesEnabled ?? false);
-    setZCodeInteractionBehavior(sharedSettings.zcodeInteractionBehavior ?? "queue");
+    setRaspberryCodeInteractionBehavior(sharedSettings.raspberrycodeInteractionBehavior ?? "queue");
   }, [sharedSettings]);
   const handleTerminalInheritSystemProfileChange = useCallback(
     async (enabled: boolean) => {
@@ -1028,16 +1028,16 @@ export function SettingsPage({
     },
     [updateSharedSettings],
   );
-  const handleZCodeInteractionBehaviorChange = useCallback(
-    async (behavior: ZCodeInteractionBehavior) => {
+  const handleRaspberryCodeInteractionBehaviorChange = useCallback(
+    async (behavior: RaspberryCodeInteractionBehavior) => {
       await runSettingsActionAsync({
         featureId: "settings.conversation",
         action: "change_interaction_behavior",
         trigger: "select",
-        operation: () => updateSharedSettings({ zcodeInteractionBehavior: behavior }),
+        operation: () => updateSharedSettings({ raspberrycodeInteractionBehavior: behavior }),
         completed: { resultSource: "shared_settings", valueAfter: behavior },
       });
-      setZCodeInteractionBehavior(behavior);
+      setRaspberryCodeInteractionBehavior(behavior);
     },
     [updateSharedSettings],
   );
@@ -1511,7 +1511,7 @@ export function SettingsPage({
                               toolGroupingExploreEnabled={toolGroupingExploreEnabled}
                               toolGroupingTerminalEnabled={toolGroupingTerminalEnabled}
                               toolGroupingChangesEnabled={toolGroupingChangesEnabled}
-                              zcodeInteractionBehavior={zcodeInteractionBehavior}
+                              raspberrycodeInteractionBehavior={raspberrycodeInteractionBehavior}
                               askUserQuestionAutoResolutionEnabled={
                                 askUserQuestionAutoResolutionEnabled
                               }
@@ -1550,8 +1550,8 @@ export function SettingsPage({
                               onToolGroupingChangesEnabledChange={
                                 handleToolGroupingChangesEnabledChange
                               }
-                              onZCodeInteractionBehaviorChange={
-                                handleZCodeInteractionBehaviorChange
+                              onRaspberryCodeInteractionBehaviorChange={
+                                handleRaspberryCodeInteractionBehaviorChange
                               }
                               onAskUserQuestionAutoResolutionEnabledChange={
                                 handleAskUserQuestionAutoResolutionEnabledChange

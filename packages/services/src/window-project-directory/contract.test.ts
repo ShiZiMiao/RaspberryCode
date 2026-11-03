@@ -1,4 +1,4 @@
-import { Emitter } from "@zcode/rpc";
+import { Emitter } from "@raspberrycode/rpc";
 import { expect, it, vi } from "vitest";
 import { createWindowProjectChangesService } from "#src/window-project-directory/index.js";
 

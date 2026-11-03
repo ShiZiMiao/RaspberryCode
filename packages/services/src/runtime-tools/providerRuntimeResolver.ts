@@ -1,11 +1,11 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, resolve as resolvePath } from "node:path";
-import { ZCODE_AGENT_RUNTIME, sanitizeZCodeRuntimeEnvInPlace } from "@zcode/shared";
+import { RASPBERRYCODE_AGENT_RUNTIME, sanitizeRaspberryCodeRuntimeEnvInPlace } from "@raspberrycode/shared";
 import { getDataBaseDir, getProviderWorkspaceConfigDir } from "../paths.js";
 import { buildRuntimeProcessEnvPatch } from "./runtimeCommandEnv.js";
 
-const ZCODE_AGENT_WORKDIR_ENV = "ZCODE_AGENT_WORKDIR";
+const RASPBERRYCODE_AGENT_WORKDIR_ENV = "RASPBERRYCODE_AGENT_WORKDIR";
 
 /** 返回 provider + workspace 在应用内的专属配置目录路径 */
 export function resolveProviderConfigDir(
@@ -43,8 +43,8 @@ export function buildCleanEnv(
     env[key] = value;
   }
   // 修复原因：provider/agent runtime 子进程不能默认继承 shell 里的 NODE_ENV、代理或证书变量。
-  // 这些运行时输入必须来自 ZCODE_* 显式配置或 app 设置页，避免用户环境污染模型请求和工具子进程。
-  sanitizeZCodeRuntimeEnvInPlace(env);
+  // 这些运行时输入必须来自 RASPBERRYCODE_* 显式配置或 app 设置页，避免用户环境污染模型请求和工具子进程。
+  sanitizeRaspberryCodeRuntimeEnvInPlace(env);
   // Bugfix: Windows 环境变量名大小写不敏感，但 JS 普通对象区分大小写。
   // process.env 枚举时 PATH 通常以 "Path"（title case）出现，
   // 复制到普通对象后，下游 buildRuntimeProcessEnvPatch 按 "PATH"（全大写）查找会得到 undefined，
@@ -93,7 +93,7 @@ function resolvePlatformScopedBundledAgentRoots(moduleDir?: string): Array<strin
   return [
     resolvePath(process.cwd(), "bundled-agents", platformKey),
     resolvePath(process.cwd(), "packages", "desktop", "bundled-agents", platformKey),
-    // pnpm --filter @zcode/server dev 启动时 cwd 落在 packages/server。
+    // pnpm --filter @raspberrycode/server dev 启动时 cwd 落在 packages/server。
     // RaspberryCode Agent 资源可能位于桌面包或仓库根的 bundled-agents/<platform>。
     // 这里统一补齐仓库内所有平台化目录候选，desktop/server 共享一套解析链路。
     resolvePath(process.cwd(), "..", "desktop", "bundled-agents", platformKey),
@@ -112,8 +112,8 @@ function resolveLegacyBundledResourceRoots(moduleDir?: string): Array<string | n
   ];
 }
 
-export function findZCodeAgentRuntimeBinary(): string | null {
-  const runtime = ZCODE_AGENT_RUNTIME;
+export function findRaspberryCodeAgentRuntimeBinary(): string | null {
+  const runtime = RASPBERRYCODE_AGENT_RUNTIME;
   const entrySegments = runtime.resolveEntrySegments(process.platform);
   const resourceSegments = [runtime.bundledResourceDir, ...entrySegments];
   const envPath = process.env[runtime.binaryEnvVar];
@@ -121,7 +121,7 @@ export function findZCodeAgentRuntimeBinary(): string | null {
     return envPath;
   }
 
-  // import.meta.dirname 在打包后的 CJS bundle（zcode-server.cjs）中是 undefined，
+  // import.meta.dirname 在打包后的 CJS bundle（raspberrycode-server.cjs）中是 undefined，
   // 直接传给 resolvePath 会报 "paths[0]" argument must be of type string。
   // 这里做空值保护，只有 import.meta.dirname 存在时才构建对应的候选路径。
   const moduleDir: string | undefined = import.meta.dirname;
@@ -140,17 +140,17 @@ export function findZCodeAgentRuntimeBinary(): string | null {
 }
 
 /**
- * 查找 agent 的 JS bundle（resources/glm/zcode.cjs）。
+ * 查找 agent 的 JS bundle（resources/agent/raspberrycode.cjs）。
  * 桌面打包态用 app 内置的 Electron Node runtime 直接执行这个 bundle，不再随包内置独立 Node 二进制。
- * 候选目录与 findZCodeAgentRuntimeBinary 完全平行，只是入口换成平台无关的 nodeBundleEntryFile。
- * 不查 ZCODE_AGENT_BINARY_PATH——那个 env 指向原生二进制，语义不同。
+ * 候选目录与 findRaspberryCodeAgentRuntimeBinary 完全平行，只是入口换成平台无关的 nodeBundleEntryFile。
+ * 不查 RASPBERRYCODE_AGENT_BINARY_PATH——那个 env 指向原生二进制，语义不同。
  */
-export function findZCodeAgentRuntimeNodeBundle(): string | null {
-  const runtime = ZCODE_AGENT_RUNTIME;
+export function findRaspberryCodeAgentRuntimeNodeBundle(): string | null {
+  const runtime = RASPBERRYCODE_AGENT_RUNTIME;
   const entrySegments = runtime.resolveNodeBundleSegments();
   const resourceSegments = [runtime.bundledResourceDir, ...entrySegments];
 
-  // 与 findZCodeAgentRuntimeBinary 一致，打包后的 CJS bundle 里 import.meta.dirname 为 undefined，
+  // 与 findRaspberryCodeAgentRuntimeBinary 一致，打包后的 CJS bundle 里 import.meta.dirname 为 undefined，
   // 这里做空值保护后再构建仓库内候选路径。
   const moduleDir: string | undefined = import.meta.dirname;
   const platformScopedRoots = resolvePlatformScopedBundledAgentRoots(moduleDir);
@@ -172,18 +172,18 @@ export function findBinary(provider: string): string | null {
   if (provider !== "agent") {
     return null;
   }
-  // 开发态：ZCODE_AGENT_WORKDIR 或相邻目录发现，返回源码入口路径作为 "binary"
+  // 开发态：RASPBERRYCODE_AGENT_WORKDIR 或相邻目录发现，返回源码入口路径作为 "binary"
   const devEntry = findAgentDevEntry();
   if (devEntry) {
     return devEntry.agentPath;
   }
-  return findZCodeAgentRuntimeBinary();
+  return findRaspberryCodeAgentRuntimeBinary();
 }
 
 /**
  * GLM 开发态源码入口发现。
- * 优先读取 ZCODE_AGENT_WORKDIR。
- * 未设置时在 cwd 相邻目录查找 zcode-cli / glm。
+ * 优先读取 RASPBERRYCODE_AGENT_WORKDIR。
+ * 未设置时在 cwd 相邻目录查找 raspberrycode-cli / glm。
  */
 interface GlmDevEntry {
   workdir: string;
@@ -210,7 +210,7 @@ function resolveGlmDevEntry(workdir: string): GlmDevEntry | null {
 }
 
 function findAgentDevEntry(): GlmDevEntry | null {
-  const workdir = process.env[ZCODE_AGENT_WORKDIR_ENV];
+  const workdir = process.env[RASPBERRYCODE_AGENT_WORKDIR_ENV];
   if (workdir) {
     const entry = resolveGlmDevEntry(workdir);
     if (entry) {
@@ -218,14 +218,14 @@ function findAgentDevEntry(): GlmDevEntry | null {
     }
   }
   // Bugfix: desktop dev 进程的 cwd 是 packages/desktop，旧逻辑只查 cwd 的父级，
-  // 会误找 packages/zcode-cli，而不是仓库旁边的 ../zcode-cli。这里先向上定位仓库根，
+  // 会误找 packages/raspberrycode-cli，而不是仓库旁边的 ../raspberrycode-cli。这里先向上定位仓库根，
   // 再按“仓库相邻目录”发现本地 Agent 源码，同时保留 cwd 相邻目录作为非 monorepo 兜底。
   const repoRoot = findWorkspaceRoot(process.cwd());
   const anchorDirs = [repoRoot, process.cwd()].filter((anchor): anchor is string =>
     Boolean(anchor),
   );
   // "agent" 是历史源码目录名，保留作开发态目录发现的读兼容候选。
-  const candidates = ["zcode-cli", "agent", "cc-refactor"];
+  const candidates = ["raspberrycode-cli", "agent", "cc-refactor"];
   const seen = new Set<string>();
   for (const anchorDir of anchorDirs) {
     for (const name of candidates) {

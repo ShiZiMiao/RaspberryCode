@@ -70,7 +70,7 @@ export function buildNativeSearchToolsWindows({
     arch: config.arch,
     outputDir,
   });
-  const workDir = mkdtempSync(join(tmpdir(), "zcode-native-search-build-"));
+  const workDir = mkdtempSync(join(tmpdir(), "raspberrycode-native-search-build-"));
   const cmakeBuildDir = join(workDir, "cmake-build");
   const cmakeOutputDir = join(workDir, "cmake-output");
   const env = {
@@ -109,14 +109,14 @@ export function buildNativeSearchToolsWindows({
         config.generator,
         "-A",
         config.generatorArchitecture,
-        `-DZCODE_BUILD_PATH=${toCmakePath(workDir)}`,
-        `-DZCODE_UGREP_OUTPUT_DIR=${toCmakePath(cmakeOutputDir)}`,
-        `-DZCODE_UGREP_SOURCE_DIR=${toCmakePath(sources.ugrep)}`,
-        `-DZCODE_PCRE2_SOURCE_DIR=${toCmakePath(sources.pcre2)}`,
-        `-DZCODE_ZLIB_SOURCE_DIR=${toCmakePath(sources.zlib)}`,
-        `-DZCODE_BZIP2_SOURCE_DIR=${toCmakePath(sources.bzip2)}`,
-        `-DZCODE_ZSTD_SOURCE_DIR=${toCmakePath(sources.zstd)}`,
-        `-DZCODE_BROTLI_SOURCE_DIR=${toCmakePath(sources.brotli)}`,
+        `-DRASPBERRYCODE_BUILD_PATH=${toCmakePath(workDir)}`,
+        `-DRASPBERRYCODE_UGREP_OUTPUT_DIR=${toCmakePath(cmakeOutputDir)}`,
+        `-DRASPBERRYCODE_UGREP_SOURCE_DIR=${toCmakePath(sources.ugrep)}`,
+        `-DRASPBERRYCODE_PCRE2_SOURCE_DIR=${toCmakePath(sources.pcre2)}`,
+        `-DRASPBERRYCODE_ZLIB_SOURCE_DIR=${toCmakePath(sources.zlib)}`,
+        `-DRASPBERRYCODE_BZIP2_SOURCE_DIR=${toCmakePath(sources.bzip2)}`,
+        `-DRASPBERRYCODE_ZSTD_SOURCE_DIR=${toCmakePath(sources.zstd)}`,
+        `-DRASPBERRYCODE_BROTLI_SOURCE_DIR=${toCmakePath(sources.brotli)}`,
       ],
       { env, quiet },
     );

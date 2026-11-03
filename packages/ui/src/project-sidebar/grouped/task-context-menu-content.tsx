@@ -1,5 +1,5 @@
 import { SidebarNativeTooltip } from "@/ControlHintTooltip.js";
-import type { ProjectTask as ZCodeTaskMeta } from "@/project-sidebar/contract.js";
+import type { ProjectTask as RaspberryCodeTaskMeta } from "@/project-sidebar/contract.js";
 
 import {
   ContextMenuContent,
@@ -32,7 +32,7 @@ export function GroupedTaskContextMenuContent({
   onOpenTaskFeedback,
   disabledReason,
 }: {
-  task: ZCodeTaskMeta;
+  task: RaspberryCodeTaskMeta;
   currentGroupId?: string;
   groups: TaskGroupMenuItem[];
   intl: {
@@ -42,11 +42,11 @@ export function GroupedTaskContextMenuContent({
   taskSessionFile: { loading: boolean; path: string | null };
   taskNativeSessionLogFile: { loading: boolean; path: string | null };
   providerConfigFile: { loading: boolean; path: string | null };
-  onMoveTaskToGroup: (task: ZCodeTaskMeta, groupId: string | null) => void;
-  onMoveTaskToTop: (task: ZCodeTaskMeta) => void;
-  onStartRenameTask: (task: ZCodeTaskMeta) => void;
-  onArchiveTask: (task: ZCodeTaskMeta) => void;
-  onMarkTaskAsUnread: (task: ZCodeTaskMeta) => void;
+  onMoveTaskToGroup: (task: RaspberryCodeTaskMeta, groupId: string | null) => void;
+  onMoveTaskToTop: (task: RaspberryCodeTaskMeta) => void;
+  onStartRenameTask: (task: RaspberryCodeTaskMeta) => void;
+  onArchiveTask: (task: RaspberryCodeTaskMeta) => void;
+  onMarkTaskAsUnread: (task: RaspberryCodeTaskMeta) => void;
   onOpenTaskPathInFileManager: () => void;
   onCopyText: (label: string, text: string | null) => void;
   onOpenProviderConfig: () => void;

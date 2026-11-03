@@ -8,9 +8,9 @@ describe("desktopDataBaseDirBootstrap", () => {
   it("应从 bootstrap setting 中提取并裁剪 dataBaseDir", () => {
     expect(
       extractBootstrapDataBaseDir({
-        dataBaseDir: "  /tmp/zcode-data  ",
+        dataBaseDir: "  /tmp/raspberrycode-data  ",
       }),
-    ).toBe("/tmp/zcode-data");
+    ).toBe("/tmp/raspberrycode-data");
   });
 
   it("应忽略无效的 bootstrap 配置", () => {

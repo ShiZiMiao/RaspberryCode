@@ -2,61 +2,60 @@ import {
   normalizeRemoteArch,
   normalizeRemotePlatform,
   resolveRemotePlatform,
-} from "@zcode/server/remote/detectEnv.js";
-import type { IRemoteBackend } from "@zcode/server/remote/backend.js";
-import { assertSupportedRemoteEnvironment } from "@zcode/server/remote/remotePlatformSupport.js";
+} from "@raspberrycode/server/remote/detectEnv.js";
+import type { IRemoteBackend } from "@raspberrycode/server/remote/backend.js";
+import { assertSupportedRemoteEnvironment } from "@raspberrycode/server/remote/remotePlatformSupport.js";
 import {
   collectCommand,
   readLastJsonLine,
   readUniqueVersion,
   throwIfAborted,
-} from "@zcode/server/source-server/sourceServerTransportRuntime.js";
+} from "@raspberrycode/server/source-server/sourceServerTransportRuntime.js";
 import type {
   SourceServerProbeOptions,
   SourceServerProbeResult,
   TransportContext,
-} from "@zcode/server/source-server/transportAdapter.js";
+} from "@raspberrycode/server/source-server/transportAdapter.js";
 
-const SERVER_ROOT_SHELL = '"$HOME/.zcode/server"';
-const SERVER_BIN_SHELL = '"$HOME/.zcode/server/bin/zcode"';
-const SERVER_CURRENT_SHELL = `${SERVER_ROOT_SHELL}/current.json`;
-const SERVER_STATUS_SHELL = `${SERVER_ROOT_SHELL}/run/status.json`;
-const SOURCE_SERVER_PROBE_MARKER_PREFIX = "__ZCODE_PROBE_";
+// shell 侧根解析与 deployShared.resolveRemoteServerBase 同一条规则（全新独立发行，无历史布局兼容）。
+const SERVER_ROOT_RESOLUTION_COMMAND = 'printf \'%s\\n\' "$HOME/.raspberrycode/server"';
+const SOURCE_SERVER_PROBE_MARKER_PREFIX = "__RASPBERRYCODE_PROBE_";
 
 function buildSourceServerProbeCommand(includeReleaseIdentity: boolean): string {
   return [
     "set +e",
+    `server_root=$(${SERVER_ROOT_RESOLUTION_COMMAND})`,
     `printf '${SOURCE_SERVER_PROBE_MARKER_PREFIX}PLATFORM__\\n'`,
     "uname -s",
     `printf '${SOURCE_SERVER_PROBE_MARKER_PREFIX}ARCH__\\n'`,
     "uname -m",
     `printf '${SOURCE_SERVER_PROBE_MARKER_PREFIX}ROOT__\\n'`,
-    `printf '%s\\n' ${SERVER_ROOT_SHELL}`,
+    `printf '%s\\n' "$server_root"`,
     `printf '${SOURCE_SERVER_PROBE_MARKER_PREFIX}KERNEL__\\n'`,
     "if [ -r /proc/sys/kernel/ostype ]; then cat /proc/sys/kernel/ostype; else printf '\\n'; fi",
     `printf '${SOURCE_SERVER_PROBE_MARKER_PREFIX}LIBC__\\n'`,
     // musl、macOS 或缺 getconf 时只留空段；set +e 下不影响 probe 退出码。
     "getconf GNU_LIBC_VERSION 2>/dev/null",
     `printf '${SOURCE_SERVER_PROBE_MARKER_PREFIX}INSTALLED__\\n'`,
-    `if [ -f ${SERVER_BIN_SHELL} ]; then printf '1\\n'; else printf '0\\n'; fi`,
+    `if [ -f "$server_root/bin/raspberrycode" ]; then printf '1\\n'; else printf '0\\n'; fi`,
     ...(includeReleaseIdentity
       ? [
           `printf '${SOURCE_SERVER_PROBE_MARKER_PREFIX}RELEASE__\\n'`,
-          `if [ -r ${SERVER_CURRENT_SHELL} ]; then cat ${SERVER_CURRENT_SHELL}; fi`,
+          `if [ -r "$server_root/current.json" ]; then cat "$server_root/current.json"; fi`,
         ]
       : []),
     `printf '${SOURCE_SERVER_PROBE_MARKER_PREFIX}VERSION__\\n'`,
-    `if [ -r ${SERVER_CURRENT_SHELL} ]; then sed -n 's/^[[:space:]]*"version"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p' ${SERVER_CURRENT_SHELL} | head -n 1; fi`,
+    `if [ -r "$server_root/current.json" ]; then sed -n 's/^[[:space:]]*"version"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p' "$server_root/current.json" | head -n 1; fi`,
     `printf '${SOURCE_SERVER_PROBE_MARKER_PREFIX}STATUS__\\n'`,
     // Bug 原因：每次 probe 启动两次完整 Server CLI，冷缓存时仅版本/状态读取就会耗尽
     // 10 秒启动预算。current/status 是 CLI 自身的权威持久化文件；status 仅在 PID 仍存活时复用。
-    `if [ -r ${SERVER_STATUS_SHELL} ]; then status_pid=$(sed -n 's/^[[:space:]]*"pid"[[:space:]]*:[[:space:]]*\\([0-9][0-9]*\\).*/\\1/p' ${SERVER_STATUS_SHELL} | head -n 1); if [ -n "$status_pid" ] && kill -0 "$status_pid" 2>/dev/null; then tr -d '\\r\\n' < ${SERVER_STATUS_SHELL}; printf '\\n'; fi; fi`,
+    `if [ -r "$server_root/run/status.json" ]; then status_pid=$(sed -n 's/^[[:space:]]*"pid"[[:space:]]*:[[:space:]]*\\([0-9][0-9]*\\).*/\\1/p' "$server_root/run/status.json" | head -n 1); if [ -n "$status_pid" ] && kill -0 "$status_pid" 2>/dev/null; then tr -d '\\r\\n' < "$server_root/run/status.json"; printf '\\n'; fi; fi`,
     `printf '${SOURCE_SERVER_PROBE_MARKER_PREFIX}END__\\n'`,
   ].join("; ");
 }
 
 function readSourceServerProbeSections(output: string): Map<string, string> {
-  const parts = output.split(/__ZCODE_PROBE_([A-Z]+)__\r?\n/gu);
+  const parts = output.split(/__RASPBERRYCODE_PROBE_([A-Z]+)__\r?\n/gu);
   const sections = new Map<string, string>();
   for (let index = 1; index + 1 < parts.length; index += 2) {
     sections.set(parts[index]!, parts[index + 1]!.trim());
@@ -75,7 +74,7 @@ const SOURCE_SERVER_MIN_GLIBC_VERSION = [2, 28] as const;
 function assertSupportedGlibc(platform: string, libcText: string): void {
   if (platform !== "linux") return;
   // Bug 原因（ZCT-2112008575366098944）：probe 过去只看平台/架构，CentOS 7 等 glibc 2.17
-  // 的远端要先上传约 87MB archive，解压后执行 bin/zcode 才由 ld.so 报一串 `not found`，
+  // 的远端要先上传约 87MB archive，解压后执行 bin/raspberrycode 才由 ld.so 报一串 `not found`，
   // 并被归为安装失败。glibc 下限是 release 的平台事实，归入远端环境检查，在确认安装前拒绝。
   // 读不到版本（musl、缺 getconf、输出无法识别）时无法判定，保持原安装链，不凭猜测拒绝。
   const match = /^glibc\s+(\d+)\.(\d+)/iu.exec(libcText);

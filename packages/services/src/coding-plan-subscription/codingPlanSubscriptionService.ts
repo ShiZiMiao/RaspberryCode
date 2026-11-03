@@ -1,4 +1,4 @@
-import { applyDynamicWorkflowUserMode, type ApiClient } from "@zcode/shared";
+import { applyDynamicWorkflowUserMode, type ApiClient } from "@raspberrycode/shared";
 import type { ICredentialService } from "../credential/credential.js";
 import type { ICodingPlanSubscriptionService } from "./codingPlanSubscription.js";
 import { BigModelCodingPlanSubscriptionProvider } from "./bigmodelCodingPlanSubscriptionProvider.js";

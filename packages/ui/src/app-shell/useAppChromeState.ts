@@ -1,8 +1,8 @@
-import type { DesktopWindowChromeState, IPlatformService } from "@zcode/shared";
+import type { DesktopWindowChromeState, IPlatformService } from "@raspberrycode/shared";
 import { useEffect, useRef, useState } from "react";
 import { logger } from "@/logger.js";
 import { toast } from "@/components/ui/toast.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 
 const MACOS_WINDOW_CONTROLS_DEFAULT_LEFT_PADDING_PX = 96;
 const WINDOWS_WINDOW_CONTROLS_DEFAULT_RIGHT_PADDING_PX = 136;
@@ -69,7 +69,7 @@ export function useAppChromeState({
     () => initialWindowControlsPadding.rightPaddingPx,
   );
   const sidebarContainerRef = useRef<HTMLElement | null>(null);
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
 
   useEffect(() => {
     if (!isDesktop || !isMacDesktop) {

@@ -1,5 +1,5 @@
-import { ApiKeyAccessConfig, ProviderConfig } from "@zcode/provider";
-import { NodePersonalProviderConfigRepository } from "@zcode/provider-node";
+import { ApiKeyAccessConfig, ProviderConfig } from "@raspberrycode/provider";
+import { NodePersonalProviderConfigRepository } from "@raspberrycode/provider-node";
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
@@ -8,7 +8,7 @@ import {
   TID_SETTINGS_SECTION_NAV,
   TID_TASK_SETTINGS_BUTTON,
   testId,
-} from "@zcode/shared/test-ids";
+} from "@raspberrycode/shared/test-ids";
 import {
   clearAppData,
   clickTestIdByDom,

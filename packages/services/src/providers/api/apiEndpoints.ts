@@ -1,6 +1,6 @@
-import { buildRuntimeZCodeApiUrl } from "@zcode/shared";
+import { buildRuntimeRaspberryCodeApiUrl } from "@raspberrycode/shared";
 
-export const ZCODE_CLIENT_SCENES_URL = buildRuntimeZCodeApiUrl(
+export const RASPBERRYCODE_CLIENT_SCENES_URL = buildRuntimeRaspberryCodeApiUrl(
   process.env,
   "/api/v1/client/scenes",
 );

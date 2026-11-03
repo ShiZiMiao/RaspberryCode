@@ -2,8 +2,8 @@ import { act, createElement, type ComponentProps } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { BUILTIN_MODEL_PROVIDER_IDS } from "@zcode/shared";
-import type { ProviderSettingsView } from "@zcode/services";
+import { BUILTIN_MODEL_PROVIDER_IDS } from "@raspberrycode/shared";
+import type { ProviderSettingsView } from "@raspberrycode/services";
 import { TooltipProvider } from "@/components/ui/tooltip.js";
 import { V4ComposerModelControls } from "@/v4/composer/V4ComposerToolbar.js";
 import type { ModelConfigSelect } from "@/ModelConfigSelect.js";
@@ -104,7 +104,7 @@ function completeDisabledModelConfig() {
 }
 
 vi.mock("@/store/StoreProvider.js", () => ({
-  useZCodeStoreWithDefault: (selector: (state: typeof mocks.auth) => unknown) =>
+  useRaspberryCodeStoreWithDefault: (selector: (state: typeof mocks.auth) => unknown) =>
     selector(mocks.auth),
 }));
 vi.mock("@/hooks/useWorkspaceServices.js", () => ({ useBaseWorkspaceServices: () => ({}) }));
@@ -193,7 +193,7 @@ vi.mock("@/hooks/useUsageEntitlement.js", () => ({
   })),
 }));
 
-vi.mock("@/hooks/useZCodeConfig.js", () => ({
+vi.mock("@/hooks/useRaspberryCodeConfig.js", () => ({
   useToolbarConfigOptions: () => ({
     configOptions: mocks.configOptions,
     loading: false,
@@ -202,7 +202,7 @@ vi.mock("@/hooks/useZCodeConfig.js", () => ({
 }));
 
 vi.mock("@/i18n/IntlProvider.js", () => ({
-  useZCodeIntl: () => ({
+  useRaspberryCodeIntl: () => ({
     intl: {
       formatMessage: ({ id }: { id: string }) => id,
     },

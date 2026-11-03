@@ -1,15 +1,15 @@
 /* oxlint-disable eslint(max-lines) -- telemetry state lock、deviceMid 编排和上报路径共享同一状态文件，拆分会增加锁语义漂移风险。 */
 import {
   createUuid,
-  ZCODE_VERSION,
-  ZCODE_ENV,
-  ZCODE_TELEMETRY_REPORT_ENDPOINT,
-  buildZCodeSourceHeadersFromContext,
-  rewriteZCodeEndpointUrl,
+  RASPBERRYCODE_VERSION,
+  RASPBERRYCODE_ENV,
+  RASPBERRYCODE_TELEMETRY_REPORT_ENDPOINT,
+  buildRaspberryCodeSourceHeadersFromContext,
+  rewriteRaspberryCodeEndpointUrl,
   sanitizeTelemetryEventDetail,
   type TelemetryEventPayload,
   type TelemetryRendererContext,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import { mkdir, open, readFile, stat, unlink, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { version } from "node:os";
@@ -19,7 +19,7 @@ import { getAppConfigDir } from "../paths.js";
 
 function sessionCreateEventId(userId: string, sessionId: string): string {
   const bytes = createHash("sha256")
-    .update(JSON.stringify(["zcode:session_create:v1", userId, sessionId]))
+    .update(JSON.stringify(["raspberrycode:session_create:v1", userId, sessionId]))
     .digest()
     .subarray(0, 16);
   bytes[6] = (bytes[6]! & 0x0f) | 0x80;
@@ -49,7 +49,7 @@ interface TelemetryCoreDependencies {
   releaseChannel?: string;
   osVersion?: string;
   homeDir?: string;
-  resolveZCodeEndpointOrigin?: () => Promise<string> | string;
+  resolveRaspberryCodeEndpointOrigin?: () => Promise<string> | string;
   /** 事件上报端点；缺省取构建期常量（构建期未配置时遥测整体关闭）。 */
   reportEndpoint?: string;
   requestTimeoutMs?: number;
@@ -301,8 +301,8 @@ async function ensureDeviceMidInLockedState(
 /**
  * 确保 telemetry-state.json 里存在 deviceMid 并返回它。
  *
- * Bug 根因：远端 zcode-server 所在主机没有 Desktop main 进程，过去没有任何进程会在那里写
- * telemetry-state.json；buildZCodeSourceHeaders() 又只读不生成，于是远端发往 RaspberryCode endpoint 的
+ * Bug 根因：远端 raspberrycode-server 所在主机没有 Desktop main 进程，过去没有任何进程会在那里写
+ * telemetry-state.json；buildRaspberryCodeSourceHeaders() 又只读不生成，于是远端发往 RaspberryCode endpoint 的
  * 请求永远缺 X-Device-Mid，billing/balance 被服务端拒绝为 parameter error，Start Plan 在远程
  * 工作区被判成未开通。这里把 telemetry 上报内部的 ensure 逻辑抽成独立入口，供远端 server 启动时
  * 调用：同一个文件、同一个字段、同一把 telemetry-state.lock，与同机 CLI 得到同一个设备身份。
@@ -338,12 +338,12 @@ export function createTelemetryCore(dependencies: TelemetryCoreDependencies = {}
   const warn = dependencies.warn ?? ((message: string) => telemetryLogger.warn(undefined, message));
   const randomUUID = dependencies.randomUUID ?? (() => createUuid());
   const now = dependencies.now ?? Date.now;
-  const appVersion = dependencies.appVersion ?? ZCODE_VERSION;
+  const appVersion = dependencies.appVersion ?? RASPBERRYCODE_VERSION;
   const platform = dependencies.platform ?? process.platform;
   const osVersion = dependencies.osVersion ?? version();
   const requestTimeoutMs = dependencies.requestTimeoutMs ?? REPORT_REQUEST_TIMEOUT_MS;
   const retrySleep = dependencies.sleep ?? sleep;
-  const reportEndpoint = dependencies.reportEndpoint ?? ZCODE_TELEMETRY_REPORT_ENDPOINT;
+  const reportEndpoint = dependencies.reportEndpoint ?? RASPBERRYCODE_TELEMETRY_REPORT_ENDPOINT;
   const pendingReports = new Set<Promise<void>>();
   const deviceMidOptions: EnsureTelemetryDeviceMidOptions = {
     homeDir: dependencies.homeDir,
@@ -441,18 +441,18 @@ export function createTelemetryCore(dependencies: TelemetryCoreDependencies = {}
     });
 
     const endpoint = String(
-      rewriteZCodeEndpointUrl(
+      rewriteRaspberryCodeEndpointUrl(
         reportEndpoint,
-        (await dependencies.resolveZCodeEndpointOrigin?.()) ?? reportEndpoint,
+        (await dependencies.resolveRaspberryCodeEndpointOrigin?.()) ?? reportEndpoint,
       ),
     );
 
-    const headers = buildZCodeSourceHeadersFromContext({
+    const headers = buildRaspberryCodeSourceHeadersFromContext({
       appVersion,
       platform,
       arch: dependencies.arch ?? process.arch,
       osVersion,
-      releaseChannel: dependencies.releaseChannel ?? ZCODE_ENV,
+      releaseChannel: dependencies.releaseChannel ?? RASPBERRYCODE_ENV,
       clientLanguage: context.clientLanguage,
       clientTimezone: context.clientTimezone,
       deviceMid,

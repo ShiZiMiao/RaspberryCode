@@ -7,18 +7,18 @@ import {
   type RefObject,
 } from "react";
 import {
-  type ZCodeApiRetryStatus,
-  type ZCodeConfigOption,
-  type ZCodeConfigSelectValue,
-  type ZCodeProvider,
-} from "@zcode/shared";
+  type RaspberryCodeApiRetryStatus,
+  type RaspberryCodeConfigOption,
+  type RaspberryCodeConfigSelectValue,
+  type RaspberryCodeProvider,
+} from "@raspberrycode/shared";
 import {
   TID_CHAT_MODE_SELECT_ITEM,
   TID_CHAT_MODE_SELECT_TRIGGER,
   TID_CHAT_THOUGHT_LEVEL_SELECT_ITEM,
   TID_CHAT_THOUGHT_LEVEL_SELECT_TRIGGER,
   testId,
-} from "@zcode/shared/test-ids";
+} from "@raspberrycode/shared/test-ids";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
 import {
   Select,
@@ -32,7 +32,7 @@ import {
   shouldRestoreChatInputFocusAfterPickerClose,
 } from "@/lib/pickerFocus.js";
 import { cn } from "@/components/lib/utils.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { logger } from "@/logger.js";
 import {
   ChevronDownIcon,
@@ -43,8 +43,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import {
-  ZCODE_MODE_OPTION_DESCRIPTION_IDS,
-  ZCODE_MODE_OPTION_LABEL_IDS,
+  RASPBERRYCODE_MODE_OPTION_DESCRIPTION_IDS,
+  RASPBERRYCODE_MODE_OPTION_LABEL_IDS,
 } from "./display-help.js";
 import { RollingToolbarLabel } from "@/chat-input-toolbar/RollingToolbarLabel.js";
 
@@ -63,7 +63,7 @@ type ConfigSelectTriggerVariant = ComponentProps<
  * 系统事件误当成用户选择（如 Automations 编辑页仅打开详情就被标记未保存修改）。
  * 用户只能点到已渲染的 option，值域外的选择回调一律丢弃。 */
 export function isConfigSelectValueInOptions(
-  option: ZCodeConfigOption,
+  option: RaspberryCodeConfigOption,
   value: string,
 ): boolean {
   return option.options?.some((entry) => String(entry.value) === value) ?? false;
@@ -79,7 +79,7 @@ const HIGH_PERMISSION_MODE_VALUES = new Set([
 ]);
 
 function getConfigSelectTriggerTestId(
-  option: ZCodeConfigOption,
+  option: RaspberryCodeConfigOption,
 ): string | undefined {
   if (option.category === "thought_level") {
     return TID_CHAT_THOUGHT_LEVEL_SELECT_TRIGGER;
@@ -93,8 +93,8 @@ function getConfigSelectTriggerTestId(
 }
 
 function getConfigSelectItemTestId(
-  option: ZCodeConfigOption,
-  entry: ZCodeConfigSelectValue,
+  option: RaspberryCodeConfigOption,
+  entry: RaspberryCodeConfigSelectValue,
 ): string | undefined {
   if (option.category === "thought_level") {
     return testId(TID_CHAT_THOUGHT_LEVEL_SELECT_ITEM, entry.value);
@@ -137,8 +137,8 @@ export function ChatApiRetryStatus({
   intl,
   locale,
 }: {
-  apiRetry: ZCodeApiRetryStatus | null;
-  intl: ReturnType<typeof useZCodeIntl>["intl"];
+  apiRetry: RaspberryCodeApiRetryStatus | null;
+  intl: ReturnType<typeof useRaspberryCodeIntl>["intl"];
   locale: string;
 }) {
   const retryLabel = useMemo(() => {
@@ -183,9 +183,9 @@ export function ChatApiRetryStatus({
 }
 
 export function getModeOptionDisplayLabel(
-  intl: ReturnType<typeof useZCodeIntl>["intl"],
-  provider: ZCodeProvider | undefined,
-  entry: Pick<ZCodeConfigSelectValue, "name" | "value">,
+  intl: ReturnType<typeof useRaspberryCodeIntl>["intl"],
+  provider: RaspberryCodeProvider | undefined,
+  entry: Pick<RaspberryCodeConfigSelectValue, "name" | "value">,
 ): string {
   const labelMessageId = getModeOptionLabelMessageId(provider, entry);
   if (!labelMessageId) {
@@ -196,32 +196,32 @@ export function getModeOptionDisplayLabel(
 }
 
 export function getModeOptionLabelMessageId(
-  provider: ZCodeProvider | undefined,
-  entry: Pick<ZCodeConfigSelectValue, "value">,
+  provider: RaspberryCodeProvider | undefined,
+  entry: Pick<RaspberryCodeConfigSelectValue, "value">,
 ): string | null {
   if (!provider) {
     return null;
   }
 
-  return ZCODE_MODE_OPTION_LABEL_IDS[provider]?.[entry.value] ?? null;
+  return RASPBERRYCODE_MODE_OPTION_LABEL_IDS[provider]?.[entry.value] ?? null;
 }
 
 export function getModeOptionDescriptionMessageId(
-  provider: ZCodeProvider | undefined,
-  entry: Pick<ZCodeConfigSelectValue, "value">,
+  provider: RaspberryCodeProvider | undefined,
+  entry: Pick<RaspberryCodeConfigSelectValue, "value">,
 ): string | null {
   if (!provider) {
     return null;
   }
 
-  return ZCODE_MODE_OPTION_DESCRIPTION_IDS[provider]?.[entry.value] ?? null;
+  return RASPBERRYCODE_MODE_OPTION_DESCRIPTION_IDS[provider]?.[entry.value] ?? null;
 }
 
 export function getConfigOptionEntryLabel(
-  intl: ReturnType<typeof useZCodeIntl>["intl"],
-  provider: ZCodeProvider | undefined,
-  option: ZCodeConfigOption,
-  entry: ZCodeConfigSelectValue,
+  intl: ReturnType<typeof useRaspberryCodeIntl>["intl"],
+  provider: RaspberryCodeProvider | undefined,
+  option: RaspberryCodeConfigOption,
+  entry: RaspberryCodeConfigSelectValue,
 ): string {
   if (option.category === "mode") {
     return getModeOptionDisplayLabel(intl, provider, entry);
@@ -231,10 +231,10 @@ export function getConfigOptionEntryLabel(
 }
 
 export function getConfigOptionEntryDescription(
-  intl: ReturnType<typeof useZCodeIntl>["intl"],
-  provider: ZCodeProvider | undefined,
-  option: ZCodeConfigOption,
-  entry: ZCodeConfigSelectValue,
+  intl: ReturnType<typeof useRaspberryCodeIntl>["intl"],
+  provider: RaspberryCodeProvider | undefined,
+  option: RaspberryCodeConfigOption,
+  entry: RaspberryCodeConfigSelectValue,
 ): string | undefined {
   if (option.category !== "mode") {
     return entry.description;
@@ -294,7 +294,7 @@ export function ConfigSelect({
   provider,
   restoreFocusSelector = '[data-testid="chat-input"]',
 }: {
-  option: ZCodeConfigOption;
+  option: RaspberryCodeConfigOption;
   onValueChange: (value: string) => void;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -308,10 +308,10 @@ export function ConfigSelect({
   triggerSize?: ConfigSelectTriggerSize;
   leadingIcon?: LucideIcon;
   labelVisibilityClassName?: string;
-  provider?: ZCodeProvider;
+  provider?: RaspberryCodeProvider;
   restoreFocusSelector?: string | null;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
 
   // 注意：handleContentKeyDown 必须在 early return 之前调用。
   // 之前 `if (option.type !== "select" ...) return null` 写在 useCallback 之前，

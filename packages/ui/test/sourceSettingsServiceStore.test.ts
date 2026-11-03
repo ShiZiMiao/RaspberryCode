@@ -1,4 +1,4 @@
-import type { IServiceAccessor } from "@zcode/services";
+import type { IServiceAccessor } from "@raspberrycode/services";
 import { describe, expect, it, vi } from "vitest";
 import {
   getSourceSettingsServices,

@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.js";
 import { usePluginCreator } from "@/conversation-workspace-target/usePluginCreator.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 
 export function PluginAddMenu({
   onCreateTask,
@@ -26,7 +26,7 @@ export function PluginAddMenu({
   size?: "default" | "lg";
   isMobileOverlay?: boolean;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   const creator = usePluginCreator(onCreateTask, isMobileOverlay);
   return (
     <DropdownMenu>

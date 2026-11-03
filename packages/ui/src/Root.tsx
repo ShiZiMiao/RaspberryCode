@@ -4,8 +4,8 @@ import {
   buildRemoteWorkspaceIdentity,
   buildServerRemoteWorkspaceIdentity,
   remoteHostIdFromWorkspaceIdentity,
-} from "@zcode/shared";
-import type { RemoteProjectHost } from "@zcode/services";
+} from "@raspberrycode/shared";
+import type { RemoteProjectHost } from "@raspberrycode/services";
 import { useRemoteWorkspaceSessionStore } from "@/store/remoteWorkspaceSessionStore.js";
 import { RemoteConnectionProgressProvider } from "@/remote-connection-flow/ui/RemoteConnectionProgress.js";
 /* eslint-disable max-lines -- Root 当前集中编排启动、workspace shell wiring 和 Web 远控同步，先保持入口收口避免跨层状态拆散。 */
@@ -21,7 +21,7 @@ import {
   APP_RUNTIME_PREFERENCES_CHANGED_BROADCAST_CHANNEL,
   DesktopCommandIds,
   appRuntimePreferencesChangedBroadcastPayloadSchema,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import { TooltipProvider } from "@/components/ui/tooltip.js";
 import { Button } from "@/components/ui/button.js";
 import { PlatformProvider } from "@/hooks/usePlatform.js";
@@ -39,7 +39,7 @@ import { DirectoryBrowser } from "@/DirectoryBrowser.js";
 import { attachRemoteProjectWorkspace, resolveEntryProject } from "@/project-sidebar/index.js";
 import { useTabPersistence, type WorkspacePersistenceGate } from "@/hooks/useTabPersistence.js";
 import { useWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { SSHDialog } from "@/SSHDialog.js";
 import { SettingsPage } from "@/SettingsPage.js";
 import { setPendingSettingsSectionIntent } from "@/lib/settingsNavigation.js";
@@ -53,9 +53,9 @@ import {
   shouldShowRootStartupLoading,
   shouldOpenFallbackWorkspaceAfterCreate,
 } from "@/lib/rootStartupGate.js";
-import { StoreProvider, useZCodeStore } from "@/store/StoreProvider.js";
+import { StoreProvider, useRaspberryCodeStore } from "@/store/StoreProvider.js";
 import { setMcpStorePlatform } from "@/store/mcpStore.js";
-import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
+import { useRaspberryCodeSessionStore } from "@/store/raspberrycodeSessionStore.js";
 import { TabStoreProvider, useTabStore, useTabStoreApi } from "@/store/TabStoreProvider.js";
 import { isSettingsTab, isWorkspaceTab, type WorkspaceTabState } from "@/store/tabStore.js";
 import { logger } from "@/logger.js";
@@ -216,16 +216,16 @@ function RootInner({
   // 工作区级 ServiceProvider 内（远程 Host 的 accessor），由它们取数会拿到另一台 Host 的答案。
   useDynamicWorkflowAvailabilityLoader(services.codingPlanSubscriptionService);
 
-  const { intl, locale } = useZCodeIntl();
+  const { intl, locale } = useRaspberryCodeIntl();
   const handleRemoteConnectionTargetChange = useSourceServerUpdateNotifications({
     enabled: isDesktop === true,
     management: services.sourceServerManagementService,
   });
-  const theme = useZCodeStore((state) => state.theme);
-  const user = useZCodeStore((state) => state.user);
-  const isRestoringOAuthSession = useZCodeStore((state) => state.isRestoringOAuthSession);
-  const setUser = useZCodeStore((state) => state.setUser);
-  const setOAuthError = useZCodeStore((state) => state.setOAuthError);
+  const theme = useRaspberryCodeStore((state) => state.theme);
+  const user = useRaspberryCodeStore((state) => state.user);
+  const isRestoringOAuthSession = useRaspberryCodeStore((state) => state.isRestoringOAuthSession);
+  const setUser = useRaspberryCodeStore((state) => state.setUser);
+  const setOAuthError = useRaspberryCodeStore((state) => state.setOAuthError);
   const {
     settings: appSettings,
     refresh: refreshAppSettings,
@@ -236,7 +236,7 @@ function RootInner({
   useDynamicWorkflowUserModeSync({
     settingsLoaded: Boolean(appSettings),
     userMode: appSettings?.dynamicWorkflowMode,
-    zcodeAgentService: services.zcodeAgentService,
+    raspberrycodeAgentService: services.raspberrycodeAgentService,
     codingPlanSubscriptionService: services.codingPlanSubscriptionService,
   });
   const [providerFamilyDomainMigrationComplete, setProviderFamilyDomainMigrationComplete] =
@@ -293,7 +293,7 @@ function RootInner({
           return;
         }
         void refreshAppSettings();
-        void services.zcodeAgentService.syncAppRuntimePreferences(parsed.data).catch((error) => {
+        void services.raspberrycodeAgentService.syncAppRuntimePreferences(parsed.data).catch((error) => {
           logger.warn("[settings] 同步跨窗口运行时偏好失败", error);
         });
         void services.botsService.syncAppRuntimePreferences(parsed.data).catch((error) => {
@@ -334,14 +334,14 @@ function RootInner({
     refreshAppSettings,
     services.botsService,
     services.broadcastService,
-    services.zcodeAgentService,
+    services.raspberrycodeAgentService,
   ]);
 
   useEffect(() => {
     if (!appSettings) {
       return;
     }
-    void services.zcodeAgentService
+    void services.raspberrycodeAgentService
       .syncAppRuntimePreferences({
         askUserQuestionAutoResolutionEnabled:
           appSettings.askUserQuestionAutoResolutionEnabled !== false,
@@ -363,7 +363,7 @@ function RootInner({
     appSettings?.askUserQuestionAutoResolutionEnabled,
     appSettings?.modelIoFullRetentionEnabled,
     services.botsService,
-    services.zcodeAgentService,
+    services.raspberrycodeAgentService,
   ]);
 
   const tabs = useTabStore((state) => state.tabs);
@@ -619,7 +619,7 @@ function RootInner({
       projectId?: string | null;
     }) => {
       // 桌面重连只恢复连接，不得把已选会话覆盖成草稿；手机仍沿用 replayable 入口。
-      const selectedTask = useZCodeSessionStore
+      const selectedTask = useRaspberryCodeSessionStore
         .getState()
         .getWorkspaceState(workspacePath, workspaceIdentity).activeTaskId;
       if (!isDesktop || !restoreSelection || !selectedTask) {
@@ -741,7 +741,7 @@ function RootInner({
         // 再打开首屏门禁，避免 Composer 按未归类范围读取并预热同目录的项目草稿。
         for (const tab of tabStoreApi.getState().tabs) {
           if (!isWorkspaceTab(tab)) continue;
-          const workspace = useZCodeSessionStore
+          const workspace = useRaspberryCodeSessionStore
             .getState()
             .getWorkspaceState(tab.workspacePath, tab.workspaceIdentity);
           if (workspace.activeTaskId || workspace.draftProjectId !== undefined) continue;
@@ -757,7 +757,7 @@ function RootInner({
             V4_DRAFT_SCOPE_ROOT,
             scope,
           );
-          useZCodeSessionStore
+          useRaspberryCodeSessionStore
             .getState()
             .startDraft(tab.workspacePath, undefined, tab.workspaceIdentity, {
               projectId: scope.projectId,

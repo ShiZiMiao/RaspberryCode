@@ -1,5 +1,5 @@
-import { BufferReader, BufferWriter, deserialize, serialize, VSBuffer } from "@zcode/rpc";
-import { PlatformChannels, ServiceChannels } from "@zcode/shared";
+import { BufferReader, BufferWriter, deserialize, serialize, VSBuffer } from "@raspberrycode/rpc";
+import { PlatformChannels, ServiceChannels } from "@raspberrycode/shared";
 
 type Handler = (...args: unknown[]) => Promise<unknown>;
 declare global {

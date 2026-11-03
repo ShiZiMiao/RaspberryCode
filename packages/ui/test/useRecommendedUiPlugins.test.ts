@@ -14,7 +14,7 @@ vi.mock("@/plugin-ui/adapters/useUiPluginRecommendations.js", () => ({
   useUiPluginRecommendations: () => ({ recommendations: context.recommendations, loading: false }),
 }));
 vi.mock("@/logger.js", () => ({ logger: { warn: vi.fn(), error: vi.fn() } }));
-vi.mock("@/lib/zcodeDraftSkillInvalidation.js", () => ({
+vi.mock("@/lib/raspberrycodeDraftSkillInvalidation.js", () => ({
   invalidateDeferredDraftSessionForSkillChange: context.invalidate,
 }));
 vi.mock("@/lib/skillStoreRefresh.js", () => ({
@@ -24,20 +24,20 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
 });
-const id = "panel@zcode-plugins-official";
+const id = "panel@raspberrycode-plugins-official";
 function setup() {
   let installed = false,
     enabled = false;
   const service = {
     listPlugins: vi.fn(async () => ({
       plugins: installed
-        ? [{ id, name: "panel", marketplace: "zcode-plugins-official", enabled }]
+        ? [{ id, name: "panel", marketplace: "raspberrycode-plugins-official", enabled }]
         : [],
       diagnostics: [],
     })),
     getPluginsOverview: vi.fn(async () => ({
-      marketplaces: [{ id: "zcode-plugins-official" }],
-      availablePlugins: [{ id, name: "panel", marketplace: "zcode-plugins-official", installed }],
+      marketplaces: [{ id: "raspberrycode-plugins-official" }],
+      availablePlugins: [{ id, name: "panel", marketplace: "raspberrycode-plugins-official", installed }],
       installedPlugins: [],
       restorableBuiltins: [],
       diagnostics: [],
@@ -158,7 +158,7 @@ it.each(["success", "failure"])(
     );
     await waitFor(() => expect(result.current.entries).toHaveLength(1));
     const a = result.current.entries[0]!.item;
-    const b = { ...a, id: "second@zcode-plugins-official", name: "second" };
+    const b = { ...a, id: "second@raspberrycode-plugins-official", name: "second" };
     let installA!: Promise<void>;
     let installB!: Promise<void>;
     act(() => {

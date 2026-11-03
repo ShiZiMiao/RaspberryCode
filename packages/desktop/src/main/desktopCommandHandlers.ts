@@ -1,23 +1,23 @@
 import { getPluginSandboxHost } from "./pluginSandbox/index.js";
 /* eslint-disable max-lines -- 桌面命令分发需要共享窗口与平台上下文，集中维护更便于一致性 */
-import { readZCodeStdioTapDevState, setZCodeStdioTapDevEnabled } from "@zcode/services/node";
+import { readRaspberryCodeStdioTapDevState, setRaspberryCodeStdioTapDevEnabled } from "@raspberrycode/services/node";
 import {
-  buildZCodeEndpointUrls,
-  DEFAULT_ZCODE_ENDPOINT_ORIGIN,
+  buildRaspberryCodeEndpointUrls,
+  DEFAULT_RASPBERRYCODE_ENDPOINT_ORIGIN,
   DesktopCommandIds,
-  TEST_ZCODE_ENDPOINT_ORIGIN,
+  TEST_RASPBERRYCODE_ENDPOINT_ORIGIN,
   getCommunityUrlFromConfigs,
   getFeedbackUrlFromConfig,
-  normalizeZCodeEndpointOrigin,
+  normalizeRaspberryCodeEndpointOrigin,
   PlatformChannels,
   resolveHelpAppConfig,
-  resolveZCodeEndpointOrigin,
-  ZCODE_ENV,
-  ZCODE_PRODUCT_FLAVOR,
+  resolveRaspberryCodeEndpointOrigin,
+  RASPBERRYCODE_ENV,
+  RASPBERRYCODE_PRODUCT_FLAVOR,
   type AppSettings,
   type DesktopCommandId,
   type Locale,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import type { MessageBoxOptions } from "electron";
 import { app, BrowserWindow, dialog, shell } from "electron";
 import { readFile } from "node:fs/promises";
@@ -38,9 +38,9 @@ import { exportLogs } from "./exportLogs.js";
 import { openResourceManager } from "./resourceManagerWindow.js";
 
 export const HELP_TOGGLE_DEV_TOOLS_MENU_ID = "help.toggle-dev-tools";
-export const HELP_TOGGLE_ZCODE_STDIO_TAP_MENU_ID = "help.toggle-zcode-stdio-tap";
-const ZCODE_ENDPOINT_PROMPT_WIDTH = 460;
-const ZCODE_ENDPOINT_PROMPT_HEIGHT = 210;
+export const HELP_TOGGLE_RASPBERRYCODE_STDIO_TAP_MENU_ID = "help.toggle-raspberrycode-stdio-tap";
+const RASPBERRYCODE_ENDPOINT_PROMPT_WIDTH = 460;
+const RASPBERRYCODE_ENDPOINT_PROMPT_HEIGHT = 210;
 
 function resolveTargetWindow(senderWindow?: BrowserWindow | null) {
   if (senderWindow && !senderWindow.isDestroyed()) {
@@ -279,13 +279,13 @@ async function persistDesktopZoomLevel(options: {
   }
 }
 
-function toggleZCodeStdioTapDevProxy(options: {
+function toggleRaspberryCodeStdioTapDevProxy(options: {
   logger: { info: (...args: unknown[]) => void };
-  updateZCodeStdioTapDevMenuState: () => void;
+  updateRaspberryCodeStdioTapDevMenuState: () => void;
 }) {
-  const current = readZCodeStdioTapDevState();
-  const next = setZCodeStdioTapDevEnabled(!current.enabled);
-  options.updateZCodeStdioTapDevMenuState();
+  const current = readRaspberryCodeStdioTapDevState();
+  const next = setRaspberryCodeStdioTapDevEnabled(!current.enabled);
+  options.updateRaspberryCodeStdioTapDevMenuState();
   options.logger.info("[stdio-tap] dev proxy toggled", {
     enabled: next.enabled,
     visible: next.visible,
@@ -295,30 +295,30 @@ function toggleZCodeStdioTapDevProxy(options: {
 
 function resolveChangelogUrl(
   locale: Locale,
-  endpointOrigin = DEFAULT_ZCODE_ENDPOINT_ORIGIN,
+  endpointOrigin = DEFAULT_RASPBERRYCODE_ENDPOINT_ORIGIN,
 ): string {
   // 帮助菜单里的外链以前只有固定英文地址，切到中文界面后仍会落到英文 changelog。
   // 这里统一收口到主进程按当前应用语言分流，避免菜单模板里手写分支后续再出现多处不一致。
-  const origin = buildZCodeEndpointUrls(endpointOrigin).origin;
+  const origin = buildRaspberryCodeEndpointUrls(endpointOrigin).origin;
   return locale === "zh-CN" ? `${origin}/cn/changelog` : `${origin}/en/changelog`;
 }
 
 export async function openChangelog(
   locale: Locale,
-  endpointOrigin = DEFAULT_ZCODE_ENDPOINT_ORIGIN,
+  endpointOrigin = DEFAULT_RASPBERRYCODE_ENDPOINT_ORIGIN,
 ) {
   await shell.openExternal(resolveChangelogUrl(locale, endpointOrigin));
 }
 
-async function resolveCurrentZCodeEndpointOrigin(settingService: {
-  get(): Promise<{ zcodeEndpointOrigin?: string }>;
+async function resolveCurrentRaspberryCodeEndpointOrigin(settingService: {
+  get(): Promise<{ raspberrycodeEndpointOrigin?: string }>;
   envBaseOrigin?: string | null;
 }): Promise<string> {
   const settings = await settingService.get();
-  return resolveZCodeEndpointOrigin({
-    env: ZCODE_ENV,
+  return resolveRaspberryCodeEndpointOrigin({
+    env: RASPBERRYCODE_ENV,
     envBaseOrigin: settingService.envBaseOrigin,
-    overrideOrigin: settings.zcodeEndpointOrigin,
+    overrideOrigin: settings.raspberrycodeEndpointOrigin,
   });
 }
 
@@ -331,16 +331,16 @@ export async function executeDesktopCommand(options: {
     warn: (...args: unknown[]) => void;
     error: (...args: unknown[]) => void;
   };
-  updateZCodeStdioTapDevMenuState: () => void;
+  updateRaspberryCodeStdioTapDevMenuState: () => void;
   onDesktopZoomChanged?: (zoomLevel: number) => Promise<void> | void;
   onRelaunchApp: () => Promise<void>;
   settingService: {
-    get(): Promise<Pick<AppSettings, "zcodeEndpointOrigin" | "desktopZoomLevel">>;
+    get(): Promise<Pick<AppSettings, "raspberrycodeEndpointOrigin" | "desktopZoomLevel">>;
     update(
-      patch: Partial<Pick<AppSettings, "zcodeEndpointOrigin" | "desktopZoomLevel">>,
+      patch: Partial<Pick<AppSettings, "raspberrycodeEndpointOrigin" | "desktopZoomLevel">>,
     ): Promise<void>;
   };
-  zcodeEndpointEnvBaseOrigin?: string | null;
+  raspberrycodeEndpointEnvBaseOrigin?: string | null;
   credentialsDir: string;
   currentApplicationLocale: Locale;
 }) {
@@ -429,9 +429,9 @@ export async function executeDesktopCommand(options: {
     case DesktopCommandIds.OpenChangelog:
       await openChangelog(
         options.currentApplicationLocale,
-        await resolveCurrentZCodeEndpointOrigin({
+        await resolveCurrentRaspberryCodeEndpointOrigin({
           ...options.settingService,
-          envBaseOrigin: options.zcodeEndpointEnvBaseOrigin,
+          envBaseOrigin: options.raspberrycodeEndpointEnvBaseOrigin,
         }),
       );
       return;
@@ -457,10 +457,10 @@ export async function executeDesktopCommand(options: {
     case DesktopCommandIds.OpenResourceManager:
       openResourceManager();
       return;
-    case DesktopCommandIds.ToggleZCodeStdioTapDevProxy:
-      toggleZCodeStdioTapDevProxy({
+    case DesktopCommandIds.ToggleRaspberryCodeStdioTapDevProxy:
+      toggleRaspberryCodeStdioTapDevProxy({
         logger: options.logger,
-        updateZCodeStdioTapDevMenuState: options.updateZCodeStdioTapDevMenuState,
+        updateRaspberryCodeStdioTapDevMenuState: options.updateRaspberryCodeStdioTapDevMenuState,
       });
       return;
     case DesktopCommandIds.ClearAllData:

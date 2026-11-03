@@ -1,27 +1,27 @@
-import { migrateApplicationStorage, createSettingService } from "@zcode/services/node";
-import { disposeServiceResourcesAndWait, getAppConfigDir } from "@zcode/services/node";
-import type { IChannel } from "@zcode/rpc";
+import { migrateApplicationStorage, createSettingService } from "@raspberrycode/services/node";
+import { disposeServiceResourcesAndWait, getAppConfigDir } from "@raspberrycode/services/node";
+import type { IChannel } from "@raspberrycode/rpc";
 import {
-  ZCODE_VERSION,
+  RASPBERRYCODE_VERSION,
   TOPIC_RESOURCE_RELAY_CHANNEL,
   SERVICE_AUTHORITY_MODE_ENV,
   formatLogPrefix,
   formatZodError,
   helloAckMessageSchema,
-} from "@zcode/shared";
-import type { HelloMessage, HelloAckMessage } from "@zcode/shared";
+} from "@raspberrycode/shared";
+import type { HelloMessage, HelloAckMessage } from "@raspberrycode/shared";
 import { createStdioServer } from "./stdio.js";
 import { registerStdioProcessLifecycle } from "./stdio-lifecycle.js";
 import { createStdioServices } from "./stdioServices.js";
 import { ensureRemoteServerDeviceMid } from "./stdioDeviceMid.js";
 import {
-  materializeBundledZCodeBuiltinProviderConfig,
-  readBundledZCodeBuiltinProviderConfig,
-} from "./bundledZCodeBuiltinProviderConfig.js";
+  materializeBundledRaspberryCodeBuiltinProviderConfig,
+  readBundledRaspberryCodeBuiltinProviderConfig,
+} from "./bundledRaspberryCodeBuiltinProviderConfig.js";
 
 // In stdio mode, all logging goes to stderr
 const log = (...args: unknown[]) =>
-  console.error(formatLogPrefix("zcode-server:stdio", process.pid), ...args);
+  console.error(formatLogPrefix("raspberrycode-server:stdio", process.pid), ...args);
 const stderrConsoleLog = (...args: unknown[]) => console.error(...args);
 
 // stdio 模式下 stdout 只能承载 RPC 帧。
@@ -35,15 +35,15 @@ console.debug = stderrConsoleLog;
 
 // --version flag: print version and exit (used by deploy version check)
 if (process.argv.includes("--version")) {
-  process.stdout.write(ZCODE_VERSION + "\n");
+  process.stdout.write(RASPBERRYCODE_VERSION + "\n");
   process.exit(0);
 }
 
 async function main() {
   // Phase 1: Send hello message
   const hello: HelloMessage = {
-    type: "zcode-hello",
-    version: ZCODE_VERSION,
+    type: "raspberrycode-hello",
+    version: RASPBERRYCODE_VERSION,
     platform: process.platform,
     arch: process.arch,
     pid: process.pid,
@@ -61,14 +61,14 @@ async function main() {
 
   // Phase 3: Initialize services and start stdio RPC server
   let topicResourceChannel: IChannel | undefined;
-  const zcodeBuiltinProviderConfigFilePath = await materializeBundledZCodeBuiltinProviderConfig({
+  const raspberrycodeBuiltinProviderConfigFilePath = await materializeBundledRaspberryCodeBuiltinProviderConfig({
     environmentConfigRoot: getAppConfigDir(),
-    content: readBundledZCodeBuiltinProviderConfig(),
+    content: readBundledRaspberryCodeBuiltinProviderConfig(),
   });
   await migrateApplicationStorage(await createSettingService().get());
   const { authorityModeParseResult, services } = createStdioServices({
     env: process.env,
-    zcodeBuiltinProviderConfigFilePath,
+    raspberrycodeBuiltinProviderConfigFilePath,
     topicResourceRelayChannel: () => {
       if (!topicResourceChannel) throw new Error("Desktop topic resource channel is unavailable");
       return topicResourceChannel;

@@ -6,8 +6,8 @@ import {
   TID_V4_ATTACHMENT_UPLOAD_RETRY,
   TID_V4_COMPOSER_SEND,
   testId,
-} from "@zcode/shared/test-ids";
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+} from "@raspberrycode/shared/test-ids";
+import { RaspberryCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import { ConversationComposer } from "@/v4/ConversationComposer.js";
 
 const attachmentState = vi.hoisted(() => ({
@@ -130,7 +130,7 @@ const AnyConversationComposer = ConversationComposer as unknown as ComponentType
 function renderComposer(overrides: Record<string, unknown> = {}) {
   return renderToStaticMarkup(
     createElement(
-      ZCodeIntlProvider,
+      RaspberryCodeIntlProvider,
       { initialLocale: "zh-CN" },
       createElement(AnyConversationComposer, {
         draftMode: true,

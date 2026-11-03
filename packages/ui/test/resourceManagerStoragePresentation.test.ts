@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { StorageRootUsage } from "@zcode/shared";
+import type { StorageRootUsage } from "@raspberrycode/shared";
 import {
   buildStorageLegend,
   joinStoragePath,
@@ -18,7 +18,7 @@ function root(
     cleanability: "none" as const,
     entries: [],
   }));
-  return { id, path: `/${id}/.zcode`, volume: null, bytes: 0, fileCount: 0, categories };
+  return { id, path: `/${id}/.raspberrycode`, volume: null, bytes: 0, fileCount: 0, categories };
 }
 
 describe("sumCategoriesAcrossRoots", () => {
@@ -61,9 +61,9 @@ describe("buildStorageLegend", () => {
 
 describe("joinStoragePath", () => {
   it("joins with the root's own separator", () => {
-    expect(joinStoragePath("/Users/u/.zcode/", "cli/debug")).toBe("/Users/u/.zcode/cli/debug");
-    expect(joinStoragePath("C:\\Users\\u\\.zcode", "cli/debug/x.jsonl")).toBe(
-      "C:\\Users\\u\\.zcode\\cli\\debug\\x.jsonl",
+    expect(joinStoragePath("/Users/u/.raspberrycode/", "cli/debug")).toBe("/Users/u/.raspberrycode/cli/debug");
+    expect(joinStoragePath("C:\\Users\\u\\.raspberrycode", "cli/debug/x.jsonl")).toBe(
+      "C:\\Users\\u\\.raspberrycode\\cli\\debug\\x.jsonl",
     );
   });
 });

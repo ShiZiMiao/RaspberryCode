@@ -5,7 +5,7 @@ import {
   resolveSubagentRuntimeProfiles,
   type SubagentRuntimeConfig,
   type SubagentRuntimeState,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import { createServiceLogger } from "#src/logger/serviceLogger.js";
 import {
   createSubagentConfigScope,

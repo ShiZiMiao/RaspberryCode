@@ -1,12 +1,12 @@
 import { mkdirSync, appendFileSync } from "node:fs";
 import { join } from "node:path";
-import { formatTimestamp } from "@zcode/shared";
+import { formatTimestamp } from "@raspberrycode/shared";
 import { cleanupExpiredLogFiles, LOG_RETENTION_DAYS } from "./logRetention.js";
-import { getAppConfigDir, maybeThrowInjectedFsFault } from "@zcode/services/node";
+import { getAppConfigDir, maybeThrowInjectedFsFault } from "@raspberrycode/services/node";
 
 function getLogDir() {
   const e2eLogDir =
-    process.env.ZCODE_ENV === "test" ? process.env.ZCODE_E2E_RUNTIME_LOG_DIR?.trim() : undefined;
+    process.env.RASPBERRYCODE_ENV === "test" ? process.env.RASPBERRYCODE_E2E_RUNTIME_LOG_DIR?.trim() : undefined;
   if (e2eLogDir) {
     return e2eLogDir;
   }

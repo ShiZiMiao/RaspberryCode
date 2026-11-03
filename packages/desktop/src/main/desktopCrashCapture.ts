@@ -10,14 +10,14 @@ import {
 } from "node:fs";
 import { basename, join } from "node:path";
 import { app, crashReporter, type BrowserWindow, type WebContents } from "electron";
-import { getAppConfigDir } from "@zcode/services/node";
+import { getAppConfigDir } from "@raspberrycode/services/node";
 import {
   type CrashDumpV8OomSummary,
   readCrashDumpAnnotationsFromFile,
   summarizeCrashDumpAnnotations,
 } from "./crashDumpAnnotations.js";
 
-const LOCAL_ONLY_CRASH_SUBMIT_URL = "https://zcode.invalid/local-crash-only";
+const LOCAL_ONLY_CRASH_SUBMIT_URL = "https://raspberrycode.invalid/local-crash-only";
 const CRASH_DUMP_STABLE_AFTER_MS = 1_000;
 const CRASH_ARCHIVE_RETRY_DELAYS_MS = [1_500, 5_000] as const;
 const CRASH_ARCHIVE_MAX_FILES = 5;

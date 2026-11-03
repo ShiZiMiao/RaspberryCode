@@ -1,6 +1,6 @@
-import type { RemoteTargetSnapshot, RemoteWorkspaceSessionEntry } from "@zcode/shared";
+import type { RemoteTargetSnapshot, RemoteWorkspaceSessionEntry } from "@raspberrycode/shared";
 import type { ProjectRoot } from "#src/project-storage/contract.js";
-import { ServiceChannels } from "@zcode/shared";
+import { ServiceChannels } from "@raspberrycode/shared";
 import { createServiceDescriptor } from "#src/descriptors.js";
 
 export interface RemoteProjectHost {

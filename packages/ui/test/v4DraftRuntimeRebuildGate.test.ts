@@ -15,8 +15,8 @@ const mocks = vi.hoisted(() => ({
   invalidateDraftRuntime: vi.fn(),
 }));
 
-vi.mock("@/store/zcodeSessionStore.js", () => ({
-  useZCodeSessionStore: {
+vi.mock("@/store/raspberrycodeSessionStore.js", () => ({
+  useRaspberryCodeSessionStore: {
     getState: () => ({ invalidateDraftRuntime: mocks.invalidateDraftRuntime }),
   },
 }));

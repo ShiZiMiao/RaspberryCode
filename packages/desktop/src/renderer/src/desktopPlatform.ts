@@ -1,5 +1,5 @@
-import { recordArmsCustomEventForE2E } from "@zcode/ui";
-import { DesktopCommandIds, buildLocalMediaPreviewUrl, type IPlatformService } from "@zcode/shared";
+import { recordArmsCustomEventForE2E } from "@raspberrycode/ui";
+import { DesktopCommandIds, buildLocalMediaPreviewUrl, type IPlatformService } from "@raspberrycode/shared";
 
 import { desktopBrowserPlatformBridge } from "./desktopBrowserPlatformBridge.js";
 import { createDesktopPluginSandboxPlatform } from "./plugin-sandbox/desktopPluginSandboxPlatform.js";
@@ -13,161 +13,160 @@ export function createDesktopPlatform(options: {
     pluginSandbox: createDesktopPluginSandboxPlatform(),
     createLocalMediaPreviewUrl: buildLocalMediaPreviewUrl,
     isLocalDevelopmentRuntime: options.isLocalDevelopmentRuntime,
-    selectDirectory: () => window.zcode.selectDirectory(),
-    selectDirectories: () => window.zcode.selectDirectories(),
-    selectFile: () => window.zcode.selectFile(),
-    selectFiles: () => window.zcode.selectFiles?.() ?? Promise.resolve([]),
-    createTempTextAttachment: (payload) => window.zcode.createTempTextAttachment(payload),
+    selectDirectory: () => window.raspberrycode.selectDirectory(),
+    selectDirectories: () => window.raspberrycode.selectDirectories(),
+    selectFile: () => window.raspberrycode.selectFile(),
+    selectFiles: () => window.raspberrycode.selectFiles?.() ?? Promise.resolve([]),
+    createTempTextAttachment: (payload) => window.raspberrycode.createTempTextAttachment(payload),
     materializeWorkflowArtifactFile: (payload) =>
-      window.zcode.materializeWorkflowArtifactFile(payload),
-    onRemoteConnectionLog: (handler) => window.zcode.onRemoteConnectionLog(handler),
-    onRemoteSessionClosed: (handler) => window.zcode.onRemoteSessionClosed(handler),
+      window.raspberrycode.materializeWorkflowArtifactFile(payload),
+    onRemoteConnectionLog: (handler) => window.raspberrycode.onRemoteConnectionLog(handler),
+    onRemoteSessionClosed: (handler) => window.raspberrycode.onRemoteSessionClosed(handler),
     // Source 自动重连会替换 logical session；统一由 preload bridge 转发换代事件。
     onRemoteSessionReconnected: (handler) =>
-      window.zcode.onRemoteSessionReconnected?.(handler) ?? (() => {}),
+      window.raspberrycode.onRemoteSessionReconnected?.(handler) ?? (() => {}),
     activateOrSetWorkspace: (path) =>
-      window.zcode.activateOrSetWorkspace?.(path) ?? Promise.resolve({ activated: false }),
+      window.raspberrycode.activateOrSetWorkspace?.(path) ?? Promise.resolve({ activated: false }),
     connectRemote: (remoteOptions, requestId, context) =>
-      window.zcode.connectRemote(remoteOptions, requestId, context),
+      window.raspberrycode.connectRemote(remoteOptions, requestId, context),
     requestSourceSettingsAttachment: (sourceServerId) =>
-      window.zcode.requestSourceSettingsAttachment?.(sourceServerId) ??
+      window.raspberrycode.requestSourceSettingsAttachment?.(sourceServerId) ??
       Promise.reject(new Error("Source settings attachment bridge unavailable")),
     cancelPendingRemoteConnection: (requestId) =>
-      window.zcode.cancelPendingRemoteConnection?.(requestId) ?? Promise.resolve(),
+      window.raspberrycode.cancelPendingRemoteConnection?.(requestId) ?? Promise.resolve(),
     bindRemoteWorkspaceSessionContext: (context) =>
-      window.zcode.bindRemoteWorkspaceSessionContext?.(context) ??
+      window.raspberrycode.bindRemoteWorkspaceSessionContext?.(context) ??
       Promise.reject(new Error("Desktop bindRemoteWorkspaceSessionContext bridge unavailable")),
-    disposeRemoteSession: (sessionId) => window.zcode.disposeRemoteSession(sessionId),
-    isDockerAvailable: () => window.zcode.isDockerAvailable(),
-    listWSLDistros: () => window.zcode.listWSLDistros(),
-    listDockerContainers: () => window.zcode.listDockerContainers(),
-    listSSHConfigAliases: () => window.zcode.listSSHConfigAliases(),
-    loadMcpFromUserDirectory: (payload) => window.zcode.loadMcpFromUserDirectory(payload),
-    saveMcpToUserDirectory: (payload) => window.zcode.saveMcpToUserDirectory(payload),
-    migrateLegacyCommonMcp: (payload) => window.zcode.migrateLegacyCommonMcp(payload),
-    openExternal: (url) => window.zcode.openExternal(url),
-    openFeedback: () => window.zcode.executeDesktopCommand(DesktopCommandIds.OpenFeedback),
-    openCommunity: () => window.zcode.executeDesktopCommand(DesktopCommandIds.OpenCommunity),
-    canOpenCommunity: (locale) => window.zcode.canOpenCommunity(locale),
-    openInFileManager: (path) => window.zcode.openInFileManager(path),
-    openExternalFile: (path) => window.zcode.openExternalFile(path),
-    openCuaPermissionOnboarding: window.zcode.openCuaPermissionOnboarding
+    disposeRemoteSession: (sessionId) => window.raspberrycode.disposeRemoteSession(sessionId),
+    isDockerAvailable: () => window.raspberrycode.isDockerAvailable(),
+    listWSLDistros: () => window.raspberrycode.listWSLDistros(),
+    listDockerContainers: () => window.raspberrycode.listDockerContainers(),
+    listSSHConfigAliases: () => window.raspberrycode.listSSHConfigAliases(),
+    loadMcpFromUserDirectory: (payload) => window.raspberrycode.loadMcpFromUserDirectory(payload),
+    saveMcpToUserDirectory: (payload) => window.raspberrycode.saveMcpToUserDirectory(payload),
+    openExternal: (url) => window.raspberrycode.openExternal(url),
+    openFeedback: () => window.raspberrycode.executeDesktopCommand(DesktopCommandIds.OpenFeedback),
+    openCommunity: () => window.raspberrycode.executeDesktopCommand(DesktopCommandIds.OpenCommunity),
+    canOpenCommunity: (locale) => window.raspberrycode.canOpenCommunity(locale),
+    openInFileManager: (path) => window.raspberrycode.openInFileManager(path),
+    openExternalFile: (path) => window.raspberrycode.openExternalFile(path),
+    openCuaPermissionOnboarding: window.raspberrycode.openCuaPermissionOnboarding
       ? (permissionOptions) =>
-          window.zcode.openCuaPermissionOnboarding?.(permissionOptions) ??
+          window.raspberrycode.openCuaPermissionOnboarding?.(permissionOptions) ??
           Promise.resolve({ success: false, error: "not_supported" })
       : undefined,
-    prepareCuaHelperPermissionDrag: window.zcode.prepareCuaHelperPermissionDrag
+    prepareCuaHelperPermissionDrag: window.raspberrycode.prepareCuaHelperPermissionDrag
       ? () =>
-          window.zcode.prepareCuaHelperPermissionDrag?.() ??
+          window.raspberrycode.prepareCuaHelperPermissionDrag?.() ??
           Promise.resolve({ success: false, error: "not_supported" })
       : undefined,
-    startCuaHelperPermissionDrag: window.zcode.startCuaHelperPermissionDrag
-      ? () => window.zcode.startCuaHelperPermissionDrag?.()
+    startCuaHelperPermissionDrag: window.raspberrycode.startCuaHelperPermissionDrag
+      ? () => window.raspberrycode.startCuaHelperPermissionDrag?.()
       : undefined,
-    registerOAuthState: (payload) => window.zcode.registerOAuthState(payload),
-    onOAuthCallback: (callback) => window.zcode.onOAuthCallback(callback),
-    notifyRendererReady: () => window.zcode.notifyRendererReady(),
-    reportTelemetryEvent: (payload) => window.zcode.reportTelemetryEvent(payload),
+    registerOAuthState: (payload) => window.raspberrycode.registerOAuthState(payload),
+    onOAuthCallback: (callback) => window.raspberrycode.onOAuthCallback(callback),
+    notifyRendererReady: () => window.raspberrycode.notifyRendererReady(),
+    reportTelemetryEvent: (payload) => window.raspberrycode.reportTelemetryEvent(payload),
     reportArmsCustomEvent: (payload) => {
       recordArmsCustomEventForE2E(payload);
-      return window.zcode.reportArmsCustomEvent(payload);
+      return window.raspberrycode.reportArmsCustomEvent(payload);
     },
-    getRendererActionTraceConfig: window.zcode.getRendererActionTraceConfig
-      ? () => window.zcode.getRendererActionTraceConfig!()
+    getRendererActionTraceConfig: window.raspberrycode.getRendererActionTraceConfig
+      ? () => window.raspberrycode.getRendererActionTraceConfig!()
       : undefined,
-    onRendererActionTraceConfigChanged: window.zcode.onRendererActionTraceConfigChanged
-      ? (callback) => window.zcode.onRendererActionTraceConfigChanged!(callback)
+    onRendererActionTraceConfigChanged: window.raspberrycode.onRendererActionTraceConfigChanged
+      ? (callback) => window.raspberrycode.onRendererActionTraceConfigChanged!(callback)
       : undefined,
-    reportLocalTtftBatch: (batch) => window.zcode.reportLocalTtftBatch(batch),
-    reportRendererActionTraceBatch: window.zcode.reportRendererActionTraceBatch
-      ? (batch) => window.zcode.reportRendererActionTraceBatch!(batch)
+    reportLocalTtftBatch: (batch) => window.raspberrycode.reportLocalTtftBatch(batch),
+    reportRendererActionTraceBatch: window.raspberrycode.reportRendererActionTraceBatch
+      ? (batch) => window.raspberrycode.reportRendererActionTraceBatch!(batch)
       : undefined,
-    reportRendererHeapSample: window.zcode.reportRendererHeapSample
-      ? (sample) => window.zcode.reportRendererHeapSample!(sample)
+    reportRendererHeapSample: window.raspberrycode.reportRendererHeapSample
+      ? (sample) => window.raspberrycode.reportRendererHeapSample!(sample)
       : undefined,
-    showTaskNotification: (payload) => window.zcode.showTaskNotification(payload),
-    syncWindowTabs: (paths) => window.zcode.syncWindowTabs(paths),
-    syncWindowUnreadCount: (count) => window.zcode.syncWindowUnreadCount(count),
-    syncActiveTaskSession: (sessionId) => window.zcode.syncActiveTaskSession(sessionId),
-    syncAppSettings: (patch) => window.zcode.syncAppSettings?.(patch),
+    showTaskNotification: (payload) => window.raspberrycode.showTaskNotification(payload),
+    syncWindowTabs: (paths) => window.raspberrycode.syncWindowTabs(paths),
+    syncWindowUnreadCount: (count) => window.raspberrycode.syncWindowUnreadCount(count),
+    syncActiveTaskSession: (sessionId) => window.raspberrycode.syncActiveTaskSession(sessionId),
+    syncAppSettings: (patch) => window.raspberrycode.syncAppSettings?.(patch),
     // 桥缺失（旧 preload 升级窗口）时按 supported 兜底，与 Windows 现状一致，设置开关可用。
     getCloseToTrayCapability: () =>
-      window.zcode.getCloseToTrayCapability?.() ??
+      window.raspberrycode.getCloseToTrayCapability?.() ??
       Promise.resolve({ supported: true, gnomeLikeWithoutTray: false }),
-    setShortcutRecordingActive: (active) => window.zcode.setShortcutRecordingActive?.(active),
-    onFocusTab: (handler) => window.zcode.onFocusTab(handler),
-    onNewTab: (handler) => window.zcode.onNewTab(handler),
+    setShortcutRecordingActive: (active) => window.raspberrycode.setShortcutRecordingActive?.(active),
+    onFocusTab: (handler) => window.raspberrycode.onFocusTab(handler),
+    onNewTab: (handler) => window.raspberrycode.onNewTab(handler),
     onCloseActiveContextRequest: (handler) =>
-      window.zcode.onCloseActiveContextRequest?.(handler) ?? (() => {}),
-    onOpenBrowserUrl: (handler) => window.zcode.onOpenBrowserUrl?.(handler) ?? (() => {}),
+      window.raspberrycode.onCloseActiveContextRequest?.(handler) ?? (() => {}),
+    onOpenBrowserUrl: (handler) => window.raspberrycode.onOpenBrowserUrl?.(handler) ?? (() => {}),
     onEmbeddedBrowserPermissionPrompt: (handler) =>
-      window.zcode.onEmbeddedBrowserPermissionPrompt?.(handler) ?? (() => {}),
+      window.raspberrycode.onEmbeddedBrowserPermissionPrompt?.(handler) ?? (() => {}),
     resolveEmbeddedBrowserPermissionPrompt: (request) =>
-      window.zcode.resolveEmbeddedBrowserPermissionPrompt?.(request),
+      window.raspberrycode.resolveEmbeddedBrowserPermissionPrompt?.(request),
     getEmbeddedBrowserSitePermissions: () =>
-      window.zcode.getEmbeddedBrowserSitePermissions?.() ?? Promise.resolve({}),
+      window.raspberrycode.getEmbeddedBrowserSitePermissions?.() ?? Promise.resolve({}),
     setEmbeddedBrowserSitePermission: (request) =>
-      window.zcode.setEmbeddedBrowserSitePermission?.(request) ?? Promise.resolve({}),
+      window.raspberrycode.setEmbeddedBrowserSitePermission?.(request) ?? Promise.resolve({}),
     clearEmbeddedBrowserSitePermissions: () =>
-      window.zcode.clearEmbeddedBrowserSitePermissions?.() ?? Promise.resolve({}),
+      window.raspberrycode.clearEmbeddedBrowserSitePermissions?.() ?? Promise.resolve({}),
     resetEmbeddedBrowserSitePermission: (request) =>
-      window.zcode.resetEmbeddedBrowserSitePermission?.(request) ?? Promise.resolve({}),
+      window.raspberrycode.resetEmbeddedBrowserSitePermission?.(request) ?? Promise.resolve({}),
     onBrowserViewScreenshotSurfacePrepare: (handler) =>
-      window.zcode.onBrowserViewScreenshotSurfacePrepare?.(handler) ?? (() => {}),
+      window.raspberrycode.onBrowserViewScreenshotSurfacePrepare?.(handler) ?? (() => {}),
     onBrowserViewScreenshotSurfaceRelease: (handler) =>
-      window.zcode.onBrowserViewScreenshotSurfaceRelease?.(handler) ?? (() => {}),
+      window.raspberrycode.onBrowserViewScreenshotSurfaceRelease?.(handler) ?? (() => {}),
     browserViewScreenshotSurfaceReady: (payload) =>
-      window.zcode.browserViewScreenshotSurfaceReady?.(payload),
+      window.raspberrycode.browserViewScreenshotSurfaceReady?.(payload),
     ...desktopBrowserPlatformBridge,
-    onNewTask: (handler) => window.zcode.onNewTask(handler),
+    onNewTask: (handler) => window.raspberrycode.onNewTask(handler),
     onOpenWorkspace: (handler) => {
       // 开发态或升级后的旧窗口可能仍运行未暴露 onOpenWorkspace 的 preload，
       // renderer 直接调用会在启动时崩溃。这里和 activateOrSetWorkspace 一样做兼容兜底，
       // 缺少该 bridge 时只禁用原生菜单回调，不影响应用继续打开。
-      return window.zcode.onOpenWorkspace?.(handler) ?? (() => {});
+      return window.raspberrycode.onOpenWorkspace?.(handler) ?? (() => {});
     },
-    onOpenWorkspacePath: (handler) => window.zcode.onOpenWorkspacePath?.(handler) ?? (() => {}),
-    onOpenFeedbackDialog: (handler) => window.zcode.onOpenFeedbackDialog?.(handler) ?? (() => {}),
-    onOpenTicketsPanel: (handler) => window.zcode.onOpenTicketsPanel?.(handler) ?? (() => {}),
-    onWindowFullscreenChanged: (handler) => window.zcode.onWindowFullscreenChanged(handler),
-    getDesktopWindowChromeState: window.zcode.getDesktopWindowChromeState
-      ? () => window.zcode.getDesktopWindowChromeState!()
+    onOpenWorkspacePath: (handler) => window.raspberrycode.onOpenWorkspacePath?.(handler) ?? (() => {}),
+    onOpenFeedbackDialog: (handler) => window.raspberrycode.onOpenFeedbackDialog?.(handler) ?? (() => {}),
+    onOpenTicketsPanel: (handler) => window.raspberrycode.onOpenTicketsPanel?.(handler) ?? (() => {}),
+    onWindowFullscreenChanged: (handler) => window.raspberrycode.onWindowFullscreenChanged(handler),
+    getDesktopWindowChromeState: window.raspberrycode.getDesktopWindowChromeState
+      ? () => window.raspberrycode.getDesktopWindowChromeState!()
       : undefined,
-    onDesktopWindowChromeStateChanged: window.zcode.onDesktopWindowChromeStateChanged
-      ? (handler) => window.zcode.onDesktopWindowChromeStateChanged!(handler)
+    onDesktopWindowChromeStateChanged: window.raspberrycode.onDesktopWindowChromeStateChanged
+      ? (handler) => window.raspberrycode.onDesktopWindowChromeStateChanged!(handler)
       : undefined,
-    getWindowControlsOverlayMetrics: () => window.zcode.getWindowControlsOverlayMetrics?.() ?? null,
+    getWindowControlsOverlayMetrics: () => window.raspberrycode.getWindowControlsOverlayMetrics?.() ?? null,
     onWindowControlsOverlayChanged: (handler) =>
-      window.zcode.onWindowControlsOverlayChanged?.(handler) ?? (() => {}),
+      window.raspberrycode.onWindowControlsOverlayChanged?.(handler) ?? (() => {}),
     getDesktopZoomLevel: () =>
-      window.zcode.getDesktopZoomLevel?.() ?? Promise.resolve({ zoomLevel: 0 }),
+      window.raspberrycode.getDesktopZoomLevel?.() ?? Promise.resolve({ zoomLevel: 0 }),
     onDesktopZoomLevelChanged: (handler) =>
-      window.zcode.onDesktopZoomLevelChanged?.(handler) ?? (() => {}),
-    onTaskNotificationClick: (handler) => window.zcode.onTaskNotificationClick(handler),
-    exportLogs: () => window.zcode.exportLogs(),
+      window.raspberrycode.onDesktopZoomLevelChanged?.(handler) ?? (() => {}),
+    onTaskNotificationClick: (handler) => window.raspberrycode.onTaskNotificationClick(handler),
+    exportLogs: () => window.raspberrycode.exportLogs(),
     captureWindowScreenshot: () =>
-      window.zcode.captureWindowScreenshot?.() ?? Promise.resolve(null),
+      window.raspberrycode.captureWindowScreenshot?.() ?? Promise.resolve(null),
     getDesktopSessionActivity: () =>
-      window.zcode.getDesktopSessionActivity?.() ??
+      window.raspberrycode.getDesktopSessionActivity?.() ??
       Promise.resolve({ runningAgentSessionCount: 0 }),
-    getZCodeStdioTapDevState: () =>
-      window.zcode.getZCodeStdioTapDevState?.() ??
+    getRaspberryCodeStdioTapDevState: () =>
+      window.raspberrycode.getRaspberryCodeStdioTapDevState?.() ??
       Promise.resolve({ enabled: false, visible: false, logDir: "", statePath: "" }),
-    onSettingsChanged: (callback) => window.zcode.onSettingsChanged?.(callback) ?? (() => {}),
+    onSettingsChanged: (callback) => window.raspberrycode.onSettingsChanged?.(callback) ?? (() => {}),
     onApplicationLocaleChanged: (callback) =>
-      window.zcode.onApplicationLocaleChanged?.(callback) ?? (() => {}),
-    getInstalledEditors: (filePath) => window.zcode.getInstalledEditors(filePath),
+      window.raspberrycode.onApplicationLocaleChanged?.(callback) ?? (() => {}),
+    getInstalledEditors: (filePath) => window.raspberrycode.getInstalledEditors(filePath),
     getApplicationIcon: (bundleId) =>
-      window.zcode.getApplicationIcon?.(bundleId) ?? Promise.resolve(null),
+      window.raspberrycode.getApplicationIcon?.(bundleId) ?? Promise.resolve(null),
     openInEditor: (editorId, path, editorOptions) =>
-      window.zcode.openInEditor(editorId, path, editorOptions),
-    executeDesktopCommand: (command) => window.zcode.executeDesktopCommand(command),
-    setApplicationLocale: (locale) => window.zcode.setApplicationLocale(locale),
+      window.raspberrycode.openInEditor(editorId, path, editorOptions),
+    executeDesktopCommand: (command) => window.raspberrycode.executeDesktopCommand(command),
+    setApplicationLocale: (locale) => window.raspberrycode.setApplicationLocale(locale),
     getSystemLocale: () =>
-      window.zcode.getSystemLocale?.() ??
+      window.raspberrycode.getSystemLocale?.() ??
       Promise.resolve(navigator.language.toLowerCase().startsWith("zh") ? "zh-CN" : "en-US"),
-    setTitleBarTheme: (theme) => window.zcode.setTitleBarTheme(theme),
+    setTitleBarTheme: (theme) => window.raspberrycode.setTitleBarTheme(theme),
     getDeviceId: () =>
-      (window as Window & { __ZCODE_DEVICE_ID__?: string }).__ZCODE_DEVICE_ID__ ?? "",
+      (window as Window & { __RASPBERRYCODE_DEVICE_ID__?: string }).__RASPBERRYCODE_DEVICE_ID__ ?? "",
   };
 }

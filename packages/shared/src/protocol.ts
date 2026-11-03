@@ -1,7 +1,7 @@
 import type { RemoteAssetInstallMode } from "./remoteAssetInstallMode.js";
 import type { RemoteResourcePackageSelection } from "./remoteResourcePackages.js";
 import type { ProviderFamilyConnectionSelectionSettings } from "./provider-family-connection-selection.js";
-import type { ZCodeProvider } from "./zcode-task-types-core.js";
+import type { RaspberryCodeProvider } from "./raspberrycode-task-types-core.js";
 import type { WorkspacePurpose } from "./workspacePurpose.js";
 import type { DynamicWorkflowMode } from "./dynamic-workflow-feature.js";
 import type { EmbeddedBrowserViewportPreference } from "./browser-use/command-metadata.js";
@@ -79,7 +79,7 @@ export type Locale = "zh-CN" | "en-US";
 export type LocalePreference = "system" | Locale;
 
 /** RaspberryCode 运行中继续输入时的交互行为 */
-export type ZCodeInteractionBehavior = "queue" | "guide";
+export type RaspberryCodeInteractionBehavior = "queue" | "guide";
 
 /** 桌面端 Electron 自动更新发布通道。 */
 export type ElectronReleaseChannel = "stable" | "preview";
@@ -221,7 +221,7 @@ export type ResourceUsageBaseGroupKey = "main" | "gpu" | "renderer" | "host" | "
 /** 资源管理器中的一个进程行（CPU 为整机归一化百分比，内存为字节） */
 export interface ResourceUsageProcess {
   pid: number;
-  /** 进程显示名，如 zcode-main / zcode-agent-zcode-demo / node_repl */
+  /** 进程显示名，如 raspberrycode-main / raspberrycode-agent-raspberrycode-demo / node_repl */
   name: string;
   category: ResourceUsageCategory;
   groupKey: string;
@@ -331,7 +331,7 @@ export interface AppSettings {
   /** 是否把连续的 Write/Edit/ApplyPatch 工具调用聚合成 Changes。 */
   toolGroupingChangesEnabled?: boolean;
   /** RaspberryCode 运行中继续输入时，是排队到下一轮，还是引导到下一次工具调用后运行 */
-  zcodeInteractionBehavior?: ZCodeInteractionBehavior;
+  raspberrycodeInteractionBehavior?: RaspberryCodeInteractionBehavior;
   /** Agent 提问五分钟无人回答时是否允许自动继续；缺失按开启兼容旧配置。 */
   askUserQuestionAutoResolutionEnabled?: boolean;
   /** 是否完整保留 Model I/O；开启后不轮转、不限额重置、不压缩或裁剪，鉴权信息仍会脱敏。 */
@@ -342,7 +342,7 @@ export interface AppSettings {
    */
   dynamicWorkflowMode?: DynamicWorkflowMode;
   /** 已启用的内置 Agent CLI；UI 对外仍展示为“Install”，底层语义保持为启用内置能力。 */
-  enabledBuiltinAgentCliProviders?: ZCodeProvider[];
+  enabledBuiltinAgentCliProviders?: RaspberryCodeProvider[];
   /** 设置页中每个 Provider Family 当前唯一的结构化连接选择。 */
   providerFamilyConnectionSelections?: ProviderFamilyConnectionSelectionSettings;
   /** 新建或冷恢复 Session 是否为 Bash 注入 bfs/ugrep 增强；默认启用。 */
@@ -415,6 +415,6 @@ export interface AppSettings {
   skippedElectronUpdateVersions?: Partial<Record<ElectronReleaseChannel, string>>;
   /** 首次启动设置同步提示是否已消费；只表示弹窗不再出现，不代表导入成功。 */
   settingsSyncFirstRunPromptHandled?: boolean;
-  /** 设置页里的临时 endpoint override；正式/测试默认 base url 由 ZCODE_BASE_URL env 管理。 */
-  zcodeEndpointOrigin?: string;
+  /** 设置页里的临时 endpoint override；正式/测试默认 base url 由 RASPBERRYCODE_BASE_URL env 管理。 */
+  raspberrycodeEndpointOrigin?: string;
 }

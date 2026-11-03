@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { ZCodeSlashCommand } from "@zcode/shared";
+import type { RaspberryCodeSlashCommand } from "@raspberrycode/shared";
 import {
   extractActiveSlashQuery,
   filterSlashCommands,
   replaceActiveSlashCommand,
 } from "../src/lib/slashCommands.js";
 
-const commands: ZCodeSlashCommand[] = [
+const commands: RaspberryCodeSlashCommand[] = [
   {
     name: "agent-browser",
     description: "Browser automation CLI for AI agents",

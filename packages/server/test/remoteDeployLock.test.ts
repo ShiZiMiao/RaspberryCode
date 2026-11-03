@@ -1,11 +1,11 @@
 import { PassThrough } from "node:stream";
-import { Emitter } from "@zcode/rpc";
+import { Emitter } from "@raspberrycode/rpc";
 import type {
   IRemoteBackend,
   RemoteEnvironment,
   StdioStream,
-} from "@zcode/server/remote/backend.js";
-import { acquireRemoteDeployLock } from "@zcode/server/remote/remoteDeployLock.js";
+} from "@raspberrycode/server/remote/backend.js";
+import { acquireRemoteDeployLock } from "@raspberrycode/server/remote/remoteDeployLock.js";
 import { describe, expect, it, vi } from "vitest";
 
 class ControlledLockBackend implements IRemoteBackend {
@@ -62,7 +62,7 @@ describe("acquireRemoteDeployLock", () => {
     const backend = new ControlledLockBackend();
     let resolved = false;
     const acquirePromise = acquireRemoteDeployLock(backend, {
-      lockDir: "~/.zcode/server/.deploy.lock",
+      lockDir: "~/.raspberrycode/server/.deploy.lock",
       ownerToken: "owner-test",
     }).then((handle) => {
       resolved = true;
@@ -87,21 +87,17 @@ describe("acquireRemoteDeployLock", () => {
     expect(lockScript).toContain("sleep 30");
     expect(lockScript).toContain("-ge 600");
     expect(lockScript).toContain("current_owner");
-    expect(lockScript).toContain("zcode-deploy-lock-acquired:owner-test");
+    expect(lockScript).toContain("raspberrycode-deploy-lock-acquired:owner-test");
 
-    backend.stdout.write("zcode-deploy-lock-acquired:owner-test\n");
+    backend.stdout.write("raspberrycode-deploy-lock-acquired:owner-test\n");
     const handle = await acquirePromise;
     expect(handle.ownerToken).toBe("owner-test");
 
     const stdinChunks: string[] = [];
-    backend.stdin.on("data", (chunk: Buffer) =>
-      stdinChunks.push(chunk.toString()),
-    );
+    backend.stdin.on("data", (chunk: Buffer) => stdinChunks.push(chunk.toString()));
     const releasePromise = handle.release();
     await vi.waitFor(() =>
-      expect(stdinChunks.join("")).toContain(
-        "zcode-deploy-lock-release:owner-test",
-      ),
+      expect(stdinChunks.join("")).toContain("raspberrycode-deploy-lock-release:owner-test"),
     );
     backend.closeEmitter.fire(0);
     await expect(releasePromise).resolves.toBeUndefined();
@@ -126,6 +122,8 @@ describe("acquireRemoteDeployLock", () => {
       const backend = new ControlledLockBackend();
       const acquirePromise = acquireRemoteDeployLock(backend, {
         ownerToken: "owner-acquire-timeout",
+        // 显式给定 server root，避免默认解析的异步探测打乱 fake timer 下的微任务时序。
+        serverBase: "~/.raspberrycode/server",
         acquireTimeoutMs: 20,
       });
       const settled = vi.fn();
@@ -156,7 +154,7 @@ describe("acquireRemoteDeployLock", () => {
       releaseTimeoutMs: 20,
     });
     await vi.waitFor(() => expect(backend.commands).toHaveLength(1));
-    backend.stdout.write("zcode-deploy-lock-acquired:owner-timeout\n");
+    backend.stdout.write("raspberrycode-deploy-lock-acquired:owner-timeout\n");
     const handle = await acquirePromise;
 
     vi.useFakeTimers();
@@ -168,9 +166,7 @@ describe("acquireRemoteDeployLock", () => {
       expect(releaseSettled).not.toHaveBeenCalled();
       await vi.advanceTimersByTimeAsync(1);
 
-      await expect(releasePromise).rejects.toThrow(
-        /timed out after 20ms.*owner=owner-timeout/u,
-      );
+      await expect(releasePromise).rejects.toThrow(/timed out after 20ms.*owner=owner-timeout/u);
       expect(backend.stdin.destroyed).toBe(true);
       expect(backend.stdout.destroyed).toBe(true);
       expect(backend.stderr.destroyed).toBe(true);

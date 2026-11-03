@@ -3,7 +3,7 @@ import {
   createBrowserControlMainBridge,
   type BrowserExecuteRequestMessage,
 } from "../src/host/browserControlMainBridge.js";
-import type { BrowserCommand, BrowserCommandResult } from "@zcode/contracts";
+import type { BrowserCommand, BrowserCommandResult } from "@raspberrycode/contracts";
 
 const NAV: BrowserCommand = { method: "navigate", url: "https://example.com" };
 
@@ -88,7 +88,7 @@ describe("browserControlMainBridge", () => {
           startedAt: 1,
           updatedAt: 2,
           artifact: {
-            path: "/tmp/zcode-recording.webm",
+            path: "/tmp/raspberrycode-recording.webm",
             mimeType: "video/webm",
             width: 1280,
             height: 720,
@@ -108,7 +108,7 @@ describe("browserControlMainBridge", () => {
       expect.objectContaining({
         outputPath: "recordings/demo.webm",
         workspacePath: "/workspace",
-        localPath: "/tmp/zcode-recording.webm",
+        localPath: "/tmp/raspberrycode-recording.webm",
       }),
     );
     bridge.dispose();

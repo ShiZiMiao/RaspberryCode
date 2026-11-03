@@ -1,4 +1,4 @@
-import type { OAuthProviderId } from "@zcode/shared";
+import type { OAuthProviderId } from "@raspberrycode/shared";
 
 /** Provider 运行时配置（仅 host process 可见） */
 export interface OAuthProviderRuntimeConfig {

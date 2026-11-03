@@ -1,23 +1,23 @@
 import { useEffect, useState } from "react";
-import { normalizeZCodeEndpointOrigin, DEFAULT_ZCODE_ENDPOINT_ORIGIN } from "@zcode/shared";
+import { normalizeRaspberryCodeEndpointOrigin, DEFAULT_RASPBERRYCODE_ENDPOINT_ORIGIN } from "@raspberrycode/shared";
 import { Button } from "@/components/ui/button.js";
 import { Input } from "@/components/ui/input.js";
 import { toast } from "@/components/ui/toast.js";
 import { useSettings } from "@/hooks/useSettingService.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { logger } from "@/logger.js";
 import { SettingsRow } from "@/settings/SettingsPageParts.js";
 
 /**
  * 服务端点设置行（C2：端点设置从隐藏弹窗/菜单扶正到设置页）。
  * - 展示当前生效的端点来源（override 缺省时为默认域）；
- * - 保存时按 normalizeZCodeEndpointOrigin 归一成 origin；清空输入即恢复默认（空串经
+ * - 保存时按 normalizeRaspberryCodeEndpointOrigin 归一成 origin；清空输入即恢复默认（空串经
  *   normalizeSettingsPatch 归一成删除 override）。
  */
 export function EndpointOriginSetting() {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   const { settings, update } = useSettings();
-  const effectiveOrigin = settings?.zcodeEndpointOrigin || DEFAULT_ZCODE_ENDPOINT_ORIGIN;
+  const effectiveOrigin = settings?.raspberrycodeEndpointOrigin || DEFAULT_RASPBERRYCODE_ENDPOINT_ORIGIN;
   const [draft, setDraft] = useState(effectiveOrigin);
   const [saving, setSaving] = useState(false);
 
@@ -32,11 +32,11 @@ export function EndpointOriginSetting() {
   const handleSave = async () => {
     const trimmed = draft.trim();
     try {
-      const normalized = trimmed ? normalizeZCodeEndpointOrigin(trimmed) : undefined;
-      if ((normalized ?? "") === (settings?.zcodeEndpointOrigin ?? "")) return;
+      const normalized = trimmed ? normalizeRaspberryCodeEndpointOrigin(trimmed) : undefined;
+      if ((normalized ?? "") === (settings?.raspberrycodeEndpointOrigin ?? "")) return;
       setSaving(true);
-      await update({ zcodeEndpointOrigin: normalized ?? "" });
-      setDraft(normalized ?? DEFAULT_ZCODE_ENDPOINT_ORIGIN);
+      await update({ raspberrycodeEndpointOrigin: normalized ?? "" });
+      setDraft(normalized ?? DEFAULT_RASPBERRYCODE_ENDPOINT_ORIGIN);
     } catch (error) {
       logger.warn("[settings] 保存服务端点失败", { error: String(error) });
       toast(intl.formatMessage({ id: "settings.endpointOrigin.invalid" }));
@@ -46,11 +46,11 @@ export function EndpointOriginSetting() {
   };
 
   const handleReset = async () => {
-    if (!settings?.zcodeEndpointOrigin) return;
+    if (!settings?.raspberrycodeEndpointOrigin) return;
     try {
       setSaving(true);
-      await update({ zcodeEndpointOrigin: "" });
-      setDraft(DEFAULT_ZCODE_ENDPOINT_ORIGIN);
+      await update({ raspberrycodeEndpointOrigin: "" });
+      setDraft(DEFAULT_RASPBERRYCODE_ENDPOINT_ORIGIN);
     } catch (error) {
       logger.warn("[settings] 恢复默认服务端点失败", { error: String(error) });
       toast(intl.formatMessage({ id: "settings.endpointOrigin.saveError" }));

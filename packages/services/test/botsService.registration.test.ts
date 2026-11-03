@@ -34,7 +34,7 @@ describe("botsService registration", () => {
       pollDomain: "feishu",
     });
     expect(result.qrUrl).toContain("from=sdk");
-    expect(result.qrUrl).toContain("source=node-sdk%2Fzcode");
+    expect(result.qrUrl).toContain("source=node-sdk%2Fraspberrycode");
     expect(result.qrUrl).toContain("tp=sdk");
   });
 
@@ -70,7 +70,7 @@ describe("botsService registration", () => {
       pollDomain: "feishu",
     });
     expect(result.qrUrl).toBe(
-      "https://open.feishu.cn/page/launcher?user_code=LARK&from=sdk&source=node-sdk%2Fzcode&tp=sdk",
+      "https://open.feishu.cn/page/launcher?user_code=LARK&from=sdk&source=node-sdk%2Fraspberrycode&tp=sdk",
     );
     expect(fetchMock.mock.calls.map(([url]) => String(url))).toEqual([
       "https://accounts.feishu.cn/oauth/v1/app/registration",

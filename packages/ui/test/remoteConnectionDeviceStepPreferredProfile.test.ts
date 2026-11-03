@@ -2,10 +2,10 @@
 import { createElement } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { SourceServerManagementSnapshot } from "@zcode/shared";
+import type { SourceServerManagementSnapshot } from "@raspberrycode/shared";
 
 vi.mock("@/i18n/IntlProvider.js", () => ({
-  useZCodeIntl: () => ({
+  useRaspberryCodeIntl: () => ({
     intl: { formatMessage: ({ id }: { id: string }) => id },
     locale: "zh-CN",
   }),

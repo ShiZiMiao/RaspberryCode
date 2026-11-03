@@ -11,14 +11,14 @@ import { useOnboardingRecordService } from "@/hooks/useOnboardingRecordService.j
 import { usePlatform } from "@/hooks/usePlatform.js";
 import { useEffectiveShortcutBindings } from "@/shortcuts/useShortcutBindings.js";
 import { matchesShortcutBinding } from "@/shortcuts/bindings.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { Button } from "@/components/ui/button.js";
 import { Checkbox } from "@/components/ui/checkbox.js";
-import { useZCodeStore } from "@/store/StoreProvider.js";
+import { useRaspberryCodeStore } from "@/store/StoreProvider.js";
 import type { InterfaceMode } from "@/lib/interfaceMode.js";
 import { logger } from "@/logger.js";
 import { DesktopWindowControls } from "@/DesktopWindowControls.js";
-import type { OnboardingRecordEntry } from "@zcode/shared";
+import type { OnboardingRecordEntry } from "@raspberrycode/shared";
 
 /** 追加本地引导记录（userId 由 host 补全）；channel 缺失挂起时 5 秒超时按写失败处理。 */
 async function appendOnboardingRecord(
@@ -51,20 +51,20 @@ export function OccupationOnboarding({
   const platform = usePlatform();
   const onboardingRecord = useOnboardingRecordService();
   const shortcutBindings = useEffectiveShortcutBindings();
-  const requested = useZCodeStore((state) => state.newUserOnboardingOpen);
-  const setRequested = useZCodeStore((state) => state.setNewUserOnboardingOpen);
+  const requested = useRaspberryCodeStore((state) => state.newUserOnboardingOpen);
+  const setRequested = useRaspberryCodeStore((state) => state.setNewUserOnboardingOpen);
   // 按 userId 重新判定是否触发引导；无登录启动后 userId 恒为 null（specs/no-login-startup.md）。
-  const userId = useZCodeStore((state) => state.user?.id) ?? null;
-  const { intl } = useZCodeIntl();
+  const userId = useRaspberryCodeStore((state) => state.user?.id) ?? null;
+  const { intl } = useRaspberryCodeIntl();
   const t = (key: string) => intl.formatMessage({ id: `occupationOnboarding.${key}` });
   const [occupation, setOccupation] = useState<OccupationValue | null>("developer");
-  const savedInterfaceMode = useZCodeStore((state) => state.interfaceMode);
-  const setInterfaceMode = useZCodeStore((state) => state.setInterfaceMode);
+  const savedInterfaceMode = useRaspberryCodeStore((state) => state.interfaceMode);
+  const setInterfaceMode = useRaspberryCodeStore((state) => state.setInterfaceMode);
   // mode 为 null 表示模式页被"跳过"（跳过是显式答案，记录里保留 null 而非兜底值）。
   const [mode, setMode] = useState<InterfaceMode | null>(savedInterfaceMode);
   const [step, setStep] = useState<0 | 1 | 2>(0);
   const preferences = step === 2;
-  const requestOnboardingDialog = useZCodeStore((state) => state.requestOnboardingDialog);
+  const requestOnboardingDialog = useRaspberryCodeStore((state) => state.requestOnboardingDialog);
   const [migration, setMigration] = useState(false);
   const [memory, setMemory] = useState(savedInterfaceMode === "office");
   const [suggestions, setSuggestions] = useState(savedInterfaceMode === "office");

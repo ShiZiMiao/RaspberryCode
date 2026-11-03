@@ -176,7 +176,7 @@ describe("attributeHostProcessTree", () => {
     const samples = new Map<number, ProcessResourceSample>([
       sample(1, 0, "launchd"),
       sample(50, 1, "/Applications/RaspberryCode.app/Contents/MacOS/RaspberryCode"),
-      sample(60, 50, "zcode-host"),
+      sample(60, 50, "raspberrycode-host"),
       sample(70, 60, "/usr/bin/zsh"), // 终端 shell
       sample(100, 60, "/Applications/RaspberryCode.app/Contents/MacOS/RaspberryCode", 5, 2048), // agent
       sample(110, 100, "/usr/local/bin/pnpm"), // agent 工具子进程
@@ -212,7 +212,7 @@ describe("attributeHostProcessTree", () => {
 
     expect(rows.map((row) => [row.pid, row.category, row.groupKey, row.name])).toEqual([
       [70, "base", "host", "zsh"],
-      [100, "base", "cli", "zcode-agent-glm-demo"],
+      [100, "base", "cli", "raspberrycode-agent-glm-demo"],
       [110, "base", "cli", "pnpm"],
       [120, "builtin-plugin", "builtin:computer-use", "plugin:computer-use:computer-use"],
       [121, "builtin-plugin", "builtin:computer-use", "node"],
@@ -228,7 +228,7 @@ describe("attributeHostProcessTree", () => {
 
   it("CLI 映射缺失时 Agent 全部后代都归 cli；不在 Host 子树下的 Agent 也补进来", () => {
     const samples = new Map<number, ProcessResourceSample>([
-      sample(60, 1, "zcode-host"),
+      sample(60, 1, "raspberrycode-host"),
       sample(100, 1, "node"), // ppid 已被重排
       sample(101, 100, "mcp-server"),
     ]);
@@ -238,7 +238,7 @@ describe("attributeHostProcessTree", () => {
       agents: [{ pid: 100, provider: "agent", workspacePath: "C:\\work\\demo", children: [] }],
     });
     expect(rows.map((row) => [row.pid, row.groupKey, row.name])).toEqual([
-      [100, "cli", "zcode-agent-glm-demo"],
+      [100, "cli", "raspberrycode-agent-glm-demo"],
       [101, "cli", "mcp-server"],
     ]);
   });

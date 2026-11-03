@@ -4,19 +4,19 @@ import {
   desktopMenuMessageIds,
   getDesktopMenuMessage,
   isValidShortcutBinding,
-  ZCODE_ENV,
-  ZCODE_PRODUCT_FLAVOR,
+  RASPBERRYCODE_ENV,
+  RASPBERRYCODE_PRODUCT_FLAVOR,
   type DesktopCommandId,
   type Locale,
-} from "@zcode/shared";
-import { readZCodeStdioTapDevState } from "@zcode/services/node";
+} from "@raspberrycode/shared";
+import { readRaspberryCodeStdioTapDevState } from "@raspberrycode/services/node";
 import {
   DESKTOP_ZOOM_MAX_LEVEL,
   DESKTOP_ZOOM_MIN_LEVEL,
   clampDesktopZoomLevel,
 } from "./desktopZoom.js";
 import {
-  HELP_TOGGLE_ZCODE_STDIO_TAP_MENU_ID,
+  HELP_TOGGLE_RASPBERRYCODE_STDIO_TAP_MENU_ID,
   HELP_TOGGLE_DEV_TOOLS_MENU_ID,
 } from "./desktopCommandHandlers.js";
 
@@ -35,13 +35,13 @@ export function resolveSystemApplicationLocale(): Locale {
   return systemLocale.toLowerCase().startsWith("zh") ? "zh-CN" : "en-US";
 }
 
-export function updateZCodeStdioTapDevMenuState() {
+export function updateRaspberryCodeStdioTapDevMenuState() {
   const menu = Menu.getApplicationMenu();
-  const item = menu?.getMenuItemById(HELP_TOGGLE_ZCODE_STDIO_TAP_MENU_ID);
+  const item = menu?.getMenuItemById(HELP_TOGGLE_RASPBERRYCODE_STDIO_TAP_MENU_ID);
   if (!item) {
     return;
   }
-  const state = readZCodeStdioTapDevState();
+  const state = readRaspberryCodeStdioTapDevState();
   item.checked = state.enabled;
   item.visible = state.visible;
 }
@@ -93,7 +93,7 @@ function buildApplicationMenuTemplate(options: {
     getDesktopMenuLabel(options.currentApplicationLocale, id);
   const getAppLabel = (id: (typeof desktopMenuMessageIds)[keyof typeof desktopMenuMessageIds]) =>
     getLabel(id).replaceAll("{appName}", app.name);
-  const stdioTapState = readZCodeStdioTapDevState();
+  const stdioTapState = readRaspberryCodeStdioTapDevState();
   const isLocalDevelopmentRuntime = !app.isPackaged;
   const currentZoomLevel = clampDesktopZoomLevel(options.currentZoomLevel ?? 0);
   const canResetZoom = currentZoomLevel !== 0;
@@ -257,12 +257,12 @@ function buildApplicationMenuTemplate(options: {
         ...(isLocalDevelopmentRuntime && stdioTapState.visible
           ? [
               {
-                id: HELP_TOGGLE_ZCODE_STDIO_TAP_MENU_ID,
-                label: getLabel(desktopMenuMessageIds.helpToggleZCodeStdioTap),
+                id: HELP_TOGGLE_RASPBERRYCODE_STDIO_TAP_MENU_ID,
+                label: getLabel(desktopMenuMessageIds.helpToggleRaspberryCodeStdioTap),
                 type: "checkbox" as const,
                 checked: stdioTapState.enabled,
                 click: () =>
-                  void options.executeDesktopCommand(DesktopCommandIds.ToggleZCodeStdioTapDevProxy),
+                  void options.executeDesktopCommand(DesktopCommandIds.ToggleRaspberryCodeStdioTapDevProxy),
               },
               { type: "separator" as const },
             ]
@@ -320,6 +320,6 @@ export function rebuildApplicationMenu(options: {
     ),
   );
   if (!app.isPackaged) {
-    updateZCodeStdioTapDevMenuState();
+    updateRaspberryCodeStdioTapDevMenuState();
   }
 }

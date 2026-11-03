@@ -4,8 +4,8 @@ import type { ConnectConfig } from "ssh2";
 import { createReadStream } from "node:fs";
 import type { Duplex } from "node:stream";
 import { posix } from "node:path";
-import { Emitter } from "@zcode/rpc";
-import { resolveZCodeRuntimeEnv } from "@zcode/shared";
+import { Emitter } from "@raspberrycode/rpc";
+import { resolveRaspberryCodeRuntimeEnv } from "@raspberrycode/shared";
 import type {
   IRemoteBackend,
   RemoteDisconnectEvent,
@@ -13,29 +13,29 @@ import type {
   RemoteEnvironment,
   RemoteUploadOptions,
   StdioStream,
-} from "@zcode/server/remote/backend.js";
+} from "@raspberrycode/server/remote/backend.js";
 import {
   normalizeRemoteArch,
   normalizeRemotePlatform,
   resolveRemotePlatform,
-} from "@zcode/server/remote/detectEnv.js";
-import { createCloseEventController } from "@zcode/server/remote/closeEvent.js";
+} from "@raspberrycode/server/remote/detectEnv.js";
+import { createCloseEventController } from "@raspberrycode/server/remote/closeEvent.js";
 import {
   buildPosixShellExecCommand,
   quotePosixShellArg,
   resolvePosixHomePath,
-} from "@zcode/server/remote/posixShell.js";
+} from "@raspberrycode/server/remote/posixShell.js";
 import {
   buildSSHConnectConfig,
   createKeyboardInteractiveResponder,
   normalizeSSHConnectError,
-} from "@zcode/server/remote/sshAuth.js";
+} from "@raspberrycode/server/remote/sshAuth.js";
 import {
   createSSHUploadProgressReporter,
   formatSSHUploadError,
   formatSSHUploadLabel,
   readLocalFileSize,
-} from "@zcode/server/remote/sshUploadProgress.js";
+} from "@raspberrycode/server/remote/sshUploadProgress.js";
 
 export interface SSHBackendOptions {
   host: string;
@@ -138,7 +138,7 @@ export class SSHBackend implements IRemoteBackend {
       password: options.password,
       agent: options.agent,
     });
-    if (resolveZCodeRuntimeEnv(process.env) === "development") {
+    if (resolveRaspberryCodeRuntimeEnv(process.env) === "development") {
       this.config.debug = (message: string) => {
         // SSH ready 超时只暴露 client-timeout 时无法判断卡在 TCP、协商还是认证。
         // 仅开发环境输出 ssh2 握手细节；CHANNEL_DATA / EXTENDED_DATA 是命令 stdout/stderr 数据包，

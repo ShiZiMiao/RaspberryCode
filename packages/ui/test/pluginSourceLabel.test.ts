@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ZCodePluginMarketplaceSummary } from "@zcode/shared";
+import type { RaspberryCodePluginMarketplaceSummary } from "@raspberrycode/shared";
 import {
   resolveMarketplaceDisplayName,
   resolvePluginSourceLabel,
@@ -8,8 +8,8 @@ import {
 const CLAUDE_CODE_PLUGINS = "Claude Code Plugins";
 
 function makeMarketplace(
-  overrides: Partial<ZCodePluginMarketplaceSummary> = {},
-): ZCodePluginMarketplaceSummary {
+  overrides: Partial<RaspberryCodePluginMarketplaceSummary> = {},
+): RaspberryCodePluginMarketplaceSummary {
   return {
     id: "acme",
     name: "Acme Marketplace",
@@ -50,7 +50,7 @@ describe("resolvePluginSourceLabel", () => {
       resolvePluginSourceLabel({
         ...common,
         source: "official",
-        marketplace: "zcode-plugins-official",
+        marketplace: "raspberrycode-plugins-official",
       }),
     ).toBe("Built-in");
   });

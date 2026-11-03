@@ -106,7 +106,7 @@ describe("redactArmsEventBatch - exception", () => {
   });
 
   it("不改写原生 crashReporter dump 事件的 binary_images 判定字段", () => {
-    const binaryImages = [{ name: "zcode" }];
+    const binaryImages = [{ name: "raspberrycode" }];
     const [event] = redactArmsEventBatch([
       {
         event_type: "exception",
@@ -137,12 +137,12 @@ describe("redactArmsEventBatch - api / resource", () => {
       {
         event_type: "resource",
         type: "api",
-        url: "https://zcode.z.ai/api/v1/event/report?state=abc123#x",
-        name: "https://zcode.z.ai/api/v1/event/report?state=abc123",
+        url: "https://raspberrycode.example.com/api/v1/event/report?state=abc123#x",
+        name: "https://raspberrycode.example.com/api/v1/event/report?state=abc123",
       },
     ]);
-    expect(event!.url).toBe("https://zcode.z.ai/api/v1/event/report");
-    expect(event!.name).toBe("https://zcode.z.ai/api/v1/event/report");
+    expect(event!.url).toBe("https://raspberrycode.example.com/api/v1/event/report");
+    expect(event!.name).toBe("https://raspberrycode.example.com/api/v1/event/report");
   });
 
   it("归一化路由里的 UUID 身份段", () => {
@@ -150,10 +150,10 @@ describe("redactArmsEventBatch - api / resource", () => {
       {
         event_type: "resource",
         type: "api",
-        url: "https://zcode.z.ai/api/v1/tasks/0f8fad5b-d9cb-469f-a165-70867728950e/messages",
+        url: "https://raspberrycode.example.com/api/v1/tasks/0f8fad5b-d9cb-469f-a165-70867728950e/messages",
       },
     ]);
-    expect(event!.url).toBe("https://zcode.z.ai/api/v1/tasks/{segment}/messages");
+    expect(event!.url).toBe("https://raspberrycode.example.com/api/v1/tasks/{segment}/messages");
   });
 
   it("脱敏 api 事件的错误 message", () => {
@@ -161,8 +161,8 @@ describe("redactArmsEventBatch - api / resource", () => {
       {
         event_type: "resource",
         type: "api",
-        url: "https://zcode.z.ai/api/v1/ping",
-        message: "connect ECONNREFUSED for /Users/erin/.zcode/socket",
+        url: "https://raspberrycode.example.com/api/v1/ping",
+        message: "connect ECONNREFUSED for /Users/erin/.raspberrycode/socket",
       },
     ]);
     expect(event!.message).not.toContain("erin");

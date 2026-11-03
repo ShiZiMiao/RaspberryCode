@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { zcodeMcpServerStatusSnapshotSchema } from "../src/zcode-protocol/index.js";
+import { raspberrycodeMcpServerStatusSnapshotSchema } from "../src/raspberrycode-protocol/index.js";
 
 describe("MCP status diagnostics protocol", () => {
   it("accepts structured failure diagnostics and keeps legacy snapshots compatible", () => {
     expect(
-      zcodeMcpServerStatusSnapshotSchema.parse({
+      raspberrycodeMcpServerStatusSnapshotSchema.parse({
         error: "raw sdk error",
         failureKind: "server_unavailable",
         serverRequestId: "20260822000000abcdef1234567890abcd",
@@ -19,7 +19,7 @@ describe("MCP status diagnostics protocol", () => {
     });
 
     expect(
-      zcodeMcpServerStatusSnapshotSchema.parse({
+      raspberrycodeMcpServerStatusSnapshotSchema.parse({
         status: "connected",
         toolCount: 3,
         transport: "stdio",
@@ -30,7 +30,7 @@ describe("MCP status diagnostics protocol", () => {
 
   it("rejects empty request ids", () => {
     expect(
-      zcodeMcpServerStatusSnapshotSchema.safeParse({
+      raspberrycodeMcpServerStatusSnapshotSchema.safeParse({
         serverRequestId: "",
         status: "failed",
         toolCount: 0,

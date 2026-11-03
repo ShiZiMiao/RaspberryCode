@@ -1,6 +1,6 @@
-import type { Event } from "@zcode/rpc";
-import { ServiceChannels } from "@zcode/shared";
-import type { ZCodeTaskMeta } from "@zcode/shared";
+import type { Event } from "@raspberrycode/rpc";
+import { ServiceChannels } from "@raspberrycode/shared";
+import type { RaspberryCodeTaskMeta } from "@raspberrycode/shared";
 import type {
   ControllerResyncParams,
   ControllerResyncResult,
@@ -11,14 +11,14 @@ import type {
   WindowHostControllerTaskRow,
   WindowHostControllerWorkspaceFrame,
   WindowHostTaskAddress,
-} from "@zcode/shared/zcode-protocol-v4";
+} from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import { createServiceDescriptor } from "../descriptors.js";
-import type { ZCodeArchivedTaskDeletionResult } from "#src/session/zcodeTaskService.js";
+import type { RaspberryCodeArchivedTaskDeletionResult } from "#src/session/raspberrycodeTaskService.js";
 import type {
-  ZCodeTaskListItem,
-  ZCodeTaskListQuery,
-  ZCodeTaskListResult,
-} from "../session/zcodeTaskListTypes.js";
+  RaspberryCodeTaskListItem,
+  RaspberryCodeTaskListQuery,
+  RaspberryCodeTaskListResult,
+} from "../session/raspberrycodeTaskListTypes.js";
 
 export type WindowHostControllerMutation =
   | { kind: "rename"; title: string }
@@ -31,7 +31,7 @@ export type WindowHostControllerMutation =
   | { kind: "open" }
   | { kind: "resume" };
 
-export type WindowHostControllerTaskListItem = ZCodeTaskListItem & {
+export type WindowHostControllerTaskListItem = RaspberryCodeTaskListItem & {
   sourceServerId?: string;
   serverDisplayName?: string;
   remoteSessionId?: string;
@@ -40,7 +40,7 @@ export type WindowHostControllerTaskListItem = ZCodeTaskListItem & {
   activity?: WindowHostControllerTaskRow["activity"];
 };
 
-export interface WindowHostControllerTaskListResult extends Omit<ZCodeTaskListResult, "items"> {
+export interface WindowHostControllerTaskListResult extends Omit<RaspberryCodeTaskListResult, "items"> {
   items: WindowHostControllerTaskListItem[];
 }
 
@@ -64,14 +64,14 @@ export interface IWindowControllerService {
   deleteArchivedTasks(params: {
     address: WindowHostTaskAddress;
     taskIds: string[];
-  }): Promise<ZCodeArchivedTaskDeletionResult>;
-  listTaskList(params: ZCodeTaskListQuery): Promise<WindowHostControllerTaskListResult>;
+  }): Promise<RaspberryCodeArchivedTaskDeletionResult>;
+  listTaskList(params: RaspberryCodeTaskListQuery): Promise<WindowHostControllerTaskListResult>;
   /** 直接读取所属 owner 的轻量 meta；未读 CAS 不得使用可能降级为旧快照的列表投影。 */
-  getTaskMeta(params: { address: WindowHostTaskAddress }): Promise<ZCodeTaskMeta | null>;
+  getTaskMeta(params: { address: WindowHostTaskAddress }): Promise<RaspberryCodeTaskMeta | null>;
   mutateTask(params: {
     address: WindowHostTaskAddress;
     mutation: WindowHostControllerMutation;
-  }): Promise<ZCodeTaskMeta | null>;
+  }): Promise<RaspberryCodeTaskMeta | null>;
   subscribeControllerV4(params: ControllerSubscribeParams): Promise<ControllerSubscribeResult>;
   resyncControllerV4(params: ControllerResyncParams): Promise<ControllerResyncResult>;
   unsubscribeControllerV4(params: ControllerUnsubscribeParams): Promise<void>;

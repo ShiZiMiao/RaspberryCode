@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ApiClient, AppUsageSnapshot, ZCodeAccountAccess } from "@zcode/shared";
-import { BUILTIN_MODEL_PROVIDER_IDS } from "@zcode/shared";
-import type { IZCodeAgentService } from "../src/zcode-agent/zcodeAgent.js";
+import type { ApiClient, AppUsageSnapshot, RaspberryCodeAccountAccess } from "@raspberrycode/shared";
+import { BUILTIN_MODEL_PROVIDER_IDS } from "@raspberrycode/shared";
+import type { IRaspberryCodeAgentService } from "../src/raspberrycode-agent/raspberrycodeAgent.js";
 import { createUsageStatsService } from "../src/usage-stats/usageStatsService.js";
 import { resolveCodingPlanUsageTimeRange } from "../src/usage-stats/providers/meteredUsageMonitorRange.js";
 
@@ -72,7 +72,7 @@ function createUsageStatsServiceForTest(params: {
   providers: TestUsageProvider[];
   env?: NodeJS.ProcessEnv;
   credentialTokens?: Record<string, string | null | undefined>;
-  getAppUsageStats?: IZCodeAgentService["getAppUsageStats"];
+  getAppUsageStats?: IRaspberryCodeAgentService["getAppUsageStats"];
 }) {
   const service = createUsageStatsService({
     apiClient: params.apiClient ?? {
@@ -98,7 +98,7 @@ function createUsageStatsServiceForTest(params: {
       load: vi.fn(async (key) => params.credentialTokens?.[key] ?? null),
     },
     env: params.env,
-    zcodeAgentService: {
+    raspberrycodeAgentService: {
       getAppUsageStats: params.getAppUsageStats ?? vi.fn(async () => createAppUsageSnapshot()),
     },
   });
@@ -133,7 +133,7 @@ function createUsageStatsServiceForTest(params: {
         Parameters<NonNullable<typeof service.getCodingPlanRegularTps>>[0],
         "accountAccess"
       > & {
-        accountAccess?: ZCodeAccountAccess;
+        accountAccess?: RaspberryCodeAccountAccess;
       },
     ) =>
       service.getCodingPlanRegularTps?.({
@@ -144,7 +144,7 @@ function createUsageStatsServiceForTest(params: {
             type: "zhipu-account",
             family: request.preferredProviderId.includes("zai") ? "zai" : "bigmodel",
             planKind: "individual-coding-plan",
-          } satisfies ZCodeAccountAccess),
+          } satisfies RaspberryCodeAccountAccess),
       }),
   };
 }
@@ -622,7 +622,7 @@ describe("createUsageStatsService", () => {
         }),
       ],
       env: {
-        ZCODE_BIGMODEL_USAGE_API_KEY: "env-usage-key",
+        RASPBERRYCODE_BIGMODEL_USAGE_API_KEY: "env-usage-key",
       },
     });
 

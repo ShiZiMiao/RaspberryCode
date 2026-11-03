@@ -2,7 +2,7 @@
  * slashCommandHelpers — 纯函数辅助工具，供 SlashCommandPlugin.tsx 使用
  */
 import { $getRoot, $getSelection, $isRangeSelection, $isTextNode } from "lexical";
-import type { AgentSummary, Locale, SkillSummary, ZCodeSlashCommand } from "@zcode/shared";
+import type { AgentSummary, Locale, SkillSummary, RaspberryCodeSlashCommand } from "@raspberrycode/shared";
 import type { MentionItem } from "@/mentions/mentionTypes.js";
 import { mapSubagentsToMentionItemsForTest } from "@/mentions/providers/subagentsMentionProvider.js";
 import { mapSkillsToMentionItemsForTest } from "@/mentions/providers/skillsMentionProvider.js";
@@ -89,7 +89,7 @@ export function normalizeSlashCommandValue(name: string): string {
   return name.trim().replace(/^\/+/, "");
 }
 
-export function buildSlashSuggestions(commands: ZCodeSlashCommand[]): PromptInputSuggestionItem[] {
+export function buildSlashSuggestions(commands: RaspberryCodeSlashCommand[]): PromptInputSuggestionItem[] {
   return commands.flatMap((command) => {
     const value = normalizeSlashCommandValue(command.name);
     // Plan 是 Composer 本地操作。旧 Agent 仍可能广播同名命令，不能让它重新

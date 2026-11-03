@@ -4,10 +4,14 @@ import crypto from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { renderMarkerPng } from "./multimodal-marker-png.mjs";
 
-const MODEL = process.env.ZCODE_MODEL?.trim() || "glm-x-preview-f";
-const BASE_URL = (process.env.ZCODE_BASE_URL?.trim() || "https://open.bigmodel.cn/api/anthropic")
+// 中立性（specs/provider-neutrality.md 规则 6）：评测脚本不内置品牌端点/模型默认值。
+const MODEL = process.env.RASPBERRYCODE_MODEL?.trim();
+const BASE_URL = (process.env.RASPBERRYCODE_BASE_URL?.trim() || "")
   .replace(/\/+$/u, "")
   .replace(/\/v1$/u, "");
+if (!MODEL || !BASE_URL) {
+  throw new Error("Set RASPBERRYCODE_MODEL and RASPBERRYCODE_BASE_URL before running this multimodal evaluation.");
+}
 const ENDPOINT = `${BASE_URL}/v1/messages`;
 const API_KEY = process.env.ANTHROPIC_API_KEY?.trim();
 const MAX_TOKENS = parsePositiveInt(process.env.MM_P0_MAX_TOKENS, 256);

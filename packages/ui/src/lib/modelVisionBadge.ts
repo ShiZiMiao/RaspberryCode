@@ -1,10 +1,10 @@
-import type { ProviderConfigObject } from "@zcode/provider";
-import { isMeteredBridgedVisionModel } from "@zcode/shared";
+import type { ProviderConfigObject } from "@raspberrycode/provider";
+import { isMeteredBridgedVisionModel } from "@raspberrycode/shared";
 
 /**
  * 视觉能力徽标展示判定（specs/provider-neutrality.md）：计量/套餐接入下
  * 图片输入为服务端桥接的模型不标原生视觉徽标。桥接模型名单是共享展示事实数据
- * （`@zcode/shared` 的 bridged-vision-models），本模块不按 modelId 硬编码。
+ * （`@raspberrycode/shared` 的 bridged-vision-models），本模块不按 modelId 硬编码。
  * 只控制徽标，不改能力事实、附件校验或精确模型身份。
  */
 export function shouldShowModelVisionBadge(

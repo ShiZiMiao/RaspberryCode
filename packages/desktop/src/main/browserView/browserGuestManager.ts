@@ -23,7 +23,7 @@ import {
   type BrowserViewResidencyTransitionPayload,
   type BrowserViewRestoredTabShell,
   type BrowserViewportSize,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import { executeBrowserCommandOnView, type ControlledView } from "./browserCommandExecutor.js";
 import { executeIabPlaywrightLocator } from "./browserPlaywrightLocatorExecutor.js";
 import { recordBrowserVideo, type BrowserWebmRecorderFactory } from "./browserVideoRecorder.js";
@@ -2425,7 +2425,7 @@ export class BrowserGuestManager {
 
   private async installRecordingCursorOverlay(guest: GuestWebContents): Promise<void> {
     await guest.executeJavaScript(`(() => {
-      const id = "__zcode_browser_recording_cursor";
+      const id = "__raspberrycode_browser_recording_cursor";
       document.getElementById(id)?.remove();
       const cursor = document.createElement("div");
       cursor.id = id;
@@ -2442,16 +2442,16 @@ export class BrowserGuestManager {
       const up = () => {
         cursor.style.transform = "translate(-50%,-50%) scale(1)";
       };
-      window["__zcodeBrowserRecordingCursorCleanup"]?.();
+      window["__raspberrycodeBrowserRecordingCursorCleanup"]?.();
       window.addEventListener("mousemove", move, true);
       window.addEventListener("mousedown", down, true);
       window.addEventListener("mouseup", up, true);
-      window["__zcodeBrowserRecordingCursorCleanup"] = () => {
+      window["__raspberrycodeBrowserRecordingCursorCleanup"] = () => {
         window.removeEventListener("mousemove", move, true);
         window.removeEventListener("mousedown", down, true);
         window.removeEventListener("mouseup", up, true);
         cursor.remove();
-        delete window["__zcodeBrowserRecordingCursorCleanup"];
+        delete window["__raspberrycodeBrowserRecordingCursorCleanup"];
       };
     })()`);
   }
@@ -2459,7 +2459,7 @@ export class BrowserGuestManager {
   private async removeRecordingCursorOverlay(guest: GuestWebContents): Promise<void> {
     if (guest.isDestroyed()) return;
     await guest
-      .executeJavaScript('window["__zcodeBrowserRecordingCursorCleanup"]?.()')
+      .executeJavaScript('window["__raspberrycodeBrowserRecordingCursorCleanup"]?.()')
       .catch(() => undefined);
   }
 

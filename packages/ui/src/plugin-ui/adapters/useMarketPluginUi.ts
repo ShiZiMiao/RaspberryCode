@@ -1,9 +1,9 @@
 import { documentViewerInstance } from "@/plugin-ui/contract.js";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { isRemoteWorkspaceIdentity, type ZCodePluginUiSurface } from "@zcode/shared";
+import { isRemoteWorkspaceIdentity, type RaspberryCodePluginUiSurface } from "@raspberrycode/shared";
 import { useOptionalServices } from "@/hooks/useServices.js";
 import { useOptionalPlatform } from "@/hooks/usePlatform.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { resolvePluginUiSurfaceTitle } from "@/plugin-ui/adapters/usePluginUiSurfaces.js";
 import { useOpenPluginUi } from "@/plugin-ui/adapters/PluginUiProviders.js";
 import { toast } from "@/components/ui/toast.js";
@@ -21,7 +21,7 @@ export function useMarketPluginUi(target: MarketPluginUiTarget) {
   const platform = useOptionalPlatform();
   const bridge = useOptionalServices()?.pluginUiBridgeService;
   const openSidePane = useOpenPluginUi();
-  const { intl, locale } = useZCodeIntl();
+  const { intl, locale } = useRaspberryCodeIntl();
   const key = `${target.workspaceIdentity?.trim() || target.workspacePath}\0${target.remoteSessionId ?? ""}\0${target.sessionId ?? ""}`;
   const currentKey = useRef<string | null>(key);
   currentKey.current = key;
@@ -34,12 +34,12 @@ export function useMarketPluginUi(target: MarketPluginUiTarget) {
   }, [key]);
   const [selection, setSelection] = useState<{
     key: string;
-    surfaces: ZCodePluginUiSurface[];
+    surfaces: RaspberryCodePluginUiSurface[];
   } | null>(null);
   const surfaces = selection?.key === key ? selection.surfaces : [];
   const closeSelection = useCallback(() => setSelection(null), []);
   const selectSurface = useCallback(
-    (surface: ZCodePluginUiSurface) => {
+    (surface: RaspberryCodePluginUiSurface) => {
       if (currentKey.current !== key || !target.workspacePath || !target.sessionId || !openSidePane)
         return;
       openSidePane({

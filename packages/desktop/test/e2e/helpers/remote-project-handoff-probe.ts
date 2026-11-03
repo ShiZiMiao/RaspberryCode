@@ -1,6 +1,6 @@
-import { BufferReader, BufferWriter, deserialize, serialize, VSBuffer } from "@zcode/rpc";
-import { PlatformChannels, ServiceChannels } from "@zcode/shared";
-import type { RemoteProjectDirectory } from "@zcode/services";
+import { BufferReader, BufferWriter, deserialize, serialize, VSBuffer } from "@raspberrycode/rpc";
+import { PlatformChannels, ServiceChannels } from "@raspberrycode/shared";
+import type { RemoteProjectDirectory } from "@raspberrycode/services";
 
 interface HandoffRpcProbe {
   ready: boolean;

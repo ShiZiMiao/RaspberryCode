@@ -1,14 +1,14 @@
 /* eslint-disable max-lines -- Bot bot reply formatter 集中维护第三方消息的文本颗粒度、工具摘要和权限摘要，避免 provider 间文案分叉。 */
 import type {
-  ZCodePermissionRequest,
-  ZCodeStreamEvent,
-  ZCodeTaskChangeSummary,
+  RaspberryCodePermissionRequest,
+  RaspberryCodeStreamEvent,
+  RaspberryCodeTaskChangeSummary,
   Locale,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import {
   getCompactToolCallSummary,
   getPermissionRequestPreview,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import { normalizeBotMessageLocale } from "./messages.js";
 
 export interface BotReplyToolCallState {
@@ -39,7 +39,7 @@ export type BotAssistantReplyBlock =
     }
   | {
       type: "change-summary";
-      changeSummary: ZCodeTaskChangeSummary;
+      changeSummary: RaspberryCodeTaskChangeSummary;
     };
 
 const MAX_TOOL_SUMMARY_ITEMS = 10;
@@ -185,7 +185,7 @@ function formatBotDiffCount(changeStat: { added: number; removed: number }): str
 }
 
 function formatPermissionRequestHeader(
-  request: Pick<ZCodePermissionRequest, "title" | "description" | "kind" | "raw">,
+  request: Pick<RaspberryCodePermissionRequest, "title" | "description" | "kind" | "raw">,
   options?: BotReplyFormatOptions,
 ): string {
   const preview = getPermissionRequestPreview(request);
@@ -193,7 +193,7 @@ function formatPermissionRequestHeader(
 }
 
 function formatPermissionRequestTitle(
-  request: Pick<ZCodePermissionRequest, "title" | "description" | "kind" | "raw">,
+  request: Pick<RaspberryCodePermissionRequest, "title" | "description" | "kind" | "raw">,
   preview: ReturnType<typeof getPermissionRequestPreview>,
   options?: BotReplyFormatOptions,
 ): string {
@@ -212,7 +212,7 @@ function formatPermissionRequestTitle(
 }
 
 function formatEditPermissionKindLabel(
-  request: Pick<ZCodePermissionRequest, "title" | "description" | "kind" | "raw">,
+  request: Pick<RaspberryCodePermissionRequest, "title" | "description" | "kind" | "raw">,
   preview: ReturnType<typeof getPermissionRequestPreview>,
   locale?: Locale,
 ): string {
@@ -310,7 +310,7 @@ export function formatBotToolCallReply(
 }
 
 export function formatBotPermissionRequestSummary(
-  request: Pick<ZCodePermissionRequest, "title" | "description" | "kind" | "raw">,
+  request: Pick<RaspberryCodePermissionRequest, "title" | "description" | "kind" | "raw">,
   options?: BotReplyFormatOptions,
 ): string {
   const preview = getPermissionRequestPreview(request);
@@ -342,7 +342,7 @@ export function isBotToolCallReplyTerminal(
 }
 
 function formatBotChangeSummary(
-  changeSummary?: ZCodeTaskChangeSummary | null,
+  changeSummary?: RaspberryCodeTaskChangeSummary | null,
   options?: Pick<BotReplyFormatOptions, "locale">,
 ): string {
   if (!changeSummary || changeSummary.fileCount <= 0 || changeSummary.files.length === 0) {
@@ -364,7 +364,7 @@ function formatBotChangeSummary(
 
 export function updateBotReplyToolCalls(
   toolCalls: Map<string, BotReplyToolCallState>,
-  event: ZCodeStreamEvent,
+  event: RaspberryCodeStreamEvent,
 ): void {
   if (event.type === "tool_call") {
     toolCalls.set(event.toolId, {

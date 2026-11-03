@@ -1,5 +1,5 @@
-import { BufferReader, BufferWriter, deserialize, serialize, VSBuffer } from "@zcode/rpc";
-import { ISourceServerManagementService, type UpdateConnectionProfileInput } from "@zcode/services";
+import { BufferReader, BufferWriter, deserialize, serialize, VSBuffer } from "@raspberrycode/rpc";
+import { ISourceServerManagementService, type UpdateConnectionProfileInput } from "@raspberrycode/services";
 
 const DISCONNECT_REQUEST = -8301;
 const UPDATE_REQUEST = -8302;

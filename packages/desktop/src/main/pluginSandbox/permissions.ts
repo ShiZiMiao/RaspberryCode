@@ -1,5 +1,5 @@
-import type { Locale } from "@zcode/shared";
-import type { McpAppsResourcePermission } from "@zcode/shared/mcp-apps";
+import type { Locale } from "@raspberrycode/shared";
+import type { McpAppsResourcePermission } from "@raspberrycode/shared/mcp-apps";
 import { PLUGIN_SANDBOX_SCHEME } from "./contract.js";
 
 /**
@@ -75,7 +75,7 @@ export function isPluginSandboxPermissionGranted(input: {
   return !PROMPTED.has(input.permission) || input.consented.has(input.permission);
 }
 
-/** 发起请求的 frame URL 必须是 `zcode-sandbox://plugin-<sandboxId>`；shell 或其他来源返回 null（拒绝）。 */
+/** 发起请求的 frame URL 必须是 `raspberrycode-sandbox://plugin-<sandboxId>`；shell 或其他来源返回 null（拒绝）。 */
 export function readPluginSandboxIdFromPluginUrl(url: string | undefined): string | null {
   if (!url) return null;
   let parsed: URL;

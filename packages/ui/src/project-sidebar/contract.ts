@@ -1,4 +1,4 @@
-import type { Locale, RemoteTarget, UserInfo } from "@zcode/shared";
+import type { Locale, RemoteTarget, UserInfo } from "@raspberrycode/shared";
 import type { LucideIcon } from "lucide-react";
 import type {
   AppProps,
@@ -7,7 +7,7 @@ import type {
 } from "@/app-shell/types.js";
 import type { CodeViewerSource } from "@/lib/codeViewer.js";
 import type { Theme } from "@/useTheme.js";
-export { LEGACY_SINGLE_ROOT_PROJECT_PREFIX } from "@zcode/services";
+export { LEGACY_SINGLE_ROOT_PROJECT_PREFIX } from "@raspberrycode/services";
 export interface ProjectDevice {
   id: string;
   label: string;
@@ -29,11 +29,11 @@ export {
   buildRemoteWorkspaceIdentity,
   buildServerRemoteWorkspaceIdentity,
   remoteHostIdFromWorkspaceIdentity,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 export type {
   WindowHostTaskAddress,
   WindowHostControllerTaskActivity,
-} from "@zcode/shared/zcode-protocol-v4";
+} from "@raspberrycode/shared/raspberrycode-protocol-v4";
 export type {
   TaskGroup,
   TaskGroupColor,
@@ -48,7 +48,7 @@ export type {
   SaveProjectInput,
   IProjectService,
   IWindowControllerService,
-  IZCodeTaskService,
+  IRaspberryCodeTaskService,
   WindowHostControllerMutation,
   WindowHostControllerFrame,
   WindowHostTaskUnreadSignal,
@@ -56,7 +56,7 @@ export type {
   RemoteProjectDirectory,
   RemoteProjectEntry,
   RemoteProjectHost,
-} from "@zcode/services";
+} from "@raspberrycode/services";
 export interface ProjectAvailability {
   entryId?: string;
   /** 仅首次升级入口用于替换旧排序键，不改变项目身份。 */

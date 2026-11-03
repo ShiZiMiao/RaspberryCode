@@ -3,7 +3,7 @@ import type { DatabaseSync } from "node:sqlite";
 import {
   CRON_DEFAULT_GROUP_ID,
   resolveWorkspaceKey,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import type {
   GroupNode,
   GroupTaskFact,

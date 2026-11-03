@@ -24,25 +24,25 @@ import {
   getExportLogDir as getDefaultExportLogDir,
   getExportLogStageDir as getDefaultExportLogStageDir,
   getFeedbackLogArchiveDir as getDefaultFeedbackLogArchiveDir,
-} from "@zcode/services/node";
+} from "@raspberrycode/services/node";
 import { createAboutSnapshot, formatAboutDetail, readBuildMetadata } from "./about.js";
 import { logger } from "./logger.js";
 
-function getZCodeDataDir() {
+function getRaspberryCodeDataDir() {
   return getAppConfigDir();
 }
 
-function getZCodeCliDir() {
+function getRaspberryCodeCliDir() {
   return join(homedir(), ".raspberrycode", "cli");
 }
 
-function getZCodeCliLogDir() {
-  return join(getZCodeCliDir(), "log");
+function getRaspberryCodeCliLogDir() {
+  return join(getRaspberryCodeCliDir(), "log");
 }
 
 /**
  * Computer Use Helper 的运行目录。macOS 上 Helper 由 LaunchServices 启动，stderr 被系统丢弃，
- * 所以它把生命周期与后台输入诊断 tee 到 `<socket>.exit.log`（见 zcode-cua
+ * 所以它把生命周期与后台输入诊断 tee 到 `<socket>.exit.log`（见 raspberrycode-cua
  * helperExitLogPathFor）。同目录下还有 `.tokens` broker 凭据，收集时必须按文件名白名单。
  */
 function getCuaHelperRunDir() {
@@ -76,7 +76,7 @@ interface LogArchiveSkippedFileEntry {
 
 interface ExportLogsDependencies {
   now?: () => Date;
-  getZCodeDataDir?: () => string;
+  getRaspberryCodeDataDir?: () => string;
   getExportLogStageDir?: () => string;
   getExportLogDir?: () => string;
   createLogArchiveArtifacts?: (
@@ -960,27 +960,27 @@ export async function createLogArchiveArtifacts(
 
   await collectLogArchiveFilesFromDirectory(sourceDir, "", visitedDirs, files);
 
-  const zcodeCliLogDir = getZCodeCliLogDir();
-  // GLM / zcode-cli 的运行日志写在 ~/.raspberrycode/cli/log，不在应用主数据目录 ~/.raspberrycode/v2 下。
+  const raspberrycodeCliLogDir = getRaspberryCodeCliLogDir();
+  // GLM / raspberrycode-cli 的运行日志写在 ~/.raspberrycode/cli/log，不在应用主数据目录 ~/.raspberrycode/v2 下。
   // 如果导出日志只扫描 v2，定位 agent CLI 启动、协议或崩溃问题时会缺少最关键的原生侧日志。
   await collectLogArchiveFilesFromDirectory(
-    zcodeCliLogDir,
+    raspberrycodeCliLogDir,
     posix.join(".raspberrycode", "cli", "log"),
     visitedDirs,
     files,
   );
 
-  const zcodeCliDir = getZCodeCliDir();
+  const raspberrycodeCliDir = getRaspberryCodeCliDir();
   // 排查 agent CLI 问题还需要它的运行配置与模型 IO 轨迹。
   // config.json 是当前生效配置；rollout 是 model-io 调用轨迹，
   // 二者都不在 ~/.raspberrycode/cli/log 下，需要额外收集才能完整还原现场。
   await collectLogArchiveFile(
-    join(zcodeCliDir, "config.json"),
+    join(raspberrycodeCliDir, "config.json"),
     posix.join(".raspberrycode", "cli", "config.json"),
     files,
   );
   await collectLogArchiveFilesFromDirectory(
-    join(zcodeCliDir, "rollout"),
+    join(raspberrycodeCliDir, "rollout"),
     posix.join(".raspberrycode", "cli", "rollout"),
     visitedDirs,
     files,
@@ -1144,16 +1144,16 @@ export async function createFeedbackLogArchiveFromExportLogs(
   return createFeedbackDiagnosticArchive({
     sources: [
       { directory: join(sourceDir, "logs"), archivePrefix: "logs" },
-      { directory: getZCodeCliLogDir(), archivePrefix: ".raspberrycode/cli/log" },
+      { directory: getRaspberryCodeCliLogDir(), archivePrefix: ".raspberrycode/cli/log" },
       {
-        directory: getZCodeCliDir(),
+        directory: getRaspberryCodeCliDir(),
         archivePrefix: ".raspberrycode/cli",
         includeFileNames: ["config.json"],
         onlyCurrentDay: false,
         contentPolicy: "cli-config",
       },
       {
-        directory: join(getZCodeCliDir(), "rollout"),
+        directory: join(getRaspberryCodeCliDir(), "rollout"),
         archivePrefix: ".raspberrycode/cli/rollout",
       },
       {
@@ -1173,7 +1173,7 @@ export async function exportLogs(
 ): Promise<{ success: boolean; path?: string; error?: string }> {
   try {
     const now = dependencies.now ?? (() => new Date());
-    const getSourceDir = dependencies.getZCodeDataDir ?? getZCodeDataDir;
+    const getSourceDir = dependencies.getRaspberryCodeDataDir ?? getRaspberryCodeDataDir;
     const buildArtifacts = dependencies.createLogArchiveArtifacts ?? createLogArchiveArtifacts;
     const writeZip = dependencies.writeLogArchiveZip ?? writeLogArchiveZip;
     const writeDirectory = dependencies.writeLogArchiveDirectory ?? writeLogArchiveDirectory;
@@ -1188,7 +1188,7 @@ export async function exportLogs(
 
     const sourceDir = getSourceDir();
     const timestamp = formatTimestamp(now());
-    const exportBaseName = `zcode-logs-${timestamp}`;
+    const exportBaseName = `raspberrycode-logs-${timestamp}`;
     const outputRootDir = getOutputRootDir();
     await mkdir(outputRootDir, { recursive: true });
     const outputDir = await mkdtemp(join(outputRootDir, `${exportBaseName}-`));

@@ -10,7 +10,7 @@ import {
   CommandShortcut,
 } from "@/components/ui/command.js";
 import { toast } from "@/components/ui/toast.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { logger } from "@/logger.js";
 import {
   QUICK_PICK_SECTION_ORDER,
@@ -35,7 +35,7 @@ export function QuickPickCommandDialog({
   commands: QuickPickCommand[];
   onOpenChange: (open: boolean) => void;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   const groupedCommands = useMemo(
     () =>
       QUICK_PICK_SECTION_ORDER.map((sectionId) => ({

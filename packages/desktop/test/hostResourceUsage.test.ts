@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ProcessResourceSample } from "@zcode/services/node";
+import type { ProcessResourceSample } from "@raspberrycode/services/node";
 import { createHostResourceUsageResponder } from "../src/host/hostResourceUsage.js";
 
 function sample(pid: number, ppid: number, command: string): [number, ProcessResourceSample] {
@@ -50,7 +50,7 @@ describe("hostResourceUsage", () => {
           pid: 100,
           category: "base",
           groupKey: "cli",
-          name: "zcode-agent-glm-demo",
+          name: "raspberrycode-agent-glm-demo",
         }),
         expect.objectContaining({
           pid: 120,

@@ -8,41 +8,41 @@ import { PassThrough } from "node:stream";
 import { gunzipSync } from "node:zlib";
 import type { AddressInfo } from "node:net";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { IDisposable, Event } from "@zcode/rpc";
+import type { IDisposable, Event } from "@raspberrycode/rpc";
 import {
   getRemoteRuntimeToolsForPlatform,
-  ZCODE_AGENT_RUNTIME,
-  ZCODE_RUNTIME_ENV_KEY,
-  ZCODE_VERSION,
-} from "@zcode/shared";
-import type { IRemoteBackend, StdioStream } from "@zcode/server/remote/backend.js";
-import { deployZCodeAgentRuntime } from "@zcode/server/remote/zcodeAgentDeploy.js";
-import { deployServer } from "@zcode/server/remote/deploy.js";
+  RASPBERRYCODE_AGENT_RUNTIME,
+  RASPBERRYCODE_RUNTIME_ENV_KEY,
+  RASPBERRYCODE_VERSION,
+} from "@raspberrycode/shared";
+import type { IRemoteBackend, StdioStream } from "@raspberrycode/server/remote/backend.js";
+import { deployRaspberryCodeAgentRuntime } from "@raspberrycode/server/remote/raspberrycodeAgentDeploy.js";
+import { deployServer } from "@raspberrycode/server/remote/deploy.js";
 import {
   createRemoteComponentVersionResolver,
   deployNodeRuntime,
-} from "@zcode/server/remote/remoteAssetDeployDecision.js";
-import { buildRemoteExecutableReplaceCommand } from "@zcode/server/remote/deployShared.js";
-import { ensureRemoteReleaseDirFromCdn } from "@zcode/server/remote/remoteAssetCache.js";
+} from "@raspberrycode/server/remote/remoteAssetDeployDecision.js";
+import { buildRemoteExecutableReplaceCommand } from "@raspberrycode/server/remote/deployShared.js";
+import { ensureRemoteReleaseDirFromCdn } from "@raspberrycode/server/remote/remoteAssetCache.js";
 import {
   fetchRemoteDownloadManifest,
   type RemoteAssetInstaller,
-} from "@zcode/server/remote/remoteAssetInstaller.js";
-import { createTarGzArchive } from "@zcode/server/remote/localTarGz.js";
-import { buildRemoteAgentBundleWrapper } from "@zcode/server/remote/zcodeAgentBundleWrapper.js";
+} from "@raspberrycode/server/remote/remoteAssetInstaller.js";
+import { createTarGzArchive } from "@raspberrycode/server/remote/localTarGz.js";
+import { buildRemoteAgentBundleWrapper } from "@raspberrycode/server/remote/raspberrycodeAgentBundleWrapper.js";
 import {
   REMOTE_AGENT_OFFICIAL_PLUGIN_INCLUDED_TOP_LEVEL_PATHS,
   REMOTE_AGENT_OFFICIAL_PLUGIN_PACKAGE_NAMES,
   REMOTE_AGENT_OFFICIAL_PLUGIN_REQUIRED_RELATIVE_PATHS,
-} from "@zcode/server/remote/zcodeAgentOfficialPluginAssets.js";
+} from "@raspberrycode/server/remote/raspberrycodeAgentOfficialPluginAssets.js";
 
 const retiredProtocolPrefix = `${"a"}${"cp"}`;
 const retiredProxyRuntimeId = `${retiredProtocolPrefix}-proxy-runtime`;
 // 远端 RaspberryCode Agent bundle 文件名（与 REMOTE_AGENT_BUNDLE_NAME 保持一致）。
-const REMOTE_AGENT_BUNDLE_FILE_NAME = "zcode.cjs";
-const REMOTE_AGENT_WRAPPER_FILE_NAME = "zcode-agent";
+const REMOTE_AGENT_BUNDLE_FILE_NAME = "raspberrycode.cjs";
+const REMOTE_AGENT_WRAPPER_FILE_NAME = "raspberrycode-agent";
 const BROWSER_USE_REQUIRED_RELATIVE_PATHS = [
-  // node_repl 宿主已抽成 @zcode/node-repl-host，browser-use 不再产出 dist/mcp/server.js。
+  // node_repl 宿主已抽成 @raspberrycode/node-repl-host，browser-use 不再产出 dist/mcp/server.js。
   "browser-use-plugin/docs/api.json",
   "browser-use-plugin/docs/documents.json",
   "browser-use-plugin/docs/overview.md",
@@ -53,14 +53,14 @@ const BROWSER_USE_REQUIRED_RELATIVE_PATHS = [
   "browser-use-plugin/skills/web-gui-tester/SKILL.md",
 ] as const;
 // Bug 根因：remote fixture 曾复制一份旧的官方插件资产清单；生产合同加入 CUA SDK/docs/skill
-// 后 fixture 仍生成不含这些文件的 GLM archive，所有部署测试都会误报 packages 缺失。
+// 后 fixture 仍生成不含这些文件的 Agent archive，所有部署测试都会误报 packages 缺失。
 // 测试数据必须直接复用生产常量，后续新增官方资产时不能再静默漂移。
 const OFFICIAL_PLUGIN_PACKAGE_NAMES = REMOTE_AGENT_OFFICIAL_PLUGIN_PACKAGE_NAMES;
 const OFFICIAL_PLUGIN_REQUIRED_RELATIVE_PATHS =
   REMOTE_AGENT_OFFICIAL_PLUGIN_REQUIRED_RELATIVE_PATHS;
 const OFFICIAL_PLUGIN_INCLUDED_TOP_LEVEL_PATHS =
   REMOTE_AGENT_OFFICIAL_PLUGIN_INCLUDED_TOP_LEVEL_PATHS;
-const TEST_GLM_ARTIFACT_SHA256 = "a".repeat(64);
+const TEST_Agent_ARTIFACT_SHA256 = "a".repeat(64);
 
 type LegacyRemoteTestAgentRuntime = {
   binaryKind: "node-script" | "native-binary";
@@ -107,11 +107,11 @@ const LEGACY_REMOTE_TEST_AGENT_RUNTIME: Record<
       `codex-${retiredProtocolPrefix}.js`,
     ],
   },
-  glm: {
+  agent: {
     binaryKind: "native-binary",
     bundledResourceDir: "agent",
-    version: ZCODE_AGENT_RUNTIME.version,
-    resolveEntrySegments: (platform) => [resolveTestPlatformBinaryName("zcode-agent", platform)],
+    version: RASPBERRYCODE_AGENT_RUNTIME.version,
+    resolveEntrySegments: (platform) => [resolveTestPlatformBinaryName("raspberrycode-agent", platform)],
   },
 };
 
@@ -180,7 +180,7 @@ class FakeRemoteBackend implements IRemoteBackend {
   ) {
     this.commandPlans = options.commandPlans ?? [];
     this.serverVersions = options.serverVersions?.slice() ?? [
-      options.serverVersion ?? ZCODE_VERSION,
+      options.serverVersion ?? RASPBERRYCODE_VERSION,
     ];
     this.lockCloseCode = options.lockCloseCode ?? 0;
     this.lockAcquireGate = options.lockAcquireGate;
@@ -206,19 +206,19 @@ class FakeRemoteBackend implements IRemoteBackend {
     const lockOwner = command.match(/\.holder-([\w-]+)\.sh/u)?.[1];
     if (lockOwner) {
       return createLockHolderStream(
-        `zcode-deploy-lock-acquired:${lockOwner}`,
+        `raspberrycode-deploy-lock-acquired:${lockOwner}`,
         this.lockReleaseMarkers,
         this.lockCloseCode,
         this.lockAcquireGate,
       );
     }
 
-    const versionCommand = `"${"$HOME"}"'/.zcode/server/node' "${"$HOME"}"'/.zcode/server/zcode-server.cjs' --version`;
+    const versionCommand = `"${"$HOME"}"'/.raspberrycode/server/node' "${"$HOME"}"'/.raspberrycode/server/raspberrycode-server.cjs' --version`;
     if (command === versionCommand) {
       const versionSource =
         this.serverVersions.length > 1
           ? this.serverVersions.shift()!
-          : (this.serverVersions[0] ?? ZCODE_VERSION);
+          : (this.serverVersions[0] ?? RASPBERRYCODE_VERSION);
       const version = typeof versionSource === "function" ? versionSource() : versionSource;
       return createClosedStream(`${version}\n`);
     }
@@ -238,8 +238,8 @@ class FakeRemoteBackend implements IRemoteBackend {
   async exists(remotePath: string): Promise<boolean> {
     return (
       this.remoteFiles.has(remotePath) ||
-      remotePath === "~/.zcode/server/node" ||
-      remotePath === "~/.zcode/server/zcode-server.cjs"
+      remotePath === "~/.raspberrycode/server/node" ||
+      remotePath === "~/.raspberrycode/server/raspberrycode-server.cjs"
     );
   }
 
@@ -302,17 +302,17 @@ function findUploadForStagingTarget(
   );
 }
 
-class FailFirstGlmUploadRemoteBackend extends FakeRemoteBackend {
-  private shouldFailGlmUpload = true;
+class FailFirstAgentUploadRemoteBackend extends FakeRemoteBackend {
+  private shouldFailAgentUpload = true;
 
   override async upload(localPath: string, remotePath: string): Promise<void> {
     if (
-      this.shouldFailGlmUpload &&
-      (remotePath === "~/.zcode/server/agents/glm/zcode.cjs.new" ||
-        remotePath.startsWith("~/.zcode/server/agents/glm/zcode.cjs.new-"))
+      this.shouldFailAgentUpload &&
+      (remotePath === "~/.raspberrycode/server/agents/agent/raspberrycode.cjs.new" ||
+        remotePath.startsWith("~/.raspberrycode/server/agents/agent/raspberrycode.cjs.new-"))
     ) {
-      this.shouldFailGlmUpload = false;
-      throw new Error("mock glm upload failed");
+      this.shouldFailAgentUpload = false;
+      throw new Error("mock agent upload failed");
     }
     await super.upload(localPath, remotePath);
   }
@@ -399,7 +399,7 @@ async function stageRemoteRuntimeRelease(
   },
 ): Promise<void> {
   const platformKey = `${options.platform}-${options.arch}`;
-  const releaseDir = join(rootDir, "releases", ZCODE_VERSION);
+  const releaseDir = join(rootDir, "releases", RASPBERRYCODE_VERSION);
   const nodeDir = join(releaseDir, "node", platformKey);
   const serverDir = join(releaseDir, "server");
   const nodePtyDir = join(releaseDir, "node-pty", platformKey);
@@ -408,7 +408,7 @@ async function stageRemoteRuntimeRelease(
   await mkdir(serverDir, { recursive: true });
   await mkdir(nodePtyDir, { recursive: true });
   await writeFile(join(nodeDir, "node"), "node runtime", "utf8");
-  await writeFile(join(serverDir, "zcode-server.cjs"), "// remote server bundle\n", "utf8");
+  await writeFile(join(serverDir, "raspberrycode-server.cjs"), "// remote server bundle\n", "utf8");
   await writeFile(join(nodePtyDir, "pty.node"), "node-pty prebuild", "utf8");
   if (options.platform === "darwin") {
     await writeFile(join(nodePtyDir, "spawn-helper"), "node-pty spawn helper", "utf8");
@@ -461,7 +461,7 @@ async function stageRemoteRuntimeRelease(
     const binaryDir = join(releaseDir, runtime.bundledResourceDir, platformKey);
     await mkdir(binaryDir, { recursive: true });
     await writeFile(join(binaryDir, binaryName), `${provider} binary`, "utf8");
-    // RaspberryCode Agent（glm）远端不再发原生二进制，而是发编译产物 zcode.cjs，
+    // RaspberryCode Agent 远端不再发原生二进制，而是发编译产物 raspberrycode.cjs，
     // 由远端已部署的 node 通过 wrapper 执行，故 source release 需提供该 bundle。
     if (provider === "agent") {
       await writeFile(join(binaryDir, REMOTE_AGENT_BUNDLE_FILE_NAME), `${provider} bundle`, "utf8");
@@ -494,14 +494,16 @@ async function stageRemoteRuntimeRelease(
 function createFullyDeployedRemoteFiles(platformKey: RemotePlatformKey): Record<string, string> {
   const [platform] = platformKey.split("-") as ["linux" | "darwin", string];
   const files: Record<string, string> = {
-    "~/.zcode/server/build/Release/pty.node": "deployed node-pty",
+    "~/.raspberrycode/server/build/Release/pty.node": "deployed node-pty",
+    // 旧布局安装标记（deployShared.LEGACY_REMOTE_BASE_MARKERS）：已部署机器续用旧根。
+    "~/.raspberrycode/server/raspberrycode-server.cjs": "deployed server bundle",
   };
   if (platform === "darwin") {
-    files["~/.zcode/server/build/Release/spawn-helper"] = "deployed spawn helper";
+    files["~/.raspberrycode/server/build/Release/spawn-helper"] = "deployed spawn helper";
   }
 
   for (const [provider, runtime] of Object.entries(LEGACY_REMOTE_TEST_AGENT_RUNTIME)) {
-    const remoteProviderDir = `~/.zcode/server/agents/${runtime.bundledResourceDir}`;
+    const remoteProviderDir = `~/.raspberrycode/server/agents/${runtime.bundledResourceDir}`;
     files[`${remoteProviderDir}/.version`] = `${runtime.version}\n`;
     if (runtime.binaryKind === "node-script") {
       files[`${remoteProviderDir}/.bundle-meta.json`] = JSON.stringify({
@@ -517,7 +519,7 @@ function createFullyDeployedRemoteFiles(platformKey: RemotePlatformKey): Record<
         ] = "claude native binary";
       }
     } else if (provider === "agent") {
-      // RaspberryCode Agent 远端部署后：wrapper（zcode-agent）+ 编译产物 bundle（zcode.cjs）。
+      // RaspberryCode Agent 远端部署后：wrapper（raspberrycode-agent）+ 编译产物 bundle（raspberrycode.cjs）。
       const entrySegments = runtime.resolveEntrySegments(platform);
       const wrapperName = entrySegments[entrySegments.length - 1];
       if (wrapperName) {
@@ -538,11 +540,11 @@ function createFullyDeployedRemoteFiles(platformKey: RemotePlatformKey): Record<
   }
 
   for (const { runtime, version } of getRemoteRuntimeToolsForPlatform(platform)) {
-    files[`~/.zcode/server/tools/${runtime.bundledResourceDir}/.version`] = `${version}\n`;
+    files[`~/.raspberrycode/server/tools/${runtime.bundledResourceDir}/.version`] = `${version}\n`;
     const entrySegments = runtime.resolveEntrySegments(platform);
     const binaryName = entrySegments[entrySegments.length - 1];
     if (binaryName) {
-      files[`~/.zcode/server/tools/${runtime.bundledResourceDir}/${binaryName}`] =
+      files[`~/.raspberrycode/server/tools/${runtime.bundledResourceDir}/${binaryName}`] =
         `${runtime.bundledResourceDir} binary`;
     }
   }
@@ -550,30 +552,30 @@ function createFullyDeployedRemoteFiles(platformKey: RemotePlatformKey): Record<
   return files;
 }
 
-function addMatchingGlmAndServerArtifactIdentities(
+function addMatchingAgentAndServerArtifactIdentities(
   remoteFiles: Record<string, string>,
   manifest: RemoteComponentManifest,
   platformKey: RemotePlatformKey,
-  version = LEGACY_REMOTE_TEST_AGENT_RUNTIME.glm.version,
+  version = LEGACY_REMOTE_TEST_AGENT_RUNTIME.agent.version,
 ): void {
-  addMatchingGlmArtifactIdentity(remoteFiles, manifest, platformKey, version);
+  addMatchingAgentArtifactIdentity(remoteFiles, manifest, platformKey, version);
   addMatchingServerBundleArtifactIdentity(remoteFiles, manifest, platformKey);
 }
 
-function addMatchingGlmArtifactIdentity(
+function addMatchingAgentArtifactIdentity(
   remoteFiles: Record<string, string>,
   manifest: RemoteComponentManifest,
   platformKey: RemotePlatformKey,
-  version = LEGACY_REMOTE_TEST_AGENT_RUNTIME.glm.version,
+  version = LEGACY_REMOTE_TEST_AGENT_RUNTIME.agent.version,
 ): void {
-  const glm = manifest.components.find((component) => component.id === "agent");
-  if (!glm) {
-    throw new Error("missing glm component in staged manifest");
+  const agent = manifest.components.find((component) => component.id === "agent");
+  if (!agent) {
+    throw new Error("missing agent component in staged manifest");
   }
-  remoteFiles["~/.zcode/server/.asset-components/glm.json"] = JSON.stringify({
+  remoteFiles["~/.raspberrycode/server/.asset-components/agent.json"] = JSON.stringify({
     id: "agent",
     version,
-    sha256: glm.sha256,
+    sha256: agent.sha256,
     platformArch: platformKey,
   });
 }
@@ -584,7 +586,7 @@ function addMatchingServerBundleArtifactIdentity(
   platformKey: RemotePlatformKey,
 ): void {
   const serverBundle = findManifestComponent(manifest, "server-bundle");
-  remoteFiles["~/.zcode/server/.asset-components/server-bundle.json"] = JSON.stringify({
+  remoteFiles["~/.raspberrycode/server/.asset-components/server-bundle.json"] = JSON.stringify({
     id: "server-bundle",
     version: serverBundle.version,
     sha256: serverBundle.sha256,
@@ -619,7 +621,7 @@ async function writeTestOfficialPluginPackages(repoDir: string): Promise<void> {
   for (const name of ["SKILL.md", "patterns.md", "examples.md"]) {
     const path = join(
       repoDir,
-      "apps/zcode-cli/packages/bundled-skills/skills/dynamic-workflows",
+      "apps/raspberrycode-cli/packages/bundled-skills/skills/dynamic-workflows",
       name,
     );
     await mkdir(dirname(path), { recursive: true });
@@ -630,15 +632,15 @@ async function writeTestOfficialPluginPackages(repoDir: string): Promise<void> {
       const manifestPath = join(
         repoDir,
         "apps",
-        "zcode-cli",
+        "raspberrycode-cli",
         "packages",
         pluginName,
-        ".zcode-plugin",
+        ".raspberrycode-plugin",
         "plugin.json",
       );
       await mkdir(dirname(manifestPath), { recursive: true });
       const pluginManifestName =
-        pluginName === "zcode-cua-plugin" ? "computer-use" : pluginName.replace(/-plugin$/u, "");
+        pluginName === "raspberrycode-cua-plugin" ? "computer-use" : pluginName.replace(/-plugin$/u, "");
       await writeFile(
         manifestPath,
         JSON.stringify({
@@ -652,7 +654,7 @@ async function writeTestOfficialPluginPackages(repoDir: string): Promise<void> {
         relativePath.startsWith(`${pluginName}/`),
       )
         .map((relativePath) => relativePath.slice(pluginName.length + 1))
-        .filter((relativePath) => relativePath !== ".zcode-plugin/plugin.json");
+        .filter((relativePath) => relativePath !== ".raspberrycode-plugin/plugin.json");
       await Promise.all(
         requiredAssetPaths.map(async (relativePath) => {
           const assetPath = join(pluginRoot, ...relativePath.split("/"));
@@ -672,8 +674,8 @@ async function stageRemoteAssetArchive(
     useLegacyFileName?: boolean;
   },
 ): Promise<void> {
-  const sourceReleaseDir = join(mockCdnDir, "releases", ZCODE_VERSION);
-  const outputVersionDir = join(outputRoot, ZCODE_VERSION);
+  const sourceReleaseDir = join(mockCdnDir, "releases", RASPBERRYCODE_VERSION);
+  const outputVersionDir = join(outputRoot, RASPBERRYCODE_VERSION);
   const platformKey = options?.platformKey ?? "linux-arm64";
   const archiveFileName = options?.useLegacyFileName
     ? "remote-assets.tar.gz"
@@ -705,7 +707,7 @@ async function stageRemoteAssetArchive(
     },
     {
       sourcePath: join(sourceReleaseDir, "agent", platformKey),
-      archivePath: `glm/${platformKey}`,
+      archivePath: `agent/${platformKey}`,
     },
     {
       sourcePath: join(sourceReleaseDir, "tools", platformKey),
@@ -722,8 +724,8 @@ function buildRemoteComponentArtifactSpecs(
   const specs: RemoteComponentArtifactSpec[] = [
     {
       id: "server-bundle",
-      version: `${ZCODE_VERSION}-server-bundle`,
-      artifactPath: `components/${platformKey}/server-bundle/${ZCODE_VERSION}-server-bundle.tar.gz`,
+      version: `${RASPBERRYCODE_VERSION}-server-bundle`,
+      artifactPath: `components/${platformKey}/server-bundle/${RASPBERRYCODE_VERSION}-server-bundle.tar.gz`,
       mount: "server",
       sourcePath: "server",
     },
@@ -835,8 +837,8 @@ async function stageRemoteComponentArtifacts(
   options?: StageRemoteComponentArtifactsOptions,
 ): Promise<RemoteComponentManifest> {
   const platformKey = options?.platformKey ?? "linux-arm64";
-  const sourceReleaseDir = join(mockCdnDir, "releases", ZCODE_VERSION);
-  const outputVersionDir = join(outputRoot, ZCODE_VERSION);
+  const sourceReleaseDir = join(mockCdnDir, "releases", RASPBERRYCODE_VERSION);
+  const outputVersionDir = join(outputRoot, RASPBERRYCODE_VERSION);
   const componentSpecs = buildRemoteComponentArtifactSpecs(platformKey);
   const components: RemoteComponentManifestItem[] = [];
 
@@ -855,13 +857,13 @@ async function stageRemoteComponentArtifacts(
   const manifest = options?.mutateManifest
     ? options.mutateManifest({
         schemaVersion: 1,
-        appVersion: ZCODE_VERSION,
+        appVersion: RASPBERRYCODE_VERSION,
         platformArch: platformKey,
         components,
       })
     : {
         schemaVersion: 1,
-        appVersion: ZCODE_VERSION,
+        appVersion: RASPBERRYCODE_VERSION,
         platformArch: platformKey,
         components,
       };
@@ -884,10 +886,10 @@ async function computeDevelopmentAgentAssetsSha256ForTest(
   cliBundlePath: string,
 ): Promise<string> {
   const hash = createHash("sha256");
-  hash.update("bundle:zcode.cjs\n");
+  hash.update("bundle:raspberrycode.cjs\n");
   hash.update(await readFile(cliBundlePath));
   for (const packageName of OFFICIAL_PLUGIN_PACKAGE_NAMES) {
-    const packageRoot = join(repoDir, "apps", "zcode-cli", "packages", packageName);
+    const packageRoot = join(repoDir, "apps", "raspberrycode-cli", "packages", packageName);
     hash.update(`plugin:${packageName}\n`);
     for (const topLevelPath of OFFICIAL_PLUGIN_INCLUDED_TOP_LEVEL_PATHS) {
       const sourcePath = join(packageRoot, topLevelPath);
@@ -900,7 +902,7 @@ async function computeDevelopmentAgentAssetsSha256ForTest(
   }
   await hashLocalPathForTest(
     hash,
-    join(repoDir, "apps/zcode-cli/packages/bundled-skills"),
+    join(repoDir, "apps/raspberrycode-cli/packages/bundled-skills"),
     "bundled-skills",
   );
   return hash.digest("hex");
@@ -988,7 +990,7 @@ async function computePathContentSha256(path: string): Promise<string> {
 }
 
 function toVersionedArtifactRequestPath(artifactPath: string): string {
-  return `/${ZCODE_VERSION}/${artifactPath}`;
+  return `/${RASPBERRYCODE_VERSION}/${artifactPath}`;
 }
 
 function toComponentArtifactRequestPath(artifactPath: string): string {
@@ -1058,41 +1060,41 @@ async function createStaticFileServer(
 
 const tempDirs: string[] = [];
 const originalCwd = process.cwd();
-const originalRemoteDevAgentBundleEnv = process.env.ZCODE_REMOTE_DEV_AGENT_BUNDLE;
-const originalZCodeRuntimeEnv = process.env[ZCODE_RUNTIME_ENV_KEY];
+const originalRemoteDevAgentBundleEnv = process.env.RASPBERRYCODE_REMOTE_DEV_AGENT_BUNDLE;
+const originalRaspberryCodeRuntimeEnv = process.env[RASPBERRYCODE_RUNTIME_ENV_KEY];
 const DEV_CLI_BUNDLE_TEST_SUFFIX = join(
   "apps",
-  "zcode-cli",
+  "raspberrycode-cli",
   "packages",
   "cli",
   "dist",
-  "zcode.cjs",
+  "raspberrycode.cjs",
 );
 
 afterEach(async () => {
   process.chdir(originalCwd);
   if (originalRemoteDevAgentBundleEnv === undefined) {
-    delete process.env.ZCODE_REMOTE_DEV_AGENT_BUNDLE;
+    delete process.env.RASPBERRYCODE_REMOTE_DEV_AGENT_BUNDLE;
   } else {
-    process.env.ZCODE_REMOTE_DEV_AGENT_BUNDLE = originalRemoteDevAgentBundleEnv;
+    process.env.RASPBERRYCODE_REMOTE_DEV_AGENT_BUNDLE = originalRemoteDevAgentBundleEnv;
   }
-  if (originalZCodeRuntimeEnv === undefined) {
-    delete process.env[ZCODE_RUNTIME_ENV_KEY];
+  if (originalRaspberryCodeRuntimeEnv === undefined) {
+    delete process.env[RASPBERRYCODE_RUNTIME_ENV_KEY];
   } else {
-    process.env[ZCODE_RUNTIME_ENV_KEY] = originalZCodeRuntimeEnv;
+    process.env[RASPBERRYCODE_RUNTIME_ENV_KEY] = originalRaspberryCodeRuntimeEnv;
   }
   await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { force: true, recursive: true })));
 });
 
 describe("deployServer legacy agent node-script bundle deployment", () => {
   it("调用方已串行化部署时不创建远端 install-root lock", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
     const mockCdnDir = join(rootDir, "mock-cdn");
     await stageRemoteRuntimeRelease(mockCdnDir);
     const manifest = await stageRemoteComponentArtifacts(mockCdnDir, join(mockCdnDir, "releases"));
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
-    addMatchingGlmAndServerArtifactIdentities(remoteFiles, manifest, "linux-arm64");
+    addMatchingAgentAndServerArtifactIdentities(remoteFiles, manifest, "linux-arm64");
     const backend = new FakeRemoteBackend(remoteFiles);
 
     const deployed = await deployServer(
@@ -1113,15 +1115,15 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   });
 
   it("rechecks the server version after acquiring the install-root lock", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
     const mockCdnDir = join(rootDir, "mock-cdn");
     await stageRemoteRuntimeRelease(mockCdnDir);
     const manifest = await stageRemoteComponentArtifacts(mockCdnDir, join(mockCdnDir, "releases"));
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
-    addMatchingGlmAndServerArtifactIdentities(remoteFiles, manifest, "linux-arm64");
+    addMatchingAgentAndServerArtifactIdentities(remoteFiles, manifest, "linux-arm64");
     const backend = new FakeRemoteBackend(remoteFiles, {
-      serverVersions: ["previous-version", ZCODE_VERSION],
+      serverVersions: ["previous-version", RASPBERRYCODE_VERSION],
     });
 
     const deployed = await deployServer(
@@ -1133,12 +1135,12 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     expect(deployed).toBe(false);
     expect(backend.commands.filter((command) => command.endsWith("--version"))).toHaveLength(2);
     expect(backend.commands.join("\n")).toContain(".deploy.lock.holder-");
-    expect(backend.lockReleaseMarkers[0]).toMatch(/^zcode-deploy-lock-release:/u);
+    expect(backend.lockReleaseMarkers[0]).toMatch(/^raspberrycode-deploy-lock-release:/u);
     expect(backend.uploads).toEqual([]);
   });
 
   it("waits for the install-root lock before pinning the deployment manifest", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
     const mockCdnDir = join(rootDir, "mock-cdn");
     const cdnRoot = join(rootDir, "cdn");
@@ -1146,14 +1148,14 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     await stageRemoteRuntimeRelease(mockCdnDir);
     const manifest = await stageRemoteComponentArtifacts(mockCdnDir, cdnRoot);
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
-    addMatchingGlmAndServerArtifactIdentities(remoteFiles, manifest, "linux-arm64");
+    addMatchingAgentAndServerArtifactIdentities(remoteFiles, manifest, "linux-arm64");
     let releaseLockAcquire!: () => void;
     const lockAcquireGate = new Promise<void>((resolve) => {
       releaseLockAcquire = resolve;
     });
     const backend = new FakeRemoteBackend(remoteFiles, { lockAcquireGate });
     const cdnServer = await createStaticFileServer(cdnRoot);
-    const manifestPath = `/${ZCODE_VERSION}/manifest-linux-arm64.json`;
+    const manifestPath = `/${RASPBERRYCODE_VERSION}/manifest-linux-arm64.json`;
 
     try {
       const deployPromise = deployServer(
@@ -1179,7 +1181,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   });
 
   it("部署与 lock release 同时失败时应保留两个错误", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
     const backend = new FakeRemoteBackend({}, { lockCloseCode: 91 });
 
@@ -1203,8 +1205,8 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
 
   it("node-runtime 已安装语义版本时应忽略 expectedVersion 的内容 hash 后缀", async () => {
     const backend = new FakeRemoteBackend({
-      "~/.zcode/server/node": "node",
-      "~/.zcode/server/.asset-components/node-runtime.json":
+      "~/.raspberrycode/server/node": "node",
+      "~/.raspberrycode/server/.asset-components/node-runtime.json":
         '{"id":"node-runtime","version":"v22.16.0+aaaaaaaaaaaa","platformArch":"linux-arm64"}\n',
     });
     const installed: string[] = [];
@@ -1232,7 +1234,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   });
 
   it("server 版本相同但远端缺少 node-pty 时应补传", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
     const mockCdnDir = join(rootDir, "mock-cdn");
     await stageRemoteRuntimeRelease(mockCdnDir);
@@ -1249,13 +1251,13 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     );
 
     expect(deployed).toBe(false);
-    expect(hasUploadForStagingTarget(backend, "~/.zcode/server/build/Release/pty.node.new")).toBe(
+    expect(hasUploadForStagingTarget(backend, "~/.raspberrycode/server/build/Release/pty.node.new")).toBe(
       true,
     );
   });
 
   it("server 版本相同但远端主 server 缺少 sync channel 时应补传主 server", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
     const mockCdnDir = join(rootDir, "mock-cdn");
     await stageRemoteRuntimeRelease(mockCdnDir);
@@ -1279,17 +1281,17 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     );
 
     expect(deployed).toBe(true);
-    expect(hasUploadForStagingTarget(backend, "~/.zcode/server/zcode-server.cjs.new")).toBe(true);
+    expect(hasUploadForStagingTarget(backend, "~/.raspberrycode/server/raspberrycode-server.cjs.new")).toBe(true);
     expect(backend.commands.join("\n")).toContain("skill-sync");
     expect(backend.commands.join("\n")).toContain("mcp-sync");
     expect(backend.commands.join("\n")).toContain("plugin-sync");
     expect(backend.commands.join("\n")).toContain("exportMarketplaceSourceArchive");
     expect(backend.commands.join("\n")).toContain("importMarketplaceSourceArchive");
-    expect(backend.commands.join("\n")).toContain("__zcode_rpc_nested_uint8array_v1");
+    expect(backend.commands.join("\n")).toContain("__raspberrycode_rpc_nested_uint8array_v1");
   });
 
   it("忽略历史资源包选择并部署完整默认远端资源", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
     const mockCdnDir = join(rootDir, "mock-cdn");
     await stageRemoteRuntimeRelease(mockCdnDir);
@@ -1309,7 +1311,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     );
 
     expect(deployed).toBe(false);
-    expect(hasUploadForStagingTarget(backend, "~/.zcode/server/agents/glm/zcode.cjs.new")).toBe(
+    expect(hasUploadForStagingTarget(backend, "~/.raspberrycode/server/agents/agent/raspberrycode.cjs.new")).toBe(
       true,
     );
     expect(
@@ -1317,21 +1319,21 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
         upload.remotePath.includes(`/${retiredProtocolPrefix}/codex`),
       ),
     ).toBe(false);
-    expect(hasUploadForStagingTarget(backend, "~/.zcode/server/build/Release/pty.node.new")).toBe(
+    expect(hasUploadForStagingTarget(backend, "~/.raspberrycode/server/build/Release/pty.node.new")).toBe(
       true,
     );
     expect(
       backend.uploads.some(
-        (upload) => upload.remotePath === `~/.zcode/server/${retiredProxyRuntimeId}.tar.gz`,
+        (upload) => upload.remotePath === `~/.raspberrycode/server/${retiredProxyRuntimeId}.tar.gz`,
       ),
     ).toBe(false);
-    expect(hasUploadForStagingTarget(backend, "~/.zcode/server/tools/bfs/bfs.new")).toBe(true);
-    expect(hasUploadForStagingTarget(backend, "~/.zcode/server/tools/ripgrep/rg.new")).toBe(true);
-    expect(hasUploadForStagingTarget(backend, "~/.zcode/server/tools/ugrep/ugrep.new")).toBe(true);
+    expect(hasUploadForStagingTarget(backend, "~/.raspberrycode/server/tools/bfs/bfs.new")).toBe(true);
+    expect(hasUploadForStagingTarget(backend, "~/.raspberrycode/server/tools/ripgrep/rg.new")).toBe(true);
+    expect(hasUploadForStagingTarget(backend, "~/.raspberrycode/server/tools/ugrep/ugrep.new")).toBe(true);
   });
 
   it("darwin server 版本相同但远端缺少 spawn-helper 时应补传", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
     const mockCdnDir = join(rootDir, "mock-cdn");
     await stageRemoteRuntimeRelease(mockCdnDir, {
@@ -1352,13 +1354,13 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
 
     expect(deployed).toBe(false);
     expect(
-      hasUploadForStagingTarget(backend, "~/.zcode/server/build/Release/spawn-helper.new"),
+      hasUploadForStagingTarget(backend, "~/.raspberrycode/server/build/Release/spawn-helper.new"),
     ).toBe(true);
     expect(
-      backend.uploads.some((upload) => upload.remotePath.includes("~/.zcode/server/tools/bfs/")),
+      backend.uploads.some((upload) => upload.remotePath.includes("~/.raspberrycode/server/tools/bfs/")),
     ).toBe(false);
     expect(
-      backend.uploads.some((upload) => upload.remotePath.includes("~/.zcode/server/tools/ugrep/")),
+      backend.uploads.some((upload) => upload.remotePath.includes("~/.raspberrycode/server/tools/ugrep/")),
     ).toBe(false);
   });
 
@@ -1384,7 +1386,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       },
     };
 
-    await deployZCodeAgentRuntime(
+    await deployRaspberryCodeAgentRuntime(
       backend,
       { platform: "linux", arch: "arm64" },
       {
@@ -1394,30 +1396,30 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       { log: () => undefined, logWarn: () => undefined },
     );
 
-    expect(installedFiles).toEqual(["glm:~/.zcode/server/agents/glm/zcode.cjs"]);
+    expect(installedFiles).toEqual(["agent:~/.raspberrycode/server/agents/agent/raspberrycode.cjs"]);
     expect(installedDirectories).toEqual([
       {
         componentId: "agent",
-        remoteDir: "~/.zcode/server/agents/glm/packages",
-        sourceRelativePath: "glm/linux-arm64/packages",
+        remoteDir: "~/.raspberrycode/server/agents/agent/packages",
+        sourceRelativePath: "agent/linux-arm64/packages",
       },
     ]);
     expect(
       backend.uploads.some(
-        (upload) => upload.remotePath === "~/.zcode/server/agents/glm/zcode-agent.new",
+        (upload) => upload.remotePath === "~/.raspberrycode/server/agents/agent/raspberrycode-agent.new",
       ),
     ).toBe(false);
 
     expect(
       backend.commands.some(
         (command) =>
-          command.includes(`/.zcode/server/agents/${retiredProtocolPrefix}/.version`) &&
+          command.includes(`/.raspberrycode/server/agents/${retiredProtocolPrefix}/.version`) &&
           command.includes(LEGACY_REMOTE_TEST_AGENT_RUNTIME.claude.version),
       ),
     ).toBe(false);
   });
 
-  it("强制部署 RaspberryCode Agent 时应要求 installer 刷新 glm 缓存", async () => {
+  it("强制部署 RaspberryCode Agent 时应要求 installer 刷新 agent 缓存", async () => {
     const backend = new FakeRemoteBackend();
     const installRequests: Array<{
       componentId: string;
@@ -1434,7 +1436,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       },
     };
 
-    await deployZCodeAgentRuntime(
+    await deployRaspberryCodeAgentRuntime(
       backend,
       { platform: "linux", arch: "arm64" },
       {
@@ -1465,7 +1467,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       },
     };
 
-    await deployZCodeAgentRuntime(
+    await deployRaspberryCodeAgentRuntime(
       backend,
       { platform: "linux", arch: "arm64" },
       {
@@ -1475,11 +1477,13 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       { log: () => undefined, logWarn: () => undefined },
     );
 
-    const wrapperTempPath = `~/.zcode/server/agents/glm/${REMOTE_AGENT_WRAPPER_FILE_NAME}.new`;
+    const wrapperTempPath = `~/.raspberrycode/server/agents/agent/${REMOTE_AGENT_WRAPPER_FILE_NAME}.new`;
     expect(backend.uploads.map((upload) => upload.remotePath)).toContain(wrapperTempPath);
-    expect(backend.remoteFiles.get(wrapperTempPath)).toBe(buildRemoteAgentBundleWrapper("agent"));
+    expect(backend.remoteFiles.get(wrapperTempPath)).toBe(
+      buildRemoteAgentBundleWrapper("agent", "~/.raspberrycode/server"),
+    );
     expect(backend.remoteFiles.get(wrapperTempPath)).toContain('"$runtime_root/node"');
-    expect(installedDirectories).toEqual(["glm:~/.zcode/server/agents/glm/packages"]);
+    expect(installedDirectories).toEqual(["agent:~/.raspberrycode/server/agents/agent/packages"]);
     expect(
       backend.commands.some(
         (command) =>
@@ -1490,8 +1494,8 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
 
   it("WSL 已有坏 wrapper 时即使版本匹配也应重写", async () => {
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
-    remoteFiles[`~/.zcode/server/agents/glm/${REMOTE_AGENT_WRAPPER_FILE_NAME}`] =
-      '#!/bin/sh\nset -eu\nruntime_root="/home/dev/.zcode/server"\nexec "/node" "/home/dev/.zcode/server/agents/glm/zcode.cjs" ""\n';
+    remoteFiles[`~/.raspberrycode/server/agents/agent/${REMOTE_AGENT_WRAPPER_FILE_NAME}`] =
+      '#!/bin/sh\nset -eu\nruntime_root="/home/dev/.raspberrycode/server"\nexec "/node" "/home/dev/.raspberrycode/server/agents/agent/raspberrycode.cjs" ""\n';
     const backend = new FakeWslRemoteBackend(remoteFiles);
     const installedFiles: string[] = [];
     const installedDirectories: string[] = [];
@@ -1505,7 +1509,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       },
     };
 
-    await deployZCodeAgentRuntime(
+    await deployRaspberryCodeAgentRuntime(
       backend,
       { platform: "linux", arch: "arm64" },
       {
@@ -1515,19 +1519,19 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       { log: () => undefined, logWarn: () => undefined },
     );
 
-    expect(installedFiles).toEqual(["glm:~/.zcode/server/agents/glm/zcode.cjs"]);
+    expect(installedFiles).toEqual(["agent:~/.raspberrycode/server/agents/agent/raspberrycode.cjs"]);
     expect(backend.uploads.map((upload) => upload.remotePath)).toContain(
-      `~/.zcode/server/agents/glm/${REMOTE_AGENT_WRAPPER_FILE_NAME}.new`,
+      `~/.raspberrycode/server/agents/agent/${REMOTE_AGENT_WRAPPER_FILE_NAME}.new`,
     );
-    expect(installedDirectories).toEqual(["glm:~/.zcode/server/agents/glm/packages"]);
+    expect(installedDirectories).toEqual(["agent:~/.raspberrycode/server/agents/agent/packages"]);
   });
 
   it("RaspberryCode Agent 版本匹配但远端缺 builtin plugin 资产时应复用 cache 补部署 packages", async () => {
-    const remoteOfficialPluginDir = "~/.zcode/server/agents/glm/packages";
+    const remoteOfficialPluginDir = "~/.raspberrycode/server/agents/agent/packages";
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
     remoteFiles[remoteOfficialPluginDir] = "directory marker";
     delete remoteFiles[
-      "~/.zcode/server/agents/glm/packages/skill-creator-plugin/.zcode-plugin/plugin.json"
+      "~/.raspberrycode/server/agents/agent/packages/skill-creator-plugin/.raspberrycode-plugin/plugin.json"
     ];
     // SSH / Docker backend 的 exists 契约只检查普通文件，目录即使存在也会返回 false。
     const backend = new FakeFileOnlyExistsRemoteBackend(remoteFiles, [remoteOfficialPluginDir]);
@@ -1558,7 +1562,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       },
     };
 
-    await deployZCodeAgentRuntime(
+    await deployRaspberryCodeAgentRuntime(
       backend,
       { platform: "linux", arch: "arm64" },
       {
@@ -1573,30 +1577,30 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
         componentId: "agent",
         forceRefresh: false,
         kind: "file",
-        remotePath: "~/.zcode/server/agents/glm/zcode.cjs",
+        remotePath: "~/.raspberrycode/server/agents/agent/raspberrycode.cjs",
       },
       {
         componentId: "agent",
         forceRefresh: false,
         kind: "directory",
-        remoteDir: "~/.zcode/server/agents/glm/packages",
+        remoteDir: "~/.raspberrycode/server/agents/agent/packages",
       },
     ]);
     const permissionRepairCommand = backend.commands.find((command) =>
       command.includes("command chmod -R u+rwX"),
     );
     expect(permissionRepairCommand).toEqual(expect.stringContaining("if [ -d "));
-    expect(permissionRepairCommand).toContain("/.zcode/server/agents/glm/packages");
-    expect(permissionRepairCommand).not.toContain("/.zcode/plugins");
+    expect(permissionRepairCommand).toContain("/.raspberrycode/server/agents/agent/packages");
+    expect(permissionRepairCommand).not.toContain("/.raspberrycode/plugins");
   });
 
-  it("GLM 制品 hash 和 builtin plugin 资产都匹配时不应修复权限", async () => {
+  it("Agent 制品 hash 和 builtin plugin 资产都匹配时不应修复权限", async () => {
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
-    remoteFiles["~/.zcode/server/agents/glm/.version"] = "旧版本标签\n";
-    remoteFiles["~/.zcode/server/.asset-components/glm.json"] = JSON.stringify({
+    remoteFiles["~/.raspberrycode/server/agents/agent/.version"] = "旧版本标签\n";
+    remoteFiles["~/.raspberrycode/server/.asset-components/agent.json"] = JSON.stringify({
       id: "agent",
       version: "旧版本标签",
-      sha256: TEST_GLM_ARTIFACT_SHA256,
+      sha256: TEST_Agent_ARTIFACT_SHA256,
       platformArch: "linux-arm64",
     });
     const backend = new FakeRemoteBackend(remoteFiles);
@@ -1604,7 +1608,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const installer: RemoteAssetInstaller = {
       mode: "remote-download",
       async resolveComponentSha256() {
-        return TEST_GLM_ARTIFACT_SHA256;
+        return TEST_Agent_ARTIFACT_SHA256;
       },
       async installFile({ componentId, remotePath }) {
         installRequests.push(`${componentId}:file:${remotePath}`);
@@ -1614,7 +1618,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       },
     };
 
-    await deployZCodeAgentRuntime(
+    await deployRaspberryCodeAgentRuntime(
       backend,
       { platform: "linux", arch: "arm64" },
       {
@@ -1630,11 +1634,11 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     );
   });
 
-  it("GLM 版本相同但制品 hash 变化时应重新部署并修复旧目录权限", async () => {
+  it("Agent 版本相同但制品 hash 变化时应重新部署并修复旧目录权限", async () => {
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
-    remoteFiles["~/.zcode/server/.asset-components/glm.json"] = JSON.stringify({
+    remoteFiles["~/.raspberrycode/server/.asset-components/agent.json"] = JSON.stringify({
       id: "agent",
-      version: ZCODE_AGENT_RUNTIME.version,
+      version: RASPBERRYCODE_AGENT_RUNTIME.version,
       sha256: "b".repeat(64),
       platformArch: "linux-arm64",
     });
@@ -1649,7 +1653,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const installer: RemoteAssetInstaller = {
       mode: "remote-download",
       async resolveComponentSha256() {
-        return TEST_GLM_ARTIFACT_SHA256;
+        return TEST_Agent_ARTIFACT_SHA256;
       },
       async installFile({ componentId, forceRefresh, remotePath }) {
         installRequests.push({
@@ -1672,7 +1676,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       },
     };
 
-    await deployZCodeAgentRuntime(
+    await deployRaspberryCodeAgentRuntime(
       backend,
       { platform: "linux", arch: "arm64" },
       {
@@ -1687,27 +1691,27 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     );
     expect(permissionRepairCommandIndex).toBeGreaterThanOrEqual(0);
     expect(backend.commands[permissionRepairCommandIndex]).toContain(
-      "/.zcode/server/agents/glm/packages",
+      "/.raspberrycode/server/agents/agent/packages",
     );
     expect(installRequests).toEqual([
       {
         componentId: "agent",
         forceRefresh: false,
         kind: "file",
-        remotePath: "~/.zcode/server/agents/glm/zcode.cjs",
+        remotePath: "~/.raspberrycode/server/agents/agent/raspberrycode.cjs",
       },
       {
         componentId: "agent",
         forceRefresh: false,
         kind: "directory",
-        remoteDir: "~/.zcode/server/agents/glm/packages",
+        remoteDir: "~/.raspberrycode/server/agents/agent/packages",
       },
     ]);
   });
 
   it("RaspberryCode Agent 升级时权限修复失败仍应尝试替换 packages", async () => {
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
-    remoteFiles["~/.zcode/server/agents/glm/.version"] = "3.3.3\n";
+    remoteFiles["~/.raspberrycode/server/agents/agent/.version"] = "3.3.3\n";
     const backend = new FakeRemoteBackend(remoteFiles, {
       commandPlans: [
         {
@@ -1729,7 +1733,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     };
     const warnings: string[] = [];
 
-    await deployZCodeAgentRuntime(
+    await deployRaspberryCodeAgentRuntime(
       backend,
       { platform: "linux", arch: "arm64" },
       {
@@ -1743,14 +1747,14 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       true,
     );
     expect(installRequests).toEqual([
-      "glm:directory:~/.zcode/server/agents/glm/packages",
-      "glm:file:~/.zcode/server/agents/glm/zcode.cjs",
+      "agent:directory:~/.raspberrycode/server/agents/agent/packages",
+      "agent:file:~/.raspberrycode/server/agents/agent/raspberrycode.cjs",
     ]);
   });
 
   it("RaspberryCode Agent 升级时 chmod 失败后 packages 替换失败不应继续更新 bundle", async () => {
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
-    remoteFiles["~/.zcode/server/agents/glm/.version"] = "3.3.3\n";
+    remoteFiles["~/.raspberrycode/server/agents/agent/.version"] = "3.3.3\n";
     const backend = new FakeRemoteBackend(remoteFiles, {
       commandPlans: [
         {
@@ -1773,7 +1777,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     };
 
     await expect(
-      deployZCodeAgentRuntime(
+      deployRaspberryCodeAgentRuntime(
         backend,
         { platform: "linux", arch: "arm64" },
         {
@@ -1784,7 +1788,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       ),
     ).rejects.toThrow("packages replace failed");
 
-    expect(installRequests).toEqual(["glm:directory:~/.zcode/server/agents/glm/packages"]);
+    expect(installRequests).toEqual(["agent:directory:~/.raspberrycode/server/agents/agent/packages"]);
   });
 
   it("开发态官方插件资产必须包含 Browser client、effective docs 与 document judge agent", () => {
@@ -1814,25 +1818,25 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     "bundled-skills/skills/dynamic-workflows/patterns.md",
     "bundled-skills/skills/dynamic-workflows/examples.md",
   ])("开发态缺少 %s 时应在上传前拒绝残缺资源", async (missingAsset) => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-dev-agent-missing-browser-client-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-dev-agent-missing-browser-client-"));
     tempDirs.push(rootDir);
-    const repoDir = join(rootDir, "z-code");
+    const repoDir = join(rootDir, "demo");
     const cliBundlePath = join(
       repoDir,
       "apps",
-      "zcode-cli",
+      "raspberrycode-cli",
       "packages",
       "cli",
       "dist",
-      "zcode.cjs",
+      "raspberrycode.cjs",
     );
     await mkdir(dirname(cliBundlePath), { recursive: true });
-    await writeFile(cliBundlePath, "console.log('dev zcode agent');\n", "utf8");
+    await writeFile(cliBundlePath, "console.log('dev raspberrycode agent');\n", "utf8");
     await writeTestOfficialPluginPackages(repoDir);
-    await rm(join(repoDir, "apps/zcode-cli/packages", missingAsset));
+    await rm(join(repoDir, "apps/raspberrycode-cli/packages", missingAsset));
     process.chdir(repoDir);
-    process.env.ZCODE_REMOTE_DEV_AGENT_BUNDLE = "1";
-    process.env[ZCODE_RUNTIME_ENV_KEY] = "development";
+    process.env.RASPBERRYCODE_REMOTE_DEV_AGENT_BUNDLE = "1";
+    process.env[RASPBERRYCODE_RUNTIME_ENV_KEY] = "development";
 
     const backend = new FakeRemoteBackend();
     const installer: RemoteAssetInstaller = {
@@ -1846,7 +1850,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     };
 
     await expect(
-      deployZCodeAgentRuntime(
+      deployRaspberryCodeAgentRuntime(
         backend,
         { platform: "linux", arch: "arm64" },
         {
@@ -1860,25 +1864,25 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     expect(backend.uploads).toEqual([]);
   });
 
-  it("开发态 SSH 部署应上传本地 zcode.cjs 并生成远端 wrapper", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-dev-agent-"));
+  it("开发态 SSH 部署应上传本地 raspberrycode.cjs 并生成远端 wrapper", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-dev-agent-"));
     tempDirs.push(rootDir);
-    const repoDir = join(rootDir, "z-code");
+    const repoDir = join(rootDir, "demo");
     const cliBundlePath = join(
       repoDir,
       "apps",
-      "zcode-cli",
+      "raspberrycode-cli",
       "packages",
       "cli",
       "dist",
-      "zcode.cjs",
+      "raspberrycode.cjs",
     );
     await mkdir(dirname(cliBundlePath), { recursive: true });
-    await writeFile(cliBundlePath, "console.log('dev zcode agent');\n", "utf8");
+    await writeFile(cliBundlePath, "console.log('dev raspberrycode agent');\n", "utf8");
     await writeTestOfficialPluginPackages(repoDir);
     process.chdir(repoDir);
-    process.env.ZCODE_REMOTE_DEV_AGENT_BUNDLE = "1";
-    process.env[ZCODE_RUNTIME_ENV_KEY] = "development";
+    process.env.RASPBERRYCODE_REMOTE_DEV_AGENT_BUNDLE = "1";
+    process.env[RASPBERRYCODE_RUNTIME_ENV_KEY] = "development";
 
     const backend = new FakeRemoteBackend();
     let archiveContents = "";
@@ -1892,7 +1896,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const installer: RemoteAssetInstaller = {
       mode: "remote-download",
       async resolveComponentVersion() {
-        return "cdn-glm-version";
+        return "cdn-agent-version";
       },
       async installFile({ componentId, remotePath }) {
         installedFiles.push(`${componentId}:${remotePath}`);
@@ -1902,7 +1906,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       },
     };
 
-    await deployZCodeAgentRuntime(
+    await deployRaspberryCodeAgentRuntime(
       backend,
       { platform: "linux", arch: "arm64" },
       {
@@ -1920,28 +1924,28 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     expect(installedFiles).toEqual([]);
     const devBundleUpload = backend.uploads.find(
       (upload) =>
-        upload.remotePath === "~/.zcode/server/agents/glm/zcode.cjs.new" ||
-        upload.remotePath.startsWith("~/.zcode/server/agents/glm/zcode.cjs.new-"),
+        upload.remotePath === "~/.raspberrycode/server/agents/agent/raspberrycode.cjs.new" ||
+        upload.remotePath.startsWith("~/.raspberrycode/server/agents/agent/raspberrycode.cjs.new-"),
     );
     expect(devBundleUpload?.localPath.endsWith(DEV_CLI_BUNDLE_TEST_SUFFIX)).toBe(true);
     expect(
       backend.commands.some(
-        (command) => command.includes("zcode-agent.new") && command.includes("zcode.cjs"),
+        (command) => command.includes("raspberrycode-agent.new") && command.includes("raspberrycode.cjs"),
       ),
     ).toBe(true);
     expect(backend.commands.some((command) => command.includes(".dev-version"))).toBe(true);
     const officialPluginUpload = backend.uploads.find((upload) =>
-      upload.remotePath.includes("/agents/glm/packages.tar.gz-"),
+      upload.remotePath.includes("/agents/agent/packages.tar.gz-"),
     );
     expect(officialPluginUpload?.remotePath).toMatch(
-      /^~\/.zcode\/server\/agents\/glm\/packages\.tar\.gz-[\w-]+$/u,
+      /^~\/.raspberrycode\/server\/agents\/agent\/packages\.tar\.gz-[\w-]+$/u,
     );
     expect(
       backend.commands.some(
         (command) =>
           command.includes("tar -xzf") &&
           command.includes("packages.tar.gz") &&
-          command.includes("agents/glm/packages.extract-") &&
+          command.includes("agents/agent/packages.extract-") &&
           command.includes("trap cleanup_staging EXIT"),
       ),
     ).toBe(true);
@@ -1952,7 +1956,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       (command) =>
         command.includes("tar -xzf") &&
         command.includes("packages.tar.gz") &&
-        command.includes("agents/glm/packages"),
+        command.includes("agents/agent/packages"),
     );
     expect(permissionRepairCommandIndex).toBeGreaterThanOrEqual(0);
     expect(permissionRepairCommandIndex).toBeLessThan(packageExtractCommandIndex);
@@ -1963,37 +1967,37 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     async (scenario) => {
       const bundleMatches = scenario !== "bundle-changed";
       const reuse = scenario === "matching";
-      const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-dev-agent-skip-"));
+      const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-dev-agent-skip-"));
       tempDirs.push(rootDir);
-      const repoDir = join(rootDir, "z-code");
+      const repoDir = join(rootDir, "demo");
       const cliBundlePath = join(
         repoDir,
         "apps",
-        "zcode-cli",
+        "raspberrycode-cli",
         "packages",
         "cli",
         "dist",
-        "zcode.cjs",
+        "raspberrycode.cjs",
       );
       await mkdir(dirname(cliBundlePath), { recursive: true });
-      await writeFile(cliBundlePath, "console.log('same dev zcode agent');\n", "utf8");
+      await writeFile(cliBundlePath, "console.log('same dev raspberrycode agent');\n", "utf8");
       await writeTestOfficialPluginPackages(repoDir);
       process.chdir(repoDir);
-      process.env.ZCODE_REMOTE_DEV_AGENT_BUNDLE = "1";
-      process.env[ZCODE_RUNTIME_ENV_KEY] = "development";
+      process.env.RASPBERRYCODE_REMOTE_DEV_AGENT_BUNDLE = "1";
+      process.env[RASPBERRYCODE_RUNTIME_ENV_KEY] = "development";
 
       const devVersion = await computeDevelopmentAgentAssetsSha256ForTest(repoDir, cliBundlePath);
       const backend = new FakeRemoteBackend(
         {
-          "~/.zcode/server/agents/glm/.version": `${ZCODE_AGENT_RUNTIME.version}\n`,
-          "~/.zcode/server/agents/glm/.dev-version": `${devVersion}\n`,
-          "~/.zcode/server/agents/glm/zcode-agent": "dev wrapper",
-          "~/.zcode/server/agents/glm/zcode.cjs": bundleMatches
-            ? "console.log('same dev zcode agent');\n"
+          "~/.raspberrycode/server/agents/agent/.version": `${RASPBERRYCODE_AGENT_RUNTIME.version}\n`,
+          "~/.raspberrycode/server/agents/agent/.dev-version": `${devVersion}\n`,
+          "~/.raspberrycode/server/agents/agent/raspberrycode-agent": "dev wrapper",
+          "~/.raspberrycode/server/agents/agent/raspberrycode.cjs": bundleMatches
+            ? "console.log('same dev raspberrycode agent');\n"
             : "old published bundle without PAT support",
           ...Object.fromEntries(
             OFFICIAL_PLUGIN_REQUIRED_RELATIVE_PATHS.map((relativePath) => [
-              `~/.zcode/server/agents/glm/packages/${relativePath}`,
+              `~/.raspberrycode/server/agents/agent/packages/${relativePath}`,
               `dev official plugin ${relativePath}`,
             ]),
           ),
@@ -2002,13 +2006,13 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       );
       if (scenario === "remote-skill-missing")
         backend.remoteFiles.delete(
-          "~/.zcode/server/agents/glm/packages/bundled-skills/skills/dynamic-workflows/examples.md",
+          "~/.raspberrycode/server/agents/agent/packages/bundled-skills/skills/dynamic-workflows/examples.md",
         );
       if (scenario === "skill-changed")
         await writeFile(
           join(
             repoDir,
-            "apps/zcode-cli/packages/bundled-skills/skills/dynamic-workflows/examples.md",
+            "apps/raspberrycode-cli/packages/bundled-skills/skills/dynamic-workflows/examples.md",
           ),
           "updated examples",
         );
@@ -2016,7 +2020,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       const installer: RemoteAssetInstaller = {
         mode: "remote-download",
         async resolveComponentVersion() {
-          return "cdn-glm-version";
+          return "cdn-agent-version";
         },
         async installFile({ componentId, remotePath }) {
           installedFiles.push(`${componentId}:${remotePath}`);
@@ -2026,7 +2030,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
         },
       };
 
-      await deployZCodeAgentRuntime(
+      await deployRaspberryCodeAgentRuntime(
         backend,
         { platform: "linux", arch: "arm64" },
         {
@@ -2038,7 +2042,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       );
 
       expect(installedFiles).toEqual([]);
-      expect(backend.uploads.some((upload) => upload.remotePath.endsWith("zcode.cjs.new"))).toBe(
+      expect(backend.uploads.some((upload) => upload.remotePath.endsWith("raspberrycode.cjs.new"))).toBe(
         !reuse,
       );
       expect(backend.commands.some((command) => command.includes("command chmod -R u+rwX"))).toBe(
@@ -2048,7 +2052,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   );
 
   it("darwin 远端强制部署时应上传 node-pty 的 spawn-helper", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
     const mockCdnDir = join(rootDir, "mock-cdn");
     await stageRemoteRuntimeRelease(mockCdnDir, {
@@ -2068,12 +2072,12 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     );
 
     expect(
-      hasUploadForStagingTarget(backend, "~/.zcode/server/build/Release/spawn-helper.new"),
+      hasUploadForStagingTarget(backend, "~/.raspberrycode/server/build/Release/spawn-helper.new"),
     ).toBe(true);
   });
 
   it("远端覆盖替换应绕过 shell alias/function 并强制覆盖", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
     const mockCdnDir = join(rootDir, "mock-cdn");
     await stageRemoteRuntimeRelease(mockCdnDir);
@@ -2112,7 +2116,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       return;
     }
 
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-replace-cmd-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-replace-cmd-"));
     tempDirs.push(rootDir);
     const sourcePath = join(rootDir, "node.new");
     const targetPath = join(rootDir, "node");
@@ -2143,7 +2147,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   });
 
   it("远端 replace 命令非 0 退出时应立即中断部署", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
     const mockCdnDir = join(rootDir, "mock-cdn");
     await stageRemoteRuntimeRelease(mockCdnDir);
@@ -2153,7 +2157,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       {
         commandPlans: [
           {
-            matcher: /command mv -f .*zcode-server\.cjs/,
+            matcher: /command mv -f .*raspberrycode-server\.cjs/,
             exitCode: 23,
             stderrText: "mock mv failed",
           },
@@ -2171,12 +2175,12 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
         },
       ),
     ).rejects.toThrow(/exit code 23/);
-    expect(backend.lockReleaseMarkers[0]).toMatch(/^zcode-deploy-lock-release:/u);
+    expect(backend.lockReleaseMarkers[0]).toMatch(/^raspberrycode-deploy-lock-release:/u);
   });
 
   it("生产态未接入 CDN 下载占位时应抛出明确错误", async () => {
     const backend = new FakeRemoteBackend({
-      "~/.zcode/server/agents/codex/.version": "0.0.0\n",
+      "~/.raspberrycode/server/agents/codex/.version": "0.0.0\n",
     });
 
     await expect(
@@ -2185,7 +2189,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
         { platform: "linux", arch: "arm64" },
         {
           force: false,
-          remoteCacheDir: "/tmp/zcode-remote-cache",
+          remoteCacheDir: "/tmp/raspberrycode-remote-cache",
         },
       ),
     ).rejects.toThrow(
@@ -2195,7 +2199,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
 
   it("生产态 remoteCdnBaseUrl 固定到旧版本时应前置报错", async () => {
     const backend = new FakeRemoteBackend({
-      "~/.zcode/server/agents/codex/.version": "0.0.0\n",
+      "~/.raspberrycode/server/agents/codex/.version": "0.0.0\n",
     });
 
     await expect(
@@ -2205,15 +2209,15 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
         {
           force: false,
           remoteCdnBaseUrl:
-            "https://cdn.example.com/zcode/electron/releases-sandbox/fix-small-issues/0.2.7",
-          remoteCacheDir: "/tmp/zcode-remote-cache",
+            "https://cdn.example.com/raspberrycode/electron/releases-sandbox/fix-small-issues/0.2.7",
+          remoteCacheDir: "/tmp/raspberrycode-remote-cache",
         },
       ),
     ).rejects.toThrow(/remoteCdnBaseUrl 版本不匹配/);
   });
 
   it("生产态 manifest 存在时应优先下载组件产物并写入 cache（不走 legacy 整包）", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -2223,13 +2227,13 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const manifest = await stageRemoteComponentArtifacts(mockCdnDir, cdnRoot);
     await stageRemoteAssetArchive(mockCdnDir, cdnRoot);
     const cdnServer = await createStaticFileServer(cdnRoot);
-    const glmBundle = manifest.components.find((component) => component.id === "agent");
-    if (!glmBundle) {
-      throw new Error("missing glm component in staged manifest");
+    const agentBundle = manifest.components.find((component) => component.id === "agent");
+    if (!agentBundle) {
+      throw new Error("missing agent component in staged manifest");
     }
     try {
       const remoteFiles = {
-        "~/.zcode/server/agents/codex/.version": "0.0.0\n",
+        "~/.raspberrycode/server/agents/codex/.version": "0.0.0\n",
       };
       addMatchingServerBundleArtifactIdentity(remoteFiles, manifest, "linux-arm64");
       const backend = new FakeRemoteBackend(remoteFiles);
@@ -2247,21 +2251,21 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       );
 
       expect(deployed).toBe(false);
-      expect(hasUploadForStagingTarget(backend, "~/.zcode/server/agents/glm/zcode.cjs.new")).toBe(
+      expect(hasUploadForStagingTarget(backend, "~/.raspberrycode/server/agents/agent/raspberrycode.cjs.new")).toBe(
         true,
       );
       expect(
         backend.uploads.some(
-          (upload) => upload.remotePath === "~/.zcode/server/agents/codex.tar.gz",
+          (upload) => upload.remotePath === "~/.raspberrycode/server/agents/codex.tar.gz",
         ),
       ).toBe(false);
-      expect(hasUploadForStagingTarget(backend, "~/.zcode/server/tools/ripgrep/rg.new")).toBe(true);
-      expect(cdnServer.getRequestCount(`/${ZCODE_VERSION}/manifest-linux-arm64.json`)).toBe(1);
-      expect(cdnServer.getRequestCount(`/${ZCODE_VERSION}/remote-assets-linux-arm64.tar.gz`)).toBe(
+      expect(hasUploadForStagingTarget(backend, "~/.raspberrycode/server/tools/ripgrep/rg.new")).toBe(true);
+      expect(cdnServer.getRequestCount(`/${RASPBERRYCODE_VERSION}/manifest-linux-arm64.json`)).toBe(1);
+      expect(cdnServer.getRequestCount(`/${RASPBERRYCODE_VERSION}/remote-assets-linux-arm64.tar.gz`)).toBe(
         0,
       );
       expect(
-        cdnServer.getRequestCount(toComponentArtifactRequestPath(glmBundle.artifactPath)),
+        cdnServer.getRequestCount(toComponentArtifactRequestPath(agentBundle.artifactPath)),
       ).toBe(1);
     } finally {
       await cdnServer.close();
@@ -2269,7 +2273,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   });
 
   it("本地下载后上传通过注入的远程资源网络出口获取 manifest 和组件", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -2302,16 +2306,16 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       expect(directFetch).not.toHaveBeenCalled();
       expect(
         remoteAssetFetch.mock.calls.some(([input]) =>
-          String(input).endsWith(`/${ZCODE_VERSION}/manifest-linux-arm64.json`),
+          String(input).endsWith(`/${RASPBERRYCODE_VERSION}/manifest-linux-arm64.json`),
         ),
       ).toBe(true);
-      const glmComponent = findManifestComponent(manifest, "agent");
+      const agentComponent = findManifestComponent(manifest, "agent");
       expect(
         remoteAssetFetch.mock.calls.some(([input]) =>
-          String(input).endsWith(`/${glmComponent.artifactPath}`),
+          String(input).endsWith(`/${agentComponent.artifactPath}`),
         ),
       ).toBe(true);
-      expect(hasUploadForStagingTarget(backend, "~/.zcode/server/agents/glm/zcode.cjs.new")).toBe(
+      expect(hasUploadForStagingTarget(backend, "~/.raspberrycode/server/agents/agent/raspberrycode.cjs.new")).toBe(
         true,
       );
     } finally {
@@ -2321,7 +2325,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   });
 
   it("远程资源网络出口失败时不回退 global fetch", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
     const directFetch = vi
       .spyOn(globalThis, "fetch")
@@ -2337,7 +2341,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
             remoteAssetNetwork: { fetch: remoteAssetFetch },
             remoteCdnBaseUrl: "https://remote-assets.example.test",
             remoteCacheDir: join(rootDir, "remote-cache"),
-            version: ZCODE_VERSION,
+            version: RASPBERRYCODE_VERSION,
             platformArch: "linux-arm64",
             componentIds: ["agent"],
           },
@@ -2352,7 +2356,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   });
 
   it("mock-cdn 版本目录存在但缺目标平台组件时应回退 CDN cache", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -2386,21 +2390,21 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       );
 
       const nodeUpload = backend.uploads.find((upload) =>
-        upload.remotePath.startsWith("~/.zcode/server/node.new-"),
+        upload.remotePath.startsWith("~/.raspberrycode/server/node.new-"),
       );
       expect(deployed).toBe(true);
       expect(nodeUpload?.localPath).toContain(remoteCacheDir);
       expect(nodeUpload?.localPath).not.toContain(mockCdnDir);
       expect(
-        cdnServer.getRequestCount(`/${ZCODE_VERSION}/manifest-linux-x64.json`),
+        cdnServer.getRequestCount(`/${RASPBERRYCODE_VERSION}/manifest-linux-x64.json`),
       ).toBeGreaterThan(0);
     } finally {
       await cdnServer.close();
     }
   });
 
-  it("mock manifest 存在但 GLM 文件缺失时应使用 CDN SHA 决策与部署", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+  it("mock manifest 存在但 Agent 文件缺失时应使用 CDN SHA 决策与部署", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
     const mockCdnDir = join(rootDir, "mock-cdn");
     const cdnSourceDir = join(rootDir, "cdn-source");
@@ -2413,18 +2417,18 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     );
     await stageRemoteRuntimeRelease(cdnSourceDir);
     await writeFile(
-      join(cdnSourceDir, "releases", ZCODE_VERSION, "agent", "linux-arm64", "zcode.cjs"),
-      "new CDN GLM bytes under the same semantic version",
+      join(cdnSourceDir, "releases", RASPBERRYCODE_VERSION, "agent", "linux-arm64", "raspberrycode.cjs"),
+      "new CDN Agent bytes under the same semantic version",
       "utf8",
     );
     const cdnManifest = await stageRemoteComponentArtifacts(cdnSourceDir, cdnRoot);
-    const mockGlm = mockManifest.components.find((component) => component.id === "agent");
-    const cdnGlm = cdnManifest.components.find((component) => component.id === "agent");
-    expect(cdnGlm?.version).toBe(mockGlm?.version);
-    expect(cdnGlm?.sha256).not.toBe(mockGlm?.sha256);
-    await rm(join(mockCdnDir, "releases", ZCODE_VERSION, "agent", "linux-arm64", "zcode.cjs"));
+    const mockAgent = mockManifest.components.find((component) => component.id === "agent");
+    const cdnAgent = cdnManifest.components.find((component) => component.id === "agent");
+    expect(cdnAgent?.version).toBe(mockAgent?.version);
+    expect(cdnAgent?.sha256).not.toBe(mockAgent?.sha256);
+    await rm(join(mockCdnDir, "releases", RASPBERRYCODE_VERSION, "agent", "linux-arm64", "raspberrycode.cjs"));
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
-    addMatchingGlmArtifactIdentity(remoteFiles, mockManifest, "linux-arm64");
+    addMatchingAgentArtifactIdentity(remoteFiles, mockManifest, "linux-arm64");
     const backend = new FakeRemoteBackend(remoteFiles);
     const cdnServer = await createStaticFileServer(cdnRoot);
 
@@ -2439,17 +2443,17 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
         },
       );
 
-      expect(hasUploadForStagingTarget(backend, "~/.zcode/server/agents/glm/zcode.cjs.new")).toBe(
+      expect(hasUploadForStagingTarget(backend, "~/.raspberrycode/server/agents/agent/raspberrycode.cjs.new")).toBe(
         true,
       );
-      expect(backend.commands.join("\n")).toContain(cdnGlm?.sha256);
+      expect(backend.commands.join("\n")).toContain(cdnAgent?.sha256);
     } finally {
       await cdnServer.close();
     }
   });
 
-  it("本地上传的 GLM hash 变化时不应复用完整的旧语义版本 cache", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+  it("本地上传的 Agent hash 变化时不应复用完整的旧语义版本 cache", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -2466,21 +2470,21 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
         ),
       }),
     });
-    const glmComponent = manifest.components.find((component) => component.id === "agent");
-    if (!glmComponent) {
-      throw new Error("missing glm component in staged manifest");
+    const agentComponent = manifest.components.find((component) => component.id === "agent");
+    if (!agentComponent) {
+      throw new Error("missing agent component in staged manifest");
     }
-    const glmSemanticVersion = glmComponent.version.replace(/\+[a-f0-9]{12,64}$/u, "");
+    const agentSemanticVersion = agentComponent.version.replace(/\+[a-f0-9]{12,64}$/u, "");
     const staleComponentDir = join(
       remoteCacheDir,
       "components",
       "agent",
       "linux-arm64",
-      glmSemanticVersion,
+      agentSemanticVersion,
     );
     await mkdir(staleComponentDir, { recursive: true });
     await writeFile(join(staleComponentDir, ".ready"), "ready\n", "utf8");
-    await writeFile(join(staleComponentDir, "zcode.cjs"), "stale glm bundle");
+    await writeFile(join(staleComponentDir, "raspberrycode.cjs"), "stale agent bundle");
     for (const relativePath of OFFICIAL_PLUGIN_REQUIRED_RELATIVE_PATHS) {
       const stalePluginPath = join(staleComponentDir, "packages", ...relativePath.split("/"));
       await mkdir(dirname(stalePluginPath), { recursive: true });
@@ -2490,7 +2494,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
     addMatchingServerBundleArtifactIdentity(remoteFiles, manifest, "linux-arm64");
     delete remoteFiles[
-      "~/.zcode/server/agents/glm/packages/skill-creator-plugin/.zcode-plugin/plugin.json"
+      "~/.raspberrycode/server/agents/agent/packages/skill-creator-plugin/.raspberrycode-plugin/plugin.json"
     ];
     const cdnServer = await createStaticFileServer(cdnRoot);
 
@@ -2510,11 +2514,11 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       expect(deployed).toBe(false);
       expect(
         backend.uploads.some((upload) =>
-          upload.remotePath.startsWith("~/.zcode/server/agents/glm/packages.tar.gz-"),
+          upload.remotePath.startsWith("~/.raspberrycode/server/agents/agent/packages.tar.gz-"),
         ),
       ).toBe(true);
       expect(
-        cdnServer.getRequestCount(toComponentArtifactRequestPath(glmComponent.artifactPath)),
+        cdnServer.getRequestCount(toComponentArtifactRequestPath(agentComponent.artifactPath)),
       ).toBe(1);
       await expect(
         readFile(
@@ -2523,17 +2527,17 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
             "components",
             "agent",
             "linux-arm64",
-            glmComponent.sha256,
+            agentComponent.sha256,
             "packages",
             "skill-creator-plugin",
-            ".zcode-plugin",
+            ".raspberrycode-plugin",
             "plugin.json",
           ),
           "utf8",
         ),
-      ).resolves.toContain("glm official plugin");
-      await expect(readFile(join(staleComponentDir, "zcode.cjs"), "utf8")).resolves.toBe(
-        "stale glm bundle",
+      ).resolves.toContain("agent official plugin");
+      await expect(readFile(join(staleComponentDir, "raspberrycode.cjs"), "utf8")).resolves.toBe(
+        "stale agent bundle",
       );
     } finally {
       await cdnServer.close();
@@ -2541,7 +2545,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   });
 
   it("并发预热复用 release 锁后仍应按当前 required paths 补齐残缺 component cache", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -2558,23 +2562,23 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
         ),
       }),
     });
-    const glmComponent = manifest.components.find((component) => component.id === "agent");
-    if (!glmComponent) {
-      throw new Error("missing glm component in staged manifest");
+    const agentComponent = manifest.components.find((component) => component.id === "agent");
+    if (!agentComponent) {
+      throw new Error("missing agent component in staged manifest");
     }
-    const glmSemanticVersion = glmComponent.version.replace(/\+[a-f0-9]{12,64}$/u, "");
+    const agentSemanticVersion = agentComponent.version.replace(/\+[a-f0-9]{12,64}$/u, "");
     const staleComponentDir = join(
       remoteCacheDir,
       "components",
       "agent",
       "linux-arm64",
-      glmSemanticVersion,
+      agentSemanticVersion,
     );
     await mkdir(staleComponentDir, { recursive: true });
     await writeFile(join(staleComponentDir, ".ready"), "ready\n", "utf8");
-    await writeFile(join(staleComponentDir, "zcode.cjs"), "stale glm bundle");
+    await writeFile(join(staleComponentDir, "raspberrycode.cjs"), "stale agent bundle");
     const requiredReleasePath =
-      "glm/linux-arm64/packages/skill-creator-plugin/.zcode-plugin/plugin.json";
+      "agent/linux-arm64/packages/skill-creator-plugin/.raspberrycode-plugin/plugin.json";
     const cdnServer = await createStaticFileServer(cdnRoot);
 
     try {
@@ -2583,7 +2587,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
           {
             remoteCdnBaseUrl: cdnServer.baseUrl,
             remoteCacheDir,
-            version: ZCODE_VERSION,
+            version: RASPBERRYCODE_VERSION,
             platformArch: "linux-arm64",
             componentIds: ["agent"],
           },
@@ -2593,7 +2597,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
           {
             remoteCdnBaseUrl: cdnServer.baseUrl,
             remoteCacheDir,
-            version: ZCODE_VERSION,
+            version: RASPBERRYCODE_VERSION,
             platformArch: "linux-arm64",
             componentIds: ["agent"],
             requiredReleasePaths: [requiredReleasePath],
@@ -2605,9 +2609,9 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       expect(releaseDirWithRequired).toBe(releaseDirWithoutRequired);
       await expect(
         readFile(join(releaseDirWithRequired, requiredReleasePath), "utf8"),
-      ).resolves.toContain("glm official plugin");
+      ).resolves.toContain("agent official plugin");
       expect(
-        cdnServer.getRequestCount(toComponentArtifactRequestPath(glmComponent.artifactPath)),
+        cdnServer.getRequestCount(toComponentArtifactRequestPath(agentComponent.artifactPath)),
       ).toBe(1);
     } finally {
       await cdnServer.close();
@@ -2615,7 +2619,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   });
 
   it("node-runtime manifest version 带内容 hash 时，远端已安装语义版本应继续跳过", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -2636,12 +2640,12 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
 
     try {
       const remoteFiles = {
-        "~/.zcode/server/version.txt": `${ZCODE_VERSION}\n`,
-        "~/.zcode/server/node": "node",
-        "~/.zcode/server/.asset-components/node-runtime.json":
+        "~/.raspberrycode/server/version.txt": `${RASPBERRYCODE_VERSION}\n`,
+        "~/.raspberrycode/server/node": "node",
+        "~/.raspberrycode/server/.asset-components/node-runtime.json":
           '{"id":"node-runtime","version":"24.10.0-node-runtime","platformArch":"linux-arm64"}\n',
-        "~/.zcode/server/build/Release/pty.node": "pty",
-        "~/.zcode/server/.asset-components/node-pty.json":
+        "~/.raspberrycode/server/build/Release/pty.node": "pty",
+        "~/.raspberrycode/server/.asset-components/node-pty.json":
           '{"id":"node-pty","version":"1.0.0-node-pty","platformArch":"linux-arm64"}\n',
       };
       addMatchingServerBundleArtifactIdentity(remoteFiles, manifest, "linux-arm64");
@@ -2668,7 +2672,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   });
 
   it("ssh remote-download mode installs server assets without local uploads", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -2683,7 +2687,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
           Object.entries(LEGACY_REMOTE_TEST_AGENT_RUNTIME)
             .filter(([, runtime]) => runtime.binaryKind === "node-script")
             .map(([provider, runtime]) => [
-              `~/.zcode/server/agents/${runtime.bundledResourceDir}/.bundle-meta.json`,
+              `~/.raspberrycode/server/agents/${runtime.bundledResourceDir}/.bundle-meta.json`,
               JSON.stringify({
                 provider,
                 version: runtime.version,
@@ -2717,14 +2721,14 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       expect(backend.uploads).toEqual([]);
       expect(backend.commands.some((command) => command.includes("curl -fL"))).toBe(true);
       expect(backend.commands.some((command) => command.includes("sha256sum"))).toBe(true);
-      expect(cdnServer.getRequestCount(`/${ZCODE_VERSION}/manifest-linux-arm64.json`)).toBe(1);
+      expect(cdnServer.getRequestCount(`/${RASPBERRYCODE_VERSION}/manifest-linux-arm64.json`)).toBe(1);
     } finally {
       await cdnServer.close();
     }
   });
 
   it("生产态 manifest 初次 404 后同进程重试应重新探测 manifest", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -2739,7 +2743,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
           {
             remoteCdnBaseUrl: cdnServer.baseUrl,
             remoteCacheDir,
-            version: ZCODE_VERSION,
+            version: RASPBERRYCODE_VERSION,
             platformArch: "linux-arm64",
           },
           { log: () => {}, logWarn: () => {} },
@@ -2753,9 +2757,9 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       if (!serverBundle) {
         throw new Error("missing server-bundle component in staged manifest");
       }
-      const glm = manifest.components.find((component) => component.id === "agent");
-      if (!glm) {
-        throw new Error("missing glm component in staged manifest");
+      const agent = manifest.components.find((component) => component.id === "agent");
+      if (!agent) {
+        throw new Error("missing agent component in staged manifest");
       }
 
       await expect(
@@ -2763,15 +2767,22 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
           {
             remoteCdnBaseUrl: cdnServer.baseUrl,
             remoteCacheDir,
-            version: ZCODE_VERSION,
+            version: RASPBERRYCODE_VERSION,
             platformArch: "linux-arm64",
           },
           { log: () => {}, logWarn: () => {} },
         ),
       ).resolves.toBe(
-        join(remoteCacheDir, "releases", ZCODE_VERSION, "linux-arm64", "glm-content", glm.sha256),
+        join(
+          remoteCacheDir,
+          "releases",
+          RASPBERRYCODE_VERSION,
+          "linux-arm64",
+          "agent-content",
+          agent.sha256,
+        ),
       );
-      expect(cdnServer.getRequestCount(`/${ZCODE_VERSION}/manifest-linux-arm64.json`)).toBe(2);
+      expect(cdnServer.getRequestCount(`/${RASPBERRYCODE_VERSION}/manifest-linux-arm64.json`)).toBe(2);
       expect(
         cdnServer.getRequestCount(toVersionedArtifactRequestPath(serverBundle.artifactPath)),
       ).toBe(0);
@@ -2784,7 +2795,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   });
 
   it("生产态 remoteCdnBaseUrl 已固定版本时组件应从跨版本 components 根下载", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -2797,26 +2808,33 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     if (!serverBundle) {
       throw new Error("missing server-bundle component in staged manifest");
     }
-    const glm = manifest.components.find((component) => component.id === "agent");
-    if (!glm) {
-      throw new Error("missing glm component in staged manifest");
+    const agent = manifest.components.find((component) => component.id === "agent");
+    if (!agent) {
+      throw new Error("missing agent component in staged manifest");
     }
 
     try {
       await expect(
         ensureRemoteReleaseDirFromCdn(
           {
-            remoteCdnBaseUrl: `${cdnServer.baseUrl}/${ZCODE_VERSION}`,
+            remoteCdnBaseUrl: `${cdnServer.baseUrl}/${RASPBERRYCODE_VERSION}`,
             remoteCacheDir,
-            version: ZCODE_VERSION,
+            version: RASPBERRYCODE_VERSION,
             platformArch: "linux-arm64",
           },
           { log: () => {}, logWarn: () => {} },
         ),
       ).resolves.toBe(
-        join(remoteCacheDir, "releases", ZCODE_VERSION, "linux-arm64", "glm-content", glm.sha256),
+        join(
+          remoteCacheDir,
+          "releases",
+          RASPBERRYCODE_VERSION,
+          "linux-arm64",
+          "agent-content",
+          agent.sha256,
+        ),
       );
-      expect(cdnServer.getRequestCount(`/${ZCODE_VERSION}/manifest-linux-arm64.json`)).toBe(1);
+      expect(cdnServer.getRequestCount(`/${RASPBERRYCODE_VERSION}/manifest-linux-arm64.json`)).toBe(1);
       expect(
         cdnServer.getRequestCount(toVersionedArtifactRequestPath(serverBundle.artifactPath)),
       ).toBe(0);
@@ -2829,7 +2847,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   });
 
   it("生产态主 CDN 缺失组件时应回退到备选 CDN 下载组件", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -2838,9 +2856,9 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const remoteCacheDir = join(rootDir, "remote-cache");
     await stageRemoteRuntimeRelease(mockCdnDir);
     const backupManifest = await stageRemoteComponentArtifacts(mockCdnDir, backupCdnRoot);
-    await mkdir(join(primaryCdnRoot, ZCODE_VERSION), { recursive: true });
+    await mkdir(join(primaryCdnRoot, RASPBERRYCODE_VERSION), { recursive: true });
     await writeFile(
-      join(primaryCdnRoot, ZCODE_VERSION, "manifest-linux-arm64.json"),
+      join(primaryCdnRoot, RASPBERRYCODE_VERSION, "manifest-linux-arm64.json"),
       JSON.stringify(backupManifest, null, 2),
       "utf8",
     );
@@ -2853,7 +2871,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
 
     try {
       const remoteFiles = {
-        "~/.zcode/server/agents/codex/.version": "0.0.0\n",
+        "~/.raspberrycode/server/agents/codex/.version": "0.0.0\n",
       };
       addMatchingServerBundleArtifactIdentity(remoteFiles, backupManifest, "linux-arm64");
       const backend = new FakeRemoteBackend(remoteFiles);
@@ -2871,10 +2889,10 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       );
 
       expect(deployed).toBe(false);
-      expect(primaryCdnServer.getRequestCount(`/${ZCODE_VERSION}/manifest-linux-arm64.json`)).toBe(
+      expect(primaryCdnServer.getRequestCount(`/${RASPBERRYCODE_VERSION}/manifest-linux-arm64.json`)).toBe(
         1,
       );
-      expect(backupCdnServer.getRequestCount(`/${ZCODE_VERSION}/manifest-linux-arm64.json`)).toBe(
+      expect(backupCdnServer.getRequestCount(`/${RASPBERRYCODE_VERSION}/manifest-linux-arm64.json`)).toBe(
         0,
       );
       expect(
@@ -2894,10 +2912,10 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
         backupCdnServer.getRequestCount(toComponentArtifactRequestPath(ripgrepBundle.artifactPath)),
       ).toBe(1);
       expect(
-        primaryCdnServer.getRequestCount(`/${ZCODE_VERSION}/remote-assets-linux-arm64.tar.gz`),
+        primaryCdnServer.getRequestCount(`/${RASPBERRYCODE_VERSION}/remote-assets-linux-arm64.tar.gz`),
       ).toBe(0);
       expect(
-        backupCdnServer.getRequestCount(`/${ZCODE_VERSION}/remote-assets-linux-arm64.tar.gz`),
+        backupCdnServer.getRequestCount(`/${RASPBERRYCODE_VERSION}/remote-assets-linux-arm64.tar.gz`),
       ).toBe(0);
     } finally {
       await primaryCdnServer.close();
@@ -2905,8 +2923,8 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     }
   });
 
-  it("manifest 命中备 CDN 时应优先从同一 CDN 下载 GLM 制品", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+  it("manifest 命中备 CDN 时应优先从同一 CDN 下载 Agent 制品", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -2915,15 +2933,15 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const remoteCacheDir = join(rootDir, "remote-cache");
     await stageRemoteRuntimeRelease(mockCdnDir);
     const backupManifest = await stageRemoteComponentArtifacts(mockCdnDir, backupCdnRoot);
-    const glm = backupManifest.components.find((component) => component.id === "agent");
-    if (!glm) {
-      throw new Error("missing glm component in staged manifest");
+    const agent = backupManifest.components.find((component) => component.id === "agent");
+    if (!agent) {
+      throw new Error("missing agent component in staged manifest");
     }
-    await mkdir(dirname(join(primaryCdnRoot, glm.artifactPath)), {
+    await mkdir(dirname(join(primaryCdnRoot, agent.artifactPath)), {
       recursive: true,
     });
     await writeFile(
-      join(primaryCdnRoot, glm.artifactPath),
+      join(primaryCdnRoot, agent.artifactPath),
       "stale primary CDN bytes with a checksum mismatch",
       "utf8",
     );
@@ -2941,14 +2959,14 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
         },
       );
 
-      expect(hasUploadForStagingTarget(backend, "~/.zcode/server/agents/glm/zcode.cjs.new")).toBe(
+      expect(hasUploadForStagingTarget(backend, "~/.raspberrycode/server/agents/agent/raspberrycode.cjs.new")).toBe(
         true,
       );
       expect(
-        primaryCdnServer.getRequestCount(toComponentArtifactRequestPath(glm.artifactPath)),
+        primaryCdnServer.getRequestCount(toComponentArtifactRequestPath(agent.artifactPath)),
       ).toBe(0);
       expect(
-        backupCdnServer.getRequestCount(toComponentArtifactRequestPath(glm.artifactPath)),
+        backupCdnServer.getRequestCount(toComponentArtifactRequestPath(agent.artifactPath)),
       ).toBe(1);
     } finally {
       await primaryCdnServer.close();
@@ -2957,7 +2975,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   });
 
   it("生产态 manifest 缺失时不应再回退 legacy remote-assets 归档", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -2980,7 +2998,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       await expect(
         deployServer(
           new FakeRemoteBackend({
-            "~/.zcode/server/agents/codex/.version": "0.0.0\n",
+            "~/.raspberrycode/server/agents/codex/.version": "0.0.0\n",
           }),
           { platform: "linux", arch: "arm64" },
           {
@@ -2990,21 +3008,21 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
           },
         ),
       ).rejects.toThrow(/manifest not found/u);
-      expect(cdnServer.getRequestCount(`/${ZCODE_VERSION}/manifest-linux-arm64.json`)).toBe(1);
+      expect(cdnServer.getRequestCount(`/${RASPBERRYCODE_VERSION}/manifest-linux-arm64.json`)).toBe(1);
       expect(
         cdnServer.getRequestCount(toVersionedArtifactRequestPath(serverBundle.artifactPath)),
       ).toBe(0);
-      expect(cdnServer.getRequestCount(`/${ZCODE_VERSION}/remote-assets-linux-arm64.tar.gz`)).toBe(
+      expect(cdnServer.getRequestCount(`/${RASPBERRYCODE_VERSION}/remote-assets-linux-arm64.tar.gz`)).toBe(
         0,
       );
-      expect(cdnServer.getRequestCount(`/${ZCODE_VERSION}/remote-assets.tar.gz`)).toBe(0);
+      expect(cdnServer.getRequestCount(`/${RASPBERRYCODE_VERSION}/remote-assets.tar.gz`)).toBe(0);
     } finally {
       await cdnServer.close();
     }
   });
 
   it("生产态 cache 命中时不应重复下载组件产物", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -3021,7 +3039,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     try {
       await deployServer(
         new FakeRemoteBackend({
-          "~/.zcode/server/agents/codex/.version": "0.0.0\n",
+          "~/.raspberrycode/server/agents/codex/.version": "0.0.0\n",
         }),
         { platform: "linux", arch: "arm64" },
         {
@@ -3035,7 +3053,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       );
       await deployServer(
         new FakeRemoteBackend({
-          "~/.zcode/server/agents/codex/.version": "0.0.0\n",
+          "~/.raspberrycode/server/agents/codex/.version": "0.0.0\n",
         }),
         { platform: "linux", arch: "arm64" },
         {
@@ -3059,8 +3077,8 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     }
   });
 
-  it("生产态主 server 过期时应同时刷新 glm bundle", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+  it("生产态主 server 过期时应同时刷新 agent bundle", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -3074,12 +3092,12 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       const backend = new FakeRemoteBackend(
         {
           ...createFullyDeployedRemoteFiles("linux-arm64"),
-          "~/.zcode/server/.asset-components/node-runtime.json": createRemoteAssetComponentMeta(
+          "~/.raspberrycode/server/.asset-components/node-runtime.json": createRemoteAssetComponentMeta(
             "node-runtime",
             findManifestComponent(manifest, "node-runtime").version,
             "linux-arm64",
           ),
-          "~/.zcode/server/.asset-components/node-pty.json": createRemoteAssetComponentMeta(
+          "~/.raspberrycode/server/.asset-components/node-pty.json": createRemoteAssetComponentMeta(
             "node-pty",
             findManifestComponent(manifest, "node-pty").version,
             "linux-arm64",
@@ -3103,12 +3121,12 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       expect(backend.uploads).toHaveLength(3);
       expect(backend.uploads.map((upload) => upload.remotePath)).toEqual(
         expect.arrayContaining([
-          expect.stringMatching(/^~\/.zcode\/server\/zcode-server\.cjs\.new-[\w-]+$/u),
-          expect.stringMatching(/^~\/.zcode\/server\/agents\/glm\/zcode\.cjs\.new-[\w-]+$/u),
-          expect.stringMatching(/^~\/.zcode\/server\/agents\/glm\/packages\.tar\.gz-[\w-]+$/u),
+          expect.stringMatching(/^~\/.raspberrycode\/server\/raspberrycode-server\.cjs\.new-[\w-]+$/u),
+          expect.stringMatching(/^~\/.raspberrycode\/server\/agents\/agent\/raspberrycode\.cjs\.new-[\w-]+$/u),
+          expect.stringMatching(/^~\/.raspberrycode\/server\/agents\/agent\/packages\.tar\.gz-[\w-]+$/u),
         ]),
       );
-      expect(cdnServer.getRequestCount(`/${ZCODE_VERSION}/manifest-linux-arm64.json`)).toBe(1);
+      expect(cdnServer.getRequestCount(`/${RASPBERRYCODE_VERSION}/manifest-linux-arm64.json`)).toBe(1);
       for (const componentId of ["server-bundle"]) {
         expect(
           cdnServer.getRequestCount(
@@ -3145,8 +3163,8 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     }
   });
 
-  it("local-download-upload 下 App 版本变化时即使 server-bundle 与 GLM SHA cache 命中也应重新下载上传", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+  it("local-download-upload 下 App 版本变化时即使 server-bundle 与 Agent SHA cache 命中也应重新下载上传", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -3156,7 +3174,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const manifest = await stageRemoteComponentArtifacts(mockCdnDir, cdnRoot);
     const cdnServer = await createStaticFileServer(cdnRoot);
     const serverBundle = findManifestComponent(manifest, "server-bundle");
-    const glm = findManifestComponent(manifest, "agent");
+    const agent = findManifestComponent(manifest, "agent");
 
     try {
       const warmCacheBackend = new FakeRemoteBackend(createFullyDeployedRemoteFiles("linux-arm64"));
@@ -3172,17 +3190,17 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       expect(
         cdnServer.getRequestCount(toComponentArtifactRequestPath(serverBundle.artifactPath)),
       ).toBe(1);
-      expect(cdnServer.getRequestCount(toComponentArtifactRequestPath(glm.artifactPath))).toBe(1);
+      expect(cdnServer.getRequestCount(toComponentArtifactRequestPath(agent.artifactPath))).toBe(1);
 
       const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
-      addMatchingGlmAndServerArtifactIdentities(remoteFiles, manifest, "linux-arm64");
-      remoteFiles["~/.zcode/server/.asset-components/node-runtime.json"] =
+      addMatchingAgentAndServerArtifactIdentities(remoteFiles, manifest, "linux-arm64");
+      remoteFiles["~/.raspberrycode/server/.asset-components/node-runtime.json"] =
         createRemoteAssetComponentMeta(
           "node-runtime",
           findManifestComponent(manifest, "node-runtime").version,
           "linux-arm64",
         );
-      remoteFiles["~/.zcode/server/.asset-components/node-pty.json"] =
+      remoteFiles["~/.raspberrycode/server/.asset-components/node-pty.json"] =
         createRemoteAssetComponentMeta(
           "node-pty",
           findManifestComponent(manifest, "node-pty").version,
@@ -3206,20 +3224,20 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       expect(
         cdnServer.getRequestCount(toComponentArtifactRequestPath(serverBundle.artifactPath)),
       ).toBe(2);
-      expect(cdnServer.getRequestCount(toComponentArtifactRequestPath(glm.artifactPath))).toBe(2);
-      expect(hasUploadForStagingTarget(backend, "~/.zcode/server/agents/glm/zcode.cjs.new")).toBe(
+      expect(cdnServer.getRequestCount(toComponentArtifactRequestPath(agent.artifactPath))).toBe(2);
+      expect(hasUploadForStagingTarget(backend, "~/.raspberrycode/server/agents/agent/raspberrycode.cjs.new")).toBe(
         true,
       );
-      expect(hasUploadForStagingTarget(backend, "~/.zcode/server/agents/glm/packages.tar.gz")).toBe(
-        true,
-      );
+      expect(
+        hasUploadForStagingTarget(backend, "~/.raspberrycode/server/agents/agent/packages.tar.gz"),
+      ).toBe(true);
     } finally {
       await cdnServer.close();
     }
   });
 
-  it("App 版本变化后 GLM 部署失败时下次连接应继续强制刷新 cache", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+  it("App 版本变化后 Agent 部署失败时下次连接应继续强制刷新 cache", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -3228,30 +3246,30 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     await stageRemoteRuntimeRelease(mockCdnDir);
     const manifest = await stageRemoteComponentArtifacts(mockCdnDir, cdnRoot);
     const cdnServer = await createStaticFileServer(cdnRoot);
-    const glm = findManifestComponent(manifest, "agent");
+    const agent = findManifestComponent(manifest, "agent");
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
-    addMatchingGlmAndServerArtifactIdentities(remoteFiles, manifest, "linux-arm64");
-    remoteFiles["~/.zcode/server/.asset-components/node-runtime.json"] =
+    addMatchingAgentAndServerArtifactIdentities(remoteFiles, manifest, "linux-arm64");
+    remoteFiles["~/.raspberrycode/server/.asset-components/node-runtime.json"] =
       createRemoteAssetComponentMeta(
         "node-runtime",
         findManifestComponent(manifest, "node-runtime").version,
         "linux-arm64",
       );
-    remoteFiles["~/.zcode/server/.asset-components/node-pty.json"] = createRemoteAssetComponentMeta(
+    remoteFiles["~/.raspberrycode/server/.asset-components/node-pty.json"] = createRemoteAssetComponentMeta(
       "node-pty",
       findManifestComponent(manifest, "node-pty").version,
       "linux-arm64",
     );
     let remoteServerVersion = "3.4.0-old-app";
-    let backend: FailFirstGlmUploadRemoteBackend;
-    backend = new FailFirstGlmUploadRemoteBackend(remoteFiles, {
+    let backend: FailFirstAgentUploadRemoteBackend;
+    backend = new FailFirstAgentUploadRemoteBackend(remoteFiles, {
       serverVersion: () => remoteServerVersion,
       commandPlans: [
         {
-          matcher: /command mv -f .*zcode-server\.cjs\.new.*zcode-server\.cjs/u,
+          matcher: /command mv -f .*raspberrycode-server\.cjs\.new.*raspberrycode-server\.cjs/u,
           exitCode: 0,
           onExec: () => {
-            remoteServerVersion = ZCODE_VERSION;
+            remoteServerVersion = RASPBERRYCODE_VERSION;
           },
         },
         {
@@ -3259,11 +3277,11 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
           exitCode: 0,
           onExec: () => {
             backend.remoteFiles.set(
-              "~/.zcode/server/.asset-components/glm.json",
+              "~/.raspberrycode/server/.asset-components/agent.json",
               JSON.stringify({
                 id: "agent",
                 platformArch: "linux-arm64",
-                pendingRefreshAppVersion: ZCODE_VERSION,
+                pendingRefreshAppVersion: RASPBERRYCODE_VERSION,
               }),
             );
           },
@@ -3282,18 +3300,18 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
             remoteCacheDir,
           },
         ),
-      ).rejects.toThrow("mock glm upload failed");
-      expect(remoteServerVersion).toBe(ZCODE_VERSION);
-      expect(backend.remoteFiles.get("~/.zcode/server/.asset-components/glm.json")).toContain(
+      ).rejects.toThrow("mock agent upload failed");
+      expect(remoteServerVersion).toBe(RASPBERRYCODE_VERSION);
+      expect(backend.remoteFiles.get("~/.raspberrycode/server/.asset-components/agent.json")).toContain(
         "pendingRefreshAppVersion",
       );
-      expect(cdnServer.getRequestCount(toComponentArtifactRequestPath(glm.artifactPath))).toBe(1);
+      expect(cdnServer.getRequestCount(toComponentArtifactRequestPath(agent.artifactPath))).toBe(1);
       const firstAttemptCommands = backend.commands.slice();
       const refreshPendingCommandIndex = firstAttemptCommands.findIndex((command) =>
         command.includes("pendingRefreshAppVersion"),
       );
       const serverReplaceCommandIndex = firstAttemptCommands.findIndex(
-        (command) => command.includes("command mv -f ") && command.includes("zcode-server.cjs.new"),
+        (command) => command.includes("command mv -f ") && command.includes("raspberrycode-server.cjs.new"),
       );
       expect(refreshPendingCommandIndex).toBeGreaterThanOrEqual(0);
       expect(serverReplaceCommandIndex).toBeGreaterThan(refreshPendingCommandIndex);
@@ -3301,7 +3319,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
         firstAttemptCommands.some(
           (command) =>
             !command.includes("pendingRefreshAppVersion") &&
-            command.includes(".asset-components/glm.json"),
+            command.includes(".asset-components/agent.json"),
         ),
       ).toBe(false);
 
@@ -3316,20 +3334,20 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       );
 
       expect(deployed).toBe(false);
-      expect(cdnServer.getRequestCount(toComponentArtifactRequestPath(glm.artifactPath))).toBe(2);
-      expect(hasUploadForStagingTarget(backend, "~/.zcode/server/agents/glm/zcode.cjs.new")).toBe(
+      expect(cdnServer.getRequestCount(toComponentArtifactRequestPath(agent.artifactPath))).toBe(2);
+      expect(hasUploadForStagingTarget(backend, "~/.raspberrycode/server/agents/agent/raspberrycode.cjs.new")).toBe(
         true,
       );
-      expect(hasUploadForStagingTarget(backend, "~/.zcode/server/agents/glm/packages.tar.gz")).toBe(
-        true,
-      );
+      expect(
+        hasUploadForStagingTarget(backend, "~/.raspberrycode/server/agents/agent/packages.tar.gz"),
+      ).toBe(true);
       expect(
         backend.commands
           .slice(firstAttemptCommands.length)
           .some(
             (command) =>
               !command.includes("pendingRefreshAppVersion") &&
-              command.includes(".asset-components/glm.json"),
+              command.includes(".asset-components/agent.json"),
           ),
       ).toBe(true);
     } finally {
@@ -3337,8 +3355,8 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     }
   });
 
-  it("remote-download 下 App 版本变化时即使 server-bundle 与 GLM SHA 匹配也应重新下载部署", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+  it("remote-download 下 App 版本变化时即使 server-bundle 与 Agent SHA 匹配也应重新下载部署", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -3347,20 +3365,20 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const manifest = await stageRemoteComponentArtifacts(mockCdnDir, cdnRoot);
     const cdnServer = await createStaticFileServer(cdnRoot);
     const serverBundle = findManifestComponent(manifest, "server-bundle");
-    const glm = findManifestComponent(manifest, "agent");
-    const serverBundleCacheDir = `~/.zcode/server/asset-cache/components/linux-arm64/server-bundle/${serverBundle.sha256}`;
-    const glmCacheDir = `~/.zcode/server/asset-cache/components/linux-arm64/glm/${glm.sha256}`;
+    const agent = findManifestComponent(manifest, "agent");
+    const serverBundleCacheDir = `~/.raspberrycode/server/asset-cache/components/linux-arm64/server-bundle/${serverBundle.sha256}`;
+    const agentCacheDir = `~/.raspberrycode/server/asset-cache/components/linux-arm64/agent/${agent.sha256}`;
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
-    addMatchingGlmAndServerArtifactIdentities(remoteFiles, manifest, "linux-arm64");
+    addMatchingAgentAndServerArtifactIdentities(remoteFiles, manifest, "linux-arm64");
     remoteFiles[`${serverBundleCacheDir}/.ready`] = "ready";
-    remoteFiles[`${glmCacheDir}/.ready`] = "ready";
-    remoteFiles["~/.zcode/server/.asset-components/node-runtime.json"] =
+    remoteFiles[`${agentCacheDir}/.ready`] = "ready";
+    remoteFiles["~/.raspberrycode/server/.asset-components/node-runtime.json"] =
       createRemoteAssetComponentMeta(
         "node-runtime",
         findManifestComponent(manifest, "node-runtime").version,
         "linux-arm64",
       );
-    remoteFiles["~/.zcode/server/.asset-components/node-pty.json"] = createRemoteAssetComponentMeta(
+    remoteFiles["~/.raspberrycode/server/.asset-components/node-pty.json"] = createRemoteAssetComponentMeta(
       "node-pty",
       findManifestComponent(manifest, "node-pty").version,
       "linux-arm64",
@@ -3395,31 +3413,31 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       expect(
         backend.commands.some((command) =>
           command.includes(
-            `rm -rf "$HOME"'/.zcode/server/asset-cache/components/linux-arm64/server-bundle/${serverBundle.sha256}'`,
+            `rm -rf "$HOME"'/.raspberrycode/server/asset-cache/components/linux-arm64/server-bundle/${serverBundle.sha256}'`,
           ),
         ),
       ).toBe(true);
-      expect(backend.commands.some((command) => command.includes(glm.artifactPath))).toBe(true);
-      expect(backend.commands.filter((command) => command.includes(glm.artifactPath))).toHaveLength(
-        1,
-      );
+      expect(backend.commands.some((command) => command.includes(agent.artifactPath))).toBe(true);
+      expect(
+        backend.commands.filter((command) => command.includes(agent.artifactPath)),
+      ).toHaveLength(1);
       expect(
         backend.commands.some((command) =>
           command.includes(
-            `rm -rf "$HOME"'/.zcode/server/asset-cache/components/linux-arm64/glm/${glm.sha256}'`,
+            `rm -rf "$HOME"'/.raspberrycode/server/asset-cache/components/linux-arm64/agent/${agent.sha256}'`,
           ),
         ),
       ).toBe(true);
       expect(
-        backend.commands.some((command) => command.includes(".asset-components/glm.json")),
+        backend.commands.some((command) => command.includes(".asset-components/agent.json")),
       ).toBe(true);
     } finally {
       await cdnServer.close();
     }
   });
 
-  it("remote-download 下 App 版本变化后中间部署失败时应在重试中继续强刷 GLM cache", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+  it("remote-download 下 App 版本变化后中间部署失败时应在重试中继续强刷 Agent cache", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -3428,15 +3446,15 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const manifest = await stageRemoteComponentArtifacts(mockCdnDir, cdnRoot);
     const cdnServer = await createStaticFileServer(cdnRoot);
     const serverBundle = findManifestComponent(manifest, "server-bundle");
-    const glm = findManifestComponent(manifest, "agent");
+    const agent = findManifestComponent(manifest, "agent");
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
-    addMatchingGlmAndServerArtifactIdentities(remoteFiles, manifest, "linux-arm64");
+    addMatchingAgentAndServerArtifactIdentities(remoteFiles, manifest, "linux-arm64");
     remoteFiles[
-      `~/.zcode/server/asset-cache/components/linux-arm64/server-bundle/${serverBundle.sha256}/.ready`
+      `~/.raspberrycode/server/asset-cache/components/linux-arm64/server-bundle/${serverBundle.sha256}/.ready`
     ] = "ready";
-    remoteFiles[`~/.zcode/server/asset-cache/components/linux-arm64/glm/${glm.sha256}/.ready`] =
+    remoteFiles[`~/.raspberrycode/server/asset-cache/components/linux-arm64/agent/${agent.sha256}/.ready`] =
       "ready";
-    remoteFiles["~/.zcode/server/.asset-components/node-runtime.json"] =
+    remoteFiles["~/.raspberrycode/server/.asset-components/node-runtime.json"] =
       createRemoteAssetComponentMeta(
         "node-runtime",
         findManifestComponent(manifest, "node-runtime").version,
@@ -3453,10 +3471,10 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
           stdoutText: "download=curl\ntar=tar\nsha256=sha256sum\n",
         },
         {
-          matcher: /command mv -f .*zcode-server\.cjs\.new.*zcode-server\.cjs/u,
+          matcher: /command mv -f .*raspberrycode-server\.cjs\.new.*raspberrycode-server\.cjs/u,
           exitCode: 0,
           onExec: () => {
-            remoteServerVersion = ZCODE_VERSION;
+            remoteServerVersion = RASPBERRYCODE_VERSION;
           },
         },
         {
@@ -3464,11 +3482,11 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
           exitCode: 0,
           onExec: () => {
             backend.remoteFiles.set(
-              "~/.zcode/server/.asset-components/glm.json",
+              "~/.raspberrycode/server/.asset-components/agent.json",
               JSON.stringify({
                 id: "agent",
                 platformArch: "linux-arm64",
-                pendingRefreshAppVersion: ZCODE_VERSION,
+                pendingRefreshAppVersion: RASPBERRYCODE_VERSION,
               }),
             );
           },
@@ -3487,8 +3505,8 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
           },
         ),
       ).rejects.toThrow("mock node-pty install failed");
-      expect(remoteServerVersion).toBe(ZCODE_VERSION);
-      expect(backend.commands.some((command) => command.includes(glm.artifactPath))).toBe(false);
+      expect(remoteServerVersion).toBe(RASPBERRYCODE_VERSION);
+      expect(backend.commands.some((command) => command.includes(agent.artifactPath))).toBe(false);
 
       const deployed = await deployServer(
         backend,
@@ -3500,13 +3518,13 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       );
 
       expect(deployed).toBe(false);
-      expect(backend.commands.filter((command) => command.includes(glm.artifactPath))).toHaveLength(
-        1,
-      );
+      expect(
+        backend.commands.filter((command) => command.includes(agent.artifactPath)),
+      ).toHaveLength(1);
       expect(
         backend.commands.some((command) =>
           command.includes(
-            `rm -rf "$HOME"'/.zcode/server/asset-cache/components/linux-arm64/glm/${glm.sha256}'`,
+            `rm -rf "$HOME"'/.raspberrycode/server/asset-cache/components/linux-arm64/agent/${agent.sha256}'`,
           ),
         ),
       ).toBe(true);
@@ -3516,7 +3534,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   });
 
   it("开发态 mock-cdn 有匹配组件版本时主 server 过期不应重传 node runtime", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -3531,7 +3549,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       const backend = new FakeRemoteBackend(
         {
           ...createFullyDeployedRemoteFiles("linux-arm64"),
-          "~/.zcode/server/.asset-components/node-runtime.json": createRemoteAssetComponentMeta(
+          "~/.raspberrycode/server/.asset-components/node-runtime.json": createRemoteAssetComponentMeta(
             "node-runtime",
             nodeRuntime.version,
             "linux-arm64",
@@ -3552,7 +3570,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       );
 
       expect(backend.uploads.map((upload) => upload.remotePath)).not.toContain(
-        "~/.zcode/server/node.new",
+        "~/.raspberrycode/server/node.new",
       );
       const warnLines = warnSpy.mock.calls.map((args) => args.map((arg) => String(arg)).join(" "));
       expect(
@@ -3568,7 +3586,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   });
 
   it("生产态主 server 过期但 node 版本不匹配时应记录原因并重传 node", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -3587,12 +3605,12 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       const backend = new FakeRemoteBackend(
         {
           ...createFullyDeployedRemoteFiles("linux-arm64"),
-          "~/.zcode/server/.asset-components/node-runtime.json": createRemoteAssetComponentMeta(
+          "~/.raspberrycode/server/.asset-components/node-runtime.json": createRemoteAssetComponentMeta(
             "node-runtime",
             "old-node-version",
             "linux-arm64",
           ),
-          "~/.zcode/server/.asset-components/node-pty.json": createRemoteAssetComponentMeta(
+          "~/.raspberrycode/server/.asset-components/node-pty.json": createRemoteAssetComponentMeta(
             "node-pty",
             "1.0.0-node-pty",
             "linux-arm64",
@@ -3613,7 +3631,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
         },
       );
 
-      expect(hasUploadForStagingTarget(backend, "~/.zcode/server/node.new")).toBe(true);
+      expect(hasUploadForStagingTarget(backend, "~/.raspberrycode/server/node.new")).toBe(true);
       expect(
         cdnServer.getRequestCount(toVersionedArtifactRequestPath(nodeRuntime.artifactPath)),
       ).toBe(0);
@@ -3637,13 +3655,13 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   });
 
   it("版本匹配但 runtime tool binary 缺失时应补传并记录原因", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
     const mockCdnDir = join(rootDir, "mock-cdn");
     await stageRemoteRuntimeRelease(mockCdnDir);
 
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
-    delete remoteFiles["~/.zcode/server/tools/ripgrep/rg"];
+    delete remoteFiles["~/.raspberrycode/server/tools/ripgrep/rg"];
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     try {
       const backend = new FakeRemoteBackend(remoteFiles);
@@ -3657,7 +3675,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
         },
       );
 
-      expect(hasUploadForStagingTarget(backend, "~/.zcode/server/tools/ripgrep/rg.new")).toBe(true);
+      expect(hasUploadForStagingTarget(backend, "~/.raspberrycode/server/tools/ripgrep/rg.new")).toBe(true);
       const warnLines = warnSpy.mock.calls.map((args) => args.map((arg) => String(arg)).join(" "));
       expect(
         warnLines.some(
@@ -3672,16 +3690,16 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     }
   });
 
-  it("主 server 版本匹配但 glm wrapper 缺失时应补传", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+  it("主 server 版本匹配但 agent wrapper 缺失时应补传", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
     const mockCdnDir = join(rootDir, "mock-cdn");
     await stageRemoteRuntimeRelease(mockCdnDir);
     const manifest = await stageRemoteComponentArtifacts(mockCdnDir, join(mockCdnDir, "releases"));
 
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
-    addMatchingGlmAndServerArtifactIdentities(remoteFiles, manifest, "linux-arm64");
-    delete remoteFiles["~/.zcode/server/agents/glm/zcode-agent"];
+    addMatchingAgentAndServerArtifactIdentities(remoteFiles, manifest, "linux-arm64");
+    delete remoteFiles["~/.raspberrycode/server/agents/agent/raspberrycode-agent"];
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     try {
       const backend = new FakeRemoteBackend(remoteFiles);
@@ -3695,7 +3713,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
         },
       );
 
-      expect(hasUploadForStagingTarget(backend, "~/.zcode/server/agents/glm/zcode.cjs.new")).toBe(
+      expect(hasUploadForStagingTarget(backend, "~/.raspberrycode/server/agents/agent/raspberrycode.cjs.new")).toBe(
         true,
       );
       const warnLines = warnSpy.mock.calls.map((args) => args.map((arg) => String(arg)).join(" "));
@@ -3703,7 +3721,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
         warnLines.some(
           (line) =>
             line.includes("[remote-assets] upload required") &&
-            line.includes("component=glm") &&
+            line.includes("component=agent") &&
             line.includes("remote wrapper missing"),
         ),
       ).toBe(true);
@@ -3712,15 +3730,15 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     }
   });
 
-  it("主 server 版本匹配且 glm SHA 相同但版本不同时不应补传", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+  it("主 server 版本匹配且 agent SHA 相同但版本不同时不应补传", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
     const mockCdnDir = join(rootDir, "mock-cdn");
     await stageRemoteRuntimeRelease(mockCdnDir);
     const manifest = await stageRemoteComponentArtifacts(mockCdnDir, join(mockCdnDir, "releases"));
 
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
-    addMatchingGlmAndServerArtifactIdentities(
+    addMatchingAgentAndServerArtifactIdentities(
       remoteFiles,
       manifest,
       "linux-arm64",
@@ -3737,21 +3755,21 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       },
     );
 
-    expect(hasUploadForStagingTarget(backend, "~/.zcode/server/agents/glm/zcode.cjs.new")).toBe(
-      false,
-    );
-    expect(backend.commands.some((command) => command.includes(".asset-components/glm.json"))).toBe(
+    expect(hasUploadForStagingTarget(backend, "~/.raspberrycode/server/agents/agent/raspberrycode.cjs.new")).toBe(
       false,
     );
     expect(
+      backend.commands.some((command) => command.includes(".asset-components/agent.json")),
+    ).toBe(false);
+    expect(
       backend.uploads.some(
-        (upload) => upload.remotePath === "~/.zcode/server/agents/opencode/opencode.new",
+        (upload) => upload.remotePath === "~/.raspberrycode/server/agents/opencode/opencode.new",
       ),
     ).toBe(false);
   });
 
-  it("生产态远端 GLM SHA 匹配时只读取 manifest 而不下载制品", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+  it("生产态远端 Agent SHA 匹配时只读取 manifest 而不下载制品", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -3763,7 +3781,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
 
     try {
       const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
-      addMatchingGlmAndServerArtifactIdentities(remoteFiles, manifest, "linux-arm64");
+      addMatchingAgentAndServerArtifactIdentities(remoteFiles, manifest, "linux-arm64");
       const backend = new FakeRemoteBackend(remoteFiles);
       const deployed = await deployServer(
         backend,
@@ -3777,13 +3795,13 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
 
       expect(deployed).toBe(false);
       expect(backend.uploads).toEqual([]);
-      expect(cdnServer.getRequestCount(`/${ZCODE_VERSION}/manifest-linux-arm64.json`)).toBe(1);
-      const glm = manifest.components.find((component) => component.id === "agent");
-      if (!glm) {
-        throw new Error("missing glm component in staged manifest");
+      expect(cdnServer.getRequestCount(`/${RASPBERRYCODE_VERSION}/manifest-linux-arm64.json`)).toBe(1);
+      const agent = manifest.components.find((component) => component.id === "agent");
+      if (!agent) {
+        throw new Error("missing agent component in staged manifest");
       }
-      expect(cdnServer.getRequestCount(toComponentArtifactRequestPath(glm.artifactPath))).toBe(0);
-      expect(cdnServer.getRequestCount(`/${ZCODE_VERSION}/remote-assets-linux-arm64.tar.gz`)).toBe(
+      expect(cdnServer.getRequestCount(toComponentArtifactRequestPath(agent.artifactPath))).toBe(0);
+      expect(cdnServer.getRequestCount(`/${RASPBERRYCODE_VERSION}/remote-assets-linux-arm64.tar.gz`)).toBe(
         0,
       );
     } finally {
@@ -3792,12 +3810,12 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   });
 
   it("远端已部署时 manifest 响应超时应有界失败且允许下一次连接重试", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const cdnRoot = join(rootDir, "cdn");
     const remoteCacheDir = join(rootDir, "remote-cache");
-    const manifestPath = `/${ZCODE_VERSION}/manifest-linux-arm64.json`;
+    const manifestPath = `/${RASPBERRYCODE_VERSION}/manifest-linux-arm64.json`;
     const cdnServer = await createStaticFileServer(cdnRoot, {
       stalledPaths: [manifestPath],
     });
@@ -3836,11 +3854,11 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   });
 
   it("首次部署的 manifest 超时不应在锁内降级重拉", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
     const cdnRoot = join(rootDir, "cdn");
     const remoteCacheDir = join(rootDir, "remote-cache");
-    const manifestPath = `/${ZCODE_VERSION}/manifest-linux-arm64.json`;
+    const manifestPath = `/${RASPBERRYCODE_VERSION}/manifest-linux-arm64.json`;
     const cdnServer = await createStaticFileServer(cdnRoot, {
       stalledPaths: [manifestPath],
     });
@@ -3869,11 +3887,11 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   });
 
   it("component version resolver 应透传 manifest request deadline", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
     const cdnRoot = join(rootDir, "cdn");
     const remoteCacheDir = join(rootDir, "remote-cache");
-    const manifestPath = `/${ZCODE_VERSION}/manifest-linux-arm64.json`;
+    const manifestPath = `/${RASPBERRYCODE_VERSION}/manifest-linux-arm64.json`;
     const cdnServer = await createStaticFileServer(cdnRoot, {
       stalledPaths: [manifestPath],
     });
@@ -3900,10 +3918,10 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   });
 
   it("remote-download manifest 超时应保留 CDN 候选诊断", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
     const cdnRoot = join(rootDir, "cdn");
-    const manifestPath = `/${ZCODE_VERSION}/manifest-linux-arm64.json`;
+    const manifestPath = `/${RASPBERRYCODE_VERSION}/manifest-linux-arm64.json`;
     const cdnServer = await createStaticFileServer(cdnRoot, {
       stalledPaths: [manifestPath],
     });
@@ -3912,7 +3930,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       await expect(
         fetchRemoteDownloadManifest(
           {
-            version: ZCODE_VERSION,
+            version: RASPBERRYCODE_VERSION,
             platformArch: "linux-arm64",
             remoteCdnBaseUrl: cdnServer.baseUrl,
             manifestRequestTimeoutMs: 25,
@@ -3926,8 +3944,8 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     }
   });
 
-  it("同一进程内 GLM 版本不变但 manifest SHA 更新时应重新部署", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+  it("同一进程内 Agent 版本不变但 manifest SHA 更新时应重新部署", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -3936,7 +3954,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     await stageRemoteRuntimeRelease(mockCdnDir);
     const initialManifest = await stageRemoteComponentArtifacts(mockCdnDir, cdnRoot);
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
-    addMatchingGlmAndServerArtifactIdentities(remoteFiles, initialManifest, "linux-arm64");
+    addMatchingAgentAndServerArtifactIdentities(remoteFiles, initialManifest, "linux-arm64");
     const backend = new FakeRemoteBackend(remoteFiles);
     const cdnServer = await createStaticFileServer(cdnRoot);
 
@@ -3953,15 +3971,15 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       expect(backend.uploads).toEqual([]);
 
       await writeFile(
-        join(mockCdnDir, "releases", ZCODE_VERSION, "agent", "linux-arm64", "zcode.cjs"),
-        "glm bundle republished with the same semantic version",
+        join(mockCdnDir, "releases", RASPBERRYCODE_VERSION, "agent", "linux-arm64", "raspberrycode.cjs"),
+        "agent bundle republished with the same semantic version",
         "utf8",
       );
       const updatedManifest = await stageRemoteComponentArtifacts(mockCdnDir, cdnRoot);
-      const initialGlm = initialManifest.components.find((component) => component.id === "agent");
-      const updatedGlm = updatedManifest.components.find((component) => component.id === "agent");
-      expect(updatedGlm?.version).toBe(initialGlm?.version);
-      expect(updatedGlm?.sha256).not.toBe(initialGlm?.sha256);
+      const initialAgent = initialManifest.components.find((component) => component.id === "agent");
+      const updatedAgent = updatedManifest.components.find((component) => component.id === "agent");
+      expect(updatedAgent?.version).toBe(initialAgent?.version);
+      expect(updatedAgent?.sha256).not.toBe(initialAgent?.sha256);
 
       await deployServer(
         backend,
@@ -3973,17 +3991,17 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
         },
       );
 
-      expect(hasUploadForStagingTarget(backend, "~/.zcode/server/agents/glm/zcode.cjs.new")).toBe(
+      expect(hasUploadForStagingTarget(backend, "~/.raspberrycode/server/agents/agent/raspberrycode.cjs.new")).toBe(
         true,
       );
-      expect(cdnServer.getRequestCount(`/${ZCODE_VERSION}/manifest-linux-arm64.json`)).toBe(2);
+      expect(cdnServer.getRequestCount(`/${RASPBERRYCODE_VERSION}/manifest-linux-arm64.json`)).toBe(2);
     } finally {
       await cdnServer.close();
     }
   });
 
   it("同一 App 版本内 server-bundle SHA 更新时应下载并上传新制品", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -4001,12 +4019,12 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     await mkdir(legacyServerCacheDir, { recursive: true });
     await writeFile(join(legacyServerCacheDir, ".ready"), "ready\n", "utf8");
     await writeFile(
-      join(legacyServerCacheDir, "zcode-server.cjs"),
+      join(legacyServerCacheDir, "raspberrycode-server.cjs"),
       "// stale semantic-version server cache\n",
       "utf8",
     );
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
-    addMatchingGlmArtifactIdentity(remoteFiles, initialManifest, "linux-arm64");
+    addMatchingAgentArtifactIdentity(remoteFiles, initialManifest, "linux-arm64");
     const backend = new FakeRemoteBackend(remoteFiles);
     const cdnServer = await createStaticFileServer(cdnRoot);
 
@@ -4016,10 +4034,10 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
         { platform: "linux", arch: "arm64" },
         { remoteCdnBaseUrl: cdnServer.baseUrl, remoteCacheDir },
       );
-      expect(hasUploadForStagingTarget(backend, "~/.zcode/server/zcode-server.cjs.new")).toBe(true);
+      expect(hasUploadForStagingTarget(backend, "~/.raspberrycode/server/raspberrycode-server.cjs.new")).toBe(true);
       const initialServerUpload = findUploadForStagingTarget(
         backend,
-        "~/.zcode/server/zcode-server.cjs.new",
+        "~/.raspberrycode/server/raspberrycode-server.cjs.new",
       );
       await expect(readFile(initialServerUpload?.localPath ?? "", "utf8")).resolves.not.toContain(
         "stale semantic-version server cache",
@@ -4027,12 +4045,12 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       backend.uploads.splice(0);
       addMatchingServerBundleArtifactIdentity(remoteFiles, initialManifest, "linux-arm64");
       backend.remoteFiles.set(
-        "~/.zcode/server/.asset-components/server-bundle.json",
-        remoteFiles["~/.zcode/server/.asset-components/server-bundle.json"] ?? "",
+        "~/.raspberrycode/server/.asset-components/server-bundle.json",
+        remoteFiles["~/.raspberrycode/server/.asset-components/server-bundle.json"] ?? "",
       );
 
       await writeFile(
-        join(mockCdnDir, "releases", ZCODE_VERSION, "server", "zcode-server.cjs"),
+        join(mockCdnDir, "releases", RASPBERRYCODE_VERSION, "server", "raspberrycode-server.cjs"),
         "// server bundle republished under the same App version\n",
         "utf8",
       );
@@ -4049,7 +4067,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
 
       const serverUpload = findUploadForStagingTarget(
         backend,
-        "~/.zcode/server/zcode-server.cjs.new",
+        "~/.raspberrycode/server/raspberrycode-server.cjs.new",
       );
       expect(serverUpload).toBeDefined();
       await expect(readFile(serverUpload?.localPath ?? "", "utf8")).resolves.toContain(
@@ -4063,8 +4081,8 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     }
   });
 
-  it("并发 GLM SHA 检查应共享一次 fresh manifest 请求", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+  it("并发 Agent SHA 检查应共享一次 fresh manifest 请求", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -4074,7 +4092,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const manifest = await stageRemoteComponentArtifacts(mockCdnDir, cdnRoot);
     const createBackend = (): FakeRemoteBackend => {
       const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
-      addMatchingGlmAndServerArtifactIdentities(remoteFiles, manifest, "linux-arm64");
+      addMatchingAgentAndServerArtifactIdentities(remoteFiles, manifest, "linux-arm64");
       return new FakeRemoteBackend(remoteFiles);
     };
     const cdnServer = await createStaticFileServer(cdnRoot);
@@ -4093,7 +4111,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
         ),
       ]);
 
-      expect(cdnServer.getRequestCount(`/${ZCODE_VERSION}/manifest-linux-arm64.json`)).toBe(1);
+      expect(cdnServer.getRequestCount(`/${RASPBERRYCODE_VERSION}/manifest-linux-arm64.json`)).toBe(1);
 
       // warm cache 下的第二轮并发也只能创建一个 refresh task。
       await Promise.all([
@@ -4108,7 +4126,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
           { remoteCdnBaseUrl: cdnServer.baseUrl, remoteCacheDir },
         ),
       ]);
-      expect(cdnServer.getRequestCount(`/${ZCODE_VERSION}/manifest-linux-arm64.json`)).toBe(2);
+      expect(cdnServer.getRequestCount(`/${RASPBERRYCODE_VERSION}/manifest-linux-arm64.json`)).toBe(2);
 
       // remote-download 也必须让身份判断与实际安装共享同一个 manifest 请求。
       await Promise.all([
@@ -4129,14 +4147,14 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
           },
         ),
       ]);
-      expect(cdnServer.getRequestCount(`/${ZCODE_VERSION}/manifest-linux-arm64.json`)).toBe(3);
+      expect(cdnServer.getRequestCount(`/${RASPBERRYCODE_VERSION}/manifest-linux-arm64.json`)).toBe(3);
     } finally {
       await cdnServer.close();
     }
   });
 
-  it("并发 GLM 部署应按各自 manifest SHA 快照隔离 release", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+  it("并发 Agent 部署应按各自 manifest SHA 快照隔离 release", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -4144,12 +4162,12 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const remoteCacheDir = join(rootDir, "remote-cache");
     await stageRemoteRuntimeRelease(mockCdnDir);
     const initialManifest = await stageRemoteComponentArtifacts(mockCdnDir, cdnRoot);
-    const initialGlm = initialManifest.components.find((component) => component.id === "agent");
-    if (!initialGlm) {
-      throw new Error("missing glm component in staged manifest");
+    const initialAgent = initialManifest.components.find((component) => component.id === "agent");
+    if (!initialAgent) {
+      throw new Error("missing agent component in staged manifest");
     }
-    const pinnedArtifactPath = initialGlm.artifactPath.replace(/\.tar\.gz$/u, "-pinned.tar.gz");
-    await cp(join(cdnRoot, initialGlm.artifactPath), join(cdnRoot, pinnedArtifactPath));
+    const pinnedArtifactPath = initialAgent.artifactPath.replace(/\.tar\.gz$/u, "-pinned.tar.gz");
+    await cp(join(cdnRoot, initialAgent.artifactPath), join(cdnRoot, pinnedArtifactPath));
     const pinnedInitialManifest: RemoteComponentManifest = {
       ...initialManifest,
       components: initialManifest.components.map((component) =>
@@ -4158,17 +4176,17 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     };
 
     await writeFile(
-      join(mockCdnDir, "releases", ZCODE_VERSION, "agent", "linux-arm64", "zcode.cjs"),
-      "new GLM bytes under the same semantic version",
+      join(mockCdnDir, "releases", RASPBERRYCODE_VERSION, "agent", "linux-arm64", "raspberrycode.cjs"),
+      "new Agent bytes under the same semantic version",
       "utf8",
     );
     const updatedManifest = await stageRemoteComponentArtifacts(mockCdnDir, cdnRoot);
-    const updatedGlm = updatedManifest.components.find((component) => component.id === "agent");
-    if (!updatedGlm) {
-      throw new Error("missing updated glm component in staged manifest");
+    const updatedAgent = updatedManifest.components.find((component) => component.id === "agent");
+    if (!updatedAgent) {
+      throw new Error("missing updated agent component in staged manifest");
     }
-    expect(updatedGlm.version).toBe(initialGlm.version);
-    expect(updatedGlm.sha256).not.toBe(initialGlm.sha256);
+    expect(updatedAgent.version).toBe(initialAgent.version);
+    expect(updatedAgent.sha256).not.toBe(initialAgent.sha256);
     const cdnServer = await createStaticFileServer(cdnRoot);
 
     try {
@@ -4177,12 +4195,12 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
           {
             remoteCdnBaseUrl: cdnServer.baseUrl,
             remoteCacheDir,
-            version: ZCODE_VERSION,
+            version: RASPBERRYCODE_VERSION,
             platformArch: "linux-arm64",
             componentIds: ["agent"],
             manifestRef: {
               manifest: pinnedInitialManifest,
-              releaseBaseCandidatesForComponents: [`${cdnServer.baseUrl}/${ZCODE_VERSION}`],
+              releaseBaseCandidatesForComponents: [`${cdnServer.baseUrl}/${RASPBERRYCODE_VERSION}`],
             },
           },
           { log: () => {}, logWarn: () => {} },
@@ -4191,32 +4209,32 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
           {
             remoteCdnBaseUrl: cdnServer.baseUrl,
             remoteCacheDir,
-            version: ZCODE_VERSION,
+            version: RASPBERRYCODE_VERSION,
             platformArch: "linux-arm64",
             componentIds: ["agent"],
             manifestRef: {
               manifest: updatedManifest,
-              releaseBaseCandidatesForComponents: [`${cdnServer.baseUrl}/${ZCODE_VERSION}`],
+              releaseBaseCandidatesForComponents: [`${cdnServer.baseUrl}/${RASPBERRYCODE_VERSION}`],
             },
           },
           { log: () => {}, logWarn: () => {} },
         ),
       ]);
 
-      expect(initialReleaseDir).toContain(initialGlm.sha256);
-      expect(updatedReleaseDir).toContain(updatedGlm.sha256);
+      expect(initialReleaseDir).toContain(initialAgent.sha256);
+      expect(updatedReleaseDir).toContain(updatedAgent.sha256);
       expect(initialReleaseDir).not.toBe(updatedReleaseDir);
       expect(cdnServer.getRequestCount(toComponentArtifactRequestPath(pinnedArtifactPath))).toBe(1);
       expect(
-        cdnServer.getRequestCount(toComponentArtifactRequestPath(updatedGlm.artifactPath)),
+        cdnServer.getRequestCount(toComponentArtifactRequestPath(updatedAgent.artifactPath)),
       ).toBe(1);
     } finally {
       await cdnServer.close();
     }
   });
 
-  it("同一 GLM SHA 的普通下载与强制刷新并发时应复用一次已校验下载", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+  it("同一 Agent SHA 的普通下载与强制刷新并发时应复用一次已校验下载", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -4224,12 +4242,12 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const remoteCacheDir = join(rootDir, "remote-cache");
     await stageRemoteRuntimeRelease(mockCdnDir);
     const manifest = await stageRemoteComponentArtifacts(mockCdnDir, cdnRoot);
-    const glm = findManifestComponent(manifest, "agent");
+    const agent = findManifestComponent(manifest, "agent");
     const requiredPluginPath = OFFICIAL_PLUGIN_REQUIRED_RELATIVE_PATHS[0];
     if (!requiredPluginPath) {
       throw new Error("missing required official plugin test path");
     }
-    const artifactRequestPath = toComponentArtifactRequestPath(glm.artifactPath);
+    const artifactRequestPath = toComponentArtifactRequestPath(agent.artifactPath);
     let releaseArtifactResponse: (() => void) | undefined;
     const artifactResponseGate = new Promise<void>((resolve) => {
       releaseArtifactResponse = resolve;
@@ -4240,18 +4258,18 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const releaseOptions = {
       remoteCdnBaseUrl: cdnServer.baseUrl,
       remoteCacheDir,
-      version: ZCODE_VERSION,
+      version: RASPBERRYCODE_VERSION,
       platformArch: "linux-arm64",
       componentIds: ["agent"],
       requiredReleasePaths: [
-        "glm/linux-arm64/zcode.cjs",
+        "agent/linux-arm64/raspberrycode.cjs",
         ...OFFICIAL_PLUGIN_REQUIRED_RELATIVE_PATHS.map(
-          (relativePath) => `glm/linux-arm64/packages/${relativePath}`,
+          (relativePath) => `agent/linux-arm64/packages/${relativePath}`,
         ),
       ],
       manifestRef: {
         manifest,
-        releaseBaseCandidatesForComponents: [`${cdnServer.baseUrl}/${ZCODE_VERSION}`],
+        releaseBaseCandidatesForComponents: [`${cdnServer.baseUrl}/${RASPBERRYCODE_VERSION}`],
       },
     };
     const loggers = { log: () => {}, logWarn: () => {} };
@@ -4276,17 +4294,17 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       ]);
 
       expect(forceReleaseDir).toBe(reuseReleaseDir);
-      expect(forceReleaseDir).toContain(glm.sha256);
+      expect(forceReleaseDir).toContain(agent.sha256);
       expect(cdnServer.getRequestCount(artifactRequestPath)).toBe(1);
       await expect(
-        readFile(join(forceReleaseDir, "agent", "linux-arm64", "zcode.cjs"), "utf8"),
-      ).resolves.toBe("glm bundle");
+        readFile(join(forceReleaseDir, "agent", "linux-arm64", "raspberrycode.cjs"), "utf8"),
+      ).resolves.toBe("agent bundle");
       await expect(
         readFile(
           join(forceReleaseDir, "agent", "linux-arm64", "packages", requiredPluginPath),
           "utf8",
         ),
-      ).resolves.toBe(`glm official plugin ${requiredPluginPath}`);
+      ).resolves.toBe(`agent official plugin ${requiredPluginPath}`);
     } finally {
       releaseArtifactResponse?.();
       await cdnServer.close();
@@ -4294,7 +4312,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   });
 
   it("生产态组件 cache 未命中时应从旧 release cache 迁移相同内容组件", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -4303,7 +4321,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const platformKey = "linux-arm64";
     await stageRemoteRuntimeRelease(mockCdnDir);
 
-    const sourceReleaseDir = join(mockCdnDir, "releases", ZCODE_VERSION);
+    const sourceReleaseDir = join(mockCdnDir, "releases", RASPBERRYCODE_VERSION);
     const legacyReleaseDir = join(remoteCacheDir, "releases", "1.2.9", platformKey);
     await cp(sourceReleaseDir, legacyReleaseDir, { recursive: true });
     await writeFile(join(legacyReleaseDir, ".remote-assets-ready"), "legacy-ready\n", "utf8");
@@ -4332,9 +4350,9 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     if (!nodeRuntime) {
       throw new Error("missing node-runtime component in staged manifest");
     }
-    const glm = manifest.components.find((component) => component.id === "agent");
-    if (!glm) {
-      throw new Error("missing glm component in staged manifest");
+    const agent = manifest.components.find((component) => component.id === "agent");
+    if (!agent) {
+      throw new Error("missing agent component in staged manifest");
     }
 
     const cdnServer = await createStaticFileServer(cdnRoot);
@@ -4344,13 +4362,13 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
           {
             remoteCdnBaseUrl: cdnServer.baseUrl,
             remoteCacheDir,
-            version: ZCODE_VERSION,
+            version: RASPBERRYCODE_VERSION,
             platformArch: platformKey,
           },
           { log: () => {}, logWarn: () => {} },
         ),
       ).resolves.toBe(
-        join(remoteCacheDir, "releases", ZCODE_VERSION, platformKey, "glm-content", glm.sha256),
+        join(remoteCacheDir, "releases", RASPBERRYCODE_VERSION, platformKey, "agent-content", agent.sha256),
       );
 
       expect(
@@ -4374,8 +4392,8 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     }
   });
 
-  it("生产态 GLM 不应按语义版本复用旧 hash 目录组件", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+  it("生产态 Agent 不应按语义版本复用旧 hash 目录组件", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -4384,23 +4402,23 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const platformKey = "linux-arm64";
     await stageRemoteRuntimeRelease(mockCdnDir);
 
-    const sourceReleaseDir = join(mockCdnDir, "releases", ZCODE_VERSION);
-    const oldGlmComponentVersion = `${LEGACY_REMOTE_TEST_AGENT_RUNTIME.glm.version}-glm+legacyhash001`;
-    const oldGlmComponentDir = join(
+    const sourceReleaseDir = join(mockCdnDir, "releases", RASPBERRYCODE_VERSION);
+    const oldAgentComponentVersion = `${LEGACY_REMOTE_TEST_AGENT_RUNTIME.agent.version}-agent+legacyhash001`;
+    const oldAgentComponentDir = join(
       remoteCacheDir,
       "components",
       "agent",
       platformKey,
-      oldGlmComponentVersion,
+      oldAgentComponentVersion,
     );
-    await mkdir(oldGlmComponentDir, { recursive: true });
+    await mkdir(oldAgentComponentDir, { recursive: true });
     await copySourcePathContentToDir(
       join(sourceReleaseDir, "agent", platformKey),
-      oldGlmComponentDir,
+      oldAgentComponentDir,
     );
-    await writeFile(join(oldGlmComponentDir, ".ready"), "old-component-ready\n", "utf8");
+    await writeFile(join(oldAgentComponentDir, ".ready"), "old-component-ready\n", "utf8");
 
-    const semanticGlmComponentVersion = `${LEGACY_REMOTE_TEST_AGENT_RUNTIME.glm.version}-glm`;
+    const semanticAgentComponentVersion = `${LEGACY_REMOTE_TEST_AGENT_RUNTIME.agent.version}-agent`;
     const manifest = await stageRemoteComponentArtifacts(mockCdnDir, cdnRoot, {
       platformKey,
       mutateManifest: (rawManifest) => ({
@@ -4409,15 +4427,15 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
           component.id === "agent"
             ? {
                 ...component,
-                version: semanticGlmComponentVersion,
+                version: semanticAgentComponentVersion,
               }
             : component,
         ),
       }),
     });
-    const glm = manifest.components.find((component) => component.id === "agent");
-    if (!glm) {
-      throw new Error("missing glm component in staged manifest");
+    const agent = manifest.components.find((component) => component.id === "agent");
+    if (!agent) {
+      throw new Error("missing agent component in staged manifest");
     }
 
     const cdnServer = await createStaticFileServer(cdnRoot);
@@ -4427,20 +4445,20 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
           {
             remoteCdnBaseUrl: cdnServer.baseUrl,
             remoteCacheDir,
-            version: ZCODE_VERSION,
+            version: RASPBERRYCODE_VERSION,
             platformArch: platformKey,
             componentIds: ["agent"],
           },
           { log: () => {}, logWarn: () => {} },
         ),
       ).resolves.toBe(
-        join(remoteCacheDir, "releases", ZCODE_VERSION, platformKey, "glm-content", glm.sha256),
+        join(remoteCacheDir, "releases", RASPBERRYCODE_VERSION, platformKey, "agent-content", agent.sha256),
       );
 
-      expect(cdnServer.getRequestCount(toComponentArtifactRequestPath(glm.artifactPath))).toBe(1);
+      expect(cdnServer.getRequestCount(toComponentArtifactRequestPath(agent.artifactPath))).toBe(1);
       await expect(
         readFile(
-          join(remoteCacheDir, "components", "agent", platformKey, glm.sha256, ".ready"),
+          join(remoteCacheDir, "components", "agent", platformKey, agent.sha256, ".ready"),
           "utf8",
         ),
       ).resolves.toBeTruthy();
@@ -4450,7 +4468,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   });
 
   it("生产态不同 remoteCacheDir 并发预热时不应共享同一把下载锁", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -4473,7 +4491,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
           {
             remoteCdnBaseUrl: cdnServer.baseUrl,
             remoteCacheDir: remoteCacheDirA,
-            version: ZCODE_VERSION,
+            version: RASPBERRYCODE_VERSION,
             platformArch: "linux-arm64",
           },
           { log: () => {}, logWarn: () => {} },
@@ -4482,7 +4500,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
           {
             remoteCdnBaseUrl: cdnServer.baseUrl,
             remoteCacheDir: remoteCacheDirB,
-            version: ZCODE_VERSION,
+            version: RASPBERRYCODE_VERSION,
             platformArch: "linux-arm64",
           },
           { log: () => {}, logWarn: () => {} },
@@ -4492,7 +4510,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       expect(releaseDirA).not.toBe(releaseDirB);
       expect(releaseDirA).toContain("remote-cache-a");
       expect(releaseDirB).toContain("remote-cache-b");
-      expect(cdnServer.getRequestCount(`/${ZCODE_VERSION}/manifest-linux-arm64.json`)).toBe(2);
+      expect(cdnServer.getRequestCount(`/${RASPBERRYCODE_VERSION}/manifest-linux-arm64.json`)).toBe(2);
       expect(
         cdnServer.getRequestCount(toVersionedArtifactRequestPath(serverBundle.artifactPath)),
       ).toBe(0);
@@ -4505,7 +4523,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   });
 
   it("生产态 manifest mount 路径校验失败时应抛出错误", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -4528,7 +4546,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       await expect(
         deployServer(
           new FakeRemoteBackend({
-            "~/.zcode/server/agents/codex/.version": "0.0.0\n",
+            "~/.raspberrycode/server/agents/codex/.version": "0.0.0\n",
           }),
           { platform: "linux", arch: "arm64" },
           {
@@ -4538,7 +4556,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
           },
         ),
       ).rejects.toThrow(/mount|白名单|路径|path|invalid|escape/iu);
-      expect(cdnServer.getRequestCount(`/${ZCODE_VERSION}/remote-assets-linux-arm64.tar.gz`)).toBe(
+      expect(cdnServer.getRequestCount(`/${RASPBERRYCODE_VERSION}/remote-assets-linux-arm64.tar.gz`)).toBe(
         0,
       );
     } finally {
@@ -4547,7 +4565,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
   });
 
   it("生产态下载 remote 资源时应输出百分比/体积/速度进度日志", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-deploy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-deploy-"));
     tempDirs.push(rootDir);
 
     const mockCdnDir = join(rootDir, "mock-cdn");
@@ -4561,7 +4579,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     try {
       await deployServer(
         new FakeRemoteBackend({
-          "~/.zcode/server/agents/codex/.version": "0.0.0\n",
+          "~/.raspberrycode/server/agents/codex/.version": "0.0.0\n",
         }),
         { platform: "linux", arch: "arm64" },
         {

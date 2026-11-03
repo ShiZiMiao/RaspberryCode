@@ -15,17 +15,17 @@ vi.mock("@/project-sidebar/ProjectDirectoryProvider.js", () => ({
 vi.mock("@/hooks/useWorkspaceServices.js", () => ({
   useBaseWorkspaceServices: () => ({
     windowControllerService: { mutateTask: service.mutateTask },
-    zcodeTaskService: { renameTask: service.renameTask },
+    raspberrycodeTaskService: { renameTask: service.renameTask },
   }),
 }));
 vi.mock("@/hooks/useResolvedRemoteWorkspaceSessionId.js", () => ({
   useResolvedRemoteWorkspaceSessionId: () => null,
 }));
-vi.mock("@/store/zcodeSessionStore.js", () => ({
-  useZCodeSessionStore: (selector: (state: unknown) => unknown) => selector({ workspaces: {} }),
+vi.mock("@/store/raspberrycodeSessionStore.js", () => ({
+  useRaspberryCodeSessionStore: (selector: (state: unknown) => unknown) => selector({ workspaces: {} }),
 }));
 vi.mock("@/i18n/IntlProvider.js", () => ({
-  useZCodeIntl: () => ({ intl: { formatMessage: ({ id }: { id: string }) => id } }),
+  useRaspberryCodeIntl: () => ({ intl: { formatMessage: ({ id }: { id: string }) => id } }),
 }));
 vi.mock("@/TaskList.js", () => ({
   TaskList: (props: {

@@ -1,4 +1,4 @@
-import { isRemoteWorkspaceIdentity, parseRemoteWorkspaceIdentity } from "@zcode/shared";
+import { isRemoteWorkspaceIdentity, parseRemoteWorkspaceIdentity } from "@raspberrycode/shared";
 import type { WorkspaceTabState } from "@/store/tabStore.js";
 
 export function workspaceBelongsToSettingsSource(

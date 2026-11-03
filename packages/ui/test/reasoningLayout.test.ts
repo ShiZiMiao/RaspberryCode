@@ -1,12 +1,12 @@
-import type { IBroadcastService, IServiceAccessor } from "@zcode/services";
-import type { IPlatformService } from "@zcode/shared";
+import type { IBroadcastService, IServiceAccessor } from "@raspberrycode/services";
+import type { IPlatformService } from "@raspberrycode/shared";
 import { PlatformProvider } from "@/hooks/usePlatform.js";
 import { ServiceProvider } from "@/hooks/useServices.js";
 import { createElement } from "react";
 import type { ComponentProps } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+import { RaspberryCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import { StoreProvider } from "@/store/StoreProvider.js";
 import {
   getReasoningBottomDistance,
@@ -65,7 +65,7 @@ function renderReasoningContent(
 ) {
   return renderToStaticMarkup(
     createElement(
-      ZCodeIntlProvider,
+      RaspberryCodeIntlProvider,
       { initialLocale: locale },
       createElement(
         ServiceProvider,

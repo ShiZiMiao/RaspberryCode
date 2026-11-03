@@ -1,9 +1,9 @@
 import {
   getLatestAssistantContentPart,
-  type ZCodeAssistantMessagePart,
+  type RaspberryCodeAssistantMessagePart,
 } from "./assistant-message-parts.js";
 
-export interface ZCodeAssistantPresentationToolCall {
+export interface RaspberryCodeAssistantPresentationToolCall {
   toolId: string;
   parentToolUseId?: string | null;
   kind: string;
@@ -15,7 +15,7 @@ export interface ZCodeAssistantPresentationToolCall {
   raw?: unknown;
 }
 
-export type ZCodeAssistantPresentationBlock =
+export type RaspberryCodeAssistantPresentationBlock =
   | {
       type: "content";
       content: string;
@@ -26,21 +26,21 @@ export type ZCodeAssistantPresentationBlock =
     }
   | {
       type: "tool-call";
-      toolCall: ZCodeAssistantPresentationToolCall;
+      toolCall: RaspberryCodeAssistantPresentationToolCall;
     };
 
-export interface ZCodeAssistantPresentation {
-  messageParts: ZCodeAssistantMessagePart[];
-  blocks: ZCodeAssistantPresentationBlock[];
-  latestPart: Extract<ZCodeAssistantPresentationBlock, { type: "content" }> | null;
-  historyBlocks: ZCodeAssistantPresentationBlock[];
+export interface RaspberryCodeAssistantPresentation {
+  messageParts: RaspberryCodeAssistantMessagePart[];
+  blocks: RaspberryCodeAssistantPresentationBlock[];
+  latestPart: Extract<RaspberryCodeAssistantPresentationBlock, { type: "content" }> | null;
+  historyBlocks: RaspberryCodeAssistantPresentationBlock[];
 }
 
-export interface BuildZCodeAssistantPresentationOptions {
+export interface BuildRaspberryCodeAssistantPresentationOptions {
   content: string;
   thought?: string;
-  toolCalls?: readonly ZCodeAssistantPresentationToolCall[];
-  parts?: readonly ZCodeAssistantMessagePart[];
+  toolCalls?: readonly RaspberryCodeAssistantPresentationToolCall[];
+  parts?: readonly RaspberryCodeAssistantMessagePart[];
   streaming?: boolean;
   interrupted?: boolean;
   settling?: boolean;
@@ -50,7 +50,7 @@ function buildFallbackAssistantParts({
   content,
   thought,
   toolCalls,
-}: Pick<BuildZCodeAssistantPresentationOptions, "content" | "thought" | "toolCalls">) {
+}: Pick<BuildRaspberryCodeAssistantPresentationOptions, "content" | "thought" | "toolCalls">) {
   const rootToolCalls = (toolCalls ?? []).filter((toolCall) => {
     const parentToolUseId = toolCall.parentToolUseId ?? null;
     return (
@@ -73,7 +73,7 @@ function buildFallbackAssistantParts({
   ];
 }
 
-export function buildZCodeAssistantPresentation({
+export function buildRaspberryCodeAssistantPresentation({
   content,
   thought,
   toolCalls = [],
@@ -81,14 +81,14 @@ export function buildZCodeAssistantPresentation({
   streaming = false,
   interrupted = false,
   settling = false,
-}: BuildZCodeAssistantPresentationOptions): ZCodeAssistantPresentation {
+}: BuildRaspberryCodeAssistantPresentationOptions): RaspberryCodeAssistantPresentation {
   const messageParts =
     parts && parts.length > 0
       ? [...parts]
       : buildFallbackAssistantParts({ content, thought, toolCalls });
   const toolCallById = new Map(toolCalls.map((toolCall) => [toolCall.toolId, toolCall]));
   const renderedToolCallIds = new Set<string>();
-  const blocks: ZCodeAssistantPresentationBlock[] = [];
+  const blocks: RaspberryCodeAssistantPresentationBlock[] = [];
 
   for (const part of messageParts) {
     if (part.type === "content") {
@@ -122,12 +122,12 @@ export function buildZCodeAssistantPresentation({
       : getLatestAssistantContentPart(
           blocks
             .filter(
-              (block): block is Extract<ZCodeAssistantPresentationBlock, { type: "content" }> =>
+              (block): block is Extract<RaspberryCodeAssistantPresentationBlock, { type: "content" }> =>
                 block.type === "content",
             )
             .map((block) => ({ type: "content", content: block.content })),
         );
-  let latestPart: Extract<ZCodeAssistantPresentationBlock, { type: "content" }> | null = null;
+  let latestPart: Extract<RaspberryCodeAssistantPresentationBlock, { type: "content" }> | null = null;
   let latestBlockIndex = -1;
   if (latestContentPart) {
     latestBlockIndex = blocks.findLastIndex(
@@ -136,7 +136,7 @@ export function buildZCodeAssistantPresentation({
     latestPart =
       latestBlockIndex >= 0
         ? (blocks[latestBlockIndex] as Extract<
-            ZCodeAssistantPresentationBlock,
+            RaspberryCodeAssistantPresentationBlock,
             { type: "content" }
           >)
         : null;

@@ -1,7 +1,7 @@
 import { decorateRequestSecurityLogArgs } from "./request-security-edition/index.js";
 /* eslint-disable max-lines -- 桌面平台 IPC 集中装配，拆散会让权限边界更难审计；行数随平台能力增长。 */
 import { BrowserWindow, dialog, ipcMain, nativeTheme } from "electron";
-import { readZCodeStdioTapDevState } from "@zcode/services/node";
+import { readRaspberryCodeStdioTapDevState } from "@raspberrycode/services/node";
 import {
   DesktopCommandIds,
   appSettingsPatchSchema,
@@ -15,13 +15,12 @@ import {
   type ApplicationIconRequest,
   type Locale,
   type LoadCliMcpFromUserDirectoryRequest,
-  type MigrateLegacyCommonMcpRequest,
   type OpenInEditorOptions,
   type SaveCliMcpToUserDirectoryRequest,
   type CreateTempTextAttachmentRequest,
   type MaterializeWorkflowArtifactFileRequest,
   type WindowControlsOverlayReadyPayload,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import { getInstalledEditors } from "./editors.js";
 import { getApplicationIcon } from "./applicationIcons.js";
 import { exportLogs } from "./exportLogs.js";
@@ -50,7 +49,6 @@ import {
 } from "./desktopBrowserViewIpc.js";
 import {
   loadCliMcpFromUserDirectory,
-  migrateLegacyCommonMcp,
   saveCliMcpToUserDirectory,
 } from "./mcpUserDirectory/index.js";
 import { createTempTextAttachment } from "./tempTextAttachment.js";
@@ -86,7 +84,7 @@ export function registerPlatformIpcHandlers(options: {
   };
   syncAppSettings: (patch: ReturnType<typeof appSettingsPatchSchema.parse>) => void;
   /** 关闭驻留托盘能力查询（spec：docs/desktop/linux-close-to-tray.md）；传入 monitor 的 refresh */
-  refreshCloseToTrayCapability: () => Promise<import("@zcode/shared").DesktopCloseToTrayCapability>;
+  refreshCloseToTrayCapability: () => Promise<import("@raspberrycode/shared").DesktopCloseToTrayCapability>;
   /** 快捷键设置页录制态开关：true 时 main 重建菜单摘除可配置 accelerator（见 shortcut-settings-spec §7） */
   setShortcutRecordingActive?: (active: boolean, ownerWebContentsId?: number | null) => void;
   /** 桌面端设备标识符（基于 userData 路径的 SHA-256） */
@@ -197,7 +195,7 @@ export function registerPlatformIpcHandlers(options: {
   });
   registerResourceManagerStorageIpc();
   registerResourceManagerNetworkIpc();
-  ipcMain.handle(PlatformChannels.GetZCodeStdioTapDevState, () => readZCodeStdioTapDevState());
+  ipcMain.handle(PlatformChannels.GetRaspberryCodeStdioTapDevState, () => readRaspberryCodeStdioTapDevState());
   ipcMain.on(PlatformChannels.OpenResourceManager, () => {
     openResourceManager();
   });
@@ -220,13 +218,6 @@ export function registerPlatformIpcHandlers(options: {
         options.logger.warn("[mcp-user-directory] save failed", message);
         return { success: false, error: message };
       }
-    },
-  );
-
-  ipcMain.handle(
-    PlatformChannels.MigrateLegacyCommonMcp,
-    async (_event, payload?: MigrateLegacyCommonMcpRequest) => {
-      return migrateLegacyCommonMcp(payload);
     },
   );
 

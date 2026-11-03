@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { Worker } from "node:worker_threads";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ZCodeTaskMeta } from "@zcode/shared";
+import type { RaspberryCodeTaskMeta } from "@raspberrycode/shared";
 import { getTasksIndexDatabasePath, setDataBaseDir } from "#src/paths.js";
 import { projectStorage } from "#src/project-storage/index.js";
 import { TaskIndexRepo } from "#src/session/taskIndexRepo.js";
@@ -15,7 +15,7 @@ let repo: TaskIndexRepo;
 let tempDir: string;
 
 beforeEach(async () => {
-  tempDir = await mkdtemp(join(tmpdir(), "zcode-task-index-unread-cas-"));
+  tempDir = await mkdtemp(join(tmpdir(), "raspberrycode-task-index-unread-cas-"));
   setDataBaseDir(tempDir);
   repo = new TaskIndexRepo();
 });
@@ -28,7 +28,7 @@ afterEach(async () => {
   await rm(tempDir, { recursive: true, force: true });
 });
 
-function createTask(unreadAt: number): ZCodeTaskMeta {
+function createTask(unreadAt: number): RaspberryCodeTaskMeta {
   return {
     taskId: "task-1",
     traceId: "trace-task-1",

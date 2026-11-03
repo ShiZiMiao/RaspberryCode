@@ -1,12 +1,12 @@
 import { createServer } from "node:http";
-import { NodePersonalProviderConfigRepository } from "@zcode/provider-node";
+import { NodePersonalProviderConfigRepository } from "@raspberrycode/provider-node";
 import {
   TID_MODEL_PROVIDER_ADD_MODEL_BUTTON,
   TID_MODEL_PROVIDER_NAV_ITEM,
   TID_SETTINGS_SECTION_NAV,
   TID_TASK_SETTINGS_BUTTON,
   testId,
-} from "@zcode/shared/test-ids";
+} from "@raspberrycode/shared/test-ids";
 import {
   clearAppData,
   clickTestIdByDom,

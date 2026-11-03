@@ -1,11 +1,11 @@
 // Modified for RaspberryCode: 断言随产品名同步
 import { describe, expect, it } from "vitest";
 import type {
-  ZCodeAvailablePluginSummary,
-  ZCodeInstalledPluginSummary,
-  ZCodePluginInfo,
-  ZCodePluginMarketplaceSummary,
-} from "@zcode/shared";
+  RaspberryCodeAvailablePluginSummary,
+  RaspberryCodeInstalledPluginSummary,
+  RaspberryCodePluginInfo,
+  RaspberryCodePluginMarketplaceSummary,
+} from "@raspberrycode/shared";
 import {
   buildStoreItems,
   canUpdatePluginItem,
@@ -23,8 +23,8 @@ import {
 } from "../src/settings/pluginStoreListing.js";
 
 function makeSummary(
-  overrides: Partial<ZCodeAvailablePluginSummary> & { id: string },
-): ZCodeAvailablePluginSummary {
+  overrides: Partial<RaspberryCodeAvailablePluginSummary> & { id: string },
+): RaspberryCodeAvailablePluginSummary {
   const [name = "", marketplace = ""] = overrides.id.split("@");
   return {
     name,
@@ -34,7 +34,7 @@ function makeSummary(
   };
 }
 
-function makeInfo(overrides: Partial<ZCodePluginInfo> & { id: string }): ZCodePluginInfo {
+function makeInfo(overrides: Partial<RaspberryCodePluginInfo> & { id: string }): RaspberryCodePluginInfo {
   const [name = "", marketplace = ""] = overrides.id.split("@");
   return {
     name,
@@ -50,8 +50,8 @@ function makeInfo(overrides: Partial<ZCodePluginInfo> & { id: string }): ZCodePl
 }
 
 function makeMarketplace(
-  overrides: Partial<ZCodePluginMarketplaceSummary> & { id: string },
-): ZCodePluginMarketplaceSummary {
+  overrides: Partial<RaspberryCodePluginMarketplaceSummary> & { id: string },
+): RaspberryCodePluginMarketplaceSummary {
   return {
     name: overrides.id,
     source: {},
@@ -63,7 +63,7 @@ function makeMarketplace(
 describe("pluginStoreListing", () => {
   it("only falls back to a listing when the plugin name is unique", () => {
     const official = makeSummary({
-      id: "computer-use@zcode-plugins-official",
+      id: "computer-use@raspberrycode-plugins-official",
       listing: { displayName: "Computer Use" },
     });
     const custom = makeSummary({
@@ -116,45 +116,45 @@ describe("pluginStoreListing", () => {
 
   it("joins catalog, runtime, and installed records into store items", () => {
     const items = buildStoreItems({
-      marketplaces: [makeMarketplace({ id: "zcode-plugins-official" })],
+      marketplaces: [makeMarketplace({ id: "raspberrycode-plugins-official" })],
       marketplaceAvailabilityKnown: true,
       availablePlugins: [
-        makeSummary({ id: "a@zcode-plugins-official", installed: true }),
-        makeSummary({ id: "b@zcode-plugins-official" }),
+        makeSummary({ id: "a@raspberrycode-plugins-official", installed: true }),
+        makeSummary({ id: "b@raspberrycode-plugins-official" }),
       ],
       installedPlugins: [
         {
-          id: "a@zcode-plugins-official",
+          id: "a@raspberrycode-plugins-official",
           name: "a",
-          marketplace: "zcode-plugins-official",
+          marketplace: "raspberrycode-plugins-official",
           enabled: true,
           scope: "user",
-        } as ZCodeInstalledPluginSummary,
+        } as RaspberryCodeInstalledPluginSummary,
       ],
       plugins: [
-        makeInfo({ id: "a@zcode-plugins-official" }),
+        makeInfo({ id: "a@raspberrycode-plugins-official" }),
         // 运行时独有（inline）插件也要出现在条目集合里。
         makeInfo({ id: "c@inline", source: "inline" }),
       ],
-      restorableBuiltins: [makeSummary({ id: "d@zcode-plugins-official" })],
+      restorableBuiltins: [makeSummary({ id: "d@raspberrycode-plugins-official" })],
     });
     const byId = new Map(items.map((item) => [item.id, item]));
-    expect(byId.get("a@zcode-plugins-official")?.installed).toBe(true);
-    expect(byId.get("a@zcode-plugins-official")?.info).toBeDefined();
-    expect(byId.get("a@zcode-plugins-official")?.installedMeta).toBeDefined();
-    expect(byId.get("b@zcode-plugins-official")?.installed).toBe(false);
+    expect(byId.get("a@raspberrycode-plugins-official")?.installed).toBe(true);
+    expect(byId.get("a@raspberrycode-plugins-official")?.info).toBeDefined();
+    expect(byId.get("a@raspberrycode-plugins-official")?.installedMeta).toBeDefined();
+    expect(byId.get("b@raspberrycode-plugins-official")?.installed).toBe(false);
     expect(byId.get("c@inline")?.installed).toBe(true);
     expect(byId.get("c@inline")?.orphaned).toBe(false);
-    expect(byId.get("d@zcode-plugins-official")?.restorable).toBe(true);
+    expect(byId.get("d@raspberrycode-plugins-official")?.restorable).toBe(true);
   });
 
   it("merges a restorable built-in with its catalog entry instead of dropping detail metadata", () => {
     const [item] = buildStoreItems({
-      marketplaces: [makeMarketplace({ id: "zcode-plugins-official" })],
+      marketplaces: [makeMarketplace({ id: "raspberrycode-plugins-official" })],
       marketplaceAvailabilityKnown: true,
       availablePlugins: [
         makeSummary({
-          id: "document-skills@zcode-plugins-official",
+          id: "document-skills@raspberrycode-plugins-official",
           listing: {
             category: "productivity",
             displayName: "Document Skills",
@@ -164,11 +164,11 @@ describe("pluginStoreListing", () => {
       ],
       installedPlugins: [],
       plugins: [],
-      restorableBuiltins: [makeSummary({ id: "document-skills@zcode-plugins-official" })],
+      restorableBuiltins: [makeSummary({ id: "document-skills@raspberrycode-plugins-official" })],
     });
 
     expect(item).toMatchObject({
-      id: "document-skills@zcode-plugins-official",
+      id: "document-skills@raspberrycode-plugins-official",
       installed: false,
       restorable: true,
       listing: {
@@ -212,26 +212,26 @@ describe("pluginStoreListing", () => {
 
   it("keeps marketplace ownership when a stale restorable marker overlaps an installed record", () => {
     const [item] = buildStoreItems({
-      marketplaces: [makeMarketplace({ id: "zcode-plugins-official" })],
+      marketplaces: [makeMarketplace({ id: "raspberrycode-plugins-official" })],
       marketplaceAvailabilityKnown: true,
       availablePlugins: [
-        makeSummary({ id: "document-skills@zcode-plugins-official", installed: true }),
+        makeSummary({ id: "document-skills@raspberrycode-plugins-official", installed: true }),
       ],
       installedPlugins: [
         {
-          id: "document-skills@zcode-plugins-official",
+          id: "document-skills@raspberrycode-plugins-official",
           name: "document-skills",
-          marketplace: "zcode-plugins-official",
+          marketplace: "raspberrycode-plugins-official",
           enabled: true,
           scope: "user",
-        } as ZCodeInstalledPluginSummary,
+        } as RaspberryCodeInstalledPluginSummary,
       ],
-      plugins: [makeInfo({ id: "document-skills@zcode-plugins-official", enabled: true })],
-      restorableBuiltins: [makeSummary({ id: "document-skills@zcode-plugins-official" })],
+      plugins: [makeInfo({ id: "document-skills@raspberrycode-plugins-official", enabled: true })],
+      restorableBuiltins: [makeSummary({ id: "document-skills@raspberrycode-plugins-official" })],
     });
 
     expect(item).toMatchObject({
-      id: "document-skills@zcode-plugins-official",
+      id: "document-skills@raspberrycode-plugins-official",
       installed: true,
       restorable: false,
       info: { enabled: true },
@@ -252,7 +252,7 @@ describe("pluginStoreListing", () => {
           enabled: true,
           scope: "user",
           updateStatus: "update-available",
-        } as ZCodeInstalledPluginSummary,
+        } as RaspberryCodeInstalledPluginSummary,
       ],
       plugins: [makeInfo({ id: "orphan@personal-market" })],
       restorableBuiltins: [],
@@ -267,7 +267,7 @@ describe("pluginStoreListing", () => {
   });
 
   it("does not infer orphaned from a missing catalog listing when the source still exists", () => {
-    const installedMeta: ZCodeInstalledPluginSummary = {
+    const installedMeta: RaspberryCodeInstalledPluginSummary = {
       id: "installed@personal-market",
       name: "installed",
       marketplace: "personal-market",
@@ -290,13 +290,13 @@ describe("pluginStoreListing", () => {
 
   it("does not turn missing configuration into an installable item without a catalog source", () => {
     const missing = makeInfo({
-      id: "document-skills@zcode-plugins-official",
+      id: "document-skills@raspberrycode-plugins-official",
       source: "missing",
       packageStatus: "missing",
       rootPath: "",
     });
     const input = {
-      marketplaces: [makeMarketplace({ id: "zcode-plugins-official" })],
+      marketplaces: [makeMarketplace({ id: "raspberrycode-plugins-official" })],
       marketplaceAvailabilityKnown: true,
       availablePlugins: [],
       installedPlugins: [],
@@ -321,7 +321,7 @@ describe("pluginStoreListing", () => {
       installedPlugins: [],
       plugins: [
         makeInfo({
-          id: "builtin@zcode-plugins-official",
+          id: "builtin@raspberrycode-plugins-official",
           source: "official",
         }),
       ],
@@ -332,7 +332,7 @@ describe("pluginStoreListing", () => {
   });
 
   it("allows updates only when the installed item still has a marketplace source", () => {
-    const installedMeta: ZCodeInstalledPluginSummary = {
+    const installedMeta: RaspberryCodeInstalledPluginSummary = {
       id: "plugin@personal-market",
       name: "plugin",
       marketplace: "personal-market",
@@ -354,22 +354,22 @@ describe("pluginStoreListing", () => {
   it("selects featured items from public marketplaces in catalog order", () => {
     const items = buildStoreItems({
       marketplaces: [
-        makeMarketplace({ id: "zcode-plugins-official" }),
+        makeMarketplace({ id: "raspberrycode-plugins-official" }),
         makeMarketplace({ id: "claude-plugins-official" }),
       ],
       marketplaceAvailabilityKnown: true,
       availablePlugins: [
-        makeSummary({ id: "alpha@zcode-plugins-official" }),
-        makeSummary({ id: "beta@zcode-plugins-official" }),
+        makeSummary({ id: "alpha@raspberrycode-plugins-official" }),
+        makeSummary({ id: "beta@raspberrycode-plugins-official" }),
         makeSummary({ id: "gamma@claude-plugins-official" }),
       ],
       installedPlugins: [],
       plugins: [],
       restorableBuiltins: [],
     });
-    const publicItems = items.filter((item) => item.marketplace === "zcode-plugins-official");
+    const publicItems = items.filter((item) => item.marketplace === "raspberrycode-plugins-official");
     const featured = selectFeaturedItems(publicItems, [
-      makeMarketplace({ id: "zcode-plugins-official", featured: ["beta", "missing", "alpha"] }),
+      makeMarketplace({ id: "raspberrycode-plugins-official", featured: ["beta", "missing", "alpha"] }),
       // 非公开市场的 featured 名单不参与。
       makeMarketplace({ id: "claude-plugins-official", featured: ["gamma"] }),
     ]);
@@ -378,17 +378,17 @@ describe("pluginStoreListing", () => {
 
   it("orders category groups identically across locales with a fixed product order", () => {
     const items = buildStoreItems({
-      marketplaces: [makeMarketplace({ id: "zcode-plugins-official" })],
+      marketplaces: [makeMarketplace({ id: "raspberrycode-plugins-official" })],
       marketplaceAvailabilityKnown: true,
       availablePlugins: [
-        makeSummary({ id: "a@zcode-plugins-official", listing: { category: "productivity" } }),
-        makeSummary({ id: "b@zcode-plugins-official", listing: { category: "developer-tools" } }),
-        makeSummary({ id: "c@zcode-plugins-official", listing: { category: "legal" } }),
-        makeSummary({ id: "d@zcode-plugins-official", listing: { category: "template" } }),
-        makeSummary({ id: "e@zcode-plugins-official", listing: { category: "utilities" } }),
-        makeSummary({ id: "f@zcode-plugins-official", listing: { category: "zebra-unknown" } }),
-        makeSummary({ id: "h@zcode-plugins-official", listing: { category: "finance" } }),
-        makeSummary({ id: "g@zcode-plugins-official" }),
+        makeSummary({ id: "a@raspberrycode-plugins-official", listing: { category: "productivity" } }),
+        makeSummary({ id: "b@raspberrycode-plugins-official", listing: { category: "developer-tools" } }),
+        makeSummary({ id: "c@raspberrycode-plugins-official", listing: { category: "legal" } }),
+        makeSummary({ id: "d@raspberrycode-plugins-official", listing: { category: "template" } }),
+        makeSummary({ id: "e@raspberrycode-plugins-official", listing: { category: "utilities" } }),
+        makeSummary({ id: "f@raspberrycode-plugins-official", listing: { category: "zebra-unknown" } }),
+        makeSummary({ id: "h@raspberrycode-plugins-official", listing: { category: "finance" } }),
+        makeSummary({ id: "g@raspberrycode-plugins-official" }),
       ],
       installedPlugins: [],
       plugins: [],
@@ -413,11 +413,11 @@ describe("pluginStoreListing", () => {
 
   it("prefers listing display name with locale resolution", () => {
     const [item] = buildStoreItems({
-      marketplaces: [makeMarketplace({ id: "zcode-plugins-official" })],
+      marketplaces: [makeMarketplace({ id: "raspberrycode-plugins-official" })],
       marketplaceAvailabilityKnown: true,
       availablePlugins: [
         makeSummary({
-          id: "a@zcode-plugins-official",
+          id: "a@raspberrycode-plugins-official",
           listing: { displayName: "Alpha", displayNameI18n: { "zh-CN": "阿尔法" } },
         }),
       ],
@@ -432,11 +432,11 @@ describe("pluginStoreListing", () => {
 
   it("formats a canonical plugin name when no display name is configured", () => {
     const [item] = buildStoreItems({
-      marketplaces: [makeMarketplace({ id: "zcode-plugins-official" })],
+      marketplaces: [makeMarketplace({ id: "raspberrycode-plugins-official" })],
       marketplaceAvailabilityKnown: true,
       availablePlugins: [
         makeSummary({
-          id: "cloudbase-skills@zcode-plugins-official",
+          id: "cloudbase-skills@raspberrycode-plugins-official",
           name: "cloudbase-skills",
         }),
       ],
@@ -446,7 +446,7 @@ describe("pluginStoreListing", () => {
     });
     expect(item).toBeDefined();
     expect(resolveItemDisplayName(item!, "en-US")).toBe("Cloudbase Skills");
-    expect(formatCanonicalPluginName("zcode-guide", "en-US")).toBe("RaspberryCode Guide");
+    expect(formatCanonicalPluginName("raspberrycode-guide", "en-US")).toBe("RaspberryCode Guide");
     expect(formatCanonicalPluginName("aws-mcp-server", "en-US")).toBe("AWS MCP Server");
     expect(formatCanonicalPluginName("AWS_mCp_tools", "en-US")).toBe("AWS MCP Tools");
   });
@@ -455,7 +455,7 @@ describe("pluginStoreListing", () => {
     const items = buildStoreItems({
       marketplaces: [
         makeMarketplace({ id: "m" }),
-        makeMarketplace({ id: "zcode-plugins-official" }),
+        makeMarketplace({ id: "raspberrycode-plugins-official" }),
       ],
       marketplaceAvailabilityKnown: true,
       availablePlugins: [],
@@ -467,7 +467,7 @@ describe("pluginStoreListing", () => {
           enabled: true,
           scope: "user",
           installedAt: "2026-01-01T00:00:00Z",
-        } as ZCodeInstalledPluginSummary,
+        } as RaspberryCodeInstalledPluginSummary,
         {
           id: "new@m",
           name: "new",
@@ -475,21 +475,21 @@ describe("pluginStoreListing", () => {
           enabled: true,
           scope: "user",
           installedAt: "2026-07-01T00:00:00Z",
-        } as ZCodeInstalledPluginSummary,
+        } as RaspberryCodeInstalledPluginSummary,
         {
-          id: "builtin@zcode-plugins-official",
+          id: "builtin@raspberrycode-plugins-official",
           name: "builtin",
-          marketplace: "zcode-plugins-official",
+          marketplace: "raspberrycode-plugins-official",
           enabled: true,
           scope: "user",
           installedAt: "2025-01-01T00:00:00Z",
-        } as ZCodeInstalledPluginSummary,
+        } as RaspberryCodeInstalledPluginSummary,
       ],
       plugins: [
         makeInfo({ id: "old@m" }),
         makeInfo({ id: "new@m" }),
         makeInfo({ id: "inline@inline", source: "inline" }),
-        makeInfo({ id: "builtin@zcode-plugins-official", source: "official" }),
+        makeInfo({ id: "builtin@raspberrycode-plugins-official", source: "official" }),
       ],
       restorableBuiltins: [],
     });
@@ -500,7 +500,7 @@ describe("pluginStoreListing", () => {
   it("orders personal marketplace groups by lastUpdated descending, sinking unknown to the end", () => {
     const groups = [
       { marketplace: "claude-plugins-official", title: "Claude Code Plugins", items: [] },
-      { marketplace: "zcode-plugins-test", title: "zcode-plugins-test", items: [] },
+      { marketplace: "raspberrycode-plugins-test", title: "raspberrycode-plugins-test", items: [] },
       { marketplace: "never-refreshed", title: "never-refreshed", items: [] },
       { marketplace: "paid-demo-market", title: "paid-demo-market", items: [] },
     ];
@@ -508,16 +508,16 @@ describe("pluginStoreListing", () => {
       groups,
       [
         makeMarketplace({ id: "claude-plugins-official", lastUpdated: "2026-01-01T00:00:00Z" }),
-        makeMarketplace({ id: "zcode-plugins-test", lastUpdated: "2026-08-20T12:00:00Z" }),
+        makeMarketplace({ id: "raspberrycode-plugins-test", lastUpdated: "2026-08-20T12:00:00Z" }),
         makeMarketplace({ id: "paid-demo-market", lastUpdated: "2026-08-20T12:00:00Z" }),
         // never-refreshed 无记录：没有 lastUpdated，按缺失沉底。
       ],
       "en-US",
     );
     expect(sorted.map((group) => group.marketplace)).toEqual([
-      // 最近刷新的在前；同刻（zcode-plugins-test / paid-demo-market）按显示名字母序。
+      // 最近刷新的在前；同刻（raspberrycode-plugins-test / paid-demo-market）按显示名字母序。
       "paid-demo-market",
-      "zcode-plugins-test",
+      "raspberrycode-plugins-test",
       "claude-plugins-official",
       "never-refreshed",
     ]);
@@ -531,8 +531,8 @@ describe("pluginStoreListing", () => {
           name: "Never Refreshed",
         }),
         makeMarketplace({
-          id: "zcode-plugins-test",
-          name: "zcode-plugins-test",
+          id: "raspberrycode-plugins-test",
+          name: "raspberrycode-plugins-test",
           lastUpdated: "2026-08-20T12:00:00Z",
         }),
         makeMarketplace({
@@ -541,13 +541,13 @@ describe("pluginStoreListing", () => {
           lastUpdated: "2026-01-01T00:00:00Z",
         }),
         makeMarketplace({
-          id: "zcode-plugins-official",
-          name: "zcode-plugins-official",
+          id: "raspberrycode-plugins-official",
+          name: "raspberrycode-plugins-official",
           lastUpdated: "2026-08-20T23:00:00Z",
         }),
         makeMarketplace({
-          id: "zcode-labs",
-          name: "zcode-labs",
+          id: "raspberrycode-labs",
+          name: "raspberrycode-labs",
           lastUpdated: "2026-08-20T12:00:00Z",
         }),
       ],
@@ -555,10 +555,10 @@ describe("pluginStoreListing", () => {
     );
 
     expect(sorted.map((marketplace) => marketplace.id)).toEqual([
-      "zcode-plugins-official",
+      "raspberrycode-plugins-official",
       "claude-plugins-official",
-      "zcode-labs",
-      "zcode-plugins-test",
+      "raspberrycode-labs",
+      "raspberrycode-plugins-test",
       "never-refreshed",
     ]);
   });
@@ -566,21 +566,21 @@ describe("pluginStoreListing", () => {
 
 describe("document plugin default order", () => {
   const names = ["pdf", "presentations", "spreadsheets", "documents"];
-  const ids = names.map((name) => `${name}@zcode-plugins-official`);
+  const ids = names.map((name) => `${name}@raspberrycode-plugins-official`);
   const items = buildStoreItems({
     marketplaces: [],
     installedPlugins: [],
     restorableBuiltins: [],
     availablePlugins: ["aaa", ...names.toReversed()].map((name) =>
       makeSummary({
-        id: `${name}@zcode-plugins-official`,
+        id: `${name}@raspberrycode-plugins-official`,
         installed: true,
         listing: { category: "productivity" },
       }),
     ),
     plugins: ["aaa", ...names].map((name) =>
       makeInfo({
-        id: `${name}@zcode-plugins-official`,
+        id: `${name}@raspberrycode-plugins-official`,
         source: "official",
         enabled: false,
       }),
@@ -607,7 +607,7 @@ describe("document plugin default order", () => {
       items.filter((item) => item.name !== "pdf"),
       "en-US",
       {
-        pluginOrder: { productivity: ["aaa@zcode-plugins-official"] },
+        pluginOrder: { productivity: ["aaa@raspberrycode-plugins-official"] },
       },
     );
     expect(groups[0]?.items.map((item) => item.name)).toEqual([

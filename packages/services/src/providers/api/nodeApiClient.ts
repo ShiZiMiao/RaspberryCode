@@ -1,21 +1,21 @@
 import {
   ApiError,
-  DEFAULT_ZCODE_ENDPOINT_ORIGIN,
-  normalizeZCodeEndpointOrigin,
-  rewriteZCodeEndpointUrl,
+  DEFAULT_RASPBERRYCODE_ENDPOINT_ORIGIN,
+  normalizeRaspberryCodeEndpointOrigin,
+  rewriteRaspberryCodeEndpointUrl,
   type ApiClient,
   type ApiRequestInit,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import { createServiceLogger } from "#src/logger/serviceLogger.js";
-import { buildZCodeSourceHeaders } from "../sourceHeaders.js";
+import { buildRaspberryCodeSourceHeaders } from "../sourceHeaders.js";
 import { withRequestIdHeader } from "./requestIdHeaders.js";
 
 const log = createServiceLogger("node-api-client");
 
 interface NodeApiClientOptions {
   fetchImpl?: typeof fetch;
-  onZcodeJwtInvalid?: (input: string | URL, headers: Headers) => void;
-  isZcodeJwtRequest?: (input: string | URL, headers: Headers) => boolean | Promise<boolean>;
+  onRaspberrycodeJwtInvalid?: (input: string | URL, headers: Headers) => void;
+  isRaspberrycodeJwtRequest?: (input: string | URL, headers: Headers) => boolean | Promise<boolean>;
   isBusinessUnauthorizedRequest?: (
     input: string | URL,
     headers: Headers,
@@ -25,7 +25,7 @@ interface NodeApiClientOptions {
     input: string | URL,
     headers: Headers,
   ) => Promise<{ url: string; authorization: string; emptyBodyMeansInvalid: boolean } | null>;
-  resolveZCodeEndpointOrigin?: () => Promise<string> | string;
+  resolveRaspberryCodeEndpointOrigin?: () => Promise<string> | string;
   /** 宿主内存里的实时界面语言；同步读取，未注入或无值时 X-Client-Language 回退进程 Intl locale。 */
   resolveClientLanguage?: () => string | undefined;
 }
@@ -135,18 +135,18 @@ function readHeaderKeys(headers: RequestInit["headers"] | undefined): string[] {
 
 function isRequestForEndpoint(input: string | URL, endpointOrigin: string): boolean {
   try {
-    return new URL(resolveUrl(input)).origin === normalizeZCodeEndpointOrigin(endpointOrigin);
+    return new URL(resolveUrl(input)).origin === normalizeRaspberryCodeEndpointOrigin(endpointOrigin);
   } catch {
     return false;
   }
 }
 
-function withZCodeEndpointHeaders(
+function withRaspberryCodeEndpointHeaders(
   headers: RequestInit["headers"] | undefined,
   endpointOrigin: string,
   clientLanguage: string | undefined,
 ): RequestInit["headers"] {
-  const next = new Headers(buildZCodeSourceHeaders({ clientLanguage }));
+  const next = new Headers(buildRaspberryCodeSourceHeaders({ clientLanguage }));
   if (headers) {
     new Headers(headers).forEach((value, key) => {
       next.set(key, value);
@@ -157,8 +157,8 @@ function withZCodeEndpointHeaders(
   // 调用方显式带的 referer 优先，占位域哨兵仍按配置端点替换。
   const referer = next.get("HTTP-Referer");
   if (
-    (!referer || referer === DEFAULT_ZCODE_ENDPOINT_ORIGIN) &&
-    endpointOrigin !== DEFAULT_ZCODE_ENDPOINT_ORIGIN
+    (!referer || referer === DEFAULT_RASPBERRYCODE_ENDPOINT_ORIGIN) &&
+    endpointOrigin !== DEFAULT_RASPBERRYCODE_ENDPOINT_ORIGIN
   ) {
     next.set("HTTP-Referer", endpointOrigin);
   }
@@ -177,15 +177,15 @@ function resolveRequestHeaders(
 
   // RaspberryCode 后端请求以前只有部分业务路径手动补来源头。
   // 统一在 ApiClient 出口按 endpoint origin 注入，避免 OAuth/config/billing/snapshot 等链路遗漏。
-  return withZCodeEndpointHeaders(headers, endpointOrigin, clientLanguage);
+  return withRaspberryCodeEndpointHeaders(headers, endpointOrigin, clientLanguage);
 }
 
 export class NodeApiClient implements ApiClient {
   private readonly fetchImpl?: typeof fetch;
-  private readonly resolveZCodeEndpointOrigin?: () => Promise<string> | string;
+  private readonly resolveRaspberryCodeEndpointOrigin?: () => Promise<string> | string;
   private readonly resolveClientLanguage?: NodeApiClientOptions["resolveClientLanguage"];
-  private readonly onZcodeJwtInvalid?: (input: string | URL, headers: Headers) => void;
-  private readonly isZcodeJwtRequest?: NodeApiClientOptions["isZcodeJwtRequest"];
+  private readonly onRaspberrycodeJwtInvalid?: (input: string | URL, headers: Headers) => void;
+  private readonly isRaspberrycodeJwtRequest?: NodeApiClientOptions["isRaspberrycodeJwtRequest"];
   private readonly isBusinessUnauthorizedRequest?: NodeApiClientOptions["isBusinessUnauthorizedRequest"];
   private readonly businessUnauthorizedObservationTimeoutMs: number;
   private readonly resolveBusinessCredentialValidationRequest?: NodeApiClientOptions["resolveBusinessCredentialValidationRequest"];
@@ -200,15 +200,15 @@ export class NodeApiClient implements ApiClient {
 
   constructor(options: NodeApiClientOptions = {}) {
     this.fetchImpl = options.fetchImpl;
-    this.onZcodeJwtInvalid = options.onZcodeJwtInvalid;
-    this.isZcodeJwtRequest = options.isZcodeJwtRequest;
+    this.onRaspberrycodeJwtInvalid = options.onRaspberrycodeJwtInvalid;
+    this.isRaspberrycodeJwtRequest = options.isRaspberrycodeJwtRequest;
     this.isBusinessUnauthorizedRequest = options.isBusinessUnauthorizedRequest;
     this.resolveBusinessCredentialValidationRequest =
       options.resolveBusinessCredentialValidationRequest;
     this.businessUnauthorizedObservationTimeoutMs =
       options.businessUnauthorizedObservationTimeoutMs ??
       DEFAULT_BUSINESS_UNAUTHORIZED_OBSERVATION_TIMEOUT_MS;
-    this.resolveZCodeEndpointOrigin = options.resolveZCodeEndpointOrigin;
+    this.resolveRaspberryCodeEndpointOrigin = options.resolveRaspberryCodeEndpointOrigin;
     this.resolveClientLanguage = options.resolveClientLanguage;
   }
 
@@ -288,11 +288,11 @@ export class NodeApiClient implements ApiClient {
   }
 
   async request(input: string | URL, init?: ApiRequestInit): Promise<Response> {
-    const endpointOrigin = this.resolveZCodeEndpointOrigin
-      ? await this.resolveZCodeEndpointOrigin()
+    const endpointOrigin = this.resolveRaspberryCodeEndpointOrigin
+      ? await this.resolveRaspberryCodeEndpointOrigin()
       : undefined;
-    const activeEndpointOrigin = endpointOrigin ?? DEFAULT_ZCODE_ENDPOINT_ORIGIN;
-    const requestInput = rewriteZCodeEndpointUrl(input, activeEndpointOrigin);
+    const activeEndpointOrigin = endpointOrigin ?? DEFAULT_RASPBERRYCODE_ENDPOINT_ORIGIN;
+    const requestInput = rewriteRaspberryCodeEndpointUrl(input, activeEndpointOrigin);
     const url = resolveUrl(requestInput);
     const method = resolveMethod(init);
     const timeoutMs = init?.timeoutMs;
@@ -328,7 +328,7 @@ export class NodeApiClient implements ApiClient {
       );
       if (isRequestForEndpoint(requestInput, activeEndpointOrigin)) {
         // 调试说明：这里只记录 header key，避免 Authorization / token 等敏感值落盘。
-        log.debug(undefined, "zcode endpoint request headers prepared", {
+        log.debug(undefined, "raspberrycode endpoint request headers prepared", {
           headerKeys: readHeaderKeys(requestHeaders),
           method,
           url,
@@ -339,16 +339,16 @@ export class NodeApiClient implements ApiClient {
         headers: requestHeaders,
         ...(signal ? { signal } : {}),
       });
-      if ([200, 401, 403].includes(response.status) && this.onZcodeJwtInvalid) {
+      if ([200, 401, 403].includes(response.status) && this.onRaspberrycodeJwtInvalid) {
         try {
           await waitWithAbort(
             (async () => {
               const requestHeadersForObservation = new Headers(requestHeaders);
-              const isCurrentZCodeJwtRequest = await this.isZcodeJwtRequest?.(
+              const isCurrentRaspberryCodeJwtRequest = await this.isRaspberrycodeJwtRequest?.(
                 requestInput,
                 requestHeadersForObservation,
               );
-              if (isCurrentZCodeJwtRequest) {
+              if (isCurrentRaspberryCodeJwtRequest) {
                 let invalid = response.status === 401;
                 if (
                   !invalid &&
@@ -376,14 +376,14 @@ export class NodeApiClient implements ApiClient {
                     );
                 }
                 if (invalid && !signal?.aborted)
-                  this.onZcodeJwtInvalid?.(requestInput, requestHeadersForObservation);
+                  this.onRaspberrycodeJwtInvalid?.(requestInput, requestHeadersForObservation);
               }
             })(),
             signal,
           );
         } catch (error) {
           if (signal?.aborted) throw new DOMException("The operation was aborted.", "AbortError");
-          log.warn("zcode jwt invalid response observation failed", { error });
+          log.warn("raspberrycode jwt invalid response observation failed", { error });
         }
       }
       if (signal?.aborted) throw new DOMException("The operation was aborted.", "AbortError");

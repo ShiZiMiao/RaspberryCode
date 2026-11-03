@@ -54,7 +54,8 @@ const enUS: Record<string, string> = {
   "remote.recognizedDevice": "Connected to device {device}",
   "settings.source.addRoute": "Add a connection — use another SSH target for this device",
   "settings.modelProvider.emptyProvidersTitle": "No model providers yet",
-  "settings.modelProvider.emptyProvidersHint": "Click \"Add provider\" in the top-right to get started; configured providers become selectable in chat.",
+  "settings.modelProvider.emptyProvidersHint":
+    'Click "Add provider" in the top-right to get started; configured providers become selectable in chat.',
   "settings.plugins.empty": "No plugins found",
   "remote.action.cancel": "Cancel connection",
   "chat.toolCall.taskOutput.failed": "Failed to fetch output",
@@ -63,7 +64,8 @@ const enUS: Record<string, string> = {
     "Secure storage is required before this value can be configured.",
   "remote.manage": "Manage",
   "settings.usage.codingPlanMetric.usage": "Usage",
-  "settings.source.connectionNameHint": "Used only to distinguish this connection in RaspberryCode.",
+  "settings.source.connectionNameHint":
+    "Used only to distinguish this connection in RaspberryCode.",
   "chat.permission.allowAlways.description.command": "Do not ask again for the same command",
   "bots.botMeta": "{users} bound users · workspace {workspace}",
   "remote.error.sourceServerIdentityChangePending.reason":
@@ -241,7 +243,7 @@ const enUS: Record<string, string> = {
   "settings.usage.modelChart.remoteTokens": "From model-usage api",
   "settings.subagents.color.orange": "Orange",
   "automations.list.title": "Scheduled tasks",
-  "zcode.error.ZCODE_RUNTIME_MODEL_UNAVAILABLE":
+  "raspberrycode.error.RASPBERRYCODE_RUNTIME_MODEL_UNAVAILABLE":
     "The current model is no longer available. Select an available model from the current model list to continue.",
   "remote.sourceServerInstallCancelled": "Installation cancelled. You can retry when ready.",
   "remote.action.none": "",
@@ -330,7 +332,7 @@ const enUS: Record<string, string> = {
   "remote.log.sessionReady":
     "Remote session created successfully. You can choose a directory next.",
   "settings.subagents.table.name": "Name",
-  "zcode.error.STALE_TASK_OWNER_COMMAND": "This action belongs to an older run and was ignored.",
+  "raspberrycode.error.STALE_TASK_OWNER_COMMAND": "This action belongs to an older run and was ignored.",
   "chat.toolCall.respondToCoordinator.denied": "Reply denied",
   "bots.unbindSuccess": "Bot unbound",
   "settings.source.unidentifiedProfilesDescription":
@@ -365,7 +367,7 @@ const enUS: Record<string, string> = {
   "settings.plugins.description":
     "Enable or disable installed plugins. Plugins bundle skills, commands, hooks, and MCP servers.",
   "bots.feishuRegistrationExpired": "The QR code expired. Start again.",
-  "zcode.error.MEDIA_BUDGET_CURRENT_IMAGE_TOO_LARGE":
+  "raspberrycode.error.MEDIA_BUDGET_CURRENT_IMAGE_TOO_LARGE":
     "Current image attachments are too large. Remove or compress images and try again.",
   "remote.error.workspaceConfigConflict.reason":
     "View details, follow the instructions, and retry.",
@@ -382,7 +384,7 @@ const enUS: Record<string, string> = {
   "chat.promptEnhance.unsupported":
     "The selected model does not currently expose a direct enhancement configuration.",
   "chat.toolCall.taskOutput.denied": "Fetch denied",
-  "zcode.error.OWNER_COMMAND_FAILED": "The task owner could not complete this action.",
+  "raspberrycode.error.OWNER_COMMAND_FAILED": "The task owner could not complete this action.",
   "automations.frequency.monthly": "Every month",
   "settings.subagents.form.disallowedTools.label": "Disallowed tools",
   "settings.subagents.scope.label": "Scope",
@@ -430,7 +432,7 @@ const enUS: Record<string, string> = {
   "chat.attachments.upload.ready": "Upload complete",
   "chat.toolCall.cua.pressKey": "Press {key}",
   "settings.usage.entitlementNotConfigured":
-    "No connected Z.ai or BigModel Coding Plan account is available for quota lookup. Connect a Coding Plan account first.",
+    "No connected Coding Plan account is available for quota lookup. Connect a Coding Plan account first.",
   "settings.mcp.group.local": "Configured MCP servers",
   "chat.toolCall.agent.label": "SubAgent",
   "chat.promptEnhance.cancel": "Cancel enhance",
@@ -612,14 +614,14 @@ const enUS: Record<string, string> = {
   "automations.lifecycle.active": "Active",
   "automations.empty.description": "Create a task to run a prompt on a recurring schedule.",
   "automations.workspace.label": "Project",
-  "zcode.error.ZCODE_BIGMODEL_TEAM_PLAN_MEMBER_REQUIRED":
+  "raspberrycode.error.RASPBERRYCODE_BIGMODEL_TEAM_PLAN_MEMBER_REQUIRED":
     "The current model is unavailable. Check whether the current account has been added to the project member list.",
-  "zcode.error.MEDIA_BUDGET_CURRENT_VIDEO_TOO_LARGE":
+  "raspberrycode.error.MEDIA_BUDGET_CURRENT_VIDEO_TOO_LARGE":
     "Current video attachments are too large. Remove or compress videos and try again.",
-  "zcode.error.MEDIA_BUDGET_CURRENT_ATTACHMENT_TOO_LARGE":
+  "raspberrycode.error.MEDIA_BUDGET_CURRENT_ATTACHMENT_TOO_LARGE":
     "Current attachments are too large for one request. Remove or compress attachments and try again.",
-  "zcode.error.NO_ACTIVE_TASK_OWNER": "No active task owner is available for this action.",
-  "zcode.error.TASK_OWNED_BY_OTHER_HOST": "This task is already running in another connected view.",
+  "raspberrycode.error.NO_ACTIVE_TASK_OWNER": "No active task owner is available for this action.",
+  "raspberrycode.error.TASK_OWNED_BY_OTHER_HOST": "This task is already running in another connected view.",
   "chat.permission.fileChange.mixedMany": "Update {count} files",
   "chat.permission.fileChange.addMany": "Creates {count} files",
   "chat.permission.fileChange.add": "Create",
@@ -737,7 +739,7 @@ const enUS: Record<string, string> = {
   "onboarding.finish.summary.sessions.detail":
     "Imported {imported}, skipped {skipped}, failed {failed}.",
   "onboarding.agentSettings.providersToggleAllAria": "Select or clear providers for all agents",
-  "settings.plugins.zcodeOnly": "RaspberryCode Agent only",
+  "settings.plugins.raspberrycodeOnly": "RaspberryCode Agent only",
   "settings.hooks.backToList": "Back",
   "settings.hooks.type.command": "Shell command",
   "settings.hooks.group.plugins": "Plugin hooks",
@@ -818,7 +820,7 @@ const enUS: Record<string, string> = {
   "settings.usage.codingPlanCurrentConnectionDescription":
     "Switch the workspace model connection to an Individual Plan or Team Plan to view its quota and usage here.",
   "settings.usage.codingPlanNotConfiguredDescription":
-    "Connect a Z.ai or BigModel Coding Plan provider in Model Settings to view plan quota, model usage, and tool usage.",
+    "Connect a Coding Plan provider in Model Settings to view plan quota, model usage, and tool usage.",
   "settings.usage.timesUnit": " times",
   "settings.usage.toolUsageTitle": "Tool usage",
   "settings.usage.dailyChart.peak": "Peak day",
@@ -1071,7 +1073,7 @@ const enUS: Record<string, string> = {
   "bots.setup.testFailed": "Connectivity test failed",
   "bots.setup.footer.create": "Connectivity must pass before binding.",
   "bots.setup.guide.webhook.bind.3":
-    "If the bot uses a secret, also send `x-zcode-bot-secret`; then return here after the bind succeeds.",
+    "If the bot uses a secret, also send `x-raspberrycode-bot-secret`; then return here after the bind succeeds.",
   "bots.setup.guide.webhook.bind.1":
     "POST a private-message callback to RaspberryCode's `/api/bots/webhook` endpoint.",
   "bots.setup.guide.webhook.create.2":
@@ -1461,7 +1463,8 @@ const enUS: Record<string, string> = {
   "occupationOnboarding.migration": "Migrate conversations",
   "occupationOnboarding.migrationDescription": "Migrate conversation history from Claude Code",
   "occupationOnboarding.memory": "Enable Workspace Memory",
-  "occupationOnboarding.memoryDescription": "Let RaspberryCode remember your preferences and work context.",
+  "occupationOnboarding.memoryDescription":
+    "Let RaspberryCode remember your preferences and work context.",
   "occupationOnboarding.suggestions": "Enable proactive task suggestions",
   "occupationOnboarding.suggestionsDescription":
     "Show suggestions in new conversations. Click to fill the composer.",
@@ -1810,8 +1813,6 @@ const enUS: Record<string, string> = {
   "bots.deleteFailed": "Failed to delete bot: {error}",
 
   // Welcome / Login
-  "login.oauth.regionTag.zai": "Global",
-  "login.oauth.regionTag.bigmodel": "CN",
   "settings.onboarding": "Onboard",
   "settings.onboardingDescription":
     "Choose your role, interface mode, and preferences again. Use Migration settings to import data.",
@@ -2439,7 +2440,7 @@ const enUS: Record<string, string> = {
   "titleBar.menu.help.exportLogs": "Export logs",
   "titleBar.menu.help.toggleDevTools": "Toggle developer tools",
   "titleBar.menu.help.resourceManager": "Resource manager",
-  "titleBar.menu.help.toggleZCodeStdioTap": "Capture agent stdio traffic",
+  "titleBar.menu.help.toggleRaspberryCodeStdioTap": "Capture agent stdio traffic",
   "titleBar.menu.help.clearAllData": "Clear all data",
 
   // Directory browser
@@ -3220,11 +3221,11 @@ const enUS: Record<string, string> = {
   "settings.toolGroupingChanges": "Group file changes",
   "settings.toolGroupingChangesDescription":
     "Group consecutive Write, Edit, and ApplyPatch calls into a Changes section.",
-  "settings.zcodeInteractionBehavior": "Interaction behavior",
-  "settings.zcodeInteractionBehaviorDescription":
+  "settings.raspberrycodeInteractionBehavior": "Interaction behavior",
+  "settings.raspberrycodeInteractionBehaviorDescription":
     "While RaspberryCode is running, add follow-up actions to the queue or guide them to run after the next tool call.",
-  "settings.zcodeInteractionBehavior.option.queue": "Queue",
-  "settings.zcodeInteractionBehavior.option.guide": "Guide",
+  "settings.raspberrycodeInteractionBehavior.option.queue": "Queue",
+  "settings.raspberrycodeInteractionBehavior.option.guide": "Guide",
   "settings.askUserQuestionAutoResolution": "Automatically continue questions",
   "settings.askUserQuestionAutoResolutionDescription":
     "When enabled, Agent questions automatically continue after 5 minutes without an answer. When disabled, current and future questions wait for your response.",
@@ -3232,7 +3233,8 @@ const enUS: Record<string, string> = {
   "settings.endpointOriginDescription":
     "RaspberryCode service endpoint origin (http/https). Leave empty or reset to use the built-in default; changes apply immediately, though some capabilities may require a restart.",
   "settings.endpointOrigin.reset": "Reset",
-  "settings.endpointOrigin.invalid": "Invalid endpoint. Use an http or https origin, for example https://your-server.example",
+  "settings.endpointOrigin.invalid":
+    "Invalid endpoint. Use an http or https origin, for example https://your-server.example",
   "settings.endpointOrigin.saveError": "Failed to save the service endpoint",
   "settings.dynamicWorkflow": "Dynamic workflows",
   "settings.dynamicWorkflowDescription":
@@ -3399,7 +3401,8 @@ const enUS: Record<string, string> = {
   "settings.embeddedBrowserAllowInsecureCertificatesSavedHint":
     "Certificate setting saved. Restart the app to take effect.",
   "settings.browser.data.section": "Browser data",
-  "settings.browser.desktopOnly": "Browser data can only be managed in the RaspberryCode desktop app.",
+  "settings.browser.desktopOnly":
+    "Browser data can only be managed in the RaspberryCode desktop app.",
   "settings.browser.import.title": "Import Chrome sign-in state",
   "settings.browser.import.description":
     "Bring your Chrome sign-in state into the built-in browser once, so the AI can open sites you are already signed in to and work more smoothly.",
@@ -3874,7 +3877,7 @@ const enUS: Record<string, string> = {
   "settings.usage.duration.hour": "h",
   "settings.usage.duration.minute": "m",
   "settings.modelProvider.presetDescription":
-    "Built-in Z.ai and BigModel providers with OAuth-assisted configuration.",
+    "Built-in provider templates assist configuration; custom providers are also supported.",
   "settings.modelProvider.presetEmpty": "Not synced yet. Complete OAuth login first.",
   "settings.modelProvider.customTitle": "Custom providers",
   "settings.modelProvider.refresh": "Refresh",
@@ -3928,7 +3931,7 @@ const enUS: Record<string, string> = {
   "settings.skills.delete.title": "Delete skill",
   "settings.skills.delete.description":
     'Delete "{name}"? This removes the skill folder from disk and cannot be undone.',
-  "settings.skills.agent.glm": "RaspberryCode Agent",
+  "settings.skills.agent.raspberrycode": "RaspberryCode Agent",
   "settings.skills.agent.unknown": "Unknown source",
   "settings.skills.create.open": "New skill",
   "settings.skills.create.taskCreateFailed":
@@ -4307,7 +4310,7 @@ const enUS: Record<string, string> = {
   "settings.plugins.import.resultEmpty": "No plugin results were returned.",
   "settings.plugins.import.finish": "Done",
   "settings.commands.title": "Commands",
-  "settings.commands.source.zcodeAgent": "RaspberryCode Agent",
+  "settings.commands.source.raspberrycodeAgent": "RaspberryCode Agent",
   "settings.commands.addNew": "New command",
   "settings.commands.addDescription":
     "Fill in the command name and prompt, then save to return to the list.",
@@ -4391,9 +4394,9 @@ const enUS: Record<string, string> = {
   "settings.hooks.title": "Hooks",
   "settings.workspaceFileSearch.title": "Workspace Search Scope",
   "settings.workspaceFileSearch.description":
-    "Edit .zcodeignore rules (gitignore syntax) that scope workspace file search. Takes effect on the next search after saving.",
+    "Edit .raspberrycodeignore rules (gitignore syntax) that scope workspace file search. Takes effect on the next search after saving.",
   "settings.workspaceFileSearch.templateHint":
-    ".zcodeignore does not exist yet: the content below is the initial preview (.gitignore copy + default exclusions); it is written to the workspace only after saving.",
+    ".raspberrycodeignore does not exist yet: the content below is the initial preview (.gitignore copy + default exclusions); it is written to the workspace only after saving.",
   "settings.workspaceFileSearch.editorLabel": "Workspace search ignore rules editor",
   "settings.workspaceFileSearch.save": "Save",
   "settings.workspaceFileSearch.saved": "Saved; effective on the next search",
@@ -4404,7 +4407,7 @@ const enUS: Record<string, string> = {
   "settings.workspaceFileSearch.transformFailed":
     "Failed to apply the section operation; check the logs",
   "settings.workspaceFileSearch.reveal": "Reveal file location",
-  "settings.workspaceFileSearch.revealHint": "Save first; .zcodeignore lives at the workspace root",
+  "settings.workspaceFileSearch.revealHint": "Save first; .raspberrycodeignore lives at the workspace root",
   "settings.workspaceFileSearch.unsaved": "Unsaved changes",
   "settings.workspaceFileSearch.noWorkspace":
     "No workspace is open, so search ignore rules cannot be configured.",
@@ -4444,7 +4447,7 @@ const enUS: Record<string, string> = {
   "settingsSync.action.skip": "Not now",
   "settingsSync.action.rescan": "Scan again",
   "settingsSync.action.finish": "Start using RaspberryCode",
-  "settingsSync.agent.zcode": "RaspberryCode Agent",
+  "settingsSync.agent.raspberrycode": "RaspberryCode Agent",
   "settingsSync.agent.claudeCode": "Claude Code",
   "settingsSync.agent.codexCli": "Codex CLI",
   "settingsSync.agent.openCode": "OpenCode",
@@ -5860,18 +5863,18 @@ const enUS: Record<string, string> = {
 
   // Modes
   "mode.plan": "Plan",
-  "mode.label.glm.default": "Default",
-  "mode.label.glm.build": "Ask before changes",
-  "mode.label.glm.edit": "Edit automatically",
-  "mode.label.glm.plan": "Plan mode",
-  "mode.label.glm.guarded": "Autonomous mode",
-  "mode.description.glm.guarded": "Ask when there’s risk",
-  "mode.label.glm.yolo": "Full access",
-  "mode.description.glm.default": "Use default confirmations.",
-  "mode.description.glm.build": "Ask before file changes.",
-  "mode.description.glm.edit": "Edit files automatically.",
-  "mode.description.glm.plan": "Plan before editing.",
-  "mode.description.glm.yolo": "Run with fewer confirmations.",
+  "mode.label.agent.default": "Default",
+  "mode.label.agent.build": "Ask before changes",
+  "mode.label.agent.edit": "Edit automatically",
+  "mode.label.agent.plan": "Plan mode",
+  "mode.label.agent.guarded": "Autonomous mode",
+  "mode.description.agent.guarded": "Ask when there’s risk",
+  "mode.label.agent.yolo": "Full access",
+  "mode.description.agent.default": "Use default confirmations.",
+  "mode.description.agent.build": "Ask before file changes.",
+  "mode.description.agent.edit": "Edit files automatically.",
+  "mode.description.agent.plan": "Plan before editing.",
+  "mode.description.agent.yolo": "Run with fewer confirmations.",
   "todo.panel.title": "Todo",
   "todo.panel.currentTask": "Current task",
   "todo.panel.toggle": "Toggle todo panel",
@@ -5884,28 +5887,28 @@ const enUS: Record<string, string> = {
   "chat.permission.switchMode.placeholder": "Implementation plan",
 
   // RaspberryCode Agent
-  "zcode.error.CLAUDE_UNKNOWN_COMMAND":
+  "raspberrycode.error.CLAUDE_UNKNOWN_COMMAND":
     "Claude Code does not recognize {command}. Check the command name, or switch to an Agent/skill that supports it and try again.",
-  "zcode.error.CLAUDE_UNKNOWN_COMMAND_WITH_ARGS":
+  "raspberrycode.error.CLAUDE_UNKNOWN_COMMAND_WITH_ARGS":
     "Claude Code does not recognize {command} (args: {args}). Check the command name, or switch to an Agent/skill that supports it and try again.",
-  "zcode.error.providerBusiness.1006": "Your login session has expired. Please sign in again.",
-  "zcode.error.providerBusiness.1005":
+  "raspberrycode.error.providerBusiness.1006": "Your login session has expired. Please sign in again.",
+  "raspberrycode.error.providerBusiness.1005":
     "Today's free plan quota has been used up. Upgrade to continue now, or wait for the quota to reset.",
-  "zcode.error.providerBusiness.3006":
+  "raspberrycode.error.providerBusiness.3006":
     "The current model is not included in this plan. Switch to an allowed model and try again.",
-  "zcode.error.providerBusiness.3002":
+  "raspberrycode.error.providerBusiness.3002":
     "You're sending requests too quickly. Please try again later.",
-  "zcode.error.providerBusiness.3001":
+  "raspberrycode.error.providerBusiness.3001":
     "The request parameters are invalid. Check the input and try again.",
-  "zcode.error.providerBusiness.3008":
+  "raspberrycode.error.providerBusiness.3008":
     "The system is busy. Please switch models, upgrade your account, or try again later.",
-  "zcode.error.providerBusiness.3009":
+  "raspberrycode.error.providerBusiness.3009":
     "The system is busy. Please switch models, upgrade your account, or try again later.",
-  "zcode.error.providerBusiness.3010":
+  "raspberrycode.error.providerBusiness.3010":
     "The system is busy. Please switch models, upgrade your account, or try again later.",
-  "zcode.error.providerBusiness.2007":
+  "raspberrycode.error.providerBusiness.2007":
     "The upstream service is temporarily unavailable. Please try again later.",
-  "zcode.error.providerBusiness.429":
+  "raspberrycode.error.providerBusiness.429":
     "You're sending requests too quickly. Please try again later.",
 
   // Debug info bar

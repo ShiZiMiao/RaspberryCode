@@ -1,19 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ZCodePluginsOverviewResult, ZCodePluginInfo } from "@zcode/shared";
-import type { IPluginManagementService } from "@zcode/services";
+import type { RaspberryCodePluginsOverviewResult, RaspberryCodePluginInfo } from "@raspberrycode/shared";
+import type { IPluginManagementService } from "@raspberrycode/services";
 import {
   createPluginManagementStore,
   usePluginManagementStore,
 } from "../src/store/pluginManagementStore.js";
 import { buildStoreItems } from "../src/settings/pluginStoreListing.js";
 
-function makePlugin(overrides: Partial<ZCodePluginInfo> = {}): ZCodePluginInfo {
+function makePlugin(overrides: Partial<RaspberryCodePluginInfo> = {}): RaspberryCodePluginInfo {
   return {
-    id: "skill-creator@zcode-plugins-official",
+    id: "skill-creator@raspberrycode-plugins-official",
     name: "skill-creator",
     enabled: true,
     source: "official",
-    marketplace: "zcode-plugins-official",
+    marketplace: "raspberrycode-plugins-official",
     skillCount: 1,
     skillRootCount: 1,
     commandRootCount: 0,
@@ -49,7 +49,7 @@ function createPluginServiceMock(overrides?: {
       vi.fn(async () => ({ installedPlugins: [], dependencyClosure: [], diagnostics: [] })),
     configurePlugin:
       overrides?.configurePlugin ??
-      vi.fn(async () => ({ pluginId: "skill-creator@zcode-plugins-official", diagnostics: [] })),
+      vi.fn(async () => ({ pluginId: "skill-creator@raspberrycode-plugins-official", diagnostics: [] })),
     setPluginEnabled:
       overrides?.setPluginEnabled ??
       vi.fn(async () => ({ plugin: makePlugin({ enabled: false }), enabled: false })),
@@ -57,8 +57,8 @@ function createPluginServiceMock(overrides?: {
 }
 
 function makeOverview(
-  overrides: Partial<ZCodePluginsOverviewResult> = {},
-): ZCodePluginsOverviewResult {
+  overrides: Partial<RaspberryCodePluginsOverviewResult> = {},
+): RaspberryCodePluginsOverviewResult {
   return {
     marketplaces: [
       {
@@ -190,7 +190,7 @@ describe("pluginManagementStore", () => {
     const pending = new Map<string, () => void>();
     const listPlugins = vi.fn(
       ({ configScope }: { configScope?: "user" | "workspace" }) =>
-        new Promise<{ plugins: ZCodePluginInfo[]; diagnostics: [] }>((resolve) => {
+        new Promise<{ plugins: RaspberryCodePluginInfo[]; diagnostics: [] }>((resolve) => {
           pending.set(configScope ?? "effective", () =>
             resolve({
               plugins: [
@@ -289,11 +289,11 @@ describe("pluginManagementStore", () => {
     });
     await usePluginManagementStore
       .getState()
-      .setEnabled("skill-creator@zcode-plugins-official", false, pluginService);
+      .setEnabled("skill-creator@raspberrycode-plugins-official", false, pluginService);
 
     expect(setPluginEnabled).toHaveBeenCalledWith({
       workspacePath: "/workspace/app",
-      pluginId: "skill-creator@zcode-plugins-official",
+      pluginId: "skill-creator@raspberrycode-plugins-official",
       enabled: false,
       scope: "user",
     });
@@ -322,14 +322,14 @@ describe("pluginManagementStore", () => {
 
     const change = usePluginManagementStore
       .getState()
-      .setEnabled("skill-creator@zcode-plugins-official", false, pluginService, "workspace");
+      .setEnabled("skill-creator@raspberrycode-plugins-official", false, pluginService, "workspace");
 
     expect(usePluginManagementStore.getState().plugins[0]).toMatchObject({
       enabled: false,
       enabledSource: "workspace",
     });
     expect(usePluginManagementStore.getState().togglingPluginId).toBe(
-      "skill-creator@zcode-plugins-official",
+      "skill-creator@raspberrycode-plugins-official",
     );
 
     rejectWrite?.(new Error("write failed"));
@@ -344,10 +344,10 @@ describe("pluginManagementStore", () => {
   });
 
   it("ignores a stale toggle response after the selected configuration scope changes", async () => {
-    let resolveWrite: ((value: { plugin: ZCodePluginInfo; enabled: boolean }) => void) | undefined;
+    let resolveWrite: ((value: { plugin: RaspberryCodePluginInfo; enabled: boolean }) => void) | undefined;
     const setPluginEnabled = vi.fn(
       () =>
-        new Promise<{ plugin: ZCodePluginInfo; enabled: boolean }>((resolve) => {
+        new Promise<{ plugin: RaspberryCodePluginInfo; enabled: boolean }>((resolve) => {
           resolveWrite = resolve;
         }),
     );
@@ -362,7 +362,7 @@ describe("pluginManagementStore", () => {
     });
     const change = usePluginManagementStore
       .getState()
-      .setEnabled("skill-creator@zcode-plugins-official", false, pluginService, "workspace");
+      .setEnabled("skill-creator@raspberrycode-plugins-official", false, pluginService, "workspace");
 
     usePluginManagementStore.setState({
       workspacePath: "/workspace/b",
@@ -675,7 +675,7 @@ describe("pluginManagementStore", () => {
 
   it("forwards sensitive option clears without resetting other plugin state", async () => {
     const configurePlugin = vi.fn(async () => ({
-      pluginId: "skill-creator@zcode-plugins-official",
+      pluginId: "skill-creator@raspberrycode-plugins-official",
       diagnostics: [],
     }));
     const pluginService = createPluginServiceMock({
@@ -689,7 +689,7 @@ describe("pluginManagementStore", () => {
     const configured = await usePluginManagementStore
       .getState()
       .configurePlugin(
-        "skill-creator@zcode-plugins-official",
+        "skill-creator@raspberrycode-plugins-official",
         { region: "us-east-1" },
         pluginService,
         "workspace",
@@ -699,7 +699,7 @@ describe("pluginManagementStore", () => {
     expect(configured).toBe(true);
     expect(configurePlugin).toHaveBeenCalledWith({
       workspacePath: "/workspace/app",
-      pluginId: "skill-creator@zcode-plugins-official",
+      pluginId: "skill-creator@raspberrycode-plugins-official",
       options: { region: "us-east-1" },
       scope: "workspace",
       clearOptionKeys: ["token"],
@@ -720,7 +720,7 @@ describe("pluginManagementStore", () => {
 
     const configured = await usePluginManagementStore
       .getState()
-      .configurePlugin("skill-creator@zcode-plugins-official", {}, pluginService, "workspace", [
+      .configurePlugin("skill-creator@raspberrycode-plugins-official", {}, pluginService, "workspace", [
         "token",
       ]);
 
@@ -736,7 +736,7 @@ describe("pluginManagementStore", () => {
         new Promise<{ pluginId: string; diagnostics: [] }>((resolve) => {
           resolveConfiguration = () =>
             resolve({
-              pluginId: "skill-creator@zcode-plugins-official",
+              pluginId: "skill-creator@raspberrycode-plugins-official",
               diagnostics: [],
             });
         }),
@@ -752,10 +752,10 @@ describe("pluginManagementStore", () => {
 
     const configuration = usePluginManagementStore
       .getState()
-      .configurePlugin("skill-creator@zcode-plugins-official", { label: "user" }, pluginService);
+      .configurePlugin("skill-creator@raspberrycode-plugins-official", { label: "user" }, pluginService);
     await vi.waitFor(() => expect(configurePlugin).toHaveBeenCalledTimes(1));
     expect(usePluginManagementStore.getState().activeOperations).toEqual([
-      { id: "plugin:configure:skill-creator@zcode-plugins-official" },
+      { id: "plugin:configure:skill-creator@raspberrycode-plugins-official" },
     ]);
 
     usePluginManagementStore.setState({ configScope: "workspace" });
@@ -772,7 +772,7 @@ describe("pluginManagementStore", () => {
         new Promise<{ pluginId: string; diagnostics: [] }>((resolve) => {
           resolveConfiguration = () =>
             resolve({
-              pluginId: "skill-creator@zcode-plugins-official",
+              pluginId: "skill-creator@raspberrycode-plugins-official",
               diagnostics: [],
             });
         }),
@@ -788,7 +788,7 @@ describe("pluginManagementStore", () => {
 
     const userConfiguration = usePluginManagementStore
       .getState()
-      .configurePlugin("skill-creator@zcode-plugins-official", { label: "user" }, pluginService);
+      .configurePlugin("skill-creator@raspberrycode-plugins-official", { label: "user" }, pluginService);
     await vi.waitFor(() => expect(configurePlugin).toHaveBeenCalledTimes(1));
 
     await usePluginManagementStore.getState().initialize({
@@ -915,10 +915,10 @@ describe("pluginManagementStore", () => {
   });
 
   it("reuses an in-flight load for the same workspace", async () => {
-    let resolveList: ((value: { plugins: ZCodePluginInfo[]; diagnostics: [] }) => void) | undefined;
+    let resolveList: ((value: { plugins: RaspberryCodePluginInfo[]; diagnostics: [] }) => void) | undefined;
     const listPlugins = vi.fn(
       () =>
-        new Promise<{ plugins: ZCodePluginInfo[]; diagnostics: [] }>((resolve) => {
+        new Promise<{ plugins: RaspberryCodePluginInfo[]; diagnostics: [] }>((resolve) => {
           resolveList = resolve;
         }),
     );
@@ -948,10 +948,10 @@ describe("pluginManagementStore", () => {
   });
 
   it("does not reuse an in-flight load across Sources with the same home", async () => {
-    let resolveA: ((value: { plugins: ZCodePluginInfo[]; diagnostics: [] }) => void) | undefined;
+    let resolveA: ((value: { plugins: RaspberryCodePluginInfo[]; diagnostics: [] }) => void) | undefined;
     const listA = vi.fn(
       () =>
-        new Promise<{ plugins: ZCodePluginInfo[]; diagnostics: [] }>((resolve) => {
+        new Promise<{ plugins: RaspberryCodePluginInfo[]; diagnostics: [] }>((resolve) => {
           resolveA = resolve;
         }),
     );
@@ -980,10 +980,10 @@ describe("pluginManagementStore", () => {
   });
 
   it("ignores a stale toggle response after the Source authority changes for the same home", async () => {
-    let resolveWrite: ((value: { plugin: ZCodePluginInfo; enabled: boolean }) => void) | undefined;
+    let resolveWrite: ((value: { plugin: RaspberryCodePluginInfo; enabled: boolean }) => void) | undefined;
     const setPluginEnabled = vi.fn(
       () =>
-        new Promise<{ plugin: ZCodePluginInfo; enabled: boolean }>((resolve) => {
+        new Promise<{ plugin: RaspberryCodePluginInfo; enabled: boolean }>((resolve) => {
           resolveWrite = resolve;
         }),
     );
@@ -998,7 +998,7 @@ describe("pluginManagementStore", () => {
     });
     const change = usePluginManagementStore
       .getState()
-      .setEnabled("skill-creator@zcode-plugins-official", false, pluginService);
+      .setEnabled("skill-creator@raspberrycode-plugins-official", false, pluginService);
 
     // 两台 Source 的 home 同为 /root：workspacePath、identity、configScope 全部相同，只有 authority 不同。
     usePluginManagementStore.setState({

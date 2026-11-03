@@ -14,11 +14,11 @@ import type {
   UsageEntitlementSnapshot,
   UsageStatsRequest,
   UsageStatsSnapshot,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import {
   ApiError,
   isZaiCodingPlanProviderId,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import { createServiceLogger } from "#src/logger/serviceLogger.js";
 import type { ICredentialService } from "../../credential/credential.js";
 import { readApiJson } from "../../providers/api/apiJson.js";
@@ -349,7 +349,7 @@ export class MeteredUsageQuotaProvider {
   ): Promise<ResolvedQuotaAuthorization | null> {
     if (request.allowEnvApiKey !== false && request.requirePreferredProvider !== true) {
       const envApiKey =
-        readEnv(this.env, "ZCODE_BIGMODEL_USAGE_API_KEY") ??
+        readEnv(this.env, "RASPBERRYCODE_BIGMODEL_USAGE_API_KEY") ??
         readEnv(this.env, "BIGMODEL_USAGE_API_KEY");
       if (envApiKey) {
         return {
@@ -710,7 +710,7 @@ function addDaysToDateKey(dateKey: string, days: number): string {
 }
 
 function resolveQuotaUrlFromEnv(env: NodeJS.ProcessEnv): string | undefined {
-  return readEnv(env, "ZCODE_BIGMODEL_USAGE_QUOTA_URL") ?? readEnv(env, "BIGMODEL_USAGE_QUOTA_URL");
+  return readEnv(env, "RASPBERRYCODE_BIGMODEL_USAGE_QUOTA_URL") ?? readEnv(env, "BIGMODEL_USAGE_QUOTA_URL");
 }
 
 function resolveCodingPlanApiKeyError(providerId: string | undefined): string {

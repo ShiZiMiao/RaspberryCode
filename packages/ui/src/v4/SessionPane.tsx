@@ -1,11 +1,11 @@
-import { remoteHostIdFromWorkspaceIdentity } from "@zcode/shared";
+import { remoteHostIdFromWorkspaceIdentity } from "@raspberrycode/shared";
 import { useRemoteConversationAvailable } from "@/v4/RemoteConversationAvailability.js";
 import {
   createRemoteWorkspaceDisconnectedError,
   getRemoteConnectionFailureCode,
 } from "@/lib/remoteWorkspaceServiceError.js";
 import { resolveSelectionSideInheritedModel } from "@/lib/selectionSideInheritedModel.js";
-import type { SessionCreateSource } from "@zcode/shared";
+import type { SessionCreateSource } from "@raspberrycode/shared";
 import { reportSessionCreate } from "@/lib/sessionCreateTelemetry.js";
 import { getLocalTtftObserver } from "@/v4/telemetry/localTtftObserver.js";
 import { BotGroupDeliveryProvider } from "@/v4/BotGroupDeliveryAction.js";
@@ -27,16 +27,16 @@ import {
   BUILTIN_MODEL_PROVIDER_IDS,
   buildCustomSupplierKey,
   isRemoteWorkspaceIdentity,
-  ZCODE_AGENT_PROVIDER,
-} from "@zcode/shared";
-import { TID_CHAT_EMPTY, TID_V4_SESSION_PANE, testId } from "@zcode/shared/test-ids";
+  RASPBERRYCODE_AGENT_PROVIDER,
+} from "@raspberrycode/shared";
+import { TID_CHAT_EMPTY, TID_V4_SESSION_PANE, testId } from "@raspberrycode/shared/test-ids";
 import type {
   GitChangeSourceId,
   GitRepositorySummary,
   ModelSelection,
-  ZCodeProvider,
-  ZCodeTaskChangeSummary,
-} from "@zcode/shared";
+  RaspberryCodeProvider,
+  RaspberryCodeTaskChangeSummary,
+} from "@raspberrycode/shared";
 import type {
   AttachmentRef,
   CommandAck,
@@ -48,12 +48,12 @@ import type {
   SessionModelTransition,
   UserInputRow,
   V4ConversationFileChangesResult,
-} from "@zcode/shared/zcode-protocol-v4";
+} from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import { logger } from "@/logger.js";
 import { PluginUiSessionProvider } from "@/plugin-ui/index.js";
 import { toast } from "@/components/ui/toast.js";
 import { cn } from "@/components/lib/utils.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { DEFAULT_CODE_PREVIEW_SETTINGS } from "@/lib/codePreviewSettings.js";
 import type { CodeViewerSource } from "@/lib/codeViewer.js";
 import type { OpenAutomationsMain } from "@/lib/taskNavigationHistory.js";
@@ -72,11 +72,11 @@ import {
 } from "@/components/workflow-timeline/workflowRunSettings.js";
 import { useWorkflowRunJournalSummaries } from "@/hooks/useWorkflowRunJournalSummaries.js";
 import { useBaseWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
-import { buildGenUiModelContext } from "@zcode/shared/gen-ui";
+import { buildGenUiModelContext } from "@raspberrycode/shared/gen-ui";
 import { useWorkspaceHomePath } from "@/hooks/useWorkspaceHomePath.js";
-import { prepareWorkspaceWithZCodeSessionService } from "@/hooks/useWorkspacePrepare.js";
-import { decodeCustomModelValue, encodeCustomModelValue } from "@/lib/zcodeCustomModelValue.js";
-import { parseModelPickerValue } from "@/lib/zcodeSessionProjection.js";
+import { prepareWorkspaceWithRaspberryCodeSessionService } from "@/hooks/useWorkspacePrepare.js";
+import { decodeCustomModelValue, encodeCustomModelValue } from "@/lib/raspberrycodeCustomModelValue.js";
+import { parseModelPickerValue } from "@/lib/raspberrycodeSessionProjection.js";
 import { prepareComposerRecentReceipt } from "@/lib/composerRecent.js";
 import { useComposerClientNamespace } from "@/hooks/useServices.js";
 import {
@@ -103,8 +103,8 @@ import { projectSessionConfigToTaskConfigOptions } from "@/v4/composer/sessionCo
 import { useDraftRuntimeRebuildGate } from "@/v4/composer/useDraftRuntimeRebuildGate.js";
 import { useDraftModelReadinessGate } from "@/v4/composer/useDraftModelReadinessGate.js";
 import { useSettings } from "@/hooks/useSettingService.js";
-import { useZCodeStoreWithDefault } from "@/store/StoreProvider.js";
-import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
+import { useRaspberryCodeStoreWithDefault } from "@/store/StoreProvider.js";
+import { useRaspberryCodeSessionStore } from "@/store/raspberrycodeSessionStore.js";
 import {
   ConversationComposer,
   type ComposerRestoreRequest,
@@ -209,7 +209,7 @@ import {
   hasChatLoadingBlockingActiveWork,
   hasChatLoadingBlockingInteraction,
 } from "@/v4/chatLoadingVisibility.js";
-import type { ZCodeUiError } from "@/lib/zcodeUiError.js";
+import type { RaspberryCodeUiError } from "@/lib/raspberrycodeUiError.js";
 import type { ChatErrorBannerModelConfigTarget } from "@/ChatErrorBanner.js";
 import { isProviderNotReadyError } from "@/lib/chatPrepareError.js";
 import { setPendingSettingsSectionIntent } from "@/lib/settingsNavigation.js";
@@ -275,7 +275,7 @@ export interface SessionPaneProps {
   /** Prompt 模板埋点当前仅覆盖 Desktop；Web / 手机远控保留 UI 行为但不触发该事件。 */
   isDesktop?: boolean;
   compactForOverlay?: boolean;
-  provider?: ZCodeProvider;
+  provider?: RaspberryCodeProvider;
   onSessionCreated?: (sessionId: string) => void;
   /** deleteSession：删除当前会话后回到 draft（shell 起新草稿）。 */
   onSessionDeleted?: () => void;
@@ -309,7 +309,7 @@ export interface SessionPaneProps {
   gitDirtyFileCount?: number;
   gitWorktreeReviewSourceId?: GitChangeSourceId | null;
   gitWorktreeChangeSummary?: { added: number; removed: number } | null;
-  activeTaskChangeSummary?: ZCodeTaskChangeSummary | null;
+  activeTaskChangeSummary?: RaspberryCodeTaskChangeSummary | null;
   summaryPanelVariantOverride?: ChatViewSummaryPanelVariant | null;
   onSummaryPanelVariantOverrideChange?: (variant: ChatViewSummaryPanelVariant | null) => void;
   onRefreshGit?: () => void;
@@ -368,7 +368,7 @@ const MAX_CONVERSATION_FILE_CHANGES_CACHE_ENTRIES = 20;
 function toComposerUiError(
   sessionId: string | null | undefined,
   error: SessionErrorInfo,
-): ZCodeUiError {
+): RaspberryCodeUiError {
   return {
     code: error.code,
     message: error.message,
@@ -561,21 +561,21 @@ export function SessionPane({
   const {
     modelSelectionService,
     usageStatsService,
-    zcodeSessionService,
-    zcodeTaskService,
+    raspberrycodeSessionService,
+    raspberrycodeTaskService,
   } = useServices();
-  const { intl, locale } = useZCodeIntl();
+  const { intl, locale } = useRaspberryCodeIntl();
   const slashCommands = useSlashCommands(workspacePath, workspaceIdentity);
   const baseWorkspaceServices = useBaseWorkspaceServices();
   const composerClientNamespace = useComposerClientNamespace();
-  const composerProjectId = useZCodeSessionStore(
+  const composerProjectId = useRaspberryCodeSessionStore(
     (store) => store.getWorkspaceState(workspacePath, workspaceIdentity).draftProjectId,
   );
   const newTaskComposerScope = useMemo(
     () => resolveComposerScope(composerProjectId, workspaceIdentity, composerClientNamespace),
     [composerProjectId, workspaceIdentity, composerClientNamespace],
   );
-  const composerDraftGeneration = useZCodeSessionStore(
+  const composerDraftGeneration = useRaspberryCodeSessionStore(
     (store) => store.getWorkspaceState(workspacePath, workspaceIdentity).draftFocusVersion,
   );
   const pendingAtEntry = useMemo(() => {
@@ -688,7 +688,7 @@ export function SessionPane({
   const pluginReferenceIconsEnabled =
     isSessionPluginCatalogReady(state.status, sessionId, snapshot?.sessionId) &&
     hasPluginReferenceUserRows(snapshot?.rows.window ?? []);
-  // send_result 的落定信号：用户消息真正画进对话历史。z-code 没有乐观渲染，
+  // send_result 的落定信号：用户消息真正画进对话历史。上游实现没有乐观渲染，
   // 气泡必须等投影回流出 userInput row 才出现，所以 ACK accepted 不能算发送完成。
   // 取 useEffect 而非 store 订阅回调 —— effect 在 DOM commit 之后跑，此刻气泡已在屏幕上。
   useEffect(() => {
@@ -708,7 +708,7 @@ export function SessionPane({
     [fileChanges, sessionId, snapshot?.logEpoch],
   );
   const [dismissedErrorKeys, setDismissedErrorKeys] = useState<readonly string[]>([]);
-  const [sendSubmissionError, setSendSubmissionError] = useState<ZCodeUiError | null>(null);
+  const [sendSubmissionError, setSendSubmissionError] = useState<RaspberryCodeUiError | null>(null);
   const [paneLocalSummaryPanelVariantOverride, setPaneLocalSummaryPanelVariantOverride] =
     useState<ChatViewSummaryPanelVariant | null>(null);
   const [terminalSectionOpen, setTerminalSectionOpen] = useState(false);
@@ -817,7 +817,7 @@ export function SessionPane({
       generation: paneBindingRef.current.generation + 1,
     };
   }
-  const workspaceConfigOptions = useZCodeSessionStore(
+  const workspaceConfigOptions = useRaspberryCodeSessionStore(
     (store) => store.getWorkspaceState(workspacePath, workspaceIdentity).configOptions,
   );
   useEffect(() => {
@@ -833,7 +833,7 @@ export function SessionPane({
     // Bug 原因：V4 session 配置只存在 ConversationSnapshot，legacy task 配置桶一直为空；
     // 用户从 custom model 会话新建任务时，startDraft 只能继承 workspace 默认模型。
     // 这里仅把权威配置叠到完整目录并按 task 缓存，不改变 session 或 workspace 事实源。
-    useZCodeSessionStore
+    useRaspberryCodeSessionStore
       .getState()
       .setTaskConfigOptions(
         workspacePath,
@@ -880,16 +880,16 @@ export function SessionPane({
     // 生命周期边界，避免长时间 workbench 中 Set 随会话数增长。
     autoOpenedAssistantPptxKeysRef.current.clear();
   }, [sessionId, snapshot?.logEpoch, workspaceKey]);
-  const composerTextInsertRequest = useZCodeSessionStore(
+  const composerTextInsertRequest = useRaspberryCodeSessionStore(
     (store) => store.getWorkspaceState(workspacePath, workspaceIdentity).composerTextInsertRequest,
   );
-  const draftRuntimeInvalidationVersion = useZCodeSessionStore(
+  const draftRuntimeInvalidationVersion = useRaspberryCodeSessionStore(
     (store) =>
       store.getWorkspaceState(workspacePath, workspaceIdentity).draftRuntimeInvalidationVersion,
   );
   const handleExternalTextInsertApplied = useCallback(
     (requestId: number) => {
-      useZCodeSessionStore
+      useRaspberryCodeSessionStore
         .getState()
         .clearComposerTextInsertRequest(workspacePath, requestId, workspaceIdentity);
     },
@@ -1030,7 +1030,7 @@ export function SessionPane({
     // Selection View。旧预热会话冻结了早期 fallback，即使最新 View 已包含当前账号连接，
     // Renderer 也会永久停在旧模型。未发送且无显式选择的草稿不是执行事实；View 更新时
     // 回收并按最新选择事实重建，已显式选择和正式会话仍保持冻结。
-    useZCodeSessionStore.getState().invalidateDraftRuntime(workspacePath, workspaceIdentity);
+    useRaspberryCodeSessionStore.getState().invalidateDraftRuntime(workspacePath, workspaceIdentity);
   }, [draftConfigRef, modelSelectionView?.revision, sessionId, workspaceIdentity, workspacePath]);
   const createSubmissionFromComposer = useCallback(
     () => createComposerSubmissionConfig(draftConfigRef.current, modelSelectionView),
@@ -1168,8 +1168,8 @@ export function SessionPane({
 
   // 注入模式对齐 PermissionDialog：theme/codePreviewSettings 在宿主取 store，
   // 经稳定引用的 rowContext 下发给 memo 行组件（MessageResponse/ToolCallBlocks）。
-  const theme = useZCodeStoreWithDefault((state) => state.theme, "system");
-  const codePreviewSettings = useZCodeStoreWithDefault(
+  const theme = useRaspberryCodeStoreWithDefault((state) => state.theme, "system");
+  const codePreviewSettings = useRaspberryCodeStoreWithDefault(
     (state) => state.codePreviewSettings,
     DEFAULT_CODE_PREVIEW_SETTINGS,
   );
@@ -1253,7 +1253,7 @@ export function SessionPane({
         type === "createSession"
           ? creationProjectId !== undefined
             ? creationProjectId
-            : useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
+            : useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
                 .draftProjectId
           : undefined;
       // 必须早于第一次上行：transport error/renderer refresh 后仍有可查询线索。
@@ -1280,12 +1280,12 @@ export function SessionPane({
               taskGroupId:
                 creationTaskGroupId !== undefined
                   ? creationTaskGroupId
-                  : useZCodeSessionStore
+                  : useRaspberryCodeSessionStore
                       .getState()
                       .getWorkspaceState(workspacePath, workspaceIdentity).draftTaskGroupId,
               sessionCreateSource:
                 sessionCreateSource ??
-                useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
+                useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
                   .draftCreateSource,
             }
           : recentReceipt
@@ -1296,12 +1296,12 @@ export function SessionPane({
                       projectId: recentScope.projectId,
                       taskGroupId:
                         creationTaskGroupId ??
-                        useZCodeSessionStore
+                        useRaspberryCodeSessionStore
                           .getState()
                           .getWorkspaceState(workspacePath, workspaceIdentity).draftTaskGroupId,
                       sessionCreateSource:
                         sessionCreateSource ??
-                        useZCodeSessionStore
+                        useRaspberryCodeSessionStore
                           .getState()
                           .getWorkspaceState(workspacePath, workspaceIdentity).draftCreateSource,
                     }
@@ -1787,7 +1787,7 @@ export function SessionPane({
         let replacesChildSessionId: string | undefined;
         if (targetChildSessionId) {
           try {
-            await zcodeSessionService.readSession({
+            await raspberrycodeSessionService.readSession({
               workspacePath,
               ...(workspaceIdentity ? { workspaceIdentity } : {}),
               sessionId: targetChildSessionId,
@@ -1865,7 +1865,7 @@ export function SessionPane({
       workspaceIdentity,
       workspaceKey,
       workspacePath,
-      zcodeSessionService,
+      raspberrycodeSessionService,
     ],
   );
 
@@ -2525,7 +2525,7 @@ export function SessionPane({
   const readGroupedDraftId = useCallback(
     () =>
       String(
-        useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
+        useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
           .draftFocusVersion,
       ),
     [workspacePath, workspaceIdentity],
@@ -2789,7 +2789,7 @@ export function SessionPane({
 
   const dispatchSendText = useCallback(
     (text: string, options?: ConversationComposerSendOptions) => {
-      const createSource = useZCodeSessionStore
+      const createSource = useRaspberryCodeSessionStore
         .getState()
         .getWorkspaceState(workspacePath, workspaceIdentity).draftCreateSource;
       const submissionOptions = {
@@ -2799,7 +2799,7 @@ export function SessionPane({
       };
       const taskGroupId =
         sessionId === null
-          ? useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
+          ? useRaspberryCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
               .draftTaskGroupId
           : undefined;
       // followupMode 仍通过 Session CAS 同步；模型和模式已封装进 Submission，不再
@@ -2870,7 +2870,7 @@ export function SessionPane({
         setSendSubmissionError({
           code:
             getRemoteConnectionFailureCode(error) ??
-            (runtimeModelUnavailable ? "ZCODE_RUNTIME_MODEL_UNAVAILABLE" : "SEND_FAILED"),
+            (runtimeModelUnavailable ? "RASPBERRYCODE_RUNTIME_MODEL_UNAVAILABLE" : "SEND_FAILED"),
           message: runtimeModelUnavailable
             ? detail
             : intl.formatMessage({ id: "chat.error.sendFailed" }),
@@ -2933,7 +2933,7 @@ export function SessionPane({
       newText: string,
       attachments?: readonly AttachmentRef[],
       workspaceMode: "preserve" | "rewind" = "preserve",
-      conversationQuotes?: import("@zcode/shared").ConversationSelectionText[],
+      conversationQuotes?: import("@raspberrycode/shared").ConversationSelectionText[],
     ) => {
       const current = snapshotRef.current;
       if (!sessionId || current === null) return false;
@@ -3333,7 +3333,7 @@ export function SessionPane({
       if (!decoded?.providerId) {
         return;
       }
-      const displayProvider = provider ?? ZCODE_AGENT_PROVIDER;
+      const displayProvider = provider ?? RASPBERRYCODE_AGENT_PROVIDER;
       let modelValue = value;
       if (!decoded.modelName) {
         const fallbackModel =
@@ -3356,7 +3356,7 @@ export function SessionPane({
         provider: modelSelection.providerId,
         model: modelSelection.modelId,
       });
-      const store = useZCodeSessionStore.getState();
+      const store = useRaspberryCodeSessionStore.getState();
       store.setModelSelectionResolution(
         workspacePath,
         {
@@ -3375,18 +3375,18 @@ export function SessionPane({
       });
 
       try {
-        await zcodeTaskService.restartWorkspaceProcess({
+        await raspberrycodeTaskService.restartWorkspaceProcess({
           workspacePath,
           workspaceIdentity,
           provider: displayProvider,
           bumpRuntimeEpoch: true,
         });
 
-        const prepareResult = await prepareWorkspaceWithZCodeSessionService({
+        const prepareResult = await prepareWorkspaceWithRaspberryCodeSessionService({
           workspacePath,
           workspaceIdentity,
           provider: displayProvider,
-          zcodeSessionService,
+          raspberrycodeSessionService,
         });
         handleDraftSelectModel(modelSelection.providerId, modelSelection.modelId);
         store.setConfigOptions(workspacePath, prepareResult.configOptions ?? [], workspaceIdentity);
@@ -3416,8 +3416,8 @@ export function SessionPane({
       showModelChangeNotice,
       workspaceIdentity,
       workspacePath,
-      zcodeSessionService,
-      zcodeTaskService,
+      raspberrycodeSessionService,
+      raspberrycodeTaskService,
     ],
   );
 

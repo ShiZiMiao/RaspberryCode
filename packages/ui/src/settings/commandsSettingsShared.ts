@@ -1,25 +1,25 @@
 import {
-  ZCODE_AGENT_PROVIDER,
-  ZCODE_COMMAND_AGENT_SOURCES,
-  type ZCodeProvider,
+  RASPBERRYCODE_AGENT_PROVIDER,
+  RASPBERRYCODE_COMMAND_AGENT_SOURCES,
+  type RaspberryCodeProvider,
   type CommandAgentSource,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 
 export const COMMAND_AGENT_SOURCES = [
-  ...ZCODE_COMMAND_AGENT_SOURCES,
+  ...RASPBERRYCODE_COMMAND_AGENT_SOURCES,
 ] as const satisfies readonly CommandAgentSource[];
 
 export const COMMAND_AGENT_SOURCE_META: Record<
   CommandAgentSource,
   {
     labelId: string;
-    provider: ZCodeProvider;
+    provider: RaspberryCodeProvider;
     pathHint: string;
   }
 > = {
-  zcodeAgent: {
-    labelId: "settings.commands.source.zcodeAgent",
+  raspberrycodeAgent: {
+    labelId: "settings.commands.source.raspberrycodeAgent",
     pathHint: "~/.raspberrycode/commands",
-    provider: ZCODE_AGENT_PROVIDER,
+    provider: RASPBERRYCODE_AGENT_PROVIDER,
   },
 };

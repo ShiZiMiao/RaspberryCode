@@ -1,15 +1,15 @@
 import {
-  getZCodeToolFamilyForName,
+  getRaspberryCodeToolFamilyForName,
   isTodoPlanToolName,
-  isZCodeFileContentWriteToolName,
-  normalizeZCodeToolName,
-  type ZCodeKnownToolName,
-  type ZCodeToolFamily,
-} from "@zcode/shared";
+  isRaspberryCodeFileContentWriteToolName,
+  normalizeRaspberryCodeToolName,
+  type RaspberryCodeKnownToolName,
+  type RaspberryCodeToolFamily,
+} from "@raspberrycode/shared";
 import { normalizeAskUserQuestionInput, readAskUserQuestionInput } from "@/lib/askUserQuestion.js";
 
 export type ToolCallPresentationFamily =
-  | ZCodeToolFamily
+  | RaspberryCodeToolFamily
   | "plan-guidance"
   | "switch-mode"
   | "explore"
@@ -20,7 +20,7 @@ export type ToolCallIdentitySource =
   | "kind"
   | "title"
   | "raw"
-  | "raw-zcode-meta"
+  | "raw-raspberrycode-meta"
   | "raw-claude-meta"
   | "legacy-kind"
   | "legacy-title"
@@ -28,7 +28,7 @@ export type ToolCallIdentitySource =
   | "unknown";
 
 export interface ToolCallIdentity {
-  toolName: ZCodeKnownToolName | string | null;
+  toolName: RaspberryCodeKnownToolName | string | null;
   family: ToolCallPresentationFamily;
   source: ToolCallIdentitySource;
   isLegacy: boolean;
@@ -84,11 +84,11 @@ function identityFromKnownToolName(
   if (["fetch", "web_fetch"].includes(normalizeLegacyToken(value))) {
     return identityFromLegacyFamily(value?.trim() ?? "WebFetch", "web-fetch", source);
   }
-  const toolName = normalizeZCodeToolName(value);
+  const toolName = normalizeRaspberryCodeToolName(value);
   if (!toolName) {
     return null;
   }
-  const family = getZCodeToolFamilyForName(toolName);
+  const family = getRaspberryCodeToolFamilyForName(toolName);
   if (!family) {
     return null;
   }
@@ -119,7 +119,7 @@ function readRawToolNameCandidates(raw: unknown) {
       readNestedString(raw, ["toolName"]) ??
       readNestedString(raw, ["tool_name"]) ??
       readNestedString(raw, ["name"]),
-    zcode: readNestedString(raw, ["_meta", "zcode", "toolName"]),
+    raspberrycode: readNestedString(raw, ["_meta", "raspberrycode", "toolName"]),
     claudeCode: readNestedString(raw, ["_meta", "claudeCode", "toolName"]),
     rawKind: readNestedString(raw, ["kind"]),
     rawTitle: readNestedString(raw, ["title"]),
@@ -133,14 +133,14 @@ function isLegacyAgentTool(
   const kind = normalizeLegacyToken(toolCall.kind);
   const title = normalizeLegacyToken(toolCall.title);
   const rawDirect = normalizeLegacyToken(rawNames.direct);
-  const rawZCode = normalizeLegacyToken(rawNames.zcode);
+  const rawRaspberryCode = normalizeLegacyToken(rawNames.raspberrycode);
   const rawClaude = normalizeLegacyToken(rawNames.claudeCode);
 
   return (
     rawClaude === "agent" ||
     rawClaude === "task" ||
-    rawZCode === "agent" ||
-    rawZCode === "spawn_agent" ||
+    rawRaspberryCode === "agent" ||
+    rawRaspberryCode === "spawn_agent" ||
     rawDirect === "agent" ||
     rawDirect === "spawn_agent" ||
     kind === "agent" ||
@@ -229,7 +229,7 @@ export function resolveToolCallIdentity(toolCall: ToolIdentityLike): ToolCallIde
     { value: toolCall.toolName, source: "toolName" as const },
     { value: toolCall.kind, source: "kind" as const },
     { value: rawNames.direct, source: "raw" as const },
-    { value: rawNames.zcode, source: "raw-zcode-meta" as const },
+    { value: rawNames.raspberrycode, source: "raw-raspberrycode-meta" as const },
   ]) {
     const identity = identityFromKnownToolName(candidate.value, candidate.source);
     if (identity) {
@@ -239,7 +239,7 @@ export function resolveToolCallIdentity(toolCall: ToolIdentityLike): ToolCallIde
 
   if (isLegacyAgentTool(toolCall, rawNames)) {
     return identityFromLegacyFamily(
-      rawNames.direct ?? rawNames.zcode ?? rawNames.claudeCode ?? "Agent",
+      rawNames.direct ?? rawNames.raspberrycode ?? rawNames.claudeCode ?? "Agent",
       "agent",
       "legacy-payload",
     );
@@ -305,7 +305,7 @@ export function resolveToolCallIdentity(toolCall: ToolIdentityLike): ToolCallIde
       toolCall.kind,
       toolCall.title,
       rawNames.direct,
-      rawNames.zcode,
+      rawNames.raspberrycode,
       rawNames.claudeCode,
       rawNames.rawKind,
       rawNames.rawTitle,
@@ -360,7 +360,7 @@ export function isFileContentWriteToolCall(
   if (identity.family !== "file-write") {
     return false;
   }
-  if (isZCodeFileContentWriteToolName(identity.toolName)) {
+  if (isRaspberryCodeFileContentWriteToolName(identity.toolName)) {
     return true;
   }
   const legacyKind = normalizeLegacyToken(toolCall.kind);

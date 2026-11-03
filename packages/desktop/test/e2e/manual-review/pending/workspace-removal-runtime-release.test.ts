@@ -1,7 +1,7 @@
 import { rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { formatZCodeAgentProcessName } from "@zcode/shared";
-import { TID_CONFIRM_DIALOG_CONFIRM } from "@zcode/shared/test-ids";
+import { formatRaspberryCodeAgentProcessName } from "@raspberrycode/shared";
+import { TID_CONFIRM_DIALOG_CONFIRM } from "@raspberrycode/shared/test-ids";
 import {
   clearAppData,
   getE2EAppDataPaths,
@@ -86,8 +86,8 @@ describe("workspace removal runtime release E2E", () => {
 });
 
 function buildAgentWorkspaceNameSuffix(workspacePath: string): string {
-  const placeholderPrefix = formatZCodeAgentProcessName("placeholder");
-  const formatted = formatZCodeAgentProcessName("placeholder", workspacePath);
+  const placeholderPrefix = formatRaspberryCodeAgentProcessName("placeholder");
+  const formatted = formatRaspberryCodeAgentProcessName("placeholder", workspacePath);
   return formatted.slice(placeholderPrefix.length);
 }
 

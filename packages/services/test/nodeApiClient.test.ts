@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError } from "@zcode/shared";
+import { ApiError } from "@raspberrycode/shared";
 import { createNodeApiClient } from "../src/providers/api/nodeApiClient.js";
 
 describe("nodeApiClient", () => {
@@ -15,14 +15,14 @@ describe("nodeApiClient", () => {
     );
     const options = {
       fetchImpl,
-      isZcodeJwtRequest: () => true,
+      isRaspberrycodeJwtRequest: () => true,
       isBusinessUnauthorizedRequest: () => true,
       resolveBusinessCredentialValidationRequest: async () => ({
         url: "https://identity.example/userinfo",
         authorization: "business-token",
         emptyBodyMeansInvalid: family === "bigmodel",
       }),
-      onZcodeJwtInvalid: notified,
+      onRaspberrycodeJwtInvalid: notified,
     };
     const client = createNodeApiClient(options);
     const response = await client.request("https://business.example/pricing");
@@ -39,14 +39,14 @@ describe("nodeApiClient", () => {
         String(url).endsWith("/userinfo")
           ? Response.json({ code: 200, data: { customerNumber: "synthetic" } })
           : new Response("", { status }),
-      isZcodeJwtRequest: () => true,
+      isRaspberrycodeJwtRequest: () => true,
       isBusinessUnauthorizedRequest: () => true,
       resolveBusinessCredentialValidationRequest: async () => ({
         url: "https://identity.example/userinfo",
         authorization: "business-token",
         emptyBodyMeansInvalid: true,
       }),
-      onZcodeJwtInvalid: notified,
+      onRaspberrycodeJwtInvalid: notified,
     });
     await client.request("https://business.example/pricing");
     expect(notified).not.toHaveBeenCalled();
@@ -58,14 +58,14 @@ describe("nodeApiClient", () => {
       const notified = vi.fn();
       const client = createNodeApiClient({
         fetchImpl: async (url) => new Response(String(url).endsWith("/userinfo") ? body : ""),
-        isZcodeJwtRequest: () => true,
+        isRaspberrycodeJwtRequest: () => true,
         isBusinessUnauthorizedRequest: () => true,
         resolveBusinessCredentialValidationRequest: async () => ({
           url: "https://identity.example/userinfo",
           authorization: "business-token",
           emptyBodyMeansInvalid: false,
         }),
-        onZcodeJwtInvalid: notified,
+        onRaspberrycodeJwtInvalid: notified,
       });
       await client.request("https://business.example/pricing");
       expect(notified).not.toHaveBeenCalled();
@@ -80,14 +80,14 @@ describe("nodeApiClient", () => {
         if (failure === "network") throw new TypeError("offline");
         return Response.json({ code: 401 }, { status: 500 });
       },
-      isZcodeJwtRequest: () => true,
+      isRaspberrycodeJwtRequest: () => true,
       isBusinessUnauthorizedRequest: () => true,
       resolveBusinessCredentialValidationRequest: async () => ({
         url: "https://identity.example/userinfo",
         authorization: "business-token",
         emptyBodyMeansInvalid: true,
       }),
-      onZcodeJwtInvalid: notified,
+      onRaspberrycodeJwtInvalid: notified,
     });
     await client.request("https://business.example/pricing");
     expect(notified).not.toHaveBeenCalled();
@@ -98,14 +98,14 @@ describe("nodeApiClient", () => {
     const fetchImpl = vi.fn(async () => new Response(""));
     const client = createNodeApiClient({
       fetchImpl,
-      isZcodeJwtRequest: () => true,
+      isRaspberrycodeJwtRequest: () => true,
       isBusinessUnauthorizedRequest: () => true,
       resolveBusinessCredentialValidationRequest: async () => ({
         url: "https://identity.example/userinfo",
         authorization: "business-token",
         emptyBodyMeansInvalid: true,
       }),
-      onZcodeJwtInvalid: notified,
+      onRaspberrycodeJwtInvalid: notified,
     });
     await client.request("https://identity.example/userinfo");
     expect(fetchImpl).toHaveBeenCalledOnce();
@@ -122,14 +122,14 @@ describe("nodeApiClient", () => {
     );
     const client = createNodeApiClient({
       fetchImpl,
-      isZcodeJwtRequest: () => true,
+      isRaspberrycodeJwtRequest: () => true,
       isBusinessUnauthorizedRequest: () => true,
       resolveBusinessCredentialValidationRequest: async () => ({
         url: "https://identity.example/userinfo",
         authorization: "business-token",
         emptyBodyMeansInvalid: true,
       }),
-      onZcodeJwtInvalid: vi.fn(),
+      onRaspberrycodeJwtInvalid: vi.fn(),
     });
     const requests = [
       client.request("https://business.example/a"),
@@ -169,14 +169,14 @@ describe("nodeApiClient", () => {
             release = resolve;
           });
         },
-        isZcodeJwtRequest: () => true,
+        isRaspberrycodeJwtRequest: () => true,
         isBusinessUnauthorizedRequest: () => true,
         resolveBusinessCredentialValidationRequest: async () => ({
           url: "https://identity.example/userinfo",
           authorization: "business-token",
           emptyBodyMeansInvalid: true,
         }),
-        onZcodeJwtInvalid: notified,
+        onRaspberrycodeJwtInvalid: notified,
       });
       const result = client
         .request("https://business.example/pricing", {
@@ -230,14 +230,14 @@ describe("nodeApiClient", () => {
           phase === "business" || String(url).endsWith("/userinfo")
             ? response
             : new Response("", { status: 403 }),
-        isZcodeJwtRequest: () => true,
+        isRaspberrycodeJwtRequest: () => true,
         isBusinessUnauthorizedRequest: () => true,
         resolveBusinessCredentialValidationRequest: async () => ({
           url: "https://identity.example/userinfo",
           authorization: "business-token",
           emptyBodyMeansInvalid: true,
         }),
-        onZcodeJwtInvalid: notified,
+        onRaspberrycodeJwtInvalid: notified,
       });
       const result = client
         .request("https://business.example/pricing", { signal: controller.signal })
@@ -266,14 +266,14 @@ describe("nodeApiClient", () => {
     const notified = vi.fn();
     const client = createNodeApiClient({
       fetchImpl,
-      isZcodeJwtRequest: () => true,
+      isRaspberrycodeJwtRequest: () => true,
       isBusinessUnauthorizedRequest: () => true,
       resolveBusinessCredentialValidationRequest: async () => ({
         url: "https://identity.example/userinfo",
         authorization: "business-token",
         emptyBodyMeansInvalid: true,
       }),
-      onZcodeJwtInvalid: notified,
+      onRaspberrycodeJwtInvalid: notified,
     });
     const cancelled = client
       .request("https://business.example/a", { signal: controller.signal })
@@ -300,14 +300,14 @@ describe("nodeApiClient", () => {
         return new Promise<Response>(() => {});
       },
       businessUnauthorizedObservationTimeoutMs: 20,
-      isZcodeJwtRequest: () => true,
+      isRaspberrycodeJwtRequest: () => true,
       isBusinessUnauthorizedRequest: () => true,
       resolveBusinessCredentialValidationRequest: async () => ({
         url: "https://identity.example/userinfo",
         authorization: "business-token",
         emptyBodyMeansInvalid: true,
       }),
-      onZcodeJwtInvalid: notified,
+      onRaspberrycodeJwtInvalid: notified,
     });
     await expect(client.request("https://business.example/pricing")).resolves.toBe(original);
     expect(identitySignal?.aborted).toBe(true);
@@ -322,9 +322,9 @@ describe("nodeApiClient", () => {
     const client = createNodeApiClient({
       fetchImpl: async () => response,
       businessUnauthorizedObservationTimeoutMs: 20,
-      isZcodeJwtRequest: () => true,
+      isRaspberrycodeJwtRequest: () => true,
       isBusinessUnauthorizedRequest: () => true,
-      onZcodeJwtInvalid: notified,
+      onRaspberrycodeJwtInvalid: notified,
     });
     await expect(client.request("https://business.example/pricing")).resolves.toBe(response);
     expect(await response.text()).toBe("original");
@@ -348,7 +348,7 @@ describe("nodeApiClient", () => {
     }));
     const client = createNodeApiClient({
       fetchImpl,
-      isZcodeJwtRequest: async () => {
+      isRaspberrycodeJwtRequest: async () => {
         started();
         return new Promise<boolean>((resolve) => {
           release = resolve;
@@ -356,7 +356,7 @@ describe("nodeApiClient", () => {
       },
       isBusinessUnauthorizedRequest: () => true,
       resolveBusinessCredentialValidationRequest: resolveValidation,
-      onZcodeJwtInvalid: notified,
+      onRaspberrycodeJwtInvalid: notified,
     });
     const result = client
       .request("https://business.example/pricing", { signal: controller.signal })
@@ -405,7 +405,7 @@ describe("nodeApiClient", () => {
   });
 
   it("401 且请求携带当前 RaspberryCode JWT 时通知回调", async () => {
-    const onZcodeJwtInvalid = vi.fn();
+    const onRaspberrycodeJwtInvalid = vi.fn();
     const fetchImpl = vi.fn(
       async () =>
         new Response("", {
@@ -414,37 +414,37 @@ describe("nodeApiClient", () => {
     );
     const client = createNodeApiClient({
       fetchImpl,
-      onZcodeJwtInvalid,
-      isZcodeJwtRequest: (_input, headers) => headers.get("authorization") === "Bearer jwt",
+      onRaspberrycodeJwtInvalid,
+      isRaspberrycodeJwtRequest: (_input, headers) => headers.get("authorization") === "Bearer jwt",
     });
 
     await client.request("https://example.com/model", { headers: { Authorization: "Bearer jwt" } });
 
-    expect(onZcodeJwtInvalid).toHaveBeenCalledTimes(1);
+    expect(onRaspberrycodeJwtInvalid).toHaveBeenCalledTimes(1);
   });
 
   it("普通 401 不通知 RaspberryCode JWT 失效", async () => {
-    const onZcodeJwtInvalid = vi.fn();
+    const onRaspberrycodeJwtInvalid = vi.fn();
     const fetchImpl = vi.fn(async () => new Response("", { status: 401 }));
-    const client = createNodeApiClient({ fetchImpl, onZcodeJwtInvalid });
+    const client = createNodeApiClient({ fetchImpl, onRaspberrycodeJwtInvalid });
 
     await client.request("https://example.com/model");
 
-    expect(onZcodeJwtInvalid).not.toHaveBeenCalled();
+    expect(onRaspberrycodeJwtInvalid).not.toHaveBeenCalled();
   });
 
   it("HTTP 200 业务 401 复用失效通知，保留原响应正文", async () => {
     const payload = { code: 401, msg: "登录状态已过期", success: false };
     const response = Response.json(payload);
-    const onZcodeJwtInvalid = vi.fn();
+    const onRaspberrycodeJwtInvalid = vi.fn();
     const client = createNodeApiClient({
       fetchImpl: async () => response,
-      isZcodeJwtRequest: () => true,
+      isRaspberrycodeJwtRequest: () => true,
       isBusinessUnauthorizedRequest: () => true,
-      onZcodeJwtInvalid,
+      onRaspberrycodeJwtInvalid,
     });
     const result = await client.request("https://example.com/userinfo");
-    expect(onZcodeJwtInvalid).toHaveBeenCalledOnce();
+    expect(onRaspberrycodeJwtInvalid).toHaveBeenCalledOnce();
     expect(result).toBe(response);
     expect(result.status).toBe(200);
     expect(result.bodyUsed).toBe(false);
@@ -454,15 +454,15 @@ describe("nodeApiClient", () => {
   it("不匹配当前凭据的 HTTP 200 不读取响应副本", async () => {
     const response = Response.json({ code: 401 });
     const clone = vi.spyOn(response, "clone");
-    const onZcodeJwtInvalid = vi.fn();
+    const onRaspberrycodeJwtInvalid = vi.fn();
     const client = createNodeApiClient({
       fetchImpl: async () => response,
-      isZcodeJwtRequest: () => false,
-      onZcodeJwtInvalid,
+      isRaspberrycodeJwtRequest: () => false,
+      onRaspberrycodeJwtInvalid,
     });
     expect(await client.request("https://example.com/model")).toBe(response);
     expect(clone).not.toHaveBeenCalled();
-    expect(onZcodeJwtInvalid).not.toHaveBeenCalled();
+    expect(onRaspberrycodeJwtInvalid).not.toHaveBeenCalled();
   });
 
   it("当前 JWT 的 SSE 不读取正文，不等待 continuous 流结束", async () => {
@@ -470,15 +470,15 @@ describe("nodeApiClient", () => {
       headers: { "Content-Type": "text/event-stream; charset=utf-8" },
     });
     const clone = vi.spyOn(response, "clone");
-    const onZcodeJwtInvalid = vi.fn();
+    const onRaspberrycodeJwtInvalid = vi.fn();
     const client = createNodeApiClient({
       fetchImpl: async () => response,
-      isZcodeJwtRequest: () => true,
-      onZcodeJwtInvalid,
+      isRaspberrycodeJwtRequest: () => true,
+      onRaspberrycodeJwtInvalid,
     });
     expect(await client.request("https://example.com/stream")).toBe(response);
     expect(clone).not.toHaveBeenCalled();
-    expect(onZcodeJwtInvalid).not.toHaveBeenCalled();
+    expect(onRaspberrycodeJwtInvalid).not.toHaveBeenCalled();
     await response.body?.cancel();
   });
 
@@ -486,50 +486,50 @@ describe("nodeApiClient", () => {
     const response = new Response(new ReadableStream(), {
       headers: { "Content-Type": "application/json" },
     });
-    const onZcodeJwtInvalid = vi.fn();
+    const onRaspberrycodeJwtInvalid = vi.fn();
     const client = createNodeApiClient({
       fetchImpl: async () => response,
-      isZcodeJwtRequest: () => true,
+      isRaspberrycodeJwtRequest: () => true,
       isBusinessUnauthorizedRequest: () => true,
-      onZcodeJwtInvalid,
+      onRaspberrycodeJwtInvalid,
       businessUnauthorizedObservationTimeoutMs: 10,
     });
     const request = client.request("https://bigmodel.cn/api/biz/customer/getCustomerInfo", {
       headers: { Authorization: "Bearer jwt" },
     });
     await expect(request).resolves.toBe(response);
-    expect(onZcodeJwtInvalid).not.toHaveBeenCalled();
+    expect(onRaspberrycodeJwtInvalid).not.toHaveBeenCalled();
     await response.body?.cancel();
   });
 
   it("普通当前 JWT 请求不会读取 HTTP 200 响应副本", async () => {
     const response = Response.json({ code: 401 });
     const clone = vi.spyOn(response, "clone");
-    const onZcodeJwtInvalid = vi.fn();
+    const onRaspberrycodeJwtInvalid = vi.fn();
     const client = createNodeApiClient({
       fetchImpl: async () => response,
-      isZcodeJwtRequest: () => true,
-      onZcodeJwtInvalid,
+      isRaspberrycodeJwtRequest: () => true,
+      onRaspberrycodeJwtInvalid,
     });
     await expect(client.request("https://example.com/model")).resolves.toBe(response);
     expect(clone).not.toHaveBeenCalled();
-    expect(onZcodeJwtInvalid).not.toHaveBeenCalled();
+    expect(onRaspberrycodeJwtInvalid).not.toHaveBeenCalled();
   });
 
   it("业务 401 观察超过正文预算后放行原响应", async () => {
     const body = "x".repeat(64 * 1024 + 1);
     const response = new Response(body, { headers: { "Content-Type": "application/json" } });
-    const onZcodeJwtInvalid = vi.fn();
+    const onRaspberrycodeJwtInvalid = vi.fn();
     const client = createNodeApiClient({
       fetchImpl: async () => response,
-      isZcodeJwtRequest: () => true,
+      isRaspberrycodeJwtRequest: () => true,
       isBusinessUnauthorizedRequest: () => true,
-      onZcodeJwtInvalid,
+      onRaspberrycodeJwtInvalid,
     });
     await expect(
       client.request("https://bigmodel.cn/api/biz/customer/getCustomerInfo"),
     ).resolves.toBe(response);
-    expect(onZcodeJwtInvalid).not.toHaveBeenCalled();
+    expect(onRaspberrycodeJwtInvalid).not.toHaveBeenCalled();
     expect((await response.text()).length).toBe(body.length);
   });
 

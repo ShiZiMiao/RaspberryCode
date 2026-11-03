@@ -1,6 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
-import type { AppSettings } from "@zcode/shared";
-import type { MigrationResult } from "@zcode/shared/sqlite-migrations";
+import type { AppSettings } from "@raspberrycode/shared";
+import type { MigrationResult } from "@raspberrycode/shared/sqlite-migrations";
 
 export interface ProjectMigrationContext {
   /** 可信持库 Server 身份；不受客户端请求或旧 canonical route 影响。 */
@@ -50,7 +50,7 @@ export interface ProjectTaskRef {
   workspaceIdentity?: string;
   taskId: string;
 }
-export type ProjectTask = import("@zcode/shared").ZCodeTaskMeta & {
+export type ProjectTask = import("@raspberrycode/shared").RaspberryCodeTaskMeta & {
   projectId: string | null;
   hostId: string;
   pinned: boolean;

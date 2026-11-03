@@ -1,4 +1,4 @@
-import type { GitChangeSourceId } from "@zcode/shared";
+import type { GitChangeSourceId } from "@raspberrycode/shared";
 import type { SidePaneFullViewState } from "@/side-pane-full-view/contract.js";
 import {
   normalizeWorkspaceSidePaneState,

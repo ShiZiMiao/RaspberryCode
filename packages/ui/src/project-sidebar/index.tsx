@@ -4,7 +4,7 @@ import { SortableProjects } from "@/project-sidebar/SortableProjects.js";
 export { ArchiveManagement } from "@/project-sidebar/ArchiveManagement.js";
 import { memo, useCallback, useMemo, useRef, useState } from "react";
 import { ScrollFadeViewport } from "@/components/ui/scroll-fade-viewport.js";
-import { TID_SIDEBAR } from "@zcode/shared/test-ids";
+import { TID_SIDEBAR } from "@raspberrycode/shared/test-ids";
 import { remoteHostIdFromWorkspaceIdentity } from "@/project-sidebar/contract.js";
 import type {
   ProjectSidebarProps,
@@ -47,10 +47,10 @@ import { ProjectSidebarListHeader } from "@/project-sidebar/ProjectSidebarListHe
 import { ProjectSidebarNavigation } from "@/project-sidebar/ProjectSidebarNavigation.js";
 import { WorkspaceSidebarFooter } from "@/WorkspaceSidebarFooter.js";
 import { SidebarBottomActivity } from "@/sidebar-activity/SidebarBottomActivity.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { useTabStoreApi } from "@/store/TabStoreProvider.js";
-import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
-import { useZCodeStore } from "@/store/StoreProvider.js";
+import { useRaspberryCodeSessionStore } from "@/store/raspberrycodeSessionStore.js";
+import { useRaspberryCodeStore } from "@/store/StoreProvider.js";
 export { attachRemoteProjectWorkspace } from "@/project-sidebar/remote-navigation.js";
 export { resolveEntryProject } from "@/project-sidebar/view.js";
 export type {
@@ -77,9 +77,9 @@ export const ProjectSidebar = memo(function ProjectSidebar(props: ProjectSidebar
   const remoteSync = useProjectRemoteSync(directory);
   const diagnostics = useProjectConnectionDiagnostics(directory, props);
   const onSelectTask = useProjectTaskNavigation(props, tree, remoteService);
-  const { intl, localePreference, setLocalePreference } = useZCodeIntl();
+  const { intl, localePreference, setLocalePreference } = useRaspberryCodeIntl();
   const tabStore = useTabStoreApi();
-  const setTheme = useZCodeStore((state) => state.setTheme);
+  const setTheme = useRaspberryCodeStore((state) => state.setTheme);
   const { view, setView } = preferences;
   const scrollRef = useRef<HTMLDivElement>(null);
   const [groupedToolbar, setGroupedToolbar] = useState<HTMLDivElement | null>(null);
@@ -88,7 +88,7 @@ export const ProjectSidebar = memo(function ProjectSidebar(props: ProjectSidebar
   const [creating, setCreating] = useState(false);
   // 当前任务只影响远端“创建项目”的默认设备；分组继承在点击时读，
   // 避免本地会话/草稿切换让全部项目的菜单与 Tooltip 重渲染。
-  const hasActiveRemoteTask = useZCodeSessionStore((state) =>
+  const hasActiveRemoteTask = useRaspberryCodeSessionStore((state) =>
     Boolean(
       props.workspaceIdentity &&
       state.workspaces[props.workspaceIdentity.trim() || props.workspacePath]?.activeTaskId,
@@ -106,7 +106,7 @@ export const ProjectSidebar = memo(function ProjectSidebar(props: ProjectSidebar
   );
   const msg = (id: string) => intl.formatMessage({ id: `project.${id}` });
   const start = async (projectId?: string, hostId?: string, taskGroupId?: string | null) => {
-    const activeTaskId = useZCodeSessionStore
+    const activeTaskId = useRaspberryCodeSessionStore
       .getState()
       .getWorkspaceState(props.workspacePath, props.workspaceIdentity).activeTaskId;
     const inheritedGroup =
@@ -119,7 +119,7 @@ export const ProjectSidebar = memo(function ProjectSidebar(props: ProjectSidebar
             }),
           ) ?? null)
         : view === "grouped" && !projectId
-          ? (useZCodeSessionStore
+          ? (useRaspberryCodeSessionStore
               .getState()
               .getWorkspaceState(props.workspacePath, props.workspaceIdentity).draftTaskGroupId ??
             null)

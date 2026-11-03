@@ -8,13 +8,13 @@ import {
   ProviderConfig,
   ProviderConfigMap,
   ProviderConfigResolver,
-} from "@zcode/provider";
+} from "@raspberrycode/provider";
 import {
   NodePersonalProviderConfigRepository,
-  NodeZCodeBuiltinProviderConfigSource,
-} from "@zcode/provider-node";
+  NodeRaspberryCodeBuiltinProviderConfigSource,
+} from "@raspberrycode/provider-node";
 import { getAppConfigDir, setDataBaseDir } from "../src/paths.js";
-import { readLegacyZCodeConfigProviders } from "../src/model-provider/legacyZCodeConfigProviderReader.js";
+import { readLegacyRaspberryCodeConfigProviders } from "../src/model-provider/legacyRaspberryCodeConfigProviderReader.js";
 import { importLegacyPersonalProviderConfig } from "../src/model-provider/legacyPersonalProviderConfigImporter.js";
 
 let directory: string | undefined;
@@ -25,12 +25,12 @@ afterEach(async () => {
 
 describe("Todo 72 已发布 config.json 首次升级", () => {
   it.each([
-    { label: "外层禁用优先", fields: { enabled: false, zcode: { enabled: true } }, enabled: false },
-    { label: "外层启用优先", fields: { enabled: true, zcode: { enabled: false } }, enabled: true },
-    { label: "扩展禁用", fields: { zcode: { enabled: false } }, enabled: false },
+    { label: "外层禁用优先", fields: { enabled: false, raspberrycode: { enabled: true } }, enabled: false },
+    { label: "外层启用优先", fields: { enabled: true, raspberrycode: { enabled: false } }, enabled: true },
+    { label: "扩展禁用", fields: { raspberrycode: { enabled: false } }, enabled: false },
     { label: "缺省启用", fields: {}, enabled: undefined },
   ])("Todo118：$label 的首次导入保留启停，旧文件和后续编辑不变", async ({ fields, enabled }) => {
-    directory = await mkdtemp(join(tmpdir(), "zcode-legacy-provider-upgrade-"));
+    directory = await mkdtemp(join(tmpdir(), "raspberrycode-legacy-provider-upgrade-"));
     setDataBaseDir(directory);
     const configDir = getAppConfigDir();
     await mkdir(configDir, { recursive: true });
@@ -83,13 +83,13 @@ describe("Todo 72 已发布 config.json 首次升级", () => {
       importLegacy: async () => {
         importCount++;
         return importLegacyPersonalProviderConfig({
-          legacyProviders: await readLegacyZCodeConfigProviders(),
+          legacyProviders: await readLegacyRaspberryCodeConfigProviders(),
         });
       },
     });
-    const source = new NodeZCodeBuiltinProviderConfigSource({
+    const source = new NodeRaspberryCodeBuiltinProviderConfigSource({
       bundledFilePath: fileURLToPath(
-        new URL("../../../config/provider/zcode-builtin.json", import.meta.url),
+        new URL("../../../config/provider/raspberrycode-builtin.json", import.meta.url),
       ),
       watch: false,
     });
@@ -98,9 +98,9 @@ describe("Todo 72 已发布 config.json 首次升级", () => {
       expect(personal.providers.keys()).toEqual(["bigmodel-api", "zai-api", customId]);
       const builtin = await source.read();
       const resolved = new ProviderConfigResolver().resolve({
-        zcodeBuiltinProviders: builtin.providers,
-        zcodeBuiltinProviderTemplates: builtin.providerTemplates,
-        zcodeBuiltinModelRules: builtin.models,
+        raspberrycodeBuiltinProviders: builtin.providers,
+        raspberrycodeBuiltinProviderTemplates: builtin.providerTemplates,
+        raspberrycodeBuiltinModelRules: builtin.models,
         personalProviders: personal.providers,
         personalModels: personal.models,
         accountProviders: ProviderConfigMap.empty(),
@@ -132,9 +132,9 @@ describe("Todo 72 已发布 config.json 首次升级", () => {
         enabled ?? true,
       );
       const missingKey = new ProviderConfigResolver().resolve({
-        zcodeBuiltinProviders: builtin.providers,
-        zcodeBuiltinProviderTemplates: builtin.providerTemplates,
-        zcodeBuiltinModelRules: builtin.models,
+        raspberrycodeBuiltinProviders: builtin.providers,
+        raspberrycodeBuiltinProviderTemplates: builtin.providerTemplates,
+        raspberrycodeBuiltinModelRules: builtin.models,
         personalProviders: personal.providers.setRule({
           ...personal.providers.getRule(customId)!,
           enabled: true,
@@ -160,7 +160,7 @@ describe("Todo 72 已发布 config.json 首次升级", () => {
         importLegacy: async () => {
           importCount++;
           return importLegacyPersonalProviderConfig({
-            legacyProviders: await readLegacyZCodeConfigProviders(),
+            legacyProviders: await readLegacyRaspberryCodeConfigProviders(),
           });
         },
       });

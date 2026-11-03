@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, renderHook, waitFor, cleanup } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import { CONTROLLER_TASKS_INDEX_TOPIC } from "@zcode/shared/zcode-protocol-v4";
+import { CONTROLLER_TASKS_INDEX_TOPIC } from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import type {
   WindowHostControllerFrame,
   IWindowControllerService,
@@ -21,8 +21,8 @@ vi.mock("@/store/TabStoreProvider.js", () => ({
   useTabStore: () => mocks.tabs,
   useTabStoreApi: () => ({ subscribe: () => () => {} }),
 }));
-vi.mock("@/store/zcodeSessionStore.js", () => ({
-  useZCodeSessionStore: Object.assign(() => 0, { subscribe: () => () => {} }),
+vi.mock("@/store/raspberrycodeSessionStore.js", () => ({
+  useRaspberryCodeSessionStore: Object.assign(() => 0, { subscribe: () => () => {} }),
 }));
 vi.mock("@/v4/useWorkspaceSessionsIndexItems.js", () => ({
   useWorkspaceSessionsIndexItems: () => ({ items: [] }),

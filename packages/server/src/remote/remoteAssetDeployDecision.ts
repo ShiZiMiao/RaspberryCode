@@ -1,28 +1,33 @@
-import { ZCODE_VERSION } from "@zcode/shared";
-import type { IRemoteBackend, RemoteEnvironment } from "@zcode/server/remote/backend.js";
+import { RASPBERRYCODE_VERSION } from "@raspberrycode/shared";
+import type { IRemoteBackend, RemoteEnvironment } from "@raspberrycode/server/remote/backend.js";
 import {
-  REMOTE_BASE,
+  resolveRemoteServerBase,
   type DeployLoggers,
   type RemoteAssetDeployOptions,
-} from "@zcode/server/remote/deployShared.js";
+} from "@raspberrycode/server/remote/deployShared.js";
 import {
   readRemoteAssetComponentMeta,
   writeRemoteAssetComponentMeta,
-} from "@zcode/server/remote/remoteAssetLiveIdentity.js";
+} from "@raspberrycode/server/remote/remoteAssetLiveIdentity.js";
 import {
   fetchRemoteAssetManifestFromCdn,
   resolveRemoteAssetComponentCacheVersion,
   selectRemoteAssetManifestComponents,
   type RemoteAssetManifest,
-} from "@zcode/server/remote/remoteAssetCache.js";
+} from "@raspberrycode/server/remote/remoteAssetCache.js";
 import {
   LocalUploadAssetInstaller,
   type RemoteAssetInstaller,
-} from "@zcode/server/remote/remoteAssetInstaller.js";
-import type { RemoteAssetNetworkPort } from "@zcode/server/remote/remoteAssetNetwork.js";
+} from "@raspberrycode/server/remote/remoteAssetInstaller.js";
+import type { RemoteAssetNetworkPort } from "@raspberrycode/server/remote/remoteAssetNetwork.js";
 
-const REMOTE_NODE_PTY_PATH = `${REMOTE_BASE}/build/Release/pty.node`;
-const REMOTE_NODE_PTY_SPAWN_HELPER_PATH = `${REMOTE_BASE}/build/Release/spawn-helper`;
+function remoteNodePtyPath(serverBase: string): string {
+  return `${serverBase}/build/Release/pty.node`;
+}
+
+function remoteNodePtySpawnHelperPath(serverBase: string): string {
+  return `${serverBase}/build/Release/spawn-helper`;
+}
 
 export interface RemoteAssetVersionResolverOptions {
   mockCdnDir?: string;
@@ -78,7 +83,8 @@ export async function deployNodeRuntime(
   loggers: DeployLoggers,
 ): Promise<void> {
   const { platformArch, installer } = options;
-  const remotePath = `${REMOTE_BASE}/node`;
+  const serverBase = options.serverBase ?? (await resolveRemoteServerBase(backend));
+  const remotePath = `${serverBase}/node`;
   const expectedVersion = normalizeDeployExpectedVersion(options.expectedVersion);
   const decision = await shouldDeployVersionedComponent(backend, {
     componentId: "node-runtime",
@@ -124,11 +130,14 @@ export async function deployNodePtyPrebuilds(
   loggers: DeployLoggers,
 ): Promise<void> {
   const { platformArch, onlyIfMissing, installer } = options;
+  const serverBase = options.serverBase ?? (await resolveRemoteServerBase(backend));
+  const nodePtyPath = remoteNodePtyPath(serverBase);
+  const spawnHelperPath = remoteNodePtySpawnHelperPath(serverBase);
   const expectedVersion = normalizeDeployExpectedVersion(options.expectedVersion);
   const decision = await shouldDeployVersionedComponent(backend, {
     componentId: "node-pty",
     platformArch,
-    remotePath: REMOTE_NODE_PTY_PATH,
+    remotePath: nodePtyPath,
     expectedVersion,
     force: options.force,
     fallbackDeployWhenVersionUnknown: !onlyIfMissing,
@@ -154,7 +163,7 @@ export async function deployNodePtyPrebuilds(
       await installer.installFile({
         componentId: "node-pty",
         sourceRelativePath,
-        remotePath: REMOTE_NODE_PTY_PATH,
+        remotePath: nodePtyPath,
       });
       await writeRemoteAssetComponentMeta(backend, {
         id: "node-pty",
@@ -171,8 +180,7 @@ export async function deployNodePtyPrebuilds(
     return;
   }
 
-  const shouldUploadSpawnHelper =
-    decision.shouldDeploy || !(await backend.exists(REMOTE_NODE_PTY_SPAWN_HELPER_PATH));
+  const shouldUploadSpawnHelper = decision.shouldDeploy || !(await backend.exists(spawnHelperPath));
   if (shouldUploadSpawnHelper) {
     const sourceRelativePath = `node-pty/${platformArch}/spawn-helper`;
     if (
@@ -194,13 +202,13 @@ export async function deployNodePtyPrebuilds(
         loggers,
         installer,
         componentId: "node-pty",
-        reason: `remote file missing path=${REMOTE_NODE_PTY_SPAWN_HELPER_PATH}`,
+        reason: `remote file missing path=${spawnHelperPath}`,
       });
     }
     await installer.installFile({
       componentId: "node-pty",
       sourceRelativePath,
-      remotePath: REMOTE_NODE_PTY_SPAWN_HELPER_PATH,
+      remotePath: spawnHelperPath,
       executable: true,
     });
     loggers.log("node-pty spawn-helper install done");
@@ -300,7 +308,7 @@ async function resolveComponentManifest(
         remoteCdnBaseUrl: options.remoteCdnBaseUrl,
         remoteCdnBaseUrls: options.remoteCdnBaseUrls,
         remoteCacheDir: options.remoteCacheDir,
-        version: ZCODE_VERSION,
+        version: RASPBERRYCODE_VERSION,
         platformArch: `${env.platform}-${env.arch}`,
         manifestRequestTimeoutMs: options.manifestRequestTimeoutMs,
         remoteAssetNetwork: options.remoteAssetNetwork,

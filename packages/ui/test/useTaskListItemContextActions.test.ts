@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ZCodeProvider } from "@zcode/shared";
+import type { RaspberryCodeProvider } from "@raspberrycode/shared";
 import {
   resolveProviderConfigOpenTargetPath,
   useTaskListItemContextActions,
@@ -84,7 +84,7 @@ function HookProbe({
   workspacePath: string;
   remoteSessionId?: string;
   workspaceIdentity?: string;
-  provider?: ZCodeProvider;
+  provider?: RaspberryCodeProvider;
   loadProviderConfig?: boolean;
 }) {
   latestResult = useTaskListItemContextActions({

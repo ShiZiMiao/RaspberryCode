@@ -11,8 +11,8 @@ import {
 describe("Coding Plan E2E mock env", () => {
   it("跳过构建开关允许复用父构建；历史动态端口源已随升级购买场景移除", () => {
     expect(shouldReuseDesktopE2EBuild({})).toBe(false);
-    expect(shouldReuseDesktopE2EBuild({ ZCODE_E2E_SKIP_BUILD: "1" })).toBe(true);
-    expect(shouldReuseDesktopE2EBuild({ ZCODE_E2E_SKIP_BUILD: "0" })).toBe(false);
+    expect(shouldReuseDesktopE2EBuild({ RASPBERRYCODE_E2E_SKIP_BUILD: "1" })).toBe(true);
+    expect(shouldReuseDesktopE2EBuild({ RASPBERRYCODE_E2E_SKIP_BUILD: "0" })).toBe(false);
   });
   it.each([
     "settings/settings-ui-polish.test.ts",

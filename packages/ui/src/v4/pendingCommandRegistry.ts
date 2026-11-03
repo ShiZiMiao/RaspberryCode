@@ -6,7 +6,7 @@ import type {
   CommandsQueryParams,
   CommandsQueryResult,
   ConversationSnapshot,
-} from "@zcode/shared/zcode-protocol-v4";
+} from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import {
   resolvePendingCommandWorkspaceKey,
   type PendingCommandClientContext,
@@ -34,7 +34,7 @@ export type PendingCommandResolution =
   | "discarded";
 
 export const PENDING_COMMAND_TTL_MS = 24 * 60 * 60 * 1_000;
-const STORAGE_KEY = "zcode-v4-pending-commands:v1";
+const STORAGE_KEY = "raspberrycode-v4-pending-commands:v1";
 
 interface StorageLike {
   getItem(key: string): string | null;

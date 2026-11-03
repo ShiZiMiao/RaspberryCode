@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { ZCodeTaskMeta } from "@zcode/shared";
-import { getTaskMeta, getTaskUnreadIndicator } from "@/store/zcodeSessionStore.js";
-import { getDefaultWorkspaceState } from "@/store/zcodeSessionStoreTypes.js";
+import type { RaspberryCodeTaskMeta } from "@raspberrycode/shared";
+import { getTaskMeta, getTaskUnreadIndicator } from "@/store/raspberrycodeSessionStore.js";
+import { getDefaultWorkspaceState } from "@/store/raspberrycodeSessionStoreTypes.js";
 
-function createTaskMeta(overrides: Partial<ZCodeTaskMeta> = {}): ZCodeTaskMeta {
+function createTaskMeta(overrides: Partial<RaspberryCodeTaskMeta> = {}): RaspberryCodeTaskMeta {
   return {
     taskId: "task-unread",
     traceId: "trace-unread",

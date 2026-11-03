@@ -1,5 +1,5 @@
 import { cn } from "@/components/lib/utils.js";
-import { ZCodeStartupLogoBadge } from "@/root/RootStartupLoading.js";
+import { RaspberryCodeStartupLogoBadge } from "@/root/RootStartupLoading.js";
 
 export function WindowsTopLeftLogo({
   className,
@@ -25,7 +25,7 @@ export function WindowsTopLeftLogo({
           imageClassName,
         )}
       >
-        <ZCodeStartupLogoBadge size="titlebar" animated={false} />
+        <RaspberryCodeStartupLogoBadge size="titlebar" animated={false} />
       </span>
     </div>
   );

@@ -8,7 +8,7 @@ import {
   type OAuthProviderId,
   type OAuthStateRegistration,
   PlatformChannels,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import {
   extractWorkspaceOpenPath,
   isOAuthCallbackUrl,
@@ -252,7 +252,7 @@ export function handleDeepLink(
     const targetWindow = options.resolveApplicationWindow
       ? options.resolveApplicationWindow()
       : (BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0] ?? null);
-    // zcode://workspace/open 来自浏览器/IM 等外部应用，不能等同于用户在
+    // raspberrycode://workspace/open 来自浏览器/IM 等外部应用，不能等同于用户在
     // RaspberryCode 内部选择目录；确认必须发生在 statSync 之前，避免项目配置被静默信任。
     if (
       !confirmExternalWorkspaceOpen(workspacePath, logger, targetWindow, options.confirmationCopy)
@@ -316,7 +316,7 @@ export function registerDeepLinkProtocol(
   },
   options: { iconPath?: string } = {},
 ) {
-  const scheme = "zcode";
+  const scheme = "raspberrycode";
 
   // 外部 URL 必须位于 -- 后；否则 Windows 引号拆分可把 URL 内容变成 Electron 启动参数。
   // Inspector 早于应用 JS 和单实例锁启动，不能依赖后续 handleDeepLink 校验拦截。

@@ -21,7 +21,7 @@ vi.mock("@/hooks/useServices.js", () => ({
 }));
 
 vi.mock("@/i18n/IntlProvider.js", () => ({
-  useZCodeIntl: () => ({
+  useRaspberryCodeIntl: () => ({
     intl: {
       formatMessage: ({ id }: { id: string }) => id,
     },
@@ -43,10 +43,10 @@ function renderRootWorkspaceContent(
     renderToStaticMarkup(
       createElement(RootWorkspaceContent, {
         workspaceScopedServices: {},
-        workspaceShellPath: "/workspace/z-code",
+        workspaceShellPath: "/workspace/demo",
         workspaceIdentity: params?.workspaceIdentity,
         workspaceRemoteSessionId: params?.workspaceRemoteSessionId,
-        activeWorkspacePath: "/workspace/z-code",
+        activeWorkspacePath: "/workspace/demo",
         isSettingsTabActive,
         handleConnectRemote: vi.fn(),
         handleSelectRemoteProject: vi.fn(),
@@ -93,7 +93,7 @@ describe("RootWorkspaceContent", () => {
   });
 
   it("keeps rendering App for a disconnected remote workspace", async () => {
-    const workspaceIdentity = "remote:docker:zcode-ssh-linux-amd64:/root";
+    const workspaceIdentity = "remote:docker:raspberrycode-ssh-linux-amd64:/root";
     const html = await renderRootWorkspaceContent(false, {
       workspaceIdentity,
     });

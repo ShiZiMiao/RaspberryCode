@@ -12,7 +12,7 @@ import { tmpdir } from "node:os";
 import { createHash } from "node:crypto";
 import { dirname, join, relative, sep } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { setDataBaseDir } from "@zcode/services/node";
+import { setDataBaseDir } from "@raspberrycode/services/node";
 import {
   WORKFLOW_ARTIFACT_FILE_MAX_BYTES,
   materializeWorkflowArtifactFile,
@@ -34,7 +34,7 @@ function bytesOf(text: string): Uint8Array {
 }
 
 beforeEach(async () => {
-  tempRoot = await mkdtemp(join(tmpdir(), "zcode-dwf-artifact-file-"));
+  tempRoot = await mkdtemp(join(tmpdir(), "raspberrycode-dwf-artifact-file-"));
   setDataBaseDir(tempRoot);
 });
 

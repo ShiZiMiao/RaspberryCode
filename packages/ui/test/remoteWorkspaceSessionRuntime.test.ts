@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ZCodeTaskMeta } from "@zcode/shared";
+import type { RaspberryCodeTaskMeta } from "@raspberrycode/shared";
 import {
   DEFAULT_TASK_RUNTIME_STATE,
   getDefaultWorkspaceState,
-} from "@/store/zcodeSessionStore.js";
+} from "@/store/raspberrycodeSessionStore.js";
 import { markRemoteWorkspaceRunningTasksFailed } from "@/lib/remoteWorkspaceSessionRuntime.js";
 
-function createTask(taskId: string, status: ZCodeTaskMeta["status"]): ZCodeTaskMeta {
+function createTask(taskId: string, status: RaspberryCodeTaskMeta["status"]): RaspberryCodeTaskMeta {
   return {
     taskId,
     traceId: `trace-${taskId}`,

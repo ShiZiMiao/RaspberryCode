@@ -4,10 +4,10 @@ import { Worker } from "node:worker_threads";
 import { createInterface } from "node:readline";
 import {
   type DatabaseMigrationFacts,
-  zcodeStoragePreparationFrameSchema,
+  raspberrycodeStoragePreparationFrameSchema,
   type DatabaseStartupState,
-} from "@zcode/shared";
-import { resolveDefaultZCodeAgentCommand } from "@zcode/services/storage-startup";
+} from "@raspberrycode/shared";
+import { resolveDefaultRaspberryCodeAgentCommand } from "@raspberrycode/services/storage-startup";
 
 type Phase = NonNullable<DatabaseStartupState["databasePhase"]>;
 import { workerMessageSchema } from "./contract.js";
@@ -90,7 +90,7 @@ export async function prepareSessionStorage(options: {
   preparedPaths?: Set<string>;
   observePath: (path: string) => Promise<void>;
 }): Promise<void> {
-  const command = resolveDefaultZCodeAgentCommand({
+  const command = resolveDefaultRaspberryCodeAgentCommand({
     workspacePath: options.cwd,
     workspaceKey: options.cwd,
     presentationSurface: "desktop",
@@ -134,7 +134,7 @@ export async function prepareSessionStorage(options: {
     lines.on("line", (line) => {
       try {
         if (line.length > 65536) throw statusError("transport_closed");
-        const frame = zcodeStoragePreparationFrameSchema.parse(JSON.parse(line));
+        const frame = raspberrycodeStoragePreparationFrameSchema.parse(JSON.parse(line));
         clearTimeout(firstStateTimer);
         if (frame.method === "startup/storagePath") {
           if (pathReceived) throw statusError("transport_closed");

@@ -1,16 +1,16 @@
-import { isStartPlanModelProviderId } from "@zcode/shared";
-import type { IUsageStatsService } from "@zcode/services";
+import { isStartPlanModelProviderId } from "@raspberrycode/shared";
+import type { IUsageStatsService } from "@raspberrycode/services";
 import type {
   UsageEntitlementSnapshot,
-  ZCodeAccountAccess,
-  ZCodeProviderAccountAccess,
-} from "@zcode/shared";
+  RaspberryCodeAccountAccess,
+  RaspberryCodeProviderAccountAccess,
+} from "@raspberrycode/shared";
 
 export interface UsageEntitlementRequestOptions {
   invalidateBalanceCache?: boolean;
   includeSubscription: boolean;
   preferredProviderId?: string;
-  accountAccess?: ZCodeProviderAccountAccess | ZCodeAccountAccess;
+  accountAccess?: RaspberryCodeProviderAccountAccess | RaspberryCodeAccountAccess;
   allowDisabledPreferredProvider: boolean;
   requirePreferredProvider: boolean;
   allowEnvApiKey?: boolean;

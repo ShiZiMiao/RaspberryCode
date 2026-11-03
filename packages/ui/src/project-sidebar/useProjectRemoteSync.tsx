@@ -13,8 +13,8 @@ import {
   useWorkspaceServicesResolution,
 } from "@/hooks/useWorkspaceServices.js";
 import { RemoteSyncDialogs, shouldShowRemoteSyncActions } from "@/settings/RemoteSyncActions.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
-import { invalidateDeferredDraftSessionForSkillChange } from "@/lib/zcodeDraftSkillInvalidation.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
+import { invalidateDeferredDraftSessionForSkillChange } from "@/lib/raspberrycodeDraftSkillInvalidation.js";
 import { refreshSharedSkillStoreForWorkspace } from "@/lib/skillStoreRefresh.js";
 import { refreshWorkspacePluginCapabilitiesAfterRemoteSync } from "@/lib/remotePluginSyncRefresh.js";
 import { useMcpStore } from "@/store/mcpStore.js";
@@ -36,7 +36,7 @@ export function useProjectRemoteSync(directory: RemoteProjectDirectory) {
   const base = useBaseWorkspaceServices();
   const sessions = useRemoteWorkspaceSessionStore((state) => state.sessionsById);
   const tabs = useOptionalTabStore((state) => state.tabs);
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   const [selection, setSelection] = useState<SyncTarget | null>(null);
   const selectedHost =
     selection &&
@@ -138,8 +138,8 @@ function ProjectRemoteSyncDialog({ target, onClose }: { target: SyncTarget; onCl
       remoteMcpSyncService={services.mcpSyncService}
       localPluginSyncService={base.pluginSyncService}
       remotePluginSyncService={services.pluginSyncService}
-      localZCodeAgentService={base.zcodeAgentService}
-      remoteZCodeAgentService={services.zcodeAgentService}
+      localRaspberryCodeAgentService={base.raspberrycodeAgentService}
+      remoteRaspberryCodeAgentService={services.raspberrycodeAgentService}
       remoteTarget={target.host.target}
       workspaceIdentity={target.identity}
       skillWorkspacePath={target.path}
@@ -168,7 +168,7 @@ function ProjectRemoteSyncDialog({ target, onClose }: { target: SyncTarget; onCl
         refreshWorkspacePluginCapabilitiesAfterRemoteSync({
           commandsService: services.commandsService,
           mcpSyncService: services.mcpSyncService,
-          zcodeAgentService: services.zcodeAgentService,
+          raspberrycodeAgentService: services.raspberrycodeAgentService,
           reason: "project-remote-plugin-sync",
           skillsService: services.skillsService,
           workspaceIdentity: target.identity,

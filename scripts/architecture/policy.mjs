@@ -3,7 +3,6 @@ import path from "node:path";
 import ts from "typescript";
 import { parse as parseYaml } from "yaml";
 import { SOURCE_EXTENSIONS, resolveSpecifier } from "./resolver.mjs";
-import { isSnapshotPath } from "./upstream-snapshot.mjs";
 
 export { SOURCE_EXTENSIONS };
 
@@ -78,30 +77,7 @@ function validatePolicy(raw, cwd) {
     newFilesEnforcedSince: raw.global?.newFilesEnforcedSince
       ? String(raw.global.newFilesEnforcedSince)
       : null,
-    acceptedUpstreamCommits: raw.global?.acceptedUpstreamCommits ?? [],
-    acceptedUpstreamSnapshot: raw.global?.acceptedUpstreamSnapshot ?? null,
   };
-  if (
-    !Array.isArray(global.acceptedUpstreamCommits) ||
-    global.acceptedUpstreamCommits.some(
-      (entry) =>
-        !entry ||
-        !/^[a-f0-9]{40}$/.test(entry.commit ?? "") ||
-        !/^[a-f0-9]{40}$/.test(entry.previousHead ?? "") ||
-        typeof entry.reason !== "string" ||
-        !entry.reason.trim(),
-    )
-  ) {
-    throw new Error("acceptedUpstreamCommits 必须包含完整 commit、previousHead SHA 和非空 reason");
-  }
-  if (
-    global.acceptedUpstreamSnapshot !== null &&
-    (!isSnapshotPath(global.acceptedUpstreamSnapshot) || global.acceptedUpstreamCommits.length)
-  ) {
-    throw new Error(
-      "acceptedUpstreamSnapshot 必须为仓库相对路径，且不能与 acceptedUpstreamCommits 混用",
-    );
-  }
   const exceptions = (raw.exceptions ?? []).map((exception) => ({
     ...exception,
     paths: exception.paths ?? [],

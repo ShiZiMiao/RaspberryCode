@@ -212,7 +212,7 @@ describe("buildTreemappingActivityModel", () => {
     const model = buildTreemappingActivityModel(
       message([
         toolCall({
-          toolId: "zcode-edit-1",
+          toolId: "raspberrycode-edit-1",
           kind: "edit",
           title: "Write",
           input: { file_path: filePath, content: "large content" },
@@ -283,7 +283,7 @@ describe("buildTreemappingActivityModel", () => {
     const model = buildTreemappingActivityModel(
       message([
         toolCall({
-          toolId: "zcode-create-1",
+          toolId: "raspberrycode-create-1",
           kind: "edit",
           title: "Write",
           input: { file_path: createPath, content: "one\ntwo\n" },
@@ -304,7 +304,7 @@ describe("buildTreemappingActivityModel", () => {
           },
         }),
         toolCall({
-          toolId: "zcode-update-1",
+          toolId: "raspberrycode-update-1",
           kind: "edit",
           title: "Write",
           input: { file_path: updatePath, content: "changed\n" },
@@ -325,7 +325,7 @@ describe("buildTreemappingActivityModel", () => {
           },
         }),
         toolCall({
-          toolId: "zcode-delete-1",
+          toolId: "raspberrycode-delete-1",
           kind: "edit",
           title: "Write",
           input: { file_path: deletePath },

@@ -25,7 +25,7 @@ import {
   type CuaPermissionState,
   type CuaPermissionStatus,
   type CuaPermissionStatusResult,
-} from "@zcode/services";
+} from "@raspberrycode/services";
 
 interface StorageLike {
   getItem(key: string): string | null;
@@ -33,7 +33,7 @@ interface StorageLike {
 }
 
 /** TCC 授权是 App（Helper bundle）级而非 workspace 级，因此全局单键，不按 workspace 分。 */
-export const CUA_PERMISSION_STATUS_CACHE_KEY = "zcode-cua-permission-status";
+export const CUA_PERMISSION_STATUS_CACHE_KEY = "raspberrycode-cua-permission-status";
 
 /**
  * 缓存有效期。授权状态可能在 RaspberryCode 未运行时被用户在系统设置里改掉，缓存越旧越不可信；

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ZCodeSlashCommand } from "@zcode/shared";
+import type { RaspberryCodeSlashCommand } from "@raspberrycode/shared";
 import {
   buildAppSlashCommandSuggestions,
   buildSkillSuggestions,
@@ -20,7 +20,7 @@ describe("slashCommandHelpers", () => {
   });
 
   it("buildSlashSuggestions 逐项展示 CLI catalog，不在 UI 维护内建白名单", () => {
-    const commands: ZCodeSlashCommand[] = [
+    const commands: RaspberryCodeSlashCommand[] = [
       {
         name: "review",
         description: "run review",
@@ -205,7 +205,7 @@ describe("slashCommandHelpers", () => {
           id: "glm:workspace:code-review",
           name: "code-review",
           description: "review code",
-          path: "/repo/.zcode/skills/code-review/SKILL.md",
+          path: "/repo/.raspberrycode/skills/code-review/SKILL.md",
           scope: "workspace",
           pluginName: undefined,
         },
@@ -222,7 +222,7 @@ describe("slashCommandHelpers", () => {
         description: "Workspace · review code",
         keywords: ["code-review", "review code", "workspace", "skill", "skills"],
         data: {
-          path: "/repo/.zcode/skills/code-review/SKILL.md",
+          path: "/repo/.raspberrycode/skills/code-review/SKILL.md",
           scope: "workspace",
         },
       },

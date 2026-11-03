@@ -10,13 +10,13 @@ import { ChatPromptActionMenu } from "@/prompt-editor/ChatPromptActionMenu.js";
 import type { LexicalChatInputHandle } from "@/LexicalChatInput.js";
 import { ServiceProvider } from "@/hooks/useServices.js";
 import { StoreContext } from "@/store/StoreProvider.js";
-import { createZCodeStore } from "@/store/index.js";
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+import { createRaspberryCodeStore } from "@/store/index.js";
+import { RaspberryCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import { TooltipProvider } from "@/components/ui/tooltip.js";
-import type { IBroadcastService, IServiceAccessor } from "@zcode/services";
+import type { IBroadcastService, IServiceAccessor } from "@raspberrycode/services";
 import "@/styles.css";
 const params = new URLSearchParams(location.search);
-const store = createZCodeStore({
+const store = createRaspberryCodeStore({
   send: async () => {},
   onMessage: () => ({ dispose() {} }),
 } as unknown as IBroadcastService);
@@ -30,7 +30,7 @@ const services = {
       return response.json();
     },
   },
-  zcodeAgentService: { onAgentRuntimeRestarted: () => ({ dispose() {} }) },
+  raspberrycodeAgentService: { onAgentRuntimeRestarted: () => ({ dispose() {} }) },
   clientConfigService: {
     getSnapshot: async () => {
       const response = await fetch("/order");
@@ -82,7 +82,7 @@ function Fixture() {
             workspacePath="/fixture"
             workspaceIdentity="ssh:fixture"
             sessionId={sessionId}
-            provider="zcode"
+            provider="raspberrycode"
             container={container}
           />
         </LexicalComposer>
@@ -102,11 +102,11 @@ function Fixture() {
 createRoot(document.getElementById("root")!).render(
   <ServiceProvider services={services}>
     <StoreContext.Provider value={store}>
-      <ZCodeIntlProvider initialLocale={params.get("locale") === "zh-CN" ? "zh-CN" : "en-US"}>
+      <RaspberryCodeIntlProvider initialLocale={params.get("locale") === "zh-CN" ? "zh-CN" : "en-US"}>
         <TooltipProvider>
           <Fixture />
         </TooltipProvider>
-      </ZCodeIntlProvider>
+      </RaspberryCodeIntlProvider>
     </StoreContext.Provider>
   </ServiceProvider>,
 );

@@ -2,7 +2,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, expect, it, vi } from "vitest";
-import type { IPluginManagementService } from "@zcode/services";
+import type { IPluginManagementService } from "@raspberrycode/services";
 import { createPluginManagementStore } from "@/store/pluginManagementStore.js";
 import type { PluginStoreActions } from "@/settings/PluginStoreCard.js";
 import { TooltipProvider } from "@/components/ui/tooltip.js";
@@ -34,12 +34,12 @@ vi.mock("@/plugin-ui/index.js", () => ({
   resolvePluginUiSurfaceTitle: () => "Panel",
 }));
 vi.mock("@/i18n/IntlProvider.js", () => ({
-  useZCodeIntl: () => ({
+  useRaspberryCodeIntl: () => ({
     intl: { formatMessage: ({ id }: { id: string }) => id },
     locale: "en-US",
   }),
 }));
-vi.mock("@/lib/zcodeDraftSkillInvalidation.js", () => ({
+vi.mock("@/lib/raspberrycodeDraftSkillInvalidation.js", () => ({
   invalidateDeferredDraftSessionForSkillChange: effects.invalidate,
 }));
 vi.mock("@/lib/skillStoreRefresh.js", () => ({

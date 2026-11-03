@@ -1,23 +1,24 @@
-import { SocketProtocol, ChannelClient, ChannelServer, type IServerChannel } from "@zcode/rpc";
-import type { IServiceAccessor } from "@zcode/services";
-import { RemoteServiceAccess } from "@zcode/client";
+import { SocketProtocol, ChannelClient, ChannelServer, type IServerChannel } from "@raspberrycode/rpc";
+import type { IServiceAccessor } from "@raspberrycode/services";
+import { RemoteServiceAccess } from "@raspberrycode/client";
 import {
   SERVICE_AUTHORITY_MODE_ENV,
   TOPIC_RESOURCE_RELAY_CHANNEL,
-  ZCODE_APP_VERSION_ENV,
-  ZCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV,
-  ZCODE_DYNAMIC_WORKFLOW_MODE_ENV,
+  RASPBERRYCODE_APP_VERSION_ENV,
+  RASPBERRYCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV,
+  RASPBERRYCODE_DYNAMIC_WORKFLOW_MODE_ENV,
   formatLogPrefix,
-  ZCODE_REMOTE_HTTP_PROXY_ENV_KEY,
-  ZCODE_REMOTE_NO_PROXY_ENV_KEY,
-  ZCODE_REMOTE_RUNTIME_NETWORK_AUTHORITY_ENV_KEY,
-} from "@zcode/shared";
+  RASPBERRYCODE_REMOTE_HTTP_PROXY_ENV_KEY,
+  RASPBERRYCODE_REMOTE_NO_PROXY_ENV_KEY,
+  RASPBERRYCODE_REMOTE_RUNTIME_NETWORK_AUTHORITY_ENV_KEY,
+} from "@raspberrycode/shared";
 import type { IRemoteBackend } from "./backend.js";
 import { wrapStdioStream } from "./stdio-socket.js";
 import { performHandshake } from "./handshake.js";
 import { deployServer } from "./deploy.js";
+import { resolveRemoteServerBase } from "./deployShared.js";
 import type { DeployOptions } from "./deploy.js";
-import { assertSupportedRemoteEnvironment } from "@zcode/server/remote/remotePlatformSupport.js";
+import { assertSupportedRemoteEnvironment } from "@raspberrycode/server/remote/remotePlatformSupport.js";
 import { quotePosixShellArg } from "./posixShell.js";
 import { formatWslProxyForLog } from "./wslProxy.js";
 
@@ -57,17 +58,17 @@ export interface RemoteConnection {
 }
 
 const REMOTE_RUNTIME_ENV_KEYS = [
-  "ZCODE_ENV",
-  "ZCODE_BASE_URL",
-  "ZCODE_ENDPOINT_ORIGIN",
-  "ZCODE_TEST_BASE_URL",
-  "ZCODE_PRODUCTION_BASE_URL",
+  "RASPBERRYCODE_ENV",
+  "RASPBERRYCODE_BASE_URL",
+  "RASPBERRYCODE_ENDPOINT_ORIGIN",
+  "RASPBERRYCODE_TEST_BASE_URL",
+  "RASPBERRYCODE_PRODUCTION_BASE_URL",
   // ZAI OAuth／业务 token 环境已随登录体系拆除，不再向远端透传（2026-10-30 清理漏网）。
   // Desktop Main 已完成的单功能灰度结果；远端 server 只消费，不重新分桶。
-  ZCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV,
+  RASPBERRYCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV,
   // 同上：本地覆盖由 Desktop Main 按构建档位写定（buildHostProcessEnv），
   // 透传后 SSH/WSL/Docker 远端 Host 与本地 Host 得到同一档位。
-  ZCODE_DYNAMIC_WORKFLOW_MODE_ENV,
+  RASPBERRYCODE_DYNAMIC_WORKFLOW_MODE_ENV,
 ] as const;
 
 export type RemoteRuntimeEnvKey = (typeof REMOTE_RUNTIME_ENV_KEYS)[number];
@@ -100,7 +101,7 @@ function throwIfRemoteConnectAborted(signal: AbortSignal | undefined): void {
 }
 
 /**
- * Connect to a remote zcode server via an IRemoteBackend.
+ * Connect to a remote raspberrycode server via an IRemoteBackend.
  *
  * Steps:
  * 1. detect() → { platform, arch }
@@ -193,13 +194,17 @@ async function connectRemoteUnchecked(
 
   // 3. Launch server
   log("launching remote server...");
-  const stream = await backend.exec(buildRemoteServerCommand(options, remoteRuntimeNetwork));
+  // server 根按机器布局解析（新装新根、旧布局续用旧根）；与 deployServer 内部使用同一解析结果。
+  const serverBase = await resolveRemoteServerBase(backend);
+  const stream = await backend.exec(
+    buildRemoteServerCommand(options, remoteRuntimeNetwork, serverBase),
+  );
   throwIfRemoteConnectAborted(options?.signal);
   log("remote server exec started");
 
   // Forward stderr for debugging
   stream.stderr.on("data", (chunk: Buffer) => {
-    // 远端 zcode-server 的服务日志走 stderr，直接写 host stderr 时可能被结构化日志中继吞掉。
+    // 远端 raspberrycode-server 的服务日志走 stderr，直接写 host stderr 时可能被结构化日志中继吞掉。
     // 这里转成 host 的 console 日志，让 remote sqlite 初始化/锁冲突日志能稳定出现在连接日志面板和启动终端。
     console.log(`[remote] ${chunk.toString().trimEnd()}`);
   });
@@ -368,10 +373,12 @@ async function resolveRemoteRuntimeNetwork(
 function buildRemoteServerCommand(
   options: ConnectOptions | undefined,
   remoteRuntimeNetwork: RemoteRuntimeNetworkOptions | undefined,
+  serverRoot: string,
 ): string {
+  const rootShell = serverRoot.replace(/^~\//u, "$HOME/");
   const envParts = [
     `${SERVICE_AUTHORITY_MODE_ENV}="desktop-attached-remote"`,
-    'ZCODE_SERVER_RUNTIME_ROOT="$HOME/.zcode/server"',
+    `RASPBERRYCODE_SERVER_RUNTIME_ROOT="${rootShell}"`,
   ];
   for (const [key, value] of Object.entries(
     pickRemoteRuntimeEnv(options?.remoteRuntimeEnv ?? {}),
@@ -382,20 +389,20 @@ function buildRemoteServerCommand(
   if (appVersion) {
     // 远端 server 是通过 SSH/WSL/Docker 单独启动的，不会继承桌面 host env。
     // 这里显式把 app 版本作为远端进程 env 注入，远端 agent 才能在模型请求 header 中带上版本。
-    envParts.push(`${ZCODE_APP_VERSION_ENV}=${quotePosixShellArg(appVersion)}`);
+    envParts.push(`${RASPBERRYCODE_APP_VERSION_ENV}=${quotePosixShellArg(appVersion)}`);
   }
   if (remoteRuntimeNetwork?.authoritative) {
-    envParts.push(`${ZCODE_REMOTE_RUNTIME_NETWORK_AUTHORITY_ENV_KEY}='1'`);
+    envParts.push(`${RASPBERRYCODE_REMOTE_RUNTIME_NETWORK_AUTHORITY_ENV_KEY}='1'`);
     if (remoteRuntimeNetwork.httpProxy !== undefined) {
       envParts.push(
-        `${ZCODE_REMOTE_HTTP_PROXY_ENV_KEY}=${quotePosixShellArg(remoteRuntimeNetwork.httpProxy)}`,
+        `${RASPBERRYCODE_REMOTE_HTTP_PROXY_ENV_KEY}=${quotePosixShellArg(remoteRuntimeNetwork.httpProxy)}`,
       );
     }
     if (remoteRuntimeNetwork.noProxy !== undefined) {
       envParts.push(
-        `${ZCODE_REMOTE_NO_PROXY_ENV_KEY}=${quotePosixShellArg(remoteRuntimeNetwork.noProxy)}`,
+        `${RASPBERRYCODE_REMOTE_NO_PROXY_ENV_KEY}=${quotePosixShellArg(remoteRuntimeNetwork.noProxy)}`,
       );
     }
   }
-  return `${envParts.join(" ")} ~/.zcode/server/node ~/.zcode/server/zcode-server.cjs`;
+  return `${envParts.join(" ")} ${rootShell}/node ${rootShell}/raspberrycode-server.cjs`;
 }

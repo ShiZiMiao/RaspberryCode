@@ -1,29 +1,31 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { ZCODE_VERSION } from "@zcode/shared";
-import type { IRemoteBackend } from "@zcode/server/remote/backend.js";
-import type { RemoteEnvironment } from "@zcode/server/remote/backend.js";
+import { RASPBERRYCODE_VERSION } from "@raspberrycode/shared";
+import type { IRemoteBackend } from "@raspberrycode/server/remote/backend.js";
+import type { RemoteEnvironment } from "@raspberrycode/server/remote/backend.js";
 import {
-  REMOTE_BASE,
+  resolveRemoteServerBase,
   type DeployLoggers,
   waitForClose,
-} from "@zcode/server/remote/deployShared.js";
+} from "@raspberrycode/server/remote/deployShared.js";
 import {
   buildWriteLiteralFileCommand,
   quotePosixPathArg,
-} from "@zcode/server/remote/posixShell.js";
+} from "@raspberrycode/server/remote/posixShell.js";
 import {
   fetchRemoteAssetManifestRefFromCdn,
   type RemoteAssetManifest,
   type RemoteAssetManifestRef,
-} from "@zcode/server/remote/remoteAssetCache.js";
+} from "@raspberrycode/server/remote/remoteAssetCache.js";
 import {
   buildReleaseBaseCandidates,
   resolveRemoteCdnBaseUrls,
-} from "@zcode/server/remote/remoteAssetCdn.js";
-import type { RemoteAssetNetworkPort } from "@zcode/server/remote/remoteAssetNetwork.js";
+} from "@raspberrycode/server/remote/remoteAssetCdn.js";
+import type { RemoteAssetNetworkPort } from "@raspberrycode/server/remote/remoteAssetNetwork.js";
 
-const REMOTE_ASSET_COMPONENT_META_DIR = `${REMOTE_BASE}/.asset-components`;
+function remoteAssetComponentMetaDir(serverBase: string): string {
+  return `${serverBase}/.asset-components`;
+}
 
 export interface RemoteAssetIdentityResolverOptions {
   mockCdnDir?: string;
@@ -113,8 +115,11 @@ export async function readRemoteAssetComponentMeta(
   backend: IRemoteBackend,
   componentId: string,
 ): Promise<RemoteAssetComponentMeta | null> {
+  const serverBase = await resolveRemoteServerBase(backend);
   try {
-    const content = await backend.readFile(buildRemoteAssetComponentMetaPath(componentId));
+    const content = await backend.readFile(
+      buildRemoteAssetComponentMetaPath(serverBase, componentId),
+    );
     const parsed = JSON.parse(content) as Partial<RemoteAssetComponentMeta>;
     if (
       typeof parsed.id !== "string" ||
@@ -148,11 +153,12 @@ export async function writeRemoteAssetComponentMeta(
   if (meta.version === "unknown" && !meta.sha256) {
     return;
   }
+  const serverBase = await resolveRemoteServerBase(backend);
   const stream = await backend.exec(
     [
-      `mkdir -p ${quotePosixPathArg(REMOTE_ASSET_COMPONENT_META_DIR)}`,
+      `mkdir -p ${quotePosixPathArg(remoteAssetComponentMetaDir(serverBase))}`,
       buildWriteLiteralFileCommand(
-        buildRemoteAssetComponentMetaPath(meta.id),
+        buildRemoteAssetComponentMetaPath(serverBase, meta.id),
         `${JSON.stringify(meta)}\n`,
       ),
     ].join(" && "),
@@ -188,8 +194,8 @@ export async function hasRemoteAssetComponentRefreshPending(
   );
 }
 
-function buildRemoteAssetComponentMetaPath(componentId: string): string {
-  return `${REMOTE_ASSET_COMPONENT_META_DIR}/${componentId}.json`;
+function buildRemoteAssetComponentMetaPath(serverBase: string, componentId: string): string {
+  return `${remoteAssetComponentMetaDir(serverBase)}/${componentId}.json`;
 }
 
 function formatIdentity(identity: RemoteAssetComponentIdentity): string {
@@ -205,14 +211,14 @@ async function resolveFreshComponentManifest(
   if (options.mockCdnDir) {
     try {
       const content = await readFile(
-        join(options.mockCdnDir, "releases", ZCODE_VERSION, `manifest-${platformArch}.json`),
+        join(options.mockCdnDir, "releases", RASPBERRYCODE_VERSION, `manifest-${platformArch}.json`),
         "utf8",
       );
       return {
         manifest: JSON.parse(content) as RemoteAssetManifest,
         releaseBaseCandidatesForComponents: buildReleaseBaseCandidates(
           resolveRemoteCdnBaseUrls(options),
-          ZCODE_VERSION,
+          RASPBERRYCODE_VERSION,
         ),
       };
     } catch (error) {
@@ -229,7 +235,7 @@ async function resolveFreshComponentManifest(
         remoteCdnBaseUrl: options.remoteCdnBaseUrl,
         remoteCdnBaseUrls: options.remoteCdnBaseUrls,
         remoteCacheDir: options.remoteCacheDir,
-        version: ZCODE_VERSION,
+        version: RASPBERRYCODE_VERSION,
         platformArch,
         manifestRequestTimeoutMs: options.manifestRequestTimeoutMs,
         remoteAssetNetwork: options.remoteAssetNetwork,

@@ -6,21 +6,21 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createPluginSyncService } from "../src/plugin-sync/pluginSyncService.js";
 
 function makeHome() {
-  return mkdtempSync(join(tmpdir(), "zcode-plugin-sync-home-"));
+  return mkdtempSync(join(tmpdir(), "raspberrycode-plugin-sync-home-"));
 }
 
-async function writeZcodeUserConfig(
+async function writeRaspberrycodeUserConfig(
   home: string,
   value: Record<string, unknown>,
 ): Promise<string> {
-  const configPath = join(home, ".zcode", "cli", "config.json");
-  await mkdir(join(home, ".zcode", "cli"), { recursive: true });
+  const configPath = join(home, ".raspberrycode", "cli", "config.json");
+  await mkdir(join(home, ".raspberrycode", "cli"), { recursive: true });
   await writeFile(configPath, `${JSON.stringify(value, null, 2)}\n`, "utf-8");
   return configPath;
 }
 
-async function readZcodeUserConfig(home: string): Promise<Record<string, unknown>> {
-  const raw = await readFile(join(home, ".zcode", "cli", "config.json"), "utf-8");
+async function readRaspberrycodeUserConfig(home: string): Promise<Record<string, unknown>> {
+  const raw = await readFile(join(home, ".raspberrycode", "cli", "config.json"), "utf-8");
   return JSON.parse(raw) as Record<string, unknown>;
 }
 
@@ -30,9 +30,9 @@ async function writeInlinePlugin(
   manifest: Record<string, unknown> = {},
 ): Promise<string> {
   const pluginRoot = join(root, directoryName);
-  await mkdir(join(pluginRoot, ".zcode-plugin"), { recursive: true });
+  await mkdir(join(pluginRoot, ".raspberrycode-plugin"), { recursive: true });
   await writeFile(
-    join(pluginRoot, ".zcode-plugin", "plugin.json"),
+    join(pluginRoot, ".raspberrycode-plugin", "plugin.json"),
     `${JSON.stringify({
       name: directoryName,
       description: `${directoryName} description`,
@@ -61,7 +61,7 @@ describe("plugin sync service", () => {
     process.env.HOME = originalHome;
   });
 
-  it("lists user inline plugins from zcode plugins.dirs as local candidates", async () => {
+  it("lists user inline plugins from raspberrycode plugins.dirs as local candidates", async () => {
     const home = makeHome();
     process.env.HOME = home;
     const pluginRoot = await writeInlinePlugin(join(home, "external"), "remote-tools", {
@@ -70,7 +70,7 @@ describe("plugin sync service", () => {
       commands: ["commands"],
       hooks: [{ event: "PreToolUse", command: "echo hook" }],
     });
-    await writeZcodeUserConfig(home, {
+    await writeRaspberrycodeUserConfig(home, {
       plugins: {
         dirs: [pluginRoot],
         enabledPlugins: {
@@ -108,8 +108,8 @@ describe("plugin sync service", () => {
     expect(result).toMatchObject({
       ok: true,
       path: [
-        join(remoteHome, ".zcode", "plugins"),
-        join(remoteHome, ".zcode", "cli"),
+        join(remoteHome, ".raspberrycode", "plugins"),
+        join(remoteHome, ".raspberrycode", "cli"),
       ].join(", "),
     });
   });
@@ -117,14 +117,14 @@ describe("plugin sync service", () => {
   it("reports remote plugin write preflight failure when plugin root is not a directory", async () => {
     const remoteHome = makeHome();
     process.env.HOME = remoteHome;
-    await mkdir(join(remoteHome, ".zcode"), { recursive: true });
-    await writeFile(join(remoteHome, ".zcode", "plugins"), "not a directory");
+    await mkdir(join(remoteHome, ".raspberrycode"), { recursive: true });
+    await writeFile(join(remoteHome, ".raspberrycode", "plugins"), "not a directory");
     const service = createPluginSyncService();
 
     const result = await service.checkRemoteUserPluginWriteAccess();
 
     expect(result.ok).toBe(false);
-    expect(result.path).toBe(join(remoteHome, ".zcode", "plugins"));
+    expect(result.path).toBe(join(remoteHome, ".raspberrycode", "plugins"));
     expect(result.error).toBeTruthy();
   });
 
@@ -132,13 +132,13 @@ describe("plugin sync service", () => {
     const home = makeHome();
     process.env.HOME = home;
     const cachePluginRoot = await writeInlinePlugin(
-      join(home, ".zcode", "cli", "plugins", "cache", "market", "cached", "1.0.0"),
+      join(home, ".raspberrycode", "cli", "plugins", "cache", "market", "cached", "1.0.0"),
       "cached",
       { name: "cached" },
     );
-    await mkdir(join(home, ".zcode", "cli", "plugins"), { recursive: true });
+    await mkdir(join(home, ".raspberrycode", "cli", "plugins"), { recursive: true });
     await writeFile(
-      join(home, ".zcode", "cli", "plugins", "installed_plugins.json"),
+      join(home, ".raspberrycode", "cli", "plugins", "installed_plugins.json"),
       `${JSON.stringify({
         plugins: [
           {
@@ -165,7 +165,7 @@ describe("plugin sync service", () => {
     const pluginRoot = await writeInlinePlugin(join(localHome, "external"), "remote-tools", {
       name: "remote-tools",
     });
-    await writeZcodeUserConfig(localHome, {
+    await writeRaspberrycodeUserConfig(localHome, {
       plugins: {
         dirs: [pluginRoot],
         enabledPlugins: {
@@ -195,9 +195,9 @@ describe("plugin sync service", () => {
         status: "synced",
       },
     ]);
-    const remotePluginRoot = join(remoteHome, ".zcode", "plugins", "remote-tools");
-    expect(existsSync(join(remotePluginRoot, ".zcode-plugin", "plugin.json"))).toBe(true);
-    const remoteConfig = await readZcodeUserConfig(remoteHome);
+    const remotePluginRoot = join(remoteHome, ".raspberrycode", "plugins", "remote-tools");
+    expect(existsSync(join(remotePluginRoot, ".raspberrycode-plugin", "plugin.json"))).toBe(true);
+    const remoteConfig = await readRaspberrycodeUserConfig(remoteHome);
     expect(remoteConfig).toMatchObject({
       plugins: {
         dirs: [resolve(remotePluginRoot)],
@@ -222,7 +222,7 @@ describe("plugin sync service", () => {
     const localCommandPath = join(pluginRoot, "commands", "run.sh");
     await writeFile(localCommandPath, "#!/bin/sh\necho ok\n", "utf-8");
     await chmod(localCommandPath, 0o755);
-    await writeZcodeUserConfig(localHome, { plugins: { dirs: [pluginRoot] } });
+    await writeRaspberrycodeUserConfig(localHome, { plugins: { dirs: [pluginRoot] } });
     const localService = createPluginSyncService();
     const candidates = await localService.listLocalUserPluginCandidates();
     const exported = await localService.exportPluginsArchive({
@@ -239,7 +239,7 @@ describe("plugin sync service", () => {
 
     const remoteCommandPath = join(
       remoteHome,
-      ".zcode",
+      ".raspberrycode",
       "plugins",
       "remote-tools",
       "commands",
@@ -257,7 +257,7 @@ describe("plugin sync service", () => {
     const pluginRoot = await writeInlinePlugin(join(localHome, "external"), "remote-tools", {
       name: "remote-tools",
     });
-    await writeZcodeUserConfig(localHome, { plugins: { dirs: [pluginRoot] } });
+    await writeRaspberrycodeUserConfig(localHome, { plugins: { dirs: [pluginRoot] } });
     const localService = createPluginSyncService();
     const candidates = await localService.listLocalUserPluginCandidates();
     const exported = await localService.exportPluginsArchive({
@@ -266,9 +266,9 @@ describe("plugin sync service", () => {
 
     const remoteHome = makeHome();
     process.env.HOME = remoteHome;
-    await writeZcodeUserConfig(remoteHome, {});
-    const remoteConfigDir = join(remoteHome, ".zcode", "cli");
-    const remotePluginRoot = join(remoteHome, ".zcode", "plugins", "remote-tools");
+    await writeRaspberrycodeUserConfig(remoteHome, {});
+    const remoteConfigDir = join(remoteHome, ".raspberrycode", "cli");
+    const remotePluginRoot = join(remoteHome, ".raspberrycode", "plugins", "remote-tools");
     const remoteService = createPluginSyncService();
 
     await chmod(remoteConfigDir, 0o555);
@@ -298,7 +298,7 @@ describe("plugin sync service", () => {
         path: remotePluginRoot,
       },
     ]);
-    const remoteConfig = await readZcodeUserConfig(remoteHome);
+    const remoteConfig = await readRaspberrycodeUserConfig(remoteHome);
     expect(remoteConfig).toMatchObject({
       plugins: {
         dirs: [resolve(remotePluginRoot)],
@@ -312,7 +312,7 @@ describe("plugin sync service", () => {
     const pluginRoot = await writeInlinePlugin(join(localHome, "external"), "remote-tools", {
       name: "remote-tools",
     });
-    await writeZcodeUserConfig(localHome, { plugins: { dirs: [pluginRoot] } });
+    await writeRaspberrycodeUserConfig(localHome, { plugins: { dirs: [pluginRoot] } });
     const localService = createPluginSyncService();
     const candidates = await localService.listLocalUserPluginCandidates();
     const exported = await localService.exportPluginsArchive({
@@ -325,7 +325,7 @@ describe("plugin sync service", () => {
       "different-dir",
       { name: "remote-tools" },
     );
-    await writeZcodeUserConfig(remoteHome, { plugins: { dirs: [existingRemoteRoot] } });
+    await writeRaspberrycodeUserConfig(remoteHome, { plugins: { dirs: [existingRemoteRoot] } });
     process.env.HOME = remoteHome;
     const remoteService = createPluginSyncService();
 
@@ -340,7 +340,7 @@ describe("plugin sync service", () => {
         status: "skipped",
       },
     ]);
-    const remoteConfig = await readZcodeUserConfig(remoteHome);
+    const remoteConfig = await readRaspberrycodeUserConfig(remoteHome);
     expect(remoteConfig).toMatchObject({ plugins: { dirs: [existingRemoteRoot] } });
   });
 
@@ -350,10 +350,10 @@ describe("plugin sync service", () => {
     const existingRemoteRoot = await writeInlinePlugin(join(remoteHome, "existing"), "known", {
       name: "known",
     });
-    await writeInlinePlugin(join(remoteHome, ".zcode", "plugins"), "known", {
+    await writeInlinePlugin(join(remoteHome, ".raspberrycode", "plugins"), "known", {
       name: "other-known",
     });
-    await writeZcodeUserConfig(remoteHome, { plugins: { dirs: [existingRemoteRoot] } });
+    await writeRaspberrycodeUserConfig(remoteHome, { plugins: { dirs: [existingRemoteRoot] } });
     const service = createPluginSyncService();
 
     const result = await service.listRemoteUserPluginStatuses({
@@ -382,7 +382,7 @@ describe("plugin sync service", () => {
     });
     await writeFile(join(home, "secret.txt"), "secret");
     symlinkSync(join(home, "secret.txt"), join(pluginRoot, "secret-link.txt"));
-    await writeZcodeUserConfig(home, { plugins: { dirs: [pluginRoot] } });
+    await writeRaspberrycodeUserConfig(home, { plugins: { dirs: [pluginRoot] } });
     const service = createPluginSyncService();
     const candidates = await service.listLocalUserPluginCandidates();
 
@@ -432,7 +432,7 @@ describe("plugin sync service", () => {
       marketplaceId: "team-market",
       status: "synced",
     });
-    expect(imported.path.startsWith(join(remoteHome, ".zcode", "plugins", "marketplace-sources"))).toBe(true);
+    expect(imported.path.startsWith(join(remoteHome, ".raspberrycode", "plugins", "marketplace-sources"))).toBe(true);
     const mirroredManifest = await readJsonFile(join(imported.path, "marketplace.json"));
     expect(mirroredManifest).toMatchObject({
       name: "team-market",
@@ -447,7 +447,7 @@ describe("plugin sync service", () => {
       ],
     });
     expect(
-      existsSync(join(imported.path, "plugins", "formatter", ".zcode-plugin", "plugin.json")),
+      existsSync(join(imported.path, "plugins", "formatter", ".raspberrycode-plugin", "plugin.json")),
     ).toBe(true);
   });
 

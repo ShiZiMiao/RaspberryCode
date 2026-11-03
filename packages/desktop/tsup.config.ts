@@ -21,7 +21,7 @@ const buildTimeConfigDefines = createBuildTimeConfigDefines(
 
 const buildMetadata = getBuildMetadata();
 
-function resolveZCodeEnv(value: string | undefined): "test" | "production" {
+function resolveRaspberryCodeEnv(value: string | undefined): "test" | "production" {
   return value?.trim().toLowerCase() === "production" ? "production" : "test";
 }
 
@@ -43,19 +43,19 @@ function loadEnvFiles(): Record<string, string> {
     }
   }
   // 真实环境变量优先级最高
-  if (process.env.ZCODE_ENV) vars.ZCODE_ENV = process.env.ZCODE_ENV;
-  if (process.env.ZCODE_BASE_URL) vars.ZCODE_BASE_URL = process.env.ZCODE_BASE_URL;
-  if (process.env.VITE_ZCODE_BASE_URL) vars.VITE_ZCODE_BASE_URL = process.env.VITE_ZCODE_BASE_URL;
+  if (process.env.RASPBERRYCODE_ENV) vars.RASPBERRYCODE_ENV = process.env.RASPBERRYCODE_ENV;
+  if (process.env.RASPBERRYCODE_BASE_URL) vars.RASPBERRYCODE_BASE_URL = process.env.RASPBERRYCODE_BASE_URL;
+  if (process.env.VITE_RASPBERRYCODE_BASE_URL) vars.VITE_RASPBERRYCODE_BASE_URL = process.env.VITE_RASPBERRYCODE_BASE_URL;
   if (process.env.CDN_DOMAIN) vars.CDN_DOMAIN = process.env.CDN_DOMAIN;
   if (process.env.OSS_PATH_PREFIX) vars.OSS_PATH_PREFIX = process.env.OSS_PATH_PREFIX;
   return vars;
 }
 
 const env = loadEnvFiles();
-const { environment: zcodeEnv } = await loadBuiltinProviderConfig();
-// 安装包身份与后端环境分轴：ZCODE_PREVIEW_IDENTITY=1 让生产后端的构建仍以 RaspberryCode Preview 身份打包运行。
-const zcodeProductFlavor = resolveDesktopProductFlavor({ ...process.env, ZCODE_ENV: zcodeEnv });
-console.log(`[tsup] ZCODE_ENV=${zcodeEnv} ZCODE_PRODUCT_FLAVOR=${zcodeProductFlavor}`);
+const { environment: raspberrycodeEnv } = await loadBuiltinProviderConfig();
+// 安装包身份与后端环境分轴：RASPBERRYCODE_PREVIEW_IDENTITY=1 让生产后端的构建仍以 RaspberryCode Preview 身份打包运行。
+const raspberrycodeProductFlavor = resolveDesktopProductFlavor({ ...process.env, RASPBERRYCODE_ENV: raspberrycodeEnv });
+console.log(`[tsup] RASPBERRYCODE_ENV=${raspberrycodeEnv} RASPBERRYCODE_PRODUCT_FLAVOR=${raspberrycodeProductFlavor}`);
 
 function parseCsvEnv(value: string | undefined): string[] {
   return (value ?? "")
@@ -66,7 +66,7 @@ function parseCsvEnv(value: string | undefined): string[] {
 
 export function resolveBuildRemoteCdnReleaseRoots(runtimeEnv: Record<string, string | undefined>) {
   const domains = parseCsvEnv(runtimeEnv.CDN_DOMAIN);
-  const pathPrefixes = parseCsvEnv(runtimeEnv.OSS_PATH_PREFIX || "zcode/electron/releases");
+  const pathPrefixes = parseCsvEnv(runtimeEnv.OSS_PATH_PREFIX || "raspberrycode/electron/releases");
   if (domains.length === 0) {
     return [];
   }
@@ -85,10 +85,10 @@ export function resolveBuildRemoteCdnReleaseRoots(runtimeEnv: Record<string, str
 export function resolveBuildPackagedAgentTelemetryEnv(
   runtimeEnv: Record<string, string | undefined>,
 ): Record<string, string> {
-  const endpoint = runtimeEnv.ZCODE_PACKAGED_AGENT_OTEL_ENDPOINT?.trim();
-  const headers = runtimeEnv.ZCODE_PACKAGED_AGENT_OTEL_HEADERS?.trim();
+  const endpoint = runtimeEnv.RASPBERRYCODE_PACKAGED_AGENT_OTEL_ENDPOINT?.trim();
+  const headers = runtimeEnv.RASPBERRYCODE_PACKAGED_AGENT_OTEL_HEADERS?.trim();
   const serviceName =
-    runtimeEnv.ZCODE_PACKAGED_AGENT_OTEL_SERVICE_NAME?.trim() || "zcode-cli-agent";
+    runtimeEnv.RASPBERRYCODE_PACKAGED_AGENT_OTEL_SERVICE_NAME?.trim() || "raspberrycode-cli-agent";
 
   if (!endpoint && !headers) {
     if (
@@ -101,37 +101,37 @@ export function resolveBuildPackagedAgentTelemetryEnv(
   }
   if (!endpoint || !headers) {
     throw new Error(
-      "ZCODE_PACKAGED_AGENT_OTEL_ENDPOINT and ZCODE_PACKAGED_AGENT_OTEL_HEADERS must be configured together",
+      "RASPBERRYCODE_PACKAGED_AGENT_OTEL_ENDPOINT and RASPBERRYCODE_PACKAGED_AGENT_OTEL_HEADERS must be configured together",
     );
   }
   if (endpoint.length > 2_048) {
-    throw new Error("ZCODE_PACKAGED_AGENT_OTEL_ENDPOINT exceeds 2048 characters");
+    throw new Error("RASPBERRYCODE_PACKAGED_AGENT_OTEL_ENDPOINT exceeds 2048 characters");
   }
   if (headers.length > 8_192 || /[\r\n]/u.test(headers)) {
-    throw new Error("ZCODE_PACKAGED_AGENT_OTEL_HEADERS is invalid");
+    throw new Error("RASPBERRYCODE_PACKAGED_AGENT_OTEL_HEADERS is invalid");
   }
   if (!/^[A-Za-z0-9._:-]{1,128}$/u.test(serviceName)) {
-    throw new Error("ZCODE_PACKAGED_AGENT_OTEL_SERVICE_NAME is invalid");
+    throw new Error("RASPBERRYCODE_PACKAGED_AGENT_OTEL_SERVICE_NAME is invalid");
   }
 
   let parsedEndpoint: URL;
   try {
     parsedEndpoint = new URL(endpoint);
   } catch {
-    throw new Error("ZCODE_PACKAGED_AGENT_OTEL_ENDPOINT must be a valid HTTP(S) URL");
+    throw new Error("RASPBERRYCODE_PACKAGED_AGENT_OTEL_ENDPOINT must be a valid HTTP(S) URL");
   }
   if (
     !["http:", "https:"].includes(parsedEndpoint.protocol) ||
     parsedEndpoint.username ||
     parsedEndpoint.password
   ) {
-    throw new Error("ZCODE_PACKAGED_AGENT_OTEL_ENDPOINT must be a valid HTTP(S) URL");
+    throw new Error("RASPBERRYCODE_PACKAGED_AGENT_OTEL_ENDPOINT must be a valid HTTP(S) URL");
   }
   if (
-    resolveZCodeEnv(runtimeEnv.ZCODE_ENV) === "production" &&
+    resolveRaspberryCodeEnv(runtimeEnv.RASPBERRYCODE_ENV) === "production" &&
     parsedEndpoint.protocol !== "https:"
   ) {
-    throw new Error("ZCODE_PACKAGED_AGENT_OTEL_ENDPOINT must use HTTPS in production");
+    throw new Error("RASPBERRYCODE_PACKAGED_AGENT_OTEL_ENDPOINT must use HTTPS in production");
   }
 
   return {
@@ -140,7 +140,7 @@ export function resolveBuildPackagedAgentTelemetryEnv(
     OTEL_SERVICE_NAME: serviceName,
     // 只有打进正式 Desktop 安装包的 Agent 才能由构建链可信判定为 packaged；
     // source/development_bundle 不在运行时猜测，未显式注入时保持 unknown。
-    ZCODE_TELEMETRY_RUNTIME_DISTRIBUTION: "packaged",
+    RASPBERRYCODE_TELEMETRY_RUNTIME_DISTRIBUTION: "packaged",
   };
 }
 
@@ -148,7 +148,7 @@ export function resolveDesktopTsupBundleSecurityOptions(
   runtimeEnv: Record<string, string | undefined> = process.env,
 ) {
   const isProduction = runtimeEnv.NODE_ENV === "production";
-  const isE2ECoverageBuild = runtimeEnv.ZCODE_E2E_COVERAGE === "1";
+  const isE2ECoverageBuild = runtimeEnv.RASPBERRYCODE_E2E_COVERAGE === "1";
   return {
     // 发布包的 main/host/preload 之前没有随 NODE_ENV=production 压缩，
     // 产物保留大量源码注释与格式化换行，增加逆向和内部实现暴露风险。
@@ -176,22 +176,22 @@ const desktopTsupBundleSecurityOptions = resolveDesktopTsupBundleSecurityOptions
 
 function createSharedDefines() {
   return {
-    __ZCODE_VERSION__: JSON.stringify(buildMetadata.appVersion),
-    __ZCODE_MIN_COMPATIBLE_VERSION__: JSON.stringify(buildMetadata.minCompatibleVersion),
-    __ZCODE_COMMIT__: JSON.stringify(buildMetadata.buildCommitId),
-    __ZCODE_BUILD_TIME__: JSON.stringify(buildMetadata.buildTime),
-    __ZCODE_ENV__: JSON.stringify(zcodeEnv),
-    __ZCODE_PRODUCT_FLAVOR__: JSON.stringify(zcodeProductFlavor),
+    __RASPBERRYCODE_VERSION__: JSON.stringify(buildMetadata.appVersion),
+    __RASPBERRYCODE_MIN_COMPATIBLE_VERSION__: JSON.stringify(buildMetadata.minCompatibleVersion),
+    __RASPBERRYCODE_COMMIT__: JSON.stringify(buildMetadata.buildCommitId),
+    __RASPBERRYCODE_BUILD_TIME__: JSON.stringify(buildMetadata.buildTime),
+    __RASPBERRYCODE_ENV__: JSON.stringify(raspberrycodeEnv),
+    __RASPBERRYCODE_PRODUCT_FLAVOR__: JSON.stringify(raspberrycodeProductFlavor),
     ...buildTimeConfigDefines,
     // Computer Use Helper build identity — helperInstaller 读它决定下载哪个 Helper bundle。
     // 缺失时 installer 抛 "Packaged RaspberryCode is missing its embedded Computer Use Helper build identity"。
-    // CI 构建时通过 ZCODE_CUA_HELPER_BUILD_ID env 注入；dev 为空串走兜底（dev helper 不走下载）。
-    __ZCODE_CUA_HELPER_BUILD_ID__: JSON.stringify(
-      process.env.ZCODE_CUA_HELPER_BUILD_ID?.trim() ?? "",
+    // CI 构建时通过 RASPBERRYCODE_CUA_HELPER_BUILD_ID env 注入；dev 为空串走兜底（dev helper 不走下载）。
+    __RASPBERRYCODE_CUA_HELPER_BUILD_ID__: JSON.stringify(
+      process.env.RASPBERRYCODE_CUA_HELPER_BUILD_ID?.trim() ?? "",
     ),
     // Bugfix: remote runtime CDN 根之前硬编码在 main bundle 里，OSS/CDN 切换必须改代码。
     // 这里改成构建期从 CI 的 CDN_DOMAIN/OSS_PATH_PREFIX 注入；没有配置时保留旧默认。
-    __ZCODE_REMOTE_CDN_RELEASE_ROOTS__: JSON.stringify(resolveBuildRemoteCdnReleaseRoots(env)),
+    __RASPBERRYCODE_REMOTE_CDN_RELEASE_ROOTS__: JSON.stringify(resolveBuildRemoteCdnReleaseRoots(env)),
   };
 }
 
@@ -200,7 +200,7 @@ function createMainDefines() {
     ...createSharedDefines(),
     // 正式安装包无法继承 GitLab Runner 或开发终端环境。这里只把 CI 提供的低权限写入配置
     // 编译进 Desktop Main，再由既有 Main -> Host -> Agent 安全边界定向传递。
-    __ZCODE_PACKAGED_AGENT_TELEMETRY_ENV__: JSON.stringify(
+    __RASPBERRYCODE_PACKAGED_AGENT_TELEMETRY_ENV__: JSON.stringify(
       resolveBuildPackagedAgentTelemetryEnv(process.env),
     ),
   };
@@ -233,7 +233,7 @@ export default defineConfig([
     entry: {
       "main/index": "src/main/index.ts",
       "main/browserWebmRecorder": "src/main/browserView/electronBrowserWebmRecorder.ts",
-      "main/zcodeDataSizeWorker": "src/main/zcodeDataSizeWorker.ts",
+      "main/raspberrycodeDataSizeWorker": "src/main/raspberrycodeDataSizeWorker.ts",
       // 资源管理器「存储」tab 的扫描 Worker：main 持有 StorageService，遍历放独立线程，供 new Worker(new URL()) 解析。
       "main/storageScanWorker": "src/main/storageScanWorker.ts",
     },
@@ -248,19 +248,19 @@ export default defineConfig([
     // desktop 保持 undici 为外部依赖，remote 单文件 bundle 再单独内联。
     external: desktopNodeRuntimeExternals,
     noExternal: [
-      "@zcode/server",
-      "@zcode/shared",
-      "@zcode/rpc",
-      "@zcode/services",
-      "@zcode/client",
+      "@raspberrycode/server",
+      "@raspberrycode/shared",
+      "@raspberrycode/rpc",
+      "@raspberrycode/services",
+      "@raspberrycode/client",
       // Provider Refactor 的 workspace 包导出 TypeScript 源码；Electron 生产运行时没有
       // TS loader，必须随 Desktop bundle 内联，不能留下指向 src/index.ts 的裸包引用。
-      "@zcode/provider",
-      "@zcode/provider-node",
+      "@raspberrycode/provider",
+      "@raspberrycode/provider-node",
       // services 已内联进 main，但其 producer import 曾被保留为裸包引用；
-      // electron-builder 又会排除 node_modules/@zcode，导致安装包启动即 ERR_MODULE_NOT_FOUND。
+      // electron-builder 又会排除 node_modules/@raspberrycode，导致安装包启动即 ERR_MODULE_NOT_FOUND。
       // producer 的 JS broker 必须跟随 services 一起内联，原生 addon 仍只存在于独立 Helper。
-      "@zcode/zcode-cua",
+      "@raspberrycode/raspberrycode-cua",
     ],
     define: createMainDefines(),
     // 修复原因：main/host 同时 watch 且共享 out 根目录时，默认 chunk 命名会互相覆盖，
@@ -290,7 +290,7 @@ export default defineConfig([
     removeNodeProtocol: false,
     target: "node22",
     external: ["electron"],
-    noExternal: ["@zcode/shared"],
+    noExternal: ["@raspberrycode/shared"],
     outExtension: () => ({ js: ".cjs" }),
     define: createSharedDefines(),
     esbuildOptions(options) {
@@ -300,8 +300,8 @@ export default defineConfig([
     ...desktopTsupBundleSecurityOptions,
   },
   {
-    // 插件 iframe 内的 window.zcode / window.openai 别名脚本（官方 ext-apps `App` 上的薄封装）：IIFE、浏览器平台，
-    // 由 zcode-sandbox:// protocol handler 同源服务。
+    // 插件 iframe 内的 window.raspberrycode / window.openai 别名脚本（官方 ext-apps `App` 上的薄封装）：IIFE、浏览器平台，
+    // 由 raspberrycode-sandbox:// protocol handler 同源服务。
     name: "plugin-sandbox-alias",
     loader: { ".css": "text" },
     entry: {
@@ -339,14 +339,14 @@ export default defineConfig([
     // 这里同样保留为外部依赖，避免 desktop 开发态和打包态 host 进程启动失败。
     external: desktopNodeRuntimeExternals,
     noExternal: [
-      "@zcode/server",
-      "@zcode/shared",
-      "@zcode/rpc",
-      "@zcode/services",
-      "@zcode/client",
-      "@zcode/provider",
-      "@zcode/provider-node",
-      "@zcode/zcode-cua",
+      "@raspberrycode/server",
+      "@raspberrycode/shared",
+      "@raspberrycode/rpc",
+      "@raspberrycode/services",
+      "@raspberrycode/client",
+      "@raspberrycode/provider",
+      "@raspberrycode/provider-node",
+      "@raspberrycode/raspberrycode-cua",
     ],
     define: createSharedDefines(),
     // 与 main 保持一致的 chunk 隔离策略，避免 host/main 产物相互覆盖。
@@ -366,18 +366,18 @@ export default defineConfig([
     // node:sqlite 只有带前缀的内置入口；tsup 去掉 node: 会错误加载第三方 sqlite 包。
     removeNodeProtocol: false,
     target: "node22",
-    // 与 host 同构：常驻 cron scheduler 进程复用 @zcode/services（tasks-index + cron），
+    // 与 host 同构：常驻 cron scheduler 进程复用 @raspberrycode/services（tasks-index + cron），
     // 同样保留 undici 等为外部依赖，避免 Electron ESM runtime 的 dynamic require 崩溃。
     external: desktopNodeRuntimeExternals,
     noExternal: [
-      "@zcode/server",
-      "@zcode/shared",
-      "@zcode/rpc",
-      "@zcode/services",
-      "@zcode/client",
-      "@zcode/provider",
-      "@zcode/provider-node",
-      "@zcode/zcode-cua",
+      "@raspberrycode/server",
+      "@raspberrycode/shared",
+      "@raspberrycode/rpc",
+      "@raspberrycode/services",
+      "@raspberrycode/client",
+      "@raspberrycode/provider",
+      "@raspberrycode/provider-node",
+      "@raspberrycode/raspberrycode-cua",
     ],
     define: createSharedDefines(),
     esbuildOptions(options) {

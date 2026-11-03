@@ -1,7 +1,7 @@
-import { sourceServerRunningTasksSchema, type SourceServerRunningTask } from "@zcode/shared";
+import { sourceServerRunningTasksSchema, type SourceServerRunningTask } from "@raspberrycode/shared";
 /* eslint-disable max-lines -- Source 连接状态机、重试、更新和单连接归并必须共享同一代际状态。 */
 import { SourceServerOperationLogs } from "./sourceServerOperationLogs.js";
-import { Emitter, type Event } from "@zcode/rpc";
+import { Emitter, type Event } from "@raspberrycode/rpc";
 import type {
   ConnectionProfile,
   RemoteTarget,
@@ -9,27 +9,27 @@ import type {
   CompatibilityManifest,
   SourceServerArtifactPolicy,
   SourceServerConnectionStateSnapshot,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import {
   SOURCE_SERVER_INSTALL_REQUIRED_ERROR_CODE,
   SOURCE_SERVER_IDENTITY_CHANGE_PENDING_ERROR_CODE,
   SOURCE_SERVER_UPGRADE_REQUIRED_ERROR_CODE,
   REMOTE_RECOVERY_BUDGET_EXHAUSTED_ERROR_CODE,
-  ZCODE_COMPATIBILITY_MANIFEST,
+  RASPBERRYCODE_COMPATIBILITY_MANIFEST,
   compareCompatibilityVersions,
   evaluateSourceServerCompatibility,
-  isPublicZCodeErrorCode,
+  isPublicRaspberryCodeErrorCode,
   normalizeRemoteConnectionError,
   stripRemoteTargetSecrets,
-} from "@zcode/shared";
-import type { IServiceAccessor } from "@zcode/services";
+} from "@raspberrycode/shared";
+import type { IServiceAccessor } from "@raspberrycode/services";
 import {
   createSourceServerTransportAdapter,
   type ServerReleaseAsset,
   type SourceServerFileTransfer,
   type SourceServerTransportAdapter,
   type TransportContext,
-} from "@zcode/server/source-server";
+} from "@raspberrycode/server/source-server";
 import {
   connectServerRemoteOverDuplex,
   type ServerRemoteConnection,
@@ -41,7 +41,7 @@ import { isSourceServerAutomaticRecoveryTerminalState } from "./sourceServerReco
 export type {
   SourceServerConnectionState,
   SourceServerConnectionStateSnapshot,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 
 export interface ManagedSourceServerConnection {
   /** 本次调用复用物理连接时的实际脱敏目标；不写入在线 owner。 */
@@ -338,7 +338,7 @@ export class SourceServerConnectionManager {
       options.createAdapter ?? ((kind) => createSourceServerTransportAdapter(kind));
     this.connectServer = options.connectServer ?? connectServerRemoteOverDuplex;
     this.now = options.now ?? Date.now;
-    this.compatibilityManifest = options.compatibilityManifest ?? ZCODE_COMPATIBILITY_MANIFEST;
+    this.compatibilityManifest = options.compatibilityManifest ?? RASPBERRYCODE_COMPATIBILITY_MANIFEST;
   }
 
   public async connect(
@@ -568,7 +568,7 @@ export class SourceServerConnectionManager {
     try {
       context.signal?.throwIfAborted();
       const adapter = this.getAdapter(options.profile.transport);
-      // Bug 原因：已握手分支曾改走远端 `zcode update`，但正常安装链没有配置远端 release
+      // Bug 原因：已握手分支曾改走远端 `raspberrycode update`，但正常安装链没有配置远端 release
       // manifest URL，生产更新必然失败。所有 Profile 都由 Desktop 解析同一 archive 并经 Adapter 应用。
       const probe = await adapter.probe(options.target, context);
       context.signal?.throwIfAborted();
@@ -626,7 +626,7 @@ export class SourceServerConnectionManager {
       // running-tasks 读取同样会让出执行权，断开可能发生在错误收尾期间。
       controller.signal.throwIfAborted();
       const normalized = normalizeRemoteConnectionError(error);
-      const errorCode = isPublicZCodeErrorCode(normalized.code) ? normalized.code : undefined;
+      const errorCode = isPublicRaspberryCodeErrorCode(normalized.code) ? normalized.code : undefined;
       const retryable =
         error && typeof error === "object" && "retryable" in error
           ? (error as { retryable?: unknown }).retryable
@@ -1178,7 +1178,7 @@ export class SourceServerConnectionManager {
       )
         throw error;
       const normalized = normalizeRemoteConnectionError(error);
-      const errorCode = isPublicZCodeErrorCode(normalized.code) ? normalized.code : undefined;
+      const errorCode = isPublicRaspberryCodeErrorCode(normalized.code) ? normalized.code : undefined;
       const retryable =
         error && typeof error === "object" && "retryable" in error
           ? (error as { retryable?: unknown }).retryable
@@ -1321,7 +1321,7 @@ export class SourceServerConnectionManager {
     const errorCode =
       normalized?.code &&
       normalized.code !== "remote-connection-unknown" &&
-      isPublicZCodeErrorCode(normalized.code)
+      isPublicRaspberryCodeErrorCode(normalized.code)
         ? normalized.code
         : REMOTE_RECOVERY_BUDGET_EXHAUSTED_ERROR_CODE;
     for (const profileId of this.profileIdsForSource(sourceServerId, input.profile.profileId)) {
@@ -1381,7 +1381,7 @@ export class SourceServerConnectionManager {
         sourceServerId,
         ...this.compatibilityByProfileId.get(input.profile.profileId),
         error: normalized.message,
-        ...(isPublicZCodeErrorCode(normalized.code) ? { errorCode: normalized.code } : {}),
+        ...(isPublicRaspberryCodeErrorCode(normalized.code) ? { errorCode: normalized.code } : {}),
         retryable: false,
       });
     }
@@ -1394,7 +1394,7 @@ export class SourceServerConnectionManager {
           state: "offline",
           sourceServerId,
           error: normalized.message,
-          ...(isPublicZCodeErrorCode(normalized.code) ? { errorCode: normalized.code } : {}),
+          ...(isPublicRaspberryCodeErrorCode(normalized.code) ? { errorCode: normalized.code } : {}),
           retryable: false,
         });
       }

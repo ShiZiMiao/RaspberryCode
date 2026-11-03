@@ -1,4 +1,4 @@
-import { BUILTIN_MODEL_PROVIDER_IDS, type ApiClient } from "@zcode/shared";
+import { BUILTIN_MODEL_PROVIDER_IDS, type ApiClient } from "@raspberrycode/shared";
 import { describe, expect, it, vi } from "vitest";
 import { createUsageStatsService } from "../src/usage-stats/usageStatsService.js";
 
@@ -15,7 +15,7 @@ describe("UsageStats account access", () => {
     const service = createUsageStatsService({
       apiClient: { request } as ApiClient,
       credentialService: { load: vi.fn(async () => null) },
-      zcodeAgentService: {
+      raspberrycodeAgentService: {
         getAppUsageStats: vi.fn(),
       },
     });
@@ -47,7 +47,7 @@ describe("UsageStats account access", () => {
     const service = createUsageStatsService({
       apiClient: { request } as ApiClient,
       credentialService: { load: vi.fn(async () => null) },
-      zcodeAgentService: {
+      raspberrycodeAgentService: {
         getAppUsageStats: vi.fn(),
       },
     });

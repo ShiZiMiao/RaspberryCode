@@ -14,19 +14,19 @@ export interface ProviderSource<TSnapshot> {
 
 export interface ProviderConfigSnapshot {
   readonly revision: string;
-  readonly zcodeBuiltinRevision: string;
+  readonly raspberrycodeBuiltinRevision: string;
   readonly personalRevision: string;
-  readonly zcodeBuiltinProviders: ProviderConfigMap;
-  readonly zcodeBuiltinProviderTemplates: ProviderTemplateMap;
+  readonly raspberrycodeBuiltinProviders: ProviderConfigMap;
+  readonly raspberrycodeBuiltinProviderTemplates: ProviderTemplateMap;
   readonly personalProviders: ProviderConfigMap;
-  readonly zcodeBuiltinModelRules: ModelConfigRules;
+  readonly raspberrycodeBuiltinModelRules: ModelConfigRules;
   readonly personalModels: ModelConfigRules;
   readonly personalProviderOrder?: readonly string[];
 }
 
 export interface AccountProviderConfigSnapshot {
   readonly revision: string;
-  readonly basedOnZCodeBuiltinRevision: string;
+  readonly basedOnRaspberryCodeBuiltinRevision: string;
   readonly providers: ProviderConfigMap;
   readonly states?: AccountProviderStates;
 }
@@ -36,7 +36,7 @@ export function createFailClosedAccountProviderConfigSnapshot(
   config: ProviderConfigSnapshot,
 ): AccountProviderConfigSnapshot {
   const unentitledProviders = new ProviderConfigMap(
-    config.zcodeBuiltinProviders.entries().flatMap(([providerId, provider]) =>
+    config.raspberrycodeBuiltinProviders.entries().flatMap(([providerId, provider]) =>
       provider.access?.type === "zhipu-account"
         ? ([
             [
@@ -49,17 +49,17 @@ export function createFailClosedAccountProviderConfigSnapshot(
         : [],
     ),
   );
-  return createAccountProviderConfigSnapshot(config.zcodeBuiltinRevision, unentitledProviders);
+  return createAccountProviderConfigSnapshot(config.raspberrycodeBuiltinRevision, unentitledProviders);
 }
 
 export function createAccountProviderConfigSnapshot(
-  basedOnZCodeBuiltinRevision: string,
+  basedOnRaspberryCodeBuiltinRevision: string,
   providers: ProviderConfigMap,
   states?: AccountProviderStates,
 ): AccountProviderConfigSnapshot {
   return Object.freeze({
-    revision: `account:${JSON.stringify([basedOnZCodeBuiltinRevision, providers.toJSON(), states])}`,
-    basedOnZCodeBuiltinRevision,
+    revision: `account:${JSON.stringify([basedOnRaspberryCodeBuiltinRevision, providers.toJSON(), states])}`,
+    basedOnRaspberryCodeBuiltinRevision,
     providers,
     ...(states ? { states } : {}),
   });
@@ -67,7 +67,7 @@ export function createAccountProviderConfigSnapshot(
 
 const EMPTY_ACCOUNT_PROVIDER_CONFIG_SNAPSHOT: AccountProviderConfigSnapshot = Object.freeze({
   revision: "empty-account-config-v1",
-  basedOnZCodeBuiltinRevision: "uninitialized",
+  basedOnRaspberryCodeBuiltinRevision: "uninitialized",
   providers: ProviderConfigMap.empty(),
 });
 
@@ -103,7 +103,7 @@ function freezeAccountProviderConfigSnapshot(
 ): AccountProviderConfigSnapshot {
   return Object.freeze({
     revision: snapshot.revision,
-    basedOnZCodeBuiltinRevision: snapshot.basedOnZCodeBuiltinRevision,
+    basedOnRaspberryCodeBuiltinRevision: snapshot.basedOnRaspberryCodeBuiltinRevision,
     providers: snapshot.providers,
     ...(snapshot.states ? { states: snapshot.states } : {}),
   });

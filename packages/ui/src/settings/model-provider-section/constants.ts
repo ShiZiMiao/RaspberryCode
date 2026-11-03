@@ -2,7 +2,7 @@ import {
   createUuid,
   type BuiltinModelProviderId,
   type OAuthProviderId,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import type { ProviderSettingsFormProvider } from "@/lib/providerSettingsFormTypes.js";
 import { getProviderFormLabel } from "@/lib/providerSettingsFormTypes.js";
 

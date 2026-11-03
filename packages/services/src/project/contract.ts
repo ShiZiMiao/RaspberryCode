@@ -5,8 +5,8 @@ import type {
   SaveProjectInput,
   VirtualProject,
 } from "#src/project-storage/contract.js";
-import { ServiceChannels } from "@zcode/shared";
-import type { FileEntry } from "@zcode/shared";
+import { ServiceChannels } from "@raspberrycode/shared";
+import type { FileEntry } from "@raspberrycode/shared";
 import { createServiceDescriptor } from "#src/descriptors.js";
 export { LEGACY_SINGLE_ROOT_PROJECT_PREFIX } from "#src/project-storage/contract.js";
 export type {

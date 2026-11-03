@@ -3,7 +3,7 @@ import {
   databaseStartupControlSchema,
   databaseStartupStateSchema,
   databaseStartupPortPayloadSchema,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 /* eslint-disable max-lines -- preload bridge 集中暴露桌面平台 IPC，拆散会让 contextBridge 权限边界更难审计。 */
 import { contextBridge, ipcRenderer, webFrame, webUtils } from "electron";
 import {
@@ -26,7 +26,7 @@ function parseDeviceIdFromArgs(): string {
 }
 
 // 在 contextBridge 建立之前就暴露同步值，让 renderer 在 React 渲染前就能读到
-contextBridge.exposeInMainWorld("__ZCODE_DEVICE_ID__", parseDeviceIdFromArgs());
+contextBridge.exposeInMainWorld("__RASPBERRYCODE_DEVICE_ID__", parseDeviceIdFromArgs());
 
 import type {
   AppSettings,
@@ -67,9 +67,8 @@ import type {
   RendererHeapSample,
   RemoteSessionClosedEvent,
   RemoteSessionReconnectedEvent,
-  ZCodeStdioTapDevState,
+  RaspberryCodeStdioTapDevState,
   LoadCliMcpFromUserDirectoryRequest,
-  MigrateLegacyCommonMcpRequest,
   SaveCliMcpToUserDirectoryRequest,
   SaveFileRequest,
   SaveFileResult,
@@ -83,19 +82,19 @@ import type {
   OpenCuaPermissionOnboardingOptions,
   ConfigureFinalArmsCustomEventE2ERequest,
   FinalArmsCustomEventE2EEntry,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import { unwrapRemoteWorkspaceBindResult } from "./remoteWorkspaceBindBridge.js";
 import {
   InternalChannels,
   PlatformChannels,
-  formatZCodeRendererProcessName,
+  formatRaspberryCodeRendererProcessName,
   scopedServicePortPayloadSchema,
   shouldEnableE2ETestBridge,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import { createOAuthCallbackHandler } from "./oauthCallbackBridge.js";
 
 if (shouldEnableE2ETestBridge(process.env)) {
-  contextBridge.exposeInMainWorld("__zcodeFinalArmsCustomEventsE2E", {
+  contextBridge.exposeInMainWorld("__raspberrycodeFinalArmsCustomEventsE2E", {
     read: (): Promise<FinalArmsCustomEventE2EEntry[]> =>
       ipcRenderer.invoke(PlatformChannels.ReadFinalArmsCustomEventsE2E),
     clear: (): Promise<void> => ipcRenderer.invoke(PlatformChannels.ClearFinalArmsCustomEventsE2E),
@@ -195,11 +194,11 @@ ipcRenderer.on(PlatformChannels.OpenWorkspacePath, (_event: unknown, path: strin
 });
 
 function updateRendererProcessTitle(): void {
-  process.title = formatZCodeRendererProcessName(document.title);
+  process.title = formatRaspberryCodeRendererProcessName(document.title);
 }
 
 // 进程检索体验优化：renderer 在系统里通常只会显示成通用 helper 名称，
-// 这里在 preload 阶段补上 zcode-* title，便于按窗口角色筛选。
+// 这里在 preload 阶段补上 raspberrycode-* title，便于按窗口角色筛选。
 updateRendererProcessTitle();
 window.addEventListener("DOMContentLoaded", updateRendererProcessTitle, {
   once: true,
@@ -211,14 +210,14 @@ window.addEventListener("DOMContentLoaded", updateRendererProcessTitle, {
  * 凭据管理已迁移到 host process 的 ICredentialService，
  * 通过 MessagePort RPC 访问，不再经过此 bridge。
  */
-contextBridge.exposeInMainWorld("zcode", {
+contextBridge.exposeInMainWorld("raspberrycode", {
   connectRemote: (
     options: RemoteTarget,
     requestId?: string,
     context?: {
       workspacePath?: string;
       workspaceIdentity?: string;
-      connectTrigger?: import("@zcode/shared").RemoteWorkspaceConnectTrigger;
+      connectTrigger?: import("@raspberrycode/shared").RemoteWorkspaceConnectTrigger;
       confirmSourceServerInstall?: boolean;
     },
   ) =>
@@ -239,7 +238,7 @@ contextBridge.exposeInMainWorld("zcode", {
     remoteSessionId: string;
     workspacePath: string;
     workspaceIdentity?: string;
-    workspacePurpose?: import("@zcode/shared").WorkspacePurpose;
+    workspacePurpose?: import("@raspberrycode/shared").WorkspacePurpose;
   }): Promise<BindRemoteWorkspaceSessionContextResult> =>
     ipcRenderer
       .invoke(PlatformChannels.BindRemoteWorkspaceSessionContext, context)
@@ -257,8 +256,6 @@ contextBridge.exposeInMainWorld("zcode", {
     ipcRenderer.invoke(PlatformChannels.LoadMcpFromUserDirectory, payload ?? {}),
   saveMcpToUserDirectory: (payload: SaveCliMcpToUserDirectoryRequest) =>
     ipcRenderer.invoke(PlatformChannels.SaveMcpToUserDirectory, payload),
-  migrateLegacyCommonMcp: (payload?: MigrateLegacyCommonMcpRequest) =>
-    ipcRenderer.invoke(PlatformChannels.MigrateLegacyCommonMcp, payload ?? {}),
   /** renderer 日志通过 IPC 传到 main 进程统一存储 */
   log: (level: "info" | "warn" | "error", args: unknown[]) =>
     ipcRenderer.send(PlatformChannels.Log, { level, args }),
@@ -661,7 +658,7 @@ contextBridge.exposeInMainWorld("zcode", {
       ipcRenderer.removeListener(PlatformChannels.RendererActionTraceConfigChanged, handler);
   },
   /** 发送已结束 Span；使用 send 避免遥测往返阻塞业务。 */
-  reportLocalTtftBatch: (batch: import("@zcode/shared").LocalTtftBatch): void =>
+  reportLocalTtftBatch: (batch: import("@raspberrycode/shared").LocalTtftBatch): void =>
     ipcRenderer.send(PlatformChannels.ReportLocalTtftBatch, batch),
   reportRendererActionTraceBatch: (batch: RendererActionTraceBatchV1): void =>
     ipcRenderer.send(PlatformChannels.ReportRendererActionTraceBatch, batch),
@@ -712,14 +709,14 @@ contextBridge.exposeInMainWorld("zcode", {
   browserViewUpdateViewport: (payload: { tabId: string; viewport: BrowserViewportSize | null }) =>
     ipcRenderer.invoke(PlatformChannels.BrowserViewUpdateViewport, payload),
   /** 从自动发现的 Chrome Profile 一次性导入内置浏览器数据。 */
-  importChromeBrowserData: (options?: import("@zcode/shared").ChromeBrowserDataImportOptions) =>
+  importChromeBrowserData: (options?: import("@raspberrycode/shared").ChromeBrowserDataImportOptions) =>
     ipcRenderer.invoke(PlatformChannels.ImportChromeBrowserData, options),
   /** 清理内置浏览器缓存或全部站点数据。 */
   clearEmbeddedBrowserData: (mode: "cache" | "all") =>
     ipcRenderer.invoke(PlatformChannels.ClearEmbeddedBrowserData, mode),
   /** 读取开发态 stdio tap proxy 开关状态 */
-  getZCodeStdioTapDevState: (): Promise<ZCodeStdioTapDevState> =>
-    ipcRenderer.invoke(PlatformChannels.GetZCodeStdioTapDevState),
+  getRaspberryCodeStdioTapDevState: (): Promise<RaspberryCodeStdioTapDevState> =>
+    ipcRenderer.invoke(PlatformChannels.GetRaspberryCodeStdioTapDevState),
   /** 注册 main 进程修改 settings 后的通知，返回 disposer */
   onSettingsChanged: (callback: () => void): (() => void) => {
     const handler = () => callback();

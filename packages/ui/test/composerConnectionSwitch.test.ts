@@ -5,7 +5,7 @@ import {
   useComposerConnectionSwitch,
   type ComposerConnection,
 } from "@/hooks/useComposerConnectionSwitch.js";
-import { encodeCustomModelValue } from "@/lib/zcodeCustomModelValue.js";
+import { encodeCustomModelValue } from "@/lib/raspberrycodeCustomModelValue.js";
 import { useModelSelectionServiceView } from "@/hooks/useModelSelectionView.js";
 const mocks = vi.hoisted(() => {
   const settings = { providerFamilyConnectionSelections: {} } as Record<string, unknown>;
@@ -29,7 +29,7 @@ vi.mock("@/hooks/useWorkspaceServices.js", () => ({
 }));
 vi.mock("@/hooks/useSettingService.js", () => ({ useSettings: () => ({ update: mocks.update }) }));
 vi.mock("@/i18n/IntlProvider.js", () => ({
-  useZCodeIntl: () => ({ intl: { formatMessage: () => "Switch failed; select again to retry" } }),
+  useRaspberryCodeIntl: () => ({ intl: { formatMessage: () => "Switch failed; select again to retry" } }),
 }));
 const providerId = "custom-provider";
 const connection: ComposerConnection = {

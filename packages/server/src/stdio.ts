@@ -6,12 +6,12 @@ import {
   ChannelServer,
   ChannelClient,
   type ISocket,
-} from "@zcode/rpc";
+} from "@raspberrycode/rpc";
 import {
-  IZCodeAgentService,
-  createZCodeAgentConnectionScope,
+  IRaspberryCodeAgentService,
+  createRaspberryCodeAgentConnectionScope,
   type ServiceCollection,
-} from "@zcode/services";
+} from "@raspberrycode/services";
 
 /**
  * Wrap process.stdin/stdout as an ISocket for RPC communication.
@@ -69,9 +69,9 @@ export function createStdioServer(
   const channelServer = new ChannelServer(protocol, "stdio");
   const reverseClient = onReverseClientReady ? new ChannelClient(protocol) : undefined;
   if (reverseClient) onReverseClientReady?.(reverseClient);
-  const agentService = services.getOptional(IZCodeAgentService);
+  const agentService = services.getOptional(IRaspberryCodeAgentService);
   const connectionScope = agentService
-    ? createZCodeAgentConnectionScope(agentService, {
+    ? createRaspberryCodeAgentConnectionScope(agentService, {
         connectionId: `server-stdio-${randomUUID()}`,
         clientMode: "desktop-continuous",
         role: "trusted-host-relay",
@@ -80,7 +80,7 @@ export function createStdioServer(
   services.exposeOnChannelServer(
     channelServer,
     connectionScope
-      ? new Map([[IZCodeAgentService.channelName, connectionScope.service]])
+      ? new Map([[IRaspberryCodeAgentService.channelName, connectionScope.service]])
       : new Map(),
   );
   let stopPromise: Promise<void> | undefined;

@@ -86,7 +86,7 @@ export const concepts: Concept[] = [
     lifecycle:
       "由 `session/create` 创建；`session/resume` 复用；会随 snapshot、event、message、part 全程回传。",
     owner: "agent server",
-    source: "apps/zcode-cli/packages/contracts/src/interfaces/shared.ts#createSessionId",
+    source: "apps/raspberrycode-cli/packages/contracts/src/interfaces/shared.ts#createSessionId",
     aliases: ["legacy acpSessionId"],
     related: ["taskId", "traceId", "turnId", "messageId"],
   },
@@ -98,7 +98,7 @@ export const concepts: Concept[] = [
     lifecycle:
       "UI task 列表、缓存、导航和本地持久化使用；进入 RaspberryCode Protocol 时必须找到对应 sessionId。",
     owner: "app/ui",
-    source: "packages/shared/src/zcode-task-types.ts#ZCodeTaskMeta",
+    source: "packages/shared/src/raspberrycode-task-types.ts#RaspberryCodeTaskMeta",
     related: ["sessionId", "workspaceKey", "activeInputId"],
   },
   {
@@ -110,7 +110,7 @@ export const concepts: Concept[] = [
       "当前 agent server 在创建 session record 时用 UUID 生成 root trace；之后事件 envelope 带同一观测 trace。",
     owner: "agent runtime / protocol server",
     source:
-      "apps/zcode-cli/packages/bootstrap/src/zcode-protocol/server-types.ts#createProtocolTraceId",
+      "apps/raspberrycode-cli/packages/bootstrap/src/raspberrycode-protocol/server-types.ts#createProtocolTraceId",
     aliases: ["protocol trace", "envelope.traceId"],
     related: ["inputId", "sessionId", "eventEnvelope"],
   },
@@ -122,7 +122,7 @@ export const concepts: Concept[] = [
     lifecycle:
       "UI 在每次直接发送、首发、队列 drain 时创建；通过 `session/send.inputId` 传给 agent；agent 在 turn 事件 payload 里原样回带。",
     owner: "app/ui creates, agent echoes",
-    source: "packages/shared/src/zcode-task-types.ts#createInputId",
+    source: "packages/shared/src/raspberrycode-task-types.ts#createInputId",
     aliases: ["clientMessageId 的新名", "per-input id"],
     related: ["activeInputId", "pendingInputId", "traceId"],
   },
@@ -134,7 +134,7 @@ export const concepts: Concept[] = [
     lifecycle:
       "直接发送或队列 drain 开始时写入；收到匹配 inputId 的 completed/failed 后清理或被下一轮覆盖。",
     owner: "renderer store",
-    source: "packages/ui/src/store/zcodeSessionStoreTypes.ts#TaskRuntimeState",
+    source: "packages/ui/src/store/raspberrycodeSessionStoreTypes.ts#TaskRuntimeState",
     aliases: ["activeRunId 的新名"],
     related: ["inputId", "taskRuntimeState", "taskStreamMirrorBatch"],
   },
@@ -145,7 +145,7 @@ export const concepts: Concept[] = [
     summary: "旧字段名，过去承载 UI 每次 prompt 的相关性 ID；已统一改名为 inputId。",
     lifecycle: "旧协议字段；新 RaspberryCode Protocol schema 不再接受它，继续发送会触发 Invalid params。",
     owner: "deprecated",
-    source: "dae26032: packages/shared/src/zcode-protocol/index.ts",
+    source: "dae26032: packages/shared/src/raspberrycode-protocol/index.ts",
     related: ["inputId", "sessionSend"],
   },
   {
@@ -156,7 +156,7 @@ export const concepts: Concept[] = [
     lifecycle:
       "旧 renderer runtime 字段；新代码只在少数 replayable/mirror legacy 字段里保留 runId 名称。",
     owner: "deprecated",
-    source: "dae26032: packages/ui/src/store/zcodeSessionStoreTypes.ts",
+    source: "dae26032: packages/ui/src/store/raspberrycodeSessionStoreTypes.ts",
     related: ["activeInputId", "taskRuntimeState"],
   },
   {
@@ -168,7 +168,7 @@ export const concepts: Concept[] = [
       "运行中追加输入被 agent 接收为 steer queue 时生成；drained/discarded/rejected 事件回带。",
     owner: "agent runtime",
     source:
-      "apps/zcode-cli/packages/contracts/src/interfaces/session.port.ts#PendingSteerInputInfo",
+      "apps/raspberrycode-cli/packages/contracts/src/interfaces/session.port.ts#PendingSteerInputInfo",
     related: ["inputId", "turnId", "turnSteerQueued"],
   },
   {
@@ -178,7 +178,7 @@ export const concepts: Concept[] = [
     summary: "Agent core 中一次 turn 的主键；一个 inputId 通常启动或归属到一个 turnId。",
     lifecycle: "agent runtime 在 turn 启动时创建；所有 turn 内事件可携带。",
     owner: "agent runtime",
-    source: "apps/zcode-cli/packages/contracts/src/interfaces/shared.ts#createTurnId",
+    source: "apps/raspberrycode-cli/packages/contracts/src/interfaces/shared.ts#createTurnId",
     related: ["sessionId", "inputId", "messageId"],
   },
   {
@@ -188,7 +188,7 @@ export const concepts: Concept[] = [
     summary: "消息主键，标识 user/assistant message。",
     lifecycle: "消息创建时生成；message upsert/remove、part、snapshot 都围绕它组织。",
     owner: "agent runtime",
-    source: "packages/shared/src/zcode-protocol/index.ts#ZCodeMessageInfo",
+    source: "packages/shared/src/raspberrycode-protocol/index.ts#RaspberryCodeMessageInfo",
     related: ["partId", "sessionId", "turnId"],
   },
   {
@@ -198,7 +198,7 @@ export const concepts: Concept[] = [
     summary: "消息内部 part 的主键，用于 text、reasoning、tool、patch、compaction 等细粒度更新。",
     lifecycle: "part.started/upserted/delta/remove 时使用。",
     owner: "agent runtime",
-    source: "packages/shared/src/zcode-protocol/index.ts#ZCodeMessagePart",
+    source: "packages/shared/src/raspberrycode-protocol/index.ts#RaspberryCodeMessagePart",
     related: ["messageId", "toolCallId"],
   },
   {
@@ -208,7 +208,7 @@ export const concepts: Concept[] = [
     summary: "工具调用主键，用于工具状态、权限请求和 active tool projection。",
     lifecycle: "工具 scheduled/started/progress/result/error 流程中保持稳定。",
     owner: "agent runtime",
-    source: "packages/shared/src/zcode-protocol/index.ts#ZCodeActiveToolCall",
+    source: "packages/shared/src/raspberrycode-protocol/index.ts#RaspberryCodeActiveToolCall",
     related: ["partId", "permissionRequest"],
   },
   {
@@ -219,7 +219,7 @@ export const concepts: Concept[] = [
     lifecycle:
       "server 发起 `interaction/requestPermission`；host 路由给 owner client；结果通过 permission.resolved 回到 session。",
     owner: "agent server + host owner routing",
-    source: "packages/shared/src/zcode-protocol/index.ts#zcodePermissionRequestParamsSchema",
+    source: "packages/shared/src/raspberrycode-protocol/index.ts#raspberrycodePermissionRequestParamsSchema",
     related: ["toolCallId", "deliveryKind", "sessionId"],
   },
   {
@@ -230,7 +230,7 @@ export const concepts: Concept[] = [
     lifecycle:
       "UI 在 busy 时提交输入；agent 返回 pendingInputId，并在 drained/discarded/rejected 中更新状态。",
     owner: "agent runtime",
-    source: "packages/shared/src/zcode-protocol/index.ts#zcodeTurnSteerQueuedEventPayloadSchema",
+    source: "packages/shared/src/raspberrycode-protocol/index.ts#raspberrycodeTurnSteerQueuedEventPayloadSchema",
     related: ["pendingInputId", "turnId", "inputId"],
   },
   {
@@ -241,7 +241,7 @@ export const concepts: Concept[] = [
     lifecycle:
       "每个 session 独立递增；desktop continuous 可实时消费，web remote replayable 必须用 afterSeq 补齐。",
     owner: "agent server",
-    source: "packages/shared/src/zcode-protocol/index.ts#zcodeEventEnvelopeSchema",
+    source: "packages/shared/src/raspberrycode-protocol/index.ts#raspberrycodeEventEnvelopeSchema",
     aliases: ["seq"],
     related: ["deliveryKind", "eventEnvelope"],
   },
@@ -253,7 +253,7 @@ export const concepts: Concept[] = [
     lifecycle:
       "`session/read`、`session/subscribe` 和事件 envelope 可携带；影响 snapshot/replay 行为。",
     owner: "host / protocol client",
-    source: "packages/shared/src/zcode-protocol/index.ts#zcodeDeliveryKindSchema",
+    source: "packages/shared/src/raspberrycode-protocol/index.ts#raspberrycodeDeliveryKindSchema",
     related: ["eventSeq", "taskStreamMirrorBatch"],
   },
   {
@@ -273,7 +273,7 @@ export const concepts: Concept[] = [
     summary: "真实文件路径，只用于文件读写、命令 cwd、Git 操作和路径展示。",
     lifecycle: "本地 workspace 通常直接使用；远程 workspace 不能只靠它做身份判等。",
     owner: "app/host",
-    source: "packages/shared/src/zcode-protocol/index.ts#ZCodeWorkspaceRef",
+    source: "packages/shared/src/raspberrycode-protocol/index.ts#RaspberryCodeWorkspaceRef",
     related: ["workspaceIdentity", "workspaceKey"],
   },
   {
@@ -294,7 +294,7 @@ export const concepts: Concept[] = [
       "RaspberryCode Protocol 事件外壳，承载 eventId、sessionId、turnId、seq、traceId、timestamp、deliveryKind。",
     lifecycle: "所有 `session/event` 通知和 `session/events` 读取结果都使用它。",
     owner: "agent server",
-    source: "packages/shared/src/zcode-protocol/index.ts#zcodeEventEnvelopeSchema",
+    source: "packages/shared/src/raspberrycode-protocol/index.ts#raspberrycodeEventEnvelopeSchema",
     related: ["sessionId", "traceId", "eventSeq", "deliveryKind"],
   },
   {
@@ -304,7 +304,7 @@ export const concepts: Concept[] = [
     summary: "提交用户输入的 RaspberryCode Protocol 方法，立即 ACK，不等待整轮模型生成完成。",
     lifecycle: "client 调用后，agent 后台执行 turn，并通过 session.event/state.updated 推送进度。",
     owner: "protocol client -> agent server",
-    source: "packages/shared/src/zcode-protocol/index.ts#zcodeSessionSendParamsSchema",
+    source: "packages/shared/src/raspberrycode-protocol/index.ts#raspberrycodeSessionSendParamsSchema",
     related: ["sessionId", "inputId", "traceId"],
   },
   {
@@ -314,7 +314,7 @@ export const concepts: Concept[] = [
     summary: "Renderer store 的 task 运行态，只保存 UI 运行需要的 transient 信息。",
     lifecycle: "随 stream、snapshot、queue 和 stop 操作更新；不能作为 server authoritative state。",
     owner: "renderer store",
-    source: "packages/ui/src/store/zcodeSessionStoreTypes.ts#TaskRuntimeState",
+    source: "packages/ui/src/store/raspberrycodeSessionStoreTypes.ts#TaskRuntimeState",
     related: ["activeInputId", "deliveryKind"],
   },
   {
@@ -325,7 +325,7 @@ export const concepts: Concept[] = [
       "手机远控 replayable 链路的 stream mirror 批次。字段名 runId 保留兼容，但语义上对应当前 input/mirror run。",
     lifecycle: "host 记录运行中流式 op；web remote 用 batchSeq/fromSeq/toSeq 恢复缺口。",
     owner: "host runtime",
-    source: "packages/shared/src/zcode-task-types.ts#TaskStreamMirrorBatch",
+    source: "packages/shared/src/raspberrycode-task-types.ts#TaskStreamMirrorBatch",
     related: ["inputId", "activeInputId", "deliveryKind", "eventSeq"],
   },
 ];
@@ -394,15 +394,15 @@ export const structures: StructureDoc[] = [
         meaning:
           "App 产品层任务 ID。迁移期仍存在，但 RaspberryCode Agent 路径进入协议时要找到对应 sessionId。",
         owner: "app/ui",
-        source: "ZCodeTaskMeta",
+        source: "RaspberryCodeTaskMeta",
         conceptIds: ["taskId", "sessionId"],
       },
     ],
   },
   {
-    id: "zcode-session-send",
-    title: "ZCodeSessionSendParams",
-    path: "packages/shared/src/zcode-protocol/index.ts",
+    id: "raspberrycode-session-send",
+    title: "RaspberryCodeSessionSendParams",
+    path: "packages/shared/src/raspberrycode-protocol/index.ts",
     purpose: "`session/send` 的参数结构。它只提交输入并立即 ACK，结果通过事件流返回。",
     oldShape: "{ sessionId, clientMessageId?, content, attachments?, expectedRevision? }",
     newShape: "{ sessionId, inputId?, content, attachments?, expectedRevision? }",
@@ -415,7 +415,7 @@ export const structures: StructureDoc[] = [
         meaning:
           "目标 agent session。不是 UI 临时生成值，必须来自 `session/create` 或 `session/resume`。",
         owner: "agent server",
-        source: "zcodeSessionSendParamsSchema",
+        source: "raspberrycodeSessionSendParamsSchema",
         conceptIds: ["sessionId", "sessionSend"],
       },
       {
@@ -424,7 +424,7 @@ export const structures: StructureDoc[] = [
         required: "optional",
         meaning: "本次用户输入的相关性 ID；agent 不解析业务含义，只在 turn payload 里原样回带。",
         owner: "app/ui",
-        source: "zcodeSessionSendParamsSchema",
+        source: "raspberrycodeSessionSendParamsSchema",
         conceptIds: ["inputId", "sessionSend"],
         oldName: "clientMessageId",
       },
@@ -434,7 +434,7 @@ export const structures: StructureDoc[] = [
         required: "required",
         meaning: "用户提交给 agent 的最终文本，可以已经过技能注入或附件文本化。",
         owner: "app/ui",
-        source: "zcodeSessionSendParamsSchema",
+        source: "raspberrycodeSessionSendParamsSchema",
         conceptIds: ["sessionSend"],
       },
       {
@@ -443,7 +443,7 @@ export const structures: StructureDoc[] = [
         required: "optional",
         meaning: "图片、音频或文件附件的协议投影。普通文件可带 textContent，二进制附件带 base64。",
         owner: "app/ui",
-        source: "zcodeSessionSendParamsSchema",
+        source: "raspberrycodeSessionSendParamsSchema",
         conceptIds: ["sessionSend"],
       },
       {
@@ -452,7 +452,7 @@ export const structures: StructureDoc[] = [
         required: "optional",
         meaning: "乐观并发控制的 session stateRevision；不匹配时 server 可拒绝以避免覆盖旧状态。",
         owner: "app/ui + agent server",
-        source: "zcodeSessionSendParamsSchema",
+        source: "raspberrycodeSessionSendParamsSchema",
         conceptIds: ["sessionSend"],
       },
     ],
@@ -460,7 +460,7 @@ export const structures: StructureDoc[] = [
   {
     id: "turn-event-payloads",
     title: "Turn Event Payloads",
-    path: "packages/shared/src/zcode-protocol/index.ts + apps/zcode-cli/packages/contracts/src/events/session.events.ts",
+    path: "packages/shared/src/raspberrycode-protocol/index.ts + apps/raspberrycode-cli/packages/contracts/src/events/session.events.ts",
     purpose:
       "turn.started / steerQueued / completed / failed 用 payload.inputId 把 agent 回流事件归属到某次 UI 输入。",
     oldShape: "turn payloads 使用 clientMessageId。",
@@ -519,7 +519,7 @@ export const structures: StructureDoc[] = [
         required: "optional",
         meaning: "turn.completed 里的缓存统计。新 schema 补齐该字段，避免 strict 校验丢终态事件。",
         owner: "agent runtime",
-        source: "zcodeTurnCompletedEventPayloadSchema",
+        source: "raspberrycodeTurnCompletedEventPayloadSchema",
         conceptIds: ["eventEnvelope"],
       },
       {
@@ -543,9 +543,9 @@ export const structures: StructureDoc[] = [
     ],
   },
   {
-    id: "zcode-stream-event",
-    title: "ZCodeStreamEvent / TaskStreamMirrorableEvent",
-    path: "packages/shared/src/zcode-task-types.ts",
+    id: "raspberrycode-stream-event",
+    title: "RaspberryCodeStreamEvent / TaskStreamMirrorableEvent",
+    path: "packages/shared/src/raspberrycode-task-types.ts",
     purpose: "Host 到 renderer 的实时事件结构。现在同时携带 traceId 和可选 inputId。",
     oldShape: "每个 stream event 只有 traceId；UI 把它当 run id 使用。",
     newShape: "stream event 保留 traceId 做观测，同时新增 inputId 做输入归属。",
@@ -558,7 +558,7 @@ export const structures: StructureDoc[] = [
         required: "required",
         meaning: "事件类型，如 agent_message_chunk、tool_call、task_complete、task_error。",
         owner: "host/runtime",
-        source: "ZCodeStreamEvent",
+        source: "RaspberryCodeStreamEvent",
         conceptIds: ["taskRuntimeState"],
       },
       {
@@ -567,7 +567,7 @@ export const structures: StructureDoc[] = [
         required: "required",
         meaning: "UI task 归属，用于找到对应消息列表、runtime state 和 task cache。",
         owner: "app/host",
-        source: "ZCodeStreamEvent",
+        source: "RaspberryCodeStreamEvent",
         conceptIds: ["taskId"],
       },
       {
@@ -576,7 +576,7 @@ export const structures: StructureDoc[] = [
         required: "required",
         meaning: "观测 trace。日志、调试、链路排查使用，不再做 prompt 终态收口。",
         owner: "host/runtime",
-        source: "ZCodeStreamEvent",
+        source: "RaspberryCodeStreamEvent",
         conceptIds: ["traceId"],
       },
       {
@@ -585,7 +585,7 @@ export const structures: StructureDoc[] = [
         required: "optional",
         meaning: "事件所属用户输入。terminal complete/error 优先用它与 activeInputId 比较。",
         owner: "host/runtime echoes",
-        source: "TaskStreamMirrorableEvent & ZCodeStreamEvent",
+        source: "TaskStreamMirrorableEvent & RaspberryCodeStreamEvent",
         conceptIds: ["inputId", "activeInputId"],
       },
       {
@@ -594,7 +594,7 @@ export const structures: StructureDoc[] = [
         required: "optional",
         meaning: "子 agent 或工具嵌套关系；null 表示主 agent 正文或主 agent 工具调用。",
         owner: "agent runtime",
-        source: "ZCodeStreamEvent / TaskStreamMirrorableEvent",
+        source: "RaspberryCodeStreamEvent / TaskStreamMirrorableEvent",
         conceptIds: ["toolCallId"],
       },
       {
@@ -603,7 +603,7 @@ export const structures: StructureDoc[] = [
         required: "optional",
         meaning: "RaspberryCode message upsert 主键；synthetic timeline 消息也用它做稳定更新。",
         owner: "agent runtime",
-        source: "ZCodeStreamEvent",
+        source: "RaspberryCodeStreamEvent",
         conceptIds: ["messageId"],
       },
       {
@@ -612,7 +612,7 @@ export const structures: StructureDoc[] = [
         required: "optional",
         meaning: "工具调用 ID；tool_call 与 tool_call_update 共享。",
         owner: "agent runtime",
-        source: "ZCodeStreamEvent tool update",
+        source: "RaspberryCodeStreamEvent tool update",
         conceptIds: ["toolCallId"],
       },
       {
@@ -621,7 +621,7 @@ export const structures: StructureDoc[] = [
         required: "optional",
         meaning: "task_complete 的结束原因。",
         owner: "agent runtime",
-        source: "ZCodeTaskComplete",
+        source: "RaspberryCodeTaskComplete",
         conceptIds: ["inputId"],
       },
       {
@@ -630,7 +630,7 @@ export const structures: StructureDoc[] = [
         required: "optional",
         meaning: "task_error 的可读错误正文；远控恢复依赖它展示失败原因。",
         owner: "agent runtime",
-        source: "ZCodeTaskError",
+        source: "RaspberryCodeTaskError",
         conceptIds: ["inputId"],
       },
     ],
@@ -638,7 +638,7 @@ export const structures: StructureDoc[] = [
   {
     id: "task-runtime-state",
     title: "TaskRuntimeState",
-    path: "packages/ui/src/store/zcodeSessionStoreTypes.ts",
+    path: "packages/ui/src/store/raspberrycodeSessionStoreTypes.ts",
     purpose: "Renderer 中每个 task 的运行态，驱动输入框状态、停止按钮、使用量和错误展示。",
     oldShape: "{ status, error, provider, usage, apiRetry, activeRunId?, activeRunOwnerClientId? }",
     newShape:
@@ -665,7 +665,7 @@ export const structures: StructureDoc[] = [
       },
       {
         name: "provider",
-        type: "ZCodeProvider",
+        type: "RaspberryCodeProvider",
         required: "optional",
         meaning: "该 task 当前绑定的 legacy provider，用于 workspace 级兼容投影和 busy lock。",
         owner: "renderer store",
@@ -683,7 +683,7 @@ export const structures: StructureDoc[] = [
       },
       {
         name: "apiRetry",
-        type: "ZCodeApiRetryStatus | null",
+        type: "RaspberryCodeApiRetryStatus | null",
         required: "required",
         meaning: "模型 API 重试状态，展示网络/限流恢复进度。",
         owner: "renderer store",
@@ -713,9 +713,9 @@ export const structures: StructureDoc[] = [
     ],
   },
   {
-    id: "zcode-event-envelope",
+    id: "raspberrycode-event-envelope",
     title: "RaspberryCode Event Envelope",
-    path: "packages/shared/src/zcode-protocol/index.ts",
+    path: "packages/shared/src/raspberrycode-protocol/index.ts",
     purpose: "协议事件外壳。它描述事件日志顺序和观测链路，不描述 UI 输入归属。",
     newShape: "{ eventId, sessionId, turnId?, seq, traceId?, timestamp, deliveryKind? }",
     migration: "Projection 不再把 envelope.traceId 当 input/run；payload.inputId 才是输入归属。",
@@ -726,7 +726,7 @@ export const structures: StructureDoc[] = [
         required: "required",
         meaning: "事件唯一 ID，用于日志和去重。",
         owner: "agent server",
-        source: "zcodeEventEnvelopeSchema",
+        source: "raspberrycodeEventEnvelopeSchema",
         conceptIds: ["eventEnvelope"],
       },
       {
@@ -735,7 +735,7 @@ export const structures: StructureDoc[] = [
         required: "required",
         meaning: "事件所属 session。",
         owner: "agent server",
-        source: "zcodeEventEnvelopeSchema",
+        source: "raspberrycodeEventEnvelopeSchema",
         conceptIds: ["sessionId"],
       },
       {
@@ -744,7 +744,7 @@ export const structures: StructureDoc[] = [
         required: "optional",
         meaning: "事件所属 turn。session 级事件可为空。",
         owner: "agent runtime",
-        source: "zcodeEventEnvelopeSchema",
+        source: "raspberrycodeEventEnvelopeSchema",
         conceptIds: ["turnId"],
       },
       {
@@ -753,7 +753,7 @@ export const structures: StructureDoc[] = [
         required: "required",
         meaning: "session 内单调递增事件序号，replayable 恢复以它为水位。",
         owner: "agent server",
-        source: "zcodeEventEnvelopeSchema",
+        source: "raspberrycodeEventEnvelopeSchema",
         conceptIds: ["eventSeq", "deliveryKind"],
       },
       {
@@ -762,7 +762,7 @@ export const structures: StructureDoc[] = [
         required: "optional",
         meaning: "观测 trace。不要用它判断 completed/failed 是否属于当前输入。",
         owner: "agent runtime",
-        source: "zcodeEventEnvelopeSchema",
+        source: "raspberrycodeEventEnvelopeSchema",
         conceptIds: ["traceId"],
       },
       {
@@ -771,7 +771,7 @@ export const structures: StructureDoc[] = [
         required: "required",
         meaning: "事件发生时间，毫秒时间戳。",
         owner: "agent server",
-        source: "zcodeEventEnvelopeSchema",
+        source: "raspberrycodeEventEnvelopeSchema",
         conceptIds: ["eventEnvelope"],
       },
       {
@@ -780,7 +780,7 @@ export const structures: StructureDoc[] = [
         required: "optional",
         meaning: "事件配送语义。手机远控恢复必须尊重 replayable 边界。",
         owner: "host/protocol client",
-        source: "zcodeEventEnvelopeSchema",
+        source: "raspberrycodeEventEnvelopeSchema",
         conceptIds: ["deliveryKind"],
       },
     ],
@@ -788,7 +788,7 @@ export const structures: StructureDoc[] = [
   {
     id: "session-state-snapshot",
     title: "SessionStateSnapshot",
-    path: "packages/shared/src/zcode-protocol/index.ts",
+    path: "packages/shared/src/raspberrycode-protocol/index.ts",
     purpose:
       "`session/create`、`session/read`、`session/subscribe(includeSnapshot)` 返回的完整可恢复视图。",
     newShape: "{ protocol, session, settings, projection, runtime, messages }",
@@ -800,62 +800,62 @@ export const structures: StructureDoc[] = [
         required: "required",
         meaning: "协议名和版本，客户端据此确定 schema。",
         owner: "agent server",
-        source: "zcodeSessionStateSnapshotSchema",
+        source: "raspberrycodeSessionStateSnapshotSchema",
         conceptIds: ["eventEnvelope"],
       },
       {
         name: "session",
-        type: "ZCodeSessionInfo",
+        type: "RaspberryCodeSessionInfo",
         required: "required",
         meaning:
           "session 基本信息：sessionId、workspace、parent、kind、title、mode、status、model、target、时间戳。",
         owner: "agent server",
-        source: "zcodeSessionInfoSchema",
+        source: "raspberrycodeSessionInfoSchema",
         conceptIds: ["sessionId", "workspaceKey"],
       },
       {
         name: "settings",
-        type: "ZCodeSessionSettingsState",
+        type: "RaspberryCodeSessionSettingsState",
         required: "required",
         meaning: "server-authoritative 模型、思考深度、模式和权限规则状态。",
         owner: "agent server",
-        source: "zcodeSessionSettingsStateSchema",
+        source: "raspberrycodeSessionSettingsStateSchema",
         conceptIds: ["sessionId"],
       },
       {
         name: "projection",
-        type: "ZCodeSessionProjection",
+        type: "RaspberryCodeSessionProjection",
         required: "required",
         meaning:
           "运行投影：status、currentTurnId、pendingPermissions、activeToolCalls、target、lastError 等。",
         owner: "agent server",
-        source: "zcodeSessionProjectionSchema",
+        source: "raspberrycodeSessionProjectionSchema",
         conceptIds: ["turnId", "toolCallId", "permissionRequest"],
       },
       {
         name: "runtime",
-        type: "ZCodeSessionRuntimeState",
+        type: "RaspberryCodeSessionRuntimeState",
         required: "required",
         meaning: "eventSeq、stateRevision、deliveryKind、activeTurnId、pendingRequestIds。",
         owner: "agent server",
-        source: "zcodeSessionRuntimeStateSchema",
+        source: "raspberrycodeSessionRuntimeStateSchema",
         conceptIds: ["eventSeq", "deliveryKind", "turnId"],
       },
       {
         name: "messages",
-        type: "ZCodeMessageWithParts[]",
+        type: "RaspberryCodeMessageWithParts[]",
         required: "required",
         meaning: "可渲染消息及 part 列表。UI 从这里恢复 transcript。",
         owner: "agent server",
-        source: "zcodeMessageWithPartsSchema",
+        source: "raspberrycodeMessageWithPartsSchema",
         conceptIds: ["messageId", "partId"],
       },
     ],
   },
   {
     id: "workspace-ref",
-    title: "ZCodeWorkspaceRef",
-    path: "packages/shared/src/zcode-protocol/index.ts",
+    title: "RaspberryCodeWorkspaceRef",
+    path: "packages/shared/src/raspberrycode-protocol/index.ts",
     purpose: "协议层 workspace 身份结构，分清执行路径和身份隔离。",
     newShape: "{ workspacePath, workspaceIdentity?, workspaceKey }",
     migration:
@@ -867,7 +867,7 @@ export const structures: StructureDoc[] = [
         required: "required",
         meaning: "实际文件路径，用于 cwd、文件读写、Git 和展示。",
         owner: "app/host",
-        source: "zcodeWorkspaceRefSchema",
+        source: "raspberrycodeWorkspaceRefSchema",
         conceptIds: ["workspacePath"],
       },
       {
@@ -876,7 +876,7 @@ export const structures: StructureDoc[] = [
         required: "optional",
         meaning: "远程 workspace 稳定身份。SSH/WSL/Docker 必传，本地可为空。",
         owner: "app/host",
-        source: "zcodeWorkspaceRefSchema",
+        source: "raspberrycodeWorkspaceRefSchema",
         conceptIds: ["workspaceIdentity"],
       },
       {
@@ -885,7 +885,7 @@ export const structures: StructureDoc[] = [
         required: "required",
         meaning: "身份/隔离语义使用的 key：workspaceIdentity?.trim() || workspacePath。",
         owner: "app/host",
-        source: "zcodeWorkspaceRefSchema",
+        source: "raspberrycodeWorkspaceRefSchema",
         conceptIds: ["workspaceKey"],
       },
     ],
@@ -893,7 +893,7 @@ export const structures: StructureDoc[] = [
   {
     id: "mirror-compat",
     title: "Replayable Mirror Legacy Fields",
-    path: "packages/shared/src/zcode-task-types.ts + packages/ui/src/lib/zcodeTaskRuntimeMonitor.ts",
+    path: "packages/shared/src/raspberrycode-task-types.ts + packages/ui/src/lib/raspberrycodeTaskRuntimeMonitor.ts",
     purpose:
       "手机远控 replayable 链路仍有 runId/ownerRunId 等历史命名，但文档必须标明语义是 input 归属。",
     oldShape: "{ runId, ownerRunId, traceId } 都容易被理解成 trace。",
@@ -1093,7 +1093,7 @@ export const stdioTrafficReadSteps: StdioTrafficReadStep[] = [
   {
     id: "tail-current",
     title: "实时跟随当前文件",
-    command: "cat ~/.zcode/v2/dev/stdio-traffic/<workspaceHash>/latest.txt",
+    command: "cat ~/.raspberrycode/v2/dev/stdio-traffic/<workspaceHash>/latest.txt",
     detail: "适合临时排查，按写入顺序看每一行 traffic record。",
   },
   {
@@ -1126,8 +1126,8 @@ export const stdioTrafficFrames: StdioTrafficFrame[] = [
   "method": "session/create",
   "params": {
     "workspace": {
-      "workspacePath": "/Users/dev/workspace/z-code",
-      "workspaceKey": "/Users/dev/workspace/z-code"
+      "workspacePath": "/Users/dev/workspace/demo",
+      "workspaceKey": "/Users/dev/workspace/demo"
     },
     "deliveryKind": "desktop-continuous"
   }
@@ -1232,7 +1232,7 @@ export const stdioTrafficFrames: StdioTrafficFrame[] = [
     sessionId: "sess_6b6a",
     summary: "agent stderr 只作为旁路观察，不进入协议解析",
     bytes: 118,
-    raw: "[zcode-agent] model provider ready provider=glm model=glm-4.7",
+    raw: "[raspberrycode-agent] model provider ready provider=glm model=glm-4.7",
   },
   {
     id: "frame-007",

@@ -1,5 +1,5 @@
 import { WebSocket, type RawData } from "ws";
-import { RemoteServiceAccess } from "@zcode/client";
+import { RemoteServiceAccess } from "@raspberrycode/client";
 import {
   ChannelClient,
   ChannelServer,
@@ -8,16 +8,16 @@ import {
   VSBuffer,
   type ISocket,
   type IServerChannel,
-} from "@zcode/rpc";
-import type { IServiceAccessor } from "@zcode/services";
+} from "@raspberrycode/rpc";
+import type { IServiceAccessor } from "@raspberrycode/services";
 import {
-  ZCODE_RPC_HOST_CAPABILITY_HEADER,
+  RASPBERRYCODE_RPC_HOST_CAPABILITY_HEADER,
   TOPIC_RESOURCE_RELAY_CHANNEL,
   serverRemoteHostCapabilitySchema,
   serverRemoteInfoSchema,
   type ServerConnectOptions,
   type ServerRemoteInfo,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import {
   connectWebSocketOverDuplex,
   createReusableDuplexHttpAgent,
@@ -264,7 +264,7 @@ function connectNodeWebSocket(
     const socket = new WebSocket(authenticatedUrl(wsUrl, target), {
       headers: {
         ...(token ? { authorization: `Bearer ${token}` } : {}),
-        [ZCODE_RPC_HOST_CAPABILITY_HEADER]: capability,
+        [RASPBERRYCODE_RPC_HOST_CAPABILITY_HEADER]: capability,
       },
     });
     let settled = false;
@@ -393,7 +393,7 @@ export async function connectServerRemoteOverDuplex(
       url: endpoints.hostWsUrl,
       headers: {
         ...authorization,
-        [ZCODE_RPC_HOST_CAPABILITY_HEADER]: capability.data.capability,
+        [RASPBERRYCODE_RPC_HOST_CAPABILITY_HEADER]: capability.data.capability,
       },
       createConnection: options.createConnection,
       agent,

@@ -1,21 +1,21 @@
 import { act, createElement, type ComponentProps, Suspense, useRef } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ModelSelectionView } from "@zcode/services";
+import type { ModelSelectionView } from "@raspberrycode/services";
 import { useModelSelectionServiceView } from "@/hooks/useModelSelectionView.js";
 import {
-  ZCODE_AGENT_PROVIDER_NOT_READY_CODE,
-  type ZCodeWorkspaceStateSnapshot,
-} from "@zcode/shared";
+  RASPBERRYCODE_AGENT_PROVIDER_NOT_READY_CODE,
+  type RaspberryCodeWorkspaceStateSnapshot,
+} from "@raspberrycode/shared";
 import type {
   CommandAck,
   CommandEnvelope,
   ConversationSnapshot,
   SessionModelTransition,
   SessionConfigState,
-} from "@zcode/shared/zcode-protocol-v4";
+} from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import { SessionPane } from "@/v4/SessionPane.js";
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+import { RaspberryCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import type { ConversationComposer } from "@/v4/ConversationComposer.js";
 import type { V4InteractionDialogsProps } from "@/v4/V4InteractionDialogs.js";
 import { pendingCommandRegistry } from "@/v4/pendingCommandRegistry.js";
@@ -195,7 +195,7 @@ const mocks = vi.hoisted(() => ({
     onDidChange: vi.fn(() => ({ dispose: vi.fn() })),
     validate: vi.fn(),
   },
-  zcodeSessionService: {
+  raspberrycodeSessionService: {
     getWorkspaceRuntimeIdentity: vi.fn(async () => ({
       identity: "runtime-1",
       workspaceKey: "remote:ssh:dev:/workspace",
@@ -210,7 +210,7 @@ const mocks = vi.hoisted(() => ({
       slashCommands: [],
     })),
   },
-  zcodeTaskService: {
+  raspberrycodeTaskService: {
     restartWorkspaceProcess: vi.fn(async () => {}),
   },
   toast: vi.fn(),
@@ -251,8 +251,8 @@ vi.mock("@/hooks/useServices.js", () => ({
     },
     highspeedCardService: mocks.highspeedCardService,
     modelSelectionService: mocks.modelSelectionService,
-    zcodeSessionService: mocks.zcodeSessionService,
-    zcodeTaskService: mocks.zcodeTaskService,
+    raspberrycodeSessionService: mocks.raspberrycodeSessionService,
+    raspberrycodeTaskService: mocks.raspberrycodeTaskService,
   }),
 }));
 
@@ -294,7 +294,7 @@ vi.mock("@/hooks/useSettingService.js", () => ({
   useSettings: () => ({
     settings: {
       modelProviderFamilySelectedKeys: { bigmodel: "team-plan-key" },
-      zcodeInteractionBehavior: "queue",
+      raspberrycodeInteractionBehavior: "queue",
     },
     loading: false,
     error: null,
@@ -325,7 +325,7 @@ vi.mock("@/v4/V4ConversationContext.js", () => ({
 }));
 
 vi.mock("@/store/StoreProvider.js", () => ({
-  useZCodeStoreWithDefault: (_selector: unknown, fallback: unknown) => fallback,
+  useRaspberryCodeStoreWithDefault: (_selector: unknown, fallback: unknown) => fallback,
 }));
 
 vi.mock("@/v4/composer/useDraftConfigControl.js", async (importOriginal) => {
@@ -594,7 +594,7 @@ function makePlanPendingSnapshot(): ConversationSnapshot {
   };
 }
 
-function makeWorkspaceStateSnapshot(): ZCodeWorkspaceStateSnapshot {
+function makeWorkspaceStateSnapshot(): RaspberryCodeWorkspaceStateSnapshot {
   return {
     workspace: {
       workspacePath: "/workspace",
@@ -624,7 +624,7 @@ function makeWorkspaceStateSnapshot(): ZCodeWorkspaceStateSnapshot {
 
 function createPaneElement(props: Partial<ComponentProps<typeof SessionPane>> = {}) {
   return createElement(
-    ZCodeIntlProvider,
+    RaspberryCodeIntlProvider,
     { initialLocale: "zh-CN" },
     createElement(SessionPane, {
       paneId: "workspace-main",
@@ -767,7 +767,7 @@ describe("SessionPane draft provider readiness", () => {
       discard: vi.fn(),
     };
     const providerNotReady = Object.assign(new Error("当前没有可用的模型供应商和模型"), {
-      code: ZCODE_AGENT_PROVIDER_NOT_READY_CODE,
+      code: RASPBERRYCODE_AGENT_PROVIDER_NOT_READY_CODE,
     });
     mocks.sendCommand.mockRejectedValue(providerNotReady);
 
@@ -817,7 +817,7 @@ describe("SessionPane send failure feedback", () => {
       await act(async () => flushMicrotasks());
 
       expect(captured.composerProps?.error).toMatchObject({
-        code: "ZCODE_RUNTIME_MODEL_UNAVAILABLE",
+        code: "RASPBERRYCODE_RUNTIME_MODEL_UNAVAILABLE",
         detail: expect.stringContaining("provider.notInRegistry"),
       });
       await act(async () => {
@@ -1323,7 +1323,7 @@ describe("SessionPane remote provider admission", () => {
     mocks.sendCommand.mockImplementation(async (envelope: CommandEnvelope) =>
       ackFor(envelope, { status: "accepted" }),
     );
-    mocks.zcodeSessionService.updateProviderRegistry.mockClear();
+    mocks.raspberrycodeSessionService.updateProviderRegistry.mockClear();
     mocks.sendCommand.mockClear();
 
     const root = await renderPane({ workspaceIdentity, remoteSessionId });
@@ -1333,7 +1333,7 @@ describe("SessionPane remote provider admission", () => {
         await flushMicrotasks();
       });
 
-      expect(mocks.zcodeSessionService.updateProviderRegistry).not.toHaveBeenCalled();
+      expect(mocks.raspberrycodeSessionService.updateProviderRegistry).not.toHaveBeenCalled();
       expect(mocks.sendCommand).toHaveBeenCalledWith(expect.objectContaining({ type: "sendText" }));
     } finally {
       await act(async () => root.unmount());
@@ -1352,7 +1352,7 @@ describe("SessionPane remote provider admission", () => {
     mocks.sendCommand.mockImplementation(async (envelope: CommandEnvelope) =>
       ackFor(envelope, { status: "accepted" }),
     );
-    mocks.zcodeSessionService.updateProviderRegistry.mockClear();
+    mocks.raspberrycodeSessionService.updateProviderRegistry.mockClear();
 
     const root = await renderPane();
     try {
@@ -1361,7 +1361,7 @@ describe("SessionPane remote provider admission", () => {
         await flushMicrotasks();
       });
 
-      expect(mocks.zcodeSessionService.updateProviderRegistry).not.toHaveBeenCalled();
+      expect(mocks.raspberrycodeSessionService.updateProviderRegistry).not.toHaveBeenCalled();
       expect(mocks.sendCommand).toHaveBeenCalledWith(expect.objectContaining({ type: "sendText" }));
     } finally {
       await act(async () => root.unmount());
@@ -1380,7 +1380,7 @@ describe("SessionPane remote provider admission", () => {
     mocks.sendCommand.mockImplementation(async (envelope: CommandEnvelope) =>
       ackFor(envelope, { status: "accepted" }),
     );
-    mocks.zcodeSessionService.updateProviderRegistry.mockClear();
+    mocks.raspberrycodeSessionService.updateProviderRegistry.mockClear();
 
     const root = await renderPane({
       workspaceIdentity: "remote:ssh:dev:/workspace",
@@ -1393,7 +1393,7 @@ describe("SessionPane remote provider admission", () => {
         await flushMicrotasks();
       });
 
-      expect(mocks.zcodeSessionService.updateProviderRegistry).not.toHaveBeenCalled();
+      expect(mocks.raspberrycodeSessionService.updateProviderRegistry).not.toHaveBeenCalled();
       expect(mocks.sendCommand).toHaveBeenCalledWith(expect.objectContaining({ type: "sendText" }));
     } finally {
       await act(async () => root.unmount());
@@ -1832,7 +1832,7 @@ describe("SessionPane model switch recovery", () => {
       type: "sendText",
       options: {
         attachments: [
-          { ref: "zcode-artifact://image", fileName: "image.png", mime: "image/png", bytes: 128 },
+          { ref: "raspberrycode-artifact://image", fileName: "image.png", mime: "image/png", bytes: 128 },
         ],
       },
     },
@@ -2152,7 +2152,7 @@ describe("SessionPane model switch recovery", () => {
     });
 
     expect(mocks.sendCommand).not.toHaveBeenCalled();
-    expect(mocks.zcodeSessionService.updateProviderRegistry).not.toHaveBeenCalled();
+    expect(mocks.raspberrycodeSessionService.updateProviderRegistry).not.toHaveBeenCalled();
     await act(async () => {
       root.unmount();
     });
@@ -2189,7 +2189,7 @@ describe("SessionPane model switch recovery", () => {
     });
 
     expect(mocks.sendCommand).toHaveBeenCalledTimes(1);
-    expect(mocks.zcodeSessionService.updateProviderRegistry).not.toHaveBeenCalled();
+    expect(mocks.raspberrycodeSessionService.updateProviderRegistry).not.toHaveBeenCalled();
     await act(async () => {
       root.unmount();
     });
@@ -2234,7 +2234,7 @@ describe("SessionPane model switch recovery", () => {
     });
 
     expect(mocks.sendCommand).toHaveBeenCalledTimes(1);
-    expect(mocks.zcodeSessionService.updateProviderRegistry).not.toHaveBeenCalled();
+    expect(mocks.raspberrycodeSessionService.updateProviderRegistry).not.toHaveBeenCalled();
     await act(async () => {
       root.unmount();
     });
@@ -2273,13 +2273,13 @@ describe("SessionPane model switch recovery", () => {
       "alternate-provider",
       "deepseek-v4-pro",
     );
-    expect(mocks.zcodeTaskService.restartWorkspaceProcess).toHaveBeenCalledWith({
+    expect(mocks.raspberrycodeTaskService.restartWorkspaceProcess).toHaveBeenCalledWith({
       workspacePath: "/workspace",
       workspaceIdentity: undefined,
       provider: "agent",
       bumpRuntimeEpoch: true,
     });
-    expect(mocks.zcodeTaskService.restartWorkspaceProcess.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(mocks.raspberrycodeTaskService.restartWorkspaceProcess.mock.invocationCallOrder[0]).toBeLessThan(
       draftConfigMock.handleDraftSelectModel.mock.invocationCallOrder[0] ?? 0,
     );
 
@@ -2460,7 +2460,7 @@ describe("SessionPane Plan picker action", () => {
         ackFor(envelope, { status: "accepted" }),
       );
       const attachments = [
-        { ref: "zcode-artifact://a", fileName: "a.txt", mime: "text/plain", bytes: 1 },
+        { ref: "raspberrycode-artifact://a", fileName: "a.txt", mime: "text/plain", bytes: 1 },
       ];
       const root = await renderPane();
       await act(async () => {

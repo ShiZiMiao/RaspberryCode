@@ -3,8 +3,6 @@ import type {
   ResourceUsageSnapshot,
   LoadCliMcpFromUserDirectoryRequest,
   LoadCliMcpFromUserDirectoryResult,
-  MigrateLegacyCommonMcpRequest,
-  MigrateLegacyCommonMcpResult,
   SaveCliMcpToUserDirectoryRequest,
 } from "./index.js";
 import type { OAuthStateRegistration } from "./oauth.js";
@@ -95,13 +93,13 @@ export const ServiceChannels = {
   /** 跨窗口广播 */
   Broadcast: "broadcast",
   /** RaspberryCode task wrapper 服务 */
-  ZCodeTask: "zcode-task",
+  RaspberryCodeTask: "raspberrycode-task",
   /** 窗口 Host 聚合 workspace/task 投影与列表写路由 */
   WindowController: "window-controller",
   /** RaspberryCode Protocol agent 服务 */
-  ZCodeAgent: "zcode-agent",
+  RaspberryCodeAgent: "raspberrycode-agent",
   /** RaspberryCode session 应用服务 */
-  ZCodeSession: "zcode-session",
+  RaspberryCodeSession: "raspberrycode-session",
   Project: "project",
   TaskGroups: "task-groups",
   RemoteProjects: "remote-projects",
@@ -140,7 +138,7 @@ export const ServiceChannels = {
   PluginSync: "plugin-sync",
   /** 插件管理服务 */
   Plugins: "plugins",
-  /** 设置页插件管理服务（UI 平台能力面收敛，不再直触 zcodeAgentService） */
+  /** 设置页插件管理服务（UI 平台能力面收敛，不再直触 raspberrycodeAgentService） */
   PluginManagement: "plugin-management",
   /** 插件 UI 沙箱桥：host 读取 ui:// 资源并向 main 登记、代理 UI 发起的工具调用 */
   PluginUiBridge: "plugin-ui-bridge",
@@ -177,272 +175,271 @@ export type ServiceChannelName = (typeof ServiceChannels)[keyof typeof ServiceCh
 /** Electron IPC 频道名。仅在 preload ↔ main 之间使用。 */
 export const PlatformChannels = {
   /** renderer → main：释放插件 UI 沙箱（关闭 ports、撤 protocol handler、清 partition） */
-  PluginSandboxDispose: "zcode:plugin-sandbox-dispose",
-  PluginSandboxCopyImage: "zcode:plugin-sandbox-copy-image",
-  PluginSandboxExecutionActive: "zcode:plugin-sandbox-execution-active",
+  PluginSandboxDispose: "raspberrycode:plugin-sandbox-dispose",
+  PluginSandboxCopyImage: "raspberrycode:plugin-sandbox-copy-image",
+  PluginSandboxExecutionActive: "raspberrycode:plugin-sandbox-execution-active",
   /** renderer → main：一次性消费插件 UI 沙箱 guest 的用户手势 token */
-  PluginSandboxConsumeUserGesture: "zcode:plugin-sandbox-consume-user-gesture",
+  PluginSandboxConsumeUserGesture: "raspberrycode:plugin-sandbox-consume-user-gesture",
   /** renderer → main：查询自身 webContents id，作为沙箱登记的 owner */
-  PluginSandboxOwnerWebContentsId: "zcode:plugin-sandbox-owner-web-contents-id",
+  PluginSandboxOwnerWebContentsId: "raspberrycode:plugin-sandbox-owner-web-contents-id",
   /** 打开系统目录选择框 */
-  SelectDirectory: "zcode:select-directory",
+  SelectDirectory: "raspberrycode:select-directory",
   /** 打开系统多目录选择框 */
-  SelectDirectories: "zcode:select-directories",
+  SelectDirectories: "raspberrycode:select-directories",
   /** 打开系统文件选择框 */
-  SelectFile: "zcode:select-file",
+  SelectFile: "raspberrycode:select-file",
   /** 打开系统多文件选择框 */
-  SelectFiles: "zcode:select-files",
+  SelectFiles: "raspberrycode:select-files",
   /** Renderer → Main：写入宿主 ~/.raspberrycode 临时文本附件 */
-  CreateTempTextAttachment: "zcode:create-temp-text-attachment",
+  CreateTempTextAttachment: "raspberrycode:create-temp-text-attachment",
   /** Renderer → Main：把 dwf 产物某一版的字节落成本机副本（「作为文件打开」） */
-  MaterializeWorkflowArtifactFile: "zcode:materialize-workflow-artifact-file",
+  MaterializeWorkflowArtifactFile: "raspberrycode:materialize-workflow-artifact-file",
   /** Renderer → Main：通过原生另存为对话框保存文件 */
-  SaveFile: "zcode:save-file",
+  SaveFile: "raspberrycode:save-file",
   /** Renderer → Main：用 Chromium 打印引擎把当前页面 print 媒体版面导出为 PDF */
-  PrintToPdf: "zcode:print-to-pdf",
+  PrintToPdf: "raspberrycode:print-to-pdf",
   /** Main → Renderer：转发远程连接过程日志 */
-  RemoteConnectionLog: "zcode:remote-connection-log",
+  RemoteConnectionLog: "raspberrycode:remote-connection-log",
   /** Main → Renderer：远程 workspace session 已关闭 */
-  RemoteSessionClosed: "zcode:remote-session-closed",
+  RemoteSessionClosed: "raspberrycode:remote-session-closed",
   /** Main → Renderer：Source 自动重连后的 logical session 已换代并完成 port ready */
-  RemoteSessionReconnected: "zcode:remote-session-reconnected",
+  RemoteSessionReconnected: "raspberrycode:remote-session-reconnected",
   /** 检查目录是否已在其他窗口打开，如果是则激活该窗口 */
-  ActivateOrSetWorkspace: "zcode:activate-or-set-workspace",
+  ActivateOrSetWorkspace: "raspberrycode:activate-or-set-workspace",
   /** 建立 SSH 远程连接 */
-  ConnectRemote: "zcode:connect-remote",
+  ConnectRemote: "raspberrycode:connect-remote",
   /** Desktop Renderer → Main：为在线 Source 创建配置专用 attachment */
-  RequestSourceSettingsAttachment: "zcode:request-source-settings-attachment",
+  RequestSourceSettingsAttachment: "raspberrycode:request-source-settings-attachment",
   /** 取消当前窗口正在进行中的远程连接 */
-  CancelPendingRemoteConnection: "zcode:cancel-pending-remote-connection",
+  CancelPendingRemoteConnection: "raspberrycode:cancel-pending-remote-connection",
   /** Renderer → Main：绑定远程 logical session 的 canonical workspace context */
-  BindRemoteWorkspaceSessionContext: "zcode:bind-remote-workspace-session-context",
+  BindRemoteWorkspaceSessionContext: "raspberrycode:bind-remote-workspace-session-context",
   /** 释放当前窗口里的远程 session */
-  DisposeRemoteSession: "zcode:dispose-remote-session",
+  DisposeRemoteSession: "raspberrycode:dispose-remote-session",
   /** Renderer → Main：检查本机 Docker daemon 是否可用 */
-  IsDockerAvailable: "zcode:is-docker-available",
+  IsDockerAvailable: "raspberrycode:is-docker-available",
   /** Renderer → Main：列出本机可用的 WSL 发行版 */
-  ListWSLDistros: "zcode:list-wsl-distros",
+  ListWSLDistros: "raspberrycode:list-wsl-distros",
   /** Renderer → Main：列出当前可连接的 Docker 容器 */
-  ListDockerContainers: "zcode:list-docker-containers",
+  ListDockerContainers: "raspberrycode:list-docker-containers",
   /** Renderer → Main：列出 SSH config 里可用于快速填表的 alias */
-  ListSSHConfigAliases: "zcode:list-ssh-config-aliases",
+  ListSSHConfigAliases: "raspberrycode:list-ssh-config-aliases",
   /** Renderer → Main：从用户目录加载 CLI MCP 配置 */
-  LoadMcpFromUserDirectory: "zcode:load-mcp-from-user-directory",
+  LoadMcpFromUserDirectory: "raspberrycode:load-mcp-from-user-directory",
   /** Renderer → Main：保存 CLI MCP 配置到用户目录 */
-  SaveMcpToUserDirectory: "zcode:save-mcp-to-user-directory",
+  SaveMcpToUserDirectory: "raspberrycode:save-mcp-to-user-directory",
   /** Renderer → Main：查询"关闭驻留托盘"能力（Linux 置灰判断；spec：docs/desktop/linux-close-to-tray.md） */
-  GetCloseToTrayCapability: "zcode:get-close-to-tray-capability",
+  GetCloseToTrayCapability: "raspberrycode:get-close-to-tray-capability",
   /** Renderer 日志转发到 main 进程统一存储 */
-  Log: "zcode:log",
+  Log: "raspberrycode:log",
   /** Renderer → Main：同步当前窗口所有 tab 的 workspace 路径 */
-  SyncWindowTabs: "zcode:sync-window-tabs",
+  SyncWindowTabs: "raspberrycode:sync-window-tabs",
   /** Renderer → Main：同步当前窗口的未读 task 数 */
-  SyncWindowUnreadCount: "zcode:sync-window-unread-count",
+  SyncWindowUnreadCount: "raspberrycode:sync-window-unread-count",
   /** Renderer → Main：当前窗口 active task，只更新 Main 的临时焦点映射。 */
-  SyncActiveTaskSession: "zcode:sync-active-task-session",
+  SyncActiveTaskSession: "raspberrycode:sync-active-task-session",
   /** Renderer → Main：同步 main 进程需即时感知的应用设置 */
-  SyncAppSettings: "zcode:sync-app-settings",
+  SyncAppSettings: "raspberrycode:sync-app-settings",
   /** Renderer → Main：快捷键设置页录制态开关；true = main 暂时摘除可配置菜单 accelerator */
-  SetShortcutRecordingActive: "zcode:set-shortcut-recording-active",
+  SetShortcutRecordingActive: "raspberrycode:set-shortcut-recording-active",
   /** Main → Renderer：聚焦到指定 workspace 路径的 tab */
-  FocusTab: "zcode:focus-tab",
+  FocusTab: "raspberrycode:focus-tab",
   /** Main → Renderer：菜单触发新建 tab */
-  NewTab: "zcode:new-tab",
+  NewTab: "raspberrycode:new-tab",
   /** Main → Renderer：菜单或快捷键请求关闭当前上下文 */
-  CloseActiveContextRequest: "zcode:close-active-context-request",
+  CloseActiveContextRequest: "raspberrycode:close-active-context-request",
   /** Main → Renderer：内置 webview 请求打开新的浏览器 tab */
-  OpenBrowserUrl: "zcode:open-browser-url",
+  OpenBrowserUrl: "raspberrycode:open-browser-url",
   /** Main → Renderer：内置浏览器网页权限/屏幕共享源/设备选择弹窗请求 */
-  EmbeddedBrowserPermissionPrompt: "zcode:embedded-browser-permission-prompt",
+  EmbeddedBrowserPermissionPrompt: "raspberrycode:embedded-browser-permission-prompt",
   /** Renderer → Main：用户对内置浏览器权限弹窗的决策回传 */
-  EmbeddedBrowserPermissionResolve: "zcode:embedded-browser-permission-resolve",
+  EmbeddedBrowserPermissionResolve: "raspberrycode:embedded-browser-permission-resolve",
   /** Main → Renderer：agent 首次 browser 命令建好受控 view，通知 renderer 自动开 browser-use tab */
-  BrowserViewReady: "zcode:browser-view-ready",
+  BrowserViewReady: "raspberrycode:browser-view-ready",
   /** Main → Renderer：agent 正在操作某个 browser-use tab，renderer 临时显示状态图标 */
-  BrowserViewOperation: "zcode:browser-view-operation",
+  BrowserViewOperation: "raspberrycode:browser-view-operation",
   /** Main → Renderer：browser visibility capability 显示/隐藏 IAB 右侧面板 */
-  BrowserViewVisibility: "zcode:browser-view-visibility",
+  BrowserViewVisibility: "raspberrycode:browser-view-visibility",
   /** Main → Renderer：Agent 设置/重置目标 tab viewport */
-  BrowserViewViewportChanged: "zcode:browser-view-viewport-changed",
+  BrowserViewViewportChanged: "raspberrycode:browser-view-viewport-changed",
   /** Main → Renderer：截图前请求 owner renderer 准备后台 guest 合成表面。 */
-  BrowserViewScreenshotSurfacePrepare: "zcode:browser-view-screenshot-surface-prepare",
+  BrowserViewScreenshotSurfacePrepare: "raspberrycode:browser-view-screenshot-surface-prepare",
   /** Renderer → Main：目标 guest 连续两个 animation frame 的 viewport 已稳定。 */
-  BrowserViewScreenshotSurfaceReady: "zcode:browser-view-screenshot-surface-ready",
+  BrowserViewScreenshotSurfaceReady: "raspberrycode:browser-view-screenshot-surface-ready",
   /** Main → Renderer：截图结束或准备失败，释放临时后台合成层。 */
-  BrowserViewScreenshotSurfaceRelease: "zcode:browser-view-screenshot-surface-release",
+  BrowserViewScreenshotSurfaceRelease: "raspberrycode:browser-view-screenshot-surface-release",
   /** Main → Renderer：agent close 命令 detach 受控 guest 后，通知 renderer 卸载对应 tab */
-  BrowserViewCloseTab: "zcode:browser-view-close-tab",
+  BrowserViewCloseTab: "raspberrycode:browser-view-close-tab",
   /** Main → Renderer：预算淘汰时卸载 guest，但保留 logical tab shell。 */
-  BrowserViewSuspend: "zcode:browser-view-suspend",
+  BrowserViewSuspend: "raspberrycode:browser-view-suspend",
   /** Main → Renderer：为 suspended shell 重新挂载 guest。 */
-  BrowserViewRestore: "zcode:browser-view-restore",
+  BrowserViewRestore: "raspberrycode:browser-view-restore",
   /** Main → Renderer：菜单触发新建任务 */
-  NewTask: "zcode:new-task",
+  NewTask: "raspberrycode:new-task",
   /** Main → Renderer：菜单触发打开工作区 */
-  OpenWorkspace: "zcode:open-workspace",
+  OpenWorkspace: "raspberrycode:open-workspace",
   /** Main → Renderer：deep link 直接打开指定本地工作区目录 */
-  OpenWorkspacePath: "zcode:open-workspace-path",
+  OpenWorkspacePath: "raspberrycode:open-workspace-path",
   /** Main → Renderer：打开内置反馈对话框 */
-  OpenFeedbackDialog: "zcode:open-feedback-dialog",
+  OpenFeedbackDialog: "raspberrycode:open-feedback-dialog",
   /** Main → Renderer：打开我的工单面板 */
-  OpenTicketsPanel: "zcode:open-tickets-panel",
+  OpenTicketsPanel: "raspberrycode:open-tickets-panel",
   /** Main → Renderer：窗口全屏状态变化 */
-  WindowFullscreenChanged: "zcode:window-fullscreen-changed",
+  WindowFullscreenChanged: "raspberrycode:window-fullscreen-changed",
   /** Renderer → Main：读取窗口最大化状态与系统原生圆角能力 */
-  GetDesktopWindowChromeState: "zcode:get-desktop-window-chrome-state",
+  GetDesktopWindowChromeState: "raspberrycode:get-desktop-window-chrome-state",
   /** Main → Renderer：窗口最大化状态与系统原生圆角能力变化 */
-  DesktopWindowChromeStateChanged: "zcode:desktop-window-chrome-state-changed",
+  DesktopWindowChromeStateChanged: "raspberrycode:desktop-window-chrome-state-changed",
   /** Main → Renderer：原生窗口控制区安全边距变化 */
-  WindowControlsOverlayChanged: "zcode:window-controls-overlay-changed",
+  WindowControlsOverlayChanged: "raspberrycode:window-controls-overlay-changed",
   /** Preload → Main：preload 已同步读到当前窗口控制区安全边距 */
-  WindowControlsOverlayReady: "zcode:window-controls-overlay-ready",
+  WindowControlsOverlayReady: "raspberrycode:window-controls-overlay-ready",
   /** 获取资源管理器快照（CPU / 内存，按基础服务、内置插件、社区插件归类） */
-  GetResourceUsageSnapshot: "zcode:get-resource-usage-snapshot",
-  SetResourceUsageSamplingActive: "zcode:set-resource-usage-sampling-active",
-  GetNetworkCaptureSnapshot: "zcode:get-network-capture-snapshot",
-  ClearNetworkCapture: "zcode:clear-network-capture",
+  GetResourceUsageSnapshot: "raspberrycode:get-resource-usage-snapshot",
+  SetResourceUsageSamplingActive: "raspberrycode:set-resource-usage-sampling-active",
+  GetNetworkCaptureSnapshot: "raspberrycode:get-network-capture-snapshot",
+  ClearNetworkCapture: "raspberrycode:clear-network-capture",
   /** 打开资源管理器窗口（其他窗口触发） */
-  OpenResourceManager: "zcode:open-resource-manager",
+  OpenResourceManager: "raspberrycode:open-resource-manager",
   /** 资源管理器「存储」tab：开始扫描本机 .raspberrycode 占用（main 持有 StorageService，Worker 线程遍历） */
-  StorageStartScan: "zcode:storage-start-scan",
+  StorageStartScan: "raspberrycode:storage-start-scan",
   /** 资源管理器「存储」tab：取消扫描 */
-  StorageCancelScan: "zcode:storage-cancel-scan",
+  StorageCancelScan: "raspberrycode:storage-cancel-scan",
   /** 资源管理器「存储」tab：读取最近一次快照 */
-  StorageGetSnapshot: "zcode:storage-get-snapshot",
+  StorageGetSnapshot: "raspberrycode:storage-get-snapshot",
   /** 资源管理器「存储」tab：按类别清理 */
-  StorageClean: "zcode:storage-clean",
+  StorageClean: "raspberrycode:storage-clean",
   /** 资源管理器「存储」tab：在系统文件管理器中定位数据根内的路径 */
-  StorageRevealPath: "zcode:storage-reveal-path",
+  StorageRevealPath: "raspberrycode:storage-reveal-path",
   /** Main → 资源管理器 renderer：扫描进度快照推送 */
-  StorageScanProgress: "zcode:storage-scan-progress",
+  StorageScanProgress: "raspberrycode:storage-scan-progress",
   /** Renderer → Main：打开外部 URL（用于 OAuth 跳转浏览器） */
-  OpenExternal: "zcode:open-external",
+  OpenExternal: "raspberrycode:open-external",
   /** Renderer → Main：查询当前语言下是否存在可用的用户社群入口 */
-  CanOpenCommunity: "zcode:can-open-community",
+  CanOpenCommunity: "raspberrycode:can-open-community",
   /** Renderer → Main：在系统文件管理器中打开路径 */
-  OpenInFileManager: "zcode:open-in-file-manager",
+  OpenInFileManager: "raspberrycode:open-in-file-manager",
   /** Renderer → Main：使用系统默认应用打开本地文件 */
-  OpenExternalFile: "zcode:open-external-file",
+  OpenExternalFile: "raspberrycode:open-external-file",
   /** Renderer → Main：打开 RaspberryCode Computer Use 权限引导 */
-  OpenCuaPermissionOnboarding: "zcode:open-cua-permission-onboarding",
+  OpenCuaPermissionOnboarding: "raspberrycode:open-cua-permission-onboarding",
   /** Renderer → Main：取消当前 renderer 发起的一次权限引导 participant */
-  CancelCuaPermissionOnboarding: "zcode:cancel-cua-permission-onboarding",
+  CancelCuaPermissionOnboarding: "raspberrycode:cancel-cua-permission-onboarding",
   /**
    * Renderer → Main：预热并缓存已验证的 Helper 路径 + bundle 指纹。
    * 必须在拖拽浮窗挂载时调用 —— dragstart 链路里不允许任何异步 I/O。
    */
-  PrepareCuaHelperPermissionDrag: "zcode:prepare-cua-helper-permission-drag",
+  PrepareCuaHelperPermissionDrag: "raspberrycode:prepare-cua-helper-permission-drag",
   /** Renderer → Main：把已验证的 Helper.app 同步拖出到 macOS 权限列表 */
-  StartCuaHelperPermissionDrag: "zcode:start-cua-helper-permission-drag",
+  StartCuaHelperPermissionDrag: "raspberrycode:start-cua-helper-permission-drag",
   /**
    * Renderer → Main：拖拽手势结束。
    * 拖完授权即完成，浮窗该让位（用户此时要看设置页和系统的重启提示）。必须等 dragend 而不是
    * 在 dragstart 里就收窗：startDrag 只是把 drag session 交给 OS，非阻塞，drag source
    * 立刻消失可能打断正在进行的拖拽。
    */
-  NotifyCuaHelperPermissionDragEnded: "zcode:notify-cua-helper-permission-drag-ended",
+  NotifyCuaHelperPermissionDragEnded: "raspberrycode:notify-cua-helper-permission-drag-ended",
   /** Renderer → Main：上报 OAuth state 用于 deep link 路由 */
-  OAuthRegisterState: "zcode:oauth-register-state",
+  OAuthRegisterState: "raspberrycode:oauth-register-state",
   /** Main → Renderer：转发 deep link URL */
-  OAuthCallback: "zcode:oauth-callback",
+  OAuthCallback: "raspberrycode:oauth-callback",
   /** Renderer → Main：OAuth 回调已处理完成，可继续后置启动流程 */
-  OAuthCallbackHandled: "zcode:oauth-callback-handled",
+  OAuthCallbackHandled: "raspberrycode:oauth-callback-handled",
   /** Renderer → Main：renderer 已就绪，可接收缓存的 deep link */
-  RendererReady: "zcode:renderer-ready",
+  RendererReady: "raspberrycode:renderer-ready",
   /** Renderer → Main：同步当前 renderer 的 telemetry 上下文 */
-  SyncTelemetryContext: "zcode:sync-telemetry-context",
+  SyncTelemetryContext: "raspberrycode:sync-telemetry-context",
   /** Renderer → Main：通过统一 telemetry 层上报业务事件 */
-  ReportTelemetryEvent: "zcode:report-telemetry-event",
+  ReportTelemetryEvent: "raspberrycode:report-telemetry-event",
   /** Renderer → Main：上报 ARMS 自定义事件 */
-  ReportArmsCustomEvent: "zcode:report-arms-custom-event",
+  ReportArmsCustomEvent: "raspberrycode:report-arms-custom-event",
   /** Renderer → Main：读取 Renderer 用户操作 Trace 灰度配置。 */
-  GetRendererActionTraceConfig: "zcode:get-renderer-action-trace-config",
+  GetRendererActionTraceConfig: "raspberrycode:get-renderer-action-trace-config",
   /** Main → Renderer：Renderer 用户操作 Trace 灰度配置变化。 */
-  RendererActionTraceConfigChanged: "zcode:renderer-action-trace-config-changed",
+  RendererActionTraceConfigChanged: "raspberrycode:renderer-action-trace-config-changed",
   /** Renderer → Main：发送已结束的 ui_action batch。 */
-  ReportRendererActionTraceBatch: "zcode:report-renderer-action-trace-batch",
+  ReportRendererActionTraceBatch: "raspberrycode:report-renderer-action-trace-batch",
   /** Renderer → Main：主窗口 renderer 每 60 秒的 heap 读数，单向 send，不需要回执。 */
-  ReportRendererHeapSample: "zcode:report-renderer-heap-sample",
-  ReportLocalTtftBatch: "zcode:report-local-ttft-batch",
+  ReportRendererHeapSample: "raspberrycode:report-renderer-heap-sample",
+  ReportLocalTtftBatch: "raspberrycode:report-local-ttft-batch",
   /** E2E preload → Main：读取 sendCustom 最终参数的内存 ring。 */
-  ReadFinalArmsCustomEventsE2E: "zcode:e2e:read-final-arms-custom-events",
+  ReadFinalArmsCustomEventsE2E: "raspberrycode:e2e:read-final-arms-custom-events",
   /** E2E preload → Main：清空 sendCustom 最终参数的内存 ring。 */
-  ClearFinalArmsCustomEventsE2E: "zcode:e2e:clear-final-arms-custom-events",
+  ClearFinalArmsCustomEventsE2E: "raspberrycode:e2e:clear-final-arms-custom-events",
   /** E2E preload → Main：配置只针对目标 event name 的真实网络抑制。 */
-  ConfigureFinalArmsCustomEventsE2E: "zcode:e2e:configure-final-arms-custom-events",
+  ConfigureFinalArmsCustomEventsE2E: "raspberrycode:e2e:configure-final-arms-custom-events",
   /** Renderer → Main：触发任务完成/失败的系统通知 */
-  ShowTaskNotification: "zcode:show-task-notification",
+  ShowTaskNotification: "raspberrycode:show-task-notification",
   /** Main → Preload：通知 renderer 播放任务通知提示音 */
-  TaskNotificationSound: "zcode:task-notification-sound",
+  TaskNotificationSound: "raspberrycode:task-notification-sound",
   /** Main → Preload：用户点击了系统通知，携带 taskId 让 renderer 跳转到对应任务 */
-  TaskNotificationClick: "zcode:task-notification-click",
+  TaskNotificationClick: "raspberrycode:task-notification-click",
   /** Renderer → Main：导出日志（打包 ~/.raspberrycode/v2 及外部 agent 日志为 zip 并在 Finder 中显示） */
-  ExportLogs: "zcode:export-logs",
+  ExportLogs: "raspberrycode:export-logs",
   /** Renderer → Main：截取当前窗口作为反馈附件 */
-  CaptureWindowScreenshot: "zcode:capture-window-screenshot",
+  CaptureWindowScreenshot: "raspberrycode:capture-window-screenshot",
   /**
    * Renderer → Main：`<webview>` guest dom-ready 后上报 webContentsId，
    * main 用 BrowserGuestManager attach 该 guest（fire-and-forget）。CDP-on-guest pivot。
    */
-  BrowserViewAttachGuest: "zcode:browser-view-attach-guest",
+  BrowserViewAttachGuest: "raspberrycode:browser-view-attach-guest",
   /** Renderer → Main：重建 `<webview>` 前主动断开旧 guest 的 CDP。 */
-  BrowserViewDetachGuest: "zcode:browser-view-detach-guest",
+  BrowserViewDetachGuest: "raspberrycode:browser-view-detach-guest",
   /** Renderer → Main：用户显式关闭 Browser tab。 */
-  BrowserViewCloseTabFromRenderer: "zcode:browser-view-close-tab-from-renderer",
+  BrowserViewCloseTabFromRenderer: "raspberrycode:browser-view-close-tab-from-renderer",
   /** Renderer → Main：上报 Browser tab residency/display facts。 */
-  BrowserViewReportResidency: "zcode:browser-view-report-residency",
+  BrowserViewReportResidency: "raspberrycode:browser-view-report-residency",
   /** Renderer → Main：指定 generation 的 guest 已卸载。 */
-  BrowserViewSuspendReady: "zcode:browser-view-suspend-ready",
+  BrowserViewSuspendReady: "raspberrycode:browser-view-suspend-ready",
   /** Renderer → Main：用户访问 suspended tab，请求恢复。 */
-  BrowserViewEnsureResident: "zcode:browser-view-ensure-resident",
+  BrowserViewEnsureResident: "raspberrycode:browser-view-ensure-resident",
   /** Renderer → Main：读取 workspace/task 的持久化 logical shells。 */
-  BrowserViewRestoreTabs: "zcode:browser-view-restore-tabs",
+  BrowserViewRestoreTabs: "raspberrycode:browser-view-restore-tabs",
   /** Renderer → Main：自由尺寸拖拽/开关回写目标 guest viewport */
-  BrowserViewUpdateViewport: "zcode:browser-view-update-viewport",
+  BrowserViewUpdateViewport: "raspberrycode:browser-view-update-viewport",
   /** Embedded Browser preload → Main：在网页原生 Dialog 创建前同步请求可信系统框。 */
-  EmbeddedBrowserJavaScriptDialog: "zcode:embedded-browser-javascript-dialog",
+  EmbeddedBrowserJavaScriptDialog: "raspberrycode:embedded-browser-javascript-dialog",
   /** Renderer → Main：把自动发现的本机 Chrome Profile 数据一次性导入内置浏览器分区。 */
-  ImportChromeBrowserData: "zcode:import-chrome-browser-data",
+  ImportChromeBrowserData: "raspberrycode:import-chrome-browser-data",
   /** Renderer → Main：清理内置浏览器缓存或全部站点数据。 */
-  ClearEmbeddedBrowserData: "zcode:clear-embedded-browser-data",
+  ClearEmbeddedBrowserData: "raspberrycode:clear-embedded-browser-data",
   /** Renderer → Main：读取内置浏览器站点权限记录（设置页「网站权限」） */
-  GetEmbeddedBrowserSitePermissions: "zcode:get-embedded-browser-site-permissions",
+  GetEmbeddedBrowserSitePermissions: "raspberrycode:get-embedded-browser-site-permissions",
   /** Renderer → Main：修改/删除单条站点权限（state="ask" 表示删除） */
-  SetEmbeddedBrowserSitePermission: "zcode:set-embedded-browser-site-permission",
+  SetEmbeddedBrowserSitePermission: "raspberrycode:set-embedded-browser-site-permission",
   /** Renderer → Main：清空全部站点权限记录 */
-  ClearEmbeddedBrowserSitePermissions: "zcode:clear-embedded-browser-site-permissions",
+  ClearEmbeddedBrowserSitePermissions: "raspberrycode:clear-embedded-browser-site-permissions",
   /** Renderer → Main：重置单个站点的全部权限记录（站点权限设置标签页「重置」） */
-  ResetEmbeddedBrowserSitePermission: "zcode:reset-embedded-browser-site-permission",
+  ResetEmbeddedBrowserSitePermission: "raspberrycode:reset-embedded-browser-site-permission",
   /** Renderer → Main：查询桌面端正在运行的会话数量 */
-  GetDesktopSessionActivity: "zcode:get-desktop-session-activity",
+  GetDesktopSessionActivity: "raspberrycode:get-desktop-session-activity",
   /** Renderer → Main：读取当前窗口页面缩放档位 */
-  GetDesktopZoomLevel: "zcode:get-desktop-zoom-level",
+  GetDesktopZoomLevel: "raspberrycode:get-desktop-zoom-level",
   /** Main → Renderer：当前窗口页面缩放档位变化 */
-  DesktopZoomLevelChanged: "zcode:desktop-zoom-level-changed",
+  DesktopZoomLevelChanged: "raspberrycode:desktop-zoom-level-changed",
   /** Renderer → Main：读取开发态 stdio tap proxy 开关状态 */
-  GetZCodeStdioTapDevState: "zcode:get-zcode-stdio-tap-dev-state",
+  GetRaspberryCodeStdioTapDevState: "raspberrycode:get-raspberrycode-stdio-tap-dev-state",
   /** Main → Renderer：本地 setting.json 已由 main 进程更新 */
-  SettingsChanged: "zcode:settings-changed",
+  SettingsChanged: "raspberrycode:settings-changed",
   /** Main → Renderer：应用语言已切换 */
-  ApplicationLocaleChanged: "zcode:application-locale-changed",
+  ApplicationLocaleChanged: "raspberrycode:application-locale-changed",
   /** Renderer → Main：读取宿主系统语言 */
-  GetSystemLocale: "zcode:get-system-locale",
+  GetSystemLocale: "raspberrycode:get-system-locale",
   /** Renderer → Main：获取系统中已安装的编辑器/终端列表（含图标） */
-  GetInstalledEditors: "zcode:get-installed-editors",
+  GetInstalledEditors: "raspberrycode:get-installed-editors",
   /** Renderer → Main：按 bundle id 获取系统应用图标 */
-  GetApplicationIcon: "zcode:get-application-icon",
+  GetApplicationIcon: "raspberrycode:get-application-icon",
   /** Renderer → Main：用指定编辑器打开路径 */
-  OpenInEditor: "zcode:open-in-editor",
+  OpenInEditor: "raspberrycode:open-in-editor",
   /** Renderer → Main：执行桌面窗口级命令 */
-  ExecuteDesktopCommand: "zcode:execute-desktop-command",
+  ExecuteDesktopCommand: "raspberrycode:execute-desktop-command",
   /** Renderer → Main：同步应用菜单语言，用于重建原生菜单 */
-  SetApplicationLocale: "zcode:set-application-locale",
+  SetApplicationLocale: "raspberrycode:set-application-locale",
   /** Renderer → Main：同步标题栏亮暗色，用于原生窗口控制按钮配色 */
-  SetTitleBarTheme: "zcode:set-title-bar-theme",
+  SetTitleBarTheme: "raspberrycode:set-title-bar-theme",
   /** Renderer → Main：迁移旧版 Common MCP 配置 */
-  MigrateLegacyCommonMcp: "zcode:migrate-legacy-common-mcp",
   /** Renderer → Main：获取当前设备的稳定标识符（deviceMid） */
-  GetDeviceId: "zcode:get-device-id",
+  GetDeviceId: "raspberrycode:get-device-id",
 } as const;
 
 export type PlatformChannelName = (typeof PlatformChannels)[keyof typeof PlatformChannels];
@@ -454,7 +451,7 @@ export type PlatformChannelName = (typeof PlatformChannels)[keyof typeof Platfor
 /** Electron `<webview>` 的 `sendToHost` / `ipc-message` 频道，不经过 main process。 */
 export const EmbeddedBrowserWebviewChannels = {
   /** Guest 无法继续消费某方向的滚动时，把二维 delta 转交自由尺寸画布。 */
-  WheelBoundary: "zcode:embedded-browser-wheel-boundary",
+  WheelBoundary: "raspberrycode:embedded-browser-wheel-boundary",
 } as const;
 
 export interface EmbeddedBrowserWheelBoundaryPayload {
@@ -467,12 +464,12 @@ export interface EmbeddedBrowserWheelBoundaryPayload {
 // ============================================================================
 
 /**
- * Electron `<webview>`（partition=persist:zcode-coding-plan）的 `sendToHost` / `ipc-message` 频道。
- * 官网页通过 preload 注入的 window.zcodeBridge 调用，不经过 main process。
+ * Electron `<webview>`（partition=persist:raspberrycode-coding-plan）的 `sendToHost` / `ipc-message` 频道。
+ * 官网页通过 preload 注入的 window.raspberrycodeBridge 调用，不经过 main process。
  */
 export const CodingPlanWebviewChannels = {
   /** 官网页购买成功后通知 App 刷新 entitlements 并关闭 webview。 */
-  PurchaseComplete: "zcode:coding-plan-purchase-complete",
+  PurchaseComplete: "raspberrycode:coding-plan-purchase-complete",
 } as const;
 
 /**
@@ -481,7 +478,7 @@ export const CodingPlanWebviewChannels = {
  */
 export const PluginSandboxChannels = {
   /** main → guest：{ sandboxId, initId, names } + port1[]，shell 据此建立宿主端口 */
-  Init: "zcode:plugin-sandbox-init",
+  Init: "raspberrycode:plugin-sandbox-init",
 } as const;
 
 /** 购买完成回传 payload。provider 与官网 CodingPlanProvider / auth-ready 事件 detail.provider 同构。 */
@@ -492,14 +489,14 @@ export interface CodingPlanPurchaseCompletePayload {
 }
 
 /**
- * 官网页 window.__zcodeLang__ 的取值，与 App IntlProvider 的 Locale 一致。
+ * 官网页 window.__raspberrycodeLang__ 的取值，与 App IntlProvider 的 Locale 一致。
  * App locale 变化时通过 executeJavaScript 重写此变量并派发 lang-change 事件。
  */
 export type CodingPlanWebviewLocale = "zh-CN" | "en-US";
 
 /**
  * 官网页 lang-change 事件 detail。App 用 executeJavaScript 在 main world 派发
- * `zcode-coding-plan-lang-change` CustomEvent，website 侧（zcodeBridge.onLangChange 或
+ * `raspberrycode-coding-plan-lang-change` CustomEvent，website 侧（raspberrycodeBridge.onLangChange 或
  * 直接 window.addEventListener）订阅后切换 copy。
  */
 export interface CodingPlanWebviewLangChangeDetail {
@@ -511,26 +508,26 @@ export interface CodingPlanWebviewLangChangeDetail {
 // ============================================================================
 /** 内部传输频道。用于 MessagePort 转发等框架级通信。 */
 export const InternalChannels = {
-  DatabaseStartupState: "zcode:database-startup-state",
-  DatabaseStartupControl: "zcode:database-startup-control",
+  DatabaseStartupState: "raspberrycode:database-startup-state",
+  DatabaseStartupControl: "raspberrycode:database-startup-control",
   /** main → renderer 转发 MessagePort（通过 webContents.postMessage） */
-  ServicePort: "zcode:service-port",
+  ServicePort: "raspberrycode:service-port",
   /** main → renderer 转发窗口 Host 的 scoped MessagePort */
-  ScopedServicePort: "zcode:scoped-service-port",
+  ScopedServicePort: "raspberrycode:scoped-service-port",
   /** renderer → main：scoped MessagePort 已注册，可安全切换 attachment */
-  ScopedServicePortReady: "zcode:scoped-service-port-ready",
+  ScopedServicePortReady: "raspberrycode:scoped-service-port-ready",
   /** main → renderer：在线 Source 的配置专用 MessagePort */
-  SourceSettingsServicePort: "zcode:source-settings-service-port",
+  SourceSettingsServicePort: "raspberrycode:source-settings-service-port",
   /** preload → renderer：主进程已确认系统通知展示，renderer 可播放提示音 */
-  TaskNotificationSound: "zcode:task-notification-sound",
+  TaskNotificationSound: "raspberrycode:task-notification-sound",
   /** main → 宿主 renderer：插件 UI 沙箱的 MessagePort 组（port2[]），payload { sandboxId, initId, names } */
-  PluginSandboxPorts: "zcode:plugin-sandbox-ports",
+  PluginSandboxPorts: "raspberrycode:plugin-sandbox-ports",
 } as const;
 
 /** @deprecated `/ws` 已忽略该头；保留常量仅供旧客户端兼容。 */
-export const ZCODE_RPC_CLIENT_MODE_HEADER = "x-zcode-rpc-client-mode";
+export const RASPBERRYCODE_RPC_CLIENT_MODE_HEADER = "x-raspberrycode-rpc-client-mode";
 /** desktop 先经受保护 HTTP endpoint 申请，再在 `/ws/host` 握手时一次性消费。 */
-export const ZCODE_RPC_HOST_CAPABILITY_HEADER = "x-zcode-rpc-host-capability";
+export const RASPBERRYCODE_RPC_HOST_CAPABILITY_HEADER = "x-raspberrycode-rpc-host-capability";
 
 // ============================================================================
 // 进程间消息类型 —— main ↔ host process 之间的 postMessage
@@ -810,10 +807,6 @@ export interface PlatformChannelMap {
   [PlatformChannels.SaveMcpToUserDirectory]: {
     request: SaveCliMcpToUserDirectoryRequest;
     response: { success: boolean; error?: string };
-  };
-  [PlatformChannels.MigrateLegacyCommonMcp]: {
-    request: MigrateLegacyCommonMcpRequest;
-    response: MigrateLegacyCommonMcpResult;
   };
   [PlatformChannels.Log]: {
     request: { level: "info" | "warn" | "error"; args: unknown[] };

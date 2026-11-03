@@ -1,4 +1,4 @@
-import type { UsageQuotaLimit, UsageQuotaUsageDetail } from "@zcode/shared";
+import type { UsageQuotaLimit, UsageQuotaUsageDetail } from "@raspberrycode/shared";
 
 export interface MeteredUsageQuotaEnvelope {
   code?: number;

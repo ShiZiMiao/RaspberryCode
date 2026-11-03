@@ -1,9 +1,9 @@
 import { Blocks, CalendarClock } from "lucide-react";
-import { TID_AUTOMATIONS_OPEN } from "@zcode/shared/test-ids";
+import { TID_AUTOMATIONS_OPEN } from "@raspberrycode/shared/test-ids";
 import type { ProjectSidebarProps } from "@/project-sidebar/contract.js";
 import { Button } from "@/components/ui/button.js";
 import { NewTaskButtonGroup } from "@/NewTaskButtonGroup.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 
 /** 顶部导航只展示 Shell 的选中状态，路由仍由 Shell 唯一持有。 */
 export function ProjectSidebarNavigation({
@@ -16,7 +16,7 @@ export function ProjectSidebarNavigation({
   >;
   onCreate(): void;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   return (
     <div data-testid="sidebar-primary-navigation" className="flex flex-col gap-1 px-2 py-3">
       <NewTaskButtonGroup onCreateTask={onCreate} />

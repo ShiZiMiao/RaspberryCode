@@ -7,7 +7,7 @@ import {
   createGlobalNoticeStore,
   type GlobalNoticeStorage,
 } from "@/global-notice/globalNoticeStore.js";
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+import { RaspberryCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import { SidebarBottomActivity } from "@/sidebar-activity/SidebarBottomActivity.js";
 
 // 营销触达已整体移除：本组件只剩 highspeed 全局通知槽位。
@@ -55,7 +55,7 @@ type GlobalNoticeStore = ReturnType<typeof createGlobalNoticeStore>;
 function renderActivity(noticeStore: GlobalNoticeStore) {
   return render(
     createElement(
-      ZCodeIntlProvider,
+      RaspberryCodeIntlProvider,
       { initialLocale: "zh-CN" },
       createElement(SidebarBottomActivity, { noticeStore }),
     ),

@@ -1,12 +1,12 @@
 import {
-  isZCodeAgentProvider,
-  zcodeProviderAccountAccessSchema,
-  type ZCodeProviderAccountAccess,
-  type ZCodeProvider,
-} from "@zcode/shared";
-import type { ModelSelectionView } from "@zcode/services";
+  isRaspberryCodeAgentProvider,
+  raspberrycodeProviderAccountAccessSchema,
+  type RaspberryCodeProviderAccountAccess,
+  type RaspberryCodeProvider,
+} from "@raspberrycode/shared";
+import type { ModelSelectionView } from "@raspberrycode/services";
 import type { ModelSelectGroup } from "@/ModelConfigSelect.js";
-import { decodeCustomModelValue, encodeCustomModelValue } from "@/lib/zcodeCustomModelValue.js";
+import { decodeCustomModelValue, encodeCustomModelValue } from "@/lib/raspberrycodeCustomModelValue.js";
 import { shouldShowModelVisionBadge } from "@/lib/modelVisionBadge.js";
 
 export interface ModelProviderGroupLabelOptions {
@@ -21,16 +21,16 @@ export interface ModelProviderGroupLabelOptions {
 }
 
 function supportsRegistryApiFormat(
-  selectedProvider: ZCodeProvider,
+  selectedProvider: RaspberryCodeProvider,
   apiFormat: string | null | undefined,
 ): boolean {
   if (!apiFormat) return false;
   // 仅剩 glm（RaspberryCode Agent）provider；三方 CLI 的 api format 差异已随 provider 下线。
-  return isZCodeAgentProvider(selectedProvider);
+  return isRaspberryCodeAgentProvider(selectedProvider);
 }
 
 export function buildRegistryModelSelectGroups(
-  selectedProvider: ZCodeProvider,
+  selectedProvider: RaspberryCodeProvider,
   view: ModelSelectionView,
   labels: ModelProviderGroupLabelOptions = {},
 ): ModelSelectGroup[] {
@@ -39,7 +39,7 @@ export function buildRegistryModelSelectGroups(
       return [];
     }
 
-    const accountAccess = zcodeProviderAccountAccessSchema.safeParse(provider.config.access);
+    const accountAccess = raspberrycodeProviderAccountAccessSchema.safeParse(provider.config.access);
     const accountPresentation = accountAccess.success
       ? getRegistryAccountProviderGroupPresentation(provider.providerId, accountAccess.data, labels)
       : null;
@@ -80,7 +80,7 @@ export function buildRegistryModelSelectGroups(
 
 function getRegistryAccountProviderGroupPresentation(
   providerId: string,
-  access: ZCodeProviderAccountAccess,
+  access: RaspberryCodeProviderAccountAccess,
   labels: ModelProviderGroupLabelOptions,
 ): Pick<ModelSelectGroup, "label" | "labelBadge"> {
   const label = providerId;

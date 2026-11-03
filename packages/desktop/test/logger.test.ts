@@ -6,20 +6,20 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 describe("desktop main logger", () => {
   afterEach(async () => {
     vi.restoreAllMocks();
-    const services = await import("@zcode/services/node");
+    const services = await import("@raspberrycode/services/node");
     services.resetProcessFsFaultInjectorForTests();
     services.setDataBaseDir(null);
     vi.resetModules();
   });
 
   it("swallows injected append faults for main log files", async () => {
-    const tempRoot = await mkdtemp(join(tmpdir(), "zcode-desktop-log-fault-"));
+    const tempRoot = await mkdtemp(join(tmpdir(), "raspberrycode-desktop-log-fault-"));
     vi.spyOn(console, "log").mockImplementation(() => undefined);
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
     try {
       vi.resetModules();
-      const services = await import("@zcode/services/node");
+      const services = await import("@raspberrycode/services/node");
       services.setDataBaseDir(tempRoot);
       services.setFsFaultInjectorForTests(
         services.createFsFaultInjector([

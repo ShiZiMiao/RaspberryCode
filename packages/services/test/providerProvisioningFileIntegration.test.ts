@@ -13,13 +13,13 @@ import {
   type ModelSelection,
   type ModelSelectionValidation,
   type ProviderConfigLayerUpdate,
-} from "@zcode/provider";
+} from "@raspberrycode/provider";
 import {
   NodePersonalProviderConfigRepository,
   NodeModelSelectionConfigRepository,
   encodeProviderConfigFile,
-} from "@zcode/provider-node";
-import { providerProvisioningEnvelopeSchema } from "@zcode/shared";
+} from "@raspberrycode/provider-node";
+import { providerProvisioningEnvelopeSchema } from "@raspberrycode/shared";
 import { createProviderProvisioningSource } from "../src/model-provider/providerProvisioningSource.js";
 import { createProviderProvisioningTarget } from "../src/model-provider/providerProvisioningTarget.js";
 

@@ -1,17 +1,17 @@
-import type { ZCodeProvider, SkillsPromptContext, SkillsListResult } from "@zcode/shared";
-import { ServiceChannels } from "@zcode/shared";
+import type { RaspberryCodeProvider, SkillsPromptContext, SkillsListResult } from "@raspberrycode/shared";
+import { ServiceChannels } from "@raspberrycode/shared";
 import { createServiceDescriptor } from "../descriptors.js";
 
 export interface ISkillsService {
   list(params: {
     workspacePath: string;
     workspaceIdentity?: string;
-    provider?: ZCodeProvider;
+    provider?: RaspberryCodeProvider;
   }): Promise<SkillsListResult>;
   setEnabled(params: {
     workspacePath: string;
     workspaceIdentity?: string;
-    provider?: ZCodeProvider;
+    provider?: RaspberryCodeProvider;
     scope?: "workspace" | "user" | "plugin";
     skillId: string;
     enabled: boolean;
@@ -19,7 +19,7 @@ export interface ISkillsService {
   buildPromptContext(params: {
     workspacePath: string;
     workspaceIdentity?: string;
-    provider?: ZCodeProvider;
+    provider?: RaspberryCodeProvider;
     prompt: string;
   }): Promise<SkillsPromptContext>;
   /** 将指定 skill 复制到通用目录（.raspberrycode/skills），成功后返回新 skill 的路径。 */

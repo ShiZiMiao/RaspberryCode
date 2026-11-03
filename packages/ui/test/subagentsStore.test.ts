@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AgentSummary } from "@zcode/shared";
-import type { ISubagentsService } from "@zcode/services";
+import type { AgentSummary } from "@raspberrycode/shared";
+import type { ISubagentsService } from "@raspberrycode/services";
 import { getSubagentsContextKey, useSubagentsContextStore } from "@/store/subagentsContextStore.js";
 import {
   refreshLoadedSubagentsStoreForWorkspace,

@@ -38,7 +38,7 @@ describe("用户连接日志路径边界", () => {
   });
 
   it.each([
-    "/home/dev/.zcode/server",
+    "/home/dev/.raspberrycode/server",
     "~/server",
     "C:\\Users\\dev\\server",
     "\\\\host\\share\\server",

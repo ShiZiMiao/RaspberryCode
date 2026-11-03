@@ -6,8 +6,8 @@ import {
 } from "node:fs";
 import { dirname, join } from "node:path";
 
-import { createUuid } from "@zcode/shared";
-import { getAppConfigDir } from "@zcode/services/node";
+import { createUuid } from "@raspberrycode/shared";
+import { getAppConfigDir } from "@raspberrycode/services/node";
 
 export interface EnsureDesktopDeviceMidSyncOptions {
   /** state 文件所在目录，默认 getAppConfigDir()（即 ~/.raspberrycode/v2）。仅测试注入 */

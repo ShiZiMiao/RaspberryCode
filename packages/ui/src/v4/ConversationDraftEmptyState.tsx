@@ -14,7 +14,7 @@ import {
 import brandMarkBlackUrl from "@/assets/brand-mark-black.svg";
 import brandMarkWhiteUrl from "@/assets/brand-mark-white.svg";
 import { cn } from "@/components/lib/utils.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { useIsOfficeMode } from "@/hooks/useInterfaceMode.js";
 import { logger } from "@/logger.js";
 
@@ -101,7 +101,7 @@ export function ConversationDraftEmptyState({
   className?: string;
   compactForOverlay?: boolean;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   const isOfficeMode = useIsOfficeMode();
   const [greetingDate, setGreetingDate] = useState(() => new Date());
   const [greetingFontSizePx, setGreetingFontSizePx] = useState(
@@ -214,7 +214,7 @@ export function ConversationDraftEmptyState({
           "-translate-x-1/2 -translate-y-1/2 text-foreground-subtlest",
         )}
       >
-        <ZCodeEmptyStateLogo className="h-full w-full" />
+        <RaspberryCodeEmptyStateLogo className="h-full w-full" />
       </div>
       <p
         ref={greetingContainerRef}
@@ -244,7 +244,7 @@ export function ConversationDraftEmptyState({
   );
 }
 
-function ZCodeEmptyStateLogo({ className }: { className?: string }) {
+function RaspberryCodeEmptyStateLogo({ className }: { className?: string }) {
   // Modified for RaspberryCode: 水印图形替换为 RaspberryCode 单色标记（原 RaspberryCode Z 形线框
   // 与夜间渐变资源），深浅主题各用一套单色资产，渐隐遮罩两套共用。
   const fadeMask = cn(

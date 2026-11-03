@@ -1,7 +1,7 @@
 import { createElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { TID_V4_COMPOSER_INPUT } from "@zcode/shared/test-ids";
+import { TID_V4_COMPOSER_INPUT } from "@raspberrycode/shared/test-ids";
 
 const captured = vi.hoisted(() => ({
   contentProps: null as Record<string, unknown> | null,
@@ -42,12 +42,12 @@ vi.mock("@/components/ui/dropdown-menu.js", () => {
 
 vi.mock("@/lib/pickerFocus.js", () => ({ isCoarseTouchDevice: () => false }));
 
-vi.mock("@/hooks/useZCodeConfig.js", () => ({
+vi.mock("@/hooks/useRaspberryCodeConfig.js", () => ({
   useToolbarConfigOptions: () => ({ configOptions: [] }),
 }));
 
 vi.mock("@/i18n/IntlProvider.js", () => ({
-  useZCodeIntl: () => ({
+  useRaspberryCodeIntl: () => ({
     intl: {
       formatMessage: ({ id }: { id: string }) => id,
     },
@@ -161,7 +161,7 @@ describe("V4ComposerModeSwitch", () => {
     expect(captured.planProps?.checked).toBe(true);
     expect(
       renderToStaticMarkup(createElement("div", null, captured.planProps?.children as ReactNode)),
-    ).toContain("mode.description.glm.plan");
+    ).toContain("mode.description.agent.plan");
     expect(html).toContain('data-testid="v4-composer-plan-marker"');
     const onCheckedChange = captured.planProps!.onCheckedChange as (checked: boolean) => void;
     onCheckedChange(false);

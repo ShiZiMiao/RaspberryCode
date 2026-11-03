@@ -7,8 +7,8 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
-import type { ZCodeElicitationQuestion, ZCodeElicitationRequest } from "@zcode/shared";
-import type { InteractionAutoResolution } from "@zcode/shared/zcode-protocol-v4";
+import type { RaspberryCodeElicitationQuestion, RaspberryCodeElicitationRequest } from "@raspberrycode/shared";
+import type { InteractionAutoResolution } from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import { CheckIcon, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge.js";
 import { Button } from "@/components/ui/button.js";
@@ -16,11 +16,11 @@ import { cn } from "@/components/lib/utils.js";
 import { Textarea } from "@/components/ui/textarea.js";
 import { InteractionRequestOriginBadge } from "@/InteractionRequestOriginBadge.js";
 import { isImeComposingKeyEvent } from "@/lib/imeComposition.js";
-import type { ElicitationFormDraft } from "@/store/zcodeSessionStoreTypes.js";
-import { useZCodeIntl } from "./i18n/IntlProvider.js";
+import type { ElicitationFormDraft } from "@/store/raspberrycodeSessionStoreTypes.js";
+import { useRaspberryCodeIntl } from "./i18n/IntlProvider.js";
 
 interface ElicitationDialogProps {
-  request: ZCodeElicitationRequest;
+  request: RaspberryCodeElicitationRequest;
   autoResolution?: InteractionAutoResolution;
   onRespond: (
     requestId: string,
@@ -102,7 +102,7 @@ function useElicitationCountdownSeconds(autoResolution: InteractionAutoResolutio
   return getElicitationCountdownSeconds(autoResolution, clockNow);
 }
 
-export interface NormalizedElicitationQuestion extends ZCodeElicitationQuestion {
+export interface NormalizedElicitationQuestion extends RaspberryCodeElicitationQuestion {
   key: string;
 }
 
@@ -162,7 +162,7 @@ export function resolveElicitationCustomInputKeyAction(event: {
 }
 
 export function normalizeElicitationQuestions(
-  request: ZCodeElicitationRequest,
+  request: RaspberryCodeElicitationRequest,
 ): NormalizedElicitationQuestion[] {
   const sourceQuestions =
     request.questions && request.questions.length > 0
@@ -193,7 +193,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isPlanApprovalElicitationRequest(request: ZCodeElicitationRequest): boolean {
+function isPlanApprovalElicitationRequest(request: RaspberryCodeElicitationRequest): boolean {
   const schema = request.schema;
   return (
     isRecord(schema) && schema.interaction === "plan_approval" && schema.toolName === "ExitPlanMode"
@@ -202,7 +202,7 @@ function isPlanApprovalElicitationRequest(request: ZCodeElicitationRequest): boo
 
 export function createInitialElicitationDrafts(
   questions: readonly NormalizedElicitationQuestion[],
-  request: ZCodeElicitationRequest,
+  request: RaspberryCodeElicitationRequest,
 ): DraftState {
   return Object.fromEntries(
     questions.map((question, index) => {
@@ -217,7 +217,7 @@ export function createInitialElicitationDrafts(
 }
 
 function normalizeInitialQuestionIndex(
-  request: ZCodeElicitationRequest,
+  request: RaspberryCodeElicitationRequest,
   questions: readonly NormalizedElicitationQuestion[],
 ) {
   if (questions.length === 0) {
@@ -348,7 +348,7 @@ function ElicitationDialogContent({
   initialFormDraft,
   onFormDraftChange,
 }: ElicitationDialogProps) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   const questions = useMemo(() => normalizeElicitationQuestions(request), [request]);
   const [questionIndex, setQuestionIndex] = useState(
     () => initialFormDraft?.questionIndex ?? normalizeInitialQuestionIndex(request, questions),

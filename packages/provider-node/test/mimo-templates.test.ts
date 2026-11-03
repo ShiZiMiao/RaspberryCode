@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { compileModelOptionMaps } from "@zcode/model-option-map";
+import { compileModelOptionMaps } from "@raspberrycode/model-option-map";
 import {
   ApiKeyAccessConfig,
   ModelConfig,
@@ -9,8 +9,8 @@ import {
   ProviderConfig,
   ProviderConfigMap,
   ProviderConfigResolver,
-} from "@zcode/provider";
-import { NodeZCodeBuiltinProviderConfigSource } from "@zcode/provider-node";
+} from "@raspberrycode/provider";
+import { NodeRaspberryCodeBuiltinProviderConfigSource } from "@raspberrycode/provider-node";
 
 const currentModelIds = ["mimo-v2.6-pro", "mimo-v2.6-flash"];
 const apiModelIds = [...currentModelIds, "mimo-v2.5-pro", "mimo-v2.5"];
@@ -25,10 +25,10 @@ const templates = [
 ] as const;
 
 describe("MiMo API 与 Token Plan 官方模板", () => {
-  it.each(["zcode-builtin.json", "zcode-builtin.test.json"])(
+  it.each(["raspberrycode-builtin.json", "raspberrycode-builtin.test.json"])(
     "%s 两模板复用模型规则，个人地址与旧身份不变",
     async (filename) => {
-      const source = new NodeZCodeBuiltinProviderConfigSource({
+      const source = new NodeRaspberryCodeBuiltinProviderConfigSource({
         bundledFilePath: fileURLToPath(
           new URL(`../../../config/provider/${filename}`, import.meta.url),
         ),
@@ -115,11 +115,11 @@ describe("MiMo API 与 Token Plan 官方模板", () => {
         ]);
         const before = personal.toJSON();
         const resolution = new ProviderConfigResolver().resolve({
-          zcodeBuiltinProviders: ProviderConfigMap.empty(),
-          zcodeBuiltinProviderTemplates: snapshot.providerTemplates,
+          raspberrycodeBuiltinProviders: ProviderConfigMap.empty(),
+          raspberrycodeBuiltinProviderTemplates: snapshot.providerTemplates,
           accountProviders: ProviderConfigMap.empty(),
           personalProviders: personal,
-          zcodeBuiltinModelRules: snapshot.models,
+          raspberrycodeBuiltinModelRules: snapshot.models,
           personalModels: new ModelConfigRules([
             {
               type: "provider-model",

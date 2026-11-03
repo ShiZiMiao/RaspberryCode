@@ -4,7 +4,7 @@ import { readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { createRequire } from "node:module";
-import { HELPER_APP_NAME } from "@zcode/zcode-cua/broker/helperConstants";
+import { HELPER_APP_NAME } from "@raspberrycode/raspberrycode-cua/broker/helperConstants";
 import { runCommand, runCommandAndReadStdout } from "../../scripts/spawn-command.mjs";
 import { loadBuiltinProviderConfig } from "../../scripts/builtin-provider-config.mjs";
 import { noticesFileName, stageElectronNotices } from "../../scripts/third-party-notices.mjs";
@@ -45,11 +45,11 @@ const targetPlatform = getTargetPlatform();
 // 修复原因：Windows Chrome 导入入口已暂时隐藏，默认安装包不应继续携带、签名或校验原生 helper。
 // 代码和完整供应链保留在显式 opt-in 后，便于未来恢复而不影响当前发布流程。
 const shouldPackageWindowsBrowserImportHelper =
-  targetPlatform.os === "win32" && process.env.ZCODE_ENABLE_WINDOWS_BROWSER_IMPORT === "1";
+  targetPlatform.os === "win32" && process.env.RASPBERRYCODE_ENABLE_WINDOWS_BROWSER_IMPORT === "1";
 const builtinProviderConfig = await loadBuiltinProviderConfig();
 const desktopProductIdentity = resolveDesktopProductIdentity({
   ...process.env,
-  ZCODE_ENV: builtinProviderConfig.environment,
+  RASPBERRYCODE_ENV: builtinProviderConfig.environment,
 });
 const nativeSearchReleasePlan = resolveNativeSearchReleasePlan({
   platform: targetPlatform.os,
@@ -59,19 +59,19 @@ const rawMacSigningIdentity = process.env.APPLE_SIGNING_IDENTITY || process.env.
 const macSigningIdentity =
   rawMacSigningIdentity?.replace(/^Developer ID Application:\s*/, "") ?? null;
 const shouldEnableMacSigning =
-  process.env.ZCODE_ENABLE_MAC_SIGN === "1" && Boolean(macSigningIdentity);
+  process.env.RASPBERRYCODE_ENABLE_MAC_SIGN === "1" && Boolean(macSigningIdentity);
 const workspaceRoot = resolve(import.meta.dirname, "../..");
 const desktopPackageRoot = import.meta.dirname;
 // Computer Use Helper（macOS .app、Windows runtime）只随真实 producer 打包；开源占位包下跳过随包资源与校验。
 const shouldPackageComputerUseHelper = isRealComputerUseProducerInstalled({ desktopPackageRoot });
-const HELPER_FILENAME = "zcode-browser-import-helper.exe";
+const HELPER_FILENAME = "raspberrycode-browser-import-helper.exe";
 const runtimeModuleLookupRoots = [
   desktopPackageRoot,
   workspaceRoot,
   resolve(desktopPackageRoot, "node_modules", ".pnpm", "node_modules"),
   resolve(workspaceRoot, "node_modules", ".pnpm", "node_modules"),
 ];
-const desktopDistDir = process.env.ZCODE_DESKTOP_DIST_DIR || "dist";
+const desktopDistDir = process.env.RASPBERRYCODE_DESKTOP_DIST_DIR || "dist";
 const bundledCuaHelperSource = resolve(
   desktopPackageRoot,
   "bundled-cua-helper",
@@ -111,7 +111,7 @@ const REQUIRED_ASAR_RUNTIME_MODULES = [
   // 线上已出现安装包启动即报 Cannot find module '@babel/runtime/helpers/interopRequireDefault'，
   // 这里显式把 @babel/runtime 作为闭包根注入，确保 ARMS 主进程埋点链路在生产包内可解析。
   "@babel/runtime",
-  // Bugfix: @zcode/services 的代理连通性探测会动态 require("undici") 取 ProxyAgent。
+  // Bugfix: @raspberrycode/services 的代理连通性探测会动态 require("undici") 取 ProxyAgent。
   // tsup 虽然把 services 代码并进了主/host 产物，但不会把这个运行时 require 的包内联进去，
   // electron-builder 产物又可能漏掉 hoisted 的 undici，最终 mac 安装包启动即报 Cannot find module "undici"。
   // 这里把 undici 和其他兜底依赖一样强制注入 app.asar，避免用户在已安装应用里主进程直接崩溃。
@@ -159,7 +159,7 @@ const PACMAN_RUNTIME_DEPENDENCIES = [
   "xdg-utils",
 ];
 
-const WINDOWS_INSTALL_MANIFEST_NAME = ".zcode-install-manifest";
+const WINDOWS_INSTALL_MANIFEST_NAME = ".raspberrycode-install-manifest";
 
 async function writeWindowsInstallManifest(context) {
   if (context.electronPlatformName !== "win32") return;
@@ -185,7 +185,7 @@ async function writeWindowsInstallManifest(context) {
 
 function resolveElectronDownloadMirror(env = process.env) {
   const existingMirror =
-    env.ZCODE_ELECTRON_RUNTIME_MIRROR ||
+    env.RASPBERRYCODE_ELECTRON_RUNTIME_MIRROR ||
     env.NPM_CONFIG_ELECTRON_MIRROR ||
     env.npm_config_electron_mirror ||
     env.npm_package_config_electron_mirror ||
@@ -212,15 +212,15 @@ function assertPackagedCuaHelper(context) {
   }
 }
 const shouldEnableWindowsVsign =
-  process.platform === "win32" && process.env.ZCODE_ENABLE_WINDOWS_SIGN === "1";
+  process.platform === "win32" && process.env.RASPBERRYCODE_ENABLE_WINDOWS_SIGN === "1";
 
 // Windows 本机打包时，Go app-builder 的 rcedit 前置会反复下载 winCodeSign，解压 darwin
-// 符号链接因无开发者模式特权而报错，整包中断。设 ZCODE_SKIP_BUILTIN_RCEDIT=1 时跳过内置
+// 符号链接因无开发者模式特权而报错，整包中断。设 RASPBERRYCODE_SKIP_BUILTIN_RCEDIT=1 时跳过内置
 // 资源编辑（win.signAndEditExecutable=false），改在 afterPack 用 electron-builder 缓存中
 // 已解压的 rcedit-x64.exe 设置可执行文件元数据与图标，保证安装包用户可见身份不残留
 // Electron 默认值。CI/正常打包机不设该变量，走原生编辑链路。
 const shouldSkipBuiltinRcedit =
-  targetPlatform.os === "win32" && process.env.ZCODE_SKIP_BUILTIN_RCEDIT === "1";
+  targetPlatform.os === "win32" && process.env.RASPBERRYCODE_SKIP_BUILTIN_RCEDIT === "1";
 
 function findCachedRcedit() {
   const localAppData =
@@ -289,11 +289,11 @@ const desktopArtifactEnvSuffix = resolveDesktopArtifactSuffix(process.env);
 // 避免“产物存在”被误认为已经走完和生产版相同的签名链路。
 if (
   desktopProductIdentity.flavor === "preview" &&
-  process.env.ZCODE_ENABLE_MAC_SIGN === "1" &&
+  process.env.RASPBERRYCODE_ENABLE_MAC_SIGN === "1" &&
   !macSigningIdentity
 ) {
   throw new Error(
-    "RaspberryCode Preview macOS packaging requires APPLE_SIGNING_IDENTITY or CSC_NAME when ZCODE_ENABLE_MAC_SIGN=1",
+    "RaspberryCode Preview macOS packaging requires APPLE_SIGNING_IDENTITY or CSC_NAME when RASPBERRYCODE_ENABLE_MAC_SIGN=1",
   );
 }
 
@@ -437,7 +437,7 @@ async function injectHoistedRuntimeModulesIntoAsar(context) {
   // CI 会把 TMPDIR 指到项目内 .tmp，GitLab get_sources/clean 可能在脚本启动前清掉该目录。
   // afterPack 里重写 app.asar 同样依赖 mkdtempSync，必须自己兜底创建父目录，避免后续签名阶段只看到 .app 消失。
   mkdirSync(tmpdir(), { recursive: true });
-  const stagingDir = mkdtempSync(resolve(tmpdir(), "zcode-app-asar-"));
+  const stagingDir = mkdtempSync(resolve(tmpdir(), "raspberrycode-app-asar-"));
   try {
     runTimedSync("afterPack:asar-extract", () =>
       runAsarCommand(["extract", appAsarPath, stagingDir]),
@@ -539,11 +539,11 @@ function assertPackagedCuaSharp(context) {
       }),
     ],
     [
-      "packages/zcode-cua-plugin",
+      "packages/raspberrycode-cua-plugin",
       verifyStagedSharp({
         resourcesDir: resolvePackagedResourcesDir(context),
         targetPlatform,
-        pluginRelativePath: "packages/zcode-cua-plugin",
+        pluginRelativePath: "packages/raspberrycode-cua-plugin",
       }),
     ],
   ].flatMap(([pluginPath, pluginProblems]) =>
@@ -581,8 +581,8 @@ function assertSignedWindowsBrowserImportHelper(context) {
     `${context.packager.appInfo.productFilename}.exe`,
   );
   const script = [
-    "$helper=Microsoft.PowerShell.Security\\Get-AuthenticodeSignature -LiteralPath $zcodeArg0;",
-    "$app=Microsoft.PowerShell.Security\\Get-AuthenticodeSignature -LiteralPath $zcodeArg1;",
+    "$helper=Microsoft.PowerShell.Security\\Get-AuthenticodeSignature -LiteralPath $raspberrycodeArg0;",
+    "$app=Microsoft.PowerShell.Security\\Get-AuthenticodeSignature -LiteralPath $raspberrycodeArg1;",
     "if($helper.Status -ne 'Valid' -or $app.Status -ne 'Valid'){",
     "[Console]::Error.WriteLine(('Authenticode status invalid: helper={0} ({1}); app={2} ({3})' -f $helper.Status,$helper.StatusMessage,$app.Status,$app.StatusMessage));",
     "exit 23};",
@@ -630,7 +630,7 @@ export default {
   // CI 环境下若这些字段缺失会在产物阶段直接失败。这里统一在构建配置补齐，避免依赖外部注入。
   extraMetadata: {
     version: buildMetadata.appVersion,
-    zcodeProductFlavor: desktopProductIdentity.flavor,
+    raspberrycodeProductFlavor: desktopProductIdentity.flavor,
     // Modified for RaspberryCode: 发行元数据指向自有仓库与维护者。
     homepage: "https://github.com/ShiZiMiao/RaspberryCode",
     author: {
@@ -671,7 +671,7 @@ export default {
     // 默认也会原样进入安装包。这里统一在主包层做一次裁剪，只移除非运行时文件，LICENSE 继续保留。
     ...PACKAGING_PRUNE_PATTERNS,
     ...createDesktopNativePackagePrunePatterns(targetPlatform.key),
-    "!node_modules/@zcode/**",
+    "!node_modules/@raspberrycode/**",
     "!node_modules/react/**",
     "!node_modules/react-dom/**",
   ],
@@ -791,8 +791,8 @@ export default {
             // CUA 权限浮窗的吸附数据源（CGWindowListCopyWindowInfo，不需要任何 TCC 权限）。
             // 主进程按 process.resourcesPath 解析；缺失时 watcher fail-open，浮窗仍可用
             // 只是不吸附，所以这里不做存在性断言。
-            from: "resources/macos-window-bounds/zcode-window-bounds",
-            to: "macos-window-bounds/zcode-window-bounds",
+            from: "resources/macos-window-bounds/raspberrycode-window-bounds",
+            to: "macos-window-bounds/raspberrycode-window-bounds",
           },
         ]
       : []),
@@ -806,7 +806,7 @@ export default {
       // Provider Registry 的 RaspberryCode Built-in Config 是静态 Provider/Model 事实的唯一内置来源。
       // 显式随包发布，避免正式 Host 回退到旧 Catalog/Preset hardcode。
       from: builtinProviderConfig.sourcePath,
-      to: "config/provider/zcode-builtin.json",
+      to: "config/provider/raspberrycode-builtin.json",
     },
     {
       // 应用图标：打包后放入 resources 目录，主进程通过 process.resourcesPath 加载
@@ -860,8 +860,8 @@ export default {
       : []),
     {
       // agent 运行时资产，打包到 resources/agent。
-      // 桌面端内置的是 agent 的 JS bundle（agent/zcode.cjs，由 prepare:agent-bundle 生成），
-      // Host 进程用 app 自带的 Electron Node runtime（ELECTRON_RUN_AS_NODE）执行 `zcode.cjs app-server --stdio`，
+      // 桌面端内置的是 agent 的 JS bundle（agent/raspberrycode.cjs，由 prepare:agent-bundle 生成），
+      // Host 进程用 app 自带的 Electron Node runtime（ELECTRON_RUN_AS_NODE）执行 `raspberrycode.cjs app-server --stdio`，
       // 不再随包内置独立 Node 二进制。远端 SSH/WSL 仍走原生二进制（无 Electron）。
       from: `bundled-agents/${targetPlatform.key}/agent`,
       to: "agent",
@@ -888,9 +888,9 @@ export default {
   protocols: [
     {
       // 协议处理器的展示名之前使用小写 scheme，打包产物里的协议描述无法体现产品名。
-      // 展示名跟随安装包身份；scheme 仍保持 zcode，因此两个应用中最后注册者会成为默认 handler。
+      // 展示名跟随安装包身份；scheme 仍保持 raspberrycode，因此两个应用中最后注册者会成为默认 handler。
       name: desktopProductIdentity.productName,
-      schemes: ["zcode"],
+      schemes: ["raspberrycode"],
     },
   ],
   mac: {
@@ -906,7 +906,7 @@ export default {
     // 预签名脚本走的是原生 codesign，要求完整的 "Developer ID Application: ..." 身份串；
     // 但 electron-builder 的 mac.identity 在 26.x 下会拒绝带此前缀的名字。
     // 这里仅对 electron-builder 侧做前缀归一化，避免本地预签名和最终 .app 签名互相打架。
-    // z-code 之前只有本地未签名打包配置，CI 即使注入了证书变量，
+    // demo 之前只有本地未签名打包配置，CI 即使注入了证书变量，
     // electron-builder 也不会自动切到 hardened runtime / entitlement 这套发布参数。
     // 这里显式收拢到环境开关，保证本地开发不被签名配置绑死，CI 发布时再按需打开。
     identity: shouldEnableMacSigning ? macSigningIdentity : null,

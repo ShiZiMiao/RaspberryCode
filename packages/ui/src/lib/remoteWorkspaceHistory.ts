@@ -5,8 +5,8 @@ import type {
   RemoteTarget,
   RemoteTargetSnapshot,
   RemoteWorkspaceSessionEntry,
-} from "@zcode/shared";
-import { buildServerRemoteWorkspaceIdentity, parseRemoteWorkspaceIdentity } from "@zcode/shared";
+} from "@raspberrycode/shared";
+import { buildServerRemoteWorkspaceIdentity, parseRemoteWorkspaceIdentity } from "@raspberrycode/shared";
 import type { WindowTabState } from "@/store/tabStore.js";
 import { isWorkspaceTab } from "@/store/tabStore.js";
 

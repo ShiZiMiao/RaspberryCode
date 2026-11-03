@@ -3,8 +3,8 @@ import type {
   RemoteAssetInstallMode,
   RemoteTarget,
   SourceServerManagementSnapshot,
-} from "@zcode/shared";
-import { isValidWslUser, normalizeRemoteResourcePackageSelection } from "@zcode/shared";
+} from "@raspberrycode/shared";
+import { isValidWslUser, normalizeRemoteResourcePackageSelection } from "@raspberrycode/shared";
 import type { SSHAuthMethod } from "@/hooks/useRemoteConnectionForm.js";
 import type { RemoteWizardStep } from "@/RemoteConnectionWizardChrome.js";
 

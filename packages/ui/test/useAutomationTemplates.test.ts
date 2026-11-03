@@ -6,7 +6,7 @@ import type {
   ClientSceneConfig,
   ClientScenesResponse,
   IClientScenesService,
-} from "@zcode/services";
+} from "@raspberrycode/services";
 import { useAutomationTemplates } from "@/settings/useAutomationTemplates.js";
 
 const loggerWarn = vi.hoisted(() => vi.fn());
@@ -21,7 +21,7 @@ function scheduledResponse(id: string, title: string): ClientScenesResponse {
     msg: "success",
     data: [
       {
-        namespace: "zcode",
+        namespace: "raspberrycode",
         scene: "scheduled-task",
         options: {
           prompts: {

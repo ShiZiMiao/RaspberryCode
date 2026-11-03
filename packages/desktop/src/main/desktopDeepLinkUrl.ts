@@ -1,5 +1,5 @@
-const DEEP_LINK_SCHEME = "zcode";
-const DEEP_LINK_RE = /\bzcode:(?:\/\/|\/)?[^\s"'<>]+/i;
+const DEEP_LINK_SCHEME = "raspberrycode";
+const DEEP_LINK_RE = /\braspberrycode:(?:\/\/|\/)?[^\s"'<>]+/i;
 const OAUTH_CALLBACK_HOSTS = new Set(["oauth"]);
 const WORKSPACE_OPEN_HOST = "workspace";
 const DEEP_LINK_ADDITIONAL_DATA_KEY = "deepLinkUrl";

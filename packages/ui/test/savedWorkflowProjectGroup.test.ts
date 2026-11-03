@@ -15,13 +15,13 @@ import {
   TID_WORKFLOW_CARD_RUN,
   TID_WORKFLOW_DETAIL,
   TID_WORKFLOW_PROJECT_GROUP,
-  type ZCodeSavedWorkflowEntry,
-  type ZCodeSavedWorkflowRun,
-  type ZCodeWorkflowsListResult,
-} from "@zcode/shared";
-import { testId } from "@zcode/shared/test-ids";
+  type RaspberryCodeSavedWorkflowEntry,
+  type RaspberryCodeSavedWorkflowRun,
+  type RaspberryCodeWorkflowsListResult,
+} from "@raspberrycode/shared";
+import { testId } from "@raspberrycode/shared/test-ids";
 import type { AutomationWorkspaceOption } from "@/settings/automationWorkspaceOptions.js";
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+import { RaspberryCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import { resetSavedWorkflowStoreForTests } from "@/store/savedWorkflowStore.js";
 
 const confirmMock = vi.fn(async () => true);
@@ -38,10 +38,10 @@ const fileWatcherService = {
 };
 
 function makeAgent() {
-  const listResult: { current: ZCodeWorkflowsListResult } = {
+  const listResult: { current: RaspberryCodeWorkflowsListResult } = {
     current: { workflows: [], invalid: [], dir: "/beta/.raspberrycode/workflows" },
   };
-  const runsResult: { current: ZCodeSavedWorkflowRun[] } = { current: [] };
+  const runsResult: { current: RaspberryCodeSavedWorkflowRun[] } = { current: [] };
   const agent = {
     listResult,
     runsResult,
@@ -65,7 +65,7 @@ const agentByPath: Record<string, ReturnType<typeof makeAgent>> = {
 
 vi.mock("@/hooks/useWorkspaceServices.js", () => ({
   useWorkspaceServicesResolution: (workspacePath: string) => ({
-    services: { zcodeAgentService: agentByPath[workspacePath] ?? agentRepo, fileWatcherService },
+    services: { raspberrycodeAgentService: agentByPath[workspacePath] ?? agentRepo, fileWatcherService },
     remoteSessionId: null,
     isRemoteTarget: false,
     connectionKind: "local-ready" as const,
@@ -107,13 +107,13 @@ vi.mock("@/settings/saved-workflows/SavedWorkflowCard.js", () => ({
     onMove,
     onDelete,
   }: {
-    entry: ZCodeSavedWorkflowEntry;
-    lastRun: ZCodeSavedWorkflowRun | undefined;
-    onOpen: (entry: ZCodeSavedWorkflowEntry) => void;
-    onRun: (entry: ZCodeSavedWorkflowEntry) => void;
-    onRevise: (entry: ZCodeSavedWorkflowEntry) => void;
-    onMove?: (entry: ZCodeSavedWorkflowEntry) => void;
-    onDelete: (entry: ZCodeSavedWorkflowEntry) => void;
+    entry: RaspberryCodeSavedWorkflowEntry;
+    lastRun: RaspberryCodeSavedWorkflowRun | undefined;
+    onOpen: (entry: RaspberryCodeSavedWorkflowEntry) => void;
+    onRun: (entry: RaspberryCodeSavedWorkflowEntry) => void;
+    onRevise: (entry: RaspberryCodeSavedWorkflowEntry) => void;
+    onMove?: (entry: RaspberryCodeSavedWorkflowEntry) => void;
+    onDelete: (entry: RaspberryCodeSavedWorkflowEntry) => void;
   }) =>
     createElement(
       "div",
@@ -181,8 +181,8 @@ const { SavedWorkflowProjectGroup } =
 
 function entry(
   name: string,
-  overrides: Partial<ZCodeSavedWorkflowEntry> = {},
-): ZCodeSavedWorkflowEntry {
+  overrides: Partial<RaspberryCodeSavedWorkflowEntry> = {},
+): RaspberryCodeSavedWorkflowEntry {
   return {
     name,
     description: `${name} 的说明`,
@@ -203,7 +203,7 @@ function mount(props: Partial<Parameters<typeof SavedWorkflowProjectGroup>[0]> =
   const onBack = vi.fn();
   const result = render(
     createElement(
-      ZCodeIntlProvider,
+      RaspberryCodeIntlProvider,
       { initialLocale: "zh-CN" },
       createElement(SavedWorkflowProjectGroup, {
         project: BETA,
@@ -339,7 +339,7 @@ describe("SavedWorkflowProjectGroup", () => {
 
     rerender(
       createElement(
-        ZCodeIntlProvider,
+        RaspberryCodeIntlProvider,
         { initialLocale: "zh-CN" },
         createElement(SavedWorkflowProjectGroup, {
           project: BETA,

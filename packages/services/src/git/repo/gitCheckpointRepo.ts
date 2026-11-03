@@ -5,7 +5,7 @@ import type {
   GitCheckpointDiff,
   GitCheckpointMeta,
   GitCheckpointRestoreResult,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import { getGitCheckpointIndexRootDir } from "../../paths.js";
 import { toWorkspaceRelativeGitPath } from "../config.js";
 import {
@@ -324,7 +324,7 @@ export function createGitCheckpointRepo(options?: {
             "commit-tree",
             treeResult.stdout.trim(),
             "-m",
-            `zcode checkpoint ${params.checkpointId}`,
+            `raspberrycode checkpoint ${params.checkpointId}`,
           ],
           env,
         });

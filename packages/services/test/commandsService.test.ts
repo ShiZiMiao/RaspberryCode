@@ -16,7 +16,7 @@ const originalHome = process.env.HOME;
 const tempRoots: string[] = [];
 
 function makeTempRoot(): string {
-  const root = mkdtempSync(join(tmpdir(), "zcode-commands-"));
+  const root = mkdtempSync(join(tmpdir(), "raspberrycode-commands-"));
   tempRoots.push(root);
   return root;
 }
@@ -32,7 +32,7 @@ function officialPluginRoot(
     "cli",
     "plugins",
     "cache",
-    "zcode-plugins-official",
+    "raspberrycode-plugins-official",
     pluginName,
     version,
   );
@@ -60,9 +60,9 @@ function writePluginManifest(
   pluginRoot: string,
   manifest: Record<string, unknown>,
 ): void {
-  mkdirSync(join(pluginRoot, ".zcode-plugin"), { recursive: true });
+  mkdirSync(join(pluginRoot, ".raspberrycode-plugin"), { recursive: true });
   writeFileSync(
-    join(pluginRoot, ".zcode-plugin", "plugin.json"),
+    join(pluginRoot, ".raspberrycode-plugin", "plugin.json"),
     JSON.stringify(manifest, null, 2),
     "utf-8",
   );
@@ -171,26 +171,26 @@ describe("commandsService", () => {
     expect(result.userCommands).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          agentSource: "zcodeAgent",
-          id: "zcodeAgent:zcode:global:/global",
+          agentSource: "raspberrycodeAgent",
+          id: "raspberrycodeAgent:raspberrycode:global:/global",
           name: "/global",
           scope: "global",
           description: "Global command",
           location: expect.objectContaining({
-            source: "zcode",
+            source: "raspberrycode",
             scope: "user",
             directoryPath: join(home, ".raspberrycode", "commands"),
           }),
         }),
         expect.objectContaining({
-          agentSource: "zcodeAgent",
-          id: "zcodeAgent:zcode:project:/ops/deploy",
+          agentSource: "raspberrycodeAgent",
+          id: "raspberrycodeAgent:raspberrycode:project:/ops/deploy",
           name: "/ops/deploy",
           scope: "project",
           projectPath: workspacePath,
           argumentHint: "<env>",
           location: expect.objectContaining({
-            source: "zcode",
+            source: "raspberrycode",
             scope: "project",
             directoryPath: join(workspacePath, ".raspberrycode", "commands"),
           }),
@@ -218,12 +218,12 @@ describe("commandsService", () => {
 
     expect(result.userCommands).toEqual([
       expect.objectContaining({
-        agentSource: "zcodeAgent",
-        id: "zcodeAgent:zcode:project:/project-only",
+        agentSource: "raspberrycodeAgent",
+        id: "raspberrycodeAgent:raspberrycode:project:/project-only",
         name: "/project-only",
         scope: "project",
         location: expect.objectContaining({
-          source: "zcode",
+          source: "raspberrycode",
           scope: "project",
           directoryPath: join(workspacePath, ".raspberrycode", "commands"),
         }),
@@ -231,7 +231,7 @@ describe("commandsService", () => {
     ]);
   });
 
-  it("reads .raspberrycode command directories first and skips .agents/.claude when zcode has commands", async () => {
+  it("reads .raspberrycode command directories first and skips .agents/.claude when raspberrycode has commands", async () => {
     const home = makeTempRoot();
     const workspacePath = join(makeTempRoot(), "workspace");
     mkdirSync(join(home, ".raspberrycode", "commands"), { recursive: true });
@@ -278,18 +278,18 @@ describe("commandsService", () => {
 
     const service = await createCommandsServiceInEnv(home);
     const all = await service.list({ workspacePath });
-    const zcodeOnly = await service.list({
-      agentSource: "zcodeAgent",
+    const raspberrycodeOnly = await service.list({
+      agentSource: "raspberrycodeAgent",
       workspacePath,
     });
 
     expect(all.userCommands.map((command) => command.id)).toEqual([
-      "zcodeAgent:zcode:project:/project",
-      "zcodeAgent:zcode:global:/review",
+      "raspberrycodeAgent:raspberrycode:project:/project",
+      "raspberrycodeAgent:raspberrycode:global:/review",
     ]);
-    expect(zcodeOnly.userCommands.map((command) => command.id)).toEqual([
-      "zcodeAgent:zcode:project:/project",
-      "zcodeAgent:zcode:global:/review",
+    expect(raspberrycodeOnly.userCommands.map((command) => command.id)).toEqual([
+      "raspberrycodeAgent:raspberrycode:project:/project",
+      "raspberrycodeAgent:raspberrycode:global:/review",
     ]);
   });
 
@@ -298,7 +298,7 @@ describe("commandsService", () => {
     const service = await createCommandsServiceInEnv(home);
 
     const created = await service.writeCommandFile({
-      agentSource: "zcodeAgent",
+      agentSource: "raspberrycodeAgent",
       config: {
         name: "ship-it",
         prompt: "Ship it",
@@ -306,17 +306,17 @@ describe("commandsService", () => {
       },
     });
     const directory = await service.getPrimaryUserCommandsDirectory({
-      agentSource: "zcodeAgent",
+      agentSource: "raspberrycodeAgent",
     });
 
     expect(directory.path).toBe(join(home, ".raspberrycode", "commands"));
     expect(created.command).toMatchObject({
-      agentSource: "zcodeAgent",
+      agentSource: "raspberrycodeAgent",
       filePath: join(home, ".raspberrycode", "commands", "ship-it.md"),
-      id: "zcodeAgent:zcode:global:/ship-it",
+      id: "raspberrycodeAgent:raspberrycode:global:/ship-it",
       name: "/ship-it",
       location: expect.objectContaining({
-        source: "zcode",
+        source: "raspberrycode",
         scope: "user",
         directoryPath: join(home, ".raspberrycode", "commands"),
       }),
@@ -344,7 +344,7 @@ describe("commandsService", () => {
     // 同一 scope 中 .raspberrycode 读到命令后，.agents 不再参与，即便包含不同命令名。
     writeFileSync(
       join(workspacePath, ".raspberrycode", "commands", "dup.md"),
-      "---\ndescription: from zcode\n---\n\nzcode body",
+      "---\ndescription: from raspberrycode\n---\n\nraspberrycode body",
       "utf-8",
     );
     writeFileSync(
@@ -365,7 +365,7 @@ describe("commandsService", () => {
       (command) => command.name === "/dup",
     );
     expect(dup).toHaveLength(1);
-    expect(dup[0]?.description).toBe("from zcode");
+    expect(dup[0]?.description).toBe("from raspberrycode");
     expect(result.userCommands.map((command) => command.name)).not.toContain(
       "/agents-only",
     );
@@ -387,7 +387,7 @@ describe("commandsService", () => {
 
     expect(result.userCommands).toEqual([
       expect.objectContaining({
-        id: "zcodeAgent:agents:project:/agents-only",
+        id: "raspberrycodeAgent:agents:project:/agents-only",
         name: "/agents-only",
         description: "agents only",
         location: expect.objectContaining({
@@ -423,7 +423,7 @@ describe("commandsService", () => {
     writeCliConfig(home, {
       plugins: {
         enabledPlugins: {
-          "ios-simulator@zcode-plugins-official": true,
+          "ios-simulator@raspberrycode-plugins-official": true,
         },
       },
     });
@@ -441,7 +441,7 @@ describe("commandsService", () => {
         enabled: true,
         name: "/ios/dev",
         pluginEnabled: true,
-        pluginMarketplace: "zcode-plugins-official",
+        pluginMarketplace: "raspberrycode-plugins-official",
         pluginName: "ios-simulator",
         source: "plugin",
       }),
@@ -484,7 +484,7 @@ describe("commandsService", () => {
     // document-skills 被卸载（suppressed），skill-creator 保持默认启用。
     writeCliConfig(home, {
       plugins: {
-        suppressedBuiltins: ["document-skills@zcode-plugins-official"],
+        suppressedBuiltins: ["document-skills@raspberrycode-plugins-official"],
       },
     });
 
@@ -550,7 +550,7 @@ describe("commandsService", () => {
     ]);
   });
 
-  it("stores command disabled overrides in the user zcode config", async () => {
+  it("stores command disabled overrides in the user raspberrycode config", async () => {
     const home = makeTempRoot();
     const service = await createCommandsServiceInEnv(home);
     const created = await service.writeCommandFile({

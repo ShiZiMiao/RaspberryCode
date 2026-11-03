@@ -21,8 +21,8 @@ export function resolveSpawnRuntimeOptions(command, platform = process.platform)
 }
 
 // shell:true 时 Node 只把 args 按空格拼接进命令行、不做转义（对应 DEP0190 警告）。
-// Windows 上仓库路径含空格时（如 E:\Z Code\...），pnpm --dir 的路径会被 cmd 按空格
-// 截断成 E:\Z 并报 ENOENT: lstat。这里按 cmd.exe 规则给含空格的参数补双引号；
+// Windows 上仓库路径含空格时（如 D:\my repo\...），pnpm --dir 的路径会被 cmd 按空格
+// 截断成 D:\my 并报 ENOENT: lstat。这里按 cmd.exe 规则给含空格的参数补双引号；
 // 无空格参数保持原样，不影响现有无空格路径与 CI 行为。
 export function quoteArgsForWindowsShell(args) {
   return args.map((arg) => (/\s/.test(arg) ? `"${arg}"` : arg));

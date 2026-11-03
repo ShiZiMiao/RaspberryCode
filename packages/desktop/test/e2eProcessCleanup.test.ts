@@ -42,7 +42,7 @@ describe("desktop e2e process cleanup", () => {
   it("passes both run and HOME identity markers through Electron appArgs", () => {
     const wdioSource = readFileSync(new URL("../wdio.conf.ts", import.meta.url), "utf8");
 
-    expect(CURRENT_HOME_MARKER).toBe(`--zcode-e2e-home=${CURRENT_HOME}`);
+    expect(CURRENT_HOME_MARKER).toBe(`--raspberrycode-e2e-home=${CURRENT_HOME}`);
     expect(wdioSource).toMatch(
       /appArgs:\s*\[[\s\S]*?buildE2ERunIdArg\(E2E_RUN_ID\)[\s\S]*?createWindowsE2EHomeMarkerArg\(E2E_HOME_DIR\)[\s\S]*?\]/u,
     );
@@ -72,7 +72,7 @@ describe("desktop e2e process cleanup", () => {
       /const exitAfterLastWindowClosed[\s\S]*?exitPreparedApp\("all-windows-closed-after-preparation"\)/u,
     );
     expect(mainSource).toMatch(
-      /process\.env\.ZCODE_E2E_RUN_ID\?\.trim\(\)[\s\S]*?spawn\("taskkill"[\s\S]*?spawn\("kill", \["-9", String\(process\.pid\)\]/u,
+      /process\.env\.RASPBERRYCODE_E2E_RUN_ID\?\.trim\(\)[\s\S]*?spawn\("taskkill"[\s\S]*?spawn\("kill", \["-9", String\(process\.pid\)\]/u,
     );
   });
 
@@ -143,7 +143,7 @@ describe("desktop e2e process cleanup", () => {
         ppid: 1,
       },
       { command: "node host-process", pid: 11, ppid: 10 },
-      { command: "node zcode-agent", pid: 12, ppid: 11 },
+      { command: "node raspberrycode-agent", pid: 12, ppid: 11 },
       {
         command: `Electron --app=${sharedEntryPoint} --no-sandbox ${buildE2ERunIdArg("run-b")}`,
         pid: 20,
@@ -155,7 +155,7 @@ describe("desktop e2e process cleanup", () => {
     expect(
       collectE2EProcessTreePids(processes, {
         currentPid: 999,
-        homeDir: "/tmp/zcode-e2e-run-a",
+        homeDir: "/tmp/raspberrycode-e2e-run-a",
         runId: "run-a",
       }),
     ).toEqual([12, 11, 10]);
@@ -166,13 +166,13 @@ describe("desktop e2e process cleanup", () => {
       { command: "Electron", pid: 10, ppid: 1 },
       { command: "Electron Helper (Renderer)", pid: 11, ppid: 10 },
       { command: "node host-process", pid: 12, ppid: 10 },
-      { command: "node zcode-agent", pid: 13, ppid: 12 },
+      { command: "node raspberrycode-agent", pid: 13, ppid: 12 },
     ];
 
     expect(
       collectE2EProcessTreePids(processes, {
         currentPid: 999,
-        homeDir: "/tmp/zcode-e2e-run-a",
+        homeDir: "/tmp/raspberrycode-e2e-run-a",
         rootPids: [10],
         runId: "run-a",
       }),
@@ -180,13 +180,13 @@ describe("desktop e2e process cleanup", () => {
   });
 
   it("recovers markerless ChromeDriver and Electron ancestors from a marked renderer", () => {
-    const currentHome = "/tmp/zcode-e2e-run-a";
+    const currentHome = "/tmp/raspberrycode-e2e-run-a";
     const processes = [
       { command: "node wdio.conf.ts", pid: 9, ppid: 1 },
       { command: "chromedriver --port=55089", pid: 10, ppid: 9 },
       { command: "RaspberryCode E2E", pid: 11, ppid: 10 },
       {
-        command: `Electron Helper (Renderer) --user-data-dir=/repo/.e2e-cache/run-a/chromium-profiles/0-51 --config=${currentHome}/.zcode/config.json`,
+        command: `Electron Helper (Renderer) --user-data-dir=/repo/.e2e-cache/run-a/chromium-profiles/0-51 --config=${currentHome}/.raspberrycode/config.json`,
         pid: 12,
         ppid: 11,
       },
@@ -209,13 +209,13 @@ describe("desktop e2e process cleanup", () => {
   });
 
   it("keeps ChromeDriver out of the per-session reload exit barrier", () => {
-    const currentHome = "/tmp/zcode-e2e-run-a";
+    const currentHome = "/tmp/raspberrycode-e2e-run-a";
     const processes = [
       { command: "node wdio.conf.ts", pid: 9, ppid: 1 },
       { command: "chromedriver --port=55089", pid: 10, ppid: 9 },
       { command: "RaspberryCode E2E", pid: 11, ppid: 10 },
       {
-        command: `Electron Helper (Renderer) --config=${currentHome}/.zcode/config.json`,
+        command: `Electron Helper (Renderer) --config=${currentHome}/.raspberrycode/config.json`,
         pid: 12,
         ppid: 11,
       },
@@ -244,9 +244,9 @@ describe("desktop e2e process cleanup", () => {
         ppid: 11,
       },
       { command: "Electron Helper", pid: 13, ppid: 11 },
-      { command: "node zcode-agent", pid: 14, ppid: 13 },
+      { command: "node raspberrycode-agent", pid: 14, ppid: 13 },
       {
-        command: "chrome_crashpad_handler --database=/tmp/zcode-e2e-run-a/.zcode/crash",
+        command: "chrome_crashpad_handler --database=/tmp/raspberrycode-e2e-run-a/.raspberrycode/crash",
         pid: 15,
         ppid: 1,
       },
@@ -267,7 +267,7 @@ describe("desktop e2e process cleanup", () => {
     const identity = {
       chromiumProfileRootDir,
       currentPid: 9,
-      homeDir: "/tmp/zcode-e2e-run-a",
+      homeDir: "/tmp/raspberrycode-e2e-run-a",
       runId: "run-a",
     };
 
@@ -321,7 +321,7 @@ describe("desktop e2e process cleanup", () => {
       { command: "RaspberryCode E2E", pid: 11, ppid: 10 },
       {
         command:
-          "Electron Helper --user-data-dir=/repo/.e2e-cache/run-a/chromium-profiles/0-51 --config=/tmp/zcode-e2e-run-a/.zcode/config.json",
+          "Electron Helper --user-data-dir=/repo/.e2e-cache/run-a/chromium-profiles/0-51 --config=/tmp/raspberrycode-e2e-run-a/.raspberrycode/config.json",
         pid: 12,
         ppid: 11,
       },
@@ -330,7 +330,7 @@ describe("desktop e2e process cleanup", () => {
     expect(
       collectE2EProcessTreePids(processes, {
         currentPid: 99,
-        homeDir: "/tmp/zcode-e2e-run-a",
+        homeDir: "/tmp/raspberrycode-e2e-run-a",
         runId: "run-a",
       }),
     ).toEqual([12, 11, 10]);
@@ -341,13 +341,13 @@ describe("desktop e2e process cleanup", () => {
       [
         `10 1 Electron ${buildE2ERunIdArg("run-a")}`,
         "11 10 node host-process",
-        "12 11 node zcode-agent",
+        "12 11 node raspberrycode-agent",
       ].join("\n"),
     );
 
     expect(
       listE2EProcessTreePids(
-        { currentPid: 999, homeDir: "/tmp/zcode-e2e-run-a", runId: "run-a" },
+        { currentPid: 999, homeDir: "/tmp/raspberrycode-e2e-run-a", runId: "run-a" },
         { platform: "linux", runCommand },
       ),
     ).toEqual([12, 11, 10]);
@@ -358,9 +358,9 @@ describe("desktop e2e process cleanup", () => {
     const runCommand = vi.fn(async () =>
       [
         "10 1 RaspberryCode E2E",
-        "11 10 zcode-host-local-1",
-        "12 11 zcode-cli",
-        "13 12 zcode-browser-use-mcp",
+        "11 10 raspberrycode-host-local-1",
+        "12 11 raspberrycode-cli",
+        "13 12 raspberrycode-browser-use-mcp",
         "20 1 unrelated",
       ].join("\n"),
     );
@@ -372,9 +372,9 @@ describe("desktop e2e process cleanup", () => {
 
     expect(collectProcessTreeByRootPids(processes, [10])).toEqual([
       { command: "RaspberryCode E2E", pid: 10, ppid: 1 },
-      { command: "zcode-host-local-1", pid: 11, ppid: 10 },
-      { command: "zcode-cli", pid: 12, ppid: 11 },
-      { command: "zcode-browser-use-mcp", pid: 13, ppid: 12 },
+      { command: "raspberrycode-host-local-1", pid: 11, ppid: 10 },
+      { command: "raspberrycode-cli", pid: 12, ppid: 11 },
+      { command: "raspberrycode-browser-use-mcp", pid: 13, ppid: 12 },
     ]);
   });
 
@@ -419,7 +419,7 @@ describe("desktop e2e process cleanup", () => {
     expect(
       collectE2EProcessTreePids(processes, {
         currentPid: 999,
-        homeDir: "/tmp/zcode-e2e-run-a",
+        homeDir: "/tmp/raspberrycode-e2e-run-a",
         runId: "run-a",
       }),
     ).toEqual([]);
@@ -433,7 +433,7 @@ describe("desktop e2e process cleanup", () => {
         pid: 101,
       },
       {
-        command: "node.exe --config=C:/e2e/shards/current/.zcode/cli/config.json",
+        command: "node.exe --config=C:/e2e/shards/current/.raspberrycode/cli/config.json",
         parentPid: 101,
         pid: 102,
       },
@@ -509,7 +509,7 @@ describe("desktop e2e process cleanup", () => {
     expect(
       collectE2EProcessTreePids(processes, {
         currentPid: 999,
-        homeDir: "/tmp/zcode-e2e-run-1",
+        homeDir: "/tmp/raspberrycode-e2e-run-1",
         runId: "run-1",
       }),
     ).toEqual([20]);

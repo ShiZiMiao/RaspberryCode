@@ -63,7 +63,8 @@ const zhCN: Record<string, string> = {
   "remote.recognizedDevice": "已连接到设备 {device}",
   "settings.source.addRoute": "添加连接 — 通过新的 SSH 目标连接同一设备",
   "settings.modelProvider.emptyProvidersTitle": "尚未添加模型供应商",
-  "settings.modelProvider.emptyProvidersHint": "点击右上角「添加供应商」开始配置，配置后即可在聊天时选择使用。",
+  "settings.modelProvider.emptyProvidersHint":
+    "点击右上角「添加供应商」开始配置，配置后即可在聊天时选择使用。",
   "chat.toolCall.taskOutput.failed": "获取输出失败",
   "settings.mcp.failure.runtime_unavailable": "MCP 运行环境不可用，请检查插件和本地依赖。",
   "settings.plugins.config.sensitiveUnavailable": "该值需要安全存储接入后才能配置。",
@@ -221,7 +222,7 @@ const zhCN: Record<string, string> = {
   "chat.empty.createWorkspace.title": "创建工作区",
   "chat.selections.limit.total": "对话引用总计最多 16,000 个字符。",
   "settings.usage.modelChart.remoteTokens": "来自模型用量接口",
-  "zcode.error.ZCODE_RUNTIME_MODEL_UNAVAILABLE":
+  "raspberrycode.error.RASPBERRYCODE_RUNTIME_MODEL_UNAVAILABLE":
     "当前使用的模型已不可用，请从当前模型列表中选择一个可用模型后继续。",
   "remote.sourceServerInstallCancelled": "已取消安装，准备好后可以重试。",
   "chat.toolCall.cua.readNamedApp": "读取 {app} 应用界面",
@@ -315,7 +316,7 @@ const zhCN: Record<string, string> = {
   "bots.bindHint": "在机器人私聊中发送 {command}。",
   "settings.plugins.searchPlaceholder": "搜索插件...",
   "remote.error.bindCanceled.reason": "请查看详细信息并按提示处理后重试。",
-  "zcode.error.STALE_TASK_OWNER_COMMAND": "该操作属于旧的运行轮次，已忽略。",
+  "raspberrycode.error.STALE_TASK_OWNER_COMMAND": "该操作属于旧的运行轮次，已忽略。",
   "automations.form.schedule.preview": "运行时间：{summary}",
   "chat.toolCall.respondToCoordinator.denied": "回复已拒绝",
   "automations.customRepeat.hours": "小时",
@@ -352,7 +353,7 @@ const zhCN: Record<string, string> = {
   "bots.feishuRegistrationExpired": "二维码已过期，请重新开始。",
   "settings.source.error.source-server-remove-callback-missing.reason":
     "请查看详细信息并按提示处理后重试。",
-  "zcode.error.MEDIA_BUDGET_CURRENT_IMAGE_TOO_LARGE":
+  "raspberrycode.error.MEDIA_BUDGET_CURRENT_IMAGE_TOO_LARGE":
     "当前图片附件过大，请移除部分图片或压缩后重试。",
   "automations.unsaved.save": "保存",
   "quickPick.section.chat": "对话",
@@ -372,7 +373,7 @@ const zhCN: Record<string, string> = {
   "chat.toolCall.taskOutput.denied": "获取已拒绝",
   "remote.error.permissionDenied.docker": "没有容器写入权限",
   "chat.changeSummary.rewindDialog.noUnsafeFiles": "没有发现不安全文件。",
-  "zcode.error.OWNER_COMMAND_FAILED": "任务所有者未能完成该操作。",
+  "raspberrycode.error.OWNER_COMMAND_FAILED": "任务所有者未能完成该操作。",
   "automations.frequency.monthly": "每月",
   "settings.subagents.scope.label": "作用域",
   "remote.errorPanel.uploadFailedHint":
@@ -414,8 +415,7 @@ const zhCN: Record<string, string> = {
     "扫描本机 Claude Code 原生历史，可按 workspace 和时间范围筛选，再把选中的会话导入到对应的 RaspberryCode 任务列表。",
   "chat.toolCall.cua.pressKey": "按下 {key}",
   "settings.plugins.marketplaces.count": "{count} 个市场",
-  "settings.usage.entitlementNotConfigured":
-    "未找到可查询额度的 Z.ai / BigModel 编程套餐账号。请先连接编程套餐账号。",
+  "settings.usage.entitlementNotConfigured": "未找到可查询额度的套餐账号。请先连接套餐账号。",
   "settings.mcp.group.local": "已配置 MCP 服务器",
   "bots.test": "测试",
   "remote.log.prepare": "已校验向导参数，准备发起连接。",
@@ -583,14 +583,14 @@ const zhCN: Record<string, string> = {
   "automations.lifecycle.active": "运行中",
   "automations.empty.description": "创建一个任务，按周期自动运行你的指令。",
   "automations.list.title": "定时任务",
-  "zcode.error.ZCODE_BIGMODEL_TEAM_PLAN_MEMBER_REQUIRED":
+  "raspberrycode.error.RASPBERRYCODE_BIGMODEL_TEAM_PLAN_MEMBER_REQUIRED":
     "当前模型不可用，请检查是否已将当前账号添加到项目成员列表",
-  "zcode.error.MEDIA_BUDGET_CURRENT_VIDEO_TOO_LARGE":
+  "raspberrycode.error.MEDIA_BUDGET_CURRENT_VIDEO_TOO_LARGE":
     "当前视频附件过大，请移除部分视频或压缩后重试。",
-  "zcode.error.MEDIA_BUDGET_CURRENT_ATTACHMENT_TOO_LARGE":
+  "raspberrycode.error.MEDIA_BUDGET_CURRENT_ATTACHMENT_TOO_LARGE":
     "当前附件总量过大，请移除部分附件或压缩后重试。",
-  "zcode.error.NO_ACTIVE_TASK_OWNER": "当前没有可处理该操作的任务所有者。",
-  "zcode.error.TASK_OWNED_BY_OTHER_HOST": "该任务正在另一个已连接视图中运行。",
+  "raspberrycode.error.NO_ACTIVE_TASK_OWNER": "当前没有可处理该操作的任务所有者。",
+  "raspberrycode.error.TASK_OWNED_BY_OTHER_HOST": "该任务正在另一个已连接视图中运行。",
   "chat.permission.fileChange.mixedMany": "更新 {count} 个文件",
   "chat.permission.fileChange.addMany": "创建 {count} 个文件",
   "chat.permission.fileChange.add": "创建",
@@ -697,7 +697,7 @@ const zhCN: Record<string, string> = {
   "onboarding.finish.summary.sessions.detail":
     "已导入 {imported}，已跳过 {skipped}，失败 {failed}。",
   "onboarding.agentSettings.providersToggleAllAria": "全选或清空所有 Agent 的模型供应商",
-  "settings.plugins.zcodeOnly": "仅支持 RaspberryCode Agent",
+  "settings.plugins.raspberrycodeOnly": "仅支持 RaspberryCode Agent",
   "settings.hooks.backToList": "返回",
   "settings.hooks.type.command": "Shell 命令",
   "settings.hooks.group.plugins": "插件 Hook",
@@ -776,7 +776,7 @@ const zhCN: Record<string, string> = {
   "settings.usage.codingPlanCurrentConnectionDescription":
     "将当前工作区模型连接方式切换为个人套餐或团队套餐后，即可在这里查看对应额度和用量。",
   "settings.usage.codingPlanNotConfiguredDescription":
-    "请先在模型设置中连接 Z.ai 或 BigModel 编程套餐，即可查看套餐额度、模型用量和工具用量。",
+    "请先在模型设置中连接编程套餐，即可查看套餐额度、模型用量和工具用量。",
   "settings.usage.timesUnit": "次",
   "settings.usage.toolUsageTitle": "工具用量",
   "settings.usage.dailyChart.peak": "峰值日期",
@@ -910,7 +910,8 @@ const zhCN: Record<string, string> = {
   "settings.source.neverOnline": "从未在线",
   "settings.source.error.recent-project-unresolved": "无法确定原项目，请从侧栏选择项目。",
   "settings.source.linesTitle": "连接",
-  "settings.source.reinstallRequired": "远端已卸载 RaspberryCode Server；连接与任务记录仍保留在本机",
+  "settings.source.reinstallRequired":
+    "远端已卸载 RaspberryCode Server；连接与任务记录仍保留在本机",
   "settings.source.uninstalled": "已卸载",
   "settings.source.label": "来源",
   "remote.sourceServerInstallDescription":
@@ -992,8 +993,9 @@ const zhCN: Record<string, string> = {
   "bots.setup.testFailed": "连通性测试失败",
   "bots.setup.footer.create": "测试通过后才会进入绑定步骤。",
   "bots.setup.guide.webhook.bind.3":
-    "如果配置了 secret，请同时在请求头里带上 `x-zcode-bot-secret`；绑定成功后再回到这里完成设置。",
-  "bots.setup.guide.webhook.bind.1": "向 RaspberryCode 的 `/api/bots/webhook` 发送一条私聊消息回调。",
+    "如果配置了 secret，请同时在请求头里带上 `x-raspberrycode-bot-secret`；绑定成功后再回到这里完成设置。",
+  "bots.setup.guide.webhook.bind.1":
+    "向 RaspberryCode 的 `/api/bots/webhook` 发送一条私聊消息回调。",
   "bots.setup.guide.webhook.create.2":
     "先约定一个共享 secret；如果你还想接收异步回复，再填一个出站 Webhook URL。",
   "bots.setup.guide.feishu.bind.3": "看到绑定成功后回到这里继续配置默认 workspace 和 CLI。",
@@ -1618,7 +1620,8 @@ const zhCN: Record<string, string> = {
   "bots.runtime.telegramLongPollingRunning": "Telegram 长轮询运行中。",
   "bots.runtime.telegramLongPollingStarting": "Telegram 长轮询启动中。",
   "bots.runtime.telegramLongPollingStopped": "Telegram 长轮询已停止。",
-  "bots.runtime.telegramLongPollingHandledElsewhere": "Telegram 长轮询由另一个 RaspberryCode 窗口处理。",
+  "bots.runtime.telegramLongPollingHandledElsewhere":
+    "Telegram 长轮询由另一个 RaspberryCode 窗口处理。",
   "bots.runtime.telegramTokenMissing": "Telegram 机器人凭据缺失。",
   "bots.runtime.telegramPollingFailedRetrying": "Telegram 轮询失败，正在重试。",
   "bots.runtime.feishuWebSocketStarting": "飞书 WebSocket 启动中。",
@@ -1674,8 +1677,8 @@ const zhCN: Record<string, string> = {
   "bots.deleteFailed": "删除机器人失败：{error}",
 
   // 登录
-  "login.oauth.regionTag.zai": "全球",
-  "login.oauth.regionTag.bigmodel": "中国",
+  "bots.regionTag.global": "全球",
+  "bots.regionTag.cn": "中国",
   "settings.onboarding": "引导",
   "settings.onboardingDescription":
     "重新选择职业、界面模式和使用偏好。数据迁移可在迁移设置中操作。",
@@ -2279,7 +2282,7 @@ const zhCN: Record<string, string> = {
   "titleBar.menu.help.exportLogs": "导出日志",
   "titleBar.menu.help.toggleDevTools": "切换开发者工具",
   "titleBar.menu.help.resourceManager": "资源管理器",
-  "titleBar.menu.help.toggleZCodeStdioTap": "抓取 Agent stdio 通信",
+  "titleBar.menu.help.toggleRaspberryCodeStdioTap": "抓取 Agent stdio 通信",
   "titleBar.menu.help.clearAllData": "清除所有数据",
 
   // 目录浏览
@@ -2341,7 +2344,8 @@ const zhCN: Record<string, string> = {
   "workspaceSidebar.manageDevice": "在设置中管理",
   "workspaceSidebar.newRemoteConnection": "新建远程连接…",
   "workspaceSidebar.recoveringAutomaticAttempt": "正在自动恢复连接（{attempt}/{limit}）",
-  "remote.error.sourceServerInstallRequired": "远程设备尚未安装 RaspberryCode Server，需要先确认安装。",
+  "remote.error.sourceServerInstallRequired":
+    "远程设备尚未安装 RaspberryCode Server，需要先确认安装。",
   "remote.error.sourceServerIdentityChangePending":
     "连接目标的身份已变化，请确认是否作为新设备使用。",
   "remote.error.credentialsRequired": "没有可用的 SSH 密码或私钥凭据，请返回配置后补充。",
@@ -3022,11 +3026,11 @@ const zhCN: Record<string, string> = {
   "settings.toolGroupingChanges": "分组文件更改",
   "settings.toolGroupingChangesDescription":
     "将连续的 Write、Edit 和 ApplyPatch 调用聚合为 Changes 分组。",
-  "settings.zcodeInteractionBehavior": "交互行为",
-  "settings.zcodeInteractionBehaviorDescription":
+  "settings.raspberrycodeInteractionBehavior": "交互行为",
+  "settings.raspberrycodeInteractionBehaviorDescription":
     "在 RaspberryCode 运行时将后续操作加入队列，或引导至下一轮工具调用后运行。",
-  "settings.zcodeInteractionBehavior.option.queue": "队列",
-  "settings.zcodeInteractionBehavior.option.guide": "引导",
+  "settings.raspberrycodeInteractionBehavior.option.queue": "队列",
+  "settings.raspberrycodeInteractionBehavior.option.guide": "引导",
   "settings.askUserQuestionAutoResolution": "提问自动继续",
   "settings.askUserQuestionAutoResolutionDescription":
     "开启后，Agent 提问 5 分钟未回答会自动继续；关闭后，当前和后续提问会一直等待你的回答。",
@@ -3034,7 +3038,8 @@ const zhCN: Record<string, string> = {
   "settings.endpointOriginDescription":
     "RaspberryCode 服务端点来源（http/https origin）。留空或恢复默认即使用内置默认域；保存后立即生效，部分能力可能需要重启后生效。",
   "settings.endpointOrigin.reset": "恢复默认",
-  "settings.endpointOrigin.invalid": "端点无效，请输入 http 或 https 的 origin，例如 https://your-server.example",
+  "settings.endpointOrigin.invalid":
+    "端点无效，请输入 http 或 https 的 origin，例如 https://your-server.example",
   "settings.endpointOrigin.saveError": "保存服务端点失败",
   "settings.dynamicWorkflow": "动态工作流",
   "settings.dynamicWorkflowDescription":
@@ -3476,7 +3481,7 @@ const zhCN: Record<string, string> = {
   "settings.modelProvider.apiFormat.title.anthropicMessages": "Anthropic Messages",
   "settings.modelProvider.anthropicEndpoint": "Anthropic 接口地址",
   "settings.modelProvider.anthropicEndpointPlaceholder":
-    "如：https://open.bigmodel.cn/api/anthropic",
+    "如：https://your-server.example/api/anthropic",
   "settings.modelProvider.openaiEndpoint": "OpenAI 接口地址",
   "settings.modelProvider.openaiEndpointPlaceholder": "如：https://api.openai.com/v1",
   "settings.modelProvider.geminiEndpoint": "Gemini 接口地址",
@@ -3591,7 +3596,7 @@ const zhCN: Record<string, string> = {
   "settings.modelProvider.claudeMappingDescription": "为 Claude 的各模型槽位选择对应的模型",
   "settings.modelProvider.mappingNotSet": "未设置",
   "settings.modelProvider.presetDescription":
-    "内置 Z.ai 与 BigModel 供应商，支持通过 OAuth 辅助完成配置。",
+    "内置供应商模板可辅助完成配置，也可自行添加自定义供应商。",
   "settings.modelProvider.presetEmpty": "尚未同步，请先完成 OAuth 登录。",
   "settings.modelProvider.customTitle": "自定义供应商",
   "settings.modelProvider.refresh": "刷新",
@@ -3688,7 +3693,7 @@ const zhCN: Record<string, string> = {
   "settings.skills.removeFailed": "移除技能失败。",
   "settings.skills.delete.title": "删除技能",
   "settings.skills.delete.description": "确定删除「{name}」？将从磁盘移除该技能目录，且无法撤销。",
-  "settings.skills.agent.glm": "RaspberryCode Agent",
+  "settings.skills.agent.raspberrycode": "RaspberryCode Agent",
   "settings.skills.agent.unknown": "未知来源",
   "settings.skills.create.open": "新建技能",
   "settings.skills.create.taskCreateFailed":
@@ -3802,7 +3807,8 @@ const zhCN: Record<string, string> = {
   "settings.skills.diagnostics.code.skill_too_large": "SKILL.md 体积过大已截断",
   "settings.skills.diagnostics.code.skill_not_found": "技能未找到",
   "settings.subagents.title": "子智能体",
-  "settings.subagents.description": "管理 RaspberryCode Agent 运行时消费的用户级子智能体 Markdown 文件。",
+  "settings.subagents.description":
+    "管理 RaspberryCode Agent 运行时消费的用户级子智能体 Markdown 文件。",
   "settings.subagents.workspaceScopeUnsupported": "暂不支持工作区级创建或编辑",
   "settings.subagents.searchPlaceholder": "搜索子智能体...",
   "settings.subagents.empty": "没有找到子智能体",
@@ -4042,7 +4048,7 @@ const zhCN: Record<string, string> = {
   "settings.plugins.import.resultEmpty": "暂无插件导入结果。",
   "settings.plugins.import.finish": "完成",
   "settings.commands.title": "命令",
-  "settings.commands.source.zcodeAgent": "RaspberryCode Agent",
+  "settings.commands.source.raspberrycodeAgent": "RaspberryCode Agent",
   "settings.commands.addNew": "新建命令",
   "settings.commands.addDescription": "填写命令名称和提示词，保存后返回列表。",
   "settings.commands.edit": "编辑命令",
@@ -4120,9 +4126,9 @@ const zhCN: Record<string, string> = {
   "settings.hooks.title": "钩子",
   "settings.workspaceFileSearch.title": "工作区搜索范围",
   "settings.workspaceFileSearch.description":
-    "编辑 .zcodeignore 忽略规则（语法与 .gitignore 一致），控制工作区文件搜索的范围。保存后下次搜索生效。",
+    "编辑 .raspberrycodeignore 忽略规则（语法与 .gitignore 一致），控制工作区文件搜索的范围。保存后下次搜索生效。",
   "settings.workspaceFileSearch.templateHint":
-    ".zcodeignore 尚未创建：下方为初始内容预览（.gitignore 拷贝 + 默认排除规则），保存后才会写入工作区。",
+    ".raspberrycodeignore 尚未创建：下方为初始内容预览（.gitignore 拷贝 + 默认排除规则），保存后才会写入工作区。",
   "settings.workspaceFileSearch.editorLabel": "工作区搜索忽略规则编辑框",
   "settings.workspaceFileSearch.save": "保存",
   "settings.workspaceFileSearch.saved": "已保存，下次搜索生效",
@@ -4132,7 +4138,7 @@ const zhCN: Record<string, string> = {
   "settings.workspaceFileSearch.restoreDefaults": "恢复默认规则",
   "settings.workspaceFileSearch.transformFailed": "应用分区操作失败，请查看日志",
   "settings.workspaceFileSearch.reveal": "打开文件位置",
-  "settings.workspaceFileSearch.revealHint": "保存后即可在工作区根目录找到 .zcodeignore",
+  "settings.workspaceFileSearch.revealHint": "保存后即可在工作区根目录找到 .raspberrycodeignore",
   "settings.workspaceFileSearch.unsaved": "有未保存的修改",
   "settings.workspaceFileSearch.noWorkspace": "当前没有打开的工作区，无法配置搜索忽略规则。",
   "settings.hooks.description": "管理任务生命周期钩子，在特定事件发生时自动执行命令。",
@@ -4170,7 +4176,7 @@ const zhCN: Record<string, string> = {
   "settingsSync.action.skip": "暂不导入",
   "settingsSync.action.rescan": "重新扫描",
   "settingsSync.action.finish": "开始使用",
-  "settingsSync.agent.zcode": "RaspberryCode Agent",
+  "settingsSync.agent.raspberrycode": "RaspberryCode Agent",
   "settingsSync.agent.claudeCode": "Claude Code",
   "settingsSync.agent.codexCli": "Codex CLI",
   "settingsSync.agent.openCode": "OpenCode",
@@ -4908,7 +4914,8 @@ const zhCN: Record<string, string> = {
   "workflows.hub.detail.meta.saveFailed": "保存失败：{reason}",
   "workflows.hub.detail.meta.descriptionRequired": "说明不能为空",
   "workflows.hub.detail.script": "脚本",
-  "workflows.hub.detail.script.note": "脚本只读。要改脚本，在对话里让 RaspberryCode 修订后另存一版。",
+  "workflows.hub.detail.script.note":
+    "脚本只读。要改脚本，在对话里让 RaspberryCode 修订后另存一版。",
   "workflows.hub.detail.script.copy": "复制脚本",
   "workflows.hub.detail.loadError": "无法读取这个工作流：{reason}",
   "workflows.hub.detail.notFound": "这个工作流已不在项目里。",
@@ -5118,7 +5125,8 @@ const zhCN: Record<string, string> = {
   "chat.toolCall.workflow.saveRun.announce.global": "已保存为全局工作流",
   "chat.toolCall.workflow.saveRun.title": "保存工作流",
   "chat.toolCall.workflow.saveRun.lead": "让 RaspberryCode 帮我提炼保存",
-  "chat.toolCall.workflow.saveRun.lead.hint": "RaspberryCode 会帮你提炼出可复用的工作流，再交你确认。",
+  "chat.toolCall.workflow.saveRun.lead.hint":
+    "RaspberryCode 会帮你提炼出可复用的工作流，再交你确认。",
   "chat.toolCall.workflow.saveRun.lead.sending": "已交给 RaspberryCode…",
   "chat.toolCall.workflow.saveRun.lead.unsupported": "当前 agent 不支持直接保存。",
   "chat.toolCall.workflow.saveRun.or": "或按原样直接保存",
@@ -5618,18 +5626,18 @@ const zhCN: Record<string, string> = {
 
   // 模式
   "mode.plan": "计划",
-  "mode.label.glm.default": "默认模式",
-  "mode.label.glm.build": "变更前确认",
-  "mode.label.glm.edit": "自动编辑",
-  "mode.label.glm.plan": "计划模式",
-  "mode.label.glm.guarded": "自主模式",
-  "mode.description.glm.guarded": "在有风险时询问",
-  "mode.label.glm.yolo": "完全访问",
-  "mode.description.glm.default": "使用默认确认策略。",
-  "mode.description.glm.build": "改文件前先问我。",
-  "mode.description.glm.edit": "自动编辑文件。",
-  "mode.description.glm.plan": "编辑前先出计划。",
-  "mode.description.glm.yolo": "减少确认次数。",
+  "mode.label.agent.default": "默认模式",
+  "mode.label.agent.build": "变更前确认",
+  "mode.label.agent.edit": "自动编辑",
+  "mode.label.agent.plan": "计划模式",
+  "mode.label.agent.guarded": "自主模式",
+  "mode.description.agent.guarded": "在有风险时询问",
+  "mode.label.agent.yolo": "完全访问",
+  "mode.description.agent.default": "使用默认确认策略。",
+  "mode.description.agent.build": "改文件前先问我。",
+  "mode.description.agent.edit": "自动编辑文件。",
+  "mode.description.agent.plan": "编辑前先出计划。",
+  "mode.description.agent.yolo": "减少确认次数。",
   "todo.panel.title": "待办",
   "todo.panel.currentTask": "当前任务",
   "todo.panel.toggle": "切换待办面板",
@@ -5642,22 +5650,22 @@ const zhCN: Record<string, string> = {
   "chat.permission.switchMode.placeholder": "实施计划",
 
   // RaspberryCode Agent
-  "zcode.error.CLAUDE_UNKNOWN_COMMAND":
+  "raspberrycode.error.CLAUDE_UNKNOWN_COMMAND":
     "Claude Code 未知命令 {command}。请确认命令名称，或切换到支持该命令的 Agent/技能后重试。",
-  "zcode.error.CLAUDE_UNKNOWN_COMMAND_WITH_ARGS":
+  "raspberrycode.error.CLAUDE_UNKNOWN_COMMAND_WITH_ARGS":
     "Claude Code 未知命令 {command}（参数：{args}）。请确认命令名称，或切换到支持该命令的 Agent/技能后重试。",
-  "zcode.error.providerBusiness.1006": "登录状态已失效，请重新登录后再试。",
-  "zcode.error.providerBusiness.1005":
+  "raspberrycode.error.providerBusiness.1006": "登录状态已失效，请重新登录后再试。",
+  "raspberrycode.error.providerBusiness.1005":
     "今日免费计划额度已用完。请升级账户、切换模型，或等待额度恢复。",
-  "zcode.error.providerBusiness.3006": "当前模型不在可用范围内，请切换到允许的模型后重试。",
-  "zcode.error.providerBusiness.3002": "请求过于频繁，请稍后重试。",
-  "zcode.error.providerBusiness.3001": "请求参数错误，请检查输入后重试。",
-  "zcode.error.providerBusiness.3008": "当前系统繁忙，请切换模型、升级账户，或稍后再试。",
-  "zcode.error.providerBusiness.3009": "当前系统繁忙，请切换模型、升级账户，或稍后再试。",
-  "zcode.error.providerBusiness.3010": "当前系统繁忙，请切换模型、升级账户，或稍后再试。",
-  "zcode.error.modelSuspiciousEmpty": "模型未返回任何内容。",
-  "zcode.error.providerBusiness.2007": "上游服务暂时不可用，请稍后重试。",
-  "zcode.error.providerBusiness.429": "请求过于频繁，请稍后重试。",
+  "raspberrycode.error.providerBusiness.3006": "当前模型不在可用范围内，请切换到允许的模型后重试。",
+  "raspberrycode.error.providerBusiness.3002": "请求过于频繁，请稍后重试。",
+  "raspberrycode.error.providerBusiness.3001": "请求参数错误，请检查输入后重试。",
+  "raspberrycode.error.providerBusiness.3008": "当前系统繁忙，请切换模型、升级账户，或稍后再试。",
+  "raspberrycode.error.providerBusiness.3009": "当前系统繁忙，请切换模型、升级账户，或稍后再试。",
+  "raspberrycode.error.providerBusiness.3010": "当前系统繁忙，请切换模型、升级账户，或稍后再试。",
+  "raspberrycode.error.modelSuspiciousEmpty": "模型未返回任何内容。",
+  "raspberrycode.error.providerBusiness.2007": "上游服务暂时不可用，请稍后重试。",
+  "raspberrycode.error.providerBusiness.429": "请求过于频繁，请稍后重试。",
 
   // 调试信息栏
 

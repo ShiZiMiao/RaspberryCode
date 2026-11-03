@@ -42,7 +42,7 @@ describe("botsService config", () => {
             activeTaskId: null,
             updatedAt: 1,
             draftOptions: {
-              provider: "zcode",
+              provider: "raspberrycode",
               modelSelection: {
                 providerId: "target",
                 modelId: "old",
@@ -398,7 +398,7 @@ describe("botsService config", () => {
             activeTaskId: null,
             updatedAt: 1,
             draftOptions: {
-              provider: "zcode",
+              provider: "raspberrycode",
               modelSelection: {
                 providerId: "local-only",
                 modelId: "m",
@@ -428,7 +428,7 @@ describe("botsService config", () => {
       remoteWorkspaceService: {
         isConnected: vi.fn(async () => true),
         ensureConnected: vi.fn(async () => ({ ok: true })),
-        getZCodeTaskService: vi.fn(async () => f.createLegacyTaskService()),
+        getRaspberryCodeTaskService: vi.fn(async () => f.createLegacyTaskService()),
         getModelSelectionService: getRemote,
       },
       credentialService: f.createCredentialService({ "secret-1": "secret" }),

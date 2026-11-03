@@ -5,9 +5,9 @@ import type { AppSettings } from "./protocol.js";
 import { REMOTE_ASSET_INSTALL_MODES } from "./remoteAssetInstallMode.js";
 import { isKnownRemoteResourcePackageId } from "./remoteResourcePackages.js";
 import { wslUserSchema } from "./wslUserValidation.js";
-import { ZCODE_ENABLED_AGENT_PROVIDERS } from "./zcode-agent-policy.js";
+import { RASPBERRYCODE_ENABLED_AGENT_PROVIDERS } from "./raspberrycode-agent-policy.js";
 import { DYNAMIC_WORKFLOW_MODES } from "./dynamic-workflow-feature.js";
-import { normalizeZCodeEndpointOrigin } from "./zcodeEndpoint.js";
+import { normalizeRaspberryCodeEndpointOrigin } from "./raspberrycodeEndpoint.js";
 import {
   DEFAULT_EMBEDDED_BROWSER_VIEWPORT_PREFERENCE,
   embeddedBrowserViewportPreferenceSchema,
@@ -42,7 +42,7 @@ const nonEmptyStringSchema = z.string().trim().min(1);
 
 export const localeSchema = z.enum(["zh-CN", "en-US"]);
 export const localePreferenceSchema = z.enum(["system", "zh-CN", "en-US"]);
-const zcodeInteractionBehaviorSchema = z.enum(["queue", "guide"]);
+const raspberrycodeInteractionBehaviorSchema = z.enum(["queue", "guide"]);
 // launch.md「The user's choice」：读文件时未知取值（降级后读到新版本写的值）按「跟随」处理，
 // 不能让一个偏好字段把整份设置读坏。
 const dynamicWorkflowModeSettingSchema = z.enum(DYNAMIC_WORKFLOW_MODES).optional().catch(undefined);
@@ -68,7 +68,7 @@ export const integratedTerminalShellSelectionSchema = z.discriminatedUnion("mode
 const enabledBuiltinAgentCliProvidersSchema = z
   // 兼容旧 settings：历史列表可能残留三方 CLI provider，解析后统一归一为 RaspberryCode Agent。
   .array(z.enum(["claude", "opencode", "gemini", "codex", "agent", "agent"]))
-  .transform(() => [...ZCODE_ENABLED_AGENT_PROVIDERS]);
+  .transform(() => [...RASPBERRYCODE_ENABLED_AGENT_PROVIDERS]);
 
 export const postUpdateReleaseNotesPayloadSchema = z.object({
   version: nonEmptyStringSchema,
@@ -150,7 +150,7 @@ const remoteConversationWorkspaceRecordSchema = z
   })
   .strict();
 
-const zcodeEndpointOriginSchema = z.preprocess((value) => {
+const raspberrycodeEndpointOriginSchema = z.preprocess((value) => {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -159,25 +159,25 @@ const zcodeEndpointOriginSchema = z.preprocess((value) => {
     return undefined;
   }
   try {
-    return normalizeZCodeEndpointOrigin(trimmed);
+    return normalizeRaspberryCodeEndpointOrigin(trimmed);
   } catch {
     return undefined;
   }
 }, z.string().optional());
 
-function sanitizeZCodeEndpointOrigin(value: unknown): unknown {
+function sanitizeRaspberryCodeEndpointOrigin(value: unknown): unknown {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return value;
   }
   const raw = value as Record<string, unknown>;
-  if (!("zcodeEndpointOrigin" in raw)) {
+  if (!("raspberrycodeEndpointOrigin" in raw)) {
     return value;
   }
-  const parsed = zcodeEndpointOriginSchema.safeParse(raw.zcodeEndpointOrigin);
+  const parsed = raspberrycodeEndpointOriginSchema.safeParse(raw.raspberrycodeEndpointOrigin);
   if (parsed.success && typeof parsed.data === "string") {
-    return { ...raw, zcodeEndpointOrigin: parsed.data };
+    return { ...raw, raspberrycodeEndpointOrigin: parsed.data };
   }
-  const { zcodeEndpointOrigin: _zcodeEndpointOrigin, ...next } = raw;
+  const { raspberrycodeEndpointOrigin: _raspberrycodeEndpointOrigin, ...next } = raw;
   // 非生产 endpoint override 是开发辅助字段，坏值只丢弃该字段，不能拖垮整个 settings 读取。
   return next;
 }
@@ -324,7 +324,7 @@ function migrateLegacyBuiltinAgentCliProviders(value: unknown): unknown {
   // 这里在 schema 入口统一归一到 RaspberryCode Agent，让核心 provider 状态只有一个事实源。
   return {
     ...raw,
-    enabledBuiltinAgentCliProviders: [...ZCODE_ENABLED_AGENT_PROVIDERS],
+    enabledBuiltinAgentCliProviders: [...RASPBERRYCODE_ENABLED_AGENT_PROVIDERS],
   };
 }
 
@@ -523,12 +523,12 @@ const appSettingsObjectSchema = z.object({
   toolGroupingExploreEnabled: z.boolean().default(true),
   toolGroupingTerminalEnabled: z.boolean().default(true),
   toolGroupingChangesEnabled: z.boolean().default(false),
-  zcodeInteractionBehavior: zcodeInteractionBehaviorSchema.default("queue"),
+  raspberrycodeInteractionBehavior: raspberrycodeInteractionBehaviorSchema.default("queue"),
   askUserQuestionAutoResolutionEnabled: z.boolean().default(true),
   modelIoFullRetentionEnabled: z.boolean().default(false),
   dynamicWorkflowMode: dynamicWorkflowModeSettingSchema,
   enabledBuiltinAgentCliProviders: enabledBuiltinAgentCliProvidersSchema.default([
-    ...ZCODE_ENABLED_AGENT_PROVIDERS,
+    ...RASPBERRYCODE_ENABLED_AGENT_PROVIDERS,
   ]),
   startPlanRecommendationDismissed: z.boolean().default(false),
   providerFamilyConnectionSelections: providerFamilyConnectionSelectionSettingsSchema.default({}),
@@ -559,10 +559,10 @@ const appSettingsObjectSchema = z.object({
   autoDownloadAndInstallUpdates: z.boolean().default(false),
   skippedElectronUpdateVersions: skippedElectronUpdateVersionsSchema,
   settingsSyncFirstRunPromptHandled: z.boolean().optional(),
-  zcodeEndpointOrigin: zcodeEndpointOriginSchema.optional(),
+  raspberrycodeEndpointOrigin: raspberrycodeEndpointOriginSchema.optional(),
 });
 
-/** Web 远控已随 zcode.z.ai 云端功能下线：旧 settings 文件里的远控键静默丢弃（读兼容）。 */
+/** Web 远控已随云端功能下线：旧 settings 文件里的远控键静默丢弃（读兼容）。 */
 function stripRetiredWebRemoteControlSettings(value: unknown): unknown {
   if (typeof value !== "object" || value === null) return value;
   const { webRemoteControlRelayV2Device: _a, webRemoteControlExternalRelayDevice: _b, webRemoteControlLastEnabledContext: _c, ...rest } =
@@ -587,7 +587,7 @@ export const appSettingsSchema = z.preprocess(
           migrateMessageStreamShowReasoningDefault(
             migrateCloseToTrayOnWindowsDefault(
               migrateLegacyLocalePreference(
-                sanitizeZCodeEndpointOrigin(
+                sanitizeRaspberryCodeEndpointOrigin(
                   migrateLegacyWorkspaceSession(
                     migrateLegacyBuiltinAgentCliProviders(
                       migrateRemoteBoundaryIntroAcknowledgement(migrateTaskAutoArchiveReset(value)),
@@ -633,7 +633,7 @@ export const appSettingsPatchSchema = z.object({
   toolGroupingExploreEnabled: z.boolean().optional(),
   toolGroupingTerminalEnabled: z.boolean().optional(),
   toolGroupingChangesEnabled: z.boolean().optional(),
-  zcodeInteractionBehavior: zcodeInteractionBehaviorSchema.optional(),
+  raspberrycodeInteractionBehavior: raspberrycodeInteractionBehaviorSchema.optional(),
   askUserQuestionAutoResolutionEnabled: z.boolean().optional(),
   modelIoFullRetentionEnabled: z.boolean().optional(),
   // 空串是「删除选择、回到跟随」的哨兵：RPC 会吞掉 undefined，normalizeSettingsPatch 把它归一成删除。
@@ -685,5 +685,5 @@ export const appSettingsPatchSchema = z.object({
     .partialRecord(electronReleaseChannelSchema, nonEmptyStringSchema)
     .optional(),
   settingsSyncFirstRunPromptHandled: z.boolean().optional(),
-  zcodeEndpointOrigin: zcodeEndpointOriginSchema.optional(),
+  raspberrycodeEndpointOrigin: raspberrycodeEndpointOriginSchema.optional(),
 });

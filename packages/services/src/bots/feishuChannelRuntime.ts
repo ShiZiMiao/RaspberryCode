@@ -4,7 +4,7 @@ import {
   type BotProvider,
   type BotProviderCallbackResult,
   type BotsConfigFile,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import type { ICredentialService } from "../credential/credential.js";
 import { startFeishuBotWebSocket, type FeishuWebSocketClient } from "./providers/feishuProvider.js";
 import {

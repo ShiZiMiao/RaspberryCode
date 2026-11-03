@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createRemoteConnectionProgressContext } from "@zcode/server/remote/remoteConnectionProgressContext.js";
+import { createRemoteConnectionProgressContext } from "@raspberrycode/server/remote/remoteConnectionProgressContext.js";
 
 describe("remoteConnectionProgressContext", () => {
   it("只输出显式文本，脱敏路径、凭据和设备标识", async () => {

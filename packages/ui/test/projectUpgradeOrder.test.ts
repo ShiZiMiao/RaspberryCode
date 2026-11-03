@@ -5,7 +5,7 @@ import { mergeProjectTrees, projectKey, selectSortedProjects } from "@/project-s
 import { useProjectSidebarPreferences } from "@/project-sidebar/useProjectSidebarPreferences.js";
 import type { VirtualProject } from "@/project-sidebar/contract.js";
 
-const storageKey = "zcode-project-sidebar-preferences";
+const storageKey = "raspberrycode-project-sidebar-preferences";
 const project = (id: string, position: number, hostId = "local"): VirtualProject => ({
   id,
   name: id,

@@ -1,7 +1,7 @@
 import { createElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ZCodeAvailablePluginSummary, ZCodePluginInfo } from "@zcode/shared";
+import type { RaspberryCodeAvailablePluginSummary, RaspberryCodePluginInfo } from "@raspberrycode/shared";
 import type { StorePluginItem } from "../src/settings/pluginStoreListing.js";
 import type { PluginStoreActions } from "../src/settings/PluginStoreCard.js";
 
@@ -20,10 +20,10 @@ vi.mock("@/components/ui/button.js", () => ({
 }));
 
 function restorableItem(overrides: Partial<StorePluginItem> = {}): StorePluginItem {
-  const summary: ZCodeAvailablePluginSummary = {
-    id: "skill-creator@zcode-plugins-official",
+  const summary: RaspberryCodeAvailablePluginSummary = {
+    id: "skill-creator@raspberrycode-plugins-official",
     name: "skill-creator",
-    marketplace: "zcode-plugins-official",
+    marketplace: "raspberrycode-plugins-official",
     version: "1.0.0",
     installed: false,
   };
@@ -54,7 +54,7 @@ function makeActions(overrides: Partial<PluginStoreActions> = {}): PluginStoreAc
 
 function installedItemWithRuntimeInfo(): StorePluginItem {
   const item = restorableItem({ installed: true, restorable: false });
-  const info: ZCodePluginInfo = {
+  const info: RaspberryCodePluginInfo = {
     id: item.id,
     name: item.name,
     marketplace: item.marketplace,
@@ -72,10 +72,10 @@ function installedItemWithRuntimeInfo(): StorePluginItem {
 
 async function renderCard(item: StorePluginItem, actions: PluginStoreActions): Promise<string> {
   const { PluginStoreCard } = await import("../src/settings/PluginStoreCard.js");
-  const { ZCodeIntlProvider } = await import("@/i18n/IntlProvider.js");
+  const { RaspberryCodeIntlProvider } = await import("@/i18n/IntlProvider.js");
   return renderToStaticMarkup(
     createElement(
-      ZCodeIntlProvider,
+      RaspberryCodeIntlProvider,
       { initialLocale: "en-US" },
       createElement(PluginStoreCard, { item, actions, locale: "en-US" }),
     ),
@@ -88,10 +88,10 @@ async function renderDetail(
   onUsePrompt: (item: StorePluginItem, prompt: string) => void = () => {},
 ): Promise<string> {
   const { PluginStoreDetailView } = await import("../src/settings/PluginStoreDetailView.js");
-  const { ZCodeIntlProvider } = await import("@/i18n/IntlProvider.js");
+  const { RaspberryCodeIntlProvider } = await import("@/i18n/IntlProvider.js");
   return renderToStaticMarkup(
     createElement(
-      ZCodeIntlProvider,
+      RaspberryCodeIntlProvider,
       { initialLocale: "en-US" },
       createElement(PluginStoreDetailView, {
         item,
@@ -263,7 +263,7 @@ describe("PluginStoreCard restorable built-ins", () => {
 
     expect(onInstall).toHaveBeenCalledTimes(1);
     expect(onInstall.mock.calls[0]?.[0]).toMatchObject({
-      id: "skill-creator@zcode-plugins-official",
+      id: "skill-creator@raspberrycode-plugins-official",
       restorable: true,
     });
   });
@@ -308,9 +308,9 @@ describe("PluginStoreCard restorable built-ins", () => {
     const html = await renderDetail(
       restorableItem({
         info: {
-          id: "skill-creator@zcode-plugins-official",
+          id: "skill-creator@raspberrycode-plugins-official",
           name: "skill-creator",
-          marketplace: "zcode-plugins-official",
+          marketplace: "raspberrycode-plugins-official",
           enabled: true,
           source: "missing",
           packageStatus: "missing",

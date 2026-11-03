@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
-import type { IUsageStatsService } from "@zcode/services";
-import type { SessionErrorInfo, SessionPhase } from "@zcode/shared/zcode-protocol-v4";
+import type { IUsageStatsService } from "@raspberrycode/services";
+import type { SessionErrorInfo, SessionPhase } from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import { useUsageEntitlementWithService } from "@/hooks/useUsageEntitlement.js";
 import { useProviderSettingsView } from "@/hooks/useProviderSettingsView.js";
 import {

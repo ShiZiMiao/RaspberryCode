@@ -1,56 +1,56 @@
 /* eslint-disable max-lines -- 远端部署入口集中编排 server/node/agent/tool 资源，拆分需单独整理边界。 */
 import { join } from "node:path";
 import {
-  ZCODE_VERSION,
+  RASPBERRYCODE_VERSION,
   formatLogPrefix,
   normalizeRemoteResourcePackageSelection,
   type RemoteAssetInstallMode,
   type RemoteResourcePackageId,
   type RemoteResourcePackageSelection,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import type { IRemoteBackend, RemoteEnvironment } from "./backend.js";
-import { deployZCodeAgentRuntime } from "./zcodeAgentDeploy.js";
+import { deployRaspberryCodeAgentRuntime } from "./raspberrycodeAgentDeploy.js";
 import {
   deployNodePtyPrebuilds,
   deployNodeRuntime,
   createRemoteComponentVersionResolver,
   logDeployRequired,
-} from "@zcode/server/remote/remoteAssetDeployDecision.js";
+} from "@raspberrycode/server/remote/remoteAssetDeployDecision.js";
 import {
-  REMOTE_BASE,
+  resolveRemoteServerBase,
   fileExists,
   formatOptionalValue,
   formatOptionalValues,
   type DeployLoggers,
   type RemoteAssetDeployOptions,
-} from "@zcode/server/remote/deployShared.js";
-import { quotePosixPathArg } from "@zcode/server/remote/posixShell.js";
-import { checkServerBundleRequiredMarkers } from "@zcode/server/remote/serverBundleDeployCheck.js";
-import { deployRuntimeTools } from "@zcode/server/remote/runtimeToolDeploy.js";
-import { REMOTE_AGENT_OFFICIAL_PLUGIN_REQUIRED_RELATIVE_PATHS } from "@zcode/server/remote/zcodeAgentOfficialPluginAssets.js";
+} from "@raspberrycode/server/remote/deployShared.js";
+import { quotePosixPathArg } from "@raspberrycode/server/remote/posixShell.js";
+import { checkServerBundleRequiredMarkers } from "@raspberrycode/server/remote/serverBundleDeployCheck.js";
+import { deployRuntimeTools } from "@raspberrycode/server/remote/runtimeToolDeploy.js";
+import { REMOTE_AGENT_OFFICIAL_PLUGIN_REQUIRED_RELATIVE_PATHS } from "@raspberrycode/server/remote/raspberrycodeAgentOfficialPluginAssets.js";
 import {
   ensureRemoteReleaseDirFromCdn,
   selectRemoteAssetManifestComponents,
   type RemoteAssetManifestRef,
-} from "@zcode/server/remote/remoteAssetCache.js";
+} from "@raspberrycode/server/remote/remoteAssetCache.js";
 import {
   fetchRemoteDownloadManifest,
   LocalUploadAssetInstaller,
   RemoteDownloadAssetInstaller,
   type RemoteAssetInstaller,
   type RemoteManifestRef,
-} from "@zcode/server/remote/remoteAssetInstaller.js";
+} from "@raspberrycode/server/remote/remoteAssetInstaller.js";
 import {
   checkRemoteAssetComponentIdentity,
   createFreshRemoteAssetManifestRefResolver,
   hasRemoteAssetComponentRefreshPending,
   markRemoteAssetComponentRefreshPending,
   writeRemoteAssetComponentMeta,
-} from "@zcode/server/remote/remoteAssetLiveIdentity.js";
-import { detectRemoteAssetTools } from "@zcode/server/remote/remoteAssetPreflight.js";
-import { assertSupportedRemoteEnvironment } from "@zcode/server/remote/remotePlatformSupport.js";
-import { acquireRemoteDeployLock } from "@zcode/server/remote/remoteDeployLock.js";
-import type { RemoteAssetNetworkPort } from "@zcode/server/remote/remoteAssetNetwork.js";
+} from "@raspberrycode/server/remote/remoteAssetLiveIdentity.js";
+import { detectRemoteAssetTools } from "@raspberrycode/server/remote/remoteAssetPreflight.js";
+import { assertSupportedRemoteEnvironment } from "@raspberrycode/server/remote/remotePlatformSupport.js";
+import { acquireRemoteDeployLock } from "@raspberrycode/server/remote/remoteDeployLock.js";
+import type { RemoteAssetNetworkPort } from "@raspberrycode/server/remote/remoteAssetNetwork.js";
 
 const log = (...args: unknown[]) => console.log(formatLogPrefix("deploy", process.pid), ...args);
 const logWarn = (...args: unknown[]) =>
@@ -70,6 +70,8 @@ export interface DeployOptions {
   remoteCdnBaseUrls?: string[];
   /** 生产态 remote 资源缓存目录 */
   remoteCacheDir?: string;
+  /** 远端 server 根（见 deployShared.resolveRemoteServerBase）；缺省按旧根标记探测解析。 */
+  serverBase?: string;
   /** 单个 manifest CDN 候选请求的超时时间，默认 10 秒。 */
   manifestRequestTimeoutMs?: number;
   /** Desktop Host 注入的远程资源 HTTP(S) 出口；standalone 未注入时保持直连。 */
@@ -87,7 +89,7 @@ export interface DeployOptions {
 }
 
 /**
- * Deploy the zcode server to the remote machine.
+ * Deploy the raspberrycode server to the remote machine.
  * Uploads Node.js binary, server bundle, and node-pty prebuild.
  *
  * Returns true if a deploy was performed, false if skipped (version matches).
@@ -110,6 +112,8 @@ export async function deployServer(
     manifestRequestTimeoutMs: options?.manifestRequestTimeoutMs,
     remoteAssetNetwork: options?.remoteAssetNetwork,
   };
+  // 远端 server 根解析一次并贯穿整条部署链（新装新根、旧布局机器续用旧根）。
+  const serverBase = options?.serverBase ?? (await resolveRemoteServerBase(backend));
   const resolveFreshAssetManifestRef = createFreshRemoteAssetManifestRefResolver(
     componentResolverOptions,
     env,
@@ -127,7 +131,7 @@ export async function deployServer(
   const getRemoteManifestRef = (): Promise<RemoteManifestRef> => {
     remoteManifestPromise ??= fetchRemoteDownloadManifest(
       {
-        version: ZCODE_VERSION,
+        version: RASPBERRYCODE_VERSION,
         platformArch,
         remoteCdnBaseUrl: options?.remoteCdnBaseUrl,
         remoteCdnBaseUrls: options?.remoteCdnBaseUrls,
@@ -209,6 +213,7 @@ export async function deployServer(
     remoteCdnBaseUrl: options?.remoteCdnBaseUrl,
     remoteCdnBaseUrls: options?.remoteCdnBaseUrls,
     remoteCacheDir: options?.remoteCacheDir,
+    serverBase,
     manifestRequestTimeoutMs: options?.manifestRequestTimeoutMs,
     remoteAssetNetwork: options?.remoteAssetNetwork,
   };
@@ -221,7 +226,7 @@ export async function deployServer(
     {
       ...assetDeployOptions,
       platformArch,
-      version: ZCODE_VERSION,
+      version: RASPBERRYCODE_VERSION,
       assetInstallMode: options?.assetInstallMode,
     },
     { log, logWarn },
@@ -267,14 +272,14 @@ export async function deployServer(
       await markRemoteAssetComponentRefreshPending(backend, {
         componentId: "agent",
         platformArch,
-        appVersion: ZCODE_VERSION,
+        appVersion: RASPBERRYCODE_VERSION,
       });
     }
 
     // Check if deploy is needed
     if (!serverDeployDecision.shouldDeploy) {
       log("skipped — remote version matches");
-      // 主 server 版本相同只证明 node/zcode-server.cjs 可启动，不代表随包工具仍存在。
+      // 主 server 版本相同只证明 node/raspberrycode-server.cjs 可启动，不代表随包工具仍存在。
       // agent 内容跟随 app/server 版本刷新；但 wrapper/bundle 被清理或开发态 bundle 变化时仍要按实体检查修复。
       if (shouldDeployResourcePackage("node-pty")) {
         await deployNodePtyPrebuilds(
@@ -289,7 +294,7 @@ export async function deployServer(
           { log, logWarn },
         );
       }
-      await deployZCodeAgentRuntime(
+      await deployRaspberryCodeAgentRuntime(
         backend,
         env,
         {
@@ -335,8 +340,8 @@ export async function deployServer(
     });
     await installer.installFile({
       componentId: SERVER_BUNDLE_COMPONENT_ID,
-      sourceRelativePath: "server/zcode-server.cjs",
-      remotePath: `${REMOTE_BASE}/zcode-server.cjs`,
+      sourceRelativePath: "server/raspberrycode-server.cjs",
+      remotePath: `${serverBase}/raspberrycode-server.cjs`,
       // App 版本变化是新的发布边界，不能只凭历史 cache 的 `.ready`
       // 判断 server-bundle 可复用；与 Agent 一致，必须重新下载并校验当前 manifest 制品。
       forceRefresh: shouldForceRefreshContentAddressedAssets,
@@ -371,7 +376,7 @@ export async function deployServer(
     log("all uploads complete");
 
     // 部署 RaspberryCode Agent runtime 到远程，历史资源包选择已在入口统一忽略。
-    await deployZCodeAgentRuntime(
+    await deployRaspberryCodeAgentRuntime(
       backend,
       env,
       {
@@ -411,6 +416,7 @@ export async function deployServer(
       : await checkServerDeployDecision(backend, {
           platformArch,
           expectedSha256: expectedServerBundleSha256,
+          serverBase,
         });
     return deployWithDecision(decision, expectedServerBundleSha256);
   };
@@ -427,12 +433,14 @@ export async function deployServer(
     : await checkServerDeployDecision(backend, {
         platformArch,
         expectedSha256: null,
+        serverBase,
       });
   if (preLockDecision.shouldDeploy) {
     log(`waiting for install-root lock: ${preLockDecision.reason}`);
   }
   const deployLock = await acquireRemoteDeployLock(backend, {
     acquireTimeoutMs: options?.deployLockAcquireTimeoutMs,
+    serverBase,
   });
   let deployOutcome: { ok: true; value: boolean } | { ok: false; error: unknown };
   try {
@@ -483,11 +491,12 @@ async function checkServerDeployDecision(
   options: {
     platformArch: string;
     expectedSha256: string | null;
+    serverBase: string;
   },
 ): Promise<ServerDeployDecision> {
   try {
     log("checking if deploy needed...");
-    const nodePath = `${REMOTE_BASE}/node`;
+    const nodePath = `${options.serverBase}/node`;
     const exists = await backend.exists(nodePath);
     log("remote node exists:", exists);
     if (!exists) {
@@ -497,7 +506,7 @@ async function checkServerDeployDecision(
       };
     }
 
-    const serverPath = `${REMOTE_BASE}/zcode-server.cjs`;
+    const serverPath = `${options.serverBase}/raspberrycode-server.cjs`;
     const serverExists = await backend.exists(serverPath);
     log("remote server exists:", serverExists);
     if (!serverExists) {
@@ -513,11 +522,11 @@ async function checkServerDeployDecision(
       `${quotePosixPathArg(nodePath)} ${quotePosixPathArg(serverPath)} --version`,
     );
     const version = (await collectStdout(stream)).trim();
-    log("remote version:", JSON.stringify(version), "local:", ZCODE_VERSION);
-    if (version !== ZCODE_VERSION) {
+    log("remote version:", JSON.stringify(version), "local:", RASPBERRYCODE_VERSION);
+    if (version !== RASPBERRYCODE_VERSION) {
       return {
         shouldDeploy: true,
-        reason: `remote server version mismatch remote=${version} expected=${ZCODE_VERSION}`,
+        reason: `remote server version mismatch remote=${version} expected=${RASPBERRYCODE_VERSION}`,
         appVersionChanged: true,
       };
     }
@@ -620,7 +629,7 @@ function resolveMockCdnReleaseDir(mockCdnDir?: string): string | null {
     return null;
   }
 
-  return join(mockCdnDir, "releases", ZCODE_VERSION);
+  return join(mockCdnDir, "releases", RASPBERRYCODE_VERSION);
 }
 
 async function resolveReleaseDir(
@@ -669,7 +678,7 @@ async function resolveReleaseDir(
       remoteCdnBaseUrl: options?.remoteCdnBaseUrl,
       remoteCdnBaseUrls: options?.remoteCdnBaseUrls,
       remoteCacheDir: options?.remoteCacheDir,
-      version: ZCODE_VERSION,
+      version: RASPBERRYCODE_VERSION,
       platformArch,
       componentIds,
       manifestRef,
@@ -717,7 +726,7 @@ function resolveRequiredMockReleasePaths(
   for (const componentId of ids) {
     switch (componentId) {
       case SERVER_BUNDLE_COMPONENT_ID:
-        requiredPaths.add("server/zcode-server.cjs");
+        requiredPaths.add("server/raspberrycode-server.cjs");
         break;
       case "node-runtime":
         requiredPaths.add(`node/${platformArch}/node`);
@@ -729,7 +738,7 @@ function resolveRequiredMockReleasePaths(
         }
         break;
       case "agent":
-        requiredPaths.add(`agent/${platformArch}/zcode.cjs`);
+        requiredPaths.add(`agent/${platformArch}/raspberrycode.cjs`);
         for (const relativePath of REMOTE_AGENT_OFFICIAL_PLUGIN_REQUIRED_RELATIVE_PATHS) {
           requiredPaths.add(`agent/${platformArch}/packages/${relativePath}`);
         }

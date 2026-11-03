@@ -1,9 +1,9 @@
 import type {
   PluginScope,
   PluginsOverviewResult,
-  ZCodePluginsMarketplaceMutationResult,
-} from "@zcode/shared";
-import { ServiceChannels } from "@zcode/shared";
+  RaspberryCodePluginsMarketplaceMutationResult,
+} from "@raspberrycode/shared";
+import { ServiceChannels } from "@raspberrycode/shared";
 import { createServiceDescriptor } from "../descriptors.js";
 
 export interface IPluginsService {
@@ -25,7 +25,7 @@ export interface IPluginsService {
     workspacePath: string;
     workspaceIdentity?: string;
     marketplace?: string;
-  }): Promise<ZCodePluginsMarketplaceMutationResult | void>;
+  }): Promise<RaspberryCodePluginsMarketplaceMutationResult | void>;
   installPlugin(params: {
     workspacePath: string;
     workspaceIdentity?: string;

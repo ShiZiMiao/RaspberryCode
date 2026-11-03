@@ -3,10 +3,10 @@ export {
   getCompactToolCallSummary,
   isCompactToolCallFinishedState,
   isCompactToolCallRunningState,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 export type {
   CompactToolCallState,
   ToolCallChangeStat,
   ToolCallSummary,
   ToolCallSummarySource,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";

@@ -1,25 +1,25 @@
 import {
   readRequestVerificationConfig,
   type RequestVerificationClientConfig,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import type {
   ApiClient,
   ApiRequestInit,
   RequestVerificationConfig,
   ForceUpdateConfig,
-  ZCodeModelContextBudgetStrategy,
+  RaspberryCodeModelContextBudgetStrategy,
   DynamicWorkflowClientConfig,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import {
-  ZCODE_VERSION,
-  DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
+  RASPBERRYCODE_VERSION,
+  DEFAULT_RASPBERRYCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
   createDynamicWorkflowClientConfig,
   normalizeDynamicWorkflowMode,
   resolveDynamicWorkflowClientConfig,
   DEFAULT_DYNAMIC_WORKFLOW_MODE,
-  ZCODE_DYNAMIC_WORKFLOW_MODE_ENV,
-  buildRuntimeZCodeApiUrl,
-} from "@zcode/shared";
+  RASPBERRYCODE_DYNAMIC_WORKFLOW_MODE_ENV,
+  buildRuntimeRaspberryCodeApiUrl,
+} from "@raspberrycode/shared";
 import type { ICredentialService } from "../credential/credential.js";
 import { readApiJson } from "../providers/api/apiJson.js";
 import { createServiceLogger } from "../logger/serviceLogger.js";
@@ -29,12 +29,12 @@ import { createServiceLogger } from "../logger/serviceLogger.js";
  * 产品中立化裁剪）。本 provider 只剩平台级灰度配置读取（client/configs 同源）与
  * 账号态探测共用的鉴权头工具函数。
  */
-const ZCODE_CLIENT_CONFIG_API_PREFIX = "/api/v1/client/configs";
+const RASPBERRYCODE_CLIENT_CONFIG_API_PREFIX = "/api/v1/client/configs";
 const REQUEST_TIMEOUT_MS = 15_000;
 const CLIENT_CONFIG_CACHE_TTL_MS = 60 * 60 * 1000;
 const log = createServiceLogger("codingPlanSubscription");
 
-interface ZCodeClientConfigEnvelope {
+interface RaspberryCodeClientConfigEnvelope {
   code?: number;
   msg?: string;
   success?: boolean;
@@ -62,9 +62,9 @@ interface BigModelCodingPlanSubscriptionProviderOptions {
 
 export class BigModelCodingPlanSubscriptionProvider {
   protected readonly apiClient: ApiClient;
-  private clientConfigSnapshot: ZCodeClientConfigEnvelope | null = null;
+  private clientConfigSnapshot: RaspberryCodeClientConfigEnvelope | null = null;
   private clientConfigSnapshotExpiresAt = 0;
-  private clientConfigRequest: Promise<ZCodeClientConfigEnvelope> | null = null;
+  private clientConfigRequest: Promise<RaspberryCodeClientConfigEnvelope> | null = null;
 
   constructor(options: BigModelCodingPlanSubscriptionProviderOptions) {
     this.apiClient = options.apiClient;
@@ -73,7 +73,7 @@ export class BigModelCodingPlanSubscriptionProvider {
   /**
    * 动态工作流灰度快照：与闲时任务同走
    * client/configs，零新增请求。三条边界：
-   *   1. 本地覆盖（ZCODE_DYNAMIC_WORKFLOW_MODE）在任何网络动作之前裁决，命中即返回——
+   *   1. 本地覆盖（RASPBERRYCODE_DYNAMIC_WORKFLOW_MODE）在任何网络动作之前裁决，命中即返回——
    *      preview 构建和开发者手测因此不受 1h 快照与首次 Host 竞态影响；
    *   2. forceRefresh 与 Off-Peak 同义，清掉快照后重拉（灰度翻转最长 1h 不可见）；
    *   3. 请求失败 fail-closed：返回 default（disabled）并 warn，绝不把异常抛给调用方——
@@ -83,7 +83,7 @@ export class BigModelCodingPlanSubscriptionProvider {
     forceRefresh?: boolean;
   }): Promise<DynamicWorkflowClientConfig> {
     // 覆盖合法即短路：判据（normalize）与快照构造（resolve）都留在 shared，这里不复述取值域。
-    if (normalizeDynamicWorkflowMode(process.env[ZCODE_DYNAMIC_WORKFLOW_MODE_ENV])) {
+    if (normalizeDynamicWorkflowMode(process.env[RASPBERRYCODE_DYNAMIC_WORKFLOW_MODE_ENV])) {
       return resolveDynamicWorkflowClientConfig({ remote: undefined, env: process.env });
     }
     if (options?.forceRefresh) {
@@ -104,9 +104,9 @@ export class BigModelCodingPlanSubscriptionProvider {
     }
   }
 
-  async getModelContextBudgetStrategy(): Promise<ZCodeModelContextBudgetStrategy> {
+  async getModelContextBudgetStrategy(): Promise<RaspberryCodeModelContextBudgetStrategy> {
     // 3.12.2：预算统一为 preflight-v1；保留兼容方法，但不能再为每次建会话等待远端配置。
-    return DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY;
+    return DEFAULT_RASPBERRYCODE_MODEL_CONTEXT_BUDGET_STRATEGY;
   }
 
   async getRequestVerificationConfig(): Promise<RequestVerificationConfig | null> {
@@ -118,7 +118,7 @@ export class BigModelCodingPlanSubscriptionProvider {
     return unwrapClientConfigForceUpdate(payload);
   }
 
-  private async getClientConfigs(): Promise<ZCodeClientConfigEnvelope> {
+  private async getClientConfigs(): Promise<RaspberryCodeClientConfigEnvelope> {
     if (this.clientConfigSnapshot && this.clientConfigSnapshotExpiresAt > Date.now()) {
       return this.clientConfigSnapshot;
     }
@@ -127,11 +127,11 @@ export class BigModelCodingPlanSubscriptionProvider {
     }
 
     // client/configs 和其他 RaspberryCode 平台接口必须共享运行时 endpoint；
-    // E2E/测试环境会通过 ZCODE_BASE_URL 指向本地 mock，硬编码线上域名会让套餐状态不可控。
+    // E2E/测试环境会通过 RASPBERRYCODE_BASE_URL 指向本地 mock，硬编码线上域名会让套餐状态不可控。
     const url = resolveCodingPlanClientConfigUrl(process.env);
-    url.searchParams.set("app_version", ZCODE_VERSION);
+    url.searchParams.set("app_version", RASPBERRYCODE_VERSION);
     url.searchParams.set("platform", resolveClientPlatformKey());
-    this.clientConfigRequest = readCodingPlanApiJson<ZCodeClientConfigEnvelope>(
+    this.clientConfigRequest = readCodingPlanApiJson<RaspberryCodeClientConfigEnvelope>(
       this.apiClient,
       url,
       {
@@ -151,7 +151,7 @@ export class BigModelCodingPlanSubscriptionProvider {
 }
 
 export function resolveCodingPlanClientConfigUrl(env: NodeJS.ProcessEnv): URL {
-  return new URL(buildRuntimeZCodeApiUrl(env, ZCODE_CLIENT_CONFIG_API_PREFIX));
+  return new URL(buildRuntimeRaspberryCodeApiUrl(env, RASPBERRYCODE_CLIENT_CONFIG_API_PREFIX));
 }
 
 function resolveClientPlatformKey(): string {
@@ -170,7 +170,7 @@ async function readCodingPlanApiJson<T>(
     if (isUnrenderableRemoteErrorMessage(message)) {
       // 配置接口偶发返回 WAF/HTML 页面或非 JSON 响应，原样透传会污染配置解析。
       // 服务边界先收敛为稳定错误码，UI 再做本地化提示。
-      throw new Error("zcode_system_busy");
+      throw new Error("raspberrycode_system_busy");
     }
     throw error;
   }
@@ -206,7 +206,7 @@ function isUnrenderableRemoteErrorMessage(message: string): boolean {
 }
 
 function unwrapClientConfigForceUpdate(
-  payload: ZCodeClientConfigEnvelope,
+  payload: RaspberryCodeClientConfigEnvelope,
 ): ForceUpdateConfig | null {
   if (payload.code !== undefined && payload.code !== 0) {
     throw new Error(payload.msg?.trim() || "RaspberryCode client config request failed");

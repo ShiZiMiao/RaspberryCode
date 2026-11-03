@@ -1,7 +1,7 @@
 /* eslint-disable max-lines -- Source/Profile/Workspace 三实体迁移与凭据重定向需要保持同一事务编排。 */
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
-import { Emitter, type Event } from "@zcode/rpc";
+import { Emitter, type Event } from "@raspberrycode/rpc";
 import {
   buildServerRemoteWorkspaceIdentity,
   isValidWslUser,
@@ -16,17 +16,17 @@ import {
   type RemoteWorkspaceSessionEntry,
   type RemoteTarget,
   type SourceServerDeclaredWorkspaceWire,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import type {
   ICredentialService,
   ISettingService,
   UpdateConnectionProfileInput,
-} from "@zcode/services";
+} from "@raspberrycode/services";
 import {
   getDataBaseDir,
   migrateControllerRemoteWorkspaceIdentity,
   type ControllerRemoteIdentityMigrationReport,
-} from "@zcode/services/node";
+} from "@raspberrycode/services/node";
 
 export interface SourceServerDirectoryOptions {
   settingService: ISettingService;

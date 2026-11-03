@@ -1,12 +1,12 @@
 import { z } from "zod";
-import { ZCODE_VERSION } from "../version.js";
+import { RASPBERRYCODE_VERSION } from "../version.js";
 
-declare const __ZCODE_MIN_COMPATIBLE_VERSION__: string;
+declare const __RASPBERRYCODE_MIN_COMPATIBLE_VERSION__: string;
 
-export const ZCODE_MIN_COMPATIBLE_VERSION =
-  typeof __ZCODE_MIN_COMPATIBLE_VERSION__ !== "undefined"
-    ? __ZCODE_MIN_COMPATIBLE_VERSION__
-    : ZCODE_VERSION;
+export const RASPBERRYCODE_MIN_COMPATIBLE_VERSION =
+  typeof __RASPBERRYCODE_MIN_COMPATIBLE_VERSION__ !== "undefined"
+    ? __RASPBERRYCODE_MIN_COMPATIBLE_VERSION__
+    : RASPBERRYCODE_VERSION;
 
 export const compatibilityManifestSchema = z
   .object({
@@ -19,8 +19,8 @@ export const compatibilityManifestSchema = z
 export type CompatibilityManifest = z.infer<typeof compatibilityManifestSchema>;
 
 export function createCompatibilityManifest(
-  productVersion = ZCODE_VERSION,
-  minCompatibleVersion = ZCODE_MIN_COMPATIBLE_VERSION,
+  productVersion = RASPBERRYCODE_VERSION,
+  minCompatibleVersion = RASPBERRYCODE_MIN_COMPATIBLE_VERSION,
 ): CompatibilityManifest {
   return compatibilityManifestSchema.parse({
     schemaVersion: 1,
@@ -29,7 +29,7 @@ export function createCompatibilityManifest(
   });
 }
 
-export const ZCODE_COMPATIBILITY_MANIFEST = Object.freeze(createCompatibilityManifest());
+export const RASPBERRYCODE_COMPATIBILITY_MANIFEST = Object.freeze(createCompatibilityManifest());
 
 interface ParsedVersion {
   major: number;

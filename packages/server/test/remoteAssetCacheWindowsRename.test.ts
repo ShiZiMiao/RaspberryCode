@@ -5,8 +5,8 @@ import { tmpdir } from "node:os";
 import { join, normalize } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ZCODE_VERSION } from "@zcode/shared";
-import { createTarGzArchive } from "@zcode/server/remote/localTarGz.js";
+import { RASPBERRYCODE_VERSION } from "@raspberrycode/shared";
+import { createTarGzArchive } from "@raspberrycode/server/remote/localTarGz.js";
 
 function remoteAssetRenameEperm(): NodeJS.ErrnoException {
   const error = new Error("operation not permitted, rename") as NodeJS.ErrnoException;
@@ -35,7 +35,9 @@ async function writeComponentArchive(options: {
       archivePath: entry,
     })),
   );
-  return createHash("sha256").update(await readFile(archivePath)).digest("hex");
+  return createHash("sha256")
+    .update(await readFile(archivePath))
+    .digest("hex");
 }
 
 describe("remote asset cache Windows directory commit", () => {
@@ -46,9 +48,9 @@ describe("remote asset cache Windows directory commit", () => {
   });
 
   it("retries transient EPERM while committing a staged release component directory", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-remote-cache-rename-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-remote-cache-rename-"));
     const sourceRoot = join(rootDir, "source");
-    const cdnRoot = join(rootDir, "cdn", ZCODE_VERSION);
+    const cdnRoot = join(rootDir, "cdn", RASPBERRYCODE_VERSION);
     const remoteCacheDir = join(rootDir, "remote-cache");
     const platformArch = "linux-x64";
     const failedRenameTargets: string[] = [];
@@ -57,14 +59,14 @@ describe("remote asset cache Windows directory commit", () => {
       await mkdir(join(sourceRoot, "server"), { recursive: true });
       await mkdir(join(sourceRoot, "node", platformArch), { recursive: true });
       await mkdir(join(sourceRoot, "agent", platformArch), { recursive: true });
-      await writeFile(join(sourceRoot, "server", "zcode-server.cjs"), "server", "utf8");
+      await writeFile(join(sourceRoot, "server", "raspberrycode-server.cjs"), "server", "utf8");
       await writeFile(join(sourceRoot, "node", platformArch, "node"), "node", "utf8");
-      await writeFile(join(sourceRoot, "agent", platformArch, "zcode-agent"), "agent", "utf8");
+      await writeFile(join(sourceRoot, "agent", platformArch, "raspberrycode-agent"), "agent", "utf8");
 
       const components = [
         {
           id: "server-bundle",
-          version: `${ZCODE_VERSION}-server-bundle`,
+          version: `${RASPBERRYCODE_VERSION}-server-bundle`,
           artifactPath: `components/${platformArch}/server-bundle.tar.gz`,
           mount: "server",
         },
@@ -76,9 +78,9 @@ describe("remote asset cache Windows directory commit", () => {
         },
         {
           id: "agent",
-          version: "3.1.2-glm",
-          artifactPath: `components/${platformArch}/glm.tar.gz`,
-          mount: `glm/${platformArch}`,
+          version: "3.1.2-agent",
+          artifactPath: `components/${platformArch}/agent.tar.gz`,
+          mount: `agent/${platformArch}`,
         },
       ];
       const manifestComponents = [];
@@ -93,18 +95,16 @@ describe("remote asset cache Windows directory commit", () => {
           }),
         });
       }
-      const glmSha256 = manifestComponents.find(
-        (component) => component.id === "agent",
-      )?.sha256;
-      if (!glmSha256) {
-        throw new Error("missing GLM component SHA");
+      const agentSha256 = manifestComponents.find((component) => component.id === "agent")?.sha256;
+      if (!agentSha256) {
+        throw new Error("missing agent component SHA");
       }
       await writeFile(
         join(cdnRoot, `manifest-${platformArch}.json`),
         JSON.stringify(
           {
             schemaVersion: 1,
-            appVersion: ZCODE_VERSION,
+            appVersion: RASPBERRYCODE_VERSION,
             platformArch,
             components: manifestComponents,
           },
@@ -152,32 +152,24 @@ describe("remote asset cache Windows directory commit", () => {
         }),
       );
 
-      const { ensureRemoteReleaseDirFromCdn } = await import(
-        "@zcode/server/remote/remoteAssetCache.js"
-      );
+      const { ensureRemoteReleaseDirFromCdn } =
+        await import("@raspberrycode/server/remote/remoteAssetCache.js");
       const releaseDir = await ensureRemoteReleaseDirFromCdn(
         {
           remoteCdnBaseUrl: pathToFileURL(join(rootDir, "cdn")).href,
           remoteCacheDir,
-          version: ZCODE_VERSION,
+          version: RASPBERRYCODE_VERSION,
           platformArch,
         },
         { log: () => undefined, logWarn: () => undefined },
       );
 
       expect(releaseDir).toBe(
-        join(
-          remoteCacheDir,
-          "releases",
-          ZCODE_VERSION,
-          platformArch,
-          "glm-content",
-          glmSha256,
-        ),
+        join(remoteCacheDir, "releases", RASPBERRYCODE_VERSION, platformArch, "agent-content", agentSha256),
       );
       expect(failedRenameTargets).toHaveLength(1);
       await expect(
-        readFile(join(releaseDir, "agent", platformArch, "zcode-agent"), "utf8"),
+        readFile(join(releaseDir, "agent", platformArch, "raspberrycode-agent"), "utf8"),
       ).resolves.toBe("agent");
     } finally {
       await rm(rootDir, { force: true, recursive: true });

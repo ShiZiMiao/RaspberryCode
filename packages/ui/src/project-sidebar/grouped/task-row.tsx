@@ -1,17 +1,17 @@
-import { TID_TASK_ITEM, testId } from "@zcode/shared/test-ids";
-import type { ProjectTask as ZCodeTaskMeta } from "@/project-sidebar/contract.js";
+import { TID_TASK_ITEM, testId } from "@raspberrycode/shared/test-ids";
+import type { ProjectTask as RaspberryCodeTaskMeta } from "@/project-sidebar/contract.js";
 import { memo, useState } from "react";
 import type { KeyboardEvent, MouseEvent } from "react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import type { UniqueIdentifier } from "@dnd-kit/core";
-import { isCronTask } from "@zcode/shared";
+import { isCronTask } from "@raspberrycode/shared";
 import { ArrowUpToLine, Clock, Cloud, Folder, ListTree, LoaderIcon, X } from "lucide-react";
 import { cn } from "@/components/lib/utils.js";
 import { Badge } from "@/components/ui/badge.js";
 import { toast } from "@/components/ui/toast.js";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu.js";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import {
   deriveTaskLeadingIndicator,
   formatTaskRelativeTime,
@@ -59,7 +59,7 @@ function GroupedTaskRowComponent({
   dragOverlay,
   tooltipsDisabled,
 }: {
-  task: ZCodeTaskMeta;
+  task: RaspberryCodeTaskMeta;
   currentGroupId?: string;
   groups: TaskGroupMenuItem[];
   remoteSessionId?: string;
@@ -68,19 +68,19 @@ function GroupedTaskRowComponent({
   activeTaskId: string | null;
   workspaceLabel: string;
   onSelectTask: (workspacePath: string, taskId: string, workspaceIdentity?: string) => void;
-  onCloseTask: (task: ZCodeTaskMeta) => void;
-  onOpenFileTree?: (task: ZCodeTaskMeta) => void;
-  onMoveTaskToGroup: (task: ZCodeTaskMeta, groupId: string | null) => void;
-  onMoveTaskToTop: (task: ZCodeTaskMeta) => void;
-  onStartRenameTask: (task: ZCodeTaskMeta) => void;
-  onArchiveTask: (task: ZCodeTaskMeta) => void;
-  onMarkTaskAsUnread: (task: ZCodeTaskMeta) => void;
+  onCloseTask: (task: RaspberryCodeTaskMeta) => void;
+  onOpenFileTree?: (task: RaspberryCodeTaskMeta) => void;
+  onMoveTaskToGroup: (task: RaspberryCodeTaskMeta, groupId: string | null) => void;
+  onMoveTaskToTop: (task: RaspberryCodeTaskMeta) => void;
+  onStartRenameTask: (task: RaspberryCodeTaskMeta) => void;
+  onArchiveTask: (task: RaspberryCodeTaskMeta) => void;
+  onMarkTaskAsUnread: (task: RaspberryCodeTaskMeta) => void;
   dragId?: UniqueIdentifier;
   dragging?: boolean;
   dragOverlay?: boolean;
   tooltipsDisabled?: boolean;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   const workspaceActionsDisabled = useOptionalTabStore((state) =>
     isWorkspaceReadOnly(state, task.workspacePath, task.workspaceIdentity),
   );
