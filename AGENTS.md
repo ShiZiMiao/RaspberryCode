@@ -32,7 +32,7 @@ affected 使用 Vitest 官方选择，只运行选中的根 UT；选中整个套
 - `packages/ui`：共享 React 组件、hooks 与 Zustand store。
 - `packages/services`：业务服务；`packages/rpc`：RPC 框架。
 - `packages/shared`：共享协议与类型；`packages/client`：Agent 客户端 SDK。
-- `apps/zcode-cli`：Agent CLI 与运行时。
+- `apps/raspberrycode-cli`：Agent CLI 与运行时。
 - `CONTEXT.md`：插件商店领域词汇；修改相关 UI 前阅读。
 - `DESIGN.md`：UI 设计规范；修改 UI 前阅读。
 
@@ -51,18 +51,18 @@ affected 使用 Vitest 官方选择，只运行选中的根 UT；选中整个套
 ## UI 与平台边界
 
 - 遵守 `DESIGN.md`，复用已有组件，兼顾布局、交互、主题和国际化。
-- 组件通过 `packages/ui/src/hooks/` 访问服务；平台操作通过 `IPlatformService`（`packages/shared/src/platform.ts`），不直接调用 `window.zcode`。
+- 组件通过 `packages/ui/src/hooks/` 访问服务；平台操作通过 `IPlatformService`（`packages/shared/src/platform.ts`），不直接调用 `window.raspberrycode`。
 - 通过依赖注入处理 Desktop、Web、本地和远程环境的差异，并兼顾 Windows、macOS 和 Linux。
 - Zustand 状态位于 `packages/ui/src/store/`。广播同步的主题、语言等字段需要防止回环；UI 局部状态不应被误当作服务端事实。
 - hooks 中含 JSX 的文件使用 `.tsx`。
 
-## 进程、协议与远程控制
+## 进程、协议与远程链路
 
-- Desktop app 通过 stdio 与 Agent 通信。协议改动同步更新 `packages/shared/src/zcode-protocol/index.ts`，提供严格类型与运行时校验。
+- Desktop app 通过 stdio 与 Agent 通信。协议改动同步更新 `packages/shared/src/raspberrycode-protocol/index.ts`，提供严格类型与运行时校验。
 - Main 负责窗口、原生操作、进程调度和消息转发，不承载 task/session 业务状态。
 - 每个窗口使用一个 window-scoped Local Host；本地 workspace 共享该 Host。远程 workspace 由窗口内的连接注册表管理，不另建 Desktop Remote Host。
 - Desktop 的 `desktop-continuous` 实时链路与 `web-remote-replayable` 恢复链路必须明确区分。修改 stream、snapshot、queue 或重连时，同时验证两种语义。
-- 外部 relay 与 Main 只做鉴权、配对、心跳、转发及 attachment 调度，不保存任务队列、快照等业务状态。
+- Server/Host 侧转发组件（`trusted-host-relay`、topic resource relay）只做鉴权、转发及 attachment 调度，不保存任务队列、快照等业务状态。
 - 已接受的 busy/running 输入由 CLI/runtime `CommandInbox` 串行 admission；Renderer 只保留未提交草稿与 pending optimistic overlay，Host owner/lease 负责路由。
 - 保留 owner/lease、跨 Host 路由和 stale run 防护，不能仅根据单一路径删除边界判断。
 
@@ -75,7 +75,7 @@ affected 使用 Vitest 官方选择，只运行选中的根 UT；选中整个套
 
 ## 日志
 
-- UI 使用 `packages/ui/src/logger.ts`，不直接使用 `console.log` 或 `window.zcode?.log`。
+- UI 使用 `packages/ui/src/logger.ts`，不直接使用 `console.log` 或 `window.raspberrycode?.log`。
 - Agent/session/runtime 相关服务日志使用 `createServiceLogger(scope)`（`packages/services/src/logger/serviceLogger.ts`）。
 - `debug` 用于协议原始数据、流式 chunk 和逐条工具更新等高频诊断，生产环境不落盘。
 - `info` 用于进程和会话生命周期、权限结果、一次性初始化等生产可用事件。

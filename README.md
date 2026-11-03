@@ -31,7 +31,7 @@ pnpm bootstrap
 
 `pnpm bootstrap` 安装 workspace 依赖、准备桌面本地运行资源，再执行 `build:bootstrap`。
 
-Agent CLI 与运行时源码位于 [apps/zcode-cli/](apps/zcode-cli/)，作为普通目录随本仓库一起克隆，无需单独拉取或初始化 Git submodule。
+Agent CLI 与运行时源码位于 [apps/raspberrycode-cli/](apps/raspberrycode-cli/)，作为普通目录随本仓库一起克隆，无需单独拉取或初始化 Git submodule。
 
 根据需要选择其他初始化或构建入口：
 
@@ -58,10 +58,10 @@ pnpm dev:desktop:test
 
 `pnpm dev:desktop` 默认等同于 `pnpm dev:desktop:prod`，使用生产服务配置。启动脚本会准备本地运行资源、构建桌面 Agent，再启动 Electron 和源码监听。
 
-需要独立开发数据目录时，可设置 `ZCODE_DATA_BASE_DIR`。例如在 macOS / Linux 中：
+需要独立开发数据目录时，可设置 `RASPBERRYCODE_DATA_BASE_DIR`。例如在 macOS / Linux 中：
 
 ```bash
-ZCODE_DATA_BASE_DIR="$HOME/.zcode-dev-home" pnpm dev:desktop:test
+RASPBERRYCODE_DATA_BASE_DIR="$HOME/.raspberrycode-dev-home" pnpm dev:desktop:test
 ```
 
 ### 远程功能（SSH/WSL）
@@ -76,49 +76,49 @@ ZCODE_DATA_BASE_DIR="$HOME/.zcode-dev-home" pnpm dev:desktop:test
 pnpm dev:server
 ```
 
-Agent 源码修改后，执行 `pnpm --filter @zcode/cli... build` 并重启服务。需要验证完整发行包时，按下方“RaspberryCode 命令行版”打包章节解压运行。
+Agent 源码修改后，执行 `pnpm --filter @raspberrycode/cli... build` 并重启服务。需要验证完整发行包时，按下方“RaspberryCode 命令行版”打包章节解压运行。
 
 ### RaspberryCode 命令行版
 
-命令行发行包包含 TUI 和 Agent，统一使用 `zcode` 启动：无参数进入 TUI；其他参数交给 Agent CLI 处理。在本机运行，无需 Electron。
+命令行发行包包含 TUI 和 Agent，统一使用 `raspberrycode` 启动：无参数进入 TUI；其他参数交给 Agent CLI 处理。在本机运行，无需 Electron。
 
 ```bash
 # 默认进入终端交互界面
-zcode
+raspberrycode
 
 # 查看 CLI 参数
-zcode --help
+raspberrycode --help
 
 # 查看发行包版本
-zcode --version
+raspberrycode --version
 ```
 
-直接启动通用 Web 服务的 HTTP 入口（`server/entry-http.js`，bot 回调等）时，通过 `ZCODE_SERVER_AUTH_TOKEN` 配置 API／WebSocket 认证；通过程序接口创建服务时，使用 `authToken` 选项。
+直接启动通用 Web 服务的 HTTP 入口（`server/entry-http.js`，bot 回调等）时，通过 `RASPBERRYCODE_SERVER_AUTH_TOKEN` 配置 API／WebSocket 认证；通过程序接口创建服务时，使用 `authToken` 选项。
 
-构建方式见下方打包章节。`pnpm build:zcode` 只生成发行包，不会替换 `PATH` 中已有的 `zcode`。如果命令仍指向旧安装或其他源码目录，macOS / Linux 可用 `command -v zcode` 检查，Windows 可用 `where.exe zcode` 检查。
+构建方式见下方打包章节。`pnpm build:raspberrycode` 只生成发行包，不会替换 `PATH` 中已有的 `raspberrycode`。如果命令仍指向旧安装或其他源码目录，macOS / Linux 可用 `command -v raspberrycode` 检查，Windows 可用 `where.exe raspberrycode` 检查。
 
 ### CLI 源码开发
 
-CLI 的模型配置、非交互调用、工具与扩展、批量评测和轨迹记录见 [CLI 使用指南](apps/zcode-cli/docs/usage/README.md)。
+CLI 的模型配置、非交互调用、工具与扩展、批量评测和轨迹记录见 [CLI 使用指南](apps/raspberrycode-cli/docs/usage/README.md)。
 
 直接开发 TUI 或 Agent 时，运行源码入口：
 
 ```bash
-pnpm --filter @zcode/cli dev --help
-pnpm --filter @zcode/cli dev
+pnpm --filter @raspberrycode/cli dev --help
+pnpm --filter @raspberrycode/cli dev
 
 # 构建 CLI 及其 workspace 依赖
-pnpm --filter @zcode/cli... build
-node apps/zcode-cli/packages/cli/dist/zcode.cjs --help
+pnpm --filter @raspberrycode/cli... build
+node apps/raspberrycode-cli/packages/cli/dist/raspberrycode.cjs --help
 ```
 
-这个入口直接运行 Agent CLI。验证统一的 `zcode` 命令，用下方解压后的 `bin/zcode.mjs`。
+这个入口直接运行 Agent CLI。验证统一的 `raspberrycode` 命令，用下方解压后的 `bin/raspberrycode.mjs`。
 
 ### UI Plugin 开发
 
 参见 [UI Plugin：能力、API 与调试](UI_PLUGIN.md)，从 Excalidraw 的画布协作示例开始，了解插件安装更新、页面 API 和宿主联调入口。
 
-**向 `zcode-plugins` 提交插件 PR 时，必须在 PR 模板中声明是否为 UI Plugin，并填写插件名称。** 判断标准见[提交 PR 时声明插件类型](UI_PLUGIN.md#提交-pr-时声明插件类型)。
+**向 `raspberrycode-plugins` 提交插件 PR 时，必须在 PR 模板中声明是否为 UI Plugin，并填写插件名称。** 判断标准见[提交 PR 时声明插件类型](UI_PLUGIN.md#提交-pr-时声明插件类型)。
 
 ## 配置
 
@@ -126,10 +126,10 @@ node apps/zcode-cli/packages/cli/dist/zcode.cjs --help
 
 | 配置                                 | 用途                                             |
 | ------------------------------------ | ------------------------------------------------ |
-| `ZCODE_DATA_BASE_DIR`                | 应用数据基目录，数据写入其下的 `.raspberrycode/`         |
-| `ZCODE_SERVER_WORKSPACE`             | Web 后端的工作区路径                             |
-| `ZCODE_BUILTIN_PROVIDER_CONFIG_FILE` | 本地 Provider 配置文件路径；未设置时使用内置配置 |
-| `ZCODE_DIST_BASE_URL`                | 命令行安装脚本使用的下载根地址                   |
+| `RASPBERRYCODE_DATA_BASE_DIR`                | 应用数据基目录，数据写入其下的 `.raspberrycode/`         |
+| `RASPBERRYCODE_SERVER_WORKSPACE`             | Web 后端的工作区路径                             |
+| `RASPBERRYCODE_BUILTIN_PROVIDER_CONFIG_FILE` | 本地 Provider 配置文件路径；未设置时使用内置配置 |
+| `RASPBERRYCODE_DIST_BASE_URL`                | 命令行安装脚本使用的下载根地址                   |
 
 运行时变量可在启动命令的环境中显式设置。随客户端发布的默认配置见 [config/README.md](config/README.md)。
 
@@ -162,48 +162,48 @@ sudo xattr -rd com.apple.quarantine /Applications/RaspberryCode.app
 
 | 检查项 | 替换方式 |
 | ------ | -------- |
-| 下载根地址 `ZCODE_DIST_BASE_URL` | 构建环境变量或 `--base-url`（见下方命令行版章节） |
-| 远程资源 CDN 根（远程部署资源下载） | 构建期设置 `CDN_DOMAIN`（逗号分隔可多域名，配 `OSS_PATH_PREFIX`），由打包时注入 `__ZCODE_REMOTE_CDN_RELEASE_ROOTS__` |
-| 遥测上报端点 `ZCODE_TELEMETRY_REPORT_ENDPOINT` | 不设置即不发送遥测（默认关闭）；接入自有收集端时按构建配置注入 |
+| 下载根地址 `RASPBERRYCODE_DIST_BASE_URL` | 构建环境变量或 `--base-url`（见下方命令行版章节） |
+| 远程资源 CDN 根（远程部署资源下载） | 构建期设置 `CDN_DOMAIN`（逗号分隔可多域名，配 `OSS_PATH_PREFIX`），由打包时注入 `__RASPBERRYCODE_REMOTE_CDN_RELEASE_ROOTS__` |
+| 遥测上报端点 `RASPBERRYCODE_TELEMETRY_REPORT_ENDPOINT` | 不设置即不发送遥测（默认关闭）；接入自有收集端时按构建配置注入 |
 
 ### RaspberryCode 命令行版
 
-构建入口为 `pnpm build:zcode`。脚本会依次构建 CLI/TUI 和后端，收集 TUI 的原生库、worker 与运行时依赖，再组装发行包；运行发行包仍需要 Node.js，版本以 `mise.toml` 为准。
+构建入口为 `pnpm build:raspberrycode`。脚本会依次构建 CLI/TUI 和后端，收集 TUI 的原生库、worker 与运行时依赖，再组装发行包；运行发行包仍需要 Node.js，版本以 `mise.toml` 为准。
 
-打包前必须设置下载根地址 `ZCODE_DIST_BASE_URL`（可放在 `.env`、`.env.local` 或环境变量中），也可以通过 `--base-url` 传入。以下地址是占位示例，发布时替换为实际托管地址：
+打包前必须设置下载根地址 `RASPBERRYCODE_DIST_BASE_URL`（可放在 `.env`、`.env.local` 或环境变量中），也可以通过 `--base-url` 传入。以下地址是占位示例，发布时替换为实际托管地址：
 
 ```bash
-pnpm build:zcode --base-url https://downloads.example.com/zcode/
+pnpm build:raspberrycode --base-url https://downloads.example.com/raspberrycode/
 
-# 已配置 ZCODE_DIST_BASE_URL 时
-pnpm build:zcode
+# 已配置 RASPBERRYCODE_DIST_BASE_URL 时
+pnpm build:raspberrycode
 
 # 仅重新组包，复用已有的 Agent 和后端构建产物
-pnpm build:zcode --skip-build
+pnpm build:raspberrycode --skip-build
 
 # 查看版本、输出目录等可选参数
-pnpm build:zcode --help
+pnpm build:raspberrycode --help
 ```
 
-默认版本取根目录 `package.json`，输出目录为 `dist/zcode/`：
+默认版本取根目录 `package.json`，输出目录为 `dist/raspberrycode/`：
 
-- `releases/<version>/zcode-<version>.tar.gz`：运行包。
+- `releases/<version>/raspberrycode-<version>.tar.gz`：运行包。
 - `releases/<version>/sha256.txt`：校验摘要。
 - `latest.json`、`install.sh`：版本索引和安装脚本。
 
-完整目录可上传到配置的下载根地址。安装脚本从该地址下载运行包，默认安装到 `~/.raspberrycode/runtime`，并在 `~/.local/bin` 创建 `zcode` 命令。安装目录可通过 `ZCODE_DIST_HOME` 修改，命令目录可通过 `ZCODE_DIST_BIN_DIR` 修改。
+完整目录可上传到配置的下载根地址。安装脚本从该地址下载运行包，默认安装到 `~/.raspberrycode/runtime`，并在 `~/.local/bin` 创建 `raspberrycode` 命令。安装目录可通过 `RASPBERRYCODE_DIST_HOME` 修改，命令目录可通过 `RASPBERRYCODE_DIST_BIN_DIR` 修改。
 
 旧 Lite 用户需要改用上述构建命令、环境变量和新的安装脚本。新安装不会删除旧 Lite 目录，也不会迁移或删除已有会话数据。
 
 本地调试打包产物时，可直接解压运行，无需上传或安装：
 
 ```bash
-zcode_version=$(node -p "require('./dist/zcode/latest.json').version")
-mkdir -p dist/zcode/debug
-tar -xzf "dist/zcode/releases/$zcode_version/zcode-$zcode_version.tar.gz" \
-  -C dist/zcode/debug
+raspberrycode_version=$(node -p "require('./dist/raspberrycode/latest.json').version")
+mkdir -p dist/raspberrycode/debug
+tar -xzf "dist/raspberrycode/releases/$raspberrycode_version/raspberrycode-$raspberrycode_version.tar.gz" \
+  -C dist/raspberrycode/debug
 # 默认启动 TUI
-node dist/zcode/debug/zcode/bin/zcode.mjs
+node dist/raspberrycode/debug/raspberrycode/bin/raspberrycode.mjs
 ```
 
 ## 仓库结构
@@ -212,12 +212,12 @@ node dist/zcode/debug/zcode/bin/zcode.mjs
 | ---------------------------------------------------- | ------------------------------------------ |
 | `packages/desktop`                                   | Electron Main、Host、Renderer 与桌面打包   |
 | `packages/server`                                    | HTTP / WebSocket 服务与远程连接            |
-| `packages/zcode-server-cli`                          | 独立 Server 启动与进程管理                 |
+| `packages/raspberrycode-server-cli`                          | 独立 Server 启动与进程管理                 |
 | `packages/ui`                                        | 共享 React 组件、hooks 与 Zustand 状态     |
 | `packages/services`                                  | 业务服务与持久化                           |
 | `packages/shared`、`packages/rpc`、`packages/client` | 共享协议和类型、RPC 框架、Agent 客户端 SDK |
 | `packages/provider`、`packages/provider-node`        | Provider 公共能力与 Node 实现              |
-| `apps/zcode-cli`                                     | Agent CLI、TUI、运行时与工具               |
+| `apps/raspberrycode-cli`                                     | Agent CLI、TUI、运行时与工具               |
 | `scripts`、`config`、`third-party`                   | 构建维护脚本、内置配置与第三方声明材料     |
 
 ## 项目声明
