@@ -7,18 +7,18 @@ RaspberryCode Computer Use Helper 必须作为独立 `.app` 运行，才能成�
 产品安装位置固定为：
 
 ```text
-${ZCODE_HOME:-$HOME/.raspberrycode}/computer-use/RaspberryCode Computer Use.app
+${RASPBERRYCODE_HOME:-$HOME/.raspberrycode}/computer-use/RaspberryCode Computer Use.app
 ```
 
-内部 `RaspberryCode Preview` 与生产版共享 `ZCODE_HOME` 里的任务、配置和凭据，但使用独立的 Helper
+内部 `RaspberryCode Preview` 与生产版共享 `RASPBERRYCODE_HOME` 里的任务、配置和凭据，但使用独立的 Helper
 版本目录，避免两个不同 App 版本依次使用 CUA 时互相覆盖或触发降级保护：
 
 ```text
-${ZCODE_HOME:-$HOME/.raspberrycode}/computer-use/preview/RaspberryCode Computer Use.app
+${RASPBERRYCODE_HOME:-$HOME/.raspberrycode}/computer-use/preview/RaspberryCode Computer Use.app
 ```
 
-该路径由桌面 Host 注入 `ZCODE_CUA_HELPER_INSTALL_VARIANT=preview`，只改变 CUA 运行组件位置，
-不会改变业务数据根。两个 Helper bundle 的签名身份都保持 `dev.zcode.cua-helper`，因此 macOS
+该路径由桌面 Host 注入 `RASPBERRYCODE_CUA_HELPER_INSTALL_VARIANT=preview`，只改变 CUA 运行组件位置，
+不会改变业务数据根。两个 Helper bundle 的签名身份都保持 `dev.raspberrycode.cua-helper`，因此 macOS
 Accessibility / Screen Recording 的授权主体仍显示为同一个 `RaspberryCode Computer Use`。
 
 ## 安装来源
@@ -30,14 +30,14 @@ arm64 Helper 与主 App 一起交付。
 
 以下覆盖只属于显式本地开发模式，不得作为产品分发配置：
 
-- `ZCODE_CUA_HELPER_DOWNLOAD_URL`：完整 zip URL。
-- `ZCODE_CUA_HELPER_DOWNLOAD_BASE_URL`：版本目录 base URL。
-- `ZCODE_CUA_HELPER_VERSION`：本地下载包的期望 Helper 版本。
-- `ZCODE_CUA_HELPER_TEAM_ID`：期望签名 TeamIdentifier。**未配置时默认锚定 RaspberryCode 官方 team `8A5X4JJ39T`（等价证书 pinning），不是"任意非 ad-hoc team"**；本变量仅用于开发或更换 team 时显式覆盖。
-- `ZCODE_CUA_HELPER_ALLOW_UNSIGNED_LOCAL=1`：仅供本机开发调试。此模式不下载，也不通过
+- `RASPBERRYCODE_CUA_HELPER_DOWNLOAD_URL`：完整 zip URL。
+- `RASPBERRYCODE_CUA_HELPER_DOWNLOAD_BASE_URL`：版本目录 base URL。
+- `RASPBERRYCODE_CUA_HELPER_VERSION`：本地下载包的期望 Helper 版本。
+- `RASPBERRYCODE_CUA_HELPER_TEAM_ID`：期望签名 TeamIdentifier。**未配置时默认锚定 RaspberryCode 官方 team `8A5X4JJ39T`（等价证书 pinning），不是"任意非 ad-hoc team"**；本变量仅用于开发或更换 team 时显式覆盖。
+- `RASPBERRYCODE_CUA_HELPER_ALLOW_UNSIGNED_LOCAL=1`：仅供本机开发调试。此模式不下载，也不通过
   release 签名/Gatekeeper 验收；当来源是当前 checkout 显式提供的 bundled Helper 时，即使版本号
   相同，也必须比较产物内容并在发生变化时原子刷新安装，禁止静默复用旧 Helper。
-- `ZCODE_CUA_PRODUCT_HELPER=0|false|off`（macOS/Windows）：显式关闭默认启用的产品 Helper resolver，
+- `RASPBERRYCODE_CUA_PRODUCT_HELPER=0|false|off`（macOS/Windows）：显式关闭默认启用的产品 Helper resolver，
   关闭后不创建 host、不启动 Helper、不弹 TCC。未设置或显式 `1|true|on` 时，desktop-local
   按需启动外置 Helper，并把随机 socket/token 只注入给可信 shared `node_repl` host。
 
@@ -46,11 +46,11 @@ arm64 Helper 与主 App 一起交付。
 安装器在替换现有 Helper 前必须先在 staging 目录校验。产品内嵌来源用构建 ID、签名、bundle id、
 架构和 Gatekeeper 绑定，不依赖曾经被错误解析为 `0.0.0` 的运行时版本常量；本地下载来源仍检查版本：
 
-- `Info.plist` 的 `CFBundleIdentifier` 必须是 `dev.zcode.cua-helper`。
+- `Info.plist` 的 `CFBundleIdentifier` 必须是 `dev.raspberrycode.cua-helper`。
 - 本地下载来源的 `CFBundleShortVersionString` 或 `CFBundleVersion` 必须等于期望版本。
 - `Contents/MacOS/<CFBundleExecutable>` 必须包含当前目标 arch。
 - `codesign --verify --deep --strict` 必须通过。
-- `codesign -dv --verbose=4` 必须能读到非 ad-hoc `TeamIdentifier`，且必须等于期望 team（默认 `8A5X4JJ39T`，可用 `ZCODE_CUA_HELPER_TEAM_ID` 覆盖）。release 校验下 `expectedTeamIdentifier` 为空会被直接拒绝（fail-closed），不接受未锚定 team 的包。
+- `codesign -dv --verbose=4` 必须能读到非 ad-hoc `TeamIdentifier`，且必须等于期望 team（默认 `8A5X4JJ39T`，可用 `RASPBERRYCODE_CUA_HELPER_TEAM_ID` 覆盖）。release 校验下 `expectedTeamIdentifier` 为空会被直接拒绝（fail-closed），不接受未锚定 team 的包。
 - `spctl -a -vv -t exec` 必须通过，用于验证 Gatekeeper/notarization 结果。
 
 校验失败时不能启动 Helper，也不能把 socket/token 注入给 shared `node_repl` host。
@@ -61,20 +61,20 @@ arm64 Helper 与主 App 一起交付。
 > [`cua-dev-mcp-runtime-assets.md`](./cua-dev-mcp-runtime-assets.md) 中的 Dev 构建、插件缓存与
 > session MCP 注册链路。
 
-`ZCODE_CUA_HELPER_ALLOW_UNSIGNED_LOCAL=1` 用于解决开发机没有 Developer ID 签名身份时的
+`RASPBERRYCODE_CUA_HELPER_ALLOW_UNSIGNED_LOCAL=1` 用于解决开发机没有 Developer ID 签名身份时的
 迭代测试问题。产品 Helper resolver 默认启用，不需要额外开启变量；只有
-`ZCODE_CUA_PRODUCT_HELPER=0|false|off` 才关闭。该模式保留 bundle id、版本、架构和 Mach-O 结构校验，
+`RASPBERRYCODE_CUA_PRODUCT_HELPER=0|false|off` 才关闭。该模式保留 bundle id、版本、架构和 Mach-O 结构校验，
 但允许 ad-hoc/unsigned 签名并跳过 Gatekeeper/notarization；通过后仍按产品路径用
 LaunchServices 启动外置 Helper，并把随机 socket/token 注入给可信 shared `node_repl` host。
 
 非打包 macOS desktop 在显式开启上述 unsigned-local 模式后，优先使用非空的
-`ZCODE_CUA_BUNDLED_HELPER_APP_PATH` 作为本地 bundled source；未设置、空串或仅空白时回退到
-`${ZCODE_HOME:-$HOME/.raspberrycode}/computer-use/dev/RaspberryCode Computer Use Dev.app`。路径缺失或校验失败时
+`RASPBERRYCODE_CUA_BUNDLED_HELPER_APP_PATH` 作为本地 bundled source；未设置、空串或仅空白时回退到
+`${RASPBERRYCODE_HOME:-$HOME/.raspberrycode}/computer-use/dev/RaspberryCode Computer Use Dev.app`。路径缺失或校验失败时
 fail-closed，绝不回退下载。正式打包 desktop 会忽略该开发态覆盖并始终使用
 `RaspberryCode.app/Contents/Resources/cua-helper/RaspberryCode Computer Use.app`，因此 shell 不能改写生产来源。
 
 标准 `pnpm dev:desktop` 启动脚本必须同时注入当前 checkout 的 bundled Helper 路径和
-`ZCODE_CUA_HELPER_ALLOW_UNSIGNED_LOCAL=1`。两者缺一不可：只有路径时 Host 不会进入本地开发
+`RASPBERRYCODE_CUA_HELPER_ALLOW_UNSIGNED_LOCAL=1`。两者缺一不可：只有路径时 Host 不会进入本地开发
 信任与同版本内容刷新分支，容易继续启动 `~/.raspberrycode` 中版本号相同但 native ABI 已过期的 Helper。
 
 ```text
@@ -89,14 +89,14 @@ dev 启动
 产物误覆盖成开发产物。它只能证明本地 App/Helper/socket/token 流程可运行，不能证明稳定
 TCC 身份或 release 可交付性。
 
-联合验证尚未发布的 zcode-cua 源码时，先在 producer 仓库执行 `pnpm build`，再给两条构建链
+联合验证尚未发布的 raspberrycode-cua 源码时，先在 producer 仓库执行 `pnpm build`，再给两条构建链
 传入同一个绝对目录：
 
 ```bash
-ZCODE_CUA_HELPER_RUNTIME_PACKAGE_DIR=/absolute/path/to/zcode-cua \
+RASPBERRYCODE_CUA_HELPER_RUNTIME_PACKAGE_DIR=/absolute/path/to/raspberrycode-cua \
   pnpm build:cua-helper -- --version <version>
-ZCODE_CUA_RUNTIME_PACKAGE_DIR=/absolute/path/to/zcode-cua \
-  pnpm --filter @zcode/cli build
+RASPBERRYCODE_CUA_RUNTIME_PACKAGE_DIR=/absolute/path/to/raspberrycode-cua \
+  pnpm --filter @raspberrycode/cli build
 ```
 
 两个变量只覆盖本次构建输入，不修改 lockfile。未设置时继续使用仓库固定依赖；不能只覆盖
@@ -110,7 +110,7 @@ staging。两者校验通过后使用同一套 promotion：
 1. 已有 Helper 重命名为同目录 backup。
 2. staging Helper 重命名到最终路径。
 3. promotion 失败时回滚 backup。
-4. 成功后删除 backup 和临时目录，并写入 `.zcode-cua-helper-meta.json`。
+4. 成功后删除 backup 和临时目录，并写入 `.raspberrycode-cua-helper-meta.json`。
 
 该流程避免跨卷 `rename`，并确保不会把未校验的 Helper 放到产品路径。
 

@@ -45,7 +45,7 @@ Plugin（设置页导航）
 - Plugins、MCPs 与 Skills 共用的“尚未安装”引导容器，以及 Plugin 的无匹配/不可用空状态，均使用透明背景和 `border-border` 虚线边框，不与正常的 `bg-surface` 列表混淆；容器内操作按钮统一使用 `size="lg"`。Plugin loading 状态复用同一容器层级和留白。
 - Plugin Skills 保留“当前 Scope 直属技能 + 每个插件独立分组”的来源结构。直属技能分组统一命名为 `Installed`，Scope 只由顶部选择器表达；技能名称后不再重复显示 User、Workspace 或 Plugin 标签。分组标题、列表容器、显式分割线、图标底色与行 hover 对齐 MCPs，标题右侧只放置 Import 与 New，不提供手动刷新；导入、新建、同步或启停等数据变更完成后自动刷新列表。Skills 不提供启用状态筛选菜单，列表始终包含当前 Scope 中已启用和已停用的技能。当前 Scope 没有直属技能时显示新建或导入引导，插件技能仍按插件分组继续展示；搜索导致的空结果不显示安装引导。
 - Plugin Skills 的直属技能使用 WandSparkles 缺省图标；插件技能通过对应插件的 marketplace listing 显示插件图标，找不到匹配插件时回退到缺省图标。
-- Plugin Skills 的插件分组标题复用 `formatCanonicalPluginName` 做名称转换，与 Plugins 和 MCPs 的插件显示名保持一致；其中 `mcp`、`aws`、`zcode` token 固定显示为 `MCP`、`AWS`、`RaspberryCode`，内部分组 key 仍使用原始规范化名称。
+- Plugin Skills 的插件分组标题复用 `formatCanonicalPluginName` 做名称转换，与 Plugins 和 MCPs 的插件显示名保持一致；其中 `mcp`、`aws`、`raspberrycode` token 固定显示为 `MCP`、`AWS`、`RaspberryCode`，内部分组 key 仍使用原始规范化名称。
 - MCP 授权操作统一使用 `<ExternalLink size-4> Authenticate` 的 link variant 按钮，并明确使用 `text-sky-500 dark:text-sky-400` 及对应 hover 色；不能使用会在 Zai 主题变成黑/白的 `text-brand`。直接 MCP 与插件 MCP 保持一致。
 - 直接 MCP 的缺省图标始终为 Cable，插件 MCP 使用对应插件图标。两类 MCP 的状态 dot 统一叠放在图标容器右下角，不再占用名称行空间；父容器固定为 `size-4 bg-background` 并居中内容，静态圆点使用 `size-2.5`，确保切换到连接中旋转状态时外层尺寸不跳动。状态颜色和原因 Tooltip 保持不变。
 - 进入 MCP 新建或编辑子页面时隐藏 Plugin 的 Scope、Tabs 与 Search 工具栏，并移除列表态顶部间距；保存、删除或取消回到列表后恢复工具栏。

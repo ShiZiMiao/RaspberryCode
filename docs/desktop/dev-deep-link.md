@@ -4,11 +4,11 @@
 
 - 当前事实 spec，日期：2026-09-09。
 - 目标场景：先执行 `pnpm dev:desktop:test`，再从线上测试 Share 页面点击“去 RaspberryCode 继续”。
-- 线上 Share 页面和 `zcode://share/import` 协议保持不变。
+- 线上 Share 页面和 `raspberrycode://share/import` 协议保持不变。
 
 ## 问题边界
 
-线上 Share CTA 只能生成稳定的 `zcode://share/import?code=...`。macOS 的协议处理由
+线上 Share CTA 只能生成稳定的 `raspberrycode://share/import?code=...`。macOS 的协议处理由
 LaunchServices 决定，不能感知哪个终端通过 pnpm 启动了项目。
 
 当前 `pnpm dev:desktop:test` 直接启动 `node_modules/electron/dist/Electron.app`。这个 raw
@@ -23,11 +23,11 @@ Electron bundle 的 `Info.plist` 没有 `CFBundleURLTypes`，系统登记后得�
 2. 只修改副本的 `Info.plist`，写入：
    - `CFBundleIdentifier=dev.raspberrycode.app.development`；
    - `CFBundleName/CFBundleDisplayName=RaspberryCode Dev`；
-   - `CFBundleURLTypes` 中的 `zcode` scheme。
+   - `CFBundleURLTypes` 中的 `raspberrycode` scheme。
 3. 仍以 `packages/desktop` 目录作为 Electron 的开发入口启动副本，保留 Vite、HMR、
-   `ELECTRON_RENDERER_URL`、`ZCODE_ENV` 和现有单实例锁语义。
+   `ELECTRON_RENDERER_URL`、`RASPBERRYCODE_ENV` 和现有单实例锁语义。
 4. 现有 main process 继续调用 `registerDeepLinkProtocol`；由于当前进程已经来自带
-   `zcode` 声明的 Dev bundle，LaunchServices 注册的是 Dev bundle，而不是 raw Electron。
+   `raspberrycode` 声明的 Dev bundle，LaunchServices 注册的是 Dev bundle，而不是 raw Electron。
 5. `open-url`、`second-instance`、ShareImport 投递和导入持久化逻辑不变。
 
 ## 事件顺序
@@ -35,10 +35,10 @@ Electron bundle 的 `Info.plist` 没有 `CFBundleURLTypes`，系统登记后得�
 ```text
 pnpm dev:desktop:test
   -> dev.mjs 等待 main/host/preload/Vite 就绪
-  -> 准备 RaspberryCode Dev.app + Info.plist(zcode)
+  -> 准备 RaspberryCode Dev.app + Info.plist(raspberrycode)
   -> 从 Dev.app 启动 Electron packages/desktop
-  -> main 注册 zcode 默认 handler
-  -> 浏览器点击 zcode://share/import?code=...
+  -> main 注册 raspberrycode 默认 handler
+  -> 浏览器点击 raspberrycode://share/import?code=...
   -> macOS open-url / second-instance
   -> 现有 Desktop ShareImport 路由
 ```
@@ -54,10 +54,10 @@ pnpm dev:desktop:test
 
 ## 验收标准
 
-1. `pnpm dev:desktop:test` 启动日志记录 Dev bundle 路径和 `zcode` 注册成功。
-2. macOS LaunchServices 的 `zcode` handler 指向 `dev.raspberrycode.app.development`，而不是
+1. `pnpm dev:desktop:test` 启动日志记录 Dev bundle 路径和 `raspberrycode` 注册成功。
+2. macOS LaunchServices 的 `raspberrycode` handler 指向 `dev.raspberrycode.app.development`，而不是
    `com.github.electron`。
-3. 线上 Share 页面仍显示原 CTA 和原 `zcode://share/import` href。
+3. 线上 Share 页面仍显示原 CTA 和原 `raspberrycode://share/import` href。
 4. Dev 已运行时点击 CTA，不出现 Electron 默认页，现有 Dev 窗口收到 `ShareImport`。
-5. Dev endpoint 为 `https://zcode.z.ai`，导入请求与页面环境一致。
+5. Dev endpoint 为 `https://your-server.example`，导入请求与页面环境一致。
 6. 原有 deep-link parser/route 单测继续通过。

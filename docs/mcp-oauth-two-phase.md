@@ -4,7 +4,7 @@
 > 日期：2026-08-14。
 > 修订：2026-08-24，补齐运行期 tool caller 预算、共享恢复所有权与异常收敛。
 > 基线：`exa-oauth-analysis` / `bfc91c54a9`。
-> 生产 SDK：`@modelcontextprotocol/client@2.0.0`（`apps/zcode-cli/packages/adapters/package.json:105`）。
+> 生产 SDK：`@modelcontextprotocol/client@2.0.0`（`apps/raspberrycode-cli/packages/adapters/package.json:105`）。
 > 仓库同时存在 `@modelcontextprotocol/sdk@1.29.0`，本规格与实现只使用 `client@2.0.0`。
 > 根因分析：`docs/analysis/exa-oauth-reauth-analysis.md`。
 > 前置规格：`docs/mcp-oauth-client-auth.md`（配置、凭据完整性、设置页边界）。
@@ -476,7 +476,7 @@ connecting record；失败时 failed record 替换 connecting record。禁止保
 
 ### 5.6 settings / session 双 lease 的 pending 投影
 
-settings adapter 与 session adapter 是独立 lease（`zcode-protocol-entrypoint.ts:115-133`），
+settings adapter 与 session adapter 是独立 lease（`raspberrycode-protocol-entrypoint.ts:115-133`），
 `connectionKey` 对非 workspace-isolated server 使用 `leaseId`（`pool.ts:317-328`）。因此 session 成为
 leader 时，settings follower 必须从共享 pending 键读取并把授权 URL 投影到自己的状态；现有状态更新只
 发生在当前 adapter 自己的 `onAuthorizationRequired` 回调里（`index.ts:770-785`），跨 lease 不可见。

@@ -15,22 +15,22 @@ The default workflow kind is `expert`, while the RaspberryCode task service/type
 
 ## RaspberryCode Integration
 
-The renderer never reads `~/.raspberrycode/cli/workflows` directly. It calls `IZCodeTaskService`, which currently exposes the shared `IWorkflowService` shape.
+The renderer never reads `~/.raspberrycode/cli/workflows` directly. It calls `IRaspberryCodeTaskService`, which currently exposes the shared `IWorkflowService` shape.
 
-Current branch status: the UI and shared `ZCodeWorkflow*` types are still present, but the RaspberryCode task service adapter only returns empty workflow data and marks mutating workflow operations unsupported. The intended agent extension methods remain:
+Current branch status: the UI and shared `RaspberryCodeWorkflow*` types are still present, but the RaspberryCode task service adapter only returns empty workflow data and marks mutating workflow operations unsupported. The intended agent extension methods remain:
 
-- `zcode.dev/workflow/start`
-- `zcode.dev/workflow/list`
-- `zcode.dev/workflow/get`
-- `zcode.dev/workflow/cancel`
+- `raspberrycode.dev/workflow/start`
+- `raspberrycode.dev/workflow/list`
+- `raspberrycode.dev/workflow/get`
+- `raspberrycode.dev/workflow/cancel`
 
 Live updates are delivered through the extension notification:
 
-- `zcode.dev/workflow/event`
+- `raspberrycode.dev/workflow/event`
 
-When workflow transport is reconnected, the adapter must map that notification into a workspace event with type `workspace_workflow_event`, preserving `kind`, `nodeId`, and small structured `payload` fields. Preserving these fields is required for incremental scheduler/frontier updates from `zcode-cli`; older clients that dropped them had to reload the full snapshot to understand node movement.
+When workflow transport is reconnected, the adapter must map that notification into a workspace event with type `workspace_workflow_event`, preserving `kind`, `nodeId`, and small structured `payload` fields. Preserving these fields is required for incremental scheduler/frontier updates from `raspberrycode-cli`; older clients that dropped them had to reload the full snapshot to understand node movement.
 
-The graph view uses the `snapshot.graph` payload returned by `zcode.dev/workflow/get`.
+The graph view uses the `snapshot.graph` payload returned by `raspberrycode.dev/workflow/get`.
 When the response also includes `scheduler`, the graph view prefers that derived server state and falls back to local graph derivation for older agents.
 It derives:
 

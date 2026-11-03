@@ -26,16 +26,16 @@ The current visible step order is:
 
 ## Session Scan Source
 
-- Desktop onboarding / settings migration scan reads native Claude Code history from `{HOME}/.claude/projects/**/*.jsonl` (also tries `os.homedir()` and `ZCODE_DATA_BASE_DIR` as HOME candidates).
-- Implementation: `packages/services/src/session/claude-native/claudeNativeSessionImportRepo.ts`, wired through `IZCodeTaskService.scanImportableClaudeSessions`.
+- Desktop onboarding / settings migration scan reads native Claude Code history from `{HOME}/.claude/projects/**/*.jsonl` (also tries `os.homedir()` and `RASPBERRYCODE_DATA_BASE_DIR` as HOME candidates).
+- Implementation: `packages/services/src/session/claude-native/claudeNativeSessionImportRepo.ts`, wired through `IRaspberryCodeTaskService.scanImportableClaudeSessions`.
 - Imported tasks are indexed with `provider: "claude"` and `migrationSource: "claudeCode"`. RaspberryCode Agent task lists filter to `glm` by default but also include rows with `migration_source = claudeCode`, so migrated history appears in the sidebar without mixing in stale non-migrated Claude index rows.
 
 ## Claude → RaspberryCode Session Import
 
 Claude Code 原生 `.jsonl` 与 RaspberryCode 协议 snapshot **不是同一格式**，导入时会在 services 层做归一化：
 
-1. `claudeNativeSessionImportParser.ts` 读取 jsonl，过滤 sidechain / synthetic assistant，把多段 assistant 聚合成「用户一轮 + 助手一轮」的 `ZCodePersistedMessage[]`。
-2. `session/create` 支持 `importedHistory`，导入服务会创建真实 RaspberryCode Protocol session，并把归一后的历史消息写入 zcode-cli session store。导入后的 `taskId` 就是真实 `sessionId`，因此后续 `sendPrompt`、`setModel`、`setMode` 都继续命中同一个 runtime。
+1. `claudeNativeSessionImportParser.ts` 读取 jsonl，过滤 sidechain / synthetic assistant，把多段 assistant 聚合成「用户一轮 + 助手一轮」的 `RaspberryCodePersistedMessage[]`。
+2. `session/create` 支持 `importedHistory`，导入服务会创建真实 RaspberryCode Protocol session，并把归一后的历史消息写入 raspberrycode-cli session store。导入后的 `taskId` 就是真实 `sessionId`，因此后续 `sendPrompt`、`setModel`、`setMode` 都继续命中同一个 runtime。
 3. `buildImportedClaudeTaskFile.ts` 仍会生成迁移备份 snapshot；生成前会按属性路径清洗来源端运行态字段，默认过滤 `meta.mode`、`meta.model`、`meta.provider`、`messages[].model`，避免 Claude Code 的模型/模式/provider 污染 RaspberryCode 当前 workspace 的运行时选择。
 4. `persistImportedClaudeTask.ts` 写入 `~/.raspberrycode/v2/sessions/{workspaceHash}/{taskId}.json`（legacy snapshot 备份），并同步 sqlite task index + `workspace_task_list_changed` 广播。新导入路径的列表元数据来自真实 RaspberryCode session，同时保留 `migrationSource: "claudeCode"`。
 5. 原生 jsonl 副本复制到 `~/.raspberrycode/v2/agent-config/claude/{workspaceHash}/projects/...`，供后续 Claude 续聊链路使用。
@@ -64,7 +64,7 @@ Claude Code 原生 `.jsonl` 与 RaspberryCode 协议 snapshot **不是同一格�
   - Owns per-step content rendering.
 - `packages/services/src/settings-sync/settingsSyncService.ts`
   - Owns the filesystem operation that copies `{HOME}/.claude/CLAUDE.md` to `{HOME}/.raspberrycode/AGENTS.md`.
-- `apps/zcode-cli/packages/adapters/src/context/index.ts`
+- `apps/raspberrycode-cli/packages/adapters/src/context/index.ts`
   - Resolves `{HOME}/.raspberrycode/AGENTS.md` and workspace `AGENTS.md`, then merges both when both exist.
 
 ## UX Rules

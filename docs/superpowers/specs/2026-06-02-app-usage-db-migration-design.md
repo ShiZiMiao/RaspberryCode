@@ -1,4 +1,4 @@
-# 应用用量改造：数据源迁移到 zcode agent 数据库
+# 应用用量改造：数据源迁移到 raspberrycode agent 数据库
 
 日期：2026-06-02
 分支：feat/new-agent
@@ -10,7 +10,7 @@
 「字符数 / 3」**估算** token 后聚合成三个区块：概要、热力图、趋势，支持
 全部 / 7d / 30d 时间筛选。
 
-zcode agent 新增了可观测性数据库（迁移 `0010_usage_observability`），三张表记录
+raspberrycode agent 新增了可观测性数据库（迁移 `0010_usage_observability`），三张表记录
 **真实**用量数据：
 
 - `model_usage` — 真实 token（input / output / reasoning / cache 读写）、provider/model、
@@ -43,7 +43,7 @@ RaspberryCode Protocol（stdio JSON-RPC）请求数据（现有 `session/list`�
         → buildUsageStatsSnapshot()  字符数/3 估算                 [删]
 
 新:  useAppUsageStats → usageStatsService.getAppUsageSnapshot()
-        → zcodeProtocolClient.request("usage/stats", {range,timeZone})   [新协议方法]
+        → raspberrycodeProtocolClient.request("usage/stats", {range,timeZone})   [新协议方法]
         → [agent 子进程] handler → SessionStore 新增 read 方法
         → SQL GROUP BY 聚合 model_usage / turn_usage / tool_usage        [真实数据]
         → 回传 AppUsageSnapshot
@@ -93,20 +93,20 @@ RaspberryCode Protocol（stdio JSON-RPC）请求数据（现有 `session/list`�
 
 ### Agent 侧（取数 + 聚合）
 
-- `apps/zcode-cli/packages/contracts/src/interfaces/session-store.port.ts`
+- `apps/raspberrycode-cli/packages/contracts/src/interfaces/session-store.port.ts`
   — `UsageStorePort` 增加只读聚合方法（当前仅有写方法）及结果类型。
-- `apps/zcode-cli/packages/adapters/src/storage/session-store/repositories/usage.ts`
+- `apps/raspberrycode-cli/packages/adapters/src/storage/session-store/repositories/usage.ts`
   — 新增 SQL 聚合查询（GROUP BY day / model / tool，带 30 天 + range 过滤）。
-- `apps/zcode-cli/packages/adapters/src/storage/session-store/sqlite-session-store.ts`
+- `apps/raspberrycode-cli/packages/adapters/src/storage/session-store/sqlite-session-store.ts`
   — 代理新读方法。
-- `packages/shared/src/zcode-protocol/index.ts`
-  — 新协议方法 `usage/stats` + zod 入参/结果 schema，登记到 `zcodeProtocolMethods`。
+- `packages/shared/src/raspberrycode-protocol/index.ts`
+  — 新协议方法 `usage/stats` + zod 入参/结果 schema，登记到 `raspberrycodeProtocolMethods`。
 - agent server 侧 handler（与 `session/list` 同位置）— 处理 `usage/stats`。
 
 ### 宿主服务侧（换数据源）
 
 - `packages/services/src/usage-stats/usageStatsService.ts`
-  — `getAppUsageSnapshot()` 改走 `zcodeProtocolClient` / `zcodeAgentService`。
+  — `getAppUsageSnapshot()` 改走 `raspberrycodeProtocolClient` / `raspberrycodeAgentService`。
 - **删除**：`usageStatsAggregator.ts`、`repo/sessionUsageRepo.ts`、`usageStatsSeries.ts`、
   字符估算常量（`ESTIMATED_TOKEN_CHAR_DIVISOR`、`estimateTokensFromCharacterCount` 等）。
 - `packages/shared/src/usage-stats.ts`

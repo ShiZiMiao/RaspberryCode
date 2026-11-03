@@ -75,10 +75,10 @@ Provider 领域不感知配置来自 JSON、数据库、Host 内存、RPC 还是
 
 ## 进程内复用
 
-`zcode-cli` 是物理包和可执行文件，包含三种 Entry/运行角色以及共同的 Core：
+`raspberrycode-cli` 是物理包和可执行文件，包含三种 Entry/运行角色以及共同的 Core：
 
 ```text
-zcode-cli package / executable
+raspberrycode-cli package / executable
 │
 ├─ Shared Core
 │  └─ Agent、Submission、Registry、Model、Adapter
@@ -151,7 +151,7 @@ Remote Host Server 暴露跨网络能力，负责连接、鉴权和 Worker 生�
 
 ## RaspberryCode Built-in 配置发布与 Environment 同步
 
-服务端通过既有 `/api/v1/client/configs.data.configs.zcodeBuiltin` 原子发布 RaspberryCode Built-in Provider Config
+服务端通过既有 `/api/v1/client/configs.data.configs.raspberrycodeBuiltin` 原子发布 RaspberryCode Built-in Provider Config
 与 RaspberryCode Built-in Model Config Rules：
 
 ```text

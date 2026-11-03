@@ -3,7 +3,7 @@
 Status: implemented. This document describes what a workflow run leaves behind in the chat
 transcript and in the main agent's notifications; its siblings `presentation.md` (the graph
 and run pane), `authoring.md` (the artifact system), and
-`apps/zcode-cli/packages/dynamic-workflow/docs/execution-engine.md` (terminal states, the
+`apps/raspberrycode-cli/packages/dynamic-workflow/docs/execution-engine.md` (terminal states, the
 journal) own the things these surfaces display.
 
 ## What a run leaves behind
@@ -36,7 +36,7 @@ row.
 ### The payload
 
 `workflowNotification` is a discriminated union on `BackgroundResultOriginMeta`. The zod
-source is `packages/shared/src/zcode-protocol-v4/rows.ts`; the contracts package carries a
+source is `packages/shared/src/raspberrycode-protocol-v4/rows.ts`; the contracts package carries a
 hand-synchronized TypeScript mirror.
 
 ```ts

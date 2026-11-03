@@ -10,8 +10,8 @@
 **问题**：dev Helper 每次 rebuild 后 CDHash 变化，macOS 把它当新 app，要求重新授予
 Accessibility + Screen Recording——开发迭代时每轮都要手动授权，严重拖慢速度。
 
-**解决**（z-code 仓 `scripts/ensure-cua-helper-dev-identity.mjs`）：一次性创建自签
-证书 `zcode-cua-helper-dev` 存入 login keychain，此后所有 dev Helper 用它签名 →
+**解决**（raspberrycode 仓 `scripts/ensure-cua-helper-dev-identity.mjs`）：一次性创建自签
+证书 `raspberrycode-cua-helper-dev` 存入 login keychain，此后所有 dev Helper 用它签名 →
 designated requirement 锚定证书公钥（稳定）而非 CDHash → **TCC 授权跨 rebuild 持久**。
 
 **标准流程**（新机器 / 首次）：
@@ -19,7 +19,7 @@ designated requirement 锚定证书公钥（稳定）而非 CDHash → **TCC 授
 ```bash
 # ⚠️ 必须在本地 GUI 终端（Terminal/ghostty）跑，SSH 会话会被 macOS 拒绝
 #    （"User interaction is not allowed"——keychain 写操作要求 GUI audit session）
-cd <z-code 仓> && node scripts/ensure-cua-helper-dev-identity.mjs
+cd <raspberrycode 仓> && node scripts/ensure-cua-helper-dev-identity.mjs
 # 弹出信任对话框时点「始终信任」。之后 rebuild 永远不再弹 TCC 授权。
 ```
 
@@ -34,8 +34,8 @@ cd <z-code 仓> && node scripts/ensure-cua-helper-dev-identity.mjs
 
 **防护**（同步固化）：
 - build 脚本在退回 adhoc 签名时会打印醒目黄色警告（说明 TCC 后果 + 一次性修复
-  命令）；测试可用 `ZCODE_CUA_HELPER_QUIET_ADHOC=1` 静音。
-- `ZCODE_CUA_ADDON_PATH=<producer>/build/Release/ax_native.node` 允许 producer
+  命令）；测试可用 `RASPBERRYCODE_CUA_HELPER_QUIET_ADHOC=1` 静音。
+- `RASPBERRYCODE_CUA_ADDON_PATH=<producer>/build/Release/ax_native.node` 允许 producer
   worktree 的 freshly-built addon 直接进 helper 包——否则 build 静默使用 consumer
   `node_modules` 里的**旧 addon**（按 pinned commit 编译），producer native 修复
   根本没进包，白烧一轮 TCC 授权才能发现（2026-08-16 实际踩坑）。

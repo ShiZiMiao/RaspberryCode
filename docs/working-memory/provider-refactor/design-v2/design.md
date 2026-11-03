@@ -74,8 +74,8 @@ Provider 的生效顺序固定为：
 
 ```ts
 effectiveProviders = resolveProviderTemplates(
-  zcodeBuiltinProviderTemplates,
-  zcodeBuiltinAccountProviders.overlay(accountProviders),
+  raspberrycodeBuiltinProviderTemplates,
+  raspberrycodeBuiltinAccountProviders.overlay(accountProviders),
   personalProviders,
 );
 ```
@@ -156,7 +156,7 @@ Anthropic 时，才选择该入口实际支持且验证最充分的其他 Schema
 写入边界接收稀疏 Config；执行边界只接收经过完整性证明的类型。完整类型是同一份 Config 的类型收窄，
 不是另一套 DTO，也不是第二个 Registry。
 
-Model 的字段以 `@zcode/shared/model-config` 的完整数据 schema 为唯一来源；稀疏 schema 从同一字段派生
+Model 的字段以 `@raspberrycode/shared/model-config` 的完整数据 schema 为唯一来源；稀疏 schema 从同一字段派生
 缺省/null 覆盖语义。构造输入、JSON 输出及 Registry 完整类型使用 schema 推导，行为类只保留冻结、overlay
 和序列化行为。完整性检查复用该 schema，不再手写第二份字段/值域检查表。纯数据 schema 不引用行为类，
 避免 codec 与类之间循环依赖。Provider/API/Access 同样由 `config/provider-data-schema.ts` 提供单一数据合同；
@@ -430,7 +430,7 @@ Provider Config，并被 Registry、ModelFactory 和 Runtime 消费。隐藏是�
 - 保留两家 Start Provider ID，统一显示名称，logo 各自沿用 Z.ai／BigModel。按当前品牌过滤，在现有“智谱”分组独立展示，复用详情，只去掉连接／断开。无虚拟 Provider、ID 合并或展示身份映射。
 - 保留 current，解释为匹配当前账号访问上下文。Start 不依赖付费 selection；个人／团队仍依赖当前付费选择。允许 Start 与一个付费套餐同时 current=true；权益、模型完整性、启用及请求凭据独立校验。Start connectionKey 不包含付费选择。
 - Start 按保存的 Provider ID／modelId／options 解析，退出唯一当前付费连接映射；个人／团队继续原映射。Start 失效或跨品牌后不自动替换 Provider。
-- Start 请求直接复用当前对应品牌登录的 zcodeJwtToken，解除 selection.kind 必须等于 Start 的条件；保留原鉴权，不复制 token、不新增切账号竞态校验或中断机制。
+- Start 请求直接复用当前对应品牌登录的 raspberrycodeJwtToken，解除 selection.kind 必须等于 Start 的条件；保留原鉴权，不复制 token、不新增切账号竞态校验或中断机制。
 - 不迁移模型数据，不建立升级连接快照、额外迁移版本或全库转换。旧 kind:start-plan 保持可读而不控制 Start 执行；不再写此值启用 Start。首次付费初始化保持原顺序，旧值不得被当成新用户空态误选套餐。
 - 提交／创建时，若当前为付费套餐、同模型在 Start 有明确可用额度且思考选项兼容，提示“切换套餐／不了”和“不再提示”。切换只修改当前入口的模型选择，再继续原提交／保存，不改变全局付费连接；未知额度不阻断原提交。
 - 推荐覆盖对话新提交、定时任务创建／修改模型保存、Wiki 手动新生成，以及自定义 Subagent 保存、内置／插件 Subagent 显式模型的即时保存。继承／默认不变。Bot、立即运行、后台触发／执行、闲时、已提交队列执行、原请求重试及 Wiki 失败页补齐不提示；保存并运行仅在保存阶段提示一次。
@@ -582,10 +582,10 @@ Personal 文件为 `{ schemaVersion: 1, config }`：config 内 `providerConfigRu
 ```text
 runtime/provider/
   <platform>/<appVersion>/<endpoint-key>/
-    zcode-builtin.json
-    zcode-builtin-refresh.json
+    raspberrycode-builtin.json
+    raspberrycode-builtin-refresh.json
   provisioning.json
-  bundled/zcode-builtin.json
+  bundled/raspberrycode-builtin.json
 ```
 
 随包副本固定路径，内容相同复用、变化原子替换；下载/刷新仍三维隔离。升级以退出旧进程为前提，不保留 hash 历史副本。

@@ -24,7 +24,7 @@
 直接运行指定 spec 即可：
 
 ```bash
-pnpm --filter @zcode/desktop test:e2e -- --spec ./test/e2e/upstream-provider.test.ts
+pnpm --filter @raspberrycode/desktop test:e2e -- --spec ./test/e2e/upstream-provider.test.ts
 ```
 
 默认回放模式的行为：
@@ -47,7 +47,7 @@ E2E_PROVIDER_HTTP_MODE=capture \
 E2E_PROVIDER_BASE_URL=https://<provider-host>/anthropic \
 E2E_PROVIDER_API_KEY=... \
 E2E_PROVIDER_MODEL=<model-id> \
-pnpm --filter @zcode/desktop test:e2e -- --spec ./test/e2e/upstream-provider.test.ts
+pnpm --filter @raspberrycode/desktop test:e2e -- --spec ./test/e2e/upstream-provider.test.ts
 ```
 
 capture 模式会在本机启动透明 MITM 抓包代理：
@@ -74,7 +74,7 @@ E2E_PROVIDER_PRESET=glmhighspeed \
 GLM_HIGHSPEED_E2E_API_KEY=... \
 E2E_PROVIDER_PROMPT='输出一篇很长的 Markdown，包含多级标题、列表和代码块，末尾写 PERF_TRACE_DONE' \
 E2E_PROVIDER_EXPECT_REPLY_TEXT=PERF_TRACE_DONE \
-pnpm --filter @zcode/desktop test:e2e -- --spec ./test/e2e/upstream-provider.test.ts
+pnpm --filter @raspberrycode/desktop test:e2e -- --spec ./test/e2e/upstream-provider.test.ts
 ```
 
 后续回放自定义 fixture 或 capture artifact：
@@ -82,7 +82,7 @@ pnpm --filter @zcode/desktop test:e2e -- --spec ./test/e2e/upstream-provider.tes
 ```bash
 E2E_PROVIDER_PRESET=glmhighspeed \
 E2E_PROVIDER_REPLAY_FIXTURE_PATH=/absolute/path/to/upstream-provider.json \
-pnpm --filter @zcode/desktop test:e2e -- --spec ./test/e2e/upstream-provider.test.ts
+pnpm --filter @raspberrycode/desktop test:e2e -- --spec ./test/e2e/upstream-provider.test.ts
 ```
 
 当 replay fixture 带 `response.chunks`，或直接使用含 `responseChunkTimeline` 的 capture artifact 时，

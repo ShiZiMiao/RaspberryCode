@@ -155,7 +155,7 @@
 - [GLM-5.3](https://docs.z.ai/guides/llm/glm-5.3)、[GLM-5.3-Flash](https://docs.z.ai/guides/vlm/glm-5.3-flash)：文本与原生多模态的区别。
 - [智谱搜索](https://docs.bigmodel.cn/cn/guide/tools/web-search)、[Z.ai 搜索](https://docs.z.ai/guides/tools/web-search)：独立搜索与对话内搜索的区别；不作为所有模型已实测的依据。
 
-主要代码：`config/provider/zcode-builtin.json`；`packages/provider/src/config/provider-data-schema.ts`、`provider-config.ts`、`schema.ts` 与 `packages/provider/src/resolver.ts`；`packages/ui/src/settings/model-provider-section/ProviderDraftSave.ts`、`InlineEditableProviderCard.tsx`；`apps/zcode-cli/packages/adapters/src/model/model-execution.ts`、`tool-transform.ts`；官方版本的请求安全校验实现；`packages/services/src/model-provider/accountProviderRequestAuthService.ts`。
+主要代码：`config/provider/raspberrycode-builtin.json`；`packages/provider/src/config/provider-data-schema.ts`、`provider-config.ts`、`schema.ts` 与 `packages/provider/src/resolver.ts`；`packages/ui/src/settings/model-provider-section/ProviderDraftSave.ts`、`InlineEditableProviderCard.tsx`；`apps/raspberrycode-cli/packages/adapters/src/model/model-execution.ts`、`tool-transform.ts`；官方版本的请求安全校验实现；`packages/services/src/model-provider/accountProviderRequestAuthService.ts`。
 
 现有设计 `design/registry/request-compatibility-and-access-protocols.md` 明确将官方版本请求安全校验限定为账号个人／团队，本 Todo 是新增显式 Access 的后续裁决。实施前更新该 spec 及功能图，普通 `api-key` 仍不启用请求安全校验，不将新 Access 写入 Model Config。
 

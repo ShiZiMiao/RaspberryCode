@@ -264,7 +264,7 @@ Remote Worker Registry / execution
 
 ### 2.2 临时 App 被当作无 Session 模型投影器
 
-`workspace/readState` 在没有活动 Session 时创建完整临时 `ZCodeApp`，注入 state-only 假 Adapter，再通过
+`workspace/readState` 在没有活动 Session 时创建完整临时 `RaspberryCodeApp`，注入 state-only 假 Adapter，再通过
 `mapSessionSettings()` 生成 `model + thought + configOptions`。Conversation 首条消息只是最常见入口；同一
 链路还被 Automation preview、Repo Wiki、Subagent reconciliation、Bot、Off-Peak 用户模型与 Git Commit
 sidecar 使用。
@@ -477,7 +477,7 @@ Snapshot/cache 按 target service 实例与 `workspaceKey` 隔离。切换 targe
 - 删除 `workspaceModelPreferences.defaultModel/lastUsedModel/defaultThoughtLevel`；
 - 删除 `workspace/setDefaultModel`、`workspace/setDefaultThoughtLevel` 及其 RPC、adapter、mock 和测试；
 - 保留非模型的 mode/slash command 需求，但通过自己的最小接口读取；
-- 无其他消费者后删除 `createWorkspaceStateOnlyModelAdapter()` 和仅为读取状态创建临时 `ZCodeApp` 的路径；
+- 无其他消费者后删除 `createWorkspaceStateOnlyModelAdapter()` 和仅为读取状态创建临时 `RaspberryCodeApp` 的路径；
 - Session active projection 继续报告本 Session 实际 Selection，不再兼任 Workspace 默认目录。
 
 ### 5.3 结构化持久化

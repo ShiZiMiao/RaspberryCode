@@ -106,7 +106,7 @@
 需要账号连接的入口显式接收已解析的迁移上下文，不让底层存储直接读取全局 UI 状态。
 
 实施接口：共享迁移函数只转换旧 Provider ID，显式接收当前环境账号服务解析出的
-`ZCodeAccountAccess`（可以为空）；不读取磁盘、不等待登录、不查询或扫描 Registry。
+`RaspberryCodeAccountAccess`（可以为空）；不读取磁盘、不等待登录、不查询或扫描 Registry。
 普通当前 ID 原样交给各领域验证，未知 `builtin:*` 返回未绑定。模型成员与 Reasoning 的有效性仍由
 所属领域使用目标 Registry 判断。账号上下文沿用现有 `resolveCurrentAccountAccess` 的身份与连接规则，
 不能把仅保存的 Family 偏好直接当作已登录账号事实。

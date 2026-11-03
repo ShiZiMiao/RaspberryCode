@@ -2,7 +2,7 @@
 
 ## Ownership
 
-RaspberryCode publishes product facts only. `@zcode/zcode-cua` owns PiP panels, grouping,
+RaspberryCode publishes product facts only. `@raspberrycode/raspberrycode-cua` owns PiP panels, grouping,
 dismissal, terminal badges, capture admission, native stacking and retry policy.
 
 ```text
@@ -32,8 +32,8 @@ create another Helper or presentation client.
 
 ## Strict compatibility
 
-The Local Host imports `@zcode/zcode-cua/pip-session` for pure event types and
-`@zcode/zcode-cua/pip-session/node` for the control client. It does not parse
+The Local Host imports `@raspberrycode/raspberrycode-cua/pip-session` for pure event types and
+`@raspberrycode/raspberrycode-cua/pip-session/node` for the control client. It does not parse
 NDJSON or name broker methods. The client must complete the exact runtime/version
 handshake before sending events. A mismatch disables Auto-PiP for that Helper
 transport and produces one diagnostic; there is no `pip_stop`, clear, freeze or

@@ -6,7 +6,7 @@
 >
 > 来源：Todo 21/23 完成后的实现反向审查
 >
-> 关联任务：[`Todo 21`](./todo-21-zcode-builtin-config-ownership-and-model-activation-order.md)、
+> 关联任务：[`Todo 21`](./todo-21-raspberrycode-builtin-config-ownership-and-model-activation-order.md)、
 > [`Todo 23`](./todo-23-provider-refactor-decision-gap-closure.md)、
 > [`Bugfix 02`](./bugfix-02-provider-reorder-drop-flicker.md)
 
@@ -160,4 +160,4 @@ Provider 保持固定前段，不写入 Personal `providerOrder`。Model 没有�
 - `resolveOwnedOrder()` 同时服务读取 Resolver 与 Provider/Model 写入规范化，删除写入侧 requested-first
   重复算法；Family Provider 继续位于固定段之外；
 - 增加 Personal 精确 Rule 物理前置、Provider 三段写入及 Facade/Registry 一致性回归测试；
-- `@zcode/provider` 155 个测试、typecheck、lint 与 `git diff --check` 通过。
+- `@raspberrycode/provider` 155 个测试、typecheck、lint 与 `git diff --check` 通过。

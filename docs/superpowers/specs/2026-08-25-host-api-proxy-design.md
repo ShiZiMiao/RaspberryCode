@@ -95,7 +95,7 @@ TLS 信任。继续清理用户 shell 的标准代理和 CA 变量。
 
 **原因**：与现有 app/provider 网络隔离规则一致，避免从启动 shell 获得不可见、不可诊断的行为。
 
-**未选择**：取消 `sanitizeZCodeRuntimeEnv` 对标准网络变量的清理；使用 `NODE_USE_ENV_PROXY`。
+**未选择**：取消 `sanitizeRaspberryCodeRuntimeEnv` 对标准网络变量的清理；使用 `NODE_USE_ENV_PROXY`。
 
 ### 决策 D2：使用请求级 dispatcher，不设置进程全局 dispatcher
 
@@ -225,7 +225,7 @@ OAuth code、token 或 header value。
 
 | Round | Question                    | User answer                                                         | Boundary fixed                            | Follow-up needed |
 | ----- | --------------------------- | ------------------------------------------------------------------- | ----------------------------------------- | ---------------- |
-| 1     | Host 覆盖的修改量和影响范围 | 用户继续调用 `zcode-plan`；沿用已建议的 scoped `NodeApiClient` 方案 | 先修 app-managed API，不用全局 dispatcher | no               |
+| 1     | Host 覆盖的修改量和影响范围 | 用户继续调用 `raspberrycode-plan`；沿用已建议的 scoped `NodeApiClient` 方案 | 先修 app-managed API，不用全局 dispatcher | no               |
 
 ### Boundary Decisions
 

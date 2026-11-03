@@ -52,20 +52,20 @@
 
 当前路径：
 
-- `apps/zcode-cli/packages/core/src/runtime/methods/subagent.ts`
+- `apps/raspberrycode-cli/packages/core/src/runtime/methods/subagent.ts`
   - 在 `runExploreAgent` 内计算 `systemPrompt: string`。
   - Explore 且 profile `systemPrompt` 为空时调用 `buildExploreSystemPrompt(...)`。
   - child `AgentRuntime` 通过 `systemPrompt` 配置进入 `ContextBuilder`。
-- `apps/zcode-cli/packages/core/src/context/builder.ts`
+- `apps/raspberrycode-cli/packages/core/src/context/builder.ts`
   - `customSystemPrompt` 存在时输出：
     - `system[0] = buildCliPrefixSection()`
     - `system[1] = "\n" + customSystemPrompt`
   - 同时跳过默认 identity/dynamic/env/git/output style system 段。
-- `apps/zcode-cli/packages/core/src/subagent/explore.ts`
+- `apps/raspberrycode-cli/packages/core/src/subagent/explore.ts`
   - 当前 `buildExploreSystemPrompt(...)` 同时包含 Explore agent prompt、common Notes、env/model context。
-- `apps/zcode-cli/packages/core/src/agent/message-history.ts`
+- `apps/raspberrycode-cli/packages/core/src/agent/message-history.ts`
   - `MessageHistoryImpl.init(...)` 已支持传入 `Array<ModelInputMessage | RuntimeMessageEntry>`，可直接初始化多段 system messages。
-- `apps/zcode-cli/packages/core/tests/subagent-explore.test.ts`
+- `apps/raspberrycode-cli/packages/core/tests/subagent-explore.test.ts`
   - 当前 `exploreSystemMessages` 断言 `system[0]` 是 RaspberryCode prefix，`system[1]` 是带 leading newline 的整块 Explore prompt。
 
 目标路径：
@@ -76,29 +76,29 @@
 
 ## File Structure
 
-- Modify: `apps/zcode-cli/packages/core/src/runtime/types.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/types.ts`
   - 给 `AgentRuntimeConfig` 增加 `subagentContext?: { agentPrompt: string }`，不新增 `systemMessages` 覆盖配置。
-- Modify: `apps/zcode-cli/packages/core/src/runtime/methods/context.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/methods/context.ts`
   - `createContextBuilderFromSnapshot(...)` 根据 `config.subagentContext` 创建 `SubagentContextBuilder`，主 runtime 继续创建 main `ContextBuilder`。
-- Modify: `apps/zcode-cli/packages/core/src/runtime/methods/config.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/methods/config.ts`
   - 确认 lazy `getContextBuilder()` 也走 `createContextBuilderFromSnapshot(...)`，不额外引入 subagent special-case。
-- Modify: `apps/zcode-cli/packages/core/src/context/sections/env-info.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/context/sections/env-info.ts`
   - 将 main 当前使用的 git repo 判定逻辑导出为共享 helper，避免 subagent env/model context 复制一套相似但可能漂移的判定。
-- Create: `apps/zcode-cli/packages/core/src/subagent/system-prompt.ts`
+- Create: `apps/raspberrycode-cli/packages/core/src/subagent/system-prompt.ts`
   - 提供 `buildSubagentCommonNotes()`、`buildSubagentEnvironmentContext(...)`；builder 只消费已经按 main 逻辑准备好的 `EnvInfo`。
-- Create: `apps/zcode-cli/packages/core/src/subagent/context-builder.ts`
+- Create: `apps/raspberrycode-cli/packages/core/src/subagent/context-builder.ts`
   - 提供 `SubagentContextBuilder` / `createSubagentContextBuilder(...)`，返回完整 `ContextBuildResult`，并复用 common Notes/env/model helper。
-- Modify: `apps/zcode-cli/packages/core/src/subagent/explore.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/subagent/explore.ts`
   - 将 `buildExploreSystemPrompt(...)` 改为只返回 Explore agent-specific prompt。
-- Modify: `apps/zcode-cli/packages/core/src/subagent/general-purpose.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/subagent/general-purpose.ts`
   - double check general-purpose agent-specific prompt body 是否与冻结文案一致；如果发现漂移，在本轮一并修正。
-- Modify: `apps/zcode-cli/packages/core/src/runtime/methods/subagent.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/methods/subagent.ts`
   - 传入 `subagentContext.agentPrompt` 和 child `envInfo`，由 child runtime 自己的 builder 负责 prompt assembly。
-- Modify: `apps/zcode-cli/packages/core/src/runtime/deps.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/deps.ts`
   - 若 runtime deps barrel 当前导出 `buildExploreSystemPrompt`，同步导出/导入新的 builder。
-- Modify: `apps/zcode-cli/packages/core/tests/subagent-explore.test.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/tests/subagent-explore.test.ts`
   - 更新 Explore provider-visible system message 断言。
-- Create: `apps/zcode-cli/packages/core/tests/subagent-prompt-assembly.test.ts`
+- Create: `apps/raspberrycode-cli/packages/core/tests/subagent-prompt-assembly.test.ts`
   - 覆盖 Explore、general-purpose、custom agent 的 child system prompt 组装。
 - Modify: `docs/conversation-session-case-catalog.md`
   - 为 subagent prompt assembly 增加或更新 conversation E2E case 条目。
@@ -116,13 +116,13 @@
 ### Task 1: Add Provider-Visible Prompt Assembly Tests
 
 **Files:**
-- Create: `apps/zcode-cli/packages/core/tests/subagent-prompt-assembly.test.ts`
-- Modify: `apps/zcode-cli/packages/core/tests/subagent-explore.test.ts`
+- Create: `apps/raspberrycode-cli/packages/core/tests/subagent-prompt-assembly.test.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/tests/subagent-explore.test.ts`
 
 **Interfaces:**
 - Consumes:
-  - `AgentRuntime` from `apps/zcode-cli/packages/core/src/runtime.ts`
-  - `createSessionId`, `ModelRole`, `ModelRefSource`, `modelMessageContentToText` from `@zcode/contracts`
+  - `AgentRuntime` from `apps/raspberrycode-cli/packages/core/src/runtime.ts`
+  - `createSessionId`, `ModelRole`, `ModelRefSource`, `modelMessageContentToText` from `@raspberrycode/contracts`
 - Produces:
   - Failing tests that describe final child provider request shape before implementation.
 
@@ -131,7 +131,7 @@
 Run:
 
 ```bash
-rg -n "You are RaspberryCode Explore|You are an agent for RaspberryCode|buildExploreSystemPrompt|buildGeneralPurposeSystemPrompt" apps/zcode-cli/packages/core/src/subagent apps/zcode-cli/packages/core/tests/subagent-explore.test.ts
+rg -n "You are RaspberryCode Explore|You are an agent for RaspberryCode|buildExploreSystemPrompt|buildGeneralPurposeSystemPrompt" apps/raspberrycode-cli/packages/core/src/subagent apps/raspberrycode-cli/packages/core/tests/subagent-explore.test.ts
 ```
 
 Expected:
@@ -143,7 +143,7 @@ If RaspberryCode body does not match the frozen expected text, do not treat this
 
 - [ ] **Step 2: Create a helper to capture child provider requests**
 
-Add this helper in `apps/zcode-cli/packages/core/tests/subagent-prompt-assembly.test.ts`:
+Add this helper in `apps/raspberrycode-cli/packages/core/tests/subagent-prompt-assembly.test.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -154,7 +154,7 @@ import {
   createModelProviderId,
   createSessionId,
   modelMessageContentToText,
-} from "@zcode/contracts";
+} from "@raspberrycode/contracts";
 import { AgentRuntime } from "../src/runtime.js";
 import { createTestSessionEventStore } from "./test-event-store.js";
 
@@ -204,10 +204,10 @@ describe("subagent provider-visible prompt assembly", () => {
           path: "C:\\Program Files\\Git\\bin\\bash.exe",
           source: "user-config",
         },
-        workingDirectory: "/Users/dev/Desktop/Z/z-code/apps/zcode-cli",
+        workingDirectory: "/Users/dev/Desktop/Z/z-code/apps/raspberrycode-cli",
         currentDate: "2026-06-04",
         envInfo: {
-          cwd: "/Users/dev/Desktop/Z/z-code/apps/zcode-cli",
+          cwd: "/Users/dev/Desktop/Z/z-code/apps/raspberrycode-cli",
           platform: "darwin",
           shell: "zsh",
           osVersion: "Darwin 24.3.0",
@@ -281,7 +281,7 @@ describe("subagent provider-visible prompt assembly", () => {
     expect(systems[2]).toContain("Agent threads always have their cwd reset between bash calls");
     expect(systems[2]).toContain("the parent agent reads your text output");
     expect(systems[3]).toContain("Here is useful information about the environment you are running in:");
-    expect(systems[3]).toContain("Working directory: /Users/dev/Desktop/Z/z-code/apps/zcode-cli");
+    expect(systems[3]).toContain("Working directory: /Users/dev/Desktop/Z/z-code/apps/raspberrycode-cli");
     expect(systems[3]).toContain("Is directory a git repo: Yes");
     expect(systems[3]).toContain("Platform: darwin");
     expect(systems[3]).toContain("Shell: Git Bash");
@@ -492,7 +492,7 @@ Add this test:
 
 - [ ] **Step 6: Update existing Explore test expectation**
 
-In `apps/zcode-cli/packages/core/tests/subagent-explore.test.ts`, replace the single combined `exploreSystemMessages` constant with split constants:
+In `apps/raspberrycode-cli/packages/core/tests/subagent-explore.test.ts`, replace the single combined `exploreSystemMessages` constant with split constants:
 
 ```ts
 const exploreAgentPrompt = `...`;
@@ -514,7 +514,7 @@ Keep the exact body text consistent with the new builder from Phase 2. The old e
 Run:
 
 ```bash
-pnpm --filter @zcode/core exec vitest run apps/zcode-cli/packages/core/tests/subagent-prompt-assembly.test.ts apps/zcode-cli/packages/core/tests/subagent-explore.test.ts
+pnpm --filter @raspberrycode/core exec vitest run apps/raspberrycode-cli/packages/core/tests/subagent-prompt-assembly.test.ts apps/raspberrycode-cli/packages/core/tests/subagent-explore.test.ts
 ```
 
 Expected before implementation:
@@ -527,16 +527,16 @@ Expected before implementation:
 ## Phase 2: Shared Subagent Prompt Pieces
 
 **Files:**
-- Modify: `apps/zcode-cli/packages/core/src/context/sections/env-info.ts`
-- Create: `apps/zcode-cli/packages/core/src/subagent/system-prompt.ts`
-- Modify: `apps/zcode-cli/packages/core/src/subagent/explore.ts`
-- Modify: `apps/zcode-cli/packages/core/src/subagent/general-purpose.ts`
-- Modify: `apps/zcode-cli/packages/core/src/runtime/deps.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/context/sections/env-info.ts`
+- Create: `apps/raspberrycode-cli/packages/core/src/subagent/system-prompt.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/subagent/explore.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/subagent/general-purpose.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/deps.ts`
 
 **Interfaces:**
 - Consumes:
-  - `EnvInfo` from `@zcode/contracts`
-  - `isEnvInfoGitRepository(info: EnvInfo): boolean` from `apps/zcode-cli/packages/core/src/context/sections/env-info.ts`
+  - `EnvInfo` from `@raspberrycode/contracts`
+  - `isEnvInfoGitRepository(info: EnvInfo): boolean` from `apps/raspberrycode-cli/packages/core/src/context/sections/env-info.ts`
 - Produces:
   - `buildSubagentCommonNotes(): string`
   - `buildSubagentEnvironmentContext(options): string`
@@ -544,7 +544,7 @@ Expected before implementation:
 
 - [ ] **Step 1: Export main git repo判定 helper**
 
-Modify `apps/zcode-cli/packages/core/src/context/sections/env-info.ts`.
+Modify `apps/raspberrycode-cli/packages/core/src/context/sections/env-info.ts`.
 
 Replace the private helper:
 
@@ -582,10 +582,10 @@ This keeps subagent git repo detection tied to the same logic main uses today.
 
 - [ ] **Step 2: Create the shared prompt-piece file**
 
-Create `apps/zcode-cli/packages/core/src/subagent/system-prompt.ts`:
+Create `apps/raspberrycode-cli/packages/core/src/subagent/system-prompt.ts`:
 
 ```ts
-import type { EnvInfo } from "@zcode/contracts";
+import type { EnvInfo } from "@raspberrycode/contracts";
 import { isEnvInfoGitRepository } from "../context/sections/env-info.js";
 
 export interface SubagentEnvironmentContextOptions {
@@ -633,7 +633,7 @@ Important boundary:
 
 - [ ] **Step 3: Refactor Explore prompt to agent-specific prompt only**
 
-In `apps/zcode-cli/packages/core/src/subagent/explore.ts`, rename `buildExploreSystemPrompt` to `buildExploreAgentPrompt` or keep the exported name with updated semantics if broader call sites are easier. Preferred:
+In `apps/raspberrycode-cli/packages/core/src/subagent/explore.ts`, rename `buildExploreSystemPrompt` to `buildExploreAgentPrompt` or keep the exported name with updated semantics if broader call sites are easier. Preferred:
 
 ```ts
 export function buildExploreAgentPrompt(options: {
@@ -693,7 +693,7 @@ Remove `workingDirectory`, `workspaceRoot`, `envInfo`, and `modelName` from this
 
 - [ ] **Step 4: Align general-purpose body if the baseline check found drift**
 
-If Task 1 Step 1 shows `apps/zcode-cli/packages/core/src/subagent/general-purpose.ts` has drifted from the frozen expected body, update `buildGeneralPurposeSystemPrompt()` before wiring the new system message builder.
+If Task 1 Step 1 shows `apps/raspberrycode-cli/packages/core/src/subagent/general-purpose.ts` has drifted from the frozen expected body, update `buildGeneralPurposeSystemPrompt()` before wiring the new system message builder.
 
 Keep the body identical to the frozen expected text. Preserve provider-visible punctuation, paragraph breaks, and operational wording exactly.
 
@@ -711,7 +711,7 @@ Remove the shim only if all imports can be updated in the same task.
 
 - [ ] **Step 6: Export the new prompt pieces through runtime deps**
 
-In `apps/zcode-cli/packages/core/src/runtime/deps.ts`, export/import:
+In `apps/raspberrycode-cli/packages/core/src/runtime/deps.ts`, export/import:
 
 ```ts
 export { buildExploreAgentPrompt, EXPLORE_AGENT_TYPE } from "../subagent/explore.js";
@@ -725,7 +725,7 @@ If `deps.ts` currently exports `buildExploreSystemPrompt`, replace that export o
 Run:
 
 ```bash
-pnpm --filter @zcode/core exec vitest run apps/zcode-cli/packages/core/tests/subagent-prompt-assembly.test.ts
+pnpm --filter @raspberrycode/core exec vitest run apps/raspberrycode-cli/packages/core/tests/subagent-prompt-assembly.test.ts
 ```
 
 Expected after Task 2 only:
@@ -740,11 +740,11 @@ Expected after Task 2 only:
 ### Task 3: Let Child Runtime Select Its Own Context Builder
 
 **Files:**
-- Create: `apps/zcode-cli/packages/core/src/subagent/context-builder.ts`
-- Modify: `apps/zcode-cli/packages/core/src/runtime/types.ts`
-- Modify: `apps/zcode-cli/packages/core/src/runtime/methods/context.ts`
-- Modify: `apps/zcode-cli/packages/core/src/runtime/methods/config.ts`
-- Modify: `apps/zcode-cli/packages/core/src/runtime/methods/subagent.ts`
+- Create: `apps/raspberrycode-cli/packages/core/src/subagent/context-builder.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/types.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/methods/context.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/methods/config.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/methods/subagent.ts`
 
 **Interfaces:**
 - Consumes:
@@ -758,7 +758,7 @@ Expected after Task 2 only:
 
 - [ ] **Step 1: Add `SubagentContextBuilder`**
 
-Create `apps/zcode-cli/packages/core/src/subagent/context-builder.ts`.
+Create `apps/raspberrycode-cli/packages/core/src/subagent/context-builder.ts`.
 
 The builder must extend or otherwise satisfy the runtime's existing context builder type and return a full `ContextBuildResult`:
 
@@ -783,7 +783,7 @@ Do not include main identity, task behavior, project instructions, project conte
 
 - [ ] **Step 2: Add `subagentContext` to runtime config**
 
-In `apps/zcode-cli/packages/core/src/runtime/types.ts`, add near `systemPrompt?: string`:
+In `apps/raspberrycode-cli/packages/core/src/runtime/types.ts`, add near `systemPrompt?: string`:
 
 ```ts
   /**
@@ -797,7 +797,7 @@ In `apps/zcode-cli/packages/core/src/runtime/types.ts`, add near `systemPrompt?:
 
 - [ ] **Step 3: Select builder strategy in `createContextBuilderFromSnapshot(...)`**
 
-In `apps/zcode-cli/packages/core/src/runtime/methods/context.ts`, keep the shared `envInfo = { ...snapshot.envInfo, currentModel: formatModelRef(this.defaultModelRef) }` logic. After persisting `envInfo`, add:
+In `apps/raspberrycode-cli/packages/core/src/runtime/methods/context.ts`, keep the shared `envInfo = { ...snapshot.envInfo, currentModel: formatModelRef(this.defaultModelRef) }` logic. After persisting `envInfo`, add:
 
 ```ts
 if (this.config.subagentContext) {
@@ -819,7 +819,7 @@ Main runtime continues to use the existing `createContextBuilder(contextConfig)`
 
 - [ ] **Step 5: Pass `subagentContext` from `subagent.ts`**
 
-In `apps/zcode-cli/packages/core/src/runtime/methods/subagent.ts`, replace the current `systemPrompt` calculation with an `agentPrompt` calculation:
+In `apps/raspberrycode-cli/packages/core/src/runtime/methods/subagent.ts`, replace the current `systemPrompt` calculation with an `agentPrompt` calculation:
 
 ```ts
 const agentPrompt =
@@ -856,7 +856,7 @@ Do not put currentDate into the four subagent system messages. If `currentDate` 
 Run:
 
 ```bash
-pnpm --filter @zcode/core exec vitest run apps/zcode-cli/packages/core/tests/subagent-prompt-assembly.test.ts apps/zcode-cli/packages/core/tests/subagent-explore.test.ts
+pnpm --filter @raspberrycode/core exec vitest run apps/raspberrycode-cli/packages/core/tests/subagent-prompt-assembly.test.ts apps/raspberrycode-cli/packages/core/tests/subagent-explore.test.ts
 ```
 
 Expected:
@@ -940,7 +940,7 @@ Expected:
 Run:
 
 ```bash
-pnpm --filter @zcode/core exec vitest run apps/zcode-cli/packages/core/tests/subagent-prompt-assembly.test.ts apps/zcode-cli/packages/core/tests/subagent-explore.test.ts
+pnpm --filter @raspberrycode/core exec vitest run apps/raspberrycode-cli/packages/core/tests/subagent-prompt-assembly.test.ts apps/raspberrycode-cli/packages/core/tests/subagent-explore.test.ts
 ```
 
 Expected:
@@ -952,7 +952,7 @@ Expected:
 Run:
 
 ```bash
-pnpm --filter @zcode/core exec vitest run apps/zcode-cli/packages/core/tests/context-builder.test.ts apps/zcode-cli/packages/core/tests/runtime-trace.test.ts
+pnpm --filter @raspberrycode/core exec vitest run apps/raspberrycode-cli/packages/core/tests/context-builder.test.ts apps/raspberrycode-cli/packages/core/tests/runtime-trace.test.ts
 ```
 
 Expected:
@@ -1072,7 +1072,7 @@ packages/desktop/test/e2e/helpers/conversation-session-network.ts
 Run the new spec with the local foreground Electron window, not only the container runner:
 
 ```bash
-ZCODE_E2E_SPEC=./test/e2e/conversation-session/conversation-session-subagent-prompt-assembly.test.ts pnpm --filter @zcode/desktop test:e2e
+RASPBERRYCODE_E2E_SPEC=./test/e2e/conversation-session/conversation-session-subagent-prompt-assembly.test.ts pnpm --filter @raspberrycode/desktop test:e2e
 ```
 
 Expected:
@@ -1101,7 +1101,7 @@ The final implementation report must include:
 
 ```text
 E2E command:
-ZCODE_E2E_SPEC=./test/e2e/conversation-session/conversation-session-subagent-prompt-assembly.test.ts pnpm --filter @zcode/desktop test:e2e
+RASPBERRYCODE_E2E_SPEC=./test/e2e/conversation-session/conversation-session-subagent-prompt-assembly.test.ts pnpm --filter @raspberrycode/desktop test:e2e
 
 E2E result:
 PASS
@@ -1139,7 +1139,7 @@ If the local machine cannot run foreground Electron E2E, do not mark the task co
 - Main thread prompt assembly is unchanged.
 - Focused prompt tests pass.
 - A conversation-session E2E spec covers this prompt assembly behavior.
-- The E2E spec has been run through the local foreground Electron window with `ZCODE_E2E_SPEC=./test/e2e/conversation-session/conversation-session-subagent-prompt-assembly.test.ts pnpm --filter @zcode/desktop test:e2e`, and the result is PASS.
+- The E2E spec has been run through the local foreground Electron window with `RASPBERRYCODE_E2E_SPEC=./test/e2e/conversation-session/conversation-session-subagent-prompt-assembly.test.ts pnpm --filter @raspberrycode/desktop test:e2e`, and the result is PASS.
 - `pnpm audit:conversation-session-coverage` passes after catalog/matrix updates.
 - `pnpm typecheck` and `pnpm lint` have been run, with any unrelated baseline failures explicitly reported.
 - No automatic commit is created. The final state remains reviewable in the working tree until the user explicitly asks to commit.

@@ -45,9 +45,9 @@ Registry 管理静态、可重建的 Provider/Model View。Token、Ticket、一�
 ### RaspberryCode Built-in Provider Config
 
 RaspberryCode 随产品提供的 Provider Template 与账号 Provider 声明。领域、代码和物理命名统一使用
-`zcodeBuiltin*` / `zcode-builtin`；发布文件为 `config/provider/zcode-builtin.json`。`official` 不作为这条
+`raspberrycodeBuiltin*` / `raspberrycode-builtin`；发布文件为 `config/provider/raspberrycode-builtin.json`。`official` 不作为这条
 Provider Config 链的别名，也不保留兼容入口。实施切换见
-[`../../steps/todo-10-zcode-builtin-provider-config-naming-cutover.md`](../../steps/todo-10-zcode-builtin-provider-config-naming-cutover.md)。
+[`../../steps/todo-10-raspberrycode-builtin-provider-config-naming-cutover.md`](../../steps/todo-10-raspberrycode-builtin-provider-config-naming-cutover.md)。
 
 ### Account Built-in Provider Config
 
@@ -55,8 +55,8 @@ AccountProviderService 只读取 RaspberryCode Built-in 中 `access.type = "zhip
 当前账号、套餐和团队连接投影 Account Built-in Provider Config。它在 RaspberryCode Built-in 之后、Personal 之前
 参与 Overlay：
 
-Provider Config Snapshot 必须分别携带 `zcodeBuiltinRevision` 与 `personalRevision`；Account Snapshot 必须
-携带 `basedOnZCodeBuiltinRevision`。Registry 只有在二者相等时才能解析和发布：
+Provider Config Snapshot 必须分别携带 `raspberrycodeBuiltinRevision` 与 `personalRevision`；Account Snapshot 必须
+携带 `basedOnRaspberryCodeBuiltinRevision`。Registry 只有在二者相等时才能解析和发布：
 
 ```text
 B0 + A0
@@ -71,7 +71,7 @@ B1 + A1  -- 原子发布
 ```
 
 这个 revision 只证明客户端 Account Overlay 的派生来源，不要求 Account 服务端与 Built-in 发布接口共享
-版本。Personal-only 更新不改变 `zcodeBuiltinRevision`，因此继续立即解析并发布。首次启动在正式 Account
+版本。Personal-only 更新不改变 `raspberrycodeBuiltinRevision`，因此继续立即解析并发布。首次启动在正式 Account
 Snapshot 到达前，进程可以基于当前 Built-in 生成同 revision、账号 Provider 全部 `access.entitled=false` 的初始
 Overlay，以 fail-closed 方式完成 Registry ready；禁止 wildcard revision。
 
@@ -109,9 +109,9 @@ Provider source-aware Inventory 中的成员，不会把模型加入或移出 Pr
 ### 第一轮：Provider
 
 ```ts
-const effectiveBuiltinProviders = zcodeBuiltinProviders.overlay(accountBuiltinProviders);
+const effectiveBuiltinProviders = raspberrycodeBuiltinProviders.overlay(accountBuiltinProviders);
 const effectiveProviders = resolveProviderTemplates(
-  zcodeBuiltinProviderTemplates,
+  raspberrycodeBuiltinProviderTemplates,
   effectiveBuiltinProviders,
   personalProviders,
 );
@@ -146,7 +146,7 @@ Account Built-in 模型集合是该账号 Provider 当前允许使用的动态�
 
 ```ts
 const effectiveModelRules = new ModelConfigRules([
-  ...zcodeBuiltinModelRules.rules(),
+  ...raspberrycodeBuiltinModelRules.rules(),
   ...personalModelRules.rules(),
 ]);
 

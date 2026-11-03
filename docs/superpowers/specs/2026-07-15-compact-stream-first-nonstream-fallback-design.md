@@ -49,7 +49,7 @@ P32 direct-summarizer/cache-sharing gap 继续保持 postponed。
 
 ### Core compact
 
-`apps/zcode-cli/packages/core/src/runtime/methods/compact-active.ts` 当前负责：
+`apps/raspberrycode-cli/packages/core/src/runtime/methods/compact-active.ts` 当前负责：
 
 - 创建一次 `ModelRequest(querySource=compact)`；
 - 组装 projected messages、compact tools、provider options、status sink、trace 和 header refresh hook；
@@ -74,7 +74,7 @@ P32 direct-summarizer/cache-sharing gap 继续保持 postponed。
 
 新增：
 
-`apps/zcode-cli/packages/core/src/runtime/methods/compact-summary-model-request.ts`
+`apps/raspberrycode-cli/packages/core/src/runtime/methods/compact-summary-model-request.ts`
 
 主接口：
 

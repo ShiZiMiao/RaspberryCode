@@ -72,7 +72,7 @@ storagePrepared、exit 0，stderr 为空。
 
 责任边界：`packages/desktop/src/main/startupWorkspace.ts:resolveStartupWindowBootstrap`
 与 `index.ts` 的 `agentSpawnFallbackCwd` 交接，未保证交给存储准备的 app-owned cwd 存在。
-`resolveZCodeAgentSpawnCwd` 在请求与备用目录都不可用时保留原路径，CLI 的拒绝符合路径准入契约。
+`resolveRaspberryCodeAgentSpawnCwd` 在请求与备用目录都不可用时保留原路径，CLI 的拒绝符合路径准入契约。
 
 反证与最小探针：
 

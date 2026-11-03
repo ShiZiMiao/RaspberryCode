@@ -2,7 +2,7 @@
 
 Status: implemented. This document covers every way a workflow gets started, saved, found,
 and inspected; `docs/dynamic-workflow/authoring.md` covers how the script is written, and
-`apps/zcode-cli/packages/dynamic-workflow/docs/execution-engine.md` covers what happens to
+`apps/raspberrycode-cli/packages/dynamic-workflow/docs/execution-engine.md` covers what happens to
 the run after it starts.
 
 ## The ways a workflow starts
@@ -158,7 +158,7 @@ window trustworthy: everything downstream of step 3 sees one and the same script
    `adjustable_settings` block the window reads (see "Adjusting the settings in the window"),
    overwriting any value the model supplied.
    For `path` it reads that file (relative to the session's working directory, or absolute),
-   strips a `/* zcode-workflow` block when the file carries one, validates `args` against the
+   strips a `/* raspberrycode-workflow` block when the file carries one, validates `args` against the
    block's declaration (and rejects `args` when there is no block), and rewrites the input to
    `{ name, script, path: <absolute>, args? }`. A missing or unreadable file is a structured
    failure naming the path. When the file (a `path` file, or a saved one) carries a metadata
@@ -240,7 +240,7 @@ name fails with "This host cannot choose models; remove `model` from the persona
 The handler hands the bindings to the port as `modelBindings` (structured selections); the port
 records them once, as canonical strings, on the `run-launched` event beside `subagentModel`, and
 never infers one. When a subagent's session is created, the host looks up the persona's name in
-that table (`apps/zcode-cli/packages/dynamic-workflow/docs/execution-engine.md`, "Subagent
+that table (`apps/raspberrycode-cli/packages/dynamic-workflow/docs/execution-engine.md`, "Subagent
 sessions"). A resume reads the table back from the event, so the names keep the models they
 were launched with, whatever the catalog says by then.
 
@@ -287,7 +287,7 @@ reported as compiled and not executed. The tool never pretends a run started.
 ## The `AmendWorkflow` tool
 
 Amending is how a run gets a revised script: a new run, with its own id, that imports the
-predecessor's finished work as a cache (`apps/zcode-cli/packages/dynamic-workflow/docs/execution-engine.md`,
+predecessor's finished work as a cache (`apps/raspberrycode-cli/packages/dynamic-workflow/docs/execution-engine.md`,
 "Amend-resume"). It is a separate tool from `CreateWorkflow` because it is a different act
 with a different display: the model is not starting something, it is changing something the
 user is already watching, and the predecessor may still be running.
@@ -311,7 +311,7 @@ amendment, which is what every other call is.
 The amended run's token figure, on its completion card, in the run pane, in `GetWorkflowRun`
 and in the run history, is the cost of the whole lineage: it starts at the predecessor's total
 and adds only the revision's live turns, so a chain of amendments sums by construction. The
-predecessor keeps its own figure (`apps/zcode-cli/packages/dynamic-workflow/docs/execution-engine.md`,
+predecessor keeps its own figure (`apps/raspberrycode-cli/packages/dynamic-workflow/docs/execution-engine.md`,
 "Usage across the lineage").
 
 ### Input and output
@@ -1074,7 +1074,7 @@ session whose mode is still the legacy `plan` value passes on `build`.
 (`CreateWorkflow`, `AmendWorkflow`, 「运行」 on the hub, Apply in the Configure popover) reads
 the launching session's mode at that moment and records it as `subagentPermissionMode` on the
 run's `run-launched` journal event
-(`apps/zcode-cli/packages/dynamic-workflow/docs/execution-engine.md`, "Events"). Resume reads the
+(`apps/raspberrycode-cli/packages/dynamic-workflow/docs/execution-engine.md`, "Events"). Resume reads the
 value back from that event, so a run keeps its mode across a cancel and resume, a desktop
 restart and a cold resume. Switching the session's mode while a run is in flight changes
 nothing for that run, in either direction; an amendment is a new run and takes the mode in
@@ -1127,7 +1127,7 @@ scan is the truth, and every operation reads the disk.
 ### The file
 
 ```
-/* zcode-workflow
+/* raspberrycode-workflow
 description: Pre-release check for this repository: lint, tests, changelog
 whenToUse: when the user asks to release / ship / do a pre-release check
 args:
@@ -1145,7 +1145,7 @@ const found = await reviewer.ask<string>(`Check ${String(args.target)}`);
 return found;
 ```
 
-The file is `<name>.dwf.ts`, valid TypeScript: a `/* zcode-workflow` block comment carrying
+The file is `<name>.dwf.ts`, valid TypeScript: a `/* raspberrycode-workflow` block comment carrying
 YAML metadata, closed by a line containing only `*/`, followed by the script byte for byte.
 The block comment (not a `---` fence) keeps editors working; YAML (not JSON) tolerates hand
 edits; `.dwf.ts` (not `.ts`) lets a scan tell workflows from sources without opening them.
@@ -1222,7 +1222,7 @@ The call follows the same lifecycle as `CreateWorkflow`:
 
 1. `validateInput`: the name is valid, exactly one of `script` and `script_path` is given
    (the field is not called `path` here only because `path` is already this tool's resolved
-   destination), and an inline script does not itself start with `/* zcode-workflow`
+   destination), and an inline script does not itself start with `/* raspberrycode-workflow`
    (metadata goes through the fields; there is no clever merge).
 2. `resolveInput` reads a `script_path` file and rewrites the input with its body as `script`,
    dropping a metadata block the file may carry (a draft copied from a saved workflow keeps
@@ -1444,7 +1444,7 @@ and the model's first `Edit` asks for a `Read`, as before.
 
 `path` names a script file, relative to the session's working directory or absolute. Any
 readable file is accepted, exactly as `Read` accepts it. A file whose first non-blank line
-is `/* zcode-workflow` is parsed as a saved workflow ("Saved workflows"): the block is
+is `/* raspberrycode-workflow` is parsed as a saved workflow ("Saved workflows"): the block is
 stripped, the body is the script, and the top-level `args` field is validated against the
 block's declaration with the rules of `saved.args`. Any other file is the script whole, and
 `args` is rejected because nothing declares them. `resolveInput` reads the file once and
@@ -2067,7 +2067,7 @@ questions.
 
 The card joins the tool call to its run by tool call id and reads a `workflowRuns` mirror
 that the TUI maintains with the same reducer the desktop projection uses
-(`@zcode/shared`'s `workflow-runs-reducer`), fed by `dynamic_workflow_run_progress` events
+(`@raspberrycode/shared`'s `workflow-runs-reducer`), fed by `dynamic_workflow_run_progress` events
 through a subscription that outlives turns. There is no second clock: no polling, no
 interval.
 
@@ -2136,7 +2136,7 @@ from the resumed session. Explicit tool disallowlists still take precedence when
 turns the tools on. For example:
 
 ```sh
-zcode --workflow-mode alwaysOn -p "/workflow review this change"
+raspberrycode --workflow-mode alwaysOn -p "/workflow review this change"
 ```
 
 A `-p` run that started a workflow does not exit when the turn ends. Once workflow activity
@@ -2157,12 +2157,12 @@ run is recorded as `stopped` (`interrupted`) and can be resumed.
 ### Single-executable builds
 
 A single-executable build cannot spawn `node --eval`, so the CLI has a hidden subcommand
-`__zcode-dwf-child <entry path>` dispatched before argument parsing, and the sandbox is
+`__raspberrycode-dwf-child <entry path>` dispatched before argument parsing, and the sandbox is
 started by re-executing the CLI itself with that subcommand. The child script is written
 to an entry file, `<cwd>/.raspberrycode/workflow-runs/<runId>.mjs` (with a temp-directory fallback
 and a `.gitignore`), and the command line carries only its path, so a long script never
 exceeds the Windows command-line limit. The sandbox itself is the engine's:
-`apps/zcode-cli/packages/dynamic-workflow/docs/execution-engine.md`.
+`apps/raspberrycode-cli/packages/dynamic-workflow/docs/execution-engine.md`.
 
 ## Run introspection tools
 
@@ -2511,14 +2511,14 @@ key: the standalone CLI does not read `/client/configs`. Its mode comes from the
 Host (packages/services)
   BigModelCodingPlanSubscriptionProvider.getDynamicWorkflowClientConfig()
     ← the cached /client/configs snapshot (1 h TTL, forceRefresh bypasses it)
-    ← ZCODE_DYNAMIC_WORKFLOW_MODE (local override, see below)
+    ← RASPBERRYCODE_DYNAMIC_WORKFLOW_MODE (local override, see below)
     → the offer: { offeredMode, source }                     (latched once per Host process)
   settings.dynamicWorkflowMode (the user's choice, absent = follow the offer)
     ← local and standalone-server Hosts: their own settings file, read at each use
     ← desktop-attached remote Hosts: pushed by the desktop (see "The user's choice")
     → applyDynamicWorkflowUserMode(offer, choice): { mode, enabled, offeredMode, userMode?, source }
       │
-      ├─► zcodeAgentService, at workspace client start and after every change of the choice:
+      ├─► raspberrycodeAgentService, at workspace client start and after every change of the choice:
       │      workspace/updateDynamicWorkflowPolicy { enabled, mode }   (CLI-wide fact)
       │   and on every session/create, session/resume, v4 createSession:
       │      dynamicWorkflowEnabled: true, dynamicWorkflowMode         (only when enabled)
@@ -2527,7 +2527,7 @@ Host (packages/services)
              → the automations page and the run pane read `enabled` (effective)
              → the Settings row reads `offeredMode` and `mode`
 
-CLI (apps/zcode-cli, protocol server mode)
+CLI (apps/raspberrycode-cli, protocol server mode)
   appRuntimePreferences.dynamicWorkflowEnabled / .dynamicWorkflowMode  (default false / absent = fail-closed)
   createRecord: enabled = params.dynamicWorkflowEnabled === true || preferences flag
                 mode    = params.dynamicWorkflowMode ?? preferences mode ?? (enabled ? "alwaysOn" : "disabled")
@@ -2704,7 +2704,7 @@ The renderer's availability snapshot is reloaded after the Host has re-synced, s
 
 **How a change travels.** The settings file is the single source of the choice. A write in
 any window reaches every window's renderer through the shared-settings broadcast; each
-window's root then calls `zcodeAgentService.syncDynamicWorkflowUserMode` on its own Host and,
+window's root then calls `raspberrycodeAgentService.syncDynamicWorkflowUserMode` on its own Host and,
 once that resolves, reloads its availability snapshot.
 
 - A Host with its own settings (desktop local, web and standalone server) reads the choice
@@ -2730,7 +2730,7 @@ automations page.
 
 ### The local override
 
-One environment variable, `ZCODE_DYNAMIC_WORKFLOW_MODE`, read by the Host resolver before any
+One environment variable, `RASPBERRYCODE_DYNAMIC_WORKFLOW_MODE`, read by the Host resolver before any
 network call. When it holds one of the three values the resolver returns it with
 `source: "override"` and skips the fetch, so there is no TTL and no first-Host race. Desktop
 Main is the gatekeeper: in `buildHostProcessEnv` it always writes or deletes the key before
@@ -2739,7 +2739,7 @@ the Host starts, never passes it through untouched, so the Host trusts whatever 
 | Build | What Main writes into the Host env | Effect |
 |---|---|---|
 | unpackaged dev (`pnpm dev:desktop`) | the developer's shell value, if it is one of the three | any mode, for hand testing |
-| packaged preview (`ZCODE_PRODUCT_FLAVOR === "preview"`, production backend) | the literal `alwaysOn` | preview users always have the feature; the server key is ignored |
+| packaged preview (`RASPBERRYCODE_PRODUCT_FLAVOR === "preview"`, production backend) | the literal `alwaysOn` | preview users always have the feature; the server key is ignored |
 | packaged production | nothing; an inherited value is removed | the override cannot work |
 
 Remote Hosts started over SSH, WSL and Docker receive the same value through
@@ -2755,7 +2755,7 @@ key. **When the flag is absent the mode is `disabled`**: workflows in the standa
 opt-in. The value is read with the Host's normalizer (`normalizeDynamicWorkflowMode`: the
 exact spelling, surrounding whitespace ignored); anything else fails at the CLI entry with an
 error that names the three values, exit code 1, before any app or session exists. There is no
-environment variable and no config key; `ZCODE_DYNAMIC_WORKFLOW_MODE` stays Host-only.
+environment variable and no config key; `RASPBERRYCODE_DYNAMIC_WORKFLOW_MODE` stays Host-only.
 
 **Where the flag is accepted.** With `-p`/`--prompt`, with `--target`, and for the TUI (no
 command, or `tui`). Anywhere else it is an error with exit code 1: on `app-server` and

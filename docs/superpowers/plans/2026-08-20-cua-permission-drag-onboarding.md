@@ -57,7 +57,7 @@ Helper 是 **Node SEA + `LSUIElement=true`**（实测 `NODE_SEA_BLOB` 命中、I
 - **fail-closed vs fail-open**：验签/指纹相关一律 fail-closed（拒绝操作）；窗口 bounds 获取失败一律 fail-open（退回屏幕底部居中），吸附是增强不是可用性前提。
 - **授权后生效**：两项权限都必须重启 Helper 才生效（SR 对已运行进程不生效；accessibility 有 `AXIsProcessTrusted` 进程级缓存）。保留 `restartHelperAfterReturn` 机制。
 - **语言跟随 RaspberryCode**：权限拖拽浮窗不得自行读取浏览器 `localStorage` 或操作系统语言；每次 `show(permission)` 都从 main 进程的 `currentApplicationLocale` 读取当前 RaspberryCode 界面语言，并通过浮窗 state IPC 传给 renderer。renderer 只支持 shared `Locale` 已声明的 `zh-CN` / `en-US`，同步更新说明文案、拖拽 tooltip、`document.title` 与 `<html lang>`。state 必须在 `showInactive()` 前发送，避免英文界面先闪出中文 fallback。
-- **git**：禁用 `--no-verify`。上游 `@zcode/zcode-cua` 本次**不修改**，全部改动在下游仓库。
+- **git**：禁用 `--no-verify`。上游 `@raspberrycode/raspberrycode-cua` 本次**不修改**，全部改动在下游仓库。
 - **macOS API 版本**：`CGWindowListCopyWindowInfo` 自 10.5 起可用，安全。新增任何系统命令前必须核最低支持版本（`/usr/bin/lockf` 是 15+ 曾致 macOS ≤14 全线不可用）。
 
 语言状态链路：
@@ -69,7 +69,7 @@ RaspberryCode 设置 / System default
 main.currentApplicationLocale
              │  每次 panel.show(permission) 读取
              ▼
-zcode:cua-permission-panel-state { permission, locale, iconDataUrl }
+raspberrycode:cua-permission-panel-state { permission, locale, iconDataUrl }
              │
              ▼
 浮窗 renderer：文案 + tooltip + title + html lang
@@ -106,7 +106,7 @@ zcode:cua-permission-panel-state { permission, locale, iconDataUrl }
 - Test: `packages/shared/test/channels.test.ts`
 
 **Interfaces:**
-- Produces: `PlatformChannels.PrepareCuaHelperPermissionDrag = "zcode:prepare-cua-helper-permission-drag"`、`PlatformChannels.StartCuaHelperPermissionDrag = "zcode:start-cua-helper-permission-drag"`；类型 `PrepareCuaHelperPermissionDragResult { success: boolean; error?: string; helperAppPath?: string; helperDisplayName?: string; helperBundleId?: string }`（**注意**：`helperBundleFingerprint` 故意不进 shared —— 它只允许 main 进程内存消费，不得跨 IPC 暴露给 renderer）；platform 方法 `prepareCuaHelperPermissionDrag?(): Promise<PrepareCuaHelperPermissionDragResult>`、`startCuaHelperPermissionDrag?(): void`
+- Produces: `PlatformChannels.PrepareCuaHelperPermissionDrag = "raspberrycode:prepare-cua-helper-permission-drag"`、`PlatformChannels.StartCuaHelperPermissionDrag = "raspberrycode:start-cua-helper-permission-drag"`；类型 `PrepareCuaHelperPermissionDragResult { success: boolean; error?: string; helperAppPath?: string; helperDisplayName?: string; helperBundleId?: string }`（**注意**：`helperBundleFingerprint` 故意不进 shared —— 它只允许 main 进程内存消费，不得跨 IPC 暴露给 renderer）；platform 方法 `prepareCuaHelperPermissionDrag?(): Promise<PrepareCuaHelperPermissionDragResult>`、`startCuaHelperPermissionDrag?(): void`
 
 - [ ] **Step 1: 写失败测试**
 
@@ -119,10 +119,10 @@ import { PlatformChannels } from "../src/channels.js";
 describe("CUA helper permission drag channels", () => {
   it("声明 prepare 与 start 两个通道", () => {
     expect(PlatformChannels.PrepareCuaHelperPermissionDrag).toBe(
-      "zcode:prepare-cua-helper-permission-drag",
+      "raspberrycode:prepare-cua-helper-permission-drag",
     );
     expect(PlatformChannels.StartCuaHelperPermissionDrag).toBe(
-      "zcode:start-cua-helper-permission-drag",
+      "raspberrycode:start-cua-helper-permission-drag",
     );
   });
 });
@@ -130,7 +130,7 @@ describe("CUA helper permission drag channels", () => {
 
 - [ ] **Step 2: 运行测试确认失败**
 
-Run: `pnpm --filter @zcode/shared test -- channels`
+Run: `pnpm --filter @raspberrycode/shared test -- channels`
 Expected: FAIL — `PrepareCuaHelperPermissionDrag` 为 `undefined`
 
 - [ ] **Step 3: 实现**
@@ -154,8 +154,8 @@ export interface PrepareCuaHelperPermissionDragResult {
 `packages/shared/src/channels.ts` 在 `OpenCuaPermissionOnboarding` 常量旁追加：
 
 ```ts
-  PrepareCuaHelperPermissionDrag: "zcode:prepare-cua-helper-permission-drag",
-  StartCuaHelperPermissionDrag: "zcode:start-cua-helper-permission-drag",
+  PrepareCuaHelperPermissionDrag: "raspberrycode:prepare-cua-helper-permission-drag",
+  StartCuaHelperPermissionDrag: "raspberrycode:start-cua-helper-permission-drag",
 ```
 
 同文件 schema 区（`[PlatformChannels.OpenCuaPermissionOnboarding]` 旁）追加，并把新类型加进顶部 import：
@@ -187,7 +187,7 @@ export interface PrepareCuaHelperPermissionDragResult {
 
 - [ ] **Step 4: 运行测试确认通过**
 
-Run: `pnpm --filter @zcode/shared test -- channels`
+Run: `pnpm --filter @raspberrycode/shared test -- channels`
 Expected: PASS
 
 Run: `pnpm typecheck`
@@ -229,7 +229,7 @@ it("绝不触发 native 权限请求（不弹系统弹窗）", async () => {
       appPath,
       executablePath: `${appPath}/Contents/MacOS/RaspberryCode Computer Use`,
       displayName: "RaspberryCode Computer Use",
-      bundleId: "dev.zcode.cua-helper",
+      bundleId: "dev.raspberrycode.cua-helper",
     }),
     // 这两个注入点在改造后不应存在；若实现回退到调用它们，本测试立刻失败
     requestHelperAccessibilityPermission: async () => {
@@ -257,7 +257,7 @@ it("绝不触发 native 权限请求（不弹系统弹窗）", async () => {
 
 - [ ] **Step 2: 运行测试确认失败**
 
-Run: `pnpm --filter @zcode/desktop exec vitest run test/cuaAccessibilitySettings.test.ts -t "绝不触发"`
+Run: `pnpm --filter @raspberrycode/desktop exec vitest run test/cuaAccessibilitySettings.test.ts -t "绝不触发"`
 Expected: FAIL — `requestCalls` 为 `["screen_recording", "accessibility"]`
 
 - [ ] **Step 3: 实现 —— 删除请求调用，保留验签**
@@ -296,7 +296,7 @@ Expected: FAIL — `requestCalls` 为 `["screen_recording", "accessibility"]`
 
 - [ ] **Step 4: 运行测试确认通过**
 
-Run: `pnpm --filter @zcode/desktop exec vitest run test/cuaAccessibilitySettings.test.ts`
+Run: `pnpm --filter @raspberrycode/desktop exec vitest run test/cuaAccessibilitySettings.test.ts`
 Expected: PASS。**注意**：原有断言「会调用 request*」的用例会失败，逐个改为断言不调用；断言 `openSettingsUrl` 顺序、会话协调、recovery 权的用例应全部保持通过。
 
 - [ ] **Step 5: 提交**
@@ -335,7 +335,7 @@ it("验签期间 bundle 被改则拒绝预热", async () => {
       appPath,
       executablePath: `${appPath}/Contents/MacOS/x`,
       displayName: "RaspberryCode Computer Use",
-      bundleId: "dev.zcode.cua-helper",
+      bundleId: "dev.raspberrycode.cua-helper",
     }),
   });
   expect(result.success).toBe(false);
@@ -351,7 +351,7 @@ it("预热成功返回路径与身份，但不泄漏指纹给 renderer 形状", 
       appPath,
       executablePath: `${appPath}/Contents/MacOS/x`,
       displayName: "RaspberryCode Computer Use",
-      bundleId: "dev.zcode.cua-helper",
+      bundleId: "dev.raspberrycode.cua-helper",
     }),
   });
   expect(result.success).toBe(true);
@@ -365,7 +365,7 @@ it("预热成功返回路径与身份，但不泄漏指纹给 renderer 形状", 
 
 - [ ] **Step 2: 运行测试确认失败**
 
-Run: `pnpm --filter @zcode/desktop exec vitest run test/cuaAccessibilitySettings.test.ts -t "预热"`
+Run: `pnpm --filter @raspberrycode/desktop exec vitest run test/cuaAccessibilitySettings.test.ts -t "预热"`
 Expected: FAIL — `prepareCuaHelperPermissionDrag is not a function`
 
 - [ ] **Step 3: 实现**
@@ -446,7 +446,7 @@ export async function prepareCuaHelperPermissionDrag(
 
 - [ ] **Step 4: 运行测试确认通过**
 
-Run: `pnpm --filter @zcode/desktop exec vitest run test/cuaAccessibilitySettings.test.ts`
+Run: `pnpm --filter @raspberrycode/desktop exec vitest run test/cuaAccessibilitySettings.test.ts`
 Expected: PASS
 
 - [ ] **Step 5: 提交**
@@ -505,7 +505,7 @@ it("预热后未被篡改则同步发起拖拽", async () => {
 
 - [ ] **Step 2: 运行测试确认失败**
 
-Run: `pnpm --filter @zcode/desktop exec vitest run test/desktopCuaPermissionIpc.test.ts -t "拖拽"`
+Run: `pnpm --filter @raspberrycode/desktop exec vitest run test/desktopCuaPermissionIpc.test.ts -t "拖拽"`
 Expected: FAIL — 通道无 handler
 
 - [ ] **Step 3: 实现**
@@ -622,13 +622,13 @@ const CUA_HELPER_DRAG_ICON_DATA_URL =
 `renderer/src/desktopPlatform.ts` 追加：
 
 ```ts
-    prepareCuaHelperPermissionDrag: window.zcode.prepareCuaHelperPermissionDrag
+    prepareCuaHelperPermissionDrag: window.raspberrycode.prepareCuaHelperPermissionDrag
       ? () =>
-          window.zcode.prepareCuaHelperPermissionDrag?.() ??
+          window.raspberrycode.prepareCuaHelperPermissionDrag?.() ??
           Promise.resolve({ success: false, error: "not_supported" })
       : undefined,
-    startCuaHelperPermissionDrag: window.zcode.startCuaHelperPermissionDrag
-      ? () => window.zcode.startCuaHelperPermissionDrag?.()
+    startCuaHelperPermissionDrag: window.raspberrycode.startCuaHelperPermissionDrag
+      ? () => window.raspberrycode.startCuaHelperPermissionDrag?.()
       : undefined,
 ```
 
@@ -636,7 +636,7 @@ const CUA_HELPER_DRAG_ICON_DATA_URL =
 
 - [ ] **Step 4: 运行测试确认通过**
 
-Run: `pnpm --filter @zcode/desktop exec vitest run test/desktopCuaPermissionIpc.test.ts`
+Run: `pnpm --filter @raspberrycode/desktop exec vitest run test/desktopCuaPermissionIpc.test.ts`
 Expected: PASS
 
 - [ ] **Step 5: 提交**
@@ -697,7 +697,7 @@ it("忽略非 layer-0 窗口（面板/浮层不是主窗口）", () => {
 
 - [ ] **Step 2: 运行测试确认失败**
 
-Run: `pnpm --filter @zcode/desktop exec vitest run test/cuaSystemSettingsWindowWatcher.test.ts`
+Run: `pnpm --filter @raspberrycode/desktop exec vitest run test/cuaSystemSettingsWindowWatcher.test.ts`
 Expected: FAIL — 模块不存在
 
 - [ ] **Step 3: 实现**
@@ -741,7 +741,7 @@ while true {
 }
 ```
 
-`scripts/build-macos-window-bounds.mjs`：非 darwin 直接跳过；`swiftc -O native/macos-window-bounds/main.swift -o resources/macos-window-bounds/zcode-window-bounds`；产物目录加进 `.gitignore`（`ci-repo-hygiene.mjs` 拒绝构建产物入库）。
+`scripts/build-macos-window-bounds.mjs`：非 darwin 直接跳过；`swiftc -O native/macos-window-bounds/main.swift -o resources/macos-window-bounds/raspberrycode-window-bounds`；产物目录加进 `.gitignore`（`ci-repo-hygiene.mjs` 拒绝构建产物入库）。
 
 `src/main/cuaSystemSettingsWindowWatcher.ts`：`spawn` 一次 CLI（**不是每帧起进程**），按行解析 stdout，取第一个 `layer === 0` 的窗口；`exit`/`error`/解析失败一律把 `latest()` 归零并**不抛错**；`stop()` 必须 kill 子进程。所有 timer 用 `unref()`，但注意验证时 vitest 自身会保活事件循环，需要 tsx 子进程探针才能证明真的不阻止退出。
 
@@ -749,10 +749,10 @@ while true {
 
 - [ ] **Step 4: 运行测试确认通过**
 
-Run: `pnpm --filter @zcode/desktop exec vitest run test/cuaSystemSettingsWindowWatcher.test.ts`
+Run: `pnpm --filter @raspberrycode/desktop exec vitest run test/cuaSystemSettingsWindowWatcher.test.ts`
 Expected: PASS
 
-Run: `node packages/desktop/scripts/build-macos-window-bounds.mjs && ./packages/desktop/resources/macos-window-bounds/zcode-window-bounds 150 | head -2`
+Run: `node packages/desktop/scripts/build-macos-window-bounds.mjs && ./packages/desktop/resources/macos-window-bounds/raspberrycode-window-bounds 150 | head -2`
 Expected: 打开系统设置后能看到形如 `[{"x":134,"y":157,"w":723,"h":752,"layer":0}]` 的行
 
 - [ ] **Step 5: 提交**
@@ -830,7 +830,7 @@ it.each(["success", "canceled", "timeout", "origin-destroyed"])(
 
 - [ ] **Step 2: 运行测试确认失败**
 
-Run: `pnpm --filter @zcode/desktop exec vitest run test/cuaPermissionPanelPositioner.test.ts test/cuaPermissionDragPanel.test.ts`
+Run: `pnpm --filter @raspberrycode/desktop exec vitest run test/cuaPermissionPanelPositioner.test.ts test/cuaPermissionDragPanel.test.ts`
 Expected: FAIL — 模块不存在
 
 - [ ] **Step 3: 实现**
@@ -864,7 +864,7 @@ win.once("ready-to-show", () => {
 
 - [ ] **Step 4: 运行测试确认通过**
 
-Run: `pnpm --filter @zcode/desktop exec vitest run test/cuaPermissionPanelPositioner.test.ts test/cuaPermissionDragPanel.test.ts`
+Run: `pnpm --filter @raspberrycode/desktop exec vitest run test/cuaPermissionPanelPositioner.test.ts test/cuaPermissionDragPanel.test.ts`
 Expected: PASS
 
 - [ ] **Step 5: 提交**
@@ -927,7 +927,7 @@ it("点击继续时只请求仍缺失的权限", async () => {
 
 - [ ] **Step 2: 运行测试确认失败**
 
-Run: `pnpm --filter @zcode/ui exec vitest run test/cuaPermissionChecklistModal.test.tsx`
+Run: `pnpm --filter @raspberrycode/ui exec vitest run test/cuaPermissionChecklistModal.test.tsx`
 Expected: FAIL — 组件不存在
 
 - [ ] **Step 3: 实现**
@@ -940,7 +940,7 @@ Expected: FAIL — 组件不存在
 
 - [ ] **Step 4: 运行测试确认通过**
 
-Run: `pnpm --filter @zcode/ui exec vitest run test/cuaPermissionChecklistModal.test.tsx`
+Run: `pnpm --filter @raspberrycode/ui exec vitest run test/cuaPermissionChecklistModal.test.tsx`
 Expected: PASS
 
 Run: `pnpm typecheck && pnpm lint`
@@ -962,20 +962,20 @@ git commit -m "feat(cua): add permission checklist modal and wire drag panel"
 - [ ] **Step 1: 造干净的 TCC 状态**
 
 ```bash
-tccutil reset Accessibility dev.zcode.cua-helper.dev
-tccutil reset ScreenCapture dev.zcode.cua-helper.dev
+tccutil reset Accessibility dev.raspberrycode.cua-helper.dev
+tccutil reset ScreenCapture dev.raspberrycode.cua-helper.dev
 sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
-  "select service,auth_value from access where client='dev.zcode.cua-helper.dev';"
+  "select service,auth_value from access where client='dev.raspberrycode.cua-helper.dev';"
 ```
 Expected: 无输出（零条目 = 模拟全新用户）
 
 - [ ] **Step 2: 起 dev**
 
 ```bash
-nohup env ZCODE_CUA_DEV_MODE=1 ELECTRON_MIRROR="https://npmmirror.com/mirrors/electron/" \
-  pnpm run dev:desktop > /tmp/zcode-desktop-dev.log 2>&1 < /dev/null & disown
+nohup env RASPBERRYCODE_CUA_DEV_MODE=1 ELECTRON_MIRROR="https://npmmirror.com/mirrors/electron/" \
+  pnpm run dev:desktop > /tmp/raspberrycode-desktop-dev.log 2>&1 < /dev/null & disown
 ```
-就绪判据：`grep -a "cua helper ready at" /tmp/zcode-desktop-dev.log`。**不要**用 harness 的 background 启动 dev（任务被清理会把整条 dev 链带走）；失败只认 `ELIFECYCLE` / `exited with code [1-9]`。
+就绪判据：`grep -a "cua helper ready at" /tmp/raspberrycode-desktop-dev.log`。**不要**用 harness 的 background 启动 dev（任务被清理会把整条 dev 链带走）；失败只认 `ELIFECYCLE` / `exited with code [1-9]`。
 
 - [ ] **Step 3: 走一遍授权流程，逐条核对**
 
@@ -985,13 +985,13 @@ nohup env ZCODE_CUA_DEV_MODE=1 ELECTRON_MIRROR="https://npmmirror.com/mirrors/el
 - [ ] 点/拖浮窗时系统设置**没有**被踢到后台
 - [ ] 拖动 tile 能把 Helper 拖进列表，`auth_value` 直接为 2
 - [ ] 拖完浮窗即时反馈已授权并推进到下一项
-- [ ] 会话终态后浮窗销毁，且 `zcode-window-bounds` 子进程随之退出（`pgrep -f zcode-window-bounds` 为空）
+- [ ] 会话终态后浮窗销毁，且 `raspberrycode-window-bounds` 子进程随之退出（`pgrep -f raspberrycode-window-bounds` 为空）
 
 - [ ] **Step 4: 核对 TCC 结果**
 
 ```bash
 sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
-  "select service,auth_value from access where client='dev.zcode.cua-helper.dev';"
+  "select service,auth_value from access where client='dev.raspberrycode.cua-helper.dev';"
 ```
 Expected: 两条记录 `auth_value=2`
 

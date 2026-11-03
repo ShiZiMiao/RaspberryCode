@@ -17,7 +17,7 @@
 本 Todo 同时收口旧 Catalog 退役过程中已经确认的三个衍生问题：
 
 1. 删除无实际 importer 消费者的 Legacy `modelCatalog.overrides`；
-2. 删除独立 `ZCodeModelReasoningState`，Reasoning UI 复用 Registry 模型选择候选项；
+2. 删除独立 `RaspberryCodeModelReasoningState`，Reasoning UI 复用 Registry 模型选择候选项；
 3. 用 `requiresMfjsToolSchema` Model Config 字段替代 Kimi K3 modelId Tool Schema 特判。
 
 ```text
@@ -90,7 +90,7 @@ RaspberryCode Built-in Model Config Rules
 
 ### 2.3 Reasoning UI 复用模型选择候选项
 
-`ZCodeModelReasoningState` 不是运行状态，而是旧协议为选择器重新包装的一份模型选项规格。目标链固定为：
+`RaspberryCodeModelReasoningState` 不是运行状态，而是旧协议为选择器重新包装的一份模型选项规格。目标链固定为：
 
 ```text
 Effective Model Config.optionSpecs.reasoningLevel
@@ -111,7 +111,7 @@ Effective Model Config.optionSpecs.reasoningLevel
 
 - 模型选择候选项直接提供 `optionSpecs.reasoningLevel.values/default`；
 - Option Spec 是否存在已经表达是否提供 reasoning 选择，不再保留 `enabled`；
-- 删除独立 `ZCodeModelReasoningState` 类型、schema、builder 和映射 helper；
+- 删除独立 `RaspberryCodeModelReasoningState` 类型、schema、builder 和映射 helper；
 - 不新增 reasoning 专用 fetch、Store、Context 或同步协议；
 - `ModelSelection` 只保存用户明确选择的 `options.reasoningLevel`，不复制档位全集和默认值；
 - `providerOptionsByLevel` 不进入 Protocol/UI；Provider 参数只保留在 Effective Model Config 的
@@ -168,7 +168,7 @@ Adapter Provider 请求装配边界。删除 `isKimiK3ModelId()` 和所有按具
 ### 3.2 Protocol 与 UI
 
 - 模型候选协议直接表达 reasoning Option Spec；
-- 删除 `ZCodeModelReasoningState`、`buildProtocolReasoningState()` 和旧 Provider reasoning 投影；
+- 删除 `RaspberryCodeModelReasoningState`、`buildProtocolReasoningState()` 和旧 Provider reasoning 投影；
 - 删除 `providerOptionsByLevel` 跨进程字段；
 - Composer、Subagent、Off-Peak、Repo Wiki 统一从当前候选项读取 values/default；
 - 不改变各产品入口自己的草稿、保存和提交状态归属。
@@ -262,7 +262,7 @@ Adapter Provider 请求装配边界。删除 `isKimiK3ModelId()` 和所有按具
 - 正常生产代码无 `ModelCatalogConfig`、`ModelCatalogService`、`ModelCapabilityProvider`；
 - 无 bundled models.dev snapshot/source 和对应生产打包项；
 - Config Schema/Runtime patch 无 `modelCatalog.overrides`；
-- Protocol/UI 无 `ZCodeModelReasoningState`、`enabled`、`providerOptionsByLevel`；
+- Protocol/UI 无 `RaspberryCodeModelReasoningState`、`enabled`、`providerOptionsByLevel`；
 - Adapter 无 `isKimiK3ModelId()` 或其他 Tool Schema modelId hardcode；
 - `requiresMfjsToolSchema` 只来自 Effective Model Config；
 - 投影失败在网络请求前 fail-closed，不能静默删除 Tool 或原样发送已知无法转换的引用；

@@ -162,7 +162,7 @@
 
 影响分级与代码种子（均相对仓库根）：
 
-- must-inspect：`apps/zcode-cli/packages/adapters/src/storage/session-store/{migrations,migration-runner,codecs,sqlite-session-store}.ts`、`repositories/{session-entries,model-selection-migration,messages,usage}.ts`；本次格式、事务及读写 owner。
+- must-inspect：`apps/raspberrycode-cli/packages/adapters/src/storage/session-store/{migrations,migration-runner,codecs,sqlite-session-store}.ts`、`repositories/{session-entries,model-selection-migration,messages,usage}.ts`；本次格式、事务及读写 owner。
 - must-inspect：`packages/services/src/session/{taskIndexRepo,automationRepo,automationSelectionMigration,offPeakTaskRepo,offPeakTaskService}.ts`；同库打开入口及分散补迁。
 - must-inspect：Session 消息/Part/输入 producer、恢复、fork、导入等直接消费者；需在实施账本补齐实际符号与路径，不以当前种子替代全审计。
 - should-inspect：任务投影、会话历史 hydration、自动化和闲时派发；证明配置缺失不阻碍内容，且不改变执行语义。
@@ -213,12 +213,12 @@
 
 ### 7.3 实施前资料回填及 E2E 交接
 
-- 对实际发现的结构变更先更新 `apps/zcode-cli/docs/design/v2/local-setting-migrations.md`、`apps/zcode-cli/docs/design/v2/session-persistence.md`、`docs/task/task-sqlite-index.md` 等对应 spec；不把本 Todo 的候选字段名写成既成事实。
+- 对实际发现的结构变更先更新 `apps/raspberrycode-cli/docs/design/v2/local-setting-migrations.md`、`apps/raspberrycode-cli/docs/design/v2/session-persistence.md`、`docs/task/task-sqlite-index.md` 等对应 spec；不把本 Todo 的候选字段名写成既成事实。
 - 实施前按 Agent 指令完成数据库结构变更的 CLI 负责人同步；本次没有向外部发送消息。
 - 编写交互 E2E 前读取当前 conversation 声明、case catalog、coverage matrix 和 E2E workflow，按 DB109 场景补对应需求/覆盖行，使用 e2e-case-lifecycle；实施阶段复用并扩展既有 pending 冷历史用例，不自动转正。
 - 文件 fixture：临时库按固定旧基线生成，必要旧 Reader 冻结来源 SHA；不用真实账号/用户库。Provider 使用离线 fixture，模型执行非必需；确需验证补选后执行可用可控 replay/测试模型。
 - 时序使用事务故障注入、进程握手和明确屏障，不靠任意 sleep。先完成核心整批存储测试，再共享构建做桌面/远程代表验证；手机环境限制如实记录。
-- 现有 `apps/zcode-cli/packages/adapters/tests/session-model-selection-migration.test.ts` 等可复用；执行器、Repo、旧 Reader 测试在实施账本中列明具体文件及结果。
+- 现有 `apps/raspberrycode-cli/packages/adapters/tests/session-model-selection-migration.test.ts` 等可复用；执行器、Repo、旧 Reader 测试在实施账本中列明具体文件及结果。
 
 ## 8. 执行批次、待确认项与完成标准
 

@@ -4,14 +4,14 @@
 
 ## 所有权与边界
 
-构建工具单独拥有配置选择职责，读取现有 `ZCODE_ENV=test|production`。
+构建工具单独拥有配置选择职责，读取现有 `RASPBERRYCODE_ENV=test|production`。
 显式环境变量优先；未设置时读取仓库现有 .env 环境文件，再默认 test。
-`NODE_ENV` 只影响读取哪组 .env 文件，不直接决定产品环境。非法非空 ZCODE_ENV 报错。
+`NODE_ENV` 只影响读取哪组 .env 文件，不直接决定产品环境。非法非空 RASPBERRYCODE_ENV 报错。
 
 | 产品环境   | 仓库源文件                              |
 | ---------- | --------------------------------------- |
-| production | config/provider/zcode-builtin.json      |
-| test       | config/provider/zcode-builtin.test.json |
+| production | config/provider/raspberrycode-builtin.json      |
+| test       | config/provider/raspberrycode-builtin.test.json |
 
 两份都是完整 Release。生产文件是唯一编辑源，测试文件由
 `pnpm provider:config:sync-test` 生成并提交，revision 跟随生产文件。
@@ -26,9 +26,9 @@
 | ---------------------------------------------- | ------------------------------------------------------ |
 | https://api.z.ai/api/anthropic                 | https://api.z.ai/api/anthropic                 |
 | https://open.bigmodel.cn/api/anthropic         | https://open.bigmodel.cn/api/anthropic                  |
-| https://zcode.z.ai/api/v1/zcode-plan/anthropic | https://zcode.z.ai/api/v1/zcode-plan/anthropic |
-| https://zcode.z.ai/api/v1/off-peak/anthropic   | https://zcode.z.ai/api/v1/off-peak/anthropic   |
-| https://zcode.z.ai/api/v1/highspeed/anthropic  | https://zcode.z.ai/api/v1/highspeed/anthropic  |
+| https://your-server.example/api/v1/raspberrycode-plan/anthropic | https://your-server.example/api/v1/raspberrycode-plan/anthropic |
+| https://your-server.example/api/v1/off-peak/anthropic   | https://your-server.example/api/v1/off-peak/anthropic   |
+| https://your-server.example/api/v1/highspeed/anthropic  | https://your-server.example/api/v1/highspeed/anthropic  |
 
 - 每次从完整生产配置重新生成，不增量修改旧测试配置，不维护第二份模型能力。
 - 手动模板、第三方地址、Key 管理链接等字段原样保留；新增未知账号地址时明确失败，要求补充映射，不偷偷请求生产。
@@ -44,13 +44,13 @@
                   原双环境打包流程
 ```
 
-签名准入另外在现有 Adapter 增加 `api.z.ai`、`zcode.z.ai` 精确 hostname，
+签名准入另外在现有 Adapter 增加 `api.z.ai`、`your-server.example` 精确 hostname，
 `bigmodel.cn` 已由既有 `*.bigmodel.cn` 覆盖。不扩大到整个 `*.z.ai`，
 也不改变公共 Family 分类工具的其他消费者。与产品环境开关无关，仅依实际 URL 判断。
 账号 Start／Off-Peak 的不签名例外优先于域名；个人／团队及显式套餐 Key 继续走原入口。
 
 ```text
-ZCODE_ENV + 对应完整 JSON
+RASPBERRYCODE_ENV + 对应完整 JSON
              |
              v
 共同构建入口：选文件、完整 Release 解码校验
@@ -65,8 +65,8 @@ Desktop / CLI / SEA 资源     HTTP / Remote / Server CLI 嵌入常量
           原有 Built-in Source / Registry
 ```
 
-Desktop 资源仍为 `resources/config/provider/zcode-builtin.json`；CLI 为
-`dist/provider/zcode-builtin.json`；SEA key 仍为 `zcode-provider/zcode-builtin.json`。
+Desktop 资源仍为 `resources/config/provider/raspberrycode-builtin.json`；CLI 为
+`dist/provider/raspberrycode-builtin.json`；SEA key 仍为 `raspberrycode-provider/raspberrycode-builtin.json`。
 Server 保持原有 JSON 编译常量。开发态 Desktop 根据同一个编译环境定位仓库源文件。
 显式配置路径注入优先级不变。
 
@@ -81,7 +81,7 @@ Server 保持原有 JSON 编译常量。开发态 Desktop 根据同一个编译�
 
 - 普通 CLI、Desktop、Server 构建仍按原流程执行，不新增缓存层。
 - bootstrap 每次重新构建 Agent JS，并由同次 CLI 构建验证和刷新旁边的配置资源，避免 Source Server archive 带入旧 Agent。
-- Turbo 的 CLI build 与 build:desktop-agent 包含 ZCODE_ENV、相关 .env、两份配置及公共构建工具。
+- Turbo 的 CLI build 与 build:desktop-agent 包含 RASPBERRYCODE_ENV、相关 .env、两份配置及公共构建工具。
 - Desktop E2E 构建指纹包含公共工具与配置输入；已有环境指纹继续复用。
 - 远程 Server 已将配置嵌入 JS；现有 source hash / artifact hash 自然使配置变化触发重新打包。
 - 不通过覆写仓库源文件选择环境；不同环境并行构建须使用各自 worktree／输出目录，

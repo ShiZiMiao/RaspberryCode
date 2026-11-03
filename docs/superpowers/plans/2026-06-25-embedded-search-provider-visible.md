@@ -68,10 +68,10 @@
 - 不用 patch-on-patch 的零散判断，统一抽出 branch capability、backend 和 prelude helper。
 - 注释如需解释 bug/差异原因，用中文。
 - 提交前必须执行：
-  - `pnpm --filter @zcode/core typecheck`
-  - `pnpm --filter @zcode/core lint`
-  - `pnpm --filter @zcode/adapters typecheck`
-  - `pnpm --filter @zcode/adapters lint`
+  - `pnpm --filter @raspberrycode/core typecheck`
+  - `pnpm --filter @raspberrycode/core lint`
+  - `pnpm --filter @raspberrycode/adapters typecheck`
+  - `pnpm --filter @raspberrycode/adapters lint`
   - 相关单测
 
 ## Provider-Visible 合同边界
@@ -110,7 +110,7 @@
      find() { ... "$@"; }
      grep() { ... "$@"; }
      ```
-   - 接收 `EmbeddedSearchBackend`，不硬编码 `zcode __internal-search`。
+   - 接收 `EmbeddedSearchBackend`，不硬编码 `raspberrycode __internal-search`。
 3. Embedded search backend
    - 第一版使用 `internal-cli` 降低实现成本。
    - 未来允许切换到 `argv0-dispatch`。
@@ -133,35 +133,35 @@
 
 预期新增：
 
-- `apps/zcode-cli/packages/core/src/embedded-search/capability.ts`
-- `apps/zcode-cli/packages/core/tests/runtime-embedded-search-capability.test.ts`
-- `apps/zcode-cli/packages/adapters/src/exec/embedded-search-prelude.ts`
-- `apps/zcode-cli/packages/adapters/tests/embedded-search-prelude.test.ts`
-- `apps/zcode-cli/packages/cli/src/internal-search/embedded-search-cli.ts`
-- `apps/zcode-cli/packages/cli/tests/internal-search.test.ts`
+- `apps/raspberrycode-cli/packages/core/src/embedded-search/capability.ts`
+- `apps/raspberrycode-cli/packages/core/tests/runtime-embedded-search-capability.test.ts`
+- `apps/raspberrycode-cli/packages/adapters/src/exec/embedded-search-prelude.ts`
+- `apps/raspberrycode-cli/packages/adapters/tests/embedded-search-prelude.test.ts`
+- `apps/raspberrycode-cli/packages/cli/src/internal-search/embedded-search-cli.ts`
+- `apps/raspberrycode-cli/packages/cli/tests/internal-search.test.ts`
 
 预期修改：
 
 - `docs/plan/trajectory/embedded-search-provider-visible.md`
-- `apps/zcode-cli/packages/contracts/src/interfaces/execution.port.ts`
-- `apps/zcode-cli/packages/core/src/runtime/agent-runtime.ts`
-- `apps/zcode-cli/packages/bootstrap/src/app/runtime-config.ts`
-- `apps/zcode-cli/packages/core/src/tool/executor/types.ts`
-- `apps/zcode-cli/packages/core/src/tool/executor/call-runner.ts`
-- `apps/zcode-cli/packages/core/src/tool/types.ts`
-- `apps/zcode-cli/packages/core/src/tool/handlers/index.ts`
-- `apps/zcode-cli/packages/core/src/tool/handlers/bash.ts`
-- `apps/zcode-cli/packages/core/src/tool/handlers/bash-prompt.ts`
-- `apps/zcode-cli/packages/core/src/tool/handlers/agent.ts`
-- `apps/zcode-cli/packages/core/src/tool/handlers/plan-mode-prompts.ts`
-- `apps/zcode-cli/packages/core/src/subagent/explore.ts`
-- `apps/zcode-cli/packages/core/src/runtime/methods/subagent.ts`
-- `apps/zcode-cli/packages/core/tests/tool-contracts.test.ts`
-- `apps/zcode-cli/packages/core/tests/context-builder.test.ts`
-- `apps/zcode-cli/packages/core/tests/bash-handler.test.ts`
-- `apps/zcode-cli/packages/adapters/src/exec/index.ts`
-- `apps/zcode-cli/packages/adapters/src/exec/cwd-capture.ts`
-- `apps/zcode-cli/packages/cli/src/run.ts`
+- `apps/raspberrycode-cli/packages/contracts/src/interfaces/execution.port.ts`
+- `apps/raspberrycode-cli/packages/core/src/runtime/agent-runtime.ts`
+- `apps/raspberrycode-cli/packages/bootstrap/src/app/runtime-config.ts`
+- `apps/raspberrycode-cli/packages/core/src/tool/executor/types.ts`
+- `apps/raspberrycode-cli/packages/core/src/tool/executor/call-runner.ts`
+- `apps/raspberrycode-cli/packages/core/src/tool/types.ts`
+- `apps/raspberrycode-cli/packages/core/src/tool/handlers/index.ts`
+- `apps/raspberrycode-cli/packages/core/src/tool/handlers/bash.ts`
+- `apps/raspberrycode-cli/packages/core/src/tool/handlers/bash-prompt.ts`
+- `apps/raspberrycode-cli/packages/core/src/tool/handlers/agent.ts`
+- `apps/raspberrycode-cli/packages/core/src/tool/handlers/plan-mode-prompts.ts`
+- `apps/raspberrycode-cli/packages/core/src/subagent/explore.ts`
+- `apps/raspberrycode-cli/packages/core/src/runtime/methods/subagent.ts`
+- `apps/raspberrycode-cli/packages/core/tests/tool-contracts.test.ts`
+- `apps/raspberrycode-cli/packages/core/tests/context-builder.test.ts`
+- `apps/raspberrycode-cli/packages/core/tests/bash-handler.test.ts`
+- `apps/raspberrycode-cli/packages/adapters/src/exec/index.ts`
+- `apps/raspberrycode-cli/packages/adapters/src/exec/cwd-capture.ts`
+- `apps/raspberrycode-cli/packages/cli/src/run.ts`
 
 用户补充约束：本轮完成后不要自动 commit、不要 push、不要 stage；所有改动留在 unstaged 工作区中等待 review。
 
@@ -185,7 +185,7 @@ git status --short
 执行：
 
 ```bash
-pnpm --filter @zcode/core test -- tool-contracts.test.ts context-builder.test.ts
+pnpm --filter @raspberrycode/core test -- tool-contracts.test.ts context-builder.test.ts
 ```
 
 期望：
@@ -234,7 +234,7 @@ test -f docs/plan/trajectory/embedded-search-provider-visible.md
 新增：
 
 ```text
-apps/zcode-cli/packages/core/tests/runtime-embedded-search-capability.test.ts
+apps/raspberrycode-cli/packages/core/tests/runtime-embedded-search-capability.test.ts
 ```
 
 测试覆盖：
@@ -254,7 +254,7 @@ apps/zcode-cli/packages/core/tests/runtime-embedded-search-capability.test.ts
 测试命令：
 
 ```bash
-pnpm --filter @zcode/core test -- runtime-embedded-search-capability.test.ts
+pnpm --filter @raspberrycode/core test -- runtime-embedded-search-capability.test.ts
 ```
 
 期望：
@@ -266,13 +266,13 @@ pnpm --filter @zcode/core test -- runtime-embedded-search-capability.test.ts
 新增：
 
 ```text
-apps/zcode-cli/packages/core/src/embedded-search/capability.ts
+apps/raspberrycode-cli/packages/core/src/embedded-search/capability.ts
 ```
 
 导出：
 
 ```ts
-import type { ModelConnectionInfo, ModelConnectionPort, ModelRef } from "@zcode/contracts";
+import type { ModelConnectionInfo, ModelConnectionPort, ModelRef } from "@raspberrycode/contracts";
 
 const ENABLE_EMBEDDED_SEARCH_BRANCH = true;
 
@@ -404,7 +404,7 @@ if (isEmbeddedSearchCapableModel(resolvedContext.modelId)) {
 执行：
 
 ```bash
-pnpm --filter @zcode/core test -- runtime-embedded-search-capability.test.ts
+pnpm --filter @raspberrycode/core test -- runtime-embedded-search-capability.test.ts
 ```
 
 期望：
@@ -418,7 +418,7 @@ pnpm --filter @zcode/core test -- runtime-embedded-search-capability.test.ts
 文件：
 
 ```text
-apps/zcode-cli/packages/core/src/tool/handlers/index.ts
+apps/raspberrycode-cli/packages/core/src/tool/handlers/index.ts
 ```
 
 目标：
@@ -460,7 +460,7 @@ export function registerBuiltInTools(
 文件：
 
 ```text
-apps/zcode-cli/packages/core/src/tool/handlers/bash-prompt.ts
+apps/raspberrycode-cli/packages/core/src/tool/handlers/bash-prompt.ts
 ```
 
 目标：
@@ -495,7 +495,7 @@ export function buildBashPrompt(options: BuildBashPromptOptions = {}): string {
 文件：
 
 ```text
-apps/zcode-cli/packages/core/src/tool/handlers/agent.ts
+apps/raspberrycode-cli/packages/core/src/tool/handlers/agent.ts
 ```
 
 目标：
@@ -514,7 +514,7 @@ apps/zcode-cli/packages/core/src/tool/handlers/agent.ts
 文件：
 
 ```text
-apps/zcode-cli/packages/core/src/subagent/explore.ts
+apps/raspberrycode-cli/packages/core/src/subagent/explore.ts
 ```
 
 目标：
@@ -557,7 +557,7 @@ export function buildExploreAllowedTools(options: BuildExploreSubagentOptions = 
 文件：
 
 ```text
-apps/zcode-cli/packages/core/src/tool/handlers/plan-mode-prompts.ts
+apps/raspberrycode-cli/packages/core/src/tool/handlers/plan-mode-prompts.ts
 ```
 
 目标：
@@ -574,7 +574,7 @@ apps/zcode-cli/packages/core/src/tool/handlers/plan-mode-prompts.ts
 文件：
 
 ```text
-apps/zcode-cli/packages/core/src/context/dynamic-sections.ts
+apps/raspberrycode-cli/packages/core/src/context/dynamic-sections.ts
 ```
 
 目标：
@@ -593,7 +593,7 @@ apps/zcode-cli/packages/core/src/context/dynamic-sections.ts
 文件：
 
 ```text
-apps/zcode-cli/packages/core/src/context/dynamic-sections.ts
+apps/raspberrycode-cli/packages/core/src/context/dynamic-sections.ts
 ```
 
 目标：
@@ -613,8 +613,8 @@ apps/zcode-cli/packages/core/src/context/dynamic-sections.ts
 修改：
 
 ```text
-apps/zcode-cli/packages/core/tests/tool-contracts.test.ts
-apps/zcode-cli/packages/core/tests/context-builder.test.ts
+apps/raspberrycode-cli/packages/core/tests/tool-contracts.test.ts
+apps/raspberrycode-cli/packages/core/tests/context-builder.test.ts
 ```
 
 新增断言：
@@ -637,7 +637,7 @@ apps/zcode-cli/packages/core/tests/context-builder.test.ts
 执行：
 
 ```bash
-pnpm --filter @zcode/core test -- tool-contracts.test.ts context-builder.test.ts
+pnpm --filter @raspberrycode/core test -- tool-contracts.test.ts context-builder.test.ts
 ```
 
 期望：
@@ -651,7 +651,7 @@ pnpm --filter @zcode/core test -- tool-contracts.test.ts context-builder.test.ts
 新增：
 
 ```text
-apps/zcode-cli/packages/cli/tests/internal-search.test.ts
+apps/raspberrycode-cli/packages/cli/tests/internal-search.test.ts
 ```
 
 测试覆盖：
@@ -667,7 +667,7 @@ apps/zcode-cli/packages/cli/tests/internal-search.test.ts
 执行：
 
 ```bash
-pnpm --filter @zcode/cli test -- internal-search.test.ts
+pnpm --filter @raspberrycode/cli test -- internal-search.test.ts
 ```
 
 期望：
@@ -699,7 +699,7 @@ export interface EmbeddedSearchBackend {
 新增：
 
 ```text
-apps/zcode-cli/packages/cli/src/internal-search/embedded-search-cli.ts
+apps/raspberrycode-cli/packages/cli/src/internal-search/embedded-search-cli.ts
 ```
 
 导出：
@@ -736,7 +736,7 @@ export async function runEmbeddedSearchCli(argv: string[], io: EmbeddedSearchIo)
 修改：
 
 ```text
-apps/zcode-cli/packages/cli/src/run.ts
+apps/raspberrycode-cli/packages/cli/src/run.ts
 ```
 
 目标：
@@ -744,8 +744,8 @@ apps/zcode-cli/packages/cli/src/run.ts
 - 支持内部命令：
 
 ```bash
-zcode __internal-search grep ...
-zcode __internal-search find ...
+raspberrycode __internal-search grep ...
+raspberrycode __internal-search find ...
 ```
 
 验收点：
@@ -758,7 +758,7 @@ zcode __internal-search find ...
 执行：
 
 ```bash
-pnpm --filter @zcode/cli test -- internal-search.test.ts
+pnpm --filter @raspberrycode/cli test -- internal-search.test.ts
 ```
 
 期望：
@@ -772,7 +772,7 @@ pnpm --filter @zcode/cli test -- internal-search.test.ts
 修改：
 
 ```text
-apps/zcode-cli/packages/contracts/src/interfaces/execution.port.ts
+apps/raspberrycode-cli/packages/contracts/src/interfaces/execution.port.ts
 ```
 
 新增：
@@ -808,7 +808,7 @@ bashPrelude?: ExecutionEmbeddedSearchPrelude;
 新增：
 
 ```text
-apps/zcode-cli/packages/adapters/tests/embedded-search-prelude.test.ts
+apps/raspberrycode-cli/packages/adapters/tests/embedded-search-prelude.test.ts
 ```
 
 测试覆盖：
@@ -825,7 +825,7 @@ apps/zcode-cli/packages/adapters/tests/embedded-search-prelude.test.ts
 执行：
 
 ```bash
-pnpm --filter @zcode/adapters test -- embedded-search-prelude.test.ts
+pnpm --filter @raspberrycode/adapters test -- embedded-search-prelude.test.ts
 ```
 
 期望：
@@ -837,13 +837,13 @@ pnpm --filter @zcode/adapters test -- embedded-search-prelude.test.ts
 新增：
 
 ```text
-apps/zcode-cli/packages/adapters/src/exec/embedded-search-prelude.ts
+apps/raspberrycode-cli/packages/adapters/src/exec/embedded-search-prelude.ts
 ```
 
 导出：
 
 ```ts
-import type { ExecutionEmbeddedSearchPrelude } from "@zcode/contracts";
+import type { ExecutionEmbeddedSearchPrelude } from "@raspberrycode/contracts";
 
 export function applyEmbeddedSearchPrelude(
   command: string,
@@ -869,15 +869,15 @@ export function applyEmbeddedSearchPrelude(
 `internal-cli` backend 生成：
 
 ```bash
-find() { command zcode __internal-search find "$@"; }
-grep() { command zcode __internal-search grep "$@"; }
+find() { command raspberrycode __internal-search find "$@"; }
+grep() { command raspberrycode __internal-search grep "$@"; }
 ```
 
 `argv0-dispatch` backend 预留生成：
 
 ```bash
-find() { ARGV0=bfs command zcode -S dfs -regextype findutils-default "$@"; }
-grep() { ARGV0=ugrep command zcode -G --ignore-files --hidden -I "$@"; }
+find() { ARGV0=bfs command raspberrycode -S dfs -regextype findutils-default "$@"; }
+grep() { ARGV0=ugrep command raspberrycode -G --ignore-files --hidden -I "$@"; }
 ```
 
 注意：
@@ -892,8 +892,8 @@ grep() { ARGV0=ugrep command zcode -G --ignore-files --hidden -I "$@"; }
 修改：
 
 ```text
-apps/zcode-cli/packages/adapters/src/exec/index.ts
-apps/zcode-cli/packages/adapters/src/exec/cwd-capture.ts
+apps/raspberrycode-cli/packages/adapters/src/exec/index.ts
+apps/raspberrycode-cli/packages/adapters/src/exec/cwd-capture.ts
 ```
 
 接入顺序：
@@ -910,7 +910,7 @@ apps/zcode-cli/packages/adapters/src/exec/cwd-capture.ts
 更新测试：
 
 ```text
-apps/zcode-cli/packages/adapters/tests/exec.test.ts
+apps/raspberrycode-cli/packages/adapters/tests/exec.test.ts
 ```
 
 新增 case：
@@ -921,7 +921,7 @@ apps/zcode-cli/packages/adapters/tests/exec.test.ts
 执行：
 
 ```bash
-pnpm --filter @zcode/adapters test -- embedded-search-prelude.test.ts exec.test.ts
+pnpm --filter @raspberrycode/adapters test -- embedded-search-prelude.test.ts exec.test.ts
 ```
 
 期望：
@@ -935,8 +935,8 @@ pnpm --filter @zcode/adapters test -- embedded-search-prelude.test.ts exec.test.
 修改：
 
 ```text
-apps/zcode-cli/packages/core/src/runtime/agent-runtime.ts
-apps/zcode-cli/packages/core/src/tool/executor/types.ts
+apps/raspberrycode-cli/packages/core/src/runtime/agent-runtime.ts
+apps/raspberrycode-cli/packages/core/src/tool/executor/types.ts
 ```
 
 目标：
@@ -984,8 +984,8 @@ SEA/packaged 场景填入：
 修改：
 
 ```text
-apps/zcode-cli/packages/core/src/tool/executor/call-runner.ts
-apps/zcode-cli/packages/core/src/tool/types.ts
+apps/raspberrycode-cli/packages/core/src/tool/executor/call-runner.ts
+apps/raspberrycode-cli/packages/core/src/tool/types.ts
 ```
 
 目标：
@@ -1020,7 +1020,7 @@ embeddedSearch: {
 修改：
 
 ```text
-apps/zcode-cli/packages/core/src/tool/handlers/bash.ts
+apps/raspberrycode-cli/packages/core/src/tool/handlers/bash.ts
 ```
 
 目标：
@@ -1048,7 +1048,7 @@ bashPrelude: {
 更新测试：
 
 ```text
-apps/zcode-cli/packages/core/tests/bash-handler.test.ts
+apps/raspberrycode-cli/packages/core/tests/bash-handler.test.ts
 ```
 
 新增 case：
@@ -1060,7 +1060,7 @@ apps/zcode-cli/packages/core/tests/bash-handler.test.ts
 执行：
 
 ```bash
-pnpm --filter @zcode/core test -- bash-handler.test.ts
+pnpm --filter @raspberrycode/core test -- bash-handler.test.ts
 ```
 
 期望：
@@ -1072,7 +1072,7 @@ pnpm --filter @zcode/core test -- bash-handler.test.ts
 修改：
 
 ```text
-apps/zcode-cli/packages/core/src/runtime/agent-runtime.ts
+apps/raspberrycode-cli/packages/core/src/runtime/agent-runtime.ts
 ```
 
 目标：
@@ -1108,7 +1108,7 @@ registerBuiltInTools(registry, dependencies, {
 新增或更新测试：
 
 ```text
-apps/zcode-cli/packages/core/tests/tool-contracts.test.ts
+apps/raspberrycode-cli/packages/core/tests/tool-contracts.test.ts
 ```
 
 断言：
@@ -1133,7 +1133,7 @@ apps/zcode-cli/packages/core/tests/tool-contracts.test.ts
 执行：
 
 ```bash
-pnpm --filter @zcode/core test -- tool-contracts.test.ts context-builder.test.ts
+pnpm --filter @raspberrycode/core test -- tool-contracts.test.ts context-builder.test.ts
 ```
 
 期望：
@@ -1144,8 +1144,8 @@ pnpm --filter @zcode/core test -- tool-contracts.test.ts context-builder.test.ts
 
 新增测试位置优先级：
 
-1. `apps/zcode-cli/packages/adapters/tests/exec.test.ts`
-2. 如果需要完整 CLI shim，放到 `apps/zcode-cli/packages/cli/tests/internal-search.test.ts`
+1. `apps/raspberrycode-cli/packages/adapters/tests/exec.test.ts`
+2. 如果需要完整 CLI shim，放到 `apps/raspberrycode-cli/packages/cli/tests/internal-search.test.ts`
 
 构造临时目录：
 
@@ -1177,15 +1177,15 @@ find . -name "*.ts"
 执行：
 
 ```bash
-pnpm --filter @zcode/core test -- runtime-embedded-search-capability.test.ts tool-contracts.test.ts context-builder.test.ts bash-handler.test.ts
-pnpm --filter @zcode/adapters test -- embedded-search-prelude.test.ts exec.test.ts
-pnpm --filter @zcode/cli test -- internal-search.test.ts
-pnpm --filter @zcode/core typecheck
-pnpm --filter @zcode/core lint
-pnpm --filter @zcode/adapters typecheck
-pnpm --filter @zcode/adapters lint
-pnpm --filter @zcode/cli typecheck
-pnpm --filter @zcode/cli lint
+pnpm --filter @raspberrycode/core test -- runtime-embedded-search-capability.test.ts tool-contracts.test.ts context-builder.test.ts bash-handler.test.ts
+pnpm --filter @raspberrycode/adapters test -- embedded-search-prelude.test.ts exec.test.ts
+pnpm --filter @raspberrycode/cli test -- internal-search.test.ts
+pnpm --filter @raspberrycode/core typecheck
+pnpm --filter @raspberrycode/core lint
+pnpm --filter @raspberrycode/adapters typecheck
+pnpm --filter @raspberrycode/adapters lint
+pnpm --filter @raspberrycode/cli typecheck
+pnpm --filter @raspberrycode/cli lint
 ```
 
 期望：
@@ -1205,7 +1205,7 @@ pnpm lint
 执行：
 
 ```bash
-git diff -- docs/plan/trajectory/embedded-search-provider-visible.md apps/zcode-cli/packages/core apps/zcode-cli/packages/adapters apps/zcode-cli/packages/cli apps/zcode-cli/packages/contracts
+git diff -- docs/plan/trajectory/embedded-search-provider-visible.md apps/raspberrycode-cli/packages/core apps/raspberrycode-cli/packages/adapters apps/raspberrycode-cli/packages/cli apps/raspberrycode-cli/packages/contracts
 ```
 
 检查清单：
@@ -1247,15 +1247,15 @@ Switches RaspberryCode's default provider-visible surface to the embedded search
 Keeps CMD and legacy shell fallback on the direct Glob/Grep branch, while Bash find/grep are routed through an embedded search backend for supported POSIX shells.
 
 Verification:
-- pnpm --filter @zcode/core test -- runtime-embedded-search-capability.test.ts tool-contracts.test.ts context-builder.test.ts bash-handler.test.ts
-- pnpm --filter @zcode/adapters test -- embedded-search-prelude.test.ts exec.test.ts
-- pnpm --filter @zcode/cli test -- internal-search.test.ts
-- pnpm --filter @zcode/core typecheck
-- pnpm --filter @zcode/core lint
-- pnpm --filter @zcode/adapters typecheck
-- pnpm --filter @zcode/adapters lint
-- pnpm --filter @zcode/cli typecheck
-- pnpm --filter @zcode/cli lint
+- pnpm --filter @raspberrycode/core test -- runtime-embedded-search-capability.test.ts tool-contracts.test.ts context-builder.test.ts bash-handler.test.ts
+- pnpm --filter @raspberrycode/adapters test -- embedded-search-prelude.test.ts exec.test.ts
+- pnpm --filter @raspberrycode/cli test -- internal-search.test.ts
+- pnpm --filter @raspberrycode/core typecheck
+- pnpm --filter @raspberrycode/core lint
+- pnpm --filter @raspberrycode/adapters typecheck
+- pnpm --filter @raspberrycode/adapters lint
+- pnpm --filter @raspberrycode/cli typecheck
+- pnpm --filter @raspberrycode/cli lint
 ```
 
 ## 回滚方案
@@ -1272,8 +1272,8 @@ git revert <commit-sha>
 3. 回滚后重新执行：
 
 ```bash
-pnpm --filter @zcode/core test -- tool-contracts.test.ts context-builder.test.ts bash-handler.test.ts
-pnpm --filter @zcode/adapters test -- exec.test.ts
+pnpm --filter @raspberrycode/core test -- tool-contracts.test.ts context-builder.test.ts bash-handler.test.ts
+pnpm --filter @raspberrycode/adapters test -- exec.test.ts
 ```
 
 ## 验收标准

@@ -32,4 +32,4 @@ Usage 设置页的 Coding Plan 面板会展示 5 小时、每周和 MCP 额度�
 - 切换 `today / 7d / 30d` 不会让 `Quota Remaining` 区域清空或闪烁。
 - 进入 Coding Plan Usage 页面后，`Quota Remaining` 会绕过共享 TTL 校正一次；点击刷新按钮后，`Quota Remaining` 和趋势图一起更新。
 - 英文和中文界面都显示对应的额度文案，套餐内月度 MCP 工具额度统一展示为“工具调用 / Tool calls”，不再使用“MCP 额度 / MCP quota”；独立的官方 Server MCP 日额度继续展示品牌名“RaspberryCode MCP”。
-- Usage stats 和 Model Provider 套餐卡中的 `RaspberryCode MCP` 标题后都展示 info 图标；悬停或键盘聚焦时复用 `ControlHintTooltip` 与 `sidebar.usage.plan.zcodeMcpDescription`，确保和输入框 context 的额度说明一致。
+- Usage stats 和 Model Provider 套餐卡中的 `RaspberryCode MCP` 标题后都展示 info 图标；悬停或键盘聚焦时复用 `ControlHintTooltip` 与 `sidebar.usage.plan.raspberrycodeMcpDescription`，确保和输入框 context 的额度说明一致。

@@ -6,13 +6,13 @@
 
 | 能力 | 配置项 | 关闭时的行为 |
 | --- | --- | --- |
-| ARMS RUM 上报 | `ZCODE_ARMS_RUM_ENDPOINT` | 主进程与渲染进程的 ARMS SDK 以 `enable: false` 初始化，不产生上报 |
-| 事件上报（数仓） | `ZCODE_TELEMETRY_REPORT_ENDPOINT` | 遥测事件在发送前直接返回 |
+| ARMS RUM 上报 | `RASPBERRYCODE_ARMS_RUM_ENDPOINT` | 主进程与渲染进程的 ARMS SDK 以 `enable: false` 初始化，不产生上报 |
+| 事件上报（数仓） | `RASPBERRYCODE_TELEMETRY_REPORT_ENDPOINT` | 遥测事件在发送前直接返回 |
 
 这样同一份源码可以产出"默认不上报"的构建，也可以产出启用这些能力的正式构建，
 不需要在源码里写死上报地址。
 
-> 历史说明：「自动更新」（`ZCODE_AUTO_UPDATE` / `__ZCODE_AUTO_UPDATE_ENABLED__`）曾是第三项
+> 历史说明：「自动更新」（`RASPBERRYCODE_AUTO_UPDATE` / `__RASPBERRYCODE_AUTO_UPDATE_ENABLED__`）曾是第三项
 > 构建期能力；客户端自动更新随订阅体系一并拆除，该开关已无消费方，配置项一并移除。
 
 ## 配置来源与优先级
@@ -28,13 +28,13 @@
         │ scripts/build-time-config.mjs（唯一解析入口）
         ▼
 desktop tsup（main、host、preload）与 desktop vite（renderer）的 define
-        │ __ZCODE_ARMS_RUM_ENDPOINT__ / __ZCODE_TELEMETRY_REPORT_ENDPOINT__
+        │ __RASPBERRYCODE_ARMS_RUM_ENDPOINT__ / __RASPBERRYCODE_TELEMETRY_REPORT_ENDPOINT__
         ▼
-@zcode/shared env 常量 ── 运行时代码只读这些常量
+@raspberrycode/shared env 常量 ── 运行时代码只读这些常量
 ```
 
 - 未注入 define 的环境（测试、其他 bundle）得到关闭值；vitest 为测试注入固定的事件上报端点，以便验证上报链路。
-- Agent 的 OTLP 遥测沿用既有机制，由打包环境的 `ZCODE_PACKAGED_AGENT_OTEL_*` 注入，不在本文件范围内。
+- Agent 的 OTLP 遥测沿用既有机制，由打包环境的 `RASPBERRYCODE_PACKAGED_AGENT_OTEL_*` 注入，不在本文件范围内。
 
 ## 验收
 

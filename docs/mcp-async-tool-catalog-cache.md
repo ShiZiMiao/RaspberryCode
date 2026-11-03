@@ -158,7 +158,7 @@ catalog port 的内存实现可以放在 adapter 层，但不塞进 `NodeMcpAdap
 ```text
 bootstrap creates one McpToolCatalogPort
   -> inject Agent protocol control-plane
-  -> inject every createZCodeApp / session runtime
+  -> inject every createRaspberryCodeApp / session runtime
 
 each session still creates its own NodeMcpAdapter
   -> existing connectConfiguredServers()
@@ -632,7 +632,7 @@ mobile replayable ──┘
 - desktop continuous 与 mobile replayable 只影响事件如何到达 UI，不改变 provider tool catalog 和
   live execution 事实。
 - remote workspace identity 必须进入 cache key；不能只按远端 `workspacePath` 共享。
-- 当前 `ZCodeWorkspaceRef` 只有 `workspaceIdentity` / `workspaceKey` / `workspacePath`，没有
+- 当前 `RaspberryCodeWorkspaceRef` 只有 `workspaceIdentity` / `workspaceKey` / `workspacePath`，没有
   `remoteSessionId`。Phase 2 只用统一 remote identity parser 判断它是远程 workspace，不从 identity
   字符串反推或拼造 session id；一旦判定为远程，catalog context 返回 unsupported，首轮继续走 cold
   live path。
@@ -737,26 +737,26 @@ catalog。
 
 | Rank           | 区域                                                                              | 预计改动                                             |
 | -------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| invariant-only | `apps/zcode-cli/packages/contracts/src/interfaces/mcp.port.ts`                    | 现有 live port 接口保持不变                          |
-| must-inspect   | `apps/zcode-cli/packages/contracts/src/interfaces/`                               | 新增 catalog port、scope、sanitized descriptor 类型  |
-| must-inspect   | `apps/zcode-cli/packages/adapters/src/mcp-tool-catalog/`                          | 内存 LRU、identity、TTL、generation、sanitization    |
-| must-inspect   | `apps/zcode-cli/packages/bootstrap/src/zcode-protocol-entrypoint.ts`              | process-scoped cache owner                           |
-| must-inspect   | `apps/zcode-cli/packages/bootstrap/src/zcode-protocol/server-types.ts`            | catalog port 进入 protocol process context           |
-| must-inspect   | `apps/zcode-cli/packages/bootstrap/src/zcode-protocol/server-operations.ts`       | 本地 scope 与远程分类；Phase 3 可选贯穿 session id   |
-| must-inspect   | `apps/zcode-cli/packages/bootstrap/src/zcode-protocol/workspace-model-catalog.ts` | 把同一个 port 传给每个 workspace session app         |
-| must-inspect   | `apps/zcode-cli/packages/bootstrap/src/app/create-app.ts`                         | catalog port dependency injection 到 session runtime |
-| must-inspect   | `apps/zcode-cli/packages/bootstrap/src/app/session-facade.ts`                     | 保持实际 MCP close ownership 与 cleanup              |
-| must-inspect   | `apps/zcode-cli/packages/core/src/runtime/agent-runtime.ts`                       | shutdown 同步关闭 coordinator、abort startup         |
-| must-inspect   | `apps/zcode-cli/packages/core/src/runtime/methods/mcp.ts`                         | cached/live startup 状态与 reconcile                 |
-| must-inspect   | `apps/zcode-cli/packages/core/src/runtime/methods/turn-loop.ts`                   | sampling 前 warm/cold 选择                           |
-| must-inspect   | `apps/zcode-cli/packages/core/src/mcp/index.ts`                                   | advertisement entry 与 live entry 构造               |
-| must-inspect   | `apps/zcode-cli/packages/core/src/tool/executor/call-runner.ts`                   | permission 前 live preflight、waiter abort           |
-| should-inspect | `apps/zcode-cli/packages/core/src/tool/registry.ts`                               | reconcile / provider-invisible tombstone             |
-| should-inspect | `apps/zcode-cli/packages/core/src/runtime/methods/subagent.ts`                    | parent startup 与 borrowed snapshot                  |
-| should-inspect | `apps/zcode-cli/packages/core/src/subagent/borrowed-mcp-port.ts`                  | 保持 live-only、scope-filtered                       |
-| conditional    | `apps/zcode-cli/packages/bootstrap/src/zcode-protocol/mcp.ts`                     | control-plane 成功结果 seed cache                    |
-| conditional    | `apps/zcode-cli/packages/bootstrap/src/zcode-protocol/workspace.ts`               | Phase 3 贯穿真实 remoteSessionId                     |
-| conditional    | `packages/shared/src/zcode-protocol/index.ts`                                     | 若跨进程接口需扩展，增加严格 schema                  |
+| invariant-only | `apps/raspberrycode-cli/packages/contracts/src/interfaces/mcp.port.ts`                    | 现有 live port 接口保持不变                          |
+| must-inspect   | `apps/raspberrycode-cli/packages/contracts/src/interfaces/`                               | 新增 catalog port、scope、sanitized descriptor 类型  |
+| must-inspect   | `apps/raspberrycode-cli/packages/adapters/src/mcp-tool-catalog/`                          | 内存 LRU、identity、TTL、generation、sanitization    |
+| must-inspect   | `apps/raspberrycode-cli/packages/bootstrap/src/raspberrycode-protocol-entrypoint.ts`              | process-scoped cache owner                           |
+| must-inspect   | `apps/raspberrycode-cli/packages/bootstrap/src/raspberrycode-protocol/server-types.ts`            | catalog port 进入 protocol process context           |
+| must-inspect   | `apps/raspberrycode-cli/packages/bootstrap/src/raspberrycode-protocol/server-operations.ts`       | 本地 scope 与远程分类；Phase 3 可选贯穿 session id   |
+| must-inspect   | `apps/raspberrycode-cli/packages/bootstrap/src/raspberrycode-protocol/workspace-model-catalog.ts` | 把同一个 port 传给每个 workspace session app         |
+| must-inspect   | `apps/raspberrycode-cli/packages/bootstrap/src/app/create-app.ts`                         | catalog port dependency injection 到 session runtime |
+| must-inspect   | `apps/raspberrycode-cli/packages/bootstrap/src/app/session-facade.ts`                     | 保持实际 MCP close ownership 与 cleanup              |
+| must-inspect   | `apps/raspberrycode-cli/packages/core/src/runtime/agent-runtime.ts`                       | shutdown 同步关闭 coordinator、abort startup         |
+| must-inspect   | `apps/raspberrycode-cli/packages/core/src/runtime/methods/mcp.ts`                         | cached/live startup 状态与 reconcile                 |
+| must-inspect   | `apps/raspberrycode-cli/packages/core/src/runtime/methods/turn-loop.ts`                   | sampling 前 warm/cold 选择                           |
+| must-inspect   | `apps/raspberrycode-cli/packages/core/src/mcp/index.ts`                                   | advertisement entry 与 live entry 构造               |
+| must-inspect   | `apps/raspberrycode-cli/packages/core/src/tool/executor/call-runner.ts`                   | permission 前 live preflight、waiter abort           |
+| should-inspect | `apps/raspberrycode-cli/packages/core/src/tool/registry.ts`                               | reconcile / provider-invisible tombstone             |
+| should-inspect | `apps/raspberrycode-cli/packages/core/src/runtime/methods/subagent.ts`                    | parent startup 与 borrowed snapshot                  |
+| should-inspect | `apps/raspberrycode-cli/packages/core/src/subagent/borrowed-mcp-port.ts`                  | 保持 live-only、scope-filtered                       |
+| conditional    | `apps/raspberrycode-cli/packages/bootstrap/src/raspberrycode-protocol/mcp.ts`                     | control-plane 成功结果 seed cache                    |
+| conditional    | `apps/raspberrycode-cli/packages/bootstrap/src/raspberrycode-protocol/workspace.ts`               | Phase 3 贯穿真实 remoteSessionId                     |
+| conditional    | `packages/shared/src/raspberrycode-protocol/index.ts`                                     | 若跨进程接口需扩展，增加严格 schema                  |
 | invariant-only | `packages/ui/src/settings/McpSettingsSection.tsx`                                 | status UI 不读取 catalog                             |
 | invariant-only | web remote / relay / desktop main                                                 | 不新增 cache authority 或 runtime 状态               |
 

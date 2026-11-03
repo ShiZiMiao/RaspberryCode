@@ -2,15 +2,15 @@
 
 > **状态：历史规划，未实现。** 本文拟议的 `automationSurface` / `browser_use` 模块在当前分支不存在，
 > 不可据此判断现行浏览器自动化能力。当前产品 CUA 权限边界见
-> [RaspberryCode CUA Permission Broker](../../cua-permission-broker/zcode-cua-permission-broker.md)。
+> [RaspberryCode CUA Permission Broker](../../cua-permission-broker/raspberrycode-cua-permission-broker.md)。
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 让 zcode-cli 内模型可以在受控开关开启后，通过内置 `browser_use` session-injected MCP 操作 z-code 桌面内置浏览器，并为未来 iOS Simulator、Android Emulator 等可视化自动化实例复用同一套 session/instance 管理结构。
+**Goal:** 让 raspberrycode-cli 内模型可以在受控开关开启后，通过内置 `browser_use` session-injected MCP 操作 raspberrycode 桌面内置浏览器，并为未来 iOS Simulator、Android Emulator 等可视化自动化实例复用同一套 session/instance 管理结构。
 
 **Architecture:** 采用内置 session-injected MCP，而不是普通 official plugin。Host/service 层按 RaspberryCode task/session 创建 `AutomationSurfaceSession`，按需注入 per-session loopback HTTP MCP；桌面 main 只承载 Electron WebContents/platform provider，UI 负责 retained/visible view 渲染。`browser` 是第一个 `AutomationSurfaceProvider`，未来 `ios-simulator`、`android-emulator` 只新增 provider 与 tool adapter，不重做 session 管理。
 
-**Tech Stack:** TypeScript, Electron webview, React, Zustand, zod, RaspberryCode Protocol, host/main postMessage bridge, zcode-cli HTTP MCP transport, Vitest, WebdriverIO/Electron e2e.
+**Tech Stack:** TypeScript, Electron webview, React, Zustand, zod, RaspberryCode Protocol, host/main postMessage bridge, raspberrycode-cli HTTP MCP transport, Vitest, WebdriverIO/Electron e2e.
 
 ---
 
@@ -19,7 +19,7 @@
 1. `browser_use` 是内置 session-injected MCP，但必须有开关：
    - `AppSettings.automationSurface.browserUse.enabled` 控制是否给新建/恢复的 RaspberryCode session 注入内置 MCP。
    - `AppSettings.automationSurface.browserUse.autoOpenOnToolCall` 控制 tool call 是否自动把对应 view 展示到 side pane。
-   - 初始 rollout 默认 `enabled=false`、`autoOpenOnToolCall=true`；开发/测试可用 `ZCODE_BROWSER_USE_MCP=1` 强制开启，用 `ZCODE_BROWSER_USE_MCP=0` 强制关闭。
+   - 初始 rollout 默认 `enabled=false`、`autoOpenOnToolCall=true`；开发/测试可用 `RASPBERRYCODE_BROWSER_USE_MCP=1` 强制开启，用 `RASPBERRYCODE_BROWSER_USE_MCP=0` 强制关闭。
    - 关闭时不启动 MCP HTTP server、不创建 automation instance、不暴露 `browser_use` tool。
 
 2. 跨 session 管理必须通用化：
@@ -29,7 +29,7 @@
 
 3. z-ai-pc 的方向可迁移，但不能照搬：
    - 可迁移：per-session HTTP MCP、runtime Map 管 session、partition/lastUrl 按 session 持久化、renderer 自动打开并 attach webview、guest preload 执行 DOM 操作。
-   - 需要改进：去掉全局 `registerBrowserRuntime` 风格，改为 z-code DI；`BrowserRuntime` 提升为通用 `AutomationSurfaceRuntime`；`active/visible` 不能只按裸 sessionID，必须带 workspace identity、clientMode；Electron preload 例外必须限定 partition；mobile `/remote` 只能 attach 现有 host/runtime，不能独立启动。
+   - 需要改进：去掉全局 `registerBrowserRuntime` 风格，改为 raspberrycode DI；`BrowserRuntime` 提升为通用 `AutomationSurfaceRuntime`；`active/visible` 不能只按裸 sessionID，必须带 workspace identity、clientMode；Electron preload 例外必须限定 partition；mobile `/remote` 只能 attach 现有 host/runtime，不能独立启动。
 
 ## 关键边界
 
@@ -43,7 +43,7 @@
 
 ## 当前事实
 
-- z-code 已有 human Browser side pane：`packages/ui/src/EmbeddedBrowserPane.tsx` + `packages/ui/src/EmbeddedBrowserPaneParts.tsx`。
+- raspberrycode 已有 human Browser side pane：`packages/ui/src/EmbeddedBrowserPane.tsx` + `packages/ui/src/EmbeddedBrowserPaneParts.tsx`。
 - 当前 Browser side pane memory 是 workspace 级共享，不适合直接承载 task/session-scoped automation instance。
 - `packages/desktop/src/main/desktopWindowChrome.ts` 当前会删除所有 webview preload 并强制 sandbox；automation webview 必须做 partition-scoped 例外。
 - RaspberryCode app/server create/resume schema 尚未完整贯通 UI/host 注入的 MCP servers。
@@ -62,8 +62,8 @@
   - `AppSettings` 增加 `automationSurface.browserUse.enabled` 和 `autoOpenOnToolCall`。
 - Modify: `packages/shared/src/validationAppSettings.ts`
   - 增加 settings schema/patch schema，默认关闭 injection。
-- Modify: `packages/shared/src/zcode-protocol/index.ts`
-  - `zcodeSessionCreateParamsSchema` / `zcodeSessionResumeParamsSchema` 增加可选 `mcpServers`。
+- Modify: `packages/shared/src/raspberrycode-protocol/index.ts`
+  - `raspberrycodeSessionCreateParamsSchema` / `raspberrycodeSessionResumeParamsSchema` 增加可选 `mcpServers`。
 - Modify: `packages/shared/src/mcp.ts`
   - 暴露 HTTP MCP server schema，供 RaspberryCode Protocol runtime 校验。
 - Modify: `packages/shared/src/channels.ts`
@@ -93,18 +93,18 @@
   - 暴露 `automationSurfaceService`。
 - Modify: `packages/services/src/index.ts`
   - 导出 service factory 和类型。
-- Modify: `packages/services/src/zcode-agent/zcodeTaskServiceAdapter.ts`
+- Modify: `packages/services/src/raspberrycode-agent/raspberrycodeTaskServiceAdapter.ts`
   - create/resume 前按 feature policy 准备内置 MCP servers，并随 RaspberryCode Protocol params 注入。
-- Modify: `packages/services/src/session/zcodeTaskService.ts`
-  - 保持 `mcpServers?: ZCodeAgentMcpServer[]` contract，并补中文注释说明内置 MCP 只能由 host 注入。
+- Modify: `packages/services/src/session/raspberrycodeTaskService.ts`
+  - 保持 `mcpServers?: RaspberryCodeAgentMcpServer[]` contract，并补中文注释说明内置 MCP 只能由 host 注入。
 
-### zcode-cli Runtime
+### raspberrycode-cli Runtime
 
-- Modify: `apps/zcode-cli/packages/bootstrap/src/zcode-protocol/server-operations.ts`
+- Modify: `apps/raspberrycode-cli/packages/bootstrap/src/raspberrycode-protocol/server-operations.ts`
   - 接收 `mcpServers` 并合并进 runtimeConfig。
-- Modify: `apps/zcode-cli/packages/bootstrap/src/app/runtime-config.ts`
+- Modify: `apps/raspberrycode-cli/packages/bootstrap/src/app/runtime-config.ts`
   - MCP 合并顺序固定为 `plugin/config < explicit injected`，保证内置 per-session server 优先。
-- Test: `apps/zcode-cli/packages/bootstrap/tests/zcode-protocol-session-mcp.test.ts`
+- Test: `apps/raspberrycode-cli/packages/bootstrap/tests/raspberrycode-protocol-session-mcp.test.ts`
   - 覆盖 create/resume 注入 HTTP MCP。
 
 ### Desktop Main / Platform
@@ -128,7 +128,7 @@
 - Modify: `packages/desktop/src/main/index.ts`
   - 创建 automation surface runtime 并注入 host process / IPC handlers。
 - Modify: `packages/desktop/src/preload/index.ts`
-  - 暴露 `window.zcode.automationSurface.*` 给 renderer。
+  - 暴露 `window.raspberrycode.automationSurface.*` 给 renderer。
 - Modify: `packages/desktop/src/renderer/src/main.tsx`
   - `desktopPlatform` 实现 automation surface API。
 
@@ -318,7 +318,7 @@ export type AutomationSurfaceClientMode = z.infer<typeof automationSurfaceClient
 export const automationSurfaceSessionRefSchema = z
   .object({
     surfaceSessionId: z.string().min(1),
-    zcodeSessionId: z.string().min(1),
+    raspberrycodeSessionId: z.string().min(1),
     taskId: z.string().min(1),
     workspacePath: z.string().min(1),
     workspaceIdentity: z.string().optional(),
@@ -394,7 +394,7 @@ import { z } from "zod";
 export const BROWSER_USE_MCP_SERVER_NAME = "browser_use";
 export const BROWSER_USE_MCP_TOOL_NAME = "browser";
 export const BROWSER_USE_MCP_TOKEN_HEADER = "X-RaspberryCode-Browser-MCP-Token";
-export const BROWSER_USE_PARTITION_HINT_PREFIX = "zcode-browser-use:";
+export const BROWSER_USE_PARTITION_HINT_PREFIX = "raspberrycode-browser-use:";
 
 export const browserUseActionSchema = z.enum([
   "open",
@@ -481,14 +481,14 @@ git commit -m "feat: add automation surface settings and contracts"
 
 **Files:**
 - Modify: `packages/shared/src/mcp.ts`
-- Modify: `packages/shared/src/zcode-protocol/index.ts`
-- Modify: `apps/zcode-cli/packages/bootstrap/src/zcode-protocol/server-operations.ts`
-- Modify: `apps/zcode-cli/packages/bootstrap/src/app/runtime-config.ts`
-- Test: `apps/zcode-cli/packages/bootstrap/tests/zcode-protocol-session-mcp.test.ts`
+- Modify: `packages/shared/src/raspberrycode-protocol/index.ts`
+- Modify: `apps/raspberrycode-cli/packages/bootstrap/src/raspberrycode-protocol/server-operations.ts`
+- Modify: `apps/raspberrycode-cli/packages/bootstrap/src/app/runtime-config.ts`
+- Test: `apps/raspberrycode-cli/packages/bootstrap/tests/raspberrycode-protocol-session-mcp.test.ts`
 
 - [ ] **Step 1: Add failing bootstrap test**
 
-Create `apps/zcode-cli/packages/bootstrap/tests/zcode-protocol-session-mcp.test.ts` with a create/resume operation fixture that includes:
+Create `apps/raspberrycode-cli/packages/bootstrap/tests/raspberrycode-protocol-session-mcp.test.ts` with a create/resume operation fixture that includes:
 
 ```ts
 const mcpServers = [
@@ -514,7 +514,7 @@ expect(runtimeConfig.mcp?.servers.browser_use).toMatchObject({
 Run:
 
 ```bash
-pnpm vitest run apps/zcode-cli/packages/bootstrap/tests/zcode-protocol-session-mcp.test.ts --runInBand
+pnpm vitest run apps/raspberrycode-cli/packages/bootstrap/tests/raspberrycode-protocol-session-mcp.test.ts --runInBand
 ```
 
 Expected: FAIL because create/resume params do not accept `mcpServers`.
@@ -524,16 +524,16 @@ Expected: FAIL because create/resume params do not accept `mcpServers`.
 In `packages/shared/src/mcp.ts`, add/export a zod schema for stdio/http/sse MCP servers. For HTTP:
 
 ```ts
-export const zcodeAgentMcpHeaderSchema = z.object({
+export const raspberrycodeAgentMcpHeaderSchema = z.object({
   name: z.string().min(1),
   value: z.string(),
 });
 
-export const zcodeAgentHttpMcpServerSchema = z.object({
+export const raspberrycodeAgentHttpMcpServerSchema = z.object({
   name: z.string().min(1),
   type: z.literal("http"),
   url: z.string().url(),
-  headers: z.array(zcodeAgentMcpHeaderSchema).optional(),
+  headers: z.array(raspberrycodeAgentMcpHeaderSchema).optional(),
   timeoutMs: z.number().int().positive().optional(),
   enabled: z.boolean().optional(),
 });
@@ -543,17 +543,17 @@ Include existing stdio/sse shapes if they already exist; do not duplicate type n
 
 - [ ] **Step 3: Extend RaspberryCode Protocol schemas**
 
-In `packages/shared/src/zcode-protocol/index.ts`, add:
+In `packages/shared/src/raspberrycode-protocol/index.ts`, add:
 
 ```ts
-mcpServers: z.array(zcodeAgentMcpServerSchema).optional(),
+mcpServers: z.array(raspberrycodeAgentMcpServerSchema).optional(),
 ```
 
-to both `zcodeSessionCreateParamsSchema` and `zcodeSessionResumeParamsSchema`.
+to both `raspberrycodeSessionCreateParamsSchema` and `raspberrycodeSessionResumeParamsSchema`.
 
 - [ ] **Step 4: Merge injected MCP into runtime config**
 
-In `apps/zcode-cli/packages/bootstrap/src/zcode-protocol/server-operations.ts`, convert array headers to runtime config object:
+In `apps/raspberrycode-cli/packages/bootstrap/src/raspberrycode-protocol/server-operations.ts`, convert array headers to runtime config object:
 
 ```ts
 function headerArrayToRecord(headers: { name: string; value: string }[] | undefined) {
@@ -563,7 +563,7 @@ function headerArrayToRecord(headers: { name: string; value: string }[] | undefi
 
 Then merge into runtime config.
 
-In `apps/zcode-cli/packages/bootstrap/src/app/runtime-config.ts`, enforce:
+In `apps/raspberrycode-cli/packages/bootstrap/src/app/runtime-config.ts`, enforce:
 
 ```ts
 // 内置 session-injected MCP 必须最后合并，避免被用户全局 MCP 配置覆盖 token/url。
@@ -579,7 +579,7 @@ const mergedMcpServers = {
 Run:
 
 ```bash
-pnpm vitest run apps/zcode-cli/packages/bootstrap/tests/zcode-protocol-session-mcp.test.ts --runInBand
+pnpm vitest run apps/raspberrycode-cli/packages/bootstrap/tests/raspberrycode-protocol-session-mcp.test.ts --runInBand
 ```
 
 Expected: PASS.
@@ -587,8 +587,8 @@ Expected: PASS.
 Commit:
 
 ```bash
-git add packages/shared/src/mcp.ts packages/shared/src/zcode-protocol/index.ts apps/zcode-cli/packages/bootstrap/src/zcode-protocol/server-operations.ts apps/zcode-cli/packages/bootstrap/src/app/runtime-config.ts apps/zcode-cli/packages/bootstrap/tests/zcode-protocol-session-mcp.test.ts
-git commit -m "feat: support injected mcp servers in zcode protocol"
+git add packages/shared/src/mcp.ts packages/shared/src/raspberrycode-protocol/index.ts apps/raspberrycode-cli/packages/bootstrap/src/raspberrycode-protocol/server-operations.ts apps/raspberrycode-cli/packages/bootstrap/src/app/runtime-config.ts apps/raspberrycode-cli/packages/bootstrap/tests/raspberrycode-protocol-session-mcp.test.ts
+git commit -m "feat: support injected mcp servers in raspberrycode protocol"
 ```
 
 ---
@@ -624,14 +624,14 @@ describe("automation surface feature policy", () => {
   it("lets env force-enable browser_use for dev and tests", () => {
     expect(resolveAutomationSurfaceFeaturePolicy({
       settings: {},
-      env: { ZCODE_BROWSER_USE_MCP: "1" },
+      env: { RASPBERRYCODE_BROWSER_USE_MCP: "1" },
     }).browserUse.enabled).toBe(true);
   });
 
   it("lets env force-disable browser_use", () => {
     expect(resolveAutomationSurfaceFeaturePolicy({
       settings: { automationSurface: { browserUse: { enabled: true } } },
-      env: { ZCODE_BROWSER_USE_MCP: "0" },
+      env: { RASPBERRYCODE_BROWSER_USE_MCP: "0" },
     }).browserUse.enabled).toBe(false);
   });
 });
@@ -642,7 +642,7 @@ describe("automation surface feature policy", () => {
 Create `packages/services/src/automation-surface/automationSurfaceFeaturePolicy.ts`:
 
 ```ts
-import type { AppSettings } from "@zcode/shared";
+import type { AppSettings } from "@raspberrycode/shared";
 
 export interface AutomationSurfaceFeaturePolicy {
   browserUse: {
@@ -657,7 +657,7 @@ export function resolveAutomationSurfaceFeaturePolicy(input: {
   env: Record<string, string | undefined>;
   platformSupported?: boolean;
 }): AutomationSurfaceFeaturePolicy {
-  const forced = input.env.ZCODE_BROWSER_USE_MCP;
+  const forced = input.env.RASPBERRYCODE_BROWSER_USE_MCP;
   const browserUse = input.settings.automationSurface?.browserUse;
   const platformSupported = input.platformSupported ?? true;
 
@@ -686,7 +686,7 @@ Create `packages/services/src/automation-surface/automationSurface.ts`:
 
 ```ts
 import { createServiceDescriptor } from "../collection.js";
-import type { AutomationSurfaceInstanceRef, AutomationSurfaceSessionRef } from "@zcode/shared";
+import type { AutomationSurfaceInstanceRef, AutomationSurfaceSessionRef } from "@raspberrycode/shared";
 
 export interface PrepareAutomationSurfaceSessionResult {
   mcpServers: Array<{
@@ -828,11 +828,11 @@ import {
 
 describe("automation surface desktop security", () => {
   it("only parses dedicated partition hints", () => {
-    expect(parseAutomationSurfacePartitionHint("zcode-browser-use:abc")).toEqual({
+    expect(parseAutomationSurfacePartitionHint("raspberrycode-browser-use:abc")).toEqual({
       kind: "browser",
       instanceId: "abc",
     });
-    expect(parseAutomationSurfacePartitionHint("persist:zcode-embedded-browser")).toBeNull();
+    expect(parseAutomationSurfacePartitionHint("persist:raspberrycode-embedded-browser")).toBeNull();
   });
 
   it("blocks local file and script navigation for browser provider", () => {
@@ -849,7 +849,7 @@ describe("automation surface desktop security", () => {
 Create `packages/desktop/src/main/automationSurface/security.ts`:
 
 ```ts
-import { BROWSER_USE_PARTITION_HINT_PREFIX } from "@zcode/shared";
+import { BROWSER_USE_PARTITION_HINT_PREFIX } from "@raspberrycode/shared";
 
 export function parseAutomationSurfacePartitionHint(raw: string | undefined) {
   if (!raw?.startsWith(BROWSER_USE_PARTITION_HINT_PREFIX)) {
@@ -931,7 +931,7 @@ git commit -m "feat: add desktop automation surface runtime"
 - Test: `packages/desktop/test/browserAutomationProvider.test.ts`
 - Test: `packages/desktop/test/browserAutomationPreload.test.ts`
 
-- [ ] **Step 1: Port z-ai-pc BrowserSession with z-code constraints**
+- [ ] **Step 1: Port z-ai-pc BrowserSession with raspberrycode constraints**
 
 Implement browser provider with these differences from z-ai-pc:
 
@@ -960,7 +960,7 @@ export function listInteractiveElements(root: ParentNode = document): Element[] 
 }
 ```
 
-The preload listens for `zcode:automation-surface:browser-call`, executes `snapshot/click/fill/type/press/wait/get`, and replies with `zcode:automation-surface:browser-reply`.
+The preload listens for `raspberrycode:automation-surface:browser-call`, executes `snapshot/click/fill/type/press/wait/get`, and replies with `raspberrycode:automation-surface:browser-reply`.
 
 - [ ] **Step 3: Add controlled preload exception**
 
@@ -1073,7 +1073,7 @@ Create `BrowserAutomationPane.tsx` by extracting reusable parts from `EmbeddedBr
 
 - [ ] **Step 5: Wire platform preload/web fallback**
 
-Expose `window.zcode.automationSurface` in desktop preload and map through `desktopPlatform`.
+Expose `window.raspberrycode.automationSurface` in desktop preload and map through `desktopPlatform`.
 
 In `packages/web/src/main.tsx`, return unsupported:
 
@@ -1113,21 +1113,21 @@ git commit -m "feat: render retained automation surface views"
 ## Task 7: 在 RaspberryCode session create/resume 前注入 browser_use MCP
 
 **Files:**
-- Modify: `packages/services/src/zcode-agent/zcodeTaskServiceAdapter.ts`
-- Modify: `packages/services/src/session/zcodeTaskService.ts`
-- Modify: `packages/ui/src/lib/zcodeSessionPromptControl.ts`
-- Test: `packages/services/test/zcodeTaskBrowserUseInjection.test.ts`
-- Test: `packages/ui/test/zcodeSessionPromptControl.test.ts`
+- Modify: `packages/services/src/raspberrycode-agent/raspberrycodeTaskServiceAdapter.ts`
+- Modify: `packages/services/src/session/raspberrycodeTaskService.ts`
+- Modify: `packages/ui/src/lib/raspberrycodeSessionPromptControl.ts`
+- Test: `packages/services/test/raspberrycodeTaskBrowserUseInjection.test.ts`
+- Test: `packages/ui/test/raspberrycodeSessionPromptControl.test.ts`
 
 - [ ] **Step 1: Add failing service test**
 
-Create `packages/services/test/zcodeTaskBrowserUseInjection.test.ts` by copying these existing helper functions from `packages/services/test/zcodeLegacyTaskCompatTaskIndex.test.ts`: `useTempDataBaseDir()`, `makeSnapshot()`, and `createAgentMock()`. The test constructs `createZCodeTaskServiceAdapter()` with a fake `automationSurfaceService`, calls `service.createTask()`, and asserts the injected MCP server reaches `zcodeAgentService.createSession()`.
+Create `packages/services/test/raspberrycodeTaskBrowserUseInjection.test.ts` by copying these existing helper functions from `packages/services/test/raspberrycodeLegacyTaskCompatTaskIndex.test.ts`: `useTempDataBaseDir()`, `makeSnapshot()`, and `createAgentMock()`. The test constructs `createRaspberryCodeTaskServiceAdapter()` with a fake `automationSurfaceService`, calls `service.createTask()`, and asserts the injected MCP server reaches `raspberrycodeAgentService.createSession()`.
 
 ```ts
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { setDataBaseDir } from "../src/paths.js";
-import { createZCodeTaskServiceAdapter } from "../src/zcode-agent/zcodeTaskServiceAdapter.js";
-import { createZCodeTaskIndexSyncer } from "../src/zcode-agent/zcodeTaskIndexSyncer.js";
+import { createRaspberryCodeTaskServiceAdapter } from "../src/raspberrycode-agent/raspberrycodeTaskServiceAdapter.js";
+import { createRaspberryCodeTaskIndexSyncer } from "../src/raspberrycode-agent/raspberrycodeTaskIndexSyncer.js";
 import { TaskIndexRepo } from "../src/session/taskIndexRepo.js";
 
 afterEach(() => {
@@ -1143,10 +1143,10 @@ describe("browser_use MCP injection", () => {
       workspaceIdentity: "ssh://host/repo",
     }));
     const taskIndexRepo = new TaskIndexRepo();
-    const { agent: zcodeAgentService } = createAgentMock();
-    vi.mocked(zcodeAgentService.createSession).mockImplementation(createSession);
-    const taskIndexSyncer = createZCodeTaskIndexSyncer({
-      agentService: zcodeAgentService,
+    const { agent: raspberrycodeAgentService } = createAgentMock();
+    vi.mocked(raspberrycodeAgentService.createSession).mockImplementation(createSession);
+    const taskIndexSyncer = createRaspberryCodeTaskIndexSyncer({
+      agentService: raspberrycodeAgentService,
       taskIndexRepo,
     });
     const automationSurfaceService = {
@@ -1161,8 +1161,8 @@ describe("browser_use MCP injection", () => {
       })),
     };
 
-    const service = createZCodeTaskServiceAdapter({
-      zcodeAgentService,
+    const service = createRaspberryCodeTaskServiceAdapter({
+      raspberrycodeAgentService,
       taskIndexRepo,
       taskIndexSyncer,
       automationSurfaceService,
@@ -1197,7 +1197,7 @@ describe("browser_use MCP injection", () => {
 
 - [ ] **Step 2: Inject in create/resume path**
 
-In `zcodeTaskServiceAdapter.ts`, before protocol create/resume:
+In `raspberrycodeTaskServiceAdapter.ts`, before protocol create/resume:
 
 ```ts
 const surfaceSessionId = buildAutomationSurfaceSessionId({
@@ -1208,7 +1208,7 @@ const surfaceSessionId = buildAutomationSurfaceSessionId({
 const automation = await automationSurfaceService.prepareSession({
   session: {
     surfaceSessionId,
-    zcodeSessionId: params.taskId,
+    raspberrycodeSessionId: params.taskId,
     taskId: params.taskId,
     workspacePath: params.workspacePath,
     workspaceIdentity: params.workspaceIdentity,
@@ -1223,14 +1223,14 @@ Do not inject for `clientMode === "web-remote-replayable"` unless the call is ex
 
 - [ ] **Step 3: Pass mcpServers through UI continuous path**
 
-If `packages/ui/src/lib/zcodeSessionPromptControl.ts` still has a direct `createSession`/`resumeSession` path, include `mcpServers` in both calls.
+If `packages/ui/src/lib/raspberrycodeSessionPromptControl.ts` still has a direct `createSession`/`resumeSession` path, include `mcpServers` in both calls.
 
 - [ ] **Step 4: Run and commit**
 
 Run:
 
 ```bash
-pnpm vitest run packages/services/test/zcodeTaskBrowserUseInjection.test.ts packages/ui/test/zcodeSessionPromptControl.test.ts --runInBand
+pnpm vitest run packages/services/test/raspberrycodeTaskBrowserUseInjection.test.ts packages/ui/test/raspberrycodeSessionPromptControl.test.ts --runInBand
 pnpm typecheck
 ```
 
@@ -1239,8 +1239,8 @@ Expected: PASS.
 Commit:
 
 ```bash
-git add packages/services/src/zcode-agent/zcodeTaskServiceAdapter.ts packages/services/src/session/zcodeTaskService.ts packages/ui/src/lib/zcodeSessionPromptControl.ts packages/services/test/zcodeTaskBrowserUseInjection.test.ts packages/ui/test/zcodeSessionPromptControl.test.ts
-git commit -m "feat: inject browser use mcp per zcode session"
+git add packages/services/src/raspberrycode-agent/raspberrycodeTaskServiceAdapter.ts packages/services/src/session/raspberrycodeTaskService.ts packages/ui/src/lib/raspberrycodeSessionPromptControl.ts packages/services/test/raspberrycodeTaskBrowserUseInjection.test.ts packages/ui/test/raspberrycodeSessionPromptControl.test.ts
+git commit -m "feat: inject browser use mcp per raspberrycode session"
 ```
 
 ---
@@ -1319,7 +1319,7 @@ git commit -m "feat: add browser use permissions and settings"
 
 Scenario:
 
-1. enable `ZCODE_BROWSER_USE_MCP=1`
+1. enable `RASPBERRYCODE_BROWSER_USE_MCP=1`
 2. start desktop app
 3. create a RaspberryCode session
 4. assert injected MCP server exists in protocol request
@@ -1420,7 +1420,7 @@ git commit -m "docs: document browser use mcp architecture"
 sequenceDiagram
   participant UI as Renderer UI
   participant Host as Host Services
-  participant Agent as zcode app-server
+  participant Agent as raspberrycode app-server
   participant MCP as per-session browser_use MCP
   participant Main as Desktop Main Runtime
   participant View as Retained Webview
@@ -1449,12 +1449,12 @@ sequenceDiagram
 - Replace globals with DI and typed host/main bridge.
 - Replace bare `sessionID` with `AutomationSurfaceSessionRef`.
 - Replace browser-only side pane state with `AutomationSurfaceSidePaneTab`.
-- Preserve z-code remote-control boundaries and workspace identity rules.
+- Preserve raspberrycode remote-control boundaries and workspace identity rules.
 
 ## Self-Review
 
 - Confirmed item 1: Plan uses built-in session-injected MCP and defines both enable and auto-open switches.
 - Confirmed item 2: Plan introduces generic `AutomationSurfaceSession` / `AutomationSurfaceInstance` / provider structure for browser, iOS simulator, and Android emulator.
-- Confirmed item 3: Plan reuses z-ai-pc's per-session/runtime shape but explicitly fixes z-code-specific gaps: DI, workspace identity, clientMode, host/main bridge, preload scope, remote-control boundaries, logging, settings, and i18n.
+- Confirmed item 3: Plan reuses z-ai-pc's per-session/runtime shape but explicitly fixes raspberrycode-specific gaps: DI, workspace identity, clientMode, host/main bridge, preload scope, remote-control boundaries, logging, settings, and i18n.
 - 完整性扫描: 所有任务都写明具体文件、验证命令和预期结果。
 - Residual risk: Electron sandbox-compatible guest preload must be verified in Task 5. If current Electron cannot load the preload with `sandbox=true`, keep `sandbox=false` only for automation partition and document the reason in code and docs.

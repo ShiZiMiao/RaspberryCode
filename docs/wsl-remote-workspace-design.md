@@ -29,7 +29,7 @@
 ## 当前释放生命周期
 
 WSL 使用 window-scoped pooled Remote Host：同一窗口、同一 normalized distro/user 的 logical workspace
-session 共享一个 Host、一个 `wsl.exe` server launcher 和一个 `zcode-server`。每个 session 仍保留独立
+session 共享一个 Host、一个 `wsl.exe` server launcher 和一个 `raspberrycode-server`。每个 session 仍保留独立
 `remoteSessionId`、attachment 和 `workspaceKey`。最小化、隐藏到托盘、renderer reload、手机 `/remote`
 attachment 断开都不直接销毁 Host。
 
@@ -52,7 +52,7 @@ attachment 断开都不直接销毁 Host。
 ```
 
 释放过程禁止调用 `wsl --terminate` 或 `wsl --shutdown`。WSL distro 可能仍显示 Running，这是发行版级
-运行状态，不代表 RaspberryCode 的 Host、`wsl.exe` 或远端 `zcode-server` 仍被持有。任何 fallback 只能作用于
+运行状态，不代表 RaspberryCode 的 Host、`wsl.exe` 或远端 `raspberrycode-server` 仍被持有。任何 fallback 只能作用于
 当前 backend 明确 spawn 的子进程，不能按进程名扫描或终止用户在同一 distro 中的其他任务。
 
 Main 的 Remote Host 集合包含 WSL/SSH shared Host、Docker/Server dedicated Host 和 Bot remote runtime。
@@ -81,12 +81,12 @@ packages/server/src/remote/
 // packages/server/src/remote/wsl-backend.ts
 import { spawn, execSync } from "node:child_process";
 import { createReadStream } from "node:fs";
-import { Emitter } from "@zcode/rpc";
+import { Emitter } from "@raspberrycode/rpc";
 import type {
   IRemoteBackend,
   RemoteEnvironment,
   StdioStream,
-} from "@zcode/server/remote/backend.js";
+} from "@raspberrycode/server/remote/backend.js";
 
 export interface WSLBackendOptions {
   distribution?: string;  // WSL 分发版名称，如 "Ubuntu"
@@ -230,15 +230,15 @@ WSL 有两种访问方式：
 - 小文件：`wsl.exe --exec cat` + stdin pipe
 - 大文件：考虑 `wsl.exe cp` 或直接写 `\\wsl$\Distro` 路径
 
-### 3. 部署 zcode-server
+### 3. 部署 raspberrycode-server
 
 与 SSH 完全相同：
 ```bash
 # SSH
-ssh user@host "ZCODE_SERVER_RUNTIME_ROOT=~/.raspberrycode/server ~/.raspberrycode/server/node ..."
+ssh user@host "RASPBERRYCODE_SERVER_RUNTIME_ROOT=~/.raspberrycode/server ~/.raspberrycode/server/node ..."
 
 # WSL
-wsl.exe --exec bash -c "ZCODE_SERVER_RUNTIME_ROOT=~/.raspberrycode/server ~/.raspberrycode/server/node ..."
+wsl.exe --exec bash -c "RASPBERRYCODE_SERVER_RUNTIME_ROOT=~/.raspberrycode/server ~/.raspberrycode/server/node ..."
 ```
 
 ### 4. 检测可用 WSL 分发版

@@ -77,7 +77,7 @@ Add this test after "GLM /model 入口允许只配置 openai endpoint 的供应�
     });
 
     expect(getProviderModelsForSelection("glm", provider)).toEqual(["glm-5"]);
-    expect(isModelProviderSelectableForZCodeProvider("glm", provider)).toBe(true);
+    expect(isModelProviderSelectableForRaspberryCodeProvider("glm", provider)).toBe(true);
   });
 ```
 

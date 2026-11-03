@@ -11,7 +11,7 @@
 
 - `~/.raspberrycode/cli/debug`（开发态）与 `~/.raspberrycode/cli/rollout`（生产态，最多保留最近 3 个会话文件）
   下的 `model-io-*.jsonl`。
-- 由 `apps/zcode-cli/packages/adapters/src/model/runner-debug.ts` 落盘，文件名形如
+- 由 `apps/raspberrycode-cli/packages/adapters/src/model/runner-debug.ts` 落盘，文件名形如
   `model-io-<sanitizedSessionId>.jsonl`。一个 session 只对应一个 JSONL 文件；首条记录保存完整
   `request.messages`，后续模型调用只保存相对上一条新增的消息 delta，避免完整上下文按梯度重复。
   每条记录带 `sessionId` / `turnId` / `traceId` / `querySource`、`request`（messages / toolNames）、
@@ -29,7 +29,7 @@
 - 新实现只用进程内上一条请求摘要判断 delta；进程重启、缓存缺失、历史不匹配或文件超过生产硬上限时，写入当前请求的
   bounded baseline（必要时只保留最近 tail messages），并继续从该 baseline 之后追加 delta。生产 rollout 是“最近有界轨迹”，
   不承诺无限完整回放；开发态 debug 保留更多原始字段，但同样不能在写入时回读整份历史文件。
-- RaspberryCode Agent 把 `taskId` 当作 `sessionId`（见 `zcodeTaskServiceAdapter` 里多处 `sessionId: params.taskId`），
+- RaspberryCode Agent 把 `taskId` 当作 `sessionId`（见 `raspberrycodeTaskServiceAdapter` 里多处 `sessionId: params.taskId`），
   所以轨迹只读取 `model-io-<sanitizedTaskId>.jsonl`，并按 `record.sessionId === taskId` 精确匹配。
   仅 RaspberryCode Agent（glm）会落盘 model-io。
 - 读取链路同样必须有界且异步：Host 从文件尾部按块读取，最多扫描 32 MiB，并只保留最近 `limit`
@@ -40,11 +40,11 @@
 
 服务层（host 侧读盘，桌面读本机、手机远控读远端 host，UI 只消费结构化结果）：
 
-- `packages/services/src/session/zcodeTaskService.ts`：新增 `ZCodeModelTrajectory*` 类型与
-  `IZCodeTaskService.getModelTrajectory({ taskId, limit })`。
-- `packages/services/src/zcode-agent/modelTrajectory.ts`：异步、有界地读取 session 单文件尾部，还原 delta messages、
+- `packages/services/src/session/raspberrycodeTaskService.ts`：新增 `RaspberryCodeModelTrajectory*` 类型与
+  `IRaspberryCodeTaskService.getModelTrajectory({ taskId, limit })`。
+- `packages/services/src/raspberrycode-agent/modelTrajectory.ts`：异步、有界地读取 session 单文件尾部，还原 delta messages、
   归一化 messages / parts / toolCalls / usage，按 `startedAt` 排序，超出 `limit`（默认 200）保留最近 N 条。
-- `packages/services/src/zcode-agent/zcodeTaskServiceAdapter.ts`：实现 `getModelTrajectory`。
+- `packages/services/src/raspberrycode-agent/raspberrycodeTaskServiceAdapter.ts`：实现 `getModelTrajectory`。
 
 UI 层：
 

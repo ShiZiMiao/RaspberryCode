@@ -8,8 +8,8 @@ MacBook Air 的 RaspberryCode 3.12.2 在设置页测试 OpenCode Go（Responses�
 
 - 使用 Air 原有 Key、地址、Prompt 和请求参数复现，服务端原始错误为：`[integer_below_min_value] Invalid 'max_output_tokens': integer below minimum value. Expected a value >= 16, but got 1 instead.`
 - 对照请求仅将 `max_output_tokens` 改为 `16`，返回 HTTP 200、正常文本与 `response.completed`。该证据证明本次连接失败由输出预算下限触发；512 尚未实测，不能把 16 的对照结果记作 512 验收通过。
-- 原始失败记录位于 Air 的 `~/.raspberrycode/cli/log/zcode-2026-09-17.jsonl` 与 `~/.raspberrycode/cli/rollout/model-io-sess_8c93aadb-89ce-4f3e-bee9-8aaa0de12488.jsonl`。文档不保存 Key。
-- 当前 [Core 连接测试入口](../../../../apps/zcode-cli/packages/core/src/runtime/methods/workspace-generate-text.ts) 将 `CONNECTIVITY_PROBE_MAX_OUTPUT_TOKENS` 固定为 `1`；[错误归一化](../../../../apps/zcode-cli/packages/adapters/src/model/failure-classifier.ts) 将该 400 显示为通用的 `Provider rejected the model request.`。错误文案优化不纳入本项。
+- 原始失败记录位于 Air 的 `~/.raspberrycode/cli/log/raspberrycode-2026-09-17.jsonl` 与 `~/.raspberrycode/cli/rollout/model-io-sess_8c93aadb-89ce-4f3e-bee9-8aaa0de12488.jsonl`。文档不保存 Key。
+- 当前 [Core 连接测试入口](../../../../apps/raspberrycode-cli/packages/core/src/runtime/methods/workspace-generate-text.ts) 将 `CONNECTIVITY_PROBE_MAX_OUTPUT_TOKENS` 固定为 `1`；[错误归一化](../../../../apps/raspberrycode-cli/packages/adapters/src/model/failure-classifier.ts) 将该 400 显示为通用的 `Provider rejected the model request.`。错误文案优化不纳入本项。
 
 ## 已确认目标与边界
 
@@ -24,8 +24,8 @@ MacBook Air 的 RaspberryCode 3.12.2 在设置页测试 OpenCode Go（Responses�
 ## 实施与验收
 
 - [ ] 先更新 [Settings 连接测试规格](../design/registry/settings.md)、[桌面连接测试用例说明](../../../testing/desktop-local-model-provider-p0-e2e-cases.md)及 [OpenRouter 请求契约](../../../openrouter-reasoning-request-contract.md)中仍适用的连接测试预算描述为 512，保留与本项无关的低预算 Adapter 测试。
-- [ ] 先更新 [Core 测试](../../../../apps/zcode-cli/packages/core/tests/workspace-generate-text-streaming.test.ts)，证明旧实现不满足 512，再修改生产常量。继续验证最低推理档位、固定 Prompt、无正文 stop/length 成功、流异常／缺少 finish 失败，以及 Git 辅助预算仍为 5,000。
-- [ ] 更新 [Adapter wire 测试](../../../../apps/zcode-cli/packages/adapters/tests/connectivity-probe-wire.test.ts)：实际序列化的 Anthropic `max_tokens`、Chat `max_completion_tokens`、Responses `max_output_tokens` 均为 512；保留协议映射、Prompt 和身份断言。
+- [ ] 先更新 [Core 测试](../../../../apps/raspberrycode-cli/packages/core/tests/workspace-generate-text-streaming.test.ts)，证明旧实现不满足 512，再修改生产常量。继续验证最低推理档位、固定 Prompt、无正文 stop/length 成功、流异常／缺少 finish 失败，以及 Git 辅助预算仍为 5,000。
+- [ ] 更新 [Adapter wire 测试](../../../../apps/raspberrycode-cli/packages/adapters/tests/connectivity-probe-wire.test.ts)：实际序列化的 Anthropic `max_tokens`、Chat `max_completion_tokens`、Responses `max_output_tokens` 均为 512；保留协议映射、Prompt 和身份断言。
 - [ ] 更新 [连接测试 E2E](../../../../packages/desktop/test/e2e/settings/manual-review/pending/provider-connectivity-prompt.test.ts)与 [Reasoning fallback E2E](../../../../packages/desktop/test/e2e/settings/manual-review/pending/provider-reasoning-fallback.test.ts)。通过真实模型行点击验证 wire 预算为 512、正常 finish 成功、400 仍失败、Personal／会话选择不变；增加能拒绝低于 16 预算的 Responses 回归场景，复现本次 Luna 的失败条件。
 - [ ] 实测 Air 的 OpenCode Go / `gpt-5.6-luna` 在 512 下正常完成连接测试，记录运行版本、请求预算及终态；不以本次 16 Token 的直接 API 对照代替修改后的 App 验收。
 - [ ] 按根及 CLI 子级规则执行相关测试、typecheck、lint、架构检查和受影响 E2E；覆盖受影响桌面／手机路径，远端或手机环境阻塞时明确记录未验证项。必要验证通过后自检 diff 并提交。

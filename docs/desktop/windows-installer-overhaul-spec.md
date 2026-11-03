@@ -22,7 +22,7 @@
 
 ## 版本边界与前向收敛
 
-- `.zcode-install-manifest` 是新旧卸载器之间的能力标记，不要求比较数字版本。更新调用旧卸载器前，安装器先检查旧安装目录是否存在该文件：存在即按 manifest cleanup，不触发 `.raspberrycode` 保护扫描；缺失即按 legacy full-cleanup 风险处理，先执行 `.raspberrycode` 保护扫描。
+- `.raspberrycode-install-manifest` 是新旧卸载器之间的能力标记，不要求比较数字版本。更新调用旧卸载器前，安装器先检查旧安装目录是否存在该文件：存在即按 manifest cleanup，不触发 `.raspberrycode` 保护扫描；缺失即按 legacy full-cleanup 风险处理，先执行 `.raspberrycode` 保护扫描。
 - 首次从没有 manifest 的历史版本升级时，继续使用 electron-builder 的旧卸载器流程属于已知限制：旧卸载器可能全量清理安装目录、使用原生重试文案，或无法返回可分类的错误原因。本轮不为这条路径增加备份、恢复、回滚或定制卸载器兼容层。
 - 用户在历史版本升级失败时，可以通过卸载重装或手动迁移文件完成升级；这不改变新版本之间更新的可靠性目标。
 - 每个后续版本只收敛当前版本仍能观测到的失败，不以一次性兼容所有历史安装状态为目标。新增保证必须以真实安装器/卸载器 smoke 覆盖后再写入本 spec。
@@ -91,7 +91,7 @@ installer-completed (日志可查，完成页直接启动 `$INSTDIR\\RaspberryCo
 - 开始菜单/桌面 `.lnk` 目标正确时原样保留（包括参数）。
 - 目标错误但 `.lnk` 存在时原位修复，随后设置稳定 AUMID 并发送 `SHChangeNotify(SHCNE_UPDATEITEM)`。
 - 用户删除的 `.lnk` 不重建；完成页直接启动新安装目录的 exe。
-- `app.setAppUserModelId()` 在打包态使用生产/Preview 对应 `appId`，开发态使用 `cn.aminer.zcode`。
+- `app.setAppUserModelId()` 在打包态使用生产/Preview 对应 `appId`，开发态使用 `cn.aminer.raspberrycode`。
 
 ## 接受用例
 

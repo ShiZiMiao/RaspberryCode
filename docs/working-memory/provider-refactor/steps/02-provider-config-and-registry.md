@@ -95,7 +95,7 @@ ProviderConfigResolver
 └─ 变化通知
 ```
 
-这一切片建立在新的纯领域包 `@zcode/provider` 中。后续切片已经让 Host、Worker、Prompt CLI 和 TUI 复用这套代码；文件监听、远端管理配置和账号接口继续由各自 Source Service 负责。
+这一切片建立在新的纯领域包 `@raspberrycode/provider` 中。后续切片已经让 Host、Worker、Prompt CLI 和 TUI 复用这套代码；文件监听、远端管理配置和账号接口继续由各自 Source Service 负责。
 
 这一节只记录首个领域切片当时的边界，不代表 M2 最终交付范围。后续切片已经接入 Host、Worker、设置页、模型选择和模型执行；Adapter reasoning 映射仍保持原有执行语义。
 
@@ -105,7 +105,7 @@ ProviderConfigResolver
 ## 实施切片与结果
 
 ```text
-M2.1  @zcode/provider 包                                      [完成]
+M2.1  @raspberrycode/provider 包                                      [完成]
       + ConfigOverlay、ProviderConfig、ModelConfigRules 与解析测试
 
 M2.2  ProviderConfigResolver
@@ -397,7 +397,7 @@ M2.8  退出 Host -> Worker 完整 Registry Snapshot 和旧 Provider 事实链�
       + 本地 Bot 切换 custom model 只提交 modelRef，不再 apply Provider 或下发旧完整
         Registry Snapshot；desktop-attached remote 暂时保留兼容同步 [完成]
       + Repo Wiki 直接消费所属 Environment 的 ModelSelectionView；旧
-        ZCodeProviderRegistrySnapshot 投影、反向解析器与 readiness resolver 已删除 [完成]
+        RaspberryCodeProviderRegistrySnapshot 投影、反向解析器与 readiness resolver 已删除 [完成]
       + 闲时任务套餐判断和派发凭据解析退出旧 Provider 列表与完整 Registry Snapshot；
         Account Overlay 提供固定 accessId/baseURL，请求时由 Account Request Auth Resolver
         取得当前动态凭据 [完成]

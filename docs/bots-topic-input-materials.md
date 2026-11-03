@@ -126,8 +126,8 @@ Desktop 保持 desktop-continuous；手机保持 web-remote-replayable。远端�
 5. 普通发送另一张图片或文件，随后另发 @ 请求分析该历史附件。历史 txt 列出资源索引，内置 ReadSessionContext 按需读取；不得跨话题读取，不要求扫码。
 6. 在 Desktop 排队项编辑／立即发送后确认引用和附件仍在。手机远控应连接同一 Host，单独验证预览与恢复；窄窗口检查不能代替真实手机链路。
 
-本次本机测试文件：`/tmp/zcode-topic-materials-20260908.txt`，包含独立校验码及多行文字。该路径仅用于开发验收，不是产品运行依赖。
-历史资源使用另一份 `/tmp/zcode-topic-history-resource-20260908.txt`，其中校验码不同，避免误把读取此前引用附件的结果当作历史资源读取成功。
+本次本机测试文件：`/tmp/raspberrycode-topic-materials-20260908.txt`，包含独立校验码及多行文字。该路径仅用于开发验收，不是产品运行依赖。
+历史资源使用另一份 `/tmp/raspberrycode-topic-history-resource-20260908.txt`，其中校验码不同，避免误把读取此前引用附件的结果当作历史资源读取成功。
 
 ## 本次验证记录（2026-09-08）
 
@@ -166,6 +166,6 @@ Desktop 保持 desktop-continuous；手机保持 web-remote-replayable。远端�
 
 手动验证路径：自行启动当前 checkout → 飞书测试群由绑定用户发送 `@机器人 /history on` → 在同一话题先发送城市等普通讨论，再引用问题并 @ → RaspberryCode 对应任务打开「话题历史」附件确认原文、姓名与时间 → 确认回答由机器人服务回到原话题。随后再 @，检查只包含增量；关闭历史后再发有正文的请求，附件应明确显示未读取。不要用主聊天的普通引用代替话题验证。
 
-附件物理存储沿用目标 CLI 的 session artifact：完整校验后由 `writePromptAttachment` 写入会话 artifact，返回 `zcode-artifact://` 引用；不是工作区根目录中的独立 `topic-history.txt`。RaspberryCode 使用已有附件预览读取真实内容。
+附件物理存储沿用目标 CLI 的 session artifact：完整校验后由 `writePromptAttachment` 写入会话 artifact，返回 `raspberrycode-artifact://` 引用；不是工作区根目录中的独立 `topic-history.txt`。RaspberryCode 使用已有附件预览读取真实内容。
 
 自动化结果：根目录 typecheck、lint（43 项既有 warning、0 error）、verify:pre-push 通过；Agent contracts/core/bootstrap 类型检查通过；本次 188 项根目录相关测试、188 项投影/冷恢复测试、59 项队列/编辑重试测试、5 项 core 引用/持久化测试及 2 项模型材料展示隔离测试通过。新增 helper 独立 lint 通过；Agent 全包独立 lint 仍存在既有 max-lines 超长文件限制，不宣称该检查通过。未启动 dev，未进行本轮真实飞书、Lark、手机或其他 OS 手动验收。

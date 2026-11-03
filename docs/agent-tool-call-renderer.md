@@ -21,8 +21,8 @@
 命中条件：
 
 - `raw._meta.claudeCode.toolName === "Agent"`
-- `raw._meta.zcode.toolName === "Agent"`
-- `raw._meta.zcode.toolName === "spawn_agent"` / `raw.name === "spawn_agent"` / `kind === "spawn_agent"`（Codex）
+- `raw._meta.raspberrycode.toolName === "Agent"`
+- `raw._meta.raspberrycode.toolName === "spawn_agent"` / `raw.name === "spawn_agent"` / `kind === "spawn_agent"`（Codex）
 - `kind === "think"` 且 `title === "Agent"`（GLM/RaspberryCode Agent）
 - 或 `kind === "think"` 且 `input.subagent_type` 存在
 

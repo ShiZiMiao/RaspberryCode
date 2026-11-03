@@ -2,7 +2,7 @@
 
 > 状态：初始 revision 4 发布证据；2026-09-01 已补充 Kimi 多模态校正
 >
-> 设计依据：[`zcode-builtin-provider-config.md`](../design/registry/zcode-builtin-provider-config.md)
+> 设计依据：[`raspberrycode-builtin-provider-config.md`](../design/registry/raspberrycode-builtin-provider-config.md)
 
 ## 1. 证据规则
 

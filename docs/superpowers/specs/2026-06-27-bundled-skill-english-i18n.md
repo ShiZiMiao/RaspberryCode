@@ -12,14 +12,14 @@ RaspberryCode 官方内置 skill 通过官方插件随 CLI 打包。用户在输
 ## 目标
 
 - 只在 `/` 与 `$` 候选面板里为官方内置 skill 提供中文 / 英文描述。
-- 用户自定义 skill、第三方 skill、Agent runtime 注入和 CLI `zcode skills` 输出保持原状。
+- 用户自定义 skill、第三方 skill、Agent runtime 注入和 CLI `raspberrycode skills` 输出保持原状。
 - 同一个本地化 helper 被 `/` skill 候选与 `$` skill mention 候选复用，避免两处文案漂移。
 - 未命中的 skill 继续使用服务端返回的 `description`。
 
 ## 非目标
 
 - 不修改 `SKILL.md` 正文或 frontmatter 解析格式。
-- 不改 `@zcode/protocol`、`@zcode/contracts`、`ISkillsService` 参数。
+- 不改 `@raspberrycode/protocol`、`@raspberrycode/contracts`、`ISkillsService` 参数。
 - 不影响模型可见的 skill selection metadata。
 - 不改变 skill 名称、路径、启用状态、排序或过滤规则。
 
@@ -35,7 +35,7 @@ RaspberryCode 官方内置 skill 通过官方插件随 CLI 打包。用户在输
 接入点：
 
 - `packages/ui/src/slashCommandHelpers.ts` 的 `buildSkillSuggestions()` 接收当前 locale，用 helper 生成 `/` 面板 skill 候选描述。
-- `packages/ui/src/mentions/providers/skillsMentionProvider.ts` 从 `useZCodeIntl()` 读取 locale，用同一个 helper 生成 `$` 面板 skill 候选描述与 source label。
+- `packages/ui/src/mentions/providers/skillsMentionProvider.ts` 从 `useRaspberryCodeIntl()` 读取 locale，用同一个 helper 生成 `$` 面板 skill 候选描述与 source label。
 
 ## 验证
 

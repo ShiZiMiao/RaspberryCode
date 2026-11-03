@@ -64,7 +64,7 @@ AI SDK 标准 `maxOutputTokens` 或 reasoning namespace，否则会形成第二�
 
 ## 受限 CEL
 
-唯一实现位于纯 TypeScript 包 `@zcode/model-option-map`，由 Provider Config 校验与 CLI Adapter 共同使用。
+唯一实现位于纯 TypeScript 包 `@raspberrycode/model-option-map`，由 Provider Config 校验与 CLI Adapter 共同使用。
 实现固定为 tokenizer、parser、AST evaluator；禁止 `eval`、`Function` 或动态代码执行。
 
 支持：

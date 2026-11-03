@@ -121,7 +121,7 @@ Main 只调度和透传，不承载迁移业务。Host 拥有启动编排，Agen
 - [ ] 运行 `pnpm typecheck`、`pnpm lint`、`pnpm architecture:check --changed`、CLI 对应类型检查、受影响单测和桌面 E2E。
 - [ ] 更新 spec、case catalog、coverage matrix；仅有实际证据的条目标记完成。
 - [x] 删除失效工作区接口和重复状态；确认迁移定义相对目标分支 diff 为空，Provider 补丁仍在。
-- [ ] 更新草稿 MR 的最终范围、证据和限制，经必需检查再提交；推送/MR 更新使用 zcode-mr skill。
+- [ ] 更新草稿 MR 的最终范围、证据和限制，经必需检查再提交；推送/MR 更新使用 raspberrycode-mr skill。
 
 ## 5. 失败、回滚与恢复合同
 
@@ -235,7 +235,7 @@ SQLite 使用原始数值 errcode（含扩展码时提取低 8 位）及结构�
 - `packages/desktop/src/main/desktopArmsCustomEvent.ts`：统一 custom payload、应用版本/平台等上下文与最终发送前 E2E 捕获。
 - `packages/desktop/src/main/desktopRemoteUsageArmsTelemetry.ts`：Host/生命周期事实在 Main 汇总上报的参考实现。
 - `packages/services/src/storage/adapters/volumeProbe.ts`：异步 stat/statfs 探测卷容量，失败返回 null；复用须通过领域接口或依赖注入，不能跨域直接导入内部 adapter。
-- `apps/zcode-cli/packages/bootstrap/src/zcode-protocol/storage-startup.ts`：现有迁移通知入口；新方案从同一启动状态生成 UI 和遥测，不解析日志文本推断状态。
+- `apps/raspberrycode-cli/packages/bootstrap/src/raspberrycode-protocol/storage-startup.ts`：现有迁移通知入口；新方案从同一启动状态生成 UI 和遥测，不解析日志文本推断状态。
 
 ```text
 Host/Agent 启动事实 ──→ 启动协调器 ──→ UI 阶段与安全错误提示

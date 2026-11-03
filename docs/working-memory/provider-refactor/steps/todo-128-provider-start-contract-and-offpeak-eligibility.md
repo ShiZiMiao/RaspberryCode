@@ -88,8 +88,8 @@ Registry 重算并发布新快照
 | 同文件启动日志 | 记录启动配置版本与 Provider 数量 | 启动完成后显式读取 Registry |
 | `packages/provider-node/src/provider-registry-runtime.ts` | Account Source 未初始化时，以 Config 构造默认不可用快照 | 等待 Config 启动后，从 `configService.read()` 读取所需配置 |
 | `packages/services/src/model-provider/providerRuntime.ts` | 缓存并向外返回 Registry 启动结果 | 缓存就绪 Promise，不再返回业务快照 |
-| `apps/zcode-cli/packages/bootstrap/src/app/process-provider-registry-runtime.ts` | 把 Node Registry Runtime 启动结果保存为外层 `snapshot` | 显式读取启动快照供必要的一次性日志使用，不将该属性用作持续状态读取 |
-| `apps/zcode-cli/packages/bootstrap/src/zcode-protocol-entrypoint.ts` | 使用上述 `snapshot` 写启动日志 | 与上一项一起适配；运行期仍使用 Registry 服务 |
+| `apps/raspberrycode-cli/packages/bootstrap/src/app/process-provider-registry-runtime.ts` | 把 Node Registry Runtime 启动结果保存为外层 `snapshot` | 显式读取启动快照供必要的一次性日志使用，不将该属性用作持续状态读取 |
+| `apps/raspberrycode-cli/packages/bootstrap/src/raspberrycode-protocol-entrypoint.ts` | 使用上述 `snapshot` 写启动日志 | 与上一项一起适配；运行期仍使用 Registry 服务 |
 | 测试与包装层 | 返回、断言启动快照 | 改为等待启动后通过读取接口断言；同步返回类型 |
 
 已核查的 Provider 设置、模型选择、官方 MCP、Bot、Wiki、Git 提交信息生成、Agent 启动准备和配置分发入口，使用独立服务或仅等待就绪；不将它们误记为均存在旧快照故障。CLI Prompt/TUI 的执行面使用 Registry 服务，外层启动 `snapshot` 的生产消费目前为 Protocol 启动日志。实施前再跑引用检查，避免遗漏后续新调用。

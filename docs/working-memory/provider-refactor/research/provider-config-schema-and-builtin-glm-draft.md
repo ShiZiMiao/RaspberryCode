@@ -295,7 +295,7 @@ Start Plan 的 Official Config 保存静态连接：
     },
     "api": {
       "type": "anthropic-messages",
-      "baseURL": "https://zcode.z.ai/api/v1/zcode-plan/anthropic"
+      "baseURL": "https://raspberrycode.z.ai/api/v1/raspberrycode-plan/anthropic"
     },
     "models": ["GLM-5.3", "GLM-5.2", "GLM-5-Turbo"],
     "enabled": true
@@ -319,7 +319,7 @@ Account Access 根据登录和套餐结果生成同形 Overlay：
 
 这里的 models 是当前账号获准使用的子集。请求时使用的 RaspberryCode JWT 和一次性安全校验 Header 由请求鉴权服务取得。
 
-BigModel Start Plan 使用 providerId builtin:bigmodel-start-plan。它当前与 Z.AI Start Plan 共享 zcode-plan 请求语义；最终 Endpoint 和模型全集需要同远端 Official Config 再对齐。
+BigModel Start Plan 使用 providerId builtin:bigmodel-start-plan。它当前与 Z.AI Start Plan 共享 raspberrycode-plan 请求语义；最终 Endpoint 和模型全集需要同远端 Official Config 再对齐。
 
 ### 4.3 Personal Coding Plan
 
@@ -488,7 +488,7 @@ Model
 ]
 ~~~
 
-Z.AI、BigModel 和 zcode-plan 的 Builtin 精确规则可以把 supportsNativeWebSearch 覆盖为 true。这个字段表达最终 Provider + Model 组合的可执行性质。
+Z.AI、BigModel 和 raspberrycode-plan 的 Builtin 精确规则可以把 supportsNativeWebSearch 覆盖为 true。这个字段表达最终 Provider + Model 组合的可执行性质。
 
 ## 6. GLM 的 Anthropic Messages 配置
 
@@ -660,8 +660,8 @@ Registry 只保存 Effective Provider Config 和最终模型配置。Model 保�
 - Builtin Provider ID 在 packages/shared/src/model-provider-types.ts。
 - Start Plan 与 Coding Plan 的 Endpoint fallback 在 packages/services/src/model-provider。
 - GLM reasoning 档位与 model-name 判断分散在 shared、services 和 CLI Adapter。
-- reasoning_content replay 仍由 apps/zcode-cli/packages/adapters/src/model/reasoning-content-compat.ts 的模型名称列表驱动。
-- Anthropic fixed budget 的兼容边界位于 apps/zcode-cli/packages/adapters/src/model/reasoning-policy.ts。
+- reasoning_content replay 仍由 apps/raspberrycode-cli/packages/adapters/src/model/reasoning-content-compat.ts 的模型名称列表驱动。
+- Anthropic fixed budget 的兼容边界位于 apps/raspberrycode-cli/packages/adapters/src/model/reasoning-policy.ts。
 - Native Web Search 与 Mid-conversation System 仍部分根据 Provider API、baseURL 和 modelId 推断。
 
 迁移时应先判断每条旧事实是否真实参与当前生产行为。真正生效的事实进入 Official Config 或 Adapter 固定协议逻辑；未生效的 models.dev/bundled catalog 字段不机械搬运。

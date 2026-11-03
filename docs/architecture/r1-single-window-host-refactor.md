@@ -8,7 +8,7 @@
 - 核心目标：每个 `BrowserWindow` 只有一个 window-scoped Local Host，由该 Host 统一承载本地服务、远程连接、窗口级任务投影和各类客户端 attachment
 - 明确排除：独立 Server CLI、`sourceServerId`、Connection Profile、Transport Adapter、新的远端 wire contract、跨远程 Grouped 能力，分别留待 R2/R3/R4
 
-本文是 R1 的实现规格。当前 Web 远控事实仍以 `docs/web-remote-control/` 下的架构、实时同步和任务命令队列文档为准；本规格完成后同步更新这些事实文档。
+本文是 R1 的实现规格。当前 Web 远控事实仍以 `docs/archive/web-remote-control/` 下的架构、实时同步和任务命令队列文档为准；本规格完成后同步更新这些事实文档。
 
 ## 2. 决策
 
@@ -20,7 +20,7 @@
 | 连接入口 | 保留 `IPlatformService -> Main`；Main 只做请求、状态事件和 MessagePort 薄转发 |
 | Remote Host 合并 | 合并 UI、手机、Bot 创建的全部 Desktop Remote Host |
 | 投影持久化 | `ControllerProjection` 仅驻内存并可从 source 重建，不增加数据库 |
-| 远端协议 | 不修改现有 SSH/WSL/Docker/Server 的 zcode-server service channel |
+| 远端协议 | 不修改现有 SSH/WSL/Docker/Server 的 raspberrycode-server service channel |
 | 列表写路由 | 跨 workspace 列表操作由 Controller 路由；进入 workspace/conversation 后继续使用 scoped facade |
 | Realtime Host 身份 | 每窗口一个 `hostId`，内部按 `workspaceKey + taskId` 路由 |
 | `remoteSessionId` | 由 Local Host 分配和管理；Main 只保存异步请求关联信息 |
@@ -43,8 +43,8 @@
 
 ```text
 Renderer ─┬─ base port ────> Local Host ─────────> Local CLI
-          ├─ remote port ──> SSH Remote Host ────> zcode-server
-          ├─ remote port ──> WSL Remote Host ────> zcode-server
+          ├─ remote port ──> SSH Remote Host ────> raspberrycode-server
+          ├─ remote port ──> WSL Remote Host ────> raspberrycode-server
           └─ remote port ──> Docker/Server Host ─> remote service
 
 Mobile -> relay/Main -> Local Host 或独立 Remote Host

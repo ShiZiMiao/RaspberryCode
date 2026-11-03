@@ -22,9 +22,9 @@
 
 | Domain                   | Include?            | Reason                                                            | Primary sources                                               |
 | ------------------------ | ------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------- |
-| Agent runtime/config     | yes                 | 决定 Hook 是否真实执行和影响 turn/tool                            | `apps/zcode-cli/packages/{contracts,core,adapters,bootstrap}` |
-| Permission/tool          | yes                 | 4 个 tool 事件横跨校验、permission、success/failure               | `apps/zcode-cli/packages/core/src/tool/executor`              |
-| Conversation/session     | yes                 | SessionStart、UserPromptSubmit、Stop 位于 turn lifecycle          | `apps/zcode-cli/packages/core/src/runtime`                    |
+| Agent runtime/config     | yes                 | 决定 Hook 是否真实执行和影响 turn/tool                            | `apps/raspberrycode-cli/packages/{contracts,core,adapters,bootstrap}` |
+| Permission/tool          | yes                 | 4 个 tool 事件横跨校验、permission、success/failure               | `apps/raspberrycode-cli/packages/core/src/tool/executor`              |
+| Conversation/session     | yes                 | SessionStart、UserPromptSubmit、Stop 位于 turn lifecycle          | `apps/raspberrycode-cli/packages/core/src/runtime`                    |
 | Settings UI/source       | yes                 | 用户需要配置 `.raspberrycode` 并查看 plugin hooks                         | `packages/{services,ui}`                                      |
 | Mobile remote/replayable | representative only | Hook 在共享 Agent runtime 执行，不改变 stream/snapshot/queue 语义 | 架构 invariant                                                |
 
@@ -124,7 +124,7 @@ Case-local artifacts：
 - default replay：必跑。
 - Docker：先做单 spec replay-isolated 证明；只有通过后才可用 `e2e:docker:admit` 加入
   conversation preset。
-- 收尾门禁：`pnpm --filter @zcode/desktop typecheck:e2e`、`pnpm typecheck`、`pnpm lint`。
+- 收尾门禁：`pnpm --filter @raspberrycode/desktop typecheck:e2e`、`pnpm typecheck`、`pnpm lint`。
 
 ## Verification Record
 

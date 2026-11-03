@@ -7,14 +7,14 @@
 - 环境故障 catalog：[conversation-session-environment-fault-catalog.md](./conversation-session-environment-fault-catalog.md)
 - 决策 backlog：[conversation-session-decision-backlog.md](./conversation-session-decision-backlog.md)
 - FS 故障注入协议：[e2e-fs-fault-injection.md](./e2e-fs-fault-injection.md)
-- Workspace remote 架构：[web-remote-control/web-remote-control-architecture.md](../web-remote-control/web-remote-control-architecture.md)
-- Task realtime sync：[web-remote-control/task-realtime-sync.md](../web-remote-control/task-realtime-sync.md)
+- Workspace remote 架构：[web-remote-control/web-remote-control-architecture.md](../archive/web-remote-control/web-remote-control-architecture.md)
+- Task realtime sync：[web-remote-control/task-realtime-sync.md](../archive/web-remote-control/task-realtime-sync.md)
 
 ## 当前基础设施边界
 
 | 能力 | 可覆盖的 case |
 | --- | --- |
-| `ZCODE_E2E_FS_FAULTS` | session DB 写入、workspace 父目录创建 / 非原子写入 / 删除、settings/provider 保存、日志/artifact 写入 |
+| `RASPBERRYCODE_E2E_FS_FAULTS` | session DB 写入、workspace 父目录创建 / 非原子写入 / 删除、settings/provider 保存、日志/artifact 写入 |
 | SQLite fault injection | DB open、migration、history write 的 `ENOSPC/EACCES/open_failed` |
 | replay/capture network artifact | 生命周期或断连前后的模型请求、SSE 请求、compact 请求是否继续 |
 | renderer store helpers | task runtime、queue、permission request、workspace init state、activeInputId |

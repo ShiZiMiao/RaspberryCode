@@ -461,7 +461,7 @@ turn ended
 
 ### 8.5 `playwright.domSnapshot()` 合同
 
-`tab.snapshot()` 是 z-code 为兼容早期 ref/action 工作流保留的结构化接口，不属于 common
+`tab.snapshot()` 是 raspberrycode 为兼容早期 ref/action 工作流保留的结构化接口，不属于 common
 Playwright API。locator 工作流的事实源必须是
 `tab.playwright.domSnapshot(): Promise<string>`；两者不得再共用同一“snapshot 合同”的表述。
 
@@ -703,9 +703,9 @@ RaspberryCode 自研内容：
 - 不因普通动作附加 screenshot；只有模型显式调用 screenshot API 时才返回图像结果。
 - tab ownership/lifecycle 状态（如需要）。
 
-内部归一化字段冻结为 `browserUse/backendType/browserId/browserGeneration/openTabIds/tabId/currentUrl/lifecycle`；Node REPL 对模型/客户端暴露时还必须形成 `browser_use`、`zcode/browserUse` 和 `zcode/toolSurface` 外层 marker。`currentUrl` 进入 meta 前必须移除 credential、query 和 hash。失败结果同样带不含敏感数据的 meta。取消发生在 backend action 下发前时错误标记 `sideEffect: "none"`；下发后无法证明动作未发生时标记 `sideEffect: "uncertain"`。
+内部归一化字段冻结为 `browserUse/backendType/browserId/browserGeneration/openTabIds/tabId/currentUrl/lifecycle`；Node REPL 对模型/客户端暴露时还必须形成 `browser_use`、`raspberrycode/browserUse` 和 `raspberrycode/toolSurface` 外层 marker。`currentUrl` 进入 meta 前必须移除 credential、query 和 hash。失败结果同样带不含敏感数据的 meta。取消发生在 backend action 下发前时错误标记 `sideEffect: "none"`；下发后无法证明动作未发生时标记 `sideEffect: "uncertain"`。
 
-RaspberryCode **不在**成功的导航/点击/输入等 side-effect cell 结束后自动截图，也不把截图放进 `zcode/toolSurface` 供工具面板预览：不得因普通页面动作调用 screenshot，也不得把显式 screenshot 结果自动复制成 preview meta。这一取舍只影响工具面板预览，不改变 DOM-first 观察、显式视觉截图或 tab 生命周期。
+RaspberryCode **不在**成功的导航/点击/输入等 side-effect cell 结束后自动截图，也不把截图放进 `raspberrycode/toolSurface` 供工具面板预览：不得因普通页面动作调用 screenshot，也不得把显式 screenshot 结果自动复制成 preview meta。这一取舍只影响工具面板预览，不改变 DOM-first 观察、显式视觉截图或 tab 生命周期。
 
 ### 13.1 Provider-visible IAB ambient context
 
@@ -747,7 +747,7 @@ RaspberryCode **不在**成功的导航/点击/输入等 side-effect cell 结束
 6. App 与 Agent 允许短暂版本错位。旧 Agent 对 `browserAmbientContext` 返回 `-32602` 时，App 必须同时识别
    `Invalid params` 与带字段摘要的 `Invalid params — ...`，从结构化 Zod issues 确认只有可降级字段后，删除该字段
    重试一次；不得把兼容错误直接暴露为用户第二轮发送失败。`dev:local-cli` 启动前必须重建 desktop agent bundle，
-   不能因为仓库里存在旧 `dist/zcode.cjs` 就优先启动过期协议实现。
+   不能因为仓库里存在旧 `dist/raspberrycode.cjs` 就优先启动过期协议实现。
 
 ### 13.2 Electron navigation already committed
 
@@ -850,7 +850,7 @@ IAB 应支持以下序列：
 - Playwright locator/wait/download/file chooser、clipboard/dev/content/capabilities。
 - action-time confirmation。
 
-实施结果：member-level manifest/interpreter/runtime proxy/docs 已与当前 IAB capability 动态绑定，补齐 common Playwright 的方法名集合、locator/frame locator、受信任 CDP input 与 IAB download object；IAB file chooser 明确不支持。`playwright.domSnapshot()` 已使用 AI/ARIA 输出及 3000/1000/500ms 顶层/iframe 预算，navigation wait 与 `expectNavigation` 采用并发等待语义，`networkidle` 按 IAB 实现明确拒绝。`tab.snapshot()` 仍是 z-code ref/action 兼容入口但不进入有效 common manifest；clipboard/dev/content/pageAssets/raw CDP 等未由 IAB descriptor 宣称，未来 backend 只能在真实实现后通过 capability/override 暴露。
+实施结果：member-level manifest/interpreter/runtime proxy/docs 已与当前 IAB capability 动态绑定，补齐 common Playwright 的方法名集合、locator/frame locator、受信任 CDP input 与 IAB download object；IAB file chooser 明确不支持。`playwright.domSnapshot()` 已使用 AI/ARIA 输出及 3000/1000/500ms 顶层/iframe 预算，navigation wait 与 `expectNavigation` 采用并发等待语义，`networkidle` 按 IAB 实现明确拒绝。`tab.snapshot()` 仍是 raspberrycode ref/action 兼容入口但不进入有效 common manifest；clipboard/dev/content/pageAssets/raw CDP 等未由 IAB descriptor 宣称，未来 backend 只能在真实实现后通过 capability/override 暴露。
 
 ### Slice D：Plugin/runtime 解耦
 

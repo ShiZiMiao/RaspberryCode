@@ -61,7 +61,7 @@
 
 ## 实施入口与验收
 
-主要入口：`packages/ui/src/chat-input-toolbar/thoughtLevelOptions.ts`、`ThoughtLevelCycleControl.tsx`、中英文 locale；检查 V4 composer 和其他复用控件的页面。配置投影见 `packages/ui/src/lib/modelThoughtOption.ts`、`zcodeSessionProjection.ts`。
+主要入口：`packages/ui/src/chat-input-toolbar/thoughtLevelOptions.ts`、`ThoughtLevelCycleControl.tsx`、中英文 locale；检查 V4 composer 和其他复用控件的页面。配置投影见 `packages/ui/src/lib/modelThoughtOption.ts`、`raspberrycodeSessionProjection.ts`。
 
 - [x] 先更新现有思考档位控件 spec，核对会话、定时／闲时任务、Subagent、Repo Wiki 的共享控件调用方；新增 TL-01/02 验收条目。
 - [x] 先补预期测试，再改实现：中英文逐项核对最终映射；minimal 与 low 同时出现时文案不同；ultra 正确显示；所有关闭别名统一为 Off／关闭。

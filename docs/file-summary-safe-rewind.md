@@ -42,7 +42,7 @@
 ```ts
 {
   sessionId: string;
-  target: ZCodeSessionHistoryTarget;
+  target: RaspberryCodeSessionHistoryTarget;
   expectedRevision?: number;
 }
 ```
@@ -52,7 +52,7 @@ preview 返回文件级结果：
 ```ts
 {
   sessionId: string;
-  target: ZCodeSessionHistoryTarget;
+  target: RaspberryCodeSessionHistoryTarget;
   canApply: boolean;
   safeFiles: Array<{
     path: string;

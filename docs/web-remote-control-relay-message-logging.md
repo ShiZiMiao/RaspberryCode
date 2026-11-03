@@ -24,7 +24,7 @@
 - `pair_status`（若有）
 - `role`（若有）
 - `code`（若有）
-- `payload` 摘要：`zcode_type` / `requestId` / `bridgeSessionId`
+- `payload` 摘要：`raspberrycode_type` / `requestId` / `bridgeSessionId`
 - 桌面端 `recv` 额外带 `bytes`
 
 ## 不记录内容

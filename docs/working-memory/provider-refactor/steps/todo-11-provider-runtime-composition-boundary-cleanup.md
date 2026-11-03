@@ -8,7 +8,7 @@
 >
 > 相关设计：[`../design/registry/runtime.md`](../design/registry/runtime.md)、[`../design/environment/environment.md`](../design/environment/environment.md)、[`../design/registry/configuration.md`](../design/registry/configuration.md)
 >
-> 关联任务：[`06`](./todo-06-config-storage-envelope-repository-privatization.md)、[`08`](./todo-08-legacy-model-catalog-retirement.md)、[`10`](./todo-10-zcode-builtin-provider-config-naming-cutover.md)
+> 关联任务：[`06`](./todo-06-config-storage-envelope-repository-privatization.md)、[`08`](./todo-08-legacy-model-catalog-retirement.md)、[`10`](./todo-10-raspberrycode-builtin-provider-config-naming-cutover.md)
 
 ## 0. 草案边界
 

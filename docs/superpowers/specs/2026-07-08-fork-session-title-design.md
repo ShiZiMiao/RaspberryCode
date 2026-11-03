@@ -36,7 +36,7 @@ fork parent
    - 事件必须由当前 child runtime 自己 append，避免 parent runtime 事件误投到 parent publisher。
 
 2. 在 bootstrap live record 中保留 fork parent 关系。
-   - `ZCodeProtocolSessionRecord` 新增可选 `parentSessionId`。
+   - `RaspberryCodeProtocolSessionRecord` 新增可选 `parentSessionId`。
    - `createRecord` 从 `params.parentSessionId` 初始化该字段。
    - fork record 创建时传入 `parentSessionId: fork.parentSessionId`。
    - resume 老会话时从 session store 的 `parentID` 回填。

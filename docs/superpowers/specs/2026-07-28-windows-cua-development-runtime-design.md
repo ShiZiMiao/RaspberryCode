@@ -6,7 +6,7 @@
 >
 > 范围：Windows 本地桌面源码开发环境
 >
-> 关联仓库：`z-code`、`C:\Users\dev\zcode-cua`
+> 关联仓库：`z-code`、`C:\Users\dev\raspberrycode-cua`
 
 ## 1. 背景
 
@@ -16,12 +16,12 @@ RaspberryCode 当前的 Computer Use 产品链路以 macOS 为主：
 RaspberryCode Host
   -> 安装、校验并启动独立 Helper.app
   -> 生成 socket + bearer token
-  -> 向官方 zcode-cua plugin 注入凭据
+  -> 向官方 raspberrycode-cua plugin 注入凭据
   -> plugin 通过 MCP 向 Agent 暴露工具
   -> Helper.app 通过 AX / ScreenCaptureKit / CGEvent 执行
 ```
 
-外部 `@zcode/zcode-cua` 仓库已经包含 Windows UIA、named pipe、基础
+外部 `@raspberrycode/raspberrycode-cua` 仓库已经包含 Windows UIA、named pipe、基础
 `SendInput` 点击/键盘以及部分元素语义动作，但当前还没有形成 RaspberryCode 本地桌面的完整运行链路：
 
 - RaspberryCode 默认 Product Helper 只允许 `darwin`；
@@ -113,7 +113,7 @@ Windows 使用独立 Helper 子进程，不把 UIA/native backend 运行在：
 
 ```text
 Node.js child process
-  + @zcode/zcode-cua broker/server
+  + @raspberrycode/raspberrycode-cua broker/server
   + ax_native.node
 ```
 
@@ -130,7 +130,7 @@ SEA / signed native executable
 RaspberryCode Host 负责：
 
 - 判断本地 Windows 开发态是否启用；
-- 解析受控的本地 `zcode-cua` 源码根目录；
+- 解析受控的本地 `raspberrycode-cua` 源码根目录；
 - 启动、停止和健康检查 Helper；
 - 生成 pipe、token 和 capability generation；
 - 仅向官方 CUA plugin authority 注入凭据；
@@ -145,7 +145,7 @@ RaspberryCode Host 不负责：
 - HWND、element token 或 screenshot revision 管理；
 - CUA 工具参数到平台动作的解释。
 
-这些业务能力全部留在 `zcode-cua` Helper/backend。
+这些业务能力全部留在 `raspberrycode-cua` Helper/backend。
 
 ### 5.3 Windows Graphics Capture
 
@@ -156,7 +156,7 @@ Windows.Graphics.Capture
   -> Direct3D11CaptureFramePool.CreateFreeThreaded
   -> ID3D11Texture2D / SoftwareBitmap
   -> BGRA buffer or encoded image
-  -> existing zcode-cua image pipeline
+  -> existing raspberrycode-cua image pipeline
 ```
 
 不把 `BitBlt`、PowerShell `System.Drawing` 或外部截图命令作为正式主路径。
@@ -238,7 +238,7 @@ Windows Computer Use Helper (Node child)
              ^
              | authenticated broker RPC
              |
-official zcode-cua MCP plugin
+official raspberrycode-cua MCP plugin
              ^
              | MCP stdio
              |
@@ -261,10 +261,10 @@ ordinary MCP server -> broker credentials
 RaspberryCode local Host starts
   |
   |-- platform == win32?
-  |-- ZCODE_CUA_PRODUCT_HELPER enabled?
+  |-- RASPBERRYCODE_CUA_PRODUCT_HELPER enabled?
   |-- local host only?
   |-- official CUA plugin enabled for workspace?
-  |-- ZCODE_CUA_DEV_ROOT resolves to allowed source root?
+  |-- RASPBERRYCODE_CUA_DEV_ROOT resolves to allowed source root?
   |
   | no -> no Helper, no credentials, no CUA MCP injection
   |
@@ -326,7 +326,7 @@ STOPPED
 新增显式开发配置：
 
 ```text
-ZCODE_CUA_DEV_ROOT=C:\Users\dev\zcode-cua
+RASPBERRYCODE_CUA_DEV_ROOT=C:\Users\dev\raspberrycode-cua
 ```
 
 语义：
@@ -343,13 +343,13 @@ ZCODE_CUA_DEV_ROOT=C:\Users\dev\zcode-cua
 建议开发命令：
 
 ```text
-cd C:\Users\dev\zcode-cua
+cd C:\Users\dev\raspberrycode-cua
 pnpm install
 pnpm build
 pnpm rebuild:native
 
-set ZCODE_CUA_PRODUCT_HELPER=1
-set ZCODE_CUA_DEV_ROOT=C:\Users\dev\zcode-cua
+set RASPBERRYCODE_CUA_PRODUCT_HELPER=1
+set RASPBERRYCODE_CUA_DEV_ROOT=C:\Users\dev\raspberrycode-cua
 pnpm dev:desktop
 ```
 
@@ -454,7 +454,7 @@ Bearer token 不得出现在：
 - Windows Host 单测与集成测试；
 - 开发启动说明。
 
-### `zcode-cua`
+### `raspberrycode-cua`
 
 - Windows Helper CLI/entry；
 - Windows named-pipe broker host；
@@ -467,7 +467,7 @@ Bearer token 不得出现在：
 - 跨平台测试修复；
 - native 与 live desktop 验收。
 
-### 官方 `zcode-cua-plugin`
+### 官方 `raspberrycode-cua-plugin`
 
 - 继续作为 broker-only 薄壳；
 - 缺 socket/token 时继续 fail closed；
@@ -529,7 +529,7 @@ Bearer token 不得出现在：
 
 ### 自动化
 
-`zcode-cua`：
+`raspberrycode-cua`：
 
 - `pnpm typecheck`
 - `pnpm lint`
@@ -550,7 +550,7 @@ Bearer token 不得出现在：
 按明确理由 skip，但平台中立测试不得为了获得绿色结果而整体跳过。
 
 Broker 的 live transport 测试必须使用当前平台真实支持的地址：Windows 使用每例唯一的
-`\\.\pipe\zcode-cua-test-<random>` named pipe，macOS/Linux 使用受控临时目录中的
+`\\.\pipe\raspberrycode-cua-test-<random>` named pipe，macOS/Linux 使用受控临时目录中的
 Unix socket。认证、NDJSON、dispatch、超时与 graceful-stop 等平台中立契约必须在
 Windows named pipe 上继续执行；只有依赖 socket 文件节点的 `0600/0700`、symlink、
 stale-file 与 unlink 断言允许在 Windows 跳过，并由独立 Windows named-pipe 分支测试
@@ -579,7 +579,7 @@ stale-file 与 unlink 断言允许在 Windows 跳过，并由独立 Windows name
 - Node 版本和 ABI；
 - addon 构建架构；
 - RaspberryCode commit；
-- zcode-cua commit；
+- raspberrycode-cua commit；
 - 测试应用；
 - 是否本地交互 session；
 - 失败日志路径；
@@ -591,8 +591,8 @@ stale-file 与 unlink 断言允许在 Windows 跳过，并由独立 Windows name
 - Web remote replayable 链路完全不进入本设计；
 - local/remote 判断必须在 Helper admission 前完成；
 - 不新增 `workspaceIdentity` 与 `workspacePath` 混用；
-- 不修改 Agent 与 App 的 `@zcode/protocol`，除非后续确实出现新的跨进程产品协议；
-- broker method/schema 变化在 `@zcode/zcode-cua` 内严格校验并保持旧调用兼容；
+- 不修改 Agent 与 App 的 `@raspberrycode/protocol`，除非后续确实出现新的跨进程产品协议；
+- broker method/schema 变化在 `@raspberrycode/raspberrycode-cua` 内严格校验并保持旧调用兼容；
 - IO 使用异步 API；
 - services 日志使用 `createServiceLogger(scope)`；
 - UI 未包含在本阶段；若后续修改 `packages/ui`，实施前必须读取 `DESIGN.md`。
@@ -606,7 +606,7 @@ stale-file 与 unlink 断言允许在 Windows 跳过，并由独立 Windows name
 4. **截图复杂度**：WGC 涉及 WinRT、D3D11、窗口关闭和设备重建，不应作为小型补丁处理。
 5. **焦点竞争风险**：只调用 `SetForegroundWindow` 不能证明输入目标正确。
 6. **测试债务**：现有大量测试将 macOS/POSIX 假设写死，Windows 绿色基线需要先分类。
-7. **版本漂移**：RaspberryCode compile-time `@zcode/zcode-cua`、Helper runtime alias 和 plugin 版本
+7. **版本漂移**：RaspberryCode compile-time `@raspberrycode/raspberrycode-cua`、Helper runtime alias 和 plugin 版本
    当前不完全一致，开发闭环必须记录实际服务端/客户端版本。
 
 ## 18. 已确认项与开放项
@@ -616,7 +616,7 @@ stale-file 与 unlink 断言允许在 Windows 跳过，并由独立 Windows name
 
 1. **已确认：Windows dev Helper 使用当前进程的 Node runtime。** resolver 固定返回
    `command = process.execPath`，并在 child 环境中设置
-   `ELECTRON_RUN_AS_NODE = "1"`。Desktop Host 已对 zcode-agent 使用相同模式；
+   `ELECTRON_RUN_AS_NODE = "1"`。Desktop Host 已对 raspberrycode-agent 使用相同模式；
    CLI/test host 的 `process.execPath` 自然指向 Node。`ax_native.node` 为 N-API addon，
    必须在目标 Windows 机器针对该 runtime 重建。该 resolver 阶段不注入 broker token。
 2. WGC native 层返回 BGRA buffer 还是直接返回 JPEG/PNG。

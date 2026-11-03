@@ -9,7 +9,7 @@
 
 - 当前分支相对 `origin/staging` 的提交和文件差异；
 - `docs/working-memory/provider-refactor` 下的 `design`、`steps`、`plan`、`research`、Bugfix 和实施记录；
-- 当前 `@zcode/provider`、`@zcode/provider-node`、Services、UI、CLI Bootstrap、Adapter 和 Built-in Config；
+- 当前 `@raspberrycode/provider`、`@raspberrycode/provider-node`、Services、UI、CLI Bootstrap、Adapter 和 Built-in Config；
 - 与 Provider 核心行为直接相关的测试；
 - Todo 32 的设计、实现提交和验证记录。
 
@@ -31,7 +31,7 @@
 - 当前 HEAD 与 `origin/staging` 的 merge-base 为 `65fb4532d347194095cca8848e768f0fdbb28939`；
 - 该实现基线相对 staging 有 238 个独有提交，staging 有 236 个独有提交；
 - `origin/staging...HEAD` 全仓差异约 1,271 个文件，包含大量并行产品演进，不能把全量 diff 等同于 Provider Refactor；
-- Provider 核心是本分支新增的 `packages/provider`、`packages/provider-node` 和 `config/provider/zcode-builtin.json`，
+- Provider 核心是本分支新增的 `packages/provider`、`packages/provider-node` 和 `config/provider/raspberrycode-builtin.json`，
   staging 仍主要使用已经被本分支退役的旧 Model Provider Service；
 - 当前 Built-in 内容外壳为 `schemaVersion + revision + config`，内容层有 21 个 Provider、120 条 Model Rule；
 - Todo 32 已由提交 `e01862000f` 完成，相关 UI、i18n、测试和 Design 结果已纳入本次审计。
@@ -61,11 +61,11 @@
 | Settings 候选与 Registry 可执行集同源      | `resolver.ts`、`facades.ts`                                                       | `facades.test.ts`、`registry.test.ts`                            |
 | Account 只投影 entitlement 与 Start models | `account-provider-resolution.ts`、Services `accountProviderConnectionResolver.ts` | `account-provider-resolution.test.ts`、Services 对应测试         |
 | Built-in / Account revision 原子配对       | `registry-service.ts`、`account-provider-service.ts`                              | `registry-service.test.ts`、`account-provider-service.test.ts`   |
-| Personal 持久化、远端 Built-in 与 LKG      | `packages/provider-node/src/*`                                                    | `provider-node-runtime.test.ts`、`zcode-builtin-release.test.ts` |
-| ModelFactory 固定完整执行事实              | `apps/zcode-cli/packages/bootstrap/src/app/provider-registry-model-runtime.ts`    | Bootstrap、Core、Adapter Provider 定向测试                       |
+| Personal 持久化、远端 Built-in 与 LKG      | `packages/provider-node/src/*`                                                    | `provider-node-runtime.test.ts`、`raspberrycode-builtin-release.test.ts` |
+| ModelFactory 固定完整执行事实              | `apps/raspberrycode-cli/packages/bootstrap/src/app/provider-registry-model-runtime.ts`    | Bootstrap、Core、Adapter Provider 定向测试                       |
 | Active Model 使用同结构 properties         | CLI Contracts Model 与 Adapter/Core 消费链                                        | Model input/output、媒体、Compact/Subagent 定向测试              |
 | 设置页经 Facade 读写                       | `packages/provider/src/facades.ts`、UI `useProviderSettingsView.ts`               | Provider settings / coding plan UI tests                         |
-| Built-in 正式内容                          | `config/provider/zcode-builtin.json`                                              | `packages/provider-node/test/zcode-builtin-integrity.test.ts`    |
+| Built-in 正式内容                          | `config/provider/raspberrycode-builtin.json`                                              | `packages/provider-node/test/raspberrycode-builtin-integrity.test.ts`    |
 
 ## 4. 矛盾表述与裁定
 
@@ -73,7 +73,7 @@
 
 **历史表述**：M2/M3 早期材料和实施日志大量使用 `Official Config`。
 **后续裁决**：Todo 10 明确进行一次性命名切换，不保留别名。
-**当前事实**：类型和文件均使用 `zcodeBuiltin*` / `zcode-builtin.json`。
+**当前事实**：类型和文件均使用 `raspberrycodeBuiltin*` / `raspberrycode-builtin.json`。
 **裁定**：现行名称只有 `RaspberryCode Built-in Provider Config` 与 `RaspberryCode Built-in Model Config Rules`。
 旧名称只作为历史引用。
 

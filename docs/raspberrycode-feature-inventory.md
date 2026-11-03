@@ -2,7 +2,7 @@
 
 > 基于当前检出源码逐项核实（含 2026-10-26~30 的"全拆/保留"改造后状态）。
 > 产品定位：AI 编程工作台（CodingAgent 工具），单机版——无登录、BYOK 手动 Key、自配端点。
-> 形态：**桌面应用**（Electron）/ **浏览器界面**（Web）/ **终端 Agent**（CLI + TUI）/ **自托管服务端**（`zcode` server）。
+> 形态：**桌面应用**（Electron）/ **浏览器界面**（Web）/ **终端 Agent**（CLI + TUI）/ **自托管服务端**（`raspberrycode` server）。
 
 ---
 
@@ -81,7 +81,7 @@
 - **API Key 管理**：设置页录入 / 显隐 / 删除 Key，跳转供应商 Key 管理页。
 - **两类访问模式**：`api-key`、`metered-api-key`（计量 Key）；旧值 `zhipu-coding-plan-api-key` 读入自愈归一。
 - **内置供应商模板 20 个**：zai-api / zai-standard-api / bigmodel(-standard)-api / moonshot-kimi / minimax / deepseek / qwen-alibaba-model-studio-cn/intl / xiaomi-mimo(-token-plan) / openai / anthropic / xai / openrouter / opencode 六档，各带内置模型清单。
-- **自定义 Base URL / 端点**：供应商卡片可编辑 baseUrl（归一化保存、端点建议）；全局「服务端点」设置行（`zcodeEndpointOrigin`）。
+- **自定义 Base URL / 端点**：供应商卡片可编辑 baseUrl（归一化保存、端点建议）；全局「服务端点」设置行（`raspberrycodeEndpointOrigin`）。
 - **供应商 CRUD + 连通性测试**；模型元数据编辑（名称/模态/推理等级/排序）。
 - 会话内模型选择器：按供应商分组、徽标（Key 类型、视觉能力）、自定义模型值。
 
@@ -108,21 +108,21 @@
 
 ## 六、扩展生态
 
-- **MCP**：stdio / http 服务器增删改查；多来源导入（mcp / zcodeagentmcp / claudeclimcp / geminiclimcp / codexclimcp / opencodemcp）；官方 MCP 信任/授权通道。
+- **MCP**：stdio / http 服务器增删改查；多来源导入（mcp / raspberrycodeagentmcp / claudeclimcp / geminiclimcp / codexclimcp / opencodemcp）；官方 MCP 信任/授权通道。
 - **插件系统**：含 **UI Plugin**（经 MCP Apps 提供可交互页面，如 Excalidraw 画布协作）；插件管理（暂停/卸载/恢复内置）、来源管理（git/URL/本地目录）。
 - **插件商店**：官方 Marketplace，公开/社区/个人分段、策展推荐、目录自动刷新。
 - **技能（Skills）**：列表/发现/管理、远程同步、技能锁（skills-lock.json）。
 
-## 七、自托管服务端（packages/server + zcode-server-cli）
+## 七、自托管服务端（packages/server + raspberrycode-server-cli）
 
-- HTTP Host（Hono + WebSocket RPC，默认 3030）：静态 Web 托管（SPA fallback）、可选 token 鉴权（`ZCODE_SERVER_AUTH_TOKEN`）。
+- HTTP Host（Hono + WebSocket RPC，默认 3030）：静态 Web 托管（SPA fallback）、可选 token 鉴权（`RASPBERRYCODE_SERVER_AUTH_TOKEN`）。
 - 路由面：`/api/server-info`、`/api/rpc-host-capability`、`/ws/host`（desktop-continuous 实时链路）、`/ws`（web-remote-replayable 恢复链路）、`/api/bots/:provider` Bot 回调（微信/飞书/Lark/Telegram）。
 - stdio Agent Host（设备中间层）。
-- `zcode` server CLI：`serve / status / running-tasks / stop / restart / update / apply-update / uninstall / migrate / proxy-stdio / version`。
+- `raspberrycode` server CLI：`serve / status / running-tasks / stop / restart / update / apply-update / uninstall / migrate / proxy-stdio / version`。
 
 ## 八、界面与设置
 
-- 设置分区：通用 / 外观 / 模型供应商 / 记忆 / 子代理 / 插件 / MCP / 技能 / 命令 / 自动化（含工作流）/ 钩子 / 浏览器 / 远程设备 / 计算机使用 / 快捷键 / 工作区文件搜索（.zcodeignore）/ 用量。
+- 设置分区：通用 / 外观 / 模型供应商 / 记忆 / 子代理 / 插件 / MCP / 技能 / 命令 / 自动化（含工作流）/ 钩子 / 浏览器 / 远程设备 / 计算机使用 / 快捷键 / 工作区文件搜索（.raspberrycodeignore）/ 用量。
 - 主题三态（system / dark / light）、中英双语（zh-CN / en-US）。
 - 终端：系统 Profile 继承、字体、集成终端 Shell 选择。
 - 数据存储路径管理（含迁移复制）、主动建议开关、任务自动归档、快捷键自定义。
@@ -131,9 +131,9 @@
 ## 九、形态与打包
 
 - 桌面打包：`pnpm bundle:desktop`（mac/win/linux × x64/arm64）。
-- 命令行发行包：`pnpm build:zcode` → TUI / `zcode --web` 统一入口；`install.sh` + `latest.json` 安装体系（`~/.raspberrycode/runtime`）。
+- 命令行发行包：`pnpm build:raspberrycode` → TUI / `raspberrycode --web` 统一入口；`install.sh` + `latest.json` 安装体系（`~/.raspberrycode/runtime`）。
 - Web 开发：`pnpm dev:web`（Vite 5173 + 后端 3030 代理）。
-- 品牌数据目录 `~/.raspberrycode`；`ZCODE_DATA_BASE_DIR` 可重定向。
+- 品牌数据目录 `~/.raspberrycode`；`RASPBERRYCODE_DATA_BASE_DIR` 可重定向。
 
 ---
 
@@ -156,4 +156,4 @@
 
 ---
 
-*生成说明：功能条目均带源码证据（工具注册表 `apps/zcode-cli/packages/core/src/tool/handlers/index.ts`、模式枚举 `packages/shared/src/zcode-task-mode-schema.ts` 等），本文为归纳性清单，未逐条附路径；需要定位某一项实现时可按符号名检索。*
+*生成说明：功能条目均带源码证据（工具注册表 `apps/raspberrycode-cli/packages/core/src/tool/handlers/index.ts`、模式枚举 `packages/shared/src/raspberrycode-task-mode-schema.ts` 等），本文为归纳性清单，未逐条附路径；需要定位某一项实现时可按符号名检索。*

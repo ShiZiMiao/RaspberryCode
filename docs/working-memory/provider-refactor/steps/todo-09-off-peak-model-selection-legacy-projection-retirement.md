@@ -165,7 +165,7 @@ AND scoped Registry 中至少存在一个可创建的模型候选
 
 ### 3.3 暂不改 Task 数据库形态
 
-`ZCodeOffPeakTask.model` 和 `thoughtLevel` 是 Off-Peak Task 的产品持久化/API 边界，不是模型事实全集。本
+`RaspberryCodeOffPeakTask.model` 和 `thoughtLevel` 是 Off-Peak Task 的产品持久化/API 边界，不是模型事实全集。本
 Todo 不要求修改 SQLite 列或服务端任务接口：
 
 ```text
@@ -231,7 +231,7 @@ Renderer 的禁用态只是及时反馈，Host / Service 校验才是提交边�
 
 ### 5.1 保留 Off-Peak Mock 网关
 
-`ZCODE_OFFPEAK_MOCK=1` 及其 Ticket/Availability/生命周期场景变量继续用于本地开发和 Desktop E2E：
+`RASPBERRYCODE_OFFPEAK_MOCK=1` 及其 Ticket/Availability/生命周期场景变量继续用于本地开发和 Desktop E2E：
 
 - 模拟远端入口开关和套餐展示态；
 - 模拟 Ticket、queued/ready/active、过期和核销；
@@ -242,13 +242,13 @@ Renderer 的禁用态只是及时反馈，Host / Service 校验才是提交边�
 
 ### 5.2 删除模型列表环境变量
 
-删除 `ZCODE_OFFPEAK_MOCK_ALLOWED_MODELS`。它来源于旧设计中远端 `client/configs.allowed_models` 是模型列表
+删除 `RASPBERRYCODE_OFFPEAK_MOCK_ALLOWED_MODELS`。它来源于旧设计中远端 `client/configs.allowed_models` 是模型列表
 事实源的阶段；当前真实 E2E 不依赖该变量，继续保留会允许 Mock 制造 Registry 不存在的模型。
 
 目标测试链为：
 
 ```text
-ZCODE_OFFPEAK_MOCK
+RASPBERRYCODE_OFFPEAK_MOCK
 |- 模拟产品开关、Ticket 和模型服务
 `- 不模拟模型 Registry
 
@@ -259,7 +259,7 @@ ZCODE_OFFPEAK_MOCK
 测试需要自定义模型时，必须通过测试 RaspberryCode Built-in Config / Built-in Model Rules 声明完整事实，不得用环境变量字符串、
 临时 Model Config、假 Model 或 fallback Model 注入。
 
-保留 `ZCODE_OFFPEAK_MOCK_NO_PLAN` 以及 Ready/Active/Availability/Retry 等场景变量；它们模拟产品或服务状态，
+保留 `RASPBERRYCODE_OFFPEAK_MOCK_NO_PLAN` 以及 Ready/Active/Availability/Retry 等场景变量；它们模拟产品或服务状态，
 不与模型 Registry 争夺事实所有权。
 
 ## 6. 影响面与状态所有权
@@ -344,8 +344,8 @@ capability.off-peak-model-execution
 | OPM-06  | History 模型已退出 Registry               | 查看历史                 | 仍展示已保存字符串，不把它加入候选或重写记录                          | UI unit                      |
 | OPM-07  | 排队后模型/档位退出 Registry              | Scheduler 派发           | 网络前拒绝；任务 permanent failed；不进入 transient 重试              | Host/Scheduler unit          |
 | OPM-08  | Task 未显式模型且 scoped View 非空        | Host 解析默认            | 只取当前 View 有序第一项，不从 Connection/Catalog/假 Model 推断       | Host unit                    |
-| OPM-09  | `ZCODE_OFFPEAK_MOCK=1`                    | 运行 Off-Peak E2E        | 产品服务由 Mock 驱动；模型候选只来自测试 RaspberryCode Built-in Config        | Services + Desktop E2E       |
-| OPM-10  | 测试试图用未知模型                        | 构造测试 Registry / 提交 | 无 `ZCODE_OFFPEAK_MOCK_ALLOWED_MODELS` 入口；缺完整 Config 时明确失败 | Config + Service unit        |
+| OPM-09  | `RASPBERRYCODE_OFFPEAK_MOCK=1`                    | 运行 Off-Peak E2E        | 产品服务由 Mock 驱动；模型候选只来自测试 RaspberryCode Built-in Config        | Services + Desktop E2E       |
+| OPM-10  | 测试试图用未知模型                        | 构造测试 Registry / 提交 | 无 `RASPBERRYCODE_OFFPEAK_MOCK_ALLOWED_MODELS` 入口；缺完整 Config 时明确失败 | Config + Service unit        |
 
 ### 7.2 明确剪枝
 
@@ -394,7 +394,7 @@ RaspberryCode Built-in Config 的代表性主链，不新增大规模 Conversati
 
 ### Step E：Mock 和旧代码归零
 
-- 删除 `ZCODE_OFFPEAK_MOCK_ALLOWED_MODELS` 生产解析、测试和文档；
+- 删除 `RASPBERRYCODE_OFFPEAK_MOCK_ALLOWED_MODELS` 生产解析、测试和文档；
 - 保留 Mock Gateway 及产品/服务状态场景变量；
 - E2E 继续从正式 RaspberryCode Built-in Config 派生测试 Provider，只覆盖 Endpoint 和必要测试事实；
 - 删除失去调用方的 legacy DTO 构造、类型 import、helper 和测试 fixture。
@@ -415,7 +415,7 @@ RaspberryCode Built-in Config 的代表性主链，不新增大规模 Conversati
 - 普通 `ModelSelectionView` 仍过滤 hidden Provider；
 - Off-Peak scoped View 只能解析固定 `OFF_PEAK_PROVIDER_ID`，且复用正式 View projector；
 - UI、创建/编辑校验、默认模型和派发校验读取同一 Registry revision/结构；
-- 无 `ZCODE_OFFPEAK_MOCK_ALLOWED_MODELS`；测试模型只来自测试 RaspberryCode Built-in Config / Registry；
+- 无 `RASPBERRYCODE_OFFPEAK_MOCK_ALLOWED_MODELS`；测试模型只来自测试 RaspberryCode Built-in Config / Registry；
 - 无假 Model、fallback Model、临时 Model Config 或 Registry 外模型能力推断；
 - 失效选择在创建/编辑时不取 Ticket、不写 Repo，在派发时 permanent fail-closed；
 - Task 数据库、Ticket、Account Access、Request Auth、Telemetry、desktop continuous 与 mobile replayable

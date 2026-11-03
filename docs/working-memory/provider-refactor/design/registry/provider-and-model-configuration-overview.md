@@ -311,7 +311,7 @@ Built-in Rules 的稳定组织顺序是发布文件的作者规范，不是运�
 Model Match、Model + API Match、Model + API + Endpoint Match、对全部成员成立的 Provider-scoped Match 和
 少量 Provider-Model Exact Rule；同一模型家族连续排列。`modelMatch` 对完整 Model ID 做 ASCII 大小写不敏感的
 正则匹配；其他 matcher 按各自契约匹配。Rule 仍只按物理数组顺序应用，后命中覆盖前命中。完整维护规范见
-[`zcode-builtin-provider-config.md`](./zcode-builtin-provider-config.md)。
+[`raspberrycode-builtin-provider-config.md`](./raspberrycode-builtin-provider-config.md)。
 
 ## 8. 模型输入输出格式
 

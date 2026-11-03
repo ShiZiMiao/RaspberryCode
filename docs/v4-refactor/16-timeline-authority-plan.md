@@ -19,7 +19,7 @@ P0–P4 全部实现并提交（feature/v4-vertical-slice）：
 | P4 收尾（fork provenance/remap、三路径归一、轮尾闸、守恒 resync、影子重放）        | `f57146467` | ✅                     |
 | P5 持久 session_event journal                                                      | —           | 冻结（§6-5，本轮不做） |
 
-影子重放验收（`apps/zcode-cli/scripts/shadow-replay.mjs`，2026-07-08 本机全量）：
+影子重放验收（`apps/raspberrycode-cli/scripts/shadow-replay.mjs`，2026-07-08 本机全量）：
 3,014 会话 → 0 重放崩溃、0 assistant 正文丢失、0 goalVerify marker 丢失；
 21 个 userInput flag 均为 legacy 文本嗅探消息（无结构标记的 goal-continuation
 reminder / fork notice）的启发式误报，分类器行为正确。
@@ -206,7 +206,7 @@ normalizedOrderKey = (
 
 改动面：
 
-- 新建 Event Normalizer 模块（bootstrap/zcode-protocol-v4），live 事件与 cold 事实共用同一分类入口；
+- 新建 Event Normalizer 模块（bootstrap/raspberrycode-protocol-v4），live 事件与 cold 事实共用同一分类入口；
   `getConversationMessageProjectionPolicy` 收敛为 normalizer 内部实现细节：
   semantics 优先，文本嗅探仅对无 semantics 的 legacy 数据启用并计 diagnostics。
 - `v4-bridge.loadPersistedEvents` 从「事件日志 XOR 合成」改为**三源合并**，

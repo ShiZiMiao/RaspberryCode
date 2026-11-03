@@ -73,12 +73,12 @@ UI 在 `useGroupedTaskView` / `useWorkspaceTaskLists` 里做客户端 join：`li
 - 口径：`workspaceKey = workspaceIdentity?.trim() || workspacePath`（`packages/shared/src/task-realtime-core.ts:92`）。
 - remote 落库值形如 `remote:ssh:dev.internal:22:developer:/work/demo`，即把 ssh 账号写进了主键。
 - 同一口径还被用于：`~/.raspberrycode/v2/sessions/{hash}`、`agent-config/{provider}/{hash}`、CLI memory 目录 hash、web-remote bridge key、automation/off-peak 的 `workspaceKey` 字段。**改主键的同时这些派生 hash 也会变**，需要一并迁移或保留兼容映射。
-- remote 的 `zcodeTaskService` 是 RPC 代理到远端 Host，写的是远端机器自己的 `tasks-index.sqlite`，本机没有远程 session 的索引副本。
+- remote 的 `raspberrycodeTaskService` 是 RPC 代理到远端 Host，写的是远端机器自己的 `tasks-index.sqlite`，本机没有远程 session 的索引副本。
 
 ### 2.3 现有迁移基础设施
 
 - app 侧：**没有** schema 版本号、没有「上次运行版本」记录。sqlite 用 `CREATE TABLE IF NOT EXISTS + ensureColumn`，setting.json 用 zod preprocess 链就地迁移。
-- CLI 侧：`schema_migration(id, checksum, app_version)` + 18 条顺序 migration（`apps/zcode-cli/packages/adapters/src/storage/session-store/migration-runner.ts`），可以直接复用这套模式。
+- CLI 侧：`schema_migration(id, checksum, app_version)` + 18 条顺序 migration（`apps/raspberrycode-cli/packages/adapters/src/storage/session-store/migration-runner.ts`），可以直接复用这套模式。
 - 备份/压缩：已有 `yazl`（exportLogs、feedback）、`backupCorruptFile`、`copyDataDirectory`（basedir 切换用）。**没有**磁盘空间检查。
 - 启动链：main `whenReady` → `mainSettingService.get()` → spawn cron scheduler → 建窗口 → Host `InitLocal` 时首次打开 sqlite。renderer 有 `RootStartupLoading`（`shouldShowRootStartupLoading`）可加一个 `isMigrating` 输入。
 
@@ -86,7 +86,7 @@ UI 在 `useGroupedTaskView` / `useWorkspaceTaskLists` 里做客户端 join：`li
 
 | 配置                                    | 用户级                                    | 项目级路径                                                                  | 解析根                                  | 多层合并规则                                                                                   |
 | --------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| settings（model/permission/ui/storage） | `~/.raspberrycode/cli/config.json`                | `<dir>/zcode.json`、`<dir>/.raspberrycode/config.json`                              | cwd 向上到 git root，根在前 cwd 在后    | 深合并，后者覆盖                                                                               |
+| settings（model/permission/ui/storage） | `~/.raspberrycode/cli/config.json`                | `<dir>/raspberrycode.json`、`<dir>/.raspberrycode/config.json`                              | cwd 向上到 git root，根在前 cwd 在后    | 深合并，后者覆盖                                                                               |
 | MCP servers                             | 同上 `mcp.servers`                        | 同上                                                                        | 同上                                    | 按 name：system → project → **user** → env → cli（用户级覆盖项目级）；project 来源标 untrusted |
 | hooks                                   | `config.json.hooks` 直接可执行            | 同上                                                                        | 同上                                    | 项目级只生成 hookCandidate，走 workspace hook trust                                            |
 | skills                                  | `~/.raspberrycode/skills`、`~/.agents/skills`     | `<dir>/.raspberrycode/skills`、`<dir>/.agents/skills`                               | cwd 向上到 git root 每一级              | 全部可见；同名先发现者胜（用户级 shadow 项目级）                                               |
@@ -98,7 +98,7 @@ UI 在 `useGroupedTaskView` / `useWorkspaceTaskLists` 里做客户端 join：`li
 | plugins                                 | `~/.raspberrycode/cli/plugins` + `config.json`    | 项目 config 的 plugin 段                                                    | 同 settings                             | `resolvePluginConfigSources`                                                                   |
 | workspace-config topic（设置页）        | —                                         | —                                                                           | key = `workspace-config/<workspaceId>`  | 一 workspace 一份                                                                              |
 
-CLI 侧已有一份多工作区草案 `apps/zcode-cli/docs/design/v2/multi-workspace.md`（`WorkspaceScope{primaryRoot, additionalRoots}`、`--add-dir`、roots 存 `local_setting(scope=workspace)`），尚未实现，可作为本次 agent 侧改动的落点。
+CLI 侧已有一份多工作区草案 `apps/raspberrycode-cli/docs/design/v2/multi-workspace.md`（`WorkspaceScope{primaryRoot, additionalRoots}`、`--add-dir`、roots 存 `local_setting(scope=workspace)`），尚未实现，可作为本次 agent 侧改动的落点。
 
 > 2026-10-10：远程单目录、无 Host 分组、项目先于会话、控制端统一混排的最新裁决见 [整合规格](2026-10-10-session-manage-upstream-integration.md)。本篇与其冲突的历史过程记录不再作为实现依据。
 
@@ -232,7 +232,7 @@ PRO01 验证：`desktop-e2e-20260915130441227-p90013-a508c06fba08fa3a` 1/1 通�
 
 #### 2026-10-15 旧执行后端会话可见性修复
 
-项目树与既有任务列表/Controller 使用同一执行后端准入规则：只读取 `tasks.provider = ZCODE_AGENT_PROVIDER`（当前为 `glm`）的任务。此列是执行后端，不是模型供应商；新导入到当前 CLI 的会话仍保留，不能按 `migration_source` 或标题过滤。项目、置顶、未归类、时间线、归档与未读展示均消费该 Host 项目树，远端在所属 Host 执行相同读取。
+项目树与既有任务列表/Controller 使用同一执行后端准入规则：只读取 `tasks.provider = RASPBERRYCODE_AGENT_PROVIDER`（当前为 `glm`）的任务。此列是执行后端，不是模型供应商；新导入到当前 CLI 的会话仍保留，不能按 `migration_source` 或标题过滤。项目、置顶、未归类、时间线、归档与未读展示均消费该 Host 项目树，远端在所属 Host 执行相同读取。
 
 根因：迁移为旧行补齐 `cli_*` 后，项目仓库漏掉旧列表的 provider 过滤，使旧后端行可见，Controller 操作前的列表却找不到它。修复只收口读取，不删除旧行、不重写 provider/时间/组织态、不改已发布 migration/checksum；已有迁移 ledger 的库同样立即生效。不按目录是否存在或是否打开 tab 隐藏正常历史。
 
@@ -447,7 +447,7 @@ Host app 库：任务归属 + 项目当前 roots（唯一配置来源）
        本次运行期间目录范围固定
 ```
 
-实现落点：在 Host 的 `subscribeConversationV4` 发出请求前调用同一目录解析逻辑；可沿用已有 `resumeThoughtLevel` 的参数传递路径，但目录查询错误不能被静默吞掉。同步更新 `packages/shared/src/zcode-protocol/index.ts` 的 create/resume schema 和 `packages/shared/src/zcode-protocol-v4/transport.ts` 的 subscribe schema；将 `additionalDirectories` 贯穿 Gateway → `ColdSessionResumeCoordinator` → `resumePersistedSession` → `activateSessionForResume`，在运行实例构建前交给能力与环境 prompt 消费点。Host 通过服务接口注入解析能力，Renderer 不负责拼装目录列表。
+实现落点：在 Host 的 `subscribeConversationV4` 发出请求前调用同一目录解析逻辑；可沿用已有 `resumeThoughtLevel` 的参数传递路径，但目录查询错误不能被静默吞掉。同步更新 `packages/shared/src/raspberrycode-protocol/index.ts` 的 create/resume schema 和 `packages/shared/src/raspberrycode-protocol-v4/transport.ts` 的 subscribe schema；将 `additionalDirectories` 贯穿 Gateway → `ColdSessionResumeCoordinator` → `resumePersistedSession` → `activateSessionForResume`，在运行实例构建前交给能力与环境 prompt 消费点。Host 通过服务接口注入解析能力，Renderer 不负责拼装目录列表。
 
 实施补充（2026-09-10）：当前 rowsRange / search 等查询也可能先于 subscribe 触发冷恢复。该路径复用既有 `session/requestRuntimePreferences` 的 runtime-materialization 请求，从 Host 同一目录解析接口取得 `additionalDirectories`；不建立另一个目录缓存或同步协议。显式 create/resume/subscribe 的数组仍只在新实例初始化时使用；Host 查询失败必须拒绝初始化。该反向请求已由 READY single-flight 覆盖，因此查询与订阅竞争时只读取一次目录快照。
 
@@ -721,7 +721,7 @@ desktop continuous / mobile replayable -> original attachment, no new runtime
 
 ## 7. 迁移（启动门禁，复用同一迁移实现）
 
-共享迁移模块通过 `@zcode/shared/sqlite-migrations` 导出；CLI/desktop agent 的构建子路径映射必须从 shared 包的 exports 派生，不维护第二份手工子路径清单。实际 bundle 构建与导入属于迁移交付验证，不能只检查 TypeScript 源码。
+共享迁移模块通过 `@raspberrycode/shared/sqlite-migrations` 导出；CLI/desktop agent 的构建子路径映射必须从 shared 包的 exports 派生，不维护第二份手工子路径清单。实际 bundle 构建与导入属于迁移交付验证，不能只检查 TypeScript 源码。
 
 2026-10-10 合并后采用上游的可观测启动门禁：Host Worker 在业务服务初始化前准备 app 库，再用同一 CLI bundle 的存储准备入口准备会话库。Worker 必须读取旧 settings 并传给项目迁移，不能先记账再丢掉旧项目种子。两边复用既有 SQL、checksum、表级备份及 Repo；锁等待异步，提交成功后才发布 ready，不创建第二套会话迁移实现。失败进入启动错误/重试流程；重试以完整 migration ID 幂等跳过已完成的库，不假设两库之间存在原子事务。CLI 正常打开数据库仍检查 migration，覆盖独立 TUI 与远端运行。两个不同名称的 0004 和 CLI 双方迁移都保留，不按序号覆盖；0023_session_soft_delete_outcome 识别开发期已执行的 0020 同内容记录。
 
@@ -823,7 +823,7 @@ workspace 的 CLI 因任何原因可用时（不为交接单独拉起 Agent）
 
 | MR  | 内容                                                                                                                                                                                                                                                    | 主要目录                                             | 验证                                                                                 |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| 1   | CLI 0020 migration、time_deleted / last_outcome、deleteSession 语义、SessionSummary.lastOutcome、`sessionsIndex/reconcile` 命令、additionalDirectories 消费点及 V4 冷恢复参数贯穿、skill/subagent qualifiedName                                         | apps/zcode-cli                                       | 单测 + 协议 schema 测试                                                              |
+| 1   | CLI 0020 migration、time_deleted / last_outcome、deleteSession 语义、SessionSummary.lastOutcome、`sessionsIndex/reconcile` 命令、additionalDirectories 消费点及 V4 冷恢复参数贯穿、skill/subagent qualifiedName                                         | apps/raspberrycode-cli                                       | 单测 + 协议 schema 测试                                                              |
 | 2   | 通用 migration runner（抽自 CLI，加 touchedTables 与表级备份、恢复脚本、逐表哈希单测）、5.1 schema、空间守卫、main 建窗前执行、schema.baseline.sql + CI diff                                                                                            | packages/services、packages/desktop/main、scripts/ci | 单测：各分支 + 升降级 fixture                                                        |
 | 3   | 归属收口：syncer 只写 cli\_\* 与旧列镜像；删 3 处 Date.now；renameTask / deleteTask 改经 CLI 命令并写意图位；7.4 启动对账、惰性交接、snapshot 缺席 reconcile                                                                                            | packages/services                                    | 单测 + e2e 标题 / 状态回归                                                           |
 | 4   | 项目服务：projects/hosts/roots CRUD、move session、软删除与恢复匹配、4.3.1 统一目录解析与三入口注入、F3 首次归位与 NULL 组织态保留、setting.json 双写、预热改上次活动目录、自动归档触发点迁到项目树查询、本机远程项目入口与缓存、离线移除及防止重连重建 | packages/services、packages/shared                   | 单测：含首次归位、重复启动不改归属、默认目录之外的任务自动归档；含入口移除与迟到刷新 |
@@ -1078,7 +1078,7 @@ user selects {hostId, projectId} -> existing Root createTask -> Host prepareSess
 
 ### 当前任务元数据与自动归档收尾（2026-09-11）
 
-- 详情元数据通过已有 workspace-scoped `ZCodeTaskService.getTaskMeta` 读取 Host 索引（CLI 事实镜像 + Host 组织态），不再读取 CLI active runtime 的 `readSession`，也不依赖旧列表/query cache 是否恰好含当前任务。已归档历史直接打开仍可读取标题。首发尚未落索引时只复用现有未提交乐观元数据，不新增事实写者。
+- 详情元数据通过已有 workspace-scoped `RaspberryCodeTaskService.getTaskMeta` 读取 Host 索引（CLI 事实镜像 + Host 组织态），不再读取 CLI active runtime 的 `readSession`，也不依赖旧列表/query cache 是否恰好含当前任务。已归档历史直接打开仍可读取标题。首发尚未落索引时只复用现有未提交乐观元数据，不新增事实写者。
 - 详情读取由现有 active-task hook 拥有；监听当前 workspace 的列表变更、已有 taskListVersion 和 projects 广播重读。请求按 service/attachment + workspaceKey + taskId 隔离；后发请求优先，切换身份或卸载即丢弃迟到结果。失败记录日志，不能拿前一任务标题填当前任务，也不为标题恢复 CLI。
 - 自动归档判据、七天追溯生效及未读 CAS 不变。项目树接受新结果时，只对同 Host + workspaceKey + taskId 从 `archived=false` 变为 `true` 的任务，调用既有 `removeTaskState` 清理本窗口选中态/详情；手动、自动、另一端归档保持相同效果。不把首次读到已归档记录、离线缺行、移除项目入口或失败响应当成归档事件；明确打开既有归档历史仍可查看。
 - 自动归档发生时退出当前详情到原工作区草稿，不自动选中下一条同名任务。导航和草稿仍由现有 session UI store 拥有；项目读取 hook 只比较两个已接受快照，不持久化第二份 archived 或新增同步计时器。
@@ -1157,7 +1157,7 @@ Host 首轮/定时扫描 → SettingService.get → 锁内重读旧配置
 - 最近更新复用现有 timeline 双行任务样式：首行状态与标题，第二行左侧为任务绑定工作目录的末级名称（不是虚拟项目名），右侧为相对更新时间及原有元信息。无状态任务不显示圆点，保留图标槽以对齐标题；未读/错误/运行/置顶/手机激活状态沿用共享行规则。按项目仍用紧凑单行。
 - 日期标题只在已排序并分页的相邻日期段首项前显示，不占分页名额、不重复创建任务分组，也不改变完整任务 key。日期按客户端本地日历和语言计算（en-US 周日开周，zh-CN 周一开周），跨日以日历日期判定，避免夏令时误差；刷新投影/重新渲染时重新派生。追加分页不重复同段标题，时间变化可跨段重排，操作中的行仍由完整任务身份保持。
 - 选择器和渲染层显式接收展示模式，避免渲染层重新套用运行优先。排序时间只来自 CLI 镜像，不从 Host 组织修改时间或 Date.now 派生；pin 不影响时间顺序，archive 成功后退出两种视图。
-- 唯一偏好 owner 为 ProjectDirectoryProvider 中的 useProjectSidebarPreferences。既有 zcode-project-sidebar-preferences 新增 view=projects|timeline，默认/非法值回落 projects；继续保存 expanded。旧 sort 和 zcode-sidebar-task-preferences.sortBy 不再读取，旧折叠保留，Host position 仅作首次种子，项目显示顺序改存控制端 order=[hostId,projectId]。localStorage 不可用时当前窗口仍可切换，桌面/手机各自保存偏好。
+- 唯一偏好 owner 为 ProjectDirectoryProvider 中的 useProjectSidebarPreferences。既有 raspberrycode-project-sidebar-preferences 新增 view=projects|timeline，默认/非法值回落 projects；继续保存 expanded。旧 sort 和 raspberrycode-sidebar-task-preferences.sortBy 不再读取，旧折叠保留，Host position 仅作首次种子，项目显示顺序改存控制端 order=[hostId,projectId]。localStorage 不可用时当前窗口仍可切换，桌面/手机各自保存偏好。
 - 视图切换不改任务归属、当前任务与项目折叠；composer 项目选择器继续共用目录并按手动项目顺序显示，不响应侧栏视图切换。无 Host/CLI/RPC/SQLite 变更。
 - 本地/远端任务来源沿用原项目树可见范围，不为列表建立新连接或任务缓存；身份仍是 Host + (workspaceIdentity.trim() || workspacePath) + taskId。桌面 desktop-continuous 和手机 web-remote-replayable 保持原 shared-host 导航与传输边界。
 
@@ -1188,7 +1188,7 @@ Host readTree + CLI 时间镜像 -> 纯选择器 -> 项目列表 / 最近更新�
 
 桌面验证：`desktop-e2e-20260915131918480-p99856-ceccb6286a056017`，8/8 通过；含 SBV01–05、旧项目交互及 1200/390px 明暗主题截图。相关单测 7 文件 / 45 条通过；`pnpm typecheck`、`pnpm lint`（47 条既有 warning，0 error）及 desktop E2E 类型检查通过。相对 HEAD 的架构检查 0 违规；默认相对 origin/staging 仍有开工前已存在的 `packages/ui/src/root/resolveConversationWorkspaceTarget.ts` 未受管文件错误，本次不改其模块归属。
 
-手机验证：`desktop-e2e-20260915133055419-p10183-be1302f33f03e81a`，1/1 通过；Chrome for Testing 以 390×844、hasTouch/isMobile 访问本仓 Web，经真实 relay/shared-host 完成搜索、两种视图与刷新恢复、任务重开和连续切换保留当前任务，桌面 task 标记及 Host/tab 数断言通过。用例使用隔离 HOME 与既有 synthetic provider fixture；新入口使用 touch tap，菜单关闭后继续下一操作。取 Host 证据后关闭资源管理器，避免检查器持续采样干扰待启动 CLI。通过 `ZCODE_E2E_BROWSER_NO_PROXY=1` 与 `ZCODE_E2E_MOBILE_BROWSER_EXECUTABLE` 选用测试浏览器直连，未关闭 TLS 校验。
+手机验证：`desktop-e2e-20260915133055419-p10183-be1302f33f03e81a`，1/1 通过；Chrome for Testing 以 390×844、hasTouch/isMobile 访问本仓 Web，经真实 relay/shared-host 完成搜索、两种视图与刷新恢复、任务重开和连续切换保留当前任务，桌面 task 标记及 Host/tab 数断言通过。用例使用隔离 HOME 与既有 synthetic provider fixture；新入口使用 touch tap，菜单关闭后继续下一操作。取 Host 证据后关闭资源管理器，避免检查器持续采样干扰待启动 CLI。通过 `RASPBERRYCODE_E2E_BROWSER_NO_PROXY=1` 与 `RASPBERRYCODE_E2E_MOBILE_BROWSER_EXECUTABLE` 选用测试浏览器直连，未关闭 TLS 校验。
 
 范围说明：手机证据为浏览器触屏模拟中的真实 shared-host 链路，不是实体手机；Windows/Linux 快捷键由单测覆盖，未在对应操作系统跑 GUI。跨 Host 同路径/同 taskId 的排序身份由单测覆盖，未新增 SSH/WSL 真机验证。默认 staging 架构基线问题保持单独记录，不记为本次增量通过。
 

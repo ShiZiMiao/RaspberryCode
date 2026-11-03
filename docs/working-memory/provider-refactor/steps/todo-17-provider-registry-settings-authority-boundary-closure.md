@@ -4,7 +4,7 @@
 >
 > 历史说明：本 Todo 建立的 Host/Repository 权威和细粒度保存边界仍有效；Provider/Model 创建、删除、来源、启用、
 > 重复成员与排序交互已由
-> [`Todo 21`](./todo-21-zcode-builtin-config-ownership-and-model-activation-order.md) 重新裁决。
+> [`Todo 21`](./todo-21-raspberrycode-builtin-config-ownership-and-model-activation-order.md) 重新裁决。
 >
 > 日期：2026-08-25
 >

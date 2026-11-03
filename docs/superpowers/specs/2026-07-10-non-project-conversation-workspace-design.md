@@ -2,7 +2,7 @@
 
 ## 目标
 
-新用户不再必须先选择项目，也不再自动创建 `~/ZCodeProject`。应用在内部使用一个稳定的 conversation backing workspace：
+新用户不再必须先选择项目，也不再自动创建 `~/RaspberryCodeProject`。应用在内部使用一个稳定的 conversation backing workspace：
 
 ```text
 workspacePath = <dataBaseDir>/.raspberrycode/workspace/default
@@ -58,7 +58,7 @@ Main 是首次 bootstrap 权威；Renderer 只消费完整 descriptor，或在�
 - “任务”右侧图标调用同一 `startDraft` 流程，但 target 固定为 conversation backing workspace，不能继承当前活动项目。
 - “任务”中的任务使用普通单行 row，不显示内部 backing workspace 的 `default` 目录名，也不显示无业务含义的普通 idle 灰点；未读、错误和运行中状态继续复用共享 leading indicator。
 - “项目”右侧 `+` 菜单只含“打开文件夹”和“远程连接”，复用 Root 已有操作；按 capability 隐藏不可用项。
-- 两个 section 的展开态和 `sectionOrder` 通过 renderer-local `zcode-sidebar-purpose-section-preferences` 持久化，首次、坏数据或 storage 不可用时使用默认值；右侧 action 不改变展开态。本地偏好不进入 Host/Agent，不要求其它已打开窗口实时同步。
+- 两个 section 的展开态和 `sectionOrder` 通过 renderer-local `raspberrycode-sidebar-purpose-section-preferences` 持久化，首次、坏数据或 storage 不可用时使用默认值；右侧 action 不改变展开态。本地偏好不进入 Host/Agent，不要求其它已打开窗口实时同步。
 - 顶部 `Expand all` / `Collapse all` 在按项目视图中同时控制“项目”section 和所有 workspace 行，不影响“任务”；section 收起不清除 workspace 行展开态、任务缓存或 DnD 顺序。
 - 顶部全局“新建任务”与快捷键仍使用当前活动 workspace。
 - conversation 列表只包含非 pinned、非 archived 的 `purpose=conversation` 任务；默认折叠数量和“显示更多”沿用单 workspace 列表。

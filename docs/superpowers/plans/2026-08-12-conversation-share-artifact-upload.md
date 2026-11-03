@@ -22,14 +22,14 @@ Record source authority, state pruning, upload ordering, integrity, failure beha
 ### Task 2: Add the formal artifact row
 
 **Files:**
-- Modify: `packages/shared/src/zcode-protocol-v4/rows.ts`
+- Modify: `packages/shared/src/raspberrycode-protocol-v4/rows.ts`
 - Modify: `packages/shared/src/conversation-share.ts`
 - Test: `packages/shared/test/conversationShareContract.test.ts`
-- Modify: `apps/zcode-cli/packages/contracts/src/events/session.events.ts`
-- Modify: `apps/zcode-cli/packages/bootstrap/src/zcode-protocol-v4/product-projection.ts`
-- Modify: `apps/zcode-cli/packages/bootstrap/src/zcode-protocol-v4/transcript-hydration.ts`
-- Test: `apps/zcode-cli/packages/bootstrap/tests/product-projection.test.ts`
-- Test: `apps/zcode-cli/packages/bootstrap/tests/transcript-hydration.test.ts`
+- Modify: `apps/raspberrycode-cli/packages/contracts/src/events/session.events.ts`
+- Modify: `apps/raspberrycode-cli/packages/bootstrap/src/raspberrycode-protocol-v4/product-projection.ts`
+- Modify: `apps/raspberrycode-cli/packages/bootstrap/src/raspberrycode-protocol-v4/transcript-hydration.ts`
+- Test: `apps/raspberrycode-cli/packages/bootstrap/tests/product-projection.test.ts`
+- Test: `apps/raspberrycode-cli/packages/bootstrap/tests/transcript-hydration.test.ts`
 
 Write failing schema/live/cold tests, then project completed tool attachments as deterministic artifact rows. Keep text-only paths unrecognized.
 

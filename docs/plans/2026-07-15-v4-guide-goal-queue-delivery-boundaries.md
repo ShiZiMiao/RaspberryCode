@@ -223,8 +223,8 @@ manual verifier Stop/abort
 **Files:**
 
 - Modify: `packages/ui/test/*ConversationComposer*.test.ts`
-- Modify: `apps/zcode-cli/packages/core/tests/*steer*.test.ts`
-- Modify: `apps/zcode-cli/packages/bootstrap/tests/v4-native-queue.test.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/tests/*steer*.test.ts`
+- Modify: `apps/raspberrycode-cli/packages/bootstrap/tests/v4-native-queue.test.ts`
 - Modify: contracts/projection focused tests
 
 - [ ] 增加 V4 guide mode 按钮、Enter、ACK 后清空测试，并确认当前实现失败。
@@ -249,8 +249,8 @@ manual verifier Stop/abort
 
 **Files:**
 
-- Modify: `apps/zcode-cli/packages/core/src/runtime/methods/turn-loop.ts`
-- Modify: `apps/zcode-cli/packages/core/src/runtime/methods/steering.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/methods/turn-loop.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/methods/steering.ts`
 - Modify: tool execution/model-step runtime methods
 
 - [ ] 删除 generic round-trip 对普通 queue 的 inline drain 能力。
@@ -276,7 +276,7 @@ manual verifier Stop/abort
 
 **Files:**
 
-- Modify: `apps/zcode-cli/packages/bootstrap/src/zcode-protocol/v4-bridge.ts`
+- Modify: `apps/raspberrycode-cli/packages/bootstrap/src/raspberrycode-protocol/v4-bridge.ts`
 - Reuse: target completion verification/fail-open contracts
 
 - [ ] 将普通 auto-promotion guard 收敛成一个可单测 helper：head queued + autoDrain + no active controller + session ready + (`target=null` 或 `target.status=complete`)。

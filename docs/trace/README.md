@@ -1,6 +1,6 @@
 # CLI Agent Trace
 
-本目录定义 `apps/zcode-cli` 内部 Agent 的 OpenTelemetry 执行链路。文档分为核心规范和专题参考
+本目录定义 `apps/raspberrycode-cli` 内部 Agent 的 OpenTelemetry 执行链路。文档分为核心规范和专题参考
 两个层级：核心规范定义稳定的设计、边界和接入方式；专题参考展开底层概念、完整字段以及运行时与
 运维细节。
 
@@ -19,8 +19,8 @@
 ## 相邻但独立的本地观测
 
 - [Desktop Renderer 用户操作 Trace](./desktop-renderer-user-action-trace.md)
-- [CLI 本地 Usage Observability](../../apps/zcode-cli/docs/design/v2/usage-observability.md)
-- [CLI 本地 Debug Observability](../../apps/zcode-cli/docs/design/v2/debug-observability.md)
+- [CLI 本地 Usage Observability](../../apps/raspberrycode-cli/docs/design/v2/usage-observability.md)
+- [CLI 本地 Debug Observability](../../apps/raspberrycode-cli/docs/design/v2/debug-observability.md)
 
 Desktop Renderer Trace 只记录 Desktop UI 语义操作，不传播到 CLI；Usage 和 Debug 文档保留在
 CLI 包内，分别描述本地 SQLite 事实源和本地调试设施。它们不属于 CLI Agent ARMS Trace Schema，

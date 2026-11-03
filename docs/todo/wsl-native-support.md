@@ -150,9 +150,9 @@ export const HostMessageTypes = {
 ```typescript
 export const PlatformChannels = {
   ...
-  ConnectRemote: "zcode:connect-remote",
-  ConnectWSL: "zcode:connect-wsl",    // 新增
-  ListWSLDistros: "zcode:list-wsl-distros", // 新增
+  ConnectRemote: "raspberrycode:connect-remote",
+  ConnectWSL: "raspberrycode:connect-wsl",    // 新增
+  ListWSLDistros: "raspberrycode:list-wsl-distros", // 新增
   ...
 };
 ```
@@ -173,7 +173,7 @@ export const PlatformChannels = {
   try {
     const connection = await setupWSLConnection(msg.wslOptions, msg.remoteAssets);
     // 后续注册服务的逻辑与 InitRemote 完全一致
-    // file/system/terminal/zcode task/session → 来自 WSL（远端）
+    // file/system/terminal/raspberrycode task/session → 来自 WSL（远端）
     // setting/credential/broadcast → 本地
     ...
     parentPort.postMessage({ type: HostResponseTypes.Connected });
@@ -190,7 +190,7 @@ async function setupWSLConnection(
   options: WSLConnectOptions,
   remoteAssets: RemoteAssetDirs,
 ): Promise<RemoteConnection> {
-  const { WSLBackend } = await import("@zcode/server/remote");
+  const { WSLBackend } = await import("@raspberrycode/server/remote");
   const backend = new WSLBackend(options);
   return connectRemote(backend, remoteAssets);
   // connectRemote() 完全复用 —— 它只依赖 IRemoteBackend 接口
@@ -232,7 +232,7 @@ ipcMain.handle(PlatformChannels.ConnectWSL, async (_event, rawOptions) => {
 });
 
 ipcMain.handle(PlatformChannels.ListWSLDistros, async () => {
-  const { listWSLDistros } = await import("@zcode/server/remote");
+  const { listWSLDistros } = await import("@raspberrycode/server/remote");
   return listWSLDistros();
 });
 ```
@@ -243,7 +243,7 @@ ipcMain.handle(PlatformChannels.ListWSLDistros, async () => {
 
 **文件**: `packages/desktop/src/preload/index.ts`
 
-在 `window.zcode` 上新增：
+在 `window.raspberrycode` 上新增：
 
 ```typescript
 connectWSL: (options: WSLConnectOptions) =>
@@ -267,7 +267,7 @@ listWSLDistros(): Promise<WSLDistro[]>;
 
 **文件**: `packages/desktop/src/renderer/src/main.tsx`
 
-Desktop 实现接入 `window.zcode.connectWSL` / `window.zcode.listWSLDistros`。
+Desktop 实现接入 `window.raspberrycode.connectWSL` / `window.raspberrycode.listWSLDistros`。
 
 **文件**: `web/src/main.tsx`
 

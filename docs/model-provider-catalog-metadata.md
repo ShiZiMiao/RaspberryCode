@@ -3,7 +3,7 @@
 > 历史文档：本文描述的方案先被 OpenCode config 过渡方案取代，随后又被 Provider Refactor
 > 取代。当前权威设计见 `docs/working-memory/provider-refactor/design/`；
 > `docs/model-provider-opencode-config.md` 同样只保留为历史迁移记录。本文描述的是已经被取代的
-> `models_catalog_china_llm_zcode_2026-06-03.json` 和 `model-providers.v2.json`
+> `models_catalog_china_llm_raspberrycode_2026-06-03.json` 和 `model-providers.v2.json`
 > 方案，只作为历史背景保留。
 
 ## 范围
@@ -15,7 +15,7 @@
 `modelProviderService.getCatalogProviders(sourceId)` 统一返回 app 内 catalog model：
 
 - `models-dev`：从 models.dev schema 转成统一 catalog。
-- `china-llm-zcode-dev`：读取仓库根目录 `models_catalog_china_llm_zcode_2026-06-03.json`。
+- `china-llm-raspberrycode-dev`：读取仓库根目录 `models_catalog_china_llm_raspberrycode_2026-06-03.json`。
 
 中国 LLM catalog 的 `endpoints.baseURL + endpoints.paths[kind]` 表示完整请求地址。写入 agent registry 前会归一化成运行时 SDK 需要的 API base URL，避免 OpenAI compatible SDK 再追加 `/chat/completions` 时生成重复路径。
 
@@ -25,7 +25,7 @@
 
 ```json
 {
-  "schemaVersion": "zcode.model-providers.v2",
+  "schemaVersion": "raspberrycode.model-providers.v2",
   "providers": []
 }
 ```

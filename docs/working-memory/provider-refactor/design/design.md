@@ -71,7 +71,7 @@ Effective Built-in Provider Config         Effective Model Config Rules
 Provider Config 固定按以下顺序解析：
 
 ```ts
-effectiveBuiltinProviders = zcodeBuiltinProviders.overlay(accountBuiltinProviders);
+effectiveBuiltinProviders = raspberrycodeBuiltinProviders.overlay(accountBuiltinProviders);
 effectiveProviders = effectiveBuiltinProviders.overlay(personalProviders);
 ```
 
@@ -87,7 +87,7 @@ effectiveProviders = effectiveBuiltinProviders.overlay(personalProviders);
 Model Config Rules 固定按以下顺序组合：
 
 ```ts
-effectiveModelRules = ModelConfigRules.composeEffective(zcodeBuiltinModelRules, personalModelRules);
+effectiveModelRules = ModelConfigRules.composeEffective(raspberrycodeBuiltinModelRules, personalModelRules);
 ```
 
 其内部顺序是 `RaspberryCode Built-in + Personal provider-model`。Personal JSON 只保存精确 Rule，物理排列
@@ -101,7 +101,7 @@ Overlay。`Effective` 只表示 Overlay/解析已经完成，不产生第二套�
 
 RaspberryCode Built-in Release 的 Provider/Rule 排列、Match/Exact Rule 写作层级、Endpoint 特化、证据边界和默认
 启用目录维护规范见
-[`registry/zcode-builtin-provider-config.md`](./registry/zcode-builtin-provider-config.md)。
+[`registry/raspberrycode-builtin-provider-config.md`](./registry/raspberrycode-builtin-provider-config.md)。
 
 模型历史回放、请求编码兼容与 Provider Access 产品协议的归属见
 [`registry/request-compatibility-and-access-protocols.md`](./registry/request-compatibility-and-access-protocols.md)。
@@ -269,7 +269,7 @@ Desktop continuous、Mobile replayable、Queue、snapshot 和 workspace identity
 
 - [`registry/registry.md`](./registry/registry.md)：Config 如何成为 Registry 和 Model。
 - [`registry/configuration.md`](./registry/configuration.md)：字段、Overlay、Visibility、Access、Rules 和存储。
-- [`registry/zcode-builtin-provider-config.md`](./registry/zcode-builtin-provider-config.md)：Built-in Provider/Model Rule 的发布维护规范。
+- [`registry/raspberrycode-builtin-provider-config.md`](./registry/raspberrycode-builtin-provider-config.md)：Built-in Provider/Model Rule 的发布维护规范。
 - [`registry/model-membership-and-enablement.md`](./registry/model-membership-and-enablement.md)：模型成员所有权、重名冲突、启停与 UI。
 - [`registry/model-creation.md`](./registry/model-creation.md)：ModelFactory、Adapter 和请求期鉴权。
 - [`model/model.md`](./model/model.md)：Model、ModelRequest、Options、生命周期和归因。

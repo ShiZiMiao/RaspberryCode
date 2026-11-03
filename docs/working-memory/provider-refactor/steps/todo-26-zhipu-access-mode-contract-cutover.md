@@ -301,7 +301,7 @@ Start 模型集合；新状态未解析成功时等待或 fail-closed。
   `execution-provided`、`planKind`静态字段、`challenge`、`requestSigning` 和 `executionProtocol`。
 - Account Overlay 只投影 `enabled` 与 Start 账号模型集合；固定 `account:*` Provider 的 Personal Source
   严格拒绝 `access`。
-- 动态 `ZCodeAccountAccess.planKind` 仍表达当前账号连接解析结果，不是 Provider Config 的静态字段。
+- 动态 `RaspberryCodeAccountAccess.planKind` 仍表达当前账号连接解析结果，不是 Provider Config 的静态字段。
 - Off-Peak 保留固定 Provider ID、Group 和运行时 Ticket/重试语义；特殊行为由
   `access.type=zhipu-account + mode=off-peak` 驱动。
 - 已通过 Provider、Provider Node、Services、Adapter 与 Bootstrap 定向回归；Adapter 全量仅剩两个与本轮

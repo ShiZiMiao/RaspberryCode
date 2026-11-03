@@ -28,25 +28,25 @@
 
 - Create: `docs/plan-mode-plan-file-compact-continuity.md`
   - 记录当前小 hack 的产品边界、路径合同、compact reminder 合同、非目标。
-- Modify: `apps/zcode-cli/docs/design/v2/tool/16-plan-mode.md`
+- Modify: `apps/raspberrycode-cli/docs/design/v2/tool/16-plan-mode.md`
   - 更新当前 RaspberryCode plan mode 设计说明：`ExitPlanMode.plan` 仍保留，但审批通过后写 plan file，compact 后用 `plan_file_reference` 恢复。
-- Create: `apps/zcode-cli/packages/core/src/runtime/helpers/plan-file-continuity.ts`
+- Create: `apps/raspberrycode-cli/packages/core/src/runtime/helpers/plan-file-continuity.ts`
   - 封装 plan file 路径、写入、读取、`plan_file_reference` entry 构造。
-- Modify: `apps/zcode-cli/packages/core/src/runtime/helpers/index.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/helpers/index.ts`
   - 导出 `plan-file-continuity.ts`。
-- Modify: `apps/zcode-cli/packages/core/src/tool/handlers/plan-mode.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/tool/handlers/plan-mode.ts`
   - `ExitPlanMode` 审批通过后 best-effort 写入 plan file，再退出 plan mode；写失败不阻断退出。
-- Modify: `apps/zcode-cli/packages/core/src/system-reminder/source.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/system-reminder/source.ts`
   - 新增 persisted source：`plan_file_reference`。
-- Modify: `apps/zcode-cli/packages/core/src/runtime/methods/compact-active.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/methods/compact-active.ts`
   - compact 成功时把 plan file reference entry 放入 `postCompactReminderEntries`，排在 read-state reminders 前。
-- Create: `apps/zcode-cli/packages/core/tests/plan-file-continuity.test.ts`
+- Create: `apps/raspberrycode-cli/packages/core/tests/plan-file-continuity.test.ts`
   - 覆盖路径、写入、读取、reminder 正文。
-- Modify: `apps/zcode-cli/packages/core/tests/plan-mode-tool.test.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/tests/plan-mode-tool.test.ts`
   - 覆盖 `ExitPlanMode` 审批后的 plan file 写入和写失败仍退出 plan mode。
-- Modify: `apps/zcode-cli/packages/core/tests/system-reminder-source.test.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/tests/system-reminder-source.test.ts`
   - 覆盖 `plan_file_reference` source 分组、descriptor、wrapper。
-- Modify: `apps/zcode-cli/packages/core/tests/runtime-compact.test.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/tests/runtime-compact.test.ts`
   - 覆盖 compact 后 runtime history/provider context 包含 `plan_file_reference` 完整 plan。
 - Modify: `docs/conversation-session-case-catalog.md`
   - 新增 plan approval + compact continuity accepted case。
@@ -55,7 +55,7 @@
 - Create: `packages/desktop/test/e2e/conversation-session/manual-review/pending/conversation-session-plan-file-compact-continuity.test.ts`
   - 通过真实桌面窗口验证 plan approval、plan file 落盘、`/compact`、后续 provider request 中 plan continuity。
 - After manual review, move: `packages/desktop/test/e2e/conversation-session/manual-review/pending/conversation-session-plan-file-compact-continuity.test.ts` -> `packages/desktop/test/e2e/conversation-session/conversation-session-plan-file-compact-continuity.test.ts`
-  - 通过 `pnpm --filter @zcode/desktop e2e:promote -- --spec ./test/e2e/conversation-session/manual-review/pending/conversation-session-plan-file-compact-continuity.test.ts --reviewed --apply` 完成移动和脚手架生成。
+  - 通过 `pnpm --filter @raspberrycode/desktop e2e:promote -- --spec ./test/e2e/conversation-session/manual-review/pending/conversation-session-plan-file-compact-continuity.test.ts --reviewed --apply` 完成移动和脚手架生成。
 
 ---
 
@@ -65,7 +65,7 @@
 
 **Files:**
 - Create: `docs/plan-mode-plan-file-compact-continuity.md`
-- Modify: `apps/zcode-cli/docs/design/v2/tool/16-plan-mode.md`
+- Modify: `apps/raspberrycode-cli/docs/design/v2/tool/16-plan-mode.md`
 
 **Interfaces:**
 - Consumes: 当前 `ExitPlanModeInputSchema` 仍要求 `plan: string`。
@@ -124,7 +124,7 @@ ${planContent}
 
 - [ ] **Step 2: 更新 plan mode 设计文档**
 
-In `apps/zcode-cli/docs/design/v2/tool/16-plan-mode.md`, keep the current statement that RaspberryCode `ExitPlanMode` receives `plan` in tool input, and add a subsection named `审批后 plan file 连续性` containing:
+In `apps/raspberrycode-cli/docs/design/v2/tool/16-plan-mode.md`, keep the current statement that RaspberryCode `ExitPlanMode` receives `plan` in tool input, and add a subsection named `审批后 plan file 连续性` containing:
 
 ```markdown
 ### 审批后 plan file 连续性
@@ -147,7 +147,7 @@ ${planContent}
 Run:
 
 ```bash
-rg -n "runtime injected|provider-visible.*allowedPrompts|remove.*plan|filePath output|EnterPlanMode.*draft|schema parity" docs/plan-mode-plan-file-compact-continuity.md apps/zcode-cli/docs/design/v2/tool/16-plan-mode.md
+rg -n "runtime injected|provider-visible.*allowedPrompts|remove.*plan|filePath output|EnterPlanMode.*draft|schema parity" docs/plan-mode-plan-file-compact-continuity.md apps/raspberrycode-cli/docs/design/v2/tool/16-plan-mode.md
 ```
 
 Expected: no lines that require removing provider-visible `plan` or adding injected input. Lines inside the `非目标` section are acceptable only when they explicitly say the item is not implemented.
@@ -159,8 +159,8 @@ Expected: no lines that require removing provider-visible `plan` or adding injec
 ### Task 1.1: 先写 plan-file continuity helper 单测
 
 **Files:**
-- Create: `apps/zcode-cli/packages/core/tests/plan-file-continuity.test.ts`
-- Use existing: `apps/zcode-cli/packages/core/tests/memory-test-utils.ts`
+- Create: `apps/raspberrycode-cli/packages/core/tests/plan-file-continuity.test.ts`
+- Use existing: `apps/raspberrycode-cli/packages/core/tests/memory-test-utils.ts`
 
 **Interfaces:**
 - Produces expected signatures:
@@ -171,11 +171,11 @@ Expected: no lines that require removing provider-visible `plan` or adding injec
 
 - [ ] **Step 1: Add failing helper tests**
 
-Create `apps/zcode-cli/packages/core/tests/plan-file-continuity.test.ts`:
+Create `apps/raspberrycode-cli/packages/core/tests/plan-file-continuity.test.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest";
-import { createRootTraceContext, createSessionId } from "@zcode/contracts";
+import { createRootTraceContext, createSessionId } from "@raspberrycode/contracts";
 import { MemoryFileSystem } from "./memory-test-utils.js";
 import {
   formatPlanFileReference,
@@ -269,7 +269,7 @@ describe("plan file continuity", () => {
 Run:
 
 ```bash
-pnpm --filter @zcode/core test -- plan-file-continuity.test.ts
+pnpm --filter @raspberrycode/core test -- plan-file-continuity.test.ts
 ```
 
 Expected: FAIL with module resolution error for `../src/runtime/helpers/plan-file-continuity.js`.
@@ -277,8 +277,8 @@ Expected: FAIL with module resolution error for `../src/runtime/helpers/plan-fil
 ### Task 1.2: 实现 plan-file continuity helper
 
 **Files:**
-- Create: `apps/zcode-cli/packages/core/src/runtime/helpers/plan-file-continuity.ts`
-- Modify: `apps/zcode-cli/packages/core/src/runtime/helpers/index.ts`
+- Create: `apps/raspberrycode-cli/packages/core/src/runtime/helpers/plan-file-continuity.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/helpers/index.ts`
 
 **Interfaces:**
 - Consumes: `FileSystemPort`, `PLAN_MODE_MAX_PLAN_CHARS`, `systemReminderAttachmentEntry`.
@@ -286,7 +286,7 @@ Expected: FAIL with module resolution error for `../src/runtime/helpers/plan-fil
 
 - [ ] **Step 1: Add helper implementation**
 
-Create `apps/zcode-cli/packages/core/src/runtime/helpers/plan-file-continuity.ts`:
+Create `apps/raspberrycode-cli/packages/core/src/runtime/helpers/plan-file-continuity.ts`:
 
 ```ts
 import { join } from "node:path";
@@ -298,7 +298,7 @@ import {
   type FileSystemPort,
   type SessionId,
   type TraceContext,
-} from "@zcode/contracts";
+} from "@raspberrycode/contracts";
 import {
   systemReminderAttachmentEntry,
   type RuntimeMessageEntry,
@@ -408,7 +408,7 @@ function sanitizePlanFileSessionId(sessionId: SessionId | string): string {
 
 - [ ] **Step 2: Export helper**
 
-Append to `apps/zcode-cli/packages/core/src/runtime/helpers/index.ts`:
+Append to `apps/raspberrycode-cli/packages/core/src/runtime/helpers/index.ts`:
 
 ```ts
 export * from "./plan-file-continuity.js";
@@ -419,7 +419,7 @@ export * from "./plan-file-continuity.js";
 Run:
 
 ```bash
-pnpm --filter @zcode/core test -- plan-file-continuity.test.ts
+pnpm --filter @raspberrycode/core test -- plan-file-continuity.test.ts
 ```
 
 Expected: PASS all five tests.
@@ -431,7 +431,7 @@ Expected: PASS all five tests.
 ### Task 2.1: 先写 ExitPlanMode 写入/失败行为测试
 
 **Files:**
-- Modify: `apps/zcode-cli/packages/core/tests/plan-mode-tool.test.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/tests/plan-mode-tool.test.ts`
 
 **Interfaces:**
 - Consumes: `writeApprovedPlanFile()` from Phase 1.
@@ -442,7 +442,7 @@ Expected: PASS all five tests.
 In `createPlanModeExecutor()` test helper input type, add:
 
 ```ts
-  fileSystemPort?: import("@zcode/contracts").FileSystemPort;
+  fileSystemPort?: import("@raspberrycode/contracts").FileSystemPort;
   workingDirectory?: string;
   workspaceRoot?: string;
 ```
@@ -553,7 +553,7 @@ Add this test in `describe("plan mode tools", ...)`:
 Run:
 
 ```bash
-pnpm --filter @zcode/core test -- plan-mode-tool.test.ts
+pnpm --filter @raspberrycode/core test -- plan-mode-tool.test.ts
 ```
 
 Expected: FAIL because `ExitPlanMode` has not written the plan file yet.
@@ -561,7 +561,7 @@ Expected: FAIL because `ExitPlanMode` has not written the plan file yet.
 ### Task 2.2: 写入 approved plan file 再退出 plan mode
 
 **Files:**
-- Modify: `apps/zcode-cli/packages/core/src/tool/handlers/plan-mode.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/tool/handlers/plan-mode.ts`
 
 **Interfaces:**
 - Consumes: `writeApprovedPlanFile()`.
@@ -569,7 +569,7 @@ Expected: FAIL because `ExitPlanMode` has not written the plan file yet.
 
 - [ ] **Step 1: Import helper**
 
-In `apps/zcode-cli/packages/core/src/tool/handlers/plan-mode.ts`, add:
+In `apps/raspberrycode-cli/packages/core/src/tool/handlers/plan-mode.ts`, add:
 
 ```ts
 import { writeApprovedPlanFile } from "../../runtime/helpers/plan-file-continuity.js";
@@ -627,7 +627,7 @@ In `exitPlanModeHandler`, after the mode check and before `context.sessionModePo
 Run:
 
 ```bash
-pnpm --filter @zcode/core test -- plan-mode-tool.test.ts plan-file-continuity.test.ts
+pnpm --filter @raspberrycode/core test -- plan-mode-tool.test.ts plan-file-continuity.test.ts
 ```
 
 Expected: PASS. The existing output shape still includes `plan`, `approved`, `previousMode`, `mode`, and `allowedPrompts`; no `planFilePath` output field is introduced.
@@ -639,7 +639,7 @@ Expected: PASS. The existing output shape still includes `plan`, `approved`, `pr
 ### Task 3.1: 先写 system reminder source 测试
 
 **Files:**
-- Modify: `apps/zcode-cli/packages/core/tests/system-reminder-source.test.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/tests/system-reminder-source.test.ts`
 
 **Interfaces:**
 - Produces: `plan_file_reference` is a persisted `history_continuity` / `resume_history` meta provider-visible reminder source.
@@ -686,7 +686,7 @@ Add:
 Run:
 
 ```bash
-pnpm --filter @zcode/core test -- system-reminder-source.test.ts
+pnpm --filter @raspberrycode/core test -- system-reminder-source.test.ts
 ```
 
 Expected: FAIL because `plan_file_reference` is not registered yet.
@@ -694,7 +694,7 @@ Expected: FAIL because `plan_file_reference` is not registered yet.
 ### Task 3.2: 注册 `plan_file_reference`
 
 **Files:**
-- Modify: `apps/zcode-cli/packages/core/src/system-reminder/source.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/system-reminder/source.ts`
 
 **Interfaces:**
 - Consumes: persisted compact reminder entry metadata source.
@@ -750,7 +750,7 @@ immediately after `resume_referenced_session_context`.
 Run:
 
 ```bash
-pnpm --filter @zcode/core test -- system-reminder-source.test.ts
+pnpm --filter @raspberrycode/core test -- system-reminder-source.test.ts
 ```
 
 Expected: PASS.
@@ -762,7 +762,7 @@ Expected: PASS.
 ### Task 4.1: 先写 compact runtime 回归测试
 
 **Files:**
-- Modify: `apps/zcode-cli/packages/core/tests/runtime-compact.test.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/tests/runtime-compact.test.ts`
 
 **Interfaces:**
 - Consumes: `readApprovedPlanFileReferenceEntry()`.
@@ -770,7 +770,7 @@ Expected: PASS.
 
 - [ ] **Step 1: Add regression test near existing compact post-reminder tests**
 
-In `apps/zcode-cli/packages/core/tests/runtime-compact.test.ts`, add this import near the existing test helper imports:
+In `apps/raspberrycode-cli/packages/core/tests/runtime-compact.test.ts`, add this import near the existing test helper imports:
 
 ```ts
 import { MemoryFileSystem } from "./memory-test-utils.js";
@@ -874,7 +874,7 @@ it("persists approved plan file reference after compact so resume keeps the full
 Run:
 
 ```bash
-pnpm --filter @zcode/core test -- runtime-compact.test.ts -t "persists approved plan file reference after compact"
+pnpm --filter @raspberrycode/core test -- runtime-compact.test.ts -t "persists approved plan file reference after compact"
 ```
 
 Expected: FAIL because `compactActiveConversation()` only appends read-state reminders today.
@@ -882,7 +882,7 @@ Expected: FAIL because `compactActiveConversation()` only appends read-state rem
 ### Task 4.2: Append plan file reference before generic read-state reminders
 
 **Files:**
-- Modify: `apps/zcode-cli/packages/core/src/runtime/methods/compact-active.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/methods/compact-active.ts`
 
 **Interfaces:**
 - Consumes: `readApprovedPlanFileReferenceEntry()`.
@@ -935,7 +935,7 @@ with:
 Run:
 
 ```bash
-pnpm --filter @zcode/core test -- runtime-compact.test.ts -t "persists approved plan file reference after compact"
+pnpm --filter @raspberrycode/core test -- runtime-compact.test.ts -t "persists approved plan file reference after compact"
 ```
 
 Expected: PASS.
@@ -945,7 +945,7 @@ Expected: PASS.
 Run:
 
 ```bash
-pnpm --filter @zcode/core test -- plan-file-continuity.test.ts plan-mode-tool.test.ts system-reminder-source.test.ts runtime-compact.test.ts
+pnpm --filter @raspberrycode/core test -- plan-file-continuity.test.ts plan-mode-tool.test.ts system-reminder-source.test.ts runtime-compact.test.ts
 ```
 
 Expected: PASS for the four targeted files.
@@ -957,7 +957,7 @@ Expected: PASS for the four targeted files.
 ### Task 5.1: 确认 provider-visible tool schema 没有被小 hack 改动
 
 **Files:**
-- Modify: `apps/zcode-cli/packages/core/tests/tool-contracts.test.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/tests/tool-contracts.test.ts`
 
 **Interfaces:**
 - Consumes: existing `ExitPlanModeInputSchema`.
@@ -965,7 +965,7 @@ Expected: PASS for the four targeted files.
 
 - [ ] **Step 1: Add or update tool-contract assertion**
 
-In the plan-mode portion of `apps/zcode-cli/packages/core/tests/tool-contracts.test.ts`, ensure there is an assertion equivalent to:
+In the plan-mode portion of `apps/raspberrycode-cli/packages/core/tests/tool-contracts.test.ts`, ensure there is an assertion equivalent to:
 
 ```ts
 expect(exitPlanModeContract.inputSchema).toHaveProperty("properties.plan");
@@ -978,7 +978,7 @@ expect(exitPlanModeContract.inputSchema).not.toHaveProperty("properties.filePath
 Run:
 
 ```bash
-pnpm --filter @zcode/core test -- tool-contracts.test.ts
+pnpm --filter @raspberrycode/core test -- tool-contracts.test.ts
 ```
 
 Expected: PASS. Any failure blocks completion until its source is identified; do not edit unrelated files while diagnosing this gate.
@@ -996,7 +996,7 @@ Expected: PASS. Any failure blocks completion until its source is identified; do
 Run:
 
 ```bash
-pnpm --filter @zcode/core test -- runtime-compact.test.ts -t "persists approved plan file reference after compact" --reporter verbose
+pnpm --filter @raspberrycode/core test -- runtime-compact.test.ts -t "persists approved plan file reference after compact" --reporter verbose
 ```
 
 Expected: PASS. The assertion must inspect the post-resume provider request messages and must include both `A plan file exists from plan mode at:` and `E2E_PLAN_FILE_COMPACT_CONTINUITY_MARKER`.
@@ -1226,7 +1226,7 @@ async function readLatestPlanFile(): Promise<{ content: string; path: string }> 
 Run:
 
 ```bash
-pnpm --filter @zcode/desktop typecheck:e2e
+pnpm --filter @raspberrycode/desktop typecheck:e2e
 ```
 
 Expected: PASS.
@@ -1244,7 +1244,7 @@ Expected: PASS.
 Run:
 
 ```bash
-ZCODE_E2E_MANUAL_REVIEW=1 pnpm --filter @zcode/desktop test:e2e -- --spec './test/e2e/conversation-session/manual-review/pending/conversation-session-plan-file-compact-continuity.test.ts'
+RASPBERRYCODE_E2E_MANUAL_REVIEW=1 pnpm --filter @raspberrycode/desktop test:e2e -- --spec './test/e2e/conversation-session/manual-review/pending/conversation-session-plan-file-compact-continuity.test.ts'
 ```
 
 Expected:
@@ -1287,7 +1287,7 @@ Expected:
 Run:
 
 ```bash
-pnpm --filter @zcode/desktop e2e:promote -- --spec ./test/e2e/conversation-session/manual-review/pending/conversation-session-plan-file-compact-continuity.test.ts --reviewed --apply
+pnpm --filter @raspberrycode/desktop e2e:promote -- --spec ./test/e2e/conversation-session/manual-review/pending/conversation-session-plan-file-compact-continuity.test.ts --reviewed --apply
 ```
 
 Expected:
@@ -1328,7 +1328,7 @@ The fixture may reuse `packages/desktop/test/e2e/fixtures/upstream/common.json` 
 Run:
 
 ```bash
-pnpm --filter @zcode/desktop e2e:fixture:check -- --spec './test/e2e/conversation-session/conversation-session-plan-file-compact-continuity.test.ts'
+pnpm --filter @raspberrycode/desktop e2e:fixture:check -- --spec './test/e2e/conversation-session/conversation-session-plan-file-compact-continuity.test.ts'
 ```
 
 Expected: PASS.
@@ -1338,7 +1338,7 @@ Expected: PASS.
 Run:
 
 ```bash
-pnpm --filter @zcode/desktop test:e2e -- --spec './test/e2e/conversation-session/conversation-session-plan-file-compact-continuity.test.ts'
+pnpm --filter @raspberrycode/desktop test:e2e -- --spec './test/e2e/conversation-session/conversation-session-plan-file-compact-continuity.test.ts'
 ```
 
 Expected: PASS. The replay must assert `plan_file_reference` in the post-compact provider request, not only visible UI completion.
@@ -1358,8 +1358,8 @@ Expected: PASS.
 Run:
 
 ```bash
-pnpm --filter @zcode/core test -- plan-file-continuity.test.ts plan-mode-tool.test.ts system-reminder-source.test.ts runtime-compact.test.ts
-pnpm --filter @zcode/desktop typecheck:e2e
+pnpm --filter @raspberrycode/core test -- plan-file-continuity.test.ts plan-mode-tool.test.ts system-reminder-source.test.ts runtime-compact.test.ts
+pnpm --filter @raspberrycode/desktop typecheck:e2e
 pnpm typecheck
 pnpm lint
 ```
@@ -1397,7 +1397,7 @@ Expected: shows the docs, core, tests, and E2E files changed by this implementat
 - Generic read-state reminders remain independent and still skip `docs/superpowers/plans/`.
 - Conversation-session catalog and coverage matrix include the new accepted case before E2E implementation.
 - The E2E is run through a visible desktop window, passes, is promoted, and passes replay/fixture checks.
-- `pnpm --filter @zcode/desktop typecheck:e2e`, `pnpm typecheck`, and `pnpm lint` pass or have clearly documented unrelated pre-existing failures.
+- `pnpm --filter @raspberrycode/desktop typecheck:e2e`, `pnpm typecheck`, and `pnpm lint` pass or have clearly documented unrelated pre-existing failures.
 - No commit is created automatically.
 
 ## Change Surface and Cost

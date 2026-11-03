@@ -64,7 +64,7 @@ runtime projection 与下游 skill/command/MCP adapter 是否能完整兼容。
 - manifest path 形式（例如 `skills: "./skills/"`、`commands: "./commands/"`、
   `mcpServers: "./.mcp.json"`）可投影。
 - `.mcp.json` 可被读取并转换为 RaspberryCode `McpServerConfig`。
-- MCP env 中 `${CLAUDE_PLUGIN_ROOT}`、`${CLAUDE_PLUGIN_DATA}`、`${ZCODE_PROJECT_DIR}`
+- MCP env 中 `${CLAUDE_PLUGIN_ROOT}`、`${CLAUDE_PLUGIN_DATA}`、`${RASPBERRYCODE_PROJECT_DIR}`
   等变量可替换。
 
 认为不兼容或需单独诊断：
@@ -77,7 +77,7 @@ runtime projection 与下游 skill/command/MCP adapter 是否能完整兼容。
 Claude 插件规范里 manifest `skills` 的数组项指向「技能目录本身」（项内直接是
 `SKILL.md`，如 `./skills/engineering/tdd`）；字符串形式则指向「技能集合目录」
 （其下一层子目录各自是技能）。两类形态统一由共享扫描规则
-（`apps/zcode-cli/packages/adapters/src/skills/scan.ts`）处理：
+（`apps/raspberrycode-cli/packages/adapters/src/skills/scan.ts`）处理：
 
 - 技能根自身含 `SKILL.md` 时，根自身就是一个技能（数组项语义，与桌面 services 侧
   `skillDiscoveryWalk` 的 depth-0 产出一致）；
@@ -101,7 +101,7 @@ Claude 插件规范里 manifest `skills` 的数组项指向「技能目录本身
 ## 验证命令
 
 ```bash
-pnpm --filter @zcode/adapters test plugins
+pnpm --filter @raspberrycode/adapters test plugins
 pnpm typecheck
 pnpm lint
 ```

@@ -6,7 +6,7 @@
 
 ## 工具
 
-MCP server 名称建议配置为 `zcode_image_payload_test`，工具名为 `emit_image`。
+MCP server 名称建议配置为 `raspberrycode_image_payload_test`，工具名为 `emit_image`。
 
 输入：
 
@@ -25,10 +25,10 @@ RaspberryCode Agent MCP 用户配置位于 `~/.raspberrycode/cli/config.json` �
 {
   "mcp": {
     "servers": {
-      "zcode_image_payload_test": {
+      "raspberrycode_image_payload_test": {
         "type": "stdio",
         "command": "node",
-        "args": ["/Users/dev/workspace/z-code/scripts/mcp-image-payload-test-server.mjs"]
+        "args": ["/Users/dev/workspace/raspberrycode/scripts/mcp-image-payload-test-server.mjs"]
       }
     }
   }

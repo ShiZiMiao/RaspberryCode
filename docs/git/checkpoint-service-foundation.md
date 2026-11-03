@@ -95,7 +95,7 @@ flowchart LR
   Repo --> Cmd["GitCommandProvider"]
   Cmd --> GitCLI["System Git CLI"]
   Store --> Manifest["~/.raspberrycode/v2/checkpoints/{workspaceHash}/{checkpointId}.json"]
-  Repo --> HiddenRef["refs/zcode/checkpoints/{workspaceHash}/{checkpointId}"]
+  Repo --> HiddenRef["refs/raspberrycode/checkpoints/{workspaceHash}/{checkpointId}"]
 ```
 
 这张图对应当前实现的两条关键原则：
@@ -180,7 +180,7 @@ manifest 当前只保存：
 每个 checkpoint 都会创建一个 hidden ref：
 
 ```text
-refs/zcode/checkpoints/{workspaceHash}/{checkpointId}
+refs/raspberrycode/checkpoints/{workspaceHash}/{checkpointId}
 ```
 
 当前实现里，hidden ref 的作用是：
@@ -205,7 +205,7 @@ refs/zcode/checkpoints/{workspaceHash}/{checkpointId}
 4. 执行 `git add -A -- <workspace pathspec>`，把当前 workspace scope 的 live 状态写入临时 index
 5. 执行 `git write-tree`
 6. 执行 `git commit-tree`
-7. 执行 `git update-ref refs/zcode/checkpoints/...`
+7. 执行 `git update-ref refs/raspberrycode/checkpoints/...`
 8. 返回 `GitCheckpointMeta`
 9. `GitCheckpointStore.save()` 写入 manifest
 

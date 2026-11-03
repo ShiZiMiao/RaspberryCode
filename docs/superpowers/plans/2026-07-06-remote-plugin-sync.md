@@ -50,7 +50,7 @@
 - Produces: `createPluginSyncService(options?: { maxArchiveBytes?: number }): IPluginSyncService`.
 
 - [ ] Implement config reading/writing for `~/.raspberrycode/cli/config.json`.
-- [ ] Implement manifest discovery for `.zcode-plugin`, `.claude-plugin`, `.codex-plugin`.
+- [ ] Implement manifest discovery for `.raspberrycode-plugin`, `.claude-plugin`, `.codex-plugin`.
 - [ ] Implement safe archive create/extract with size limits.
 - [ ] Implement remote import with no-overwrite conflict checks.
 - [ ] Run service tests until green.

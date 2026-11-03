@@ -27,7 +27,7 @@
 - Modify: `packages/server/test/localTarGz.test.ts`
 - Modify: `packages/server/src/remote/localTarGz.ts`
 - Modify: `packages/server/test/remoteDeploy.test.ts`
-- Modify: `packages/server/src/remote/zcodeAgentDeploy.ts`
+- Modify: `packages/server/src/remote/raspberrycodeAgentDeploy.ts`
 
 **Interfaces:**
 - Consumes: `createTarGzArchive(archivePath, entries)` and the existing ustar header format.
@@ -80,7 +80,7 @@ git add docs/superpowers/specs/2026-07-06-remote-plugin-sync-design.md \
   docs/superpowers/plans/2026-07-10-ssh-plugin-archive-permissions.md \
   packages/server/src/remote/localTarGz.ts \
   packages/server/test/localTarGz.test.ts \
-  packages/server/src/remote/zcodeAgentDeploy.ts \
+  packages/server/src/remote/raspberrycodeAgentDeploy.ts \
   packages/server/test/remoteDeploy.test.ts
 git commit -m "fix(remote): normalize uploaded archive directory modes"
 ```

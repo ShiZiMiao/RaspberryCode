@@ -60,14 +60,14 @@ import { describe, expect, it } from "vitest";
 import {
   encodeCustomModelValue,
   type ModelProviderConfig,
-  type ZCodeConfigOption,
-} from "@zcode/shared";
+  type RaspberryCodeConfigOption,
+} from "@raspberrycode/shared";
 import { resolveTargetModelContextWindow } from "@/chat-input-toolbar/modelSwitchContextWindowGuard.js";
 
 function createModelOption(
   value: string,
   providerId = "builtin:zai",
-): ZCodeConfigOption {
+): RaspberryCodeConfigOption {
   return {
     id: "model",
     name: "Model",
@@ -215,10 +215,10 @@ import {
   resolveModelProviderContextWindow,
   type ModelProviderConfig,
   type ModelProviderModelEntry,
-  type ZCodeConfigOption,
-  type ZCodeProvider,
-} from "@zcode/shared";
-import { decodeCustomModelValue } from "@/lib/zcodeCustomModelValue.js";
+  type RaspberryCodeConfigOption,
+  type RaspberryCodeProvider,
+} from "@raspberrycode/shared";
+import { decodeCustomModelValue } from "@/lib/raspberrycodeCustomModelValue.js";
 
 export interface TargetModelContextWindow {
   contextWindow: number;
@@ -228,8 +228,8 @@ export interface TargetModelContextWindow {
 
 export interface ResolveTargetModelContextWindowParams {
   modelProviders: readonly ModelProviderConfig[];
-  option: ZCodeConfigOption;
-  selectedProvider: ZCodeProvider;
+  option: RaspberryCodeConfigOption;
+  selectedProvider: RaspberryCodeProvider;
   value: string;
 }
 
@@ -260,7 +260,7 @@ function modelIdCandidates(value: string): string[] {
   return [...candidates].filter(Boolean);
 }
 
-function resolveOptionProviderId(option: ZCodeConfigOption, value: string): string | null {
+function resolveOptionProviderId(option: RaspberryCodeConfigOption, value: string): string | null {
   if (option.type !== "select") {
     return null;
   }
@@ -271,7 +271,7 @@ function resolveOptionProviderId(option: ZCodeConfigOption, value: string): stri
 function findProvider(
   modelProviders: readonly ModelProviderConfig[],
   providerId: string | null,
-  selectedProvider: ZCodeProvider,
+  selectedProvider: RaspberryCodeProvider,
 ): ModelProviderConfig | null {
   if (providerId) {
     const exact = modelProviders.find((provider) => provider.id === providerId);
@@ -944,23 +944,23 @@ At the top of `useToolbarModelChange.ts`, add:
 ```ts
 import { toast } from "@/components/ui/toast.js";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
-import { isTaskRuntimeBusy } from "@/lib/zcodeTaskRuntimeMonitorTypes.js";
-import { getTaskRuntimeState, useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
+import { isTaskRuntimeBusy } from "@/lib/raspberrycodeTaskRuntimeMonitorTypes.js";
+import { getTaskRuntimeState, useRaspberryCodeSessionStore } from "@/store/raspberrycodeSessionStore.js";
 import {
   resolveTargetModelContextWindow,
   runModelSwitchContextWindowGuard,
 } from "./modelSwitchContextWindowGuard.js";
 ```
 
-Remove the existing duplicate `useZCodeSessionStore` import line if needed so the file imports it only once.
+Remove the existing duplicate `useRaspberryCodeSessionStore` import line if needed so the file imports it only once.
 
 - [ ] **Step 4: Initialize dialog and formatter hooks**
 
 Inside `useToolbarModelChange`, before the returned `useCallback`, add:
 
 ```ts
-  const { intl, locale } = useZCodeIntl();
+  const { intl, locale } = useRaspberryCodeIntl();
   const confirmDialog = useConfirmDialog();
   const numberFormatter = new Intl.NumberFormat(locale);
 ```
@@ -978,7 +978,7 @@ Inside the returned callback, after `modelChangeNotice` and `runExistingModelSel
       });
 
       if (params.taskId && targetContext) {
-        const workspaceState = useZCodeSessionStore
+        const workspaceState = useRaspberryCodeSessionStore
           .getState()
           .getWorkspaceState(params.workspacePath, params.workspaceIdentity);
         const taskRuntime = getTaskRuntimeState(workspaceState, params.taskId);
@@ -1027,7 +1027,7 @@ Inside the returned callback, after `modelChangeNotice` and `runExistingModelSel
                 );
               },
               readContextUsedAfterCompression: () => {
-                const latestWorkspaceState = useZCodeSessionStore
+                const latestWorkspaceState = useRaspberryCodeSessionStore
                   .getState()
                   .getWorkspaceState(params.workspacePath, params.workspaceIdentity);
                 const latestUsage = getTaskRuntimeState(

@@ -90,7 +90,7 @@ Changed-file formatting and `git diff --check` passed.
 
 Live verification resumed on 2026-09-08 after the Mac was unlocked. The existing
 `pnpm dev:desktop` process completed startup (Electron PID 17515, local Host 17711;
-development log `/tmp/zcode-topic-dev.log`). Computer Use operated Ryan Bot in the
+development log `/tmp/raspberrycode-topic-dev.log`). Computer Use operated Ryan Bot in the
 real `RaspberryCode 群聊验证` group (`oc_da0fa1e9e7e9f852894c8d6aaca1c044`).
 
 - `/history on` returned the native opt-in confirmation. An ordinary root message
@@ -137,7 +137,7 @@ card-control scenarios, Lark, physical mobile remote control and
 Windows/Linux remain unverified. TP-02 stays pending.
 
 The 2026-09-08 evidence-update pre-push attempt stopped with `ENOSPC` while loading
-`zcodeAgentService.v4.test.ts` (22 files / 339 tests passed before the failed suite;
+`raspberrycodeAgentService.v4.test.ts` (22 files / 339 tests passed before the failed suite;
 no tests ran in that suite). Only about 159 MiB remained on the system volume.
 This is an environment failure, not a passing gate or a confirmed implementation
 regression. After disk space recovered to 12 GiB, the complete
@@ -584,7 +584,7 @@ regressions, not a real phone, native attachment upload or native card race test
 ### Native dedicated-topic file boundary (2026-09-08, incomplete)
 
 Computer Use uploaded the synthetic 154-byte file
-`zcode-topic-attachment-verification.txt` to CEDAR in the dedicated test group.
+`raspberrycode-topic-attachment-verification.txt` to CEDAR in the dedicated test group.
 The native history API confirmed file message `om_x100b66ccd1ebe0a8c22a536e7f67b07`
 in thread `omt_19fa0d1df1cfda52`, chat `oc_6596fb27f96a81b6ee5c34cc09be6089`.
 No bot mention was sent with this file, and no file-analysis input was admitted.
@@ -705,7 +705,7 @@ TP-03 的 Feishu／Lark 交互卡服务场景2条通过，共2个文件通过，
 不作为原生卡片或端到端 UI 证据；TP-01 不覆盖真实飞书文件下载。
 
 14:31:46 开发进程恢复，Host33325 记录 `local services ready, all channels registered`，
-日志 `/tmp/zcode-topic-post-wdio-dev.log`。本次重新构建包含取消／断连修复；
+日志 `/tmp/raspberrycode-topic-post-wdio-dev.log`。本次重新构建包含取消／断连修复；
 提交前校验另在 `/tmp/topic-post-wdio-prepush.log` 运行，原生读取结果仍待用户重测。
 
 该次提交前检查最终退出1：related Vitest 被 SIGSEGV 终止，未输出完整断言报告，
@@ -740,7 +740,7 @@ Desktop 与手机远控分别验证（窄 Desktop 不代替手机）；窄屏机
 - 浏览器：桌面/手机宽度 × 中英文 × 深浅主题，真实组件和样式；准备、等待、失败移除及接收重叠；正文沿用正式消息折叠/展开，loading 位于渠道/姓名旁。
 - 真实 Desktop/手机远控/飞书 E2E 待验证，不将窄屏 Chrome 计为真实手机验收。
 
-本次组件验证：上述浏览器 8 组通过并人工查看深浅主题截图；准备态/原始消息展开/消息编辑 42 项单测及时间线/标记回归 33 项通过；根 typecheck、architecture:check --changed 通过，lint 0 error、48 warning。截图在系统临时目录 `zcode-topic-preparation/`。
+本次组件验证：上述浏览器 8 组通过并人工查看深浅主题截图；准备态/原始消息展开/消息编辑 42 项单测及时间线/标记回归 33 项通过；根 typecheck、architecture:check --changed 通过，lint 0 error、48 warning。截图在系统临时目录 `raspberrycode-topic-preparation/`。
 
 2026-09-17 后续修正：准备消息进入 ConversationTurnGroup 消息流，共用完整正文组件，状态/失败/重试在同一气泡 DOM 内。新增 render-unit 与真实 turn-group 组件回归，覆盖未产生 CLI rows、running live tail 保留及正式输入接替；140 项相关单测通过。根 typecheck、lint（0 error，48 warning）、架构检查通过；浏览器 8 组通过。真实飞书与手机远控仍待验收。
 
@@ -794,7 +794,7 @@ checker 对结果 marker 的提示不代表输入匹配缺失，结果 marker �
 - `desktop-e2e-20260923072023647-p32033-0a7006ae178b1ce2`：MN-02/FN-01、GR-02 正常晋升/PS-01、GR-UI-01 共 4 tests 通过。该批 TP-05 的初版文件断言把工具文本误按完整 JSON 解析而失败，后续已按真实工具输出格式修正。
 - `desktop-e2e-20260923072235577-p39368-fb67b05b6f0e5ef6`：TP-04/05 两项通过；MN-01 四项、PS-01 三渠道三项、runtime authority 两项、remote disconnected 一项、automation result 一项、provider interactions 三项通过。GR runtime 与旧 TP-03 夹具失败分别记录，不把该批整体写成通过。
 - `pnpm typecheck`、Desktop `typecheck:e2e`、`architecture:check --changed` 通过；6 个相关单测文件共 149 tests 通过。
-- 根 `pnpm lint` 失败于本次未改文件的 max-lines：`packages/shared/src/zcode-protocol-v4/command.ts` 405，`packages/ui/src/v4/conversationTurnRenderUnits.ts` 401；本次修改的测试与 helper 定向 lint 0 error/0 warning。
+- 根 `pnpm lint` 失败于本次未改文件的 max-lines：`packages/shared/src/raspberrycode-protocol-v4/command.ts` 405，`packages/ui/src/v4/conversationTurnRenderUnits.ts` 401；本次修改的测试与 helper 定向 lint 0 error/0 warning。
 
 未关闭的问题与边界：
 

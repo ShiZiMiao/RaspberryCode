@@ -54,9 +54,9 @@ deployment.environment.name
 process.runtime.name
 os.type
 host.arch
-zcode.telemetry.schema_version
-zcode.product.version
-zcode.runtime.surface
+raspberrycode.telemetry.schema_version
+raspberrycode.product.version
+raspberrycode.runtime.surface
 ```
 
 它适合回答“哪一个服务、版本、进程和运行面产生了数据”。Session、Turn、登录用户会变化，不
@@ -65,7 +65,7 @@ zcode.runtime.surface
 同一个 Resource 会附在许多 Span 上，但不是业务代码给每个 Span 重复调用 Setter。OTel SDK
 在导出时组合 Resource 与 Span 数据。
 
-Trace Resource 包含 `service.instance.id` 和 `zcode.device.installation_id`，便于单次诊断。
+Trace Resource 包含 `service.instance.id` 和 `raspberrycode.device.installation_id`，便于单次诊断。
 Metric Resource 刻意去掉这两个高基数值，否则每个短生命周期 CLI 进程都会制造新的时序。
 
 ### 2.2 TracerProvider 与 Tracer
@@ -76,7 +76,7 @@ Owner，其中包含一个 TracerProvider 和一个 MeterProvider。
 Tracer 通过 Instrumentation Scope 标识“哪个库创建了这些 Span”：
 
 ```text
-name    = @zcode/cli-agent-telemetry
+name    = @raspberrycode/cli-agent-telemetry
 version = Telemetry Schema Version
 ```
 
@@ -193,7 +193,7 @@ Span 偷偷成为 Parent。
 当前 Link Attribute：
 
 ```text
-zcode.link.relation = spawned_by | triggered_by | resumed_from
+raspberrycode.link.relation = spawned_by | triggered_by | resumed_from
 ```
 
 ### 5.3 `AgentTelemetryCausation`
@@ -330,7 +330,7 @@ CLI Agent 当前不使用业务 Baggage：
 5. **用 Event 统计独立耗时。** Event 没有独立终态；需要 SLO 就建 Child Span。
 6. **把日志、Trace 和 Metric 混为一体。** 三者采集方式、隐私、基数和查询用途不同。
 7. **同时把动态值放进 Span Name。** 使用稳定 Span Name，动态事实进入受控 Attribute。
-8. **把 GenAI 字段当内部 Schema。** `zcode.*` 是权威字段，兼容字段由 Adapter 投影。
+8. **把 GenAI 字段当内部 Schema。** `raspberrycode.*` 是权威字段，兼容字段由 Adapter 投影。
 
 ## 10. 进一步阅读
 

@@ -291,13 +291,13 @@ Model Selection Repository，并在 Standalone 模式管理 Credential subscript
 ### F7. 物理 `official` 命名仍向领域 API 扩散
 
 状态：已裁决，进入
-[`steps/todo-10-zcode-builtin-provider-config-naming-cutover.md`](./steps/todo-10-zcode-builtin-provider-config-naming-cutover.md)。
+[`steps/todo-10-raspberrycode-builtin-provider-config-naming-cutover.md`](./steps/todo-10-raspberrycode-builtin-provider-config-naming-cutover.md)。
 
 当前 `officialProviders`、`officialSource` 和 `OfficialProviderConfigSource` 仍大量存在。领域语义统一为
 RaspberryCode Built-in Provider Config。
 
 领域类型、服务、Source、Facade、变量、物理文件、环境变量和 SEA asset 必须在同一次切换中统一迁移到
-`zcodeBuiltin*` / `zcode-builtin` 语义。当前分支尚未上线，不保留旧字段、旧路径、alias、fallback 或 importer。
+`raspberrycodeBuiltin*` / `raspberrycode-builtin` 语义。当前分支尚未上线，不保留旧字段、旧路径、alias、fallback 或 importer。
 
 ### F8. 完整 Model Properties 仍被作为未知态跨层传播
 
@@ -309,7 +309,7 @@ RaspberryCode Built-in Provider Config。
 
 - Bootstrap Runtime 用 `requireCompleteProperties()` 再次逐字段判断并复制；
 - Selection 只有在全部字段存在时才发送 Protocol `properties`，否则静默省略；
-- Protocol 的格式叶子必填，但 `ZCodeModelOption.properties` 整体 optional；
+- Protocol 的格式叶子必填，但 `RaspberryCodeModelOption.properties` 整体 optional；
 - Settings Draft 用 `support_text ?? true`、其他格式 `?? false` 补默认；
 - Adapter 已解析模型和消息转换继续接受 optional `properties/input_format`；
 - 旧 Catalog merge 在缺能力时硬编码 true/false。
@@ -351,7 +351,7 @@ Config；缺失项继承 Built-in Rule，不能补迁移默认或形成通用 Ru
 
 | State/fact                       | Draft/display owner          | Authoritative owner          | Commit command/service    | Persistence/cache                    |
 | -------------------------------- | ---------------------------- | ---------------------------- | ------------------------- | ------------------------------------ |
-| Built-in Provider/Model Config   | Settings View 只读投影       | Built-in Config Source       | 产品发布                  | `config/provider/zcode-builtin.json` |
+| Built-in Provider/Model Config   | Settings View 只读投影       | Built-in Config Source       | 产品发布                  | `config/provider/raspberrycode-builtin.json` |
 | Account Built-in Provider Config | Settings/Selection View 投影 | Account Provider Service     | Account refresh           | process-local last-known-good        |
 | Personal Provider/Model Config   | Renderer Draft               | Personal Config Repository   | Provider Settings Service | 当前 Environment Personal Config     |
 | Effective Provider Config        | Facade View                  | Resolver/Registry Snapshot   | Source refresh/rebuild    | 不独立持久化                         |

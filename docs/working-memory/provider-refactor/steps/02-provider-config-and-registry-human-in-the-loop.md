@@ -1083,7 +1083,7 @@ Host 随旧协议携带的 `runtimeModel` 在 Registry 进程中不再写入 Wor
   revision 已删除；
 - App 不再公开 `setModelCatalogOverlay`，也不再保存 Workspace 级 Provider/Model Overlay；
   闲时等单次执行仍通过独立的 Turn Overlay 进入，不会恢复长期 Workspace Catalog；
-- `createZCodeApp` 必须注入进程 Registry；测试与内部工具使用显式测试 Registry，不再通过缺少
+- `createRaspberryCodeApp` 必须注入进程 Registry；测试与内部工具使用显式测试 Registry，不再通过缺少
   可选参数进入旧 Runtime Model Config 装配；
 - 冷恢复 usage 的 context window 使用当前 App Runtime 已固定的模型属性；
 - `workspace/readState` 是纯投影接口，不接收 `runtimeModel`，也不修改 Active Session；

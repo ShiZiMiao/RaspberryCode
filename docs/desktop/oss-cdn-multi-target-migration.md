@@ -1,3 +1,5 @@
+> **历史记录声明（2026-11-03）**：本文档记录的是旧产品线（上游）的 CDN 多目标迁移史实，其中的域名/配置为当时事实，按原貌保留，不代表产品现行配置（现行默认端点为 `https://your-server.example` 占位、CDN 必须显式注入）。
+
 # OSS/CDN 多目标迁移
 
 ## 背景
@@ -9,9 +11,9 @@
 迁移切换只通过 CI 环境变量完成：
 
 ```bash
-CDN_DOMAIN=cdn-zcode.z.ai,cdn.zcode-ai.com,cdn.codegeex.cn
+CDN_DOMAIN=cdn-raspberrycode.z.ai,cdn.raspberrycode-ai.com,cdn.codegeex.cn
 OSS_BUCKET=new-bucket,old-bucket-a,old-bucket-b
-OSS_PATH_PREFIX=zcode/electron/releases
+OSS_PATH_PREFIX=raspberrycode/electron/releases
 OSS_CONFIG_FILE=/etc/ossutil/new,/etc/ossutil/old-a,/etc/ossutil/old-b
 ```
 
@@ -34,19 +36,19 @@ R3 Source Server 版本不再新增 legacy manifest/components；这条保留规
 配置三组目标：
 
 ```bash
-CDN_DOMAIN=cdn-zcode.z.ai,cdn.zcode-ai.com,cdn.codegeex.cn
+CDN_DOMAIN=cdn-raspberrycode.z.ai,cdn.raspberrycode-ai.com,cdn.codegeex.cn
 OSS_BUCKET=new-bucket,old-bucket-a,old-bucket-b
 OSS_CONFIG_FILE=/etc/ossutil/new,/etc/ossutil/old-a,/etc/ossutil/old-b
 ```
 
-CI 会把 `3.1.3` 的完整产物上传到三组 OSS/CDN，并在 publish 成功后覆盖三组 stable feed。旧 `3.1.2` 客户端继续从旧 feed 升级到 `3.1.3`；升级后的 `3.1.3` 客户端内置主域名 `cdn-zcode.z.ai`，后续走新 CDN。
+CI 会把 `3.1.3` 的完整产物上传到三组 OSS/CDN，并在 publish 成功后覆盖三组 stable feed。旧 `3.1.2` 客户端继续从旧 feed 升级到 `3.1.3`；升级后的 `3.1.3` 客户端内置主域名 `cdn-raspberrycode.z.ai`，后续走新 CDN。
 
 ### 3.1.4 切新
 
 配置单组目标：
 
 ```bash
-CDN_DOMAIN=cdn-zcode.z.ai
+CDN_DOMAIN=cdn-raspberrycode.z.ai
 OSS_BUCKET=new-bucket
 OSS_CONFIG_FILE=/etc/ossutil/new
 ```

@@ -35,6 +35,6 @@
 
 ## 后续可扩展
 
-- 把 diff 结构化类型补到 `@zcode/shared`
+- 把 diff 结构化类型补到 `@raspberrycode/shared`
 - services 层统一解析 RaspberryCode 标准 `toolContent`
 - 增加 side-by-side diff 和 location follow-along

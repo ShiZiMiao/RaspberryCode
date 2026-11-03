@@ -76,7 +76,7 @@
 - 严重度：P0
 - 置信度：已确认
 - 状态：待验证
-- 现象：新构建链只生成 `source-server-release.json` 和四个 `zcode-server-*.tar.gz`，正式 `release:validate` 仍要求 `manifest-*.json` 与 `components/**`。
+- 现象：新构建链只生成 `source-server-release.json` 和四个 `raspberrycode-server-*.tar.gz`，正式 `release:validate` 仍要求 `manifest-*.json` 与 `components/**`。
 - 影响：干净发布目录会稳定失败；脏目录可能用旧产物通过校验，却没有验证本轮真正发布的 Source Server archive。
 - 证据：
   - [`.gitlab/ci/30-build.yml`](../../.gitlab/ci/30-build.yml) 的 `build:remote:assets` 只收集 descriptor 和四个 archive；
@@ -90,8 +90,8 @@
 - 状态：待验证
 - 修复提交：`feat/multi-device-remote-3-real-ssh-feature` 上包含本记录的提交（`fix(release): validate Source Server descriptor and archives`）
 - 根因：构建/上传两端已切换到 descriptor+archive 合同，`validateRemoteAssets()` 未同步，且 `build:remote:assets` 切换时删掉了共享目录旧产物清理。复现：用真实脚本对"6 平台 + descriptor + 4 archive"目录校验抛 `missing remote manifest: manifest-darwin-arm64.json`；目录残留旧 manifest 时把 archive 改坏、甚至删掉 descriptor 都能通过。
-- 修复：`validateRemoteAssets()` 改为 `validateSourceServerRelease()`，校验 descriptor 的 `schemaVersion`、版本、四个 target、`fileName`、`version`、`urls`（必须含指向 archive 的安全相对路径）、`sizeBytes`、`sha256` 与真实 archive，并 fail-closed 拒绝残留 `manifest-*.json` / `components/` 及未被引用的 `zcode-server-*.tar.gz`；`build:remote:assets` 在复制前清掉自己负责的根目录产物；`docs/desktop-ci-cd.md` validate 描述同步。
-- 自动化验证：`packages/desktop/test/validateReleaseArtifacts.test.ts` 重写为新布局（含 target 常量与 `@zcode/shared` 的 `SOURCE_SERVER_RELEASE_TARGETS` 对接断言）；`gitlabCiBuildGraph.test.ts` 新增“CI 收集 target 集合 == validator 期望集合、复制前有清理”断言。
+- 修复：`validateRemoteAssets()` 改为 `validateSourceServerRelease()`，校验 descriptor 的 `schemaVersion`、版本、四个 target、`fileName`、`version`、`urls`（必须含指向 archive 的安全相对路径）、`sizeBytes`、`sha256` 与真实 archive，并 fail-closed 拒绝残留 `manifest-*.json` / `components/` 及未被引用的 `raspberrycode-server-*.tar.gz`；`build:remote:assets` 在复制前清掉自己负责的根目录产物；`docs/desktop-ci-cd.md` validate 描述同步。
+- 自动化验证：`packages/desktop/test/validateReleaseArtifacts.test.ts` 重写为新布局（含 target 常量与 `@raspberrycode/shared` 的 `SOURCE_SERVER_RELEASE_TARGETS` 对接断言）；`gitlabCiBuildGraph.test.ts` 新增“CI 收集 target 集合 == validator 期望集合、复制前有清理”断言。
 - 运行时验证：未在真实 tag / `ci*` 管道上运行，需下一次 `CI_RELEASE_BRANCH=1` 演练确认后关闭。
 - 剩余风险：`scripts/upload-oss.sh` 仍保留 `manifest-*.json` 特判分支（死代码，未清理）；validator 拒绝 legacy 残留后，若 runner 共享目录被人工放入旧文件会直接阻断 validate，需清理目录后重试。
 
@@ -135,7 +135,7 @@
 - 根因：`disconnect()` 把 online 物理 owner 误当成 Source 生命周期是否存在的判据；意外断线已经摘除该 owner，因此显式断开只清理恢复 timer 后提前返回。已经启动的恢复 flight 也没有 Source 级取消 owner，迟到成功仍可重新发布 online。
 - 修复：显式断开先捕获 Source 的全部 Profile，再清理恢复状态并统一发布 offline；已识别 Source 的 connect flight 持有可取消 owner，disconnect 会使旧 flight 失效，异步边界在发布状态前检查取消信号，迟到连接只释放、不发布 online 或 reconnect event。
 - 验证：Manager focused tests 24 项通过，覆盖多 Profile retrying-disconnect、取消全部 timer/probe 和 in-flight 迟到成功；Registry、Main、Renderer 三条终态 focused tests 通过；真实定时器最小复现保持 offline、无恢复次数且没有新增连接；全量 unit 1496 个文件、13247 项通过；`pnpm typecheck`、`pnpm lint` 与 `pnpm verify:pre-push` 通过。
-- 当前 HEAD `86f5701e10` 通过真实 SSH/进程故障注入复验：停止专用 `zcode-ssh-linux-amd64` 容器后，Source 从“已连接”进入“连接中”；在 mounted `SourceServerManagementPanel` 使用的真实 `ISourceServerManagementService` 上调用 `disconnectSource(sourceServerId)`，Host 日志记录 `source-server-management.disconnectSource OK (3.1ms)`，状态立即变为“未连接”。恢复容器并等待 6 秒后仍保持“未连接”，没有迟到 reconnect 复活；测试后容器、daemon 与 Desktop 均已恢复在线。
+- 当前 HEAD `86f5701e10` 通过真实 SSH/进程故障注入复验：停止专用 `raspberrycode-ssh-linux-amd64` 容器后，Source 从“已连接”进入“连接中”；在 mounted `SourceServerManagementPanel` 使用的真实 `ISourceServerManagementService` 上调用 `disconnectSource(sourceServerId)`，Host 日志记录 `source-server-management.disconnectSource OK (3.1ms)`，状态立即变为“未连接”。恢复容器并等待 6 秒后仍保持“未连接”，没有迟到 reconnect 复活；测试后容器、daemon 与 Desktop 均已恢复在线。
 - 交互边界：设置页和 Sidebar 当前只在 aggregated status 为 online 时展示“断开”，retrying/connecting 时没有可点击的用户入口。因此本轮证明的是生产 Renderer → MessagePort RPC → Host → Manager 的运行时合同，不是纯 UI 点击路径；若产品要求用户在恢复中主动取消，需要另补交互入口或调整按钮可见性。
 
 ### R3-ISSUE-005：同一 Source 的不同 Profile 可能产生两个 logical owner
@@ -177,7 +177,7 @@
 - 根因：retry 与 offline probe 各自维护终止条件，且只硬编码识别 `SourceServerUpgradeRequiredError`；`connectOnce()` 已发布的 install/identity/non-retryable 终态随后又被调度器覆盖。Host 同时只转发 `retrying/offline`，pending 状态无法让 logical recovery 收口。
 - 修复：Manager 在更新断连、2/4/8 秒 retry 和 2 分钟 probe 三个入口统一按公开错误码、原始 `retryable` 与 recovery owner 状态终止自动路径；owner 保留 actionable 状态，sibling Profile 收口为 terminal offline。Host 复用纯 recovery policy，把 pending 与 `failed + retryable:false` 转为既有 `recoverable:false` close，不修改 Registry、relay、main 或 realtime delivery 合同。
 - 验证：Manager、recovery policy、Window Registry 与 Directory 四个 focused test 文件共 110 项通过，覆盖 install/upgrade/identity、普通 `retryable:false`、offline probe、更新断连、同 Source 多 Profile、瞬态预算和手动恢复；fake timer 运行时回放跨过 4/8 秒及 2 分钟边界后没有新增 probe。`pnpm typecheck`、`pnpm lint` 以及新增 policy/test 与本 issue 文档的 `oxfmt --check` 通过；lint 仅报告仓库既有 warning。
-- 实机验证：当前修复提交 `9b56031ac2` 执行 `pnpm bootstrap:with-remote` 与真实 Electron `pnpm dev:desktop`，通过 CDP 9229 将 SSH `linux-amd64-dev`（Ubuntu x64、用户 `dev`）连接到 Source `32a10b89-141c-469b-aa97-850f41ab7deb`。15:49:40 UTC 临时移走 `/home/dev/.raspberrycode/server/bin/zcode` 并由备份 launcher 正常停止 daemon；约 2 秒后 UI 从首次 recovery 直接收口为“未连接 / 远端已卸载 RaspberryCode Server”，3 个项目历史保留。176 秒观察窗口完整跨过 2/4/8 秒和 2 分钟 probe 边界，UI 未进入 2/3、3/3 或 offline probe，Host 在首次 recoverable close 后只再发布一次 terminal close，日志没有新的 connect、remote-connected、upload 或 recovery-budget 记录，远端始终保持 `stopped`。恢复 launcher 后等待 8 秒仍未自动复活；用户显式点击“重新安装并连接”后于 15:55:03 恢复 online，Desktop 退出后远端保持 3.9.1 `ready`，临时备份已清除。截图证据位于 `packages/desktop/.e2e-artifacts/r3-issue-007-live-20260828-9b56031a/`。
+- 实机验证：当前修复提交 `9b56031ac2` 执行 `pnpm bootstrap:with-remote` 与真实 Electron `pnpm dev:desktop`，通过 CDP 9229 将 SSH `linux-amd64-dev`（Ubuntu x64、用户 `dev`）连接到 Source `32a10b89-141c-469b-aa97-850f41ab7deb`。15:49:40 UTC 临时移走 `/home/dev/.raspberrycode/server/bin/raspberrycode` 并由备份 launcher 正常停止 daemon；约 2 秒后 UI 从首次 recovery 直接收口为“未连接 / 远端已卸载 RaspberryCode Server”，3 个项目历史保留。176 秒观察窗口完整跨过 2/4/8 秒和 2 分钟 probe 边界，UI 未进入 2/3、3/3 或 offline probe，Host 在首次 recoverable close 后只再发布一次 terminal close，日志没有新的 connect、remote-connected、upload 或 recovery-budget 记录，远端始终保持 `stopped`。恢复 launcher 后等待 8 秒仍未自动复活；用户显式点击“重新安装并连接”后于 15:55:03 恢复 online，Desktop 退出后远端保持 3.9.1 `ready`，临时备份已清除。截图证据位于 `packages/desktop/.e2e-artifacts/r3-issue-007-live-20260828-9b56031a/`。
 - 实机覆盖边界：本次确认 SSH install-required、Desktop continuous logical terminal 与显式恢复；identity-change、普通 `retryable:false` 和 Mobile replayable 仍由 focused state matrix 覆盖，未以修改共享 installation identity 或未建立的手机配对环境伪报实测。
 
 ### R3-ISSUE-008：启动自动重连偏好被完整 AppSettings schema 丢弃
@@ -238,7 +238,7 @@
   CDP 9229 将 SSH `linux-amd64-dev`（Ubuntu x64、`dev@localhost:2222`）连接到 Source
   `32a10b89-141c-469b-aa97-850f41ab7deb`，上传并运行 3.9.1 linux-x64 release。打开
   `/home/dev/r3-issue-011-a`、`/home/dev/r3-issue-011-b` 与 Source conversation 后，Host 稳定为
-  `connections=1, logicalSessions=3, attachments=4`。首次真实 `zcode restart --json` 后三条旧 session
+  `connections=1, logicalSessions=3, attachments=4`。首次真实 `raspberrycode restart --json` 后三条旧 session
   同时 fail-closed，并在约 2.6 秒内全部换代恢复。随后使用仅存在于本次实测构建、测试后已删除的一次性
   fault injection 拒绝 B 的首次 `onSessionReconnected`：A 从 `7b9f032a-...` 单次换代为
   `7f940331-...`，conversation 单次换代为 `d37b04dd-...`；B 保持旧 `eb878642-...`，未产生对外 ghost
@@ -264,7 +264,7 @@
 
 #### 决策记录 2026-09-13
 
-- 依据：Provider 重构合并（路线 A，Q3）接受明文 Personal Config；`modelProviderService`、`zcode.apiKeyCredentialKey` 加密镜像与 provider-sync 只读校验路径已全部删除，代码中不再有 `apiKeyCredentialKey` 引用。主规格 §8 已改为「设置页绑定本地 + Provisioning 单向下发」，不再要求 Provider store 无明文；原要求该门禁的发布测试方案已归档。
+- 依据：Provider 重构合并（路线 A，Q3）接受明文 Personal Config；`modelProviderService`、`raspberrycode.apiKeyCredentialKey` 加密镜像与 provider-sync 只读校验路径已全部删除，代码中不再有 `apiKeyCredentialKey` 引用。主规格 §8 已改为「设置页绑定本地 + Provisioning 单向下发」，不再要求 Provider store 无明文；原要求该门禁的发布测试方案已归档。
 - 结论：「规格与实现冲突」的两端都已不存在，按 `不修复` 关闭。`docs/model-provider-opencode-config.md` 中描述该镜像的小节同日删除。
 
 ### R3-ISSUE-013：首次 Directory 迁移失败可能遗留孤儿凭据
@@ -297,7 +297,7 @@
 
 - 根因：controller handler 全部为 optional，生产只装配 `open-conversation`；Root 继续向 Sidebar、Settings、Dialog 和 tab lifecycle 暴露分散的连接、断开、项目打开、重连和关闭回调。
 - 修复：六类 handler 改为强类型必填，在 `useRemoteWorkspaceHistory` 内按 Source/attachment/persistence owner 完整装配单一 controller，并通过 Root provider 供 UI 使用；普通 Profile 连接统一携带 `open-conversation` completion intent。项目选择、设备断开、workspace 重连和 user-close 均先 dispatch，再进入既有 owner helper。
-- 验证：controller 全 intent/错误传播、Root production wiring、Settings disconnect 和 Sidebar 禁止直接 `disconnectSource` 的 focused tests 通过；全量 unit（1500 passed，1 skipped）、`pnpm typecheck` 与 `pnpm lint` 通过。`pnpm bootstrap:with-remote` 构建成功，`VITE_ZCODE_E2E_STORE_BRIDGE=1 pnpm dev:desktop` 启动成功并监听 CDP 9229。
+- 验证：controller 全 intent/错误传播、Root production wiring、Settings disconnect 和 Sidebar 禁止直接 `disconnectSource` 的 focused tests 通过；全量 unit（1500 passed，1 skipped）、`pnpm typecheck` 与 `pnpm lint` 通过。`pnpm bootstrap:with-remote` 构建成功，`VITE_RASPBERRYCODE_E2E_STORE_BRIDGE=1 pnpm dev:desktop` 启动成功并监听 CDP 9229。
 - 真实 SSH/CDP（2026-08-28）：使用 SSH alias `linux-amd64-dev`（`dev@localhost:2222`，密码由测试环境注入）连接真实设备，远端 `~/.raspberrycode/server/current.json` 为 `3.9.1`，设备 `4fedce9b49f0`，Source Server 为 `32a10b89-141c-469b-aa97-850f41ab7deb`。设置页普通连接完成后自动打开 `/home/dev/.raspberrycode/workspace/default` 的 `conversation` tab，`workspaceIdentity=remote:server:<sourceServerId>:/home/dev/.raspberrycode/workspace/default`；断开后卡片由“已连接”变为“未连接”，远程 attachment/session 被释放；再次连接生成新的 `remoteSessionId` 并重新打开 conversation。随后从 conversation 选择 `/home/dev` 打开 project，project 与 conversation 使用不同 `remoteSessionId`；通过真实 tab close 触发 user-close 后 project 被移除且 conversation 保留。
 - 自动化 SSH E2E：`E2E_SSH_REMOTE_PROJECT_CONVERSATION_SCOPE` 1 项通过，报告 [`desktop-e2e-20260828-153721-524`](../../packages/desktop/.e2e-artifacts/desktop-e2e-20260828-153721-524/summary.md)。同轮执行的 pending-cancel 手工复核因代理 socket 在 30 秒断言窗口后约 1.5 秒才关闭而失败（`desktop-e2e-20260828-153846-870`）；该失败路径不涉及本 issue 的 controller 写入口变更，未将其计入 R3-ISSUE-015 关闭条件。
 
@@ -312,7 +312,7 @@
 - 根因：`buildRemoteWorkspaceProjection()` 使用全部 `input.tabs` 构建 `openWorkspaces`；本地 tab 没有 `remoteSessionId`，随后被 `stateForOpenWorkspace()` 误标为 `disconnected`。同时 Sidebar、Root 和 Source 管理面板没有完整消费 projection join 结果。
 - 修复：`openWorkspaces` 先按统一 remote-tab 判定过滤；`executionContexts` 保留全部 local/remote tab，并只为 remote context 关联 open workspace。Sidebar 合并为单次 projection 计算，Root 的 Source open-tab 集合及 Source 管理面板的设备 Profile/聚合状态改从 projection 读取；新增本地 tab 回归与生产接线测试，并将边界合同写入远程 workspace 规格。
 - 自动化验证：受影响的 6 个 UI 测试文件 56 项通过；全量单测 1500 个文件、13290 项通过（1 个文件 skipped、11 项 skipped）；`pnpm typecheck` 通过；`pnpm lint` 0 errors（保留 38 个既有 warning）。`pnpm verify:pre-push` 首轮因旧静态断言失败，修正该断言后等价全量 `pnpm test:unit` 已通过。
-- 运行时验证：`VITE_ZCODE_E2E_STORE_BRIDGE=1 pnpm dev:desktop` 成功完成 Desktop/Host 构建，Electron 监听 CDP 9229，Renderer 加载 RaspberryCode 页面并显示本地与远程历史 workspace。已补做真实 local + SSH remote 混合 TabStore/Projection/Sidebar 复验，详见下方 SSH/CDP 记录。
+- 运行时验证：`VITE_RASPBERRYCODE_E2E_STORE_BRIDGE=1 pnpm dev:desktop` 成功完成 Desktop/Host 构建，Electron 监听 CDP 9229，Renderer 加载 RaspberryCode 页面并显示本地与远程历史 workspace。已补做真实 local + SSH remote 混合 TabStore/Projection/Sidebar 复验，详见下方 SSH/CDP 记录。
 - 剩余风险：真实 attachment fact 仍未由该 projection 在所有入口注入，远程 workspace 的 ready/attaching 细节需继续由各 attachment 生命周期验证；该风险不会使 local tab 进入 `openWorkspaces`。手机 `/remote` relay 实机不在本次 SSH 环境内，沿用 focused mobile tests，属于独立跨端验证项。
 
 #### 真实 SSH/CDP 复验 2026-08-29
@@ -373,7 +373,7 @@
 
 #### 修复记录 2026-09-13
 
-- 已做：新增 `docs/remote/README.md` 作为远程主链阅读入口并在 AGENTS.md 登记；主规格 §1 状态改为「已实现（基线 `fad93b9e57`）」、§7.1 启动重连门禁字段改为 `lastOnlineAt`、新增 §8.4 设备管理合同、§9.1 并入控制端逐表盘点、§15 并入 Provider 合并遗留项；领域简化规格标注 Phase 0–4 已实现；`desktop-remote-session-renderer-reattach.md` 门禁描述改为「Host 设备级 7 天 + Renderer 不按 connected 历史过滤」；18 份过程 / 评审 / 实机记录文档移入 `docs/archive/remote-r3/`，全部入站链接（含 `.agents/skills/feature-boundary-planner/references/zcode-feature-graph.yaml`）已改指归档路径；`r3-remote-ui-redesign.md` 删除 §11–§19 历史日志并标注原型未入库；`zcode-agent-remote-deployment.md`、`server-remote-workspace-connection.md` 加旧主链状态注记；coverage matrix 修正 SSH-P0-LIFE-03 的不存在 spec 引用。
+- 已做：新增 `docs/remote/README.md` 作为远程主链阅读入口并在 AGENTS.md 登记；主规格 §1 状态改为「已实现（基线 `fad93b9e57`）」、§7.1 启动重连门禁字段改为 `lastOnlineAt`、新增 §8.4 设备管理合同、§9.1 并入控制端逐表盘点、§15 并入 Provider 合并遗留项；领域简化规格标注 Phase 0–4 已实现；`desktop-remote-session-renderer-reattach.md` 门禁描述改为「Host 设备级 7 天 + Renderer 不按 connected 历史过滤」；18 份过程 / 评审 / 实机记录文档移入 `docs/archive/remote-r3/`，全部入站链接（含 `.agents/skills/feature-boundary-planner/references/raspberrycode-feature-graph.yaml`）已改指归档路径；`r3-remote-ui-redesign.md` 删除 §11–§19 历史日志并标注原型未入库；`raspberrycode-agent-remote-deployment.md`、`server-remote-workspace-connection.md` 加旧主链状态注记；coverage matrix 修正 SSH-P0-LIFE-03 的不存在 spec 引用。
 - 未做：统一「candidate SHA + 自动化结果 + 实机 artifact」的发布状态入口仍由本文与 `docs/testing/r3-remote-full-rerun-2026-09-10.md` 分担；R3-ISSUE-001 / 020 关闭后在本文补发布结论即可关闭本项。
 
 ### R3-ISSUE-020：历史实机记录不能证明当前 HEAD
@@ -408,9 +408,9 @@
 
 - 状态：已关闭
 - 根因：删除 legacy 资产链时，“构建并断言官方插件 MCP runtime”的责任没有落到新 staging 链任何一环。
-- 修复：`scripts/build-desktop-agent-cli.mjs` 的 MCP runtime 清单补入 `@zcode/android-emulator-plugin` 与 `@zcode/ios-simulator-plugin`，该脚本是桌面与 Source Server staging 共用的唯一构建入口；`stage.ts` 复制每个插件后新增 `assertOfficialPluginRuntime`，manifest 缺失或 `mcpServers` 引用的 `${ZCODE_PLUGIN_ROOT}/...` 文件不存在即抛错。R2 spec 新增“官方插件 MCP runtime 不变量”条目。
+- 修复：`scripts/build-desktop-agent-cli.mjs` 的 MCP runtime 清单补入 `@raspberrycode/android-emulator-plugin` 与 `@raspberrycode/ios-simulator-plugin`，该脚本是桌面与 Source Server staging 共用的唯一构建入口；`stage.ts` 复制每个插件后新增 `assertOfficialPluginRuntime`，manifest 缺失或 `mcpServers` 引用的 `${RASPBERRYCODE_PLUGIN_ROOT}/...` 文件不存在即抛错。R2 spec 新增“官方插件 MCP runtime 不变量”条目。
 - 自动化验证：`packaging.test.ts` 新增 2 项 fail-closed 用例（缺 MCP 入口、缺 manifest），修复前失败、修复后通过；既有插件 staging 用例补断言 `dist/mcp/server.js` 被打包；`runtime-asset-scripts.test.ts` 清单断言同步。
-- 运行时验证：本地删除 `apps/zcode-cli/packages/{android-emulator,ios-simulator}-plugin/dist` 后执行 `pnpm --filter @zcode/server-cli stage --target linux-x64`，构建链实际重建两个插件，`zcode-server-linux-x64.tar.gz` 内四个 MCP 插件的 `runtime/packages/*/dist/mcp/server.js` 均存在，耗时约 1 分钟。未运行真实 CI `build:remote:assets`。
+- 运行时验证：本地删除 `apps/raspberrycode-cli/packages/{android-emulator,ios-simulator}-plugin/dist` 后执行 `pnpm --filter @raspberrycode/server-cli stage --target linux-x64`，构建链实际重建两个插件，`raspberrycode-server-linux-x64.tar.gz` 内四个 MCP 插件的 `runtime/packages/*/dist/mcp/server.js` 均存在，耗时约 1 分钟。未运行真实 CI `build:remote:assets`。
 - 剩余风险：`stageRelease` 现在会对所有被复制的 `*-plugin` 目录做校验，若未来新增声明 mcpServers 却不在构建清单中的官方插件，staging 会显式失败而非静默残缺，这是预期行为。
 
 ### R3-ISSUE-023：恢复态手动连接成功不发 reconnect，Registry 停在 recovering
@@ -456,7 +456,7 @@
 ### R3-ISSUE-030：Provider 共享刷新等待没有接入单调用者取消
 
 - 状态：待修复，当前无传 signal 的生产调用方；2026-10-11 登记，评审核对基线 `f5c233df918e`（CR-07）。
-- 责任位置：`zcodeAgentService.ts` 的 `generateWorkspaceText` / `testProviderModelConnectivity` 等待 `ensureAccountProviderConfigSynced` 时未消费 signal。
+- 责任位置：`raspberrycodeAgentService.ts` 的 `generateWorkspaceText` / `testProviderModelConnectivity` 等待 `ensureAccountProviderConfigSynced` 时未消费 signal。
 - 证据：真实 Service 探针中取消后仍等待刷新结束，随后以 AbortError 收口；协议客户端在后续请求发出前检查 signal，因此不会执行已取消的模型请求。该证据证明收口延迟，不表示取消失效。
 - 当前处理：仅登记。首个支持取消的生产调用方接入时，单个等待者与 signal 竞速；共享 `accountConfigSyncByClient` 刷新继续完成，不能由一个调用者取消其他调用者依赖的刷新。
 - 关闭条件：一个等待者取消时及时拒绝，其他等待者仍可完成，且已取消的模型请求不会发送；共享刷新失败仍向未取消调用者传播。

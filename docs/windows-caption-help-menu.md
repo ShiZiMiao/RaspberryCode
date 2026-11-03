@@ -36,11 +36,11 @@ Windows/Linux 桌面端曾在右上角自绘标题栏放一个箭头合并菜单
 | production 状态事件 | checking 禁用；可用版本、下载进度显示对应文案；下载完成分别断言动作文案和版本 pill（不依赖括号及子节点空白拼接）；关闭重开后版本 pill 保持最新状态 |
 | Preview | 草稿态和设置页都无更新项，注入更新事件也不出现 |
 
-状态事件使用 case 内合成 `UpdateStatePayload`，只验证 main→preload→菜单展示，不修改真实 updater，也不下载或安装。测试不再依赖 Node 侧 `ZCODE_PRODUCT_FLAVOR`（未编译 define 时固定回退为 preview）；默认期望 Preview；production 必须显式传入期望身份，并对真实菜单断言。
+状态事件使用 case 内合成 `UpdateStatePayload`，只验证 main→preload→菜单展示，不修改真实 updater，也不下载或安装。测试不再依赖 Node 侧 `RASPBERRYCODE_PRODUCT_FLAVOR`（未编译 define 时固定回退为 preview）；默认期望 Preview；production 必须显式传入期望身份，并对真实菜单断言。
 
 ```bash
-ZCODE_ENV=production ZCODE_PREVIEW_IDENTITY=0 ZCODE_E2E_HELP_MENU_FLAVOR=production pnpm --filter @zcode/desktop test:e2e -- --spec ./test/e2e/help-menu-about.test.ts
-ZCODE_ENV=test ZCODE_PREVIEW_IDENTITY=1 ZCODE_E2E_HELP_MENU_FLAVOR=preview pnpm --filter @zcode/desktop test:e2e -- --spec ./test/e2e/help-menu-about.test.ts
+RASPBERRYCODE_ENV=production RASPBERRYCODE_PREVIEW_IDENTITY=0 RASPBERRYCODE_E2E_HELP_MENU_FLAVOR=production pnpm --filter @raspberrycode/desktop test:e2e -- --spec ./test/e2e/help-menu-about.test.ts
+RASPBERRYCODE_ENV=test RASPBERRYCODE_PREVIEW_IDENTITY=1 RASPBERRYCODE_E2E_HELP_MENU_FLAVOR=preview pnpm --filter @raspberrycode/desktop test:e2e -- --spec ./test/e2e/help-menu-about.test.ts
 ```
 
 两次身份切换必须重新构建；不设置 skip build。手机 Web 的入口隐藏仍由现有组件单测覆盖，本轮不声称新增手机浏览器 E2E。
@@ -49,7 +49,7 @@ ZCODE_ENV=test ZCODE_PREVIEW_IDENTITY=1 ZCODE_E2E_HELP_MENU_FLAVOR=preview pnpm 
 
 - production：`packages/desktop/.e2e-artifacts/desktop-e2e-20260916015817140-p11108-40c450981f4adf75/summary.json`
 - Preview：`packages/desktop/.e2e-artifacts/desktop-e2e-20260916015910292-p13512-0267b1fc0528ad0b/summary.json`
-- `pnpm typecheck`、`pnpm --filter @zcode/desktop typecheck:e2e`、`pnpm lint`、`pnpm architecture:check --changed` 通过；lint 保留 43 条既有警告、0 错误。
+- `pnpm typecheck`、`pnpm --filter @raspberrycode/desktop typecheck:e2e`、`pnpm lint`、`pnpm architecture:check --changed` 通过；lint 保留 43 条既有警告、0 错误。
 - 未验证 Windows/Linux 实机、手机浏览器及正式安装包下载/安装；用例已转正；Docker suite 准入不在本次范围。
 
 转正验证（2026-09-16）：正式路径不设置 manual-review 或期望身份参数，默认 Preview 4/4 通过；复用上轮已验证的 Preview App/Agent 构建。制品：`packages/desktop/.e2e-artifacts/desktop-e2e-20260916020532683-p21897-d5394bfcb8f7a780/summary.json`。production 的显式分支未改变，沿用上述 4/4 证据。

@@ -353,7 +353,7 @@ focused pane binding
 | Conversation/session behavior | yes | session 点击、focus、pane command routing 影响当前 active session。 | `docs/conversation-protocol-declaration.md`、`packages/ui/src/v4/SessionPane.tsx` |
 | Workspace identity/remote runtime | yes | 跨 workspace group 必须保持 `workspaceIdentity` 隔离和 remote session scope。 | `docs/v4-split-pane-workbench.md`、`docs/remote-workspace-session-unified-settings.md` |
 | Persistence/index/snapshot | yes | group layout localStorage 恢复、删除/归档后清理。 | `packages/ui/src/v4/paneLayoutPersistence.ts` |
-| Mobile remote/replayable realtime | limited | 仅用于明确禁用 `/remote`，避免 replayable 语义扩散。 | `docs/web-remote-control/web-remote-control-architecture.md` |
+| Mobile remote/replayable realtime | limited | 仅用于明确禁用 `/remote`，避免 replayable 语义扩散。 | `docs/archive/web-remote-control/web-remote-control-architecture.md` |
 | Protocol/agent runtime | no | group 是 renderer-local UI 状态，不改 v4 protocol。 | `docs/v4-split-pane-workbench.md` |
 
 ## High-Risk Cross-Products

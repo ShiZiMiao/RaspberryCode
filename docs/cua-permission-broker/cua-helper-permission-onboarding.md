@@ -23,10 +23,10 @@ RaspberryCode CUA 的 macOS product 权限主体必须是外置 `RaspberryCode C
 
 ## 边界
 
-- 授权目标固定为 `${ZCODE_HOME:-$HOME/.raspberrycode}/computer-use/RaspberryCode Computer Use.app`。
+- 授权目标固定为 `${RASPBERRYCODE_HOME:-$HOME/.raspberrycode}/computer-use/RaspberryCode Computer Use.app`。
 - Python、Terminal、`uvx`、local checkout 或 legacy `RaspberryCode.app` broker 不得显示 product
   onboarding。
-- `zcode-cua` 通过 namespaced `_meta["zcode.cua/request-access-status-v1"]` 提供最小权限快照，
+- `raspberrycode-cua` 通过 namespaced `_meta["raspberrycode.cua/request-access-status-v1"]` 提供最小权限快照，
   不新增 MCP tool，也不把 broker token、socket token、argv 或 config args 放进 UI metadata。
   Consumer 只接受 authority-verified official `request_access`，普通文本解析不能触发 onboarding。
 - Web/非 macOS 端不实现授权引导，只保留普通诊断或不显示该动作。

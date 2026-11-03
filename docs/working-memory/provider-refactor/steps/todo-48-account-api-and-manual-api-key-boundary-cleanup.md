@@ -76,7 +76,7 @@ getCustomerInfo
 个人 organization / project
         |
         v
-查找或创建 zcode-api-key
+查找或创建 raspberrycode-api-key
         |
         v
 copy secret

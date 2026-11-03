@@ -6,7 +6,7 @@
 >
 > 评审起点：Agent Trace V2；Model API Record V1；V4 已上线；本轮目标 Schema：`5`
 >
-> 范围：`apps/zcode-cli` 内部 Agent；[最终规范](../cli-agent-telemetry.md)
+> 范围：`apps/raspberrycode-cli` 内部 Agent；[最终规范](../cli-agent-telemetry.md)
 
 ## 1. 目的
 
@@ -35,7 +35,7 @@ OpenTelemetry
 RaspberryCode 领域语义
   Turn / Step / Tool / Command
   Model Call / Model Attempt / Compaction
-  zcode.* canonical attributes
+  raspberrycode.* canonical attributes
   Typed Writer / 隐私清洗 / 查询投影
                     │
                     ▼
@@ -321,7 +321,7 @@ ARMS 不保证任意祖先 Attribute 联表，因此部分投影必要；但不�
 
 V4：
 
-- OTel 原生 trace/span/parent 不镜像成 `zcode.*`；
+- OTel 原生 trace/span/parent 不镜像成 `raspberrycode.*`；
 - Span 本地事实只写本地 canonical；
 - 只投影独立检索必需 correlation；
 - 投影需声明来源、目的、隐私等级、目标 Span；
@@ -362,24 +362,24 @@ tool
 ### 5.12 P3：版本来源被陈旧 dist 误导
 
 2026-07-30：当前实现基线的仓库根产品版本为 `3.6.1`，CLI 构建版本为
-`0.16.1`。`apps/zcode-cli/packages/cli/package.json` 的 `0.1.0` 只是 workspace 子包
+`0.16.1`。`apps/raspberrycode-cli/packages/cli/package.json` 的 `0.1.0` 只是 workspace 子包
 元数据。仓库中存在 `v3.6.2` Tag，但它不是当前分支的版本真相；本机旧
-`dist/zcode.cjs` 和 Desktop staging `bundled-agents/darwin-arm64/glm/zcode.cjs`
+`dist/raspberrycode.cjs` 和 Desktop staging `bundled-agents/darwin-arm64/glm/raspberrycode.cjs`
 也不能作为版本真相。
 
-旧 dist/staging bundle 不是版本真相。现行 CLI build 从 `apps/zcode-cli/package.json`
+旧 dist/staging bundle 不是版本真相。现行 CLI build 从 `apps/raspberrycode-cli/package.json`
 注入 `__CLI_VERSION__`；Desktop metadata 从仓库根产品构建元数据读取版本。正式打包必须
 先重建 Agent，不能直接复用未通过版本校验的本地 staging 产物。
 
 历史缺口是 Resource 只保留 Agent 自己的运行版本，无法单独确认外层 Desktop/产品版本。
 
-V5 沿用 `service.version=CLI bundle 实际内置版本` 和 `zcode.product.version`；
+V5 沿用 `service.version=CLI bundle 实际内置版本` 和 `raspberrycode.product.version`；
 Standalone 没有外层产品时省略后者。App 显式注入产品版本，发布重新生成 bundle，
 并验证：
 
-- `--version`=`apps/zcode-cli/package.json`=`service.version`；
-- About=产品 package/build metadata=`zcode.product.version`；
-- `zcode.build.commit_id` 可用；
+- `--version`=`apps/raspberrycode-cli/package.json`=`service.version`；
+- About=产品 package/build metadata=`raspberrycode.product.version`；
+- `raspberrycode.build.commit_id` 可用；
 - Schema Version 独立为整数 `5`。
 
 V4 已经上线；本轮源事实、Metric 与 Subagent 拓扑发生破坏性变化，因此原子升级为 V5，
@@ -592,14 +592,14 @@ model_call
 三类输出：
 
 1. OTel 结构：trace/span/parent/status/time/kind；
-2. RaspberryCode canonical：`zcode.<span_name>.<property>`；
+2. RaspberryCode canonical：`raspberrycode.<span_name>.<property>`；
 3. 外部兼容：GenAI、OTel semconv、ARMS alias。
 
 业务只调用 Writer：
 
 ```text
 writer.setRequestedModel(model)
-          ├─ zcode.model_attempt.requested_model
+          ├─ raspberrycode.model_attempt.requested_model
           └─ adapter -> gen_ai.request.model
 ```
 
@@ -884,7 +884,7 @@ Core/Bootstrap：
 - `bootstrap/src/app/create-app.ts`
   只接收进程级 Owner；
 - Subagent/Workflow protocol 传播 W3C Context；
-- `services/src/zcode-agent/agentTelemetryEnv.ts`
+- `services/src/raspberrycode-agent/agentTelemetryEnv.ts`
   注入 product version 和动态 identity update，调整 user identity policy；
 - Desktop build 继续从根版本注入。
 
@@ -971,20 +971,20 @@ pnpm lint
 | 字段                             | 来源                    | 示例              | 变化时机     |
 | -------------------------------- | ----------------------- | ----------------- | ------------ |
 | `service.version`                | 实际 CLI bundle         | `0.16.1`          | CLI 发布     |
-| `zcode.product.version`          | 外层产品 build metadata | `3.6.1`           | 产品发布     |
-| `zcode.build.commit_id`          | build metadata          | commit SHA        | 每次构建     |
-| `zcode.telemetry.schema_version` | contract                | `5`               | 数据契约变化 |
-| `service.name`                   | Telemetry 固定常量      | `zcode-cli-agent` | 不随部署变化 |
+| `raspberrycode.product.version`          | 外层产品 build metadata | `3.6.1`           | 产品发布     |
+| `raspberrycode.build.commit_id`          | build metadata          | commit SHA        | 每次构建     |
+| `raspberrycode.telemetry.schema_version` | contract                | `5`               | 数据契约变化 |
+| `service.name`                   | Telemetry 固定常量      | `raspberrycode-cli-agent` | 不随部署变化 |
 
 打包门禁：
 
-1. 执行 `zcode.cjs --version`；
+1. 执行 `raspberrycode.cjs --version`；
 2. 读取 CLI project package、仓库根 product package 与 Desktop build metadata；
 3. 读取 Desktop build metadata；
 4. 启动打包 Agent 发送 Trace；
 5. 解码 OTLP Resource；
 6. 断言 `--version`=`service.version`=CLI project package；
-7. 断言 About=`zcode.product.version`=产品 package/build metadata；
+7. 断言 About=`raspberrycode.product.version`=产品 package/build metadata；
 8. 断言 Schema=`4` 且 commit 非 `unknown`。
 
 它防止旧 dist、错误 cache、Desktop 内置旧 Agent、Resource 版本漂移。
@@ -993,8 +993,8 @@ pnpm lint
 
 迁移期建议开关：
 
-- `ZCODE_AGENT_TELEMETRY_SCHEMA=4`；
-- `ZCODE_MODEL_TELEMETRY_ENABLED=0` 总关闭；
+- `RASPBERRYCODE_AGENT_TELEMETRY_SCHEMA=4`；
+- `RASPBERRYCODE_MODEL_TELEMETRY_ENABLED=0` 总关闭；
 - Event 明细；
 - identity projection；
 - Collector/ARMS Tail Sampling Policy。

@@ -6,7 +6,7 @@
 
 **Architecture:** 不新增模型专用分支或模型专用配置；直接更新现有 compact prompt、summary 后处理、post-compact message 组装、recent-context 保留、read-state/file reminder 恢复和 compact summary output cap。实现只落本计划冻结的 compact 逻辑/策略，不自行新增策略、抽象或配置开关。UI 投影继续把 compact 展示成一根 `context_compaction` divider，底层 provider-visible 保留 recent messages 不应改变聊天 UI。
 
-**Tech Stack:** TypeScript, Vitest, `apps/zcode-cli/packages/core`, `@zcode/contracts`, provider-visible request tests, existing compact/session persistence stores.
+**Tech Stack:** TypeScript, Vitest, `apps/raspberrycode-cli/packages/core`, `@raspberrycode/contracts`, provider-visible request tests, existing compact/session persistence stores.
 
 ## Global Constraints
 
@@ -35,31 +35,31 @@
 
 ## File Map
 
-- Modify: `apps/zcode-cli/packages/core/src/compact/prompt.ts`  
+- Modify: `apps/raspberrycode-cli/packages/core/src/compact/prompt.ts`  
   负责 full/recent compact prompt、summary text 格式化、post-compact continuation message。
-- Modify: `apps/zcode-cli/packages/core/src/runtime/helpers/compact.ts`  
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/helpers/compact.ts`  
   负责 compact entry selection、recent groups preservation、post-compact entries、todo/reminder placement、existing prompt-too-long handling reuse。
-- Modify: `apps/zcode-cli/packages/core/src/runtime/methods/compact-active.ts`  
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/methods/compact-active.ts`  
   负责 active compact 主流程接入 recent selection、read-state restore、summary output cap、media handling evidence gate、compact request tool exposure。
-- Modify: `apps/zcode-cli/packages/core/src/runtime/methods/compact-active-helpers.ts`  
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/methods/compact-active-helpers.ts`  
   负责 compact request assembly、summary validation、tool-call rejection。
-- Modify: `apps/zcode-cli/packages/core/src/compact/policy.ts`  
+- Modify: `apps/raspberrycode-cli/packages/core/src/compact/policy.ts`  
   负责保留 RaspberryCode 已验证的 auto threshold/output reserve 默认值，并只调整 compact summary request output cap。
-- Modify only if needed: `apps/zcode-cli/packages/core/src/runtime/methods/microcompact.ts` and `apps/zcode-cli/packages/core/src/compact/microcompact.ts`  
+- Modify only if needed: `apps/raspberrycode-cli/packages/core/src/runtime/methods/microcompact.ts` and `apps/raspberrycode-cli/packages/core/src/compact/microcompact.ts`  
   local microcompact 改动明确跳过；只允许保留现有 opt-in/安全修复，不把它扩大成本轮 compact provider-visible 收敛目标。
-- Modify: `apps/zcode-cli/packages/core/tests/runtime-compact.test.ts`  
+- Modify: `apps/raspberrycode-cli/packages/core/tests/runtime-compact.test.ts`  
   覆盖 provider-visible compact request/post-compact request、recent preservation、read-state restore、UI model-only invariants。
-- Modify: `apps/zcode-cli/packages/core/tests/compact-policy.test.ts` and `apps/zcode-cli/packages/core/tests/microcompact.test.ts`  
+- Modify: `apps/raspberrycode-cli/packages/core/tests/compact-policy.test.ts` and `apps/raspberrycode-cli/packages/core/tests/microcompact.test.ts`  
   覆盖 threshold 与 microcompact 策略变化。
-- Modify: `apps/zcode-cli/tools/prompt-trajectory/tests/derive.test.ts`  
+- Modify: `apps/raspberrycode-cli/tools/prompt-trajectory/tests/derive.test.ts`  
   更新 compact summary message shape 的 trajectory expectation。
 
 ## Task 1: 收敛 Compact Prompt 与 Summary Message Shape
 
 **Files:**
-- Modify: `apps/zcode-cli/packages/core/src/compact/prompt.ts`
-- Test: `apps/zcode-cli/packages/core/tests/runtime-compact.test.ts`
-- Test: `apps/zcode-cli/tools/prompt-trajectory/tests/derive.test.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/compact/prompt.ts`
+- Test: `apps/raspberrycode-cli/packages/core/tests/runtime-compact.test.ts`
+- Test: `apps/raspberrycode-cli/tools/prompt-trajectory/tests/derive.test.ts`
 
 **Interfaces:**
 - Produce: `buildCompactPrompt(customInstructions, { mode?: "full" | "recent" | "up_to" })`
@@ -83,14 +83,14 @@
   - `Resume directly`
   - does not include transcript recovery text unless a future RaspberryCode transcript path capability is explicitly added.
 - [ ] Implement prompt text in `prompt.ts` using existing file, not a new model-specific policy module.
-- [ ] Run: `pnpm vitest run apps/zcode-cli/packages/core/tests/runtime-compact.test.ts apps/zcode-cli/tools/prompt-trajectory/tests/derive.test.ts`
+- [ ] Run: `pnpm vitest run apps/raspberrycode-cli/packages/core/tests/runtime-compact.test.ts apps/raspberrycode-cli/tools/prompt-trajectory/tests/derive.test.ts`
 
 ## Task 2: Align Compact Request Tool Exposure and Tool Call Denial
 
 **Files:**
-- Modify: `apps/zcode-cli/packages/core/src/runtime/methods/compact-active.ts`
-- Modify: `apps/zcode-cli/packages/core/src/runtime/methods/compact-active-helpers.ts`
-- Test: `apps/zcode-cli/packages/core/tests/runtime-compact.test.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/methods/compact-active.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/methods/compact-active-helpers.ts`
+- Test: `apps/raspberrycode-cli/packages/core/tests/runtime-compact.test.ts`
 
 **Interfaces:**
 - Produce: `buildCompactSummaryRequestOptions(...)` or equivalent helper that returns normal `tools: this.getTools()` and compact metadata.
@@ -103,14 +103,14 @@
 - [ ] Replace `tools: []` in `compact-active.ts` with the normal compact-visible tool list, usually `this.getTools()`.
 - [ ] Keep compact execution single-turn summary-only: if `runtime.extractToolCallsFromResult(result)` returns any tool call, fail/retry through existing compact error path; do not schedule `ToolExecutor`.
 - [ ] Ensure `ModelRequest` event `toolCount` reflects the actual exposed compact tools, not zero.
-- [ ] Run: `pnpm vitest run apps/zcode-cli/packages/core/tests/runtime-compact.test.ts -t "compact"`
+- [ ] Run: `pnpm vitest run apps/raspberrycode-cli/packages/core/tests/runtime-compact.test.ts -t "compact"`
 
 ## Task 3: Implement Recent Group Preservation for Auto/Reactive Compact
 
 **Files:**
-- Modify: `apps/zcode-cli/packages/core/src/runtime/helpers/compact.ts`
-- Modify: `apps/zcode-cli/packages/core/src/runtime/methods/compact-active.ts`
-- Test: `apps/zcode-cli/packages/core/tests/runtime-compact.test.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/helpers/compact.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/methods/compact-active.ts`
+- Test: `apps/raspberrycode-cli/packages/core/tests/runtime-compact.test.ts`
 
 **Interfaces:**
 - Produce: `selectCompactEntries(input)` returning:
@@ -126,15 +126,15 @@
 - [ ] For `CompactTrigger.Auto` and `CompactTrigger.Reactive`, preserve at least the newest complete group plus any trailing pending user entries.
 - [ ] Keep active/reactive compact summary requests on the full compact prompt even when recent groups are preserved; recent messages are preserved in the post-compact context, not by switching the summary prompt to a recent-only prompt.
 - [ ] Persist `keptMessageCount`, `groupsPreserved`, and `totalGroups` in compact boundary metadata when available.
-- [ ] Run: `pnpm vitest run apps/zcode-cli/packages/core/tests/runtime-compact.test.ts -t "compact"`
+- [ ] Run: `pnpm vitest run apps/raspberrycode-cli/packages/core/tests/runtime-compact.test.ts -t "compact"`
 
 ## Task 4: Restore Recent File Context After Compact
 
 **Files:**
-- Modify: `apps/zcode-cli/packages/core/src/runtime/helpers/compact.ts`
-- Modify: `apps/zcode-cli/packages/core/src/runtime/methods/compact-active.ts`
-- Test: `apps/zcode-cli/packages/core/tests/runtime-compact.test.ts`
-- Test: `apps/zcode-cli/packages/core/tests/read-file-state-hydrator.test.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/helpers/compact.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/methods/compact-active.ts`
+- Test: `apps/raspberrycode-cli/packages/core/tests/runtime-compact.test.ts`
+- Test: `apps/raspberrycode-cli/packages/core/tests/read-file-state-hydrator.test.ts`
 
 **Interfaces:**
 - Produce: `buildPostCompactReadStateReminderEntries(input)` returning model-only `RuntimeMessageEntry[]`.
@@ -146,14 +146,14 @@
 - [ ] Implement selection from current runtime `readFileState` before it is cleared/replaced.
 - [ ] Sort by most recent read time, cap to 5 files, and enforce total/file token budgets.
 - [ ] Keep read-state stale guard semantics intact; this task only adds model-visible continuity reminders.
-- [ ] Run: `pnpm vitest run apps/zcode-cli/packages/core/tests/runtime-compact.test.ts apps/zcode-cli/packages/core/tests/read-file-state-hydrator.test.ts`
+- [ ] Run: `pnpm vitest run apps/raspberrycode-cli/packages/core/tests/runtime-compact.test.ts apps/raspberrycode-cli/packages/core/tests/read-file-state-hydrator.test.ts`
 
 ## Task 5: Remove RaspberryCode Todo State From Post-Compact Context
 
 **Files:**
-- Modify: `apps/zcode-cli/packages/core/src/runtime/helpers/compact.ts`
-- Modify: `apps/zcode-cli/packages/core/src/runtime/methods/compact-active.ts`
-- Test: `apps/zcode-cli/packages/core/tests/runtime-compact.test.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/helpers/compact.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/methods/compact-active.ts`
+- Test: `apps/raspberrycode-cli/packages/core/tests/runtime-compact.test.ts`
 
 **Interfaces:**
 - Do not append compact-specific todo state after compact. The generic todo reminder cadence still applies, but compact completion does not immediately restore the current todo list into provider-visible context.
@@ -162,17 +162,17 @@
 - [ ] Add assertion that post-compact provider request does not contain the restored todo state reminder.
 - [ ] Remove `appendTodoStateToCompactSummary` use from `compact-active.ts`.
 - [ ] Remove compact-only `buildPostCompactTodoReminderEntries` wiring.
-- [ ] Run: `pnpm vitest run apps/zcode-cli/packages/core/tests/runtime-compact.test.ts -t "todo"`
+- [ ] Run: `pnpm vitest run apps/raspberrycode-cli/packages/core/tests/runtime-compact.test.ts -t "todo"`
 
 ## Task 6: Investigate Current Auto Compact Budget Drift, Then Keep RaspberryCode Threshold Defaults and Align Summary Output Cap
 
 **Files:**
-- Modify: `apps/zcode-cli/packages/core/src/compact/policy.ts`
-- Modify: `apps/zcode-cli/packages/core/src/runtime/methods/compact-active.ts`
-- Modify: `apps/zcode-cli/packages/core/src/runtime/methods/compact.ts`
-- Modify if needed: `apps/zcode-cli/packages/core/src/runtime/methods/context-usage.ts`
-- Test: `apps/zcode-cli/packages/core/tests/compact-policy.test.ts`
-- Test: `apps/zcode-cli/packages/core/tests/runtime-compact.test.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/compact/policy.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/methods/compact-active.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/methods/compact.ts`
+- Modify if needed: `apps/raspberrycode-cli/packages/core/src/runtime/methods/context-usage.ts`
+- Test: `apps/raspberrycode-cli/packages/core/tests/compact-policy.test.ts`
+- Test: `apps/raspberrycode-cli/packages/core/tests/runtime-compact.test.ts`
 
 **Interfaces:**
 - Produce: `AutoCompactDecision` diagnostics must expose enough budget facts to debug failures:
@@ -201,15 +201,15 @@
 - [ ] Keep explicit config compatibility where `bufferTokens`, `summaryReserveTokens`, or threshold overrides are provided.
 - [ ] Update runtime compact test to assert summary generation request uses max output capped at 20k.
 - [ ] Implement runtime summary-cap changes without adding new env vars.
-- [ ] Run: `pnpm vitest run apps/zcode-cli/packages/core/tests/compact-policy.test.ts apps/zcode-cli/packages/core/tests/runtime-compact.test.ts -t "auto compact"`
+- [ ] Run: `pnpm vitest run apps/raspberrycode-cli/packages/core/tests/compact-policy.test.ts apps/raspberrycode-cli/packages/core/tests/runtime-compact.test.ts -t "auto compact"`
 
 ## Task 7: Explicitly Skip Local Microcompact Changes
 
 **Files:**
-- Modify: `apps/zcode-cli/packages/core/src/runtime/methods/microcompact.ts`
-- Modify: `apps/zcode-cli/packages/core/src/compact/microcompact.ts`
-- Test: `apps/zcode-cli/packages/core/tests/microcompact.test.ts`
-- Test: `apps/zcode-cli/packages/core/tests/runtime-compact.test.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/methods/microcompact.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/compact/microcompact.ts`
+- Test: `apps/raspberrycode-cli/packages/core/tests/microcompact.test.ts`
+- Test: `apps/raspberrycode-cli/packages/core/tests/runtime-compact.test.ts`
 
 **Interfaces:**
 - keep-recent/local replacement 依赖 `context_hint`/server fallback 能力，RaspberryCode 当前没有对应接口；本轮不改 local microcompact 的 provider-visible 行为。
@@ -221,8 +221,8 @@
 ## Task 8: Media Handling Should Degrade on Failure, Not Always Strip
 
 **Files:**
-- Modify: `apps/zcode-cli/packages/core/src/runtime/methods/compact-active.ts`
-- Test: `apps/zcode-cli/packages/core/tests/runtime-compact.test.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/methods/compact-active.ts`
+- Test: `apps/raspberrycode-cli/packages/core/tests/runtime-compact.test.ts`
 
 **Interfaces:**
 - First freeze the intended compact media handling with a provider-visible fixture. Only implement retry/degrade behavior if the frozen behavior keeps provider-supported media on the first compact attempt and strips/retries after a media/context failure.
@@ -234,18 +234,18 @@
 - [ ] If media is stripped before compact, add failing test for that exact provider-visible projection and do not add a retry path.
 - [ ] Implement only the branch confirmed by the evidence.
 - [ ] Preserve current prompt-too-long retry behavior only if it already exists in the compact flow; do not add a new retry tier.
-- [ ] Run: `pnpm vitest run apps/zcode-cli/packages/core/tests/runtime-compact.test.ts -t "media"`
+- [ ] Run: `pnpm vitest run apps/raspberrycode-cli/packages/core/tests/runtime-compact.test.ts -t "media"`
 
 ## Task 9: Preserve UI Divider Invariant
 
 **Files:**
-- Modify only if tests expose breakage: `packages/shared/src/zcode-session-visible-content.ts`
-- Modify only if tests expose breakage: `packages/ui/src/lib/zcodeSessionProjection.ts`
-- Modify only if tests expose breakage: `packages/services/src/zcode-agent/zcodeTaskServiceAdapter.ts`
+- Modify only if tests expose breakage: `packages/shared/src/raspberrycode-session-visible-content.ts`
+- Modify only if tests expose breakage: `packages/ui/src/lib/raspberrycodeSessionProjection.ts`
+- Modify only if tests expose breakage: `packages/services/src/raspberrycode-agent/raspberrycodeTaskServiceAdapter.ts`
 - Test: existing UI/projection tests or add focused unit coverage near projection tests.
 
 **Interfaces:**
-- `isZCodeCompactSummaryMessage` must continue filtering model-only compact summary messages.
+- `isRaspberryCodeCompactSummaryMessage` must continue filtering model-only compact summary messages.
 - `synthesizeCompactionTimeline` must continue rendering only lifecycle compaction parts as `context_compaction` divider.
 
 - [ ] Add regression test with summary message + preserved recent messages + compact lifecycle part.
@@ -257,8 +257,8 @@
 ## Task 10: Provider-Visible Golden/Trajectory Verification
 
 **Files:**
-- Modify: `apps/zcode-cli/tools/prompt-trajectory/tests/derive.test.ts`
-- Optional generated artifact review only: `apps/zcode-cli/tools/prompt-trajectory/out/...`
+- Modify: `apps/raspberrycode-cli/tools/prompt-trajectory/tests/derive.test.ts`
+- Optional generated artifact review only: `apps/raspberrycode-cli/tools/prompt-trajectory/out/...`
 
 **Scenarios:**
 - Manual full compact.
@@ -275,7 +275,7 @@
 
 ## Final Verification
 
-- [ ] Run: `pnpm vitest run apps/zcode-cli/packages/core/tests/runtime-compact.test.ts apps/zcode-cli/packages/core/tests/compact-policy.test.ts apps/zcode-cli/packages/core/tests/microcompact.test.ts apps/zcode-cli/packages/core/tests/read-file-state-hydrator.test.ts apps/zcode-cli/tools/prompt-trajectory/tests/derive.test.ts`
+- [ ] Run: `pnpm vitest run apps/raspberrycode-cli/packages/core/tests/runtime-compact.test.ts apps/raspberrycode-cli/packages/core/tests/compact-policy.test.ts apps/raspberrycode-cli/packages/core/tests/microcompact.test.ts apps/raspberrycode-cli/packages/core/tests/read-file-state-hydrator.test.ts apps/raspberrycode-cli/tools/prompt-trajectory/tests/derive.test.ts`
 - [ ] Run: `pnpm typecheck`
 - [ ] Run: `pnpm lint`
 - [ ] Run: `git status --short` and confirm changes are unstaged.

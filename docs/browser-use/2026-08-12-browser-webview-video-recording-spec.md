@@ -22,7 +22,7 @@
 ## 2. 产品与安全决策
 
 1. 第三方插件只能调用官方 `node_repl` Browser Use SDK 的 `Tab.recording.*`；权限边界仍由
-   `browser-use@zcode-plugins-official` 控制，plugin manifest 不能声明高权限 browser runtime。
+   `browser-use@raspberrycode-plugins-official` 控制，plugin manifest 不能声明高权限 browser runtime。
 2. v1 录制的是一个已受控 IAB tab 的 WebView 合成内容。页面交互和画面来自同一个 guest、同一条
    CDP 时间线，不创建 Playwright browser/context。
 3. 使用异步 `start/status/cancel`，每条 BrowserControl 命令都在既有 30 秒 transport budget 内完成；
@@ -236,7 +236,7 @@ const status = await tab.recording.status(job.id, {
 **覆盖注记**
 
 - `scripts/browser-*-smoke.mjs` 系列需要 Electron GUI 与屏幕录制权限，**未接入 CI**，属于手工/本地门禁。改录制链路时需手动跑
-  `pnpm --filter @zcode/desktop test:browser-webm-recording-smoke`。
+  `pnpm --filter @raspberrycode/desktop test:browser-webm-recording-smoke`。
 - `packages/desktop/test/*.test.ts`（非 e2e 单测）不被任何 `tsconfig` include，类型错误不会被 `pnpm typecheck` 拦住。
 - `browserVideoRecorder.ts` 返回的 `width/height/fps/durationMs/frameCount` 全部由入参推算，不解析 WebM。
   只有 Electron smoke 会核对容器里的真实分辨率与时长，单测层对这几个字段的断言是重言式。

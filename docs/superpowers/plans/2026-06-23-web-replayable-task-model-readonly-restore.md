@@ -20,7 +20,7 @@
 - Modify: `packages/ui/test/useTaskRestoreRuntimeSnapshot.test.ts`
 - Modify: `packages/ui/test/useTaskStreamEventsSnapshotReader.test.ts`
 - Modify: `packages/ui/test/taskStreamEventSnapshotSync.test.ts`
-- Modify: `packages/services/test/zcodeLegacyTaskCompatTaskIndex.test.ts`
+- Modify: `packages/services/test/raspberrycodeLegacyTaskCompatTaskIndex.test.ts`
 
 - [x] Add a UI test asserting `buildReplayableTaskRestoreSnapshotParams` can emit `resumeModelPolicy: "ui-resolved-only"`.
 - [x] Add a UI test asserting mobile replayable restore uses read-only mode while provider snapshot is not hydrated even without a local historical model hint, and desktop restore does not.
@@ -34,16 +34,16 @@
 ### Task 2: Implement Mobile-Only Policy
 
 **Files:**
-- Modify: `packages/services/src/session/zcodeTaskService.ts`
-- Modify: `packages/ui/src/hooks/useZCodeTaskService.ts`
+- Modify: `packages/services/src/session/raspberrycodeTaskService.ts`
+- Modify: `packages/ui/src/hooks/useRaspberryCodeTaskService.ts`
 - Modify: `packages/ui/src/hooks/useTaskRestore.ts`
 - Modify: `packages/ui/src/hooks/useTaskStreamEvents.ts`
 - Modify: `packages/ui/src/hooks/taskStreamEventSnapshotSync.ts`
-- Modify: `packages/services/src/zcode-agent/zcodeTaskServiceAdapter.ts`
+- Modify: `packages/services/src/raspberrycode-agent/raspberrycodeTaskServiceAdapter.ts`
 
 - [x] Add `resumeModelPolicy?: "task-index" | "ui-resolved-only"` to snapshot params.
 - [x] Include the policy in the UI snapshot dedupe/cache key.
-- [x] In `zcodeTaskServiceAdapter.getTaskSnapshot`, skip task-index resume hints only when `clientMode` is `web-remote-replayable` and policy is `ui-resolved-only`.
+- [x] In `raspberrycodeTaskServiceAdapter.getTaskSnapshot`, skip task-index resume hints only when `clientMode` is `web-remote-replayable` and policy is `ui-resolved-only`.
 - [x] In `useTaskRestore`, set the policy only when the mobile replayable path detects an unavailable historical model with no resolved fallback model, when the provider snapshot has not hydrated yet, or when task meta has not reached UI state yet.
 - [x] In that same branch, skip `resumeTask` and use `snapshot.meta` as read-only restored meta.
 - [x] In post-open web replayable snapshot sync, pass `resumeModelPolicy: "ui-resolved-only"` so event/gap/terminal snapshot alignment cannot reintroduce the unavailable task-index model after model switching.
@@ -52,7 +52,7 @@
 
 **Files:**
 - Test: `packages/ui/test/useTaskRestoreRuntimeSnapshot.test.ts`
-- Test: `packages/services/test/zcodeLegacyTaskCompatTaskIndex.test.ts`
+- Test: `packages/services/test/raspberrycodeLegacyTaskCompatTaskIndex.test.ts`
 
 - [x] Run focused tests until green.
 - [x] Run `pnpm typecheck`.

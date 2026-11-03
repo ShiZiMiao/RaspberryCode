@@ -4,7 +4,7 @@
 >
 > 状态：研究结论；确定项已进入 Built-in Provider Config revision 4
 >
-> 设计依据：[`zcode-builtin-provider-config.md`](../design/registry/zcode-builtin-provider-config.md)
+> 设计依据：[`raspberrycode-builtin-provider-config.md`](../design/registry/raspberrycode-builtin-provider-config.md)
 
 ## 1. 范围与结论
 
@@ -70,7 +70,7 @@ Account Overlay 继续约束对应 Built-in Account Provider：
 
 ## 3. Built-in Config 当前结构
 
-当前 `config/provider/zcode-builtin.json` 原子包含 Provider Map 和 Model Config Rules，覆盖三种 API Schema：
+当前 `config/provider/raspberrycode-builtin.json` 原子包含 Provider Map 和 Model Config Rules，覆盖三种 API Schema：
 
 - `anthropic-messages`
 - `openai-chat-completions`
@@ -367,10 +367,10 @@ Runtime 不判断 Plan ID、Access mode 或模型名称；它只读取 Active Mo
 
 必须检查的实现种子：
 
-- `config/provider/zcode-builtin.json`：Provider 成员、物理顺序和 Built-in Rules；
+- `config/provider/raspberrycode-builtin.json`：Provider 成员、物理顺序和 Built-in Rules；
 - `ModelConfigRules.composeEffective()` / `ModelConfigRules.resolve()`：顺序组合和 matcher 解析；
 - `packages/provider/src/resolver.ts`：Effective Provider/Model 完整性与 Registry 输入；
-- `packages/provider-node/test/zcode-builtin-integrity.test.ts`：真实 Built-in Provider/Model Config 事实证据；
+- `packages/provider-node/test/raspberrycode-builtin-integrity.test.ts`：真实 Built-in Provider/Model Config 事实证据；
 - `packages/ui/src/settings/model-provider-section/`：默认值预览、Personal 稀疏覆盖和模型编辑；
 - 各 Adapter 的 `responseJsonSchema`、Tool、MCS 与 reasoning 请求测试。
 

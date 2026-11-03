@@ -41,7 +41,7 @@ CUA Helper 就绪会触发 agent runtime 无条件回收（`packages/services/sr
 
 被否决/推迟的替代方案：
 - 在回收侧区分触发源（`onHelperHealthy` 冷启动首次就绪 vs `onHelperCredentialsRotated`），使正在服务的 workspace 不被回收；
-- 给 `ZCodeAgentService` 补活跃 turn 查询，把 `hasActiveTurnRef`（`node.ts:1467` 现为 `() => false`）真正接上。
+- 给 `RaspberryCodeAgentService` 补活跃 turn 查询，把 `hasActiveTurnRef`（`node.ts:1467` 现为 `() => false`）真正接上。
 
 这两条与本方案不冲突，可后续单独推进。
 
@@ -77,7 +77,7 @@ helper ready 后 509ms 触发回收，且该 workspace 已到 generation 4。若
 ```
 transport.onRuntimeRestart                         SessionPane props:446，已按 workspaceKey 过滤
   → 新增 effect（仅 sessionId === null）
-  → invalidateDraftRuntime(workspacePath, workspaceIdentity)    已存在：zcodeSessionStoreWorkspaceSlice.ts:408
+  → invalidateDraftRuntime(workspacePath, workspaceIdentity)    已存在：raspberrycodeSessionStoreWorkspaceSlice.ts:408
   → draftRuntimeInvalidationVersion + 1
   → reconcile()：清 blockedInvalidationVersion → retireCurrent → startCurrent
   → onReady → 新 binding → prewarmSessionId → effectiveSessionId

@@ -203,5 +203,5 @@ Desktop Local Host、Web Remote 与 Remote Workspace 均遵守目标 Environment
   后续轮询继续重试并可自行恢复；
 - Provider connectivity 协议入口在查找 Provider/Model 和创建正式 Model 前，显式等待当前 Worker
   `ProviderRegistryService.refresh("provider-connectivity")`，没有新增 Host 请求旁路、Registry Snapshot 或测试专用 Model；
-- `@zcode/provider-node` 44 个测试、Services Provider Runtime 11 个定向测试、Bootstrap 协议 108 个测试及相关
+- `@raspberrycode/provider-node` 44 个测试、Services Provider Runtime 11 个定向测试、Bootstrap 协议 108 个测试及相关
   typecheck 通过；macOS 实机复验留在最终人工验证阶段。

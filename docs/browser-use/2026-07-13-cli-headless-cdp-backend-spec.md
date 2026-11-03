@@ -49,7 +49,7 @@ ownership 和生命周期语义不同而保持 `type: "iab"`。
 示例：
 
 ```bash
-zcode --browser-use=headless \
+raspberrycode --browser-use=headless \
   --browser-executable=/usr/bin/chromium \
   --prompt "打开 http://127.0.0.1:4173 并测试登录流程"
 ```
@@ -62,7 +62,7 @@ zcode --browser-use=headless \
 - 未显式给路径时，adapter 按平台查找已安装的 Chrome/Chromium，以及 Playwright cache 中
   已存在的 Chromium；P0 不联网下载浏览器。
 - `--no-browser` 保持 OAuth 登录参数语义，不能复用为 Browser Use 开关。
-- `zcode app-server` / `zcode app-server --stdio` 使用该参数时 fail closed；不能为 Desktop、
+- `raspberrycode app-server` / `raspberrycode app-server --stdio` 使用该参数时 fail closed；不能为 Desktop、
   Web Remote 或 mobile shared-host 链路另起 CLI browser runtime。
 - 不新增环境变量；后续配置文件入口必须先定义优先级和来源审计。
 
@@ -81,7 +81,7 @@ zcode --browser-use=headless \
     tab: []
   },
   metadata: {
-    provider: "zcode-cli",
+    provider: "raspberrycode-cli",
     launchMode: "managed",
     headless: "true"
   }
@@ -203,13 +203,13 @@ adapter，不足以证明 RaspberryCode Browser Use。
 本机真实浏览器链路：
 
 ```bash
-pnpm --dir apps/zcode-cli test:browser-headless
+pnpm --dir apps/raspberrycode-cli test:browser-headless
 ```
 
 Linux、非 root、无 `DISPLAY`/Xvfb 的容器验收：
 
 ```bash
-pnpm --dir apps/zcode-cli test:browser-headless:linux
+pnpm --dir apps/raspberrycode-cli test:browser-headless:linux
 ```
 
 ## 10. 非目标
@@ -223,7 +223,7 @@ pnpm --dir apps/zcode-cli test:browser-headless:linux
 ## 11. 实现与验证记录
 
 - CLI prompt、target 与 TUI 通过依赖注入把 managed `BrowserControlPort` 交给现有
-  `createZCodeApp`；app-server 在参数边界拒绝。
+  `createRaspberryCodeApp`；app-server 在参数边界拒绝。
 - adapter 以一个 Chromium process + 每 session 一个 BrowserContext 管理 tab、generation、取消与
   close；snapshot ref 由 adapter 持有 ElementHandle，不暴露给页面 `globalThis`。
 - context、browser 和 late launch cleanup 都执行有界等待；单个 Playwright close 悬空时继续其它

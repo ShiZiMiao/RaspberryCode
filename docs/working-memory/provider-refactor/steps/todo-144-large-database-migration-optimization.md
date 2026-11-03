@@ -166,10 +166,10 @@ SQLite/账本继续拥有唯一迁移事实；Host/UI 只观察阶段。下方�
 
 ### 最终补查（当前环境）
 
-- 追加真实子进程回归发现并修复：旧启动请求结清时，即使 pending RPC 为 0，迁移也不能进入 idle 回收。`zcodeAgentProcessManager.test.ts` 40 个用例通过；ready 后恢复原空闲策略。
+- 追加真实子进程回归发现并修复：旧启动请求结清时，即使 pending RPC 为 0，迁移也不能进入 idle 回收。`raspberrycodeAgentProcessManager.test.ts` 40 个用例通过；ready 后恢复原空闲策略。
 - 最新会话库/崩溃/启动通知聚焦运行：5 文件 67 个用例通过；App 门禁聚焦 6 文件此前 59 个用例通过，随后进程管理器增加上述第 40 个用例。
 - `pnpm typecheck`、`pnpm lint`（42 个既有 warning，0 error）、`pnpm architecture:check --changed`（0 violation）、CLI bootstrap typecheck、desktop `typecheck:e2e` 通过。
-- 最后一次桌面 E2E 产物：`packages/desktop/.e2e-artifacts/desktop-e2e-20260914103736847-p37727-53170acac47dff56/summary.md`。用例尚未进入执行，ChromeDriver 在创建会话时失败。补齐虚拟显示后，一个仅调用 `app.whenReady()` / `new BrowserWindow()`、不加载 RaspberryCode 的最小 Electron 应用仍以 `Trace/breakpoint trap` 退出（`/tmp/zcode-migration-electron-minimal.log`）；因此当前环境不具备完成桌面 UI 验证的条件，不将它标为业务用例失败或通过。
+- 最后一次桌面 E2E 产物：`packages/desktop/.e2e-artifacts/desktop-e2e-20260914103736847-p37727-53170acac47dff56/summary.md`。用例尚未进入执行，ChromeDriver 在创建会话时失败。补齐虚拟显示后，一个仅调用 `app.whenReady()` / `new BrowserWindow()`、不加载 RaspberryCode 的最小 Electron 应用仍以 `Trace/breakpoint trap` 退出（`/tmp/raspberrycode-migration-electron-minimal.log`）；因此当前环境不具备完成桌面 UI 验证的条件，不将它标为业务用例失败或通过。
 - 仍待可运行桌面环境补验 loading/刷新/成功放行、失败重试、主题/语言/手机视口与真实远端链路。未执行 20 GB 测量，未发布。用户在了解验证限制后要求更名分支、推送并建 MR，并明确本次忽略 Agent 会话 trailer；不猜测 ID。
 - 未使用 codegraph。`dep:refs` 不加载 CLI bootstrap project，旧协议同步 helper 的移除依据仓库全文引用检查与入口切换后的类型检查，不声称语言服务确认零引用。
 

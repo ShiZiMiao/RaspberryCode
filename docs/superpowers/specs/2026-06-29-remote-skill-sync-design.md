@@ -55,13 +55,13 @@ RaspberryCode 的 skills 当前按运行时文件系统读取。本地 workspace
 - 本机侧能力：枚举可同步的本机用户级 skills，并为选中 skills 生成受限归档。枚举逻辑需要覆盖 `~/.raspberrycode/skills` 与 `~/.agents/skills`，并复用本地用户级去重语义，包含分组目录与目录软链。
 - 远端侧能力：接收归档，导入到远端 `~/.raspberrycode/skills`，同名目录存在时跳过。
 
-建议新增 `ISkillSyncService`，注册到本地 host 与远端 zcode-server services。renderer 通过现有 service 路由访问：
+建议新增 `ISkillSyncService`，注册到本地 host 与远端 raspberrycode-server services。renderer 通过现有 service 路由访问：
 
 - 本机候选读取：使用 `useBaseWorkspaceServices()` 取得本机 base services。
 - 远端状态与导入：使用当前 SSH workspace 的 remote services，依赖 `remoteSessionId` / `workspaceIdentity` 解析，不回退到本机服务。
 - 桌面 renderer 合并 remote workspace services 时，`skillSyncService` 必须与 `skillsService` 一样覆盖为 remote service；否则设置页 / header 入口会把导入结果写回本机 `~/.raspberrycode/skills`，但 UI 仍显示远端同步成功。
 - 桌面 host 的 `init-remote` 直接暴露远端连接 services 时，也必须注册远端 `skillSyncService`；否则 renderer 请求 `skill-sync` channel 会在 host 侧等待注册并以 `Channel name 'skill-sync' timed out after 1000ms` 失败。
-- 远端 `zcode-server.cjs` 版本号可能与本机一致但 bundle 内容仍是旧开发包；SSH 连接部署检查需要探测已部署 server bundle 是否包含 `skill-sync` channel，缺失时刷新主 server。
+- 远端 `raspberrycode-server.cjs` 版本号可能与本机一致但 bundle 内容仍是旧开发包；SSH 连接部署检查需要探测已部署 server bundle 是否包含 `skill-sync` channel，缺失时刷新主 server。
 
 服务方法建议：
 

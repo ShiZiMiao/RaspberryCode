@@ -94,7 +94,7 @@ default = max
 8. `magic_name` 只影响同一份 `client/configs` 下发的远端模型，不改变用户自建 provider，
    不改写 model ID，也不新增独立网络请求、全局 singleton 或跨进程可变正则状态。
 9. `reasoningProfile` 是远端权威模型事实：后续同步不再命中 `magic_name` 时，必须清除此前
-   持久化的 profile，不能由本地旧配置或上一版 `zcode` 扩展反向补回。用户已修改的本地模型
+   持久化的 profile，不能由本地旧配置或上一版 `raspberrycode` 扩展反向补回。用户已修改的本地模型
    继续遵循现有 `modified` 保护，不接受远端覆盖；无需迁移，下一次权威同步会自愈旧数据。
 10. 生产运行时代码不直接内嵌上述保密公开 ID 的字符串字面量或新增对应的语义化 token 常量名；
     内置匹配 token 使用中性编号和字符码在运行时构造。中文注释可以说明编号对应的模型族，便于维护。该约束

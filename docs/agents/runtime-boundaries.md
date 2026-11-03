@@ -4,7 +4,7 @@
 
 ## 进程归属
 
-- App 通过子进程 stdio 与 Agent 通信，协议为 `@zcode/protocol`。
+- App 通过子进程 stdio 与 Agent 通信，协议为 `@raspberrycode/protocol`。
 - Main 只负责窗口/native dialog、进程 fork、广播中转、日志接收，以及远控鉴权/配对/心跳、payload 透传和 host attachment 调度；session/task、stream、queue、snapshot 业务状态保留在业务 owner。
 - 每个 BrowserWindow 有且只有一个 window-scoped Local Host，通过 MessagePort 直连 renderer。同一窗口的多个本地 workspace tab 共用该 Host，服务按 workspaceKey 隔离；不要把 workspace service scope 变成独立 Host 进程。
 - Local Host 通过 `createLocalServices({ parentPort })` 承载 file/system/terminal/setting/credential/broadcast，并按 workspaceKey 管理本地 Agent CLI。
@@ -59,8 +59,8 @@ Renderer：未提交草稿 + pending optimistic overlay
 
 修改上述远控/实时行为前，按问题读取以下当前事实文档；历史 plan/spec 仅作背景：
 
-- [远控架构](../web-remote-control/web-remote-control-architecture.md)：attachment、进程职责与远程工作区。
-- [实时同步](../web-remote-control/task-realtime-sync.md)：continuous/replayable、snapshot、gap 和重连。
+- [远控架构](../archive/web-remote-control/web-remote-control-architecture.md)：attachment、进程职责与远程工作区。
+- [实时同步](../archive/web-remote-control/task-realtime-sync.md)：continuous/replayable、snapshot、gap 和重连。
 - [输入队列](../web-remote-control-task-command-queue.md)：CommandInbox、admission 与跨端 command 路由。
 
 ## 运行时证据

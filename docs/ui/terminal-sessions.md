@@ -29,34 +29,34 @@
 - 关闭 workspace tab 后，面板会根据仍打开的 workspace key 回收隐藏终端，避免后台 PTY 泄漏。
 - 打开终端面板、切换 terminal tab、或新建 terminal tab 后，当前可见的 xterm 必须自动获得键盘焦点；隐藏的 workspace/session 不抢焦点。
 - 拖拽调整底部终端高度时，xterm fit 和后端 PTY resize 不能按每个 `ResizeObserver` 回调同步执行；拖拽中按 `TERMINAL_RESIZE_DRAG_THROTTLE_MS` 低频预览，松手后立即 flush 最终尺寸，并对相同 `{ cols, rows }` 去重，避免 Windows / PowerShell 下连续 resize 卡住 UI。
-- tab 展示名使用对应 session 的 cwd 叶子名；首个编号 `1` 不显示，例如 `z-code`。编号 `2` 及以后显示为 `z-code 2`、`z-code 3`。
+- tab 展示名使用对应 session 的 cwd 叶子名；首个编号 `1` 不显示，例如 `raspberrycode`。编号 `2` 及以后显示为 `raspberrycode 2`、`raspberrycode 3`。
 - tab 名称在创建后保持不变。关闭其他 tab 不会触发已有 tab 重命名。
-- 新建 tab 使用当前 workspace 内最小可用正整数编号。关闭 `z-code 2` 后再次新建，名称仍为 `z-code 2`。
+- 新建 tab 使用当前 workspace 内最小可用正整数编号。关闭 `raspberrycode 2` 后再次新建，名称仍为 `raspberrycode 2`。
 - 终端输出中的 `http://` / `https://` 明文链接通过 xterm link provider 识别，hover 时显示下划线和手型，点击后复用 UI 层的 `onOpenBrowserUrl` 打开右侧浏览器；Web 端仍走现有新标签 fallback。
 
 状态与事件顺序：
 
 ```text
 首次打开                         新建
-面板关闭 ──open──> [z-code] ─────────────> [z-code] [z-code 2]
-                       │ close                     │ close z-code 2
+面板关闭 ──open──> [raspberrycode] ─────────────> [raspberrycode] [raspberrycode 2]
+                       │ close                     │ close raspberrycode 2
                        ▼                           ▼
-                   面板关闭                    [z-code]
+                   面板关闭                    [raspberrycode]
                   （session 保活）                  │ new
                        │ reopen                    ▼
-                       └──────────────────────> [z-code] [z-code 2]
+                       └──────────────────────> [raspberrycode] [raspberrycode 2]
 
-[z-code] [z-code 2] ──close z-code──> [z-code 2]
+[raspberrycode] [raspberrycode 2] ──close raspberrycode──> [raspberrycode 2]
                                          │ new（已有名称不变，复用最小编号 1）
                                          ▼
-                                   [z-code 2] [z-code]
+                                   [raspberrycode 2] [raspberrycode]
 
-[z-code] [z-code 2] ──PTY exit 2──> [z-code]
+[raspberrycode] [raspberrycode 2] ──PTY exit 2──> [raspberrycode]
          │
          └─PTY exit 1（最后一个）──> 删除已结束 session ──> 面板关闭
                                                             │ reopen
                                                             ▼
-                                                     新建 [z-code]
+                                                     新建 [raspberrycode]
 
 子命令 exit code != 0 ──shell 仍存活──> tab 不变
 ```

@@ -272,12 +272,12 @@ P5 Rollout
 
 出现 base/diff 异常自动回退 full。
 14. 代码影响面
-src/zcode_cua/accessibility/models.py：增加 node_id、parent_node_id、semantic state/capability。
-src/zcode_cua/accessibility/state.py：拆分 identity/material fingerprint，实现 updated/full/delta/no-change。
-src/zcode_cua/accessibility/filtering.py：语义评分、父链和字符预算。
-src/zcode_cua/platforms/macos_ax.py、Windows UIA、Linux AT-SPI：提供 backend stable identity 候选。
-src/zcode_cua/observation/presentation.py：动作结果返回 delta/no-change，移除重复指导。
-src/zcode_cua/tools/observation_tools.py：能力协商、snapshot mode、subtree/cursor 工具契约。
+src/raspberrycode_cua/accessibility/models.py：增加 node_id、parent_node_id、semantic state/capability。
+src/raspberrycode_cua/accessibility/state.py：拆分 identity/material fingerprint，实现 updated/full/delta/no-change。
+src/raspberrycode_cua/accessibility/filtering.py：语义评分、父链和字符预算。
+src/raspberrycode_cua/platforms/macos_ax.py、Windows UIA、Linux AT-SPI：提供 backend stable identity 候选。
+src/raspberrycode_cua/observation/presentation.py：动作结果返回 delta/no-change，移除重复指导。
+src/raspberrycode_cua/tools/observation_tools.py：能力协商、snapshot mode、subtree/cursor 工具契约。
 RaspberryCode protocol/event/projection：持久化 snapshot/delta 与 base dependency，支持 replay/cold recovery。
 15. 测试方案
 Identity 单测。value、focus、selected 改变不改变 node_id；窗口/文档/语义路径变化正确换 id；重复兄弟节点稳定消歧；material fingerprint 对影响动作安全的变化敏感。
@@ -363,5 +363,5 @@ Delta 依赖 base。如果模型上下文 compact 或 mobile replay 丢失 base�
 RaspberryCode Calculator：~/.raspberrycode/cli/debug/model-io-sess_4c0dec29-abc9-45db-b92a-85b734cfa5eb.jsonl
 RaspberryCode TextEdit：~/.raspberrycode/cli/debug/model-io-sess_9ce83024-e3ca-4a27-8bb7-352186b9c06e.jsonl
 RaspberryCode Chrome：~/.raspberrycode/cli/debug/model-io-sess_d7748be0-9015-464e-b6e1-7e35b3c8563c.jsonl
-核心实现：src/zcode_cua/accessibility/state.py、models.py、filtering.py、observation/presentation.py。
+核心实现：src/raspberrycode_cua/accessibility/state.py、models.py、filtering.py、observation/presentation.py。
 

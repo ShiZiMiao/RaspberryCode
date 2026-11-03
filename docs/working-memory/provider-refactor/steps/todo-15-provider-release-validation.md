@@ -107,12 +107,12 @@ conversation Docker preset
 
 ### 1.4 发布制品与跨平台启动
 
-- Desktop 开发环境和发布包都能定位 `config/provider/zcode-builtin.json`；
+- Desktop 开发环境和发布包都能定位 `config/provider/raspberrycode-builtin.json`；
 - CLI/TUI/SEA 能从嵌入资产或显式路径物化并读取同一 Built-in Config；
 - Server 构建能使用嵌入资产或受支持的显式环境变量启动；
 - macOS、Windows、Linux 都使用当前 Environment 的 `.raspberrycode/v2/config.json`，并验证路径、权限、文件锁、
   原子写和 watcher 行为；
-- `ZCODE_DATA_BASE_DIR`、测试隔离目录和显式 Built-in/Personal 路径不产生跨 Environment 污染；
+- `RASPBERRYCODE_DATA_BASE_DIR`、测试隔离目录和显式 Built-in/Personal 路径不产生跨 Environment 污染；
 - 冷启动、正常重启、配置更新和失败后恢复都得到一致的 Config/Registry 生命周期；
 - 打包产物不遗漏 Built-in Config，也不携带真实 API Key 或测试凭据。
 

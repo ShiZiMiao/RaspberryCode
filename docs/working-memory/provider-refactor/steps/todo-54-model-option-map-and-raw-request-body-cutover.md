@@ -691,7 +691,7 @@ Request Body”这条语义边。实现阶段在当前设计文档更新后补�
 
 本轮最终实现结果：
 
-- 新增纯 TypeScript `@zcode/model-option-map`，以受限 CEL、RFC 7396 Merge Patch、固定 Option 顺序和写入路径冲突检查提供唯一映射实现；
+- 新增纯 TypeScript `@raspberrycode/model-option-map`，以受限 CEL、RFC 7396 Merge Patch、固定 Option 顺序和写入路径冲突检查提供唯一映射实现；
 - Config Schema、稀疏 Overlay、Built-in Rules、Registry、Active Model、CLI Adapter 和 Settings 已统一迁移到 per-option `map`；
 - Patch 在 AI SDK 完成基础请求体后、请求安全校验前应用，Generate/Stream、Debug、Model IO 和真实网络请求观察同一份最终 Body；
 - 删除 `reasoningMapping`、`ReasoningParameters`、旧 max-output/visible-output 预算换算、Anthropic fixed-thinking 加减、OpenAI compatible `extra_body` 推理投影和相关旧 helper；
@@ -699,13 +699,13 @@ Request Body”这条语义边。实现阶段在当前设计文档更新后补�
 
 最终验证：
 
-- `@zcode/model-option-map`：25/25 单测、typecheck、build 通过；
-- `@zcode/provider`：152/152 单测、typecheck 通过；
-- `@zcode/provider-node`：48/48 单测、typecheck 通过；
+- `@raspberrycode/model-option-map`：25/25 单测、typecheck、build 通过；
+- `@raspberrycode/provider`：152/152 单测、typecheck 通过；
+- `@raspberrycode/provider-node`：48/48 单测、typecheck 通过；
 - CLI Adapter 定向测试：190/190 通过，typecheck 通过；
 - CLI Core 定向测试：197/197 通过，typecheck 通过；
 - CLI Bootstrap 定向测试：52/52 通过，typecheck 通过；
 - UI 定向测试：90/90 通过；Contracts typecheck 通过；
-- `pnpm --filter @zcode/cli build`、`pnpm lint`、改动文件格式检查、Feature Graph YAML 解析和 `git diff --check` 通过。
+- `pnpm --filter @raspberrycode/cli build`、`pnpm lint`、改动文件格式检查、Feature Graph YAML 解析和 `git diff --check` 通过。
 
 全仓门禁仍报告三项与本 Todo 无交集的现有基线问题：Desktop E2E helper 的两个 nullable 端口类型错误；Electron 文档样例和二进制文件导致全仓 `fmt:check` 失败；Adapter 的 Bash 进程组清理测试在当前环境中无法清除忽略 TERM 的后代进程。受影响文件的格式、类型和测试均已单独验证通过。

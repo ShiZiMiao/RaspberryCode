@@ -40,8 +40,8 @@ staging: 0e867f1323
 
 文件：
 
-- `packages/zcode-server-cli/test/releaseInstaller.test.ts`
-- `packages/zcode-server-cli/test/packaging.test.ts`
+- `packages/raspberrycode-server-cli/test/releaseInstaller.test.ts`
+- `packages/raspberrycode-server-cli/test/packaging.test.ts`
 
 失败用例：
 
@@ -206,8 +206,8 @@ pnpm verify:pre-push
 
 ```bash
 pnpm exec vitest run \
-  packages/zcode-server-cli/test/releaseInstaller.test.ts \
-  packages/zcode-server-cli/test/packaging.test.ts \
+  packages/raspberrycode-server-cli/test/releaseInstaller.test.ts \
+  packages/raspberrycode-server-cli/test/packaging.test.ts \
   packages/desktop/test/notarizeMacosScript.test.ts \
   packages/desktop/test/cuaHelperDevIdentity.test.ts \
   packages/desktop/test/cuaSystemSettingsWindowWatcher.test.ts \

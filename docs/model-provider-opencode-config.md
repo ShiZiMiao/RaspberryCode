@@ -6,7 +6,7 @@
 > `config.json`、Runtime Model 和 Registry Snapshot 下发只用于理解迁移前代码，不是当前事实。
 > 当前设计见 `docs/working-memory/provider-refactor/design/`。
 
-该历史方案曾取代 `zcode.model-providers.v1` catalog 和 `model-providers.v2.json` store，随后又被
+该历史方案曾取代 `raspberrycode.model-providers.v1` catalog 和 `model-providers.v2.json` store，随后又被
 当前 `.raspberrycode/v2/provider_config.json`、RaspberryCode Built-in Release 和每 Environment 自有 Registry 的方案取代。
 
 ## 文件边界
@@ -17,14 +17,14 @@
 | `~/.raspberrycode/v2/model-providers.json`               | 一次性迁移来源，只读取有效旧内容，迁移后保留原文件不改。     |
 | `~/.raspberrycode/v2/model-providers.v2.json`            | 完全忽略，不读取、不删除、不迁移。                           |
 | `~/.raspberrycode/cli/config.json`                       | standalone CLI 使用的配置文件，不参与 app provider 迁移。    |
-| `models_catalog_china_llm_zcode_2026-06-03.json` | legacy `model-providers.json` 迁移时的模型 metadata 补齐源。 |
+| `models_catalog_china_llm_raspberrycode_2026-06-03.json` | legacy `model-providers.json` 迁移时的模型 metadata 补齐源。 |
 
 `config.json` 已经存在且包含有效 `provider` 时，不用旧文件覆盖用户的新配置。
 
 ## Provider Schema
 
 Provider 结构兼容 opencode config 的 provider 形态，并向 agent 的 provider 定义靠齐。
-RaspberryCode 写回时不再写顶层 `$schema`，也不再写 `zcode` 扩展对象、provider 顶层
+RaspberryCode 写回时不再写顶层 `$schema`，也不再写 `raspberrycode` 扩展对象、provider 顶层
 `api`、`npm`、`endpoints` 等内部推导字段。请求地址只写在 `options.baseURL`。
 
 provider 的 transport 类型使用 `kind`：
@@ -50,12 +50,12 @@ provider 的 transport 类型使用 `kind`：
 - 读旧文件时仍接受顶层 `$schema`，写回时会移除。
 - 读旧文件时仍接受 provider 顶层 `api`，只作为 `options.baseURL` 缺省来源。
 - 读旧文件时仍接受 `npm`，并转换成无 `@ai-sdk/` 前缀的 `kind`。
-- 读旧文件时仍接受 provider/model 的 `zcode` 扩展对象。
+- 读旧文件时仍接受 provider/model 的 `raspberrycode` 扩展对象。
 - 当 `config.json` 已有 `kind` 或 `options.baseURL` 时，运行态以新结构字段为准；
-  残留的 `endpoints`、`apiFormat`、`defaultKind`、`zcode` 只作为缺少新字段时的迁移输入。
+  残留的 `endpoints`、`apiFormat`、`defaultKind`、`raspberrycode` 只作为缺少新字段时的迁移输入。
 - 写回时统一移除 provider 顶层 `api`、`npm`、`endpoints`、`apiFormat`、`defaultKind`、
-  `providerMappings`、`createdAt`、`updatedAt`、provider/model 的 `zcode` 扩展对象，以及
-  `providerMappings` 里旧的 `zcode*` 前缀 key。
+  `providerMappings`、`createdAt`、`updatedAt`、provider/model 的 `raspberrycode` 扩展对象，以及
+  `providerMappings` 里旧的 `raspberrycode*` 前缀 key。
 - app 内部需要的 `endpoints`、`apiFormat`、`defaultKind` 等字段由 storage 读入时从
   `kind + options.baseURL` 推导。
 - 设置页 Base URL 输入和 `options.baseURL` 读写必须保留用户配置的路径段；不得因为
@@ -78,7 +78,7 @@ provider 的 transport 类型使用 `kind`：
 
 `reasoning` 面向 UI、配置页和 RaspberryCode Protocol，表示模型是否支持思考以及可展示的推理强度
 档位。App 只保存并下发档位值，例如 `high`、`max`；这些值对应供应商请求里的哪些字段由
-zcode-cli 维护，app 不再在 `config.json` 里保存 provider-specific `model.variants`。
+raspberrycode-cli 维护，app 不再在 `config.json` 里保存 provider-specific `model.variants`。
 
 ```jsonc
 {
@@ -104,13 +104,13 @@ zcode-cli 维护，app 不再在 `config.json` 里保存 provider-specific `mode
 ## 请求参数合并
 
 app 侧只投影 provider、model、context/output limit、当前 thought level 和当前模型可用
-reasoning variants。一次模型请求中推理强度到 provider options 的映射在 zcode-cli 内完成，
+reasoning variants。一次模型请求中推理强度到 provider options 的映射在 raspberrycode-cli 内完成，
 不从 app config 下发。
 
 ```text
 provider.options
   -> model.options
-  -> zcode-cli 根据 selected reasoning level 生成供应商请求字段
+  -> raspberrycode-cli 根据 selected reasoning level 生成供应商请求字段
 ```
 
 `reasoning.variants` 是 app 侧唯一的 reasoning 档位列表来源。历史 `model.variants` 仅作为旧
@@ -150,7 +150,7 @@ continuous 链路、手机远控 replayable 恢复链路和 agent context meter 
 
 旧 `model-providers.json` 的模型经常只有字符串 id，没有 `contextWindow`、
 `maxOutputTokens`、`modalities`、`reasoning` 等模型事实。迁移时会用本地
-`models_catalog_china_llm_zcode_2026-06-03.json` 按模型 id 补齐缺失 metadata；
+`models_catalog_china_llm_raspberrycode_2026-06-03.json` 按模型 id 补齐缺失 metadata；
 例如 `deepseek-v4-pro` 会从 catalog 得到 `contextWindow: 1000000`，避免落到旧
 128k 兜底值。`model-providers.v2.json` 不参与读取或迁移。
 
@@ -161,11 +161,11 @@ continuous 链路、手机远控 replayable 恢复链路和 agent context meter 
 App 设置页读写 `~/.raspberrycode/v2/config.json`，并投影出：
 
 - UI 兼容 DTO，供设置页和聊天页展示。
-- `ZCodeProviderRegistrySnapshot`，供 app service 在本进程内解析当前选中模型。
+- `RaspberryCodeProviderRegistrySnapshot`，供 app service 在本进程内解析当前选中模型。
 
 Agent 的 `--stdio` 模式不读取 app config 文件。它只消费 app 通过协议下发的 runtime
 model config：当前 provider、当前模型、context/output limit、当前 thought level、当前模型
-可用 reasoning variants。生成请求所需的 reasoning provider options 由 zcode-cli 根据档位值
+可用 reasoning variants。生成请求所需的 reasoning provider options 由 raspberrycode-cli 根据档位值
 维护。UI 的 provider/model 列表以 app 侧 `modelProviderService` 为准，不依赖 agent snapshot
 返回完整 catalog。
 
@@ -179,7 +179,7 @@ agent runtime，也不读取远端机器自己的 provider 配置。
 - 只有 `model-providers.json` 时能迁移到 `config.json.provider`。
 - 写出的 config 不包含顶层 `$schema`。
 - 写出的 provider 使用 `kind`，且不包含 provider 顶层 `api`、`npm`、`endpoints`、
-  `apiFormat`、`defaultKind`、`providerMappings`、`createdAt`、`updatedAt` 和 `zcode`
+  `apiFormat`、`defaultKind`、`providerMappings`、`createdAt`、`updatedAt` 和 `raspberrycode`
   扩展对象。
 - legacy 字符串模型迁移时能从本地 catalog 补齐 `contextWindow` 等 metadata。
 - 只有 `model-providers.v2.json` 时不迁移，结果等同没有旧 provider 配置。

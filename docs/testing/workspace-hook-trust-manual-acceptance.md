@@ -18,14 +18,14 @@
 
 ```bash
 nvm use 24
-pnpm --dir apps/zcode-cli/packages/cli build:desktop-agent
+pnpm --dir apps/raspberrycode-cli/packages/cli build:desktop-agent
 node scripts/create-workspace-hook-trust-uat-fixture.mjs
 ```
 
 最后一条命令会输出一个新的临时 workspace，例如：
 
 ```text
-/private/tmp/zcode-workspace-hook-trust-uat-XXXXXX
+/private/tmp/raspberrycode-workspace-hook-trust-uat-XXXXXX
 ```
 
 记录该路径，并启动 Desktop：

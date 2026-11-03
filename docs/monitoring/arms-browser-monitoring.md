@@ -56,8 +56,8 @@ patch 头的目标 blob 与安装产物一致，并验证同一工作区连续�
 
 | 项                         | 位置 / 值                                                                                                            |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Endpoint                   | `ZCODE_ARMS_RUM_ENDPOINT`（`packages/shared/src/env.ts`）                                                            |
-| 上报环境                   | `mapZCodeEnvToArmsRumEnv(runtimeEnv)`：本地开发运行态始终为 `local`；非本地运行态仅 `ZCODE_ENV=production` 为 `prod` |
+| Endpoint                   | `RASPBERRYCODE_ARMS_RUM_ENDPOINT`（`packages/shared/src/env.ts`）                                                            |
+| 上报环境                   | `mapRaspberryCodeEnvToArmsRumEnv(runtimeEnv)`：本地开发运行态始终为 `local`；非本地运行态仅 `RASPBERRYCODE_ENV=production` 为 `prod` |
 | `sessionConfig.sampleRate` | `1`（100% 会话采样）                                                                                                 |
 | `autoInject`               | `true`（SDK 在 `dom-ready` 注入 Browser SDK；勿再 preload/renderer 手动 init）                                       |
 | `browserCollectors`        | `perf/webvitals/exception/whiteScreen/api/staticResource/click/longTask: true`（见 `ARMS_BROWSER_COLLECTORS`）       |
@@ -65,7 +65,7 @@ patch 头的目标 blob 与安装产物一致，并验证同一工作区连续�
 | `parseViewName`            | `file://` 取 html 文件名；http dev-server 取 pathname                                                                |
 | `tracing`                  | `arms_env=prod` 时 `enable: true`、`sample: 0.1`（0.1%）；`arms_env=local` 时 `sample: 1`                            |
 
-无 `ZCODE_ARMS_*` 环境变量。
+无 `RASPBERRYCODE_ARMS_*` 环境变量。
 
 ## longTask 归因摘要
 
@@ -113,7 +113,7 @@ Windows 安装版位于 `C:\Users\<用户名>\AppData\...`，必须与 `stack` �
 `url` 与 `name` 只保留 `protocol//host` 加归一化路由，丢弃 query 与 fragment；路由分段中的
 ID、hash、邮箱形态归一为占位符。`message`（statusText 或错误摘要）按文本脱敏规则处理。
 
-上述规则的文本实现是 `@zcode/shared` 的 `redactTelemetryText`，与 CLI
+上述规则的文本实现是 `@raspberrycode/shared` 的 `redactTelemetryText`，与 CLI
 [`error-sanitizer`](../trace/cli-agent-telemetry.md) 保持同一套模式；新增自动采集器或新增
 携带自由文本的字段时必须同步扩展本节与该实现。
 

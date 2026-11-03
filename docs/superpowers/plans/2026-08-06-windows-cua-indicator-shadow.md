@@ -171,11 +171,11 @@ git add -- packages/desktop/src/main/windowsCuaOperationIndicator.ts packages/de
 git commit -m "fix(cua): render natural Windows indicator shadow"
 ```
 
-停止当前 `@zcode/desktop dev:local-cli` 进程树，然后用以下环境变量启动隐藏 dev 进程：
+停止当前 `@raspberrycode/desktop dev:local-cli` 进程树，然后用以下环境变量启动隐藏 dev 进程：
 
 ```powershell
-$env:ZCODE_CUA_DEV_ROOT = "C:\Users\dev\zcode-cua"
-pnpm --filter @zcode/desktop dev:local-cli
+$env:RASPBERRYCODE_CUA_DEV_ROOT = "C:\Users\dev\raspberrycode-cua"
+pnpm --filter @raspberrycode/desktop dev:local-cli
 ```
 
-Expected: Electron main、desktop Host、`zcode.cjs app-server --stdio` 和 `C:\Users\dev\zcode-cua\dist\windows-helper.js` 均存在。
+Expected: Electron main、desktop Host、`raspberrycode.cjs app-server --stdio` 和 `C:\Users\dev\raspberrycode-cua\dist\windows-helper.js` 均存在。

@@ -29,7 +29,7 @@ Registry Source。仍有效的系统事实迁入 RaspberryCode Built-in Config/R
 RaspberryCode Built-in 在物理上继续使用一份完整、原子的 JSON，不拆成按 Provider、模型或规则层级划分的多份
 源文件，也不引入额外的生成/拼装流水线。Provider Map 的声明顺序和 Model Config Rules 的数组顺序就是
 发布内容的一部分；具体 Rule 类型、物理写作顺序、Endpoint 特化、证据和默认启用目录规范见
-[`zcode-builtin-provider-config.md`](./zcode-builtin-provider-config.md)。这些规范不新增 Rule priority 或动态重排。
+[`raspberrycode-builtin-provider-config.md`](./raspberrycode-builtin-provider-config.md)。这些规范不新增 Rule priority 或动态重排。
 
 Built-in Release 按以下产品来源组织：
 
@@ -58,7 +58,7 @@ Provider Template；Template 不是 Provider，不进入 Registry，也不具备
 Bundled、Remote 与 Environment Active Cache 使用同一个两层 Release 契约：
 
 ```ts
-interface ZCodeBuiltinRelease {
+interface RaspberryCodeBuiltinRelease {
   schemaVersion: 3;
   revision: number;
   config: {
@@ -84,7 +84,7 @@ Provider 与 Personal Rule 的应用顺序直观可见。Template 名称按当�
 和 Rules。已发布的同一 revision 必须对应唯一内容，内容回滚也要发布更高 revision。
 
 Environment 在
-`<config-root>/provider/zcode-builtin/<platform>/<appVersion>/<endpointKey>/active.json` 保存当前活动
+`<config-root>/provider/raspberrycode-builtin/<platform>/<appVersion>/<endpointKey>/active.json` 保存当前活动
 Release；该文件同时承担 LKG。`endpointKey` 由规范化后的 RaspberryCode 控制面 Origin 确定性生成，Active 与
 `refresh-control.json` 必须位于同一个 Endpoint 目录。启动时严格解析 Bundled 与当前 Endpoint 的 Active，选择 revision 更高的兼容候选并物化到
 Active。Active 是可丢弃的缓存/LKG，不是启动前提：Active 缺失、损坏、更旧、与 Bundled 的同 revision
@@ -125,7 +125,7 @@ Effective Built-in Provider Config
 ```
 
 ```ts
-effectiveBuiltinProviders = zcodeBuiltinProviders.overlay(accountBuiltinProviders);
+effectiveBuiltinProviders = raspberrycodeBuiltinProviders.overlay(accountBuiltinProviders);
 effectiveProviders = effectiveBuiltinProviders.overlay(personalProviders);
 ```
 
@@ -357,7 +357,7 @@ Visibility 是 presentation/option-source 配置，不是安全门禁。Registry
 Effective Rules 在领域边界确定性组合：Built-in 保留发布顺序，Personal `provider-model` 保留内部顺序并统一后置：
 
 ```ts
-effectiveModelRules = ModelConfigRules.composeEffective(zcodeBuiltinModelRules, personalModelRules);
+effectiveModelRules = ModelConfigRules.composeEffective(raspberrycodeBuiltinModelRules, personalModelRules);
 ```
 
 Built-in 与 Personal 使用共同的 Rule 结构：
@@ -707,10 +707,10 @@ Personal Config Repository ───┼─> ProviderConfigService
 Account Built-in Config Source ───> ProviderRegistry
 ```
 
-Built-in 发布文件统一命名为 `config/provider/zcode-builtin.json`。Desktop、CLI/TUI、测试和 SEA 各自显式
-注入可访问的 Source 路径或普通对象，`@zcode/provider` 不读取文件。Provider Config 链不保留
+Built-in 发布文件统一命名为 `config/provider/raspberrycode-builtin.json`。Desktop、CLI/TUI、测试和 SEA 各自显式
+注入可访问的 Source 路径或普通对象，`@raspberrycode/provider` 不读取文件。Provider Config 链不保留
 `official.json`、旧环境变量或旧协议字段兼容；原子切换计划见
-[`../../steps/todo-10-zcode-builtin-provider-config-naming-cutover.md`](../../steps/todo-10-zcode-builtin-provider-config-naming-cutover.md)。
+[`../../steps/todo-10-raspberrycode-builtin-provider-config-naming-cutover.md`](../../steps/todo-10-raspberrycode-builtin-provider-config-naming-cutover.md)。
 
 Personal Config 使用当前 Environment 的 `.raspberrycode/v2/provider_config.json`，与其他综合配置文件物理隔离。
 Repository 提供读取、变化通知和原子 `update()`；文件锁、原子写、重试和 content-revision 轮询属于

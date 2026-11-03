@@ -59,7 +59,7 @@ legacy family mode / selectedKey
 - Samantha 工作区：独立 worktree
 - MacBook Pro 标准仓库：`/Users/dev/Desktop/projects/Z.AI/z-code`
 - 两端提交：`21c38683e1 test(ui): remove stale built-in model label assertion`
-- MacBook Pro 使用已有标准 bootstrap/build 结果；执行时设置 `ZCODE_E2E_SKIP_BUILD=1`、`ZCODE_E2E_SKIP_AGENT_BUILD=1`，没有修改系统配置。
+- MacBook Pro 使用已有标准 bootstrap/build 结果；执行时设置 `RASPBERRYCODE_E2E_SKIP_BUILD=1`、`RASPBERRYCODE_E2E_SKIP_AGENT_BUILD=1`，没有修改系统配置。
 
 ### 2.2 四轮原生 Desktop E2E
 
@@ -192,13 +192,13 @@ I20 在选择 `high` 后仍轮询原始 JSON 的 `builtInThoughtLevelOverrides.E
 三项测试都把下面的日志当成 readiness barrier：
 
 ```text
-zcode_protocol.workspace_update_provider_registry.completed
+raspberrycode_protocol.workspace_update_provider_registry.completed
 ```
 
 当前生产代码已经没有这个事件，仓库中只剩这三个 E2E 在搜索它。Provider 重构后 Registry 是 process-owned runtime，启动事件是：
 
 ```text
-zcode_protocol.provider_registry.ready
+raspberrycode_protocol.provider_registry.ready
 ```
 
 Personal Config 的更新也由正式 Runtime/Registry source 处理，不再向每个 workspace 推一份 Registry snapshot。
@@ -229,7 +229,7 @@ modelProviderFamilyModes + modelProviderFamilySelectedKeys
 `triggerCodingPlanWebviewPurchaseComplete()` 先读取可见 Webview origin，再把这个 origin 当作本地 upgrade mock server 调用“标记购买完成”。当前实际 Webview URL 是正式 RaspberryCode Endpoint：
 
 ```text
-https://zcode.z.ai/coding-plan...
+https://raspberrycode.z.ai/coding-plan...
 ```
 
 它不是本地 mock server，所以 CPUW-03 在触发 bridge 以前就失败。该 Case 同时还在购买后读取 Personal Provider 的 `enabled`，与 R3 相同。

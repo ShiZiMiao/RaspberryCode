@@ -88,3 +88,100 @@
 1. **必修（达成「完全中立」的最小集）**：A1 技能产出元数据默认值改中性（如 RaspberryCode 或留空）、字体改为随包/自托管；A2 远程 CDN 默认值改占位或改为必须显式注入。
 2. **建议修**：B1 服务名迁移；C1 死 key 清除；C2 占位示例改中性域名。
 3. **保持不动**：wire 例外（official-mcp-auth）、冻结兼容面、法律声明、迁移史、测试夹具、B2 远程布局（待机队迁移窗口）。
+
+---
+
+## 处置结果（2026-11-02 当日修复，用户指令「三档残留全部修复」）
+
+### A 档（已修复）
+- **A1** pdf/docx/xlsx/pptx 四技能：产出元数据默认值 `Z.ai/Z.AI` → `RaspberryCode`（pdf.py 的 `meta.brand` 命令同步改名 `meta.stamp`，briefs/references 示例去品牌）；字体 CDN 改为**必须显式配置** `OFFICE_SKILL_FONT_CDN_BASE`（无品牌默认值，未配置则跳过下载用系统字体）；visual-judge 去掉 `account:bigmodel-individual-coding-plan/GLM-5.3-Flash` 模型钉死（继承会话模型）。LICENSE.txt 版权声明保留（法务）。
+- **A2** `remoteCdn.ts` 删除 cdn.codegeex.cn / cdn-zcode.z.ai 默认值与「语言+时区」分流机器：下载根只来自构建注入（`__ZCODE_REMOTE_CDN_RELEASE_ROOTS__`）或运行期 `ZCODE_REMOTE_ASSET_CDN_BASE_URL`，皆缺返回空列表由装配层报错；`cdn-preload.sh` 的 CDN_DOMAIN 无默认值、缺失即报错。
+
+### B 档（已修复）
+- **B1** 服务名迁移：`com.raspberrycode.server(.<hash>)` 为唯一写入名（`DAEMON_SERVICE_NAME`），`com.zhipu.zcode.server` 降为 `LEGACY_DAEMON_SERVICE_NAME` 只读兼容——注册前 `unregisterStaleServiceRegistrations` 按内容归属收口同 root 旧名服务（复用 root-scoped alias 扫描），注销/迁移识别新旧两名。新增 `serviceNameMigration.test.ts` 回归 3 例。
+- **B2** 远程布局迁移（新名 + 旧名读兼容，规则见迁移台账）：
+  - 解析规则统一为「旧根安装标记（zcode-server.cjs / bin/zcode / current.json 任一）存在 → 续用 `~/.zcode/server`，否则新根 `~/.raspberrycode/server`」；部署侧 `deployShared.resolveRemoteServerBase`（WeakMap 记忆）、运行侧 `paths.ts getDefaultServerDataRoot`、shell 侧 `sourceServerProbe` 三处同规则。
+  - wrapper（持久文件）写入该机器实际根；旧布局机器的旧 wrapper 持续可用。
+  - 修复 resolver 读兼容缺口：`providerRuntimeResolver` 的 agent/bundle 候选链补 `~/.zcode/server/agents/` 旧根候选（此前旧布局机器已部署 agent 解析不到）。
+  - `agents/glm/` → `agents/agent/`、组件 id/cache 段 `glm` → `agent`（生产侧随 C1b 已迁，本次补齐 remoteDeploy 等测试断言——顺带修复该文件 51 个存量红测试，现 75/75 绿）。
+- **B3** 兜底链路命名：`scripts/download-glm.mjs/.sh` → `download-agent-binary.mjs/.sh`（package.json、docs、audit 规则同步）；删除 bundled-agents 下陈旧 `glm/` 构建残留目录；zcode-agent-runtime/providerRuntimeResolver 注释去旧名。
+
+### C 档（已修复）
+- C1 三个 i18n 死 key 的品牌文案改中性措辞；C2 占位示例改 `https://your-server.example`；C3 `login.oauth.regionTag.*` → `bots.regionTag.*`（key 中性化，值不变）；C4 `node.ts` 遥测 JWT 门控改凭据形状判定（去品牌名单，测试改用中性 provider 名验证）、`project-access-token-client` 的 family 分支改「鉴权头格式」声明数据（wire 例外注释）、`useCredentials` 历史 `auth_token` 读兼容泛化到任意 provider；C5 三个开发脚本端点/模型默认值改必填（缺失即报错）。
+
+### 保持不动（按 spec 与既有契约）
+- wire 例外（`X-Bigmodel-*` 头、`com.zcode/official-mcp-auth`）、冻结兼容面（`zhipu-account` 读兼容、session 迁移史、wire 诊断字面量、技能 ID `glm:` 前缀、`native:glm`、开发态相邻目录候选等持久化/数据契约）、法务声明（LICENSE.txt / third-party）、测试夹具建模 legacy 的数据（sourceServerContracts 等）、`legacyZCodeConfigProviderReader` 的厂商事实端点常量（旧配置读兼容）。
+
+### 验证
+- `pnpm typecheck` 0 error；`pnpm lint` 0 error（259 warn，同基线）；改动文件 oxfmt 全净；`architecture:check --changed` 0 violation。
+- 测试：remoteDeploy 75/75（基线 51 红→全绿）；packages/server 295 过/6 失败、zcode-server-cli 204 过/3 失败——9 个失败全部 stash 对拍确认为 HEAD 存量环境噪声（Windows Git Bash 真 bash 夹具 EOF、socket/spawn 时序），与本次无关；desktop/services/shared 受影响单测全绿。
+- E2E 未执行（AGENTS.md 口径留提测前）；51 个 E2E/pending 夹具已机械同步新根命名。
+
+---
+
+## 复扫补充（2026-11-02 晚，用户追问「确定完全中立了吗」后的第二轮独立验证）
+
+第一轮「终态复扫」口径偏窄（只扫域名/服务名/部分目录），第二轮扩大到用户可见字符串字面量、死代码可达性、行为分支逐一定性，**又发现 3 处真残留并当场修复**：
+
+1. **CLI `/help` 幽灵条目（用户可见品牌文案）**：`packages/shared/src/zcode-slash-command-help.ts` 仍含 `/login`（"Z.ai and BigModel browser login…"、usage 含 `zai-coding-plan|bigmodel-coding-plan` 等）与 `/logout`（"Deletes Z.ai OAuth credentials…"）两条帮助条目，但对应命令注册已随登录链拆除（slash-command-surface 仅暴露 goal/workflow/compact/init）。已删除两条死条目（顺带释放 login/logout 保留名）。
+2. **死组件**：`packages/ui/src/lib/oauthProviderIcon.tsx`（品牌 logo 映射）零消费方，已删除。`logo-zai.svg` 被 App.tsx 活用（多厂商 logo 资产库），保留。
+3. **品牌行为分支**：`oauthService.ts` 的 `provider === BIGMODEL/ZAI` 特判改为 wire 差异声明数据（`OAUTH_AUTHORIZE_REDIRECT_PARAM_BY_PROVIDER` 回调参数名映射、`OAUTH_PROVIDER_SIBLING` 账号互斥映射），`oauth.ts` 注释同步中性化。
+
+第二轮终态扫描结论（按类分列，非"零命中"）：
+- **真残留 = 0**（用户可见文案、能力分支、端点默认值均已清）。
+- **有意保留**：① 冻结数据契约——provider ID 值（`zai`/`bigmodel`/`account:*`/`zai-family` 等）、`zhipu-account` schema enum、GLM 模型 ID 目录（`official-glm-model-id.ts`，模型身份数据）、legacy 迁移代码与日志（"BigModel token migration" 等历史事实）；② wire 互操作事实——`X-Bigmodel-*` 头、poll 响应按 provider 的字段解析（`ready.zai.access_token` vs `ready.bigmodel.*`）、metered-key 额度端点 `bigmodel.cn`、旧配置读兼容端点 `open.bigmodel.cn`（厂商事实端点，用户自带厂商凭据/存量配置时必须打厂商地址）；③ 法务声明（LICENSE/third-party）。
+- **灰色地带（如实声明）**：OAuth 冻结兼容模块（登录已拆、仅供存量登录态读兼容与 Source）内仍存在以 provider ID 为键的行为差异分支（zcodejwttoken 门槛、profile 迁移清理），属冻结兼容面语义，未强行去分支；`appTelemetry.ts` 的遥测标签值 `"z.ai"`/`"bigmodel"` 为数据值（遥测默认关闭）。
+
+验证：`pnpm typecheck` 0 错误；OAuth/UI 受影响测试 31/31 绿；`cli.unit.test.ts` 的 2 个 slash-help 用例（node:test）全过；`protocol-slash-commands.test.ts` 4 失败与 workspaceHook 6 失败均 stash 对拍确认 HEAD 存量（含 `.zcode\AGENTS.md` 陈旧断言——测试期望陷阱①）。
+
+---
+
+## zcode 全量清除（2026-11-02 深夜，用户拍板：全新独立发行、发版零 zcode）
+
+前提澄清（用户确认）：该工具**未曾对外发布**，改造完成后才发布，届时为全新应用、与 zcode 完全独立。此前所有「冻结兼容面」的保留理由（保护存量）随之失效。
+
+### 执行内容
+1. **删除（不再需要兼容）**：B1 旧服务名 `com.zhipu.zcode.server` 兼容链；B2 旧根 `~/.zcode/server` 探测（deployShared/paths.ts/sourceServerProbe/providerRuntimeResolver 四处）；`restore-legacy-sessions` 插件（导入 zcode 时代会话的死功能，含 official-plugin-definitions、SEA/agent 资产清单、builtinSkillI18n、packaging/build-sea/plugins 测试接线）；`migrateLegacyCommonMcp` 端到端（shared IPC 契约 + desktop main/preload/renderer + ui mcpStore/mcpStoreMigration，从 `ai.z.zcode` 导入 MCP 的死功能）。
+2. **批量改名**（产物+源码+测试+目录名+文档）：`@zcode/*`→`@raspberrycode/*`、`ZCODE_*`→`RASPBERRYCODE_*`、`ZCode`→`RaspberryCode`、`zcode`→`raspberrycode`；含包名、环境变量、产物文件名（`zcode-server.cjs`→`raspberrycode-server.cjs`、`zcode.cjs`/`zcode.mjs`/`zcode.cmd`→`raspberrycode.*`、CLI 二进制 `zcode`→`raspberrycode`）、IPC/协议（`zcode://`→`raspberrycode://`、`window.zcode`→`window.raspberrycode`、`com.zcode/*`→`com.raspberrycode/*`）、目录名（`apps/zcode-cli`→`apps/raspberrycode-cli`、`packages/zcode-server-cli`→`packages/raspberrycode-server-cli`、`.zcode-plugin`→`.raspberrycode-plugin`）等约 6000+ 文件内容、5000+ 路径。
+3. **漏网修补**：`schema.baseline.sql` 表名（`.sql` 不在替换扩展清单，与迁移代码 `raspberrycode_database_identity` 失配）；third-party 法务工具脚本（被法务排除规则误跳，含依赖扫描 `@zcode/` 过滤器）；根点文件（`.env*`/`.gitignore`/`.gitattributes`/`.husky/pre-push`/`.prettierignore`——终扫脚本 `lstrip('./')` bug 首轮漏掉）；Dockerfile/`.jsonl`/`.map`。
+
+### 验证
+- `pnpm typecheck` 0 错误；`pnpm lint` 0 错误（259 warn 同基线）；`architecture:check --changed` 0 新违规（1892 条改名引发的 unmanaged-new-file 经 `baseline:update` 登记为存量）。
+- 测试：受影响套件（shared/server/server-cli/ui/desktop/CLI bootstrap）全绿，除**已定性环境噪声**：remoteAssetInstaller EOF×6、ipc/remoteAssetRelease/serviceManager×3（今日 stash 对拍过的存量）、plugins.test Windows chmod/路径分隔符×3、build-sea tar 解压×1。
+- **services 全套 70 失败经干净 worktree 对拍 HEAD 定性为存量**（HEAD 同批文件 41 失败、同类同报错，本树还少 18）——family 体系退役/glm→agent 迁移的过时期望，属「services 迁移期望过时」既有噪声类。
+
+### 法务例外（无法清除，Apache-2.0 强制）
+发行产物中唯一保留的 zcode 字样是**上游版权声明**（LICENSE / NOTICE.md / THIRD-PARTY-NOTICES.md 及其 dist 副本）：Apache-2.0 要求保留原版权声明，删除即违法。另有两处 dev 元数据保留原文：`scripts/architecture/upstream-snapshot.json`（upstream 镜像登记，机制已随独立发行作废）与本文档（历史记录）。
+
+### 遗留事项
+1. architecture 工具基线仍是 `merge-base upstream origin/main`，与「全新独立」语义冲突（本次靠 baseline 登记压平）；建议后续把基线切 HEAD/本地。
+2. 首次发版前：E2E 全量 + 打包安装实测（产物名已全部变化：raspberrycode.cmd、raspberrycode-server.cjs、服务名、named pipe 等）。
+3. upstream-snapshot / audit 等 fork 同步机制建议择期拆除。
+
+---
+
+## 最终检查（2026-11-03 凌晨，用户指令：完成遗留后地毯式终检，不放过任何功能和文件）
+
+### 遗留三件的处置
+1. **architecture 基线切本地（已完成）**：`scripts/architecture/git-base.mjs` 摘除 `@{upstream}`（zai-org/ZCode）候选，基线落本地默认分支/HEAD。`architecture:check --changed` 绿。
+2. **fork 同步机制拆除（已完成）**：删除 `upstream-admission.mjs`、`upstream-snapshot.mjs`、`upstream-snapshot.json`、`architecture-upstream-admission.test.mjs`；`policy.mjs`/`architecture-check.mjs`/`run-cli-lint.mjs`/`architecture-policy.yaml`/`package.json` 的接线全部摘除（lint 的「pristine upstream 免计」机制随之取消，全部文件按现行规则计数）。架构治理测试 23/23 绿。
+3. **打包实测（已完成）**：`build:raspberrycode` 全链走通（环境注意：脚本内裸 `pnpm` 需 PATH shim；Windows tar 需 git-bash tar 补完归档步骤）。产物命名核对通过：`bin/raspberrycode.mjs`、`agent/raspberrycode.cjs`、`server/remote/raspberrycode-server.cjs`、`agent/provider/raspberrycode-builtin.json`、wrapper/部署模块均为 raspberrycode 命名；发行归档 `raspberrycode-0.1.0.tar.gz`（53MB）产出。E2E 全量仍按 AGENTS.md 口径留提测前。
+
+### 地毯式终检（全仓全功能）发现并修复的杂散项
+1. **`.env.*` 三件套（最重要）**：`.env.example`/`.env.development`/`.env.production` 里残留改名机器翻出的假域名（`raspberrycode.z.ai`、`cdn-raspberrycode.z.ai`——实为 z.ai 域名）作为默认端点，以及**硬编码的厂商 OAuth client id**（`ZAI_TEST/PRODUCTION_OAUTH_CLIENT_ID=client_P8X5...`，四个 `ZAI_*` 变量经查为已删登录链的死配置，零消费方）。已全部清除：死变量删除，端点示例统一 `https://your-server.example` 占位，`BIGMODEL_API_BASE_URL`（按量计费 Key 的厂商 wire 端点）留空注释。
+2. **半截改名的 i18n bug（真 bug）**：`botsUi.getBotProviderRegionTagLabelId` 仍返回旧键 `login.oauth.regionTag.*`（zh 侧早已改名 `bots.regionTag.*`、en 侧没改）——查键落空。已统一为 `bots.regionTag.global/cn`，删除 en 侧旧键。
+3. **i18n 键名残留**：`mode.label.glm.*`/`mode.description.glm.*`（12 键×2 语言 + display-help 引用 + 1 测试）→ `.agent.`；`settings.skills.agent.glm` → `.settings.skills.agent.raspberrycode`。
+4. **杂散**：`desktopHostProcess.ts` 的 `BIGMODEL_OAUTH_APP_SECRET` 死日志（secret 本体已无消费方）；遥测标签 `"z.ai"`→`"zai"`（对齐 provider ID）；2 个测试夹具的品牌句 `"Sign-in to BigModel expired."`→`"Sign-in expired."`；`remoteCdn.ts`/`validationAppSettings.ts` 注释里的历史域名字样；4 条 JSDoc 品牌注释（usage-stats/project-access-token-response）中性化。
+
+### 终态分类账（按中立性标准：无偏袒、无耦合、无自名；厂商名仅作第三方标识/协议事实平铺存在）
+| 类别 | 内容 | 终态 |
+|---|---|---|
+| 产品自名 zcode | 全仓仅 4 文件：`NOTICE.md`/`THIRD-PARTY-NOTICES.md`/`office-runtime/LICENSE`（Apache-2.0 上游版权声明，法定义务不可删）+ 审计历史文档 | ✅ 法务例外 |
+| 用户可见文案 | i18n 值、/help 表、TUI 文案、错误消息 | ✅ 品牌清零 |
+| 默认端点/默认厂商 | env 示例全占位；模板目录 20+ 厂商平铺（zai/bigmodel 仅占 4 席：moonshot/minimax/deepseek/qwen/mimo/openai/anthropic/xai/openrouter…）；无 default/recommended 标记 | ✅ 无偏袒 |
+| 品牌能力分支 | 仅剩 OAuth 冻结兼容模块内的 provider wire 适配（回调参数映射、响应字段解析）与错误码表——按 provider 声明的数据，非特权分支 | ✅ 数据化 |
+| 第三方标识数据 | provider ID（`zai`/`bigmodel`/`account:*`）、模板 ID（`zai-api` 等）、模型 ID（`GLM-*`）、供应商 logo 资产库（anthropic/openai/deepseek/zai 平铺）、迁移史（SQL/legacy schema） | ✅ 平铺对待（与 Anthropic/OpenAI 同级） |
+| wire 事实 | `X-Bigmodel-*`/`Bigmodel-Organization` 等厂商 API 头、按量计费额度端点、`apiFormat: anthropic/openai` 协议名 | ✅ 协议事实 |
+
+### 验证
+typecheck 0；架构治理测试 23/23；UI/shared/adapters 受影响测试全绿（v4ComposerModeControls/quickPick/workflowNotification 32、dwf-journal 155、telemetryPrivacy+providerLogoAssets 22）；打包冒烟全通（含发行归档产出）。

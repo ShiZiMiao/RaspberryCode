@@ -148,7 +148,7 @@ Local Desktop authority:
 
 Remote server authority:
   - file / git / terminal / file watcher
-  - zcodeTask / zcodeSession / zcodeAgent
+  - raspberrycodeTask / raspberrycodeSession / raspberrycodeAgent
   - skills / plugins / MCP / commands for remote workspace
   - model provider registry used by the remote runtime
   - workspace-level settings and task/session persistence
@@ -174,7 +174,7 @@ Mobile /remote:
 
 第一版发送策略：
 
-- connected 且 task ready：直接走远端 `zcodeTaskService` / `zcodeAgentService` 现有发送路径。
+- connected 且 task ready：直接走远端 `raspberrycodeTaskService` / `raspberrycodeAgentService` 现有发送路径。
 - disconnected：禁用发送，不在本地 renderer queue 积压。
 - running task 的流由远端 server 持有；Desktop 断线不会杀远端 runtime。
 - 重连后用远端 session/task snapshot 对齐 UI。
@@ -197,7 +197,7 @@ Remote Connection
 
 - 本地 Vite 开发启动，或 Desktop platform 明确标记 `isLocalDevelopmentRuntime = true`：展示 `Server` 类型卡片。
 - production-mode 打包的 Desktop（包括正式包和预览包）：不展示 `Server` 类型卡片，即使产品环境配置为 `test` 也不放开。
-- 门禁只使用本地开发运行形态，不使用 `ZCODE_ENV` 或内网探测结果；SSH / WSL / Docker 的展示规则不受影响。
+- 门禁只使用本地开发运行形态，不使用 `RASPBERRYCODE_ENV` 或内网探测结果；SSH / WSL / Docker 的展示规则不受影响。
 
 Server 表单字段：
 

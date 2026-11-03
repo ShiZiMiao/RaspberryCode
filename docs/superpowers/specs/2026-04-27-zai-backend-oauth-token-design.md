@@ -2,7 +2,7 @@
 
 ## 背景
 
-当前桌面端已经有多 provider OAuth 架构，ZAI 登录通过 `ZaiProviderAdapter` 直接向三方 ZAI token 与 userinfo 接口换取 access token。新需求要求桌面端只负责打开 ZAI 授权页并接收 deep link 回调；拿到 `code` 和 `state` 后调用自有后端 `https://zcode.z.ai/api/v1/oauth/token`，由后端完成向 z.ai 换 token、拉取 userinfo、创建用户并签发 JWT。
+当前桌面端已经有多 provider OAuth 架构，ZAI 登录通过 `ZaiProviderAdapter` 直接向三方 ZAI token 与 userinfo 接口换取 access token。新需求要求桌面端只负责打开 ZAI 授权页并接收 deep link 回调；拿到 `code` 和 `state` 后调用自有后端 `https://raspberrycode.z.ai/api/v1/oauth/token`，由后端完成向 z.ai 换 token、拉取 userinfo、创建用户并签发 JWT。
 
 本次改造目标是最终把后端返回的 JWT 保存为 ZAI 登录 token，同时保留现有 UI、deep link、凭据仓储和多 provider service 架构。
 
@@ -19,21 +19,21 @@
 2. `ZaiProviderAdapter.buildAuthorizeUrl` 生成授权 URL：
    - `https://chat.z.ai/api/oauth/authorize`
    - `client_id=client_P8X5CMWmlaRO9gyO-KSqtg`
-   - `redirect_uri=zcode://zai-auth/callback`
+   - `redirect_uri=raspberrycode://zai-auth/callback`
    - `state=<random-state>`
 3. 桌面端通过平台层打开浏览器。
 4. 用户授权后，系统 deep link 回到：
-   - `zcode://zai-auth/callback?code=<code>&state=<state>`
+   - `raspberrycode://zai-auth/callback?code=<code>&state=<state>`
 5. `OAuthService.handleCallback` 校验 pending state 后调用 ZAI adapter。
 6. ZAI adapter 调用后端：
 
 ```http
-POST https://zcode.z.ai/api/v1/oauth/token
+POST https://raspberrycode.z.ai/api/v1/oauth/token
 Content-Type: application/json
 
 {
   "code": "<code>",
-  "redirect_uri": "zcode://zai-auth/callback",
+  "redirect_uri": "raspberrycode://zai-auth/callback",
   "state": "<state>"
 }
 ```
@@ -67,11 +67,11 @@ Content-Type: application/json
 ZAI provider 配置：
 
 - `authorizeUrl`: `https://chat.z.ai/api/oauth/authorize`
-- `tokenUrl`: `https://zcode.z.ai/api/v1/oauth/token`
+- `tokenUrl`: `https://raspberrycode.z.ai/api/v1/oauth/token`
 - `userinfoUrl`: 保留配置字段但本次登录成功路径不再调用
 - `appId`: 使用 `client_P8X5CMWmlaRO9gyO-KSqtg`
-- `redirectUri`: `zcode://zai-auth/callback`
-- `legacyRedirectUri`: 继续保留 `zcode://oauth/callback` 兼容旧 deep link 解析能力
+- `redirectUri`: `raspberrycode://zai-auth/callback`
+- `legacyRedirectUri`: 继续保留 `raspberrycode://oauth/callback` 兼容旧 deep link 解析能力
 
 Token 映射：
 

@@ -32,6 +32,6 @@ Air 的连接测试成功横幅下半部缺失，模型行仍可见；下方同�
 - 本机 `/tmp/pro-banner-stress-evidence.json`：每轮几何及命中结果。
 - 本机 `/tmp/pro-banner-frame-0.png` 至 `11.png`：采样帧。
 - 本机 `/tmp/pro-banner-row-spinner.png`：模型行与横幅同时转圈场景。
-- 本机 `/tmp/zcode-banner-stress.cjs`、`/tmp/zcode-pro-banner-cdp.cjs`：诊断脚本，不是正式测试或生产代码。
+- 本机 `/tmp/raspberrycode-banner-stress.cjs`、`/tmp/raspberrycode-pro-banner-cdp.cjs`：诊断脚本，不是正式测试或生产代码。
 
 以上为临时诊断文件，不是永久回归证据；实施修复时仍须留下可重复的正式用例。

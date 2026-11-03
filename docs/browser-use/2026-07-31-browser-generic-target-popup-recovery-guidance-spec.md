@@ -273,9 +273,9 @@ snapshot-proven locator -- count === 1 --> click once
 | BCP-223 red phase | `navigationWait` 缺少显式 `domcontentloaded` 调用时契约按预期失败，证明旧 guidance 缺少新 URL 的显式等待调用顺序 |
 | `pnpm exec vitest run tests/browser-manifest.test.ts tests/node-repl-tools.test.ts tests/node-repl-browser-injection.test.ts` | 3 files / 37 tests 通过；覆盖 Skill、API manifest、overview/workflow/playwright、effective/fallback docs、tool description 与现有 tab registry 注入兼容性 |
 | `pnpm exec vitest run packages/desktop/test/browserGuestManager.test.ts` | 1 file / 57 tests 通过；确认 stale-binding hint 明确限定为 action 前恢复，不与 action 后 popup 观察混用 |
-| `pnpm --filter @zcode/browser-use-plugin test` | 6 files / 29 tests 通过 |
-| `@zcode/core typecheck` | 通过 |
-| `@zcode/browser-use-plugin build` | 通过 |
+| `pnpm --filter @raspberrycode/browser-use-plugin test` | 6 files / 29 tests 通过 |
+| `@raspberrycode/core typecheck` | 通过 |
+| `@raspberrycode/browser-use-plugin build` | 通过 |
 | RaspberryCode CLI workspace typecheck | 23/23 tasks 通过；受影响的 core/browser-use-plugin 均实际执行 |
 | 根仓库 `pnpm typecheck` | 通过 |
 | 根仓库 `pnpm lint` | 通过，36 warnings、0 errors；warning 均不在本次变更文件 |

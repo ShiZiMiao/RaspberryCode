@@ -77,7 +77,7 @@ Desktop 每个窗口拥有一个 Local Host；多个窗口可以共享同一 Env
 
 ### 3.2 Desktop Agent Worker
 
-Desktop 派发的 Agent Worker 只通过 `ZCODE_PERSONAL_PROVIDER_CONFIG_FILE` 读取 `provider_config.json`。它不持有
+Desktop 派发的 Agent Worker 只通过 `RASPBERRYCODE_PERSONAL_PROVIDER_CONFIG_FILE` 读取 `provider_config.json`。它不持有
 Legacy Importer，不参与迁移；长期存活时继续使用 Bugfix 05 的 content-revision 轮询追踪外部写入。
 
 ### 3.3 Standalone CLI
@@ -125,7 +125,7 @@ CLI 用户 `config.json` 并执行一次性导入。协议 Worker 路径仍只�
 必须统一修改：
 
 - Desktop Local Host 默认 Personal Config 路径；
-- Host 派发给本地/远程 Agent 的 `ZCODE_PERSONAL_PROVIDER_CONFIG_FILE`；
+- Host 派发给本地/远程 Agent 的 `RASPBERRYCODE_PERSONAL_PROVIDER_CONFIG_FILE`；
 - Standalone CLI 的 `~/.raspberrycode/v2/provider_config.json`；
 - Desktop E2E 的 Provider Config seed；
 - Provider Node、Services、CLI、Desktop 的路径与迁移测试。
@@ -173,7 +173,7 @@ CLI 用户 `config.json` 并执行一次性导入。协议 Worker 路径仍只�
   不再被当作无版本输入，也不再生成或恢复 `.bak`；无效正式文件保持原样并以内存空 Overlay 降级；
 - Local Host 在派发 Agent Runtime Env 前等待 Provider Runtime 初始化，Worker 只接收正式文件路径并继续使用
   content-revision 轮询；
-- 旧 Reader 已按剩余职责改名为 `legacyZCodeConfigProviderReader`，只读取已发布旧 `config.json`；生产源码中
+- 旧 Reader 已按剩余职责改名为 `legacyRaspberryCodeConfigProviderReader`，只读取已发布旧 `config.json`；生产源码中
   `model-providers.json` 引用归零；
 - `legacyAccountProviderApiKeyLoader`、Credential Store/Service 的 `loadLegacy` 参数和 Remote Workspace 旧 Key
   搬运全部删除；

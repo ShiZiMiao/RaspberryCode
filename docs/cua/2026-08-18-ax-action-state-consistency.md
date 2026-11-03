@@ -32,7 +32,7 @@ element write -> producer native dispatch
     v                v
 action_sent=false   never replay from native error
 
-zcode-cua MCP result -> official authority gate
+raspberrycode-cua MCP result -> official authority gate
     |
     +-- image_ref + image: final-raster protection remains special and fail-closed
     +-- action_receipt/text/structuredContent: generic MCP result projection and budget
@@ -65,8 +65,8 @@ zcode-cua MCP result -> official authority gate
 
 | State/fact                            | Display owner                | Authoritative owner           | Commit sink                            | Persistence/cache                |
 | ------------------------------------- | ---------------------------- | ----------------------------- | -------------------------------------- | -------------------------------- |
-| `state_id` 与 mutation epoch          | explicit observation result  | `zcode-cua` transport session | `get_app_state` / frame-producing tools | producer in-memory session       |
-| broker/Helper dispatch fact           | CUA action receipt           | `zcode-cua` + signed Helper   | per-server MCP/Broker RPC               | 既有 tool result/session history |
+| `state_id` 与 mutation epoch          | explicit observation result  | `raspberrycode-cua` transport session | `get_app_state` / frame-producing tools | producer in-memory session       |
+| broker/Helper dispatch fact           | CUA action receipt           | `raspberrycode-cua` + signed Helper   | per-server MCP/Broker RPC               | 既有 tool result/session history |
 | receipt 文本/structuredContent 投影   | provider tool-result history | generic MCP bridge            | tool executor serialization             | 既有 tool result/session history |
 | UI tool lifecycle                     | conversation row             | 既有 session event/projection | generic MCP tool lifecycle             | 既有 conversation persistence    |
 
@@ -104,7 +104,7 @@ zcode-cua MCP result -> official authority gate
 ## 验证结果
 
 以下结果均使用 Node `24.14.0`。producer 已通过
-[`zcode-cua!533`](https://git.example.invalid/codegeex/zcode-cua/-/merge_requests/533) 合入
+[`raspberrycode-cua!533`](https://git.example.invalid/codegeex/raspberrycode-cua/-/merge_requests/533) 合入
 `main`；RaspberryCode consumer 精确锁定合入前经过评审的 source commit
 `589dc68d4127457ca3d48bb9894cabae393e9668`，不从 semver 猜测实现来源。
 
@@ -118,7 +118,7 @@ zcode-cua MCP result -> official authority gate
 | wrapper/provenance           | 13/13；host authority 1/1                                                      | 版本、skill bytes、producer SHA 与 runtime contract 一致                                     |
 | RaspberryCode 全量单测               | 1309 files passed、1 skipped；11475 passed、12 skipped                         | consumer 与产品链路完整回归通过                                                              |
 | RaspberryCode 静态门禁               | root typecheck 通过；CLI 24/24 typecheck；root lint 0 error、38 条既有 warning | 本次变更没有新增 lint error                                                                  |
-| 独立 MCP                     | 30 个工具；initialize、request_access、list_apps、Chrome full state 成功       | `zcode-cua@0.5.6` 可脱离 RaspberryCode wrapper 直接通过 stdio 使用                                   |
+| 独立 MCP                     | 30 个工具；initialize、request_access、list_apps、Chrome full state 成功       | `raspberrycode-cua@0.5.6` 可脱离 RaspberryCode wrapper 直接通过 stdio 使用                                   |
 
 独立 MCP 还验证了失败路径：Godot AX tree 在 8 秒遍历期限内未完成时安全返回错误，未派发
 动作；当前新安装的 Dev Helper 尚未获得 macOS Screen Recording 权限，因此 consumer 环境的

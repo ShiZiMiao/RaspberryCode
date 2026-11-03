@@ -9,8 +9,8 @@
 
 WSL remote workspace 当前复用统一 `IRemoteBackend` / `connectRemote` / Desktop Host
 链路。WSL 的主连接是一个由 Desktop Host 启动的
-`wsl.exe -- bash -lc "...zcode-server..."` stdio 子进程；正常释放依赖客户端关闭
-stdin，WSL 内 `zcode-server` 收到 EOF 后再释放其托管的 RaspberryCode Agent。
+`wsl.exe -- bash -lc "...raspberrycode-server..."` stdio 子进程；正常释放依赖客户端关闭
+stdin，WSL 内 `raspberrycode-server` 收到 EOF 后再释放其托管的 RaspberryCode Agent。
 
 当时已有 per-session、per-window 和 Host 内部资源释放，但应用级退出只等待
 `windowHostProcessMap` 中的 Local Host。当时的 WSL/Docker/Server dedicated Host、窗口级共享
@@ -20,12 +20,12 @@ RPC stop，会在总 deadline 后直接退出，可能跳过 Agent dispose；`di
 最终退出保证。
 
 这使“已经发起释放”和“所有 RaspberryCode-owned 远程进程已经退出”之间存在空窗。在主进程提前退出、
-Host cleanup 卡住或旧版本异常退出时，WSL 内 detached `zcode-cli` 可能被 PID 1 接管并长期残留。
+Host cleanup 卡住或旧版本异常退出时，WSL 内 detached `raspberrycode-cli` 可能被 PID 1 接管并长期残留。
 
 ## 目标
 
 - 用户真正关闭窗口、退出应用或安装更新时，确定性回收该 owner 持有的 Remote Host、
-  WSL `zcode-server` 和 RaspberryCode Agent。
+  WSL `raspberrycode-server` 和 RaspberryCode Agent。
 - app quit / update install 在有界时间内等待 Local Host 与全部 Remote Host；超时后留下明确日志并
   执行进程级兜底。
 - RPC stop 超时不能阻止 Agent cleanup 被尝试。
@@ -40,7 +40,7 @@ Host cleanup 卡住或旧版本异常退出时，WSL 内 detached `zcode-cli` �
 - 不调用 `wsl --terminate` 或 `wsl --shutdown`。WSL distro 是用户共享环境，不属于单个
   RaspberryCode session。
 - 不在手机断线、Web bridge 重建、renderer reload、窗口最小化或隐藏到托盘时销毁 Host/Agent。
-- 不清理无法证明归属 RaspberryCode 的任意 `node`、`zcode-cli` 或用户 shell 进程。
+- 不清理无法证明归属 RaspberryCode 的任意 `node`、`raspberrycode-cli` 或用户 shell 进程。
 - 不改变 SSH Host 的窗口级共享策略，也不把 WSL/Docker 改成共享 Host。
 - 不把 task/session/queue/snapshot 状态下沉到 desktop main、relay 或清理 registry。
 

@@ -19,7 +19,7 @@
 - Test: `packages/desktop/test/dev-cua-plugin-runtime.test.ts`
 - Test: `packages/desktop/test/runtime-asset-scripts.test.ts`
 
-- [ ] Add a test that creates a temporary plugin root and calls `stageDevCuaPluginRuntime` with `ZCODE_CUA_DEV_MODE=1`.
+- [ ] Add a test that creates a temporary plugin root and calls `stageDevCuaPluginRuntime` with `RASPBERRYCODE_CUA_DEV_MODE=1`.
 - [ ] Assert the returned package list includes `sharp` and the platform native package.
 - [ ] Load Sharp through `createRequire(<temporary-plugin>/package.json)` and assert its native `versions.vips` value exists.
 - [ ] Add a no-op test proving an unset dev flag leaves the temporary plugin root untouched.
@@ -36,7 +36,7 @@
 - Test: `packages/desktop/test/runtime-asset-scripts.test.ts`
 
 - [ ] Export `stageDevCuaPluginRuntime({ env, platform, arch, desktopPackageRoot, pluginRoot })`.
-- [ ] Return an empty list without filesystem mutation unless `ZCODE_CUA_DEV_MODE === "1"`.
+- [ ] Return an empty list without filesystem mutation unless `RASPBERRYCODE_CUA_DEV_MODE === "1"`.
 - [ ] Validate the CUA plugin manifest before staging so startup fails clearly on a broken source layout.
 - [ ] Delegate package selection and copying to `stageSharpIntoBundledAgents`; do not duplicate the native dependency matrix.
 - [ ] Add a Chinese bug-cause comment explaining why the source, rather than only the cache, must contain Sharp.
@@ -47,10 +47,10 @@
 
 **Files:**
 
-- Modify: `apps/zcode-cli/packages/bootstrap/tests/plugins.test.ts`
-- Test: `apps/zcode-cli/packages/bootstrap/tests/plugins.test.ts`
+- Modify: `apps/raspberrycode-cli/packages/bootstrap/tests/plugins.test.ts`
+- Test: `apps/raspberrycode-cli/packages/bootstrap/tests/plugins.test.ts`
 
-- [ ] Build a temporary Electron-style `resources/glm/packages/zcode-cua-plugin` source fixture.
+- [ ] Build a temporary Electron-style `resources/glm/packages/raspberrycode-cua-plugin` source fixture.
 - [ ] Use the real dev staging entry to place the platform Sharp closure into that source.
 - [ ] Run `resolveOfficialPluginRoots` against a temporary plugin storage root, exercising the real atomic filesystem seed path.
 - [ ] Assert the resulting official cache contains the runtime closure and load Sharp with `createRequire` from the cached plugin package.
@@ -61,10 +61,10 @@
 
 **Files:**
 
-- Create: `apps/zcode-cli/packages/bootstrap/src/app/official-plugin-seed-lock.ts`
-- Create: `apps/zcode-cli/packages/bootstrap/tests/official-plugin-seed-lock.test.ts`
-- Modify: `apps/zcode-cli/packages/bootstrap/src/app/bundled-plugins.ts`
-- Test: `apps/zcode-cli/packages/bootstrap/tests/official-plugin-seed-lock.test.ts`
+- Create: `apps/raspberrycode-cli/packages/bootstrap/src/app/official-plugin-seed-lock.ts`
+- Create: `apps/raspberrycode-cli/packages/bootstrap/tests/official-plugin-seed-lock.test.ts`
+- Modify: `apps/raspberrycode-cli/packages/bootstrap/src/app/bundled-plugins.ts`
+- Test: `apps/raspberrycode-cli/packages/bootstrap/tests/official-plugin-seed-lock.test.ts`
 
 - [ ] Add a real filesystem test where a child process releases an existing version lock and the waiting action runs afterward.
 - [ ] Add a stale-lock takeover test so a crashed process cannot block startup indefinitely.
@@ -84,7 +84,7 @@
 - [ ] Run `pnpm typecheck`.
 - [ ] Run `pnpm lint`.
 - [ ] Stop the current dev processes without touching unrelated processes.
-- [ ] Restart with `ZCODE_CUA_DEV_MODE=1` and `ZCODE_CUA_DEV_ROOT=C:\Users\dev\zcode-cua`.
+- [ ] Restart with `RASPBERRYCODE_CUA_DEV_MODE=1` and `RASPBERRYCODE_CUA_DEV_ROOT=C:\Users\dev\raspberrycode-cua`.
 - [ ] Confirm the source plugin and freshly reseeded live cache both resolve Sharp.
 - [ ] Inspect the new dev log for Helper readiness and absence of `Cannot find module 'sharp'`.
 - [ ] Review `git diff`, ensure only intended tracked files changed, and commit with a Conventional Commit message.

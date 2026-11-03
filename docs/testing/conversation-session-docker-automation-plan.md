@@ -45,7 +45,7 @@ E2E_SPEC_PRESET=conversation-session-verified pnpm run test:e2e:container
 
 ## Suite 批量运行策略
 
-`conversation-session-verified` 在至少一个 V4 formal case 完成 Docker admission 后才可作为批量回归入口。脚本把 suite 内 spec 作为逗号分隔的 `ZCODE_E2E_SPEC` 传给同一次 WDIO 运行，复用同一个镜像、同一次容器启动、同一次 desktop app / agent server 构建。
+`conversation-session-verified` 在至少一个 V4 formal case 完成 Docker admission 后才可作为批量回归入口。脚本把 suite 内 spec 作为逗号分隔的 `RASPBERRYCODE_E2E_SPEC` 传给同一次 WDIO 运行，复用同一个镜像、同一次容器启动、同一次 desktop app / agent server 构建。
 
 单 spec Docker 运行只用于准入证明和失败定位：
 
@@ -71,7 +71,7 @@ E2E_SPEC=./test/e2e/conversation-session/<case>.test.ts \
 通过后再登记进 `conversation-session-verified`：
 
 ```bash
-pnpm --filter @zcode/desktop e2e:docker:admit -- \
+pnpm --filter @raspberrycode/desktop e2e:docker:admit -- \
   --spec ./test/e2e/conversation-session/<case>.test.ts \
   --verified \
   --artifact packages/desktop/.e2e-artifacts/<run-id> \

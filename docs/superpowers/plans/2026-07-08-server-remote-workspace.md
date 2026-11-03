@@ -6,7 +6,7 @@
 
 **Architecture:** Extend the shared remote target model with `kind: "server"`, then route Desktop remote session creation through the existing utility host process. The host process uses a Node WebSocket connector to the server `/ws` ChannelServer, wraps it as `RemoteServiceAccess`, exposes it through the existing MessagePort path, and keeps Desktop as `desktop-continuous`.
 
-**Tech Stack:** TypeScript, Electron utilityProcess, `ws`, `@zcode/rpc` `SocketProtocol`, `@zcode/client` `RemoteServiceAccess`, existing `ServiceCollection` and Remote Connection dialog.
+**Tech Stack:** TypeScript, Electron utilityProcess, `ws`, `@raspberrycode/rpc` `SocketProtocol`, `@raspberrycode/client` `RemoteServiceAccess`, existing `ServiceCollection` and Remote Connection dialog.
 
 ## Global Constraints
 

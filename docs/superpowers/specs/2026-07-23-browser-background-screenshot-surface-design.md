@@ -117,7 +117,7 @@ hidden owner window
 - 不通过裁掉重复区域、图像相关性检测或截图后重采样掩盖 compositor 错误。
 - 不把 browser-use tab 强制切为用户当前活动 tab。
 - 不在 relay、desktop main 或手机端新增 task/stream/snapshot 业务状态。
-- 不修改 `@zcode/protocol`；本设计只新增 desktop main 与 owner renderer 之间的瞬时平台协调。
+- 不修改 `@raspberrycode/protocol`；本设计只新增 desktop main 与 owner renderer 之间的瞬时平台协调。
 - 不在本修复中解决“显式 responsive viewport 大于窗口可合成区域”的独立 Electron 限制。
   如果该场景无法准备同尺寸 surface，必须失败而不是输出平铺图片；BCP-199 的大视口真实
   Electron 覆盖继续作为单独工作项。

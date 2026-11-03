@@ -6,7 +6,7 @@
 
 **Architecture:** Keep file-name/version fallback in the repo layer, keep provider/model matching in pure migration helpers, and let `createBotsService` run one lazy storage migration before state/cache reads are trusted. Old files are never written by the new code path.
 
-**Tech Stack:** TypeScript, Zod schemas, Vitest, existing `@zcode/shared` bot/model-provider types, service logger via `createServiceLogger`.
+**Tech Stack:** TypeScript, Zod schemas, Vitest, existing `@raspberrycode/shared` bot/model-provider types, service logger via `createServiceLogger`.
 
 ---
 
@@ -35,7 +35,7 @@ describe("BotsRepo", () => {
   let tempDir: string | null = null;
 
   beforeEach(() => {
-    tempDir = mkdtempSync(join(tmpdir(), "zcode-bots-repo-"));
+    tempDir = mkdtempSync(join(tmpdir(), "raspberrycode-bots-repo-"));
     setDataBaseDir(tempDir);
   });
 
@@ -229,7 +229,7 @@ Create `packages/services/test/botsStorageMigration.test.ts` with cases for dire
 
 ```ts
 import { describe, expect, it } from "vitest";
-import { createModelProviderModelConfig, encodeCustomModelValue, type BotsStateFile, type ModelProviderConfig } from "@zcode/shared";
+import { createModelProviderModelConfig, encodeCustomModelValue, type BotsStateFile, type ModelProviderConfig } from "@raspberrycode/shared";
 import { createDefaultBotsModelCache } from "../src/bots/modelCacheRepo.js";
 import { migrateBotsModelCacheToV2, migrateBotsStateToV2 } from "../src/bots/storageMigration.js";
 
@@ -331,7 +331,7 @@ describe("bot storage migration", () => {
       providers: [
         {
           id: "new-provider",
-          apiKey: "__zcode_cached_api_key_present__",
+          apiKey: "__raspberrycode_cached_api_key_present__",
         },
       ],
     });
@@ -357,16 +357,16 @@ Create `packages/services/src/bots/storageMigration.ts` with:
 import {
   decodeCustomModelValue,
   encodeCustomModelValue,
-  normalizeAgentProviderToZCodeAgent,
+  normalizeAgentProviderToRaspberryCodeAgent,
   type BotsStateFile,
   type BotDraftOptions,
   type ModelProviderConfig,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import {
   type BotsModelCacheFile,
 } from "./modelCacheRepo.js";
 
-const BOT_MODEL_CACHE_API_KEY_PLACEHOLDER = "__zcode_cached_api_key_present__";
+const BOT_MODEL_CACHE_API_KEY_PLACEHOLDER = "__raspberrycode_cached_api_key_present__";
 
 export function migrateBotsModelCacheToV2(params: {
   legacyCache: BotsModelCacheFile;
@@ -600,7 +600,7 @@ await repo.write({
         gemini: "",
       },
       apiFormat: "openai-responses",
-      apiKey: "__zcode_cached_api_key_present__",
+      apiKey: "__raspberrycode_cached_api_key_present__",
       models: [
         createModelProviderModelConfig({
           id: "gpt-example",

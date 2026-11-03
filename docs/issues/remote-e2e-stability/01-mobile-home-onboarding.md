@@ -23,7 +23,7 @@ Status: needs-triage
 ## 实际证据
 
 - 业务基线：`54ece08f23f79ae54aea1f51e0d941497d627392`，未修改业务代码。
-- 批次：`r3-server-20260924051309226-ac32d1`，服务器 `/home/e2e/z-code-stability-20260924`。
+- 批次：`r3-server-20260924051309226-ac32d1`，服务器 `/home/e2e/raspberrycode-stability-20260924`。
 - `mobile` 与 `mobileperm` 各自使用独立 Desktop HOME、容器和 Playwright context，均等待首页失败。
 - 两份 `mobile-pairing-1.json` 都记录 `testIds: ["onboarding-page"]`，正文为「工作方向 / UI 模式 / 助手偏好」，资源加载错误数组为空。
 - 独立批次 `r3-server-20260924054830817-45203b` 的 `soakdual` 也出现同一页面，199 秒后失败；尚未进入 10 分钟观测，不能据此宣称稳定性已验证。

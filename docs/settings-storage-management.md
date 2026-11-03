@@ -23,15 +23,15 @@ App 允许设置「数据存储路径」（`setting.json.dataBaseDir`），但**
 
 | 写入方                                         | 根目录解析                                                                                       | 是否跟随「数据存储路径」 | 代码                                                                             |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------ | -------------------------------------------------------------------------------- |
-| app services（host 进程）                      | `{dataBaseDir}/.raspberrycode`，默认 `~/.raspberrycode`                                                          | 是                       | `packages/services/src/paths.ts` `getZCodeDataRootDir()`                         |
+| app services（host 进程）                      | `{dataBaseDir}/.raspberrycode`，默认 `~/.raspberrycode`                                                          | 是                       | `packages/services/src/paths.ts` `getRaspberryCodeDataRootDir()`                         |
 | 「数据存储路径」切换时的迁移                   | 只复制 `.raspberrycode/v2`，且是复制不是移动                                                             | —                        | `packages/services/src/paths.ts` `copyDataDirectory()`                           |
-| zcode-cli（agent 进程）                        | `~/.raspberrycode/cli/config.json` 的 `storage.dir`，默认 `~/.raspberrycode`；app **不下发** `ZCODE_STORAGE_DIR` | 否                       | `apps/zcode-cli/packages/bootstrap/src/app/create-app.ts:184`                    |
-| 模型调用轨迹 model-io                          | 直接 `homedir()/.raspberrycode/cli/{debug,rollout}`                                                      | 否（硬编码）             | `apps/zcode-cli/packages/adapters/src/model/runner-debug.ts` `getModelIOBaseDir` |
+| raspberrycode-cli（agent 进程）                        | `~/.raspberrycode/cli/config.json` 的 `storage.dir`，默认 `~/.raspberrycode`；app **不下发** `RASPBERRYCODE_STORAGE_DIR` | 否                       | `apps/raspberrycode-cli/packages/bootstrap/src/app/create-app.ts:184`                    |
+| 模型调用轨迹 model-io                          | 直接 `homedir()/.raspberrycode/cli/{debug,rollout}`                                                      | 否（硬编码）             | `apps/raspberrycode-cli/packages/adapters/src/model/runner-debug.ts` `getModelIOBaseDir` |
 | hooks 信任库 / subagents / skills / commands   | 读 `~/.raspberrycode/cli/config.json` 的 `storage.dir`                                                   | 否                       | `packages/services/src/hooks/hooksService.ts:153-173` 等                         |
 | Computer Use Helper、日志导出对 cli 目录的引用 | `homedir()/.raspberrycode/...`                                                                           | 否（硬编码）             | `packages/desktop/src/main/exportLogs.ts:34-48`                                  |
 | `v2/setting.json` 本身                         | 永远写在真实 HOME（bootstrap 文件）                                                              | 刻意不跟随               | `packages/services/src/setting/settingService.ts:36-46`                          |
 | GLM provider 的 workspace 配置目录             | `getDataBaseDir()/.raspberrycode/cli/...`，与上面 CLI 读 `~/.raspberrycode/cli` 两套口径并存                     | 是                       | `packages/services/src/paths.ts:295-299, 355-362`                                |
-| 轨迹查看器读 model-io                          | 同时扫 `homedir()` 与 `dataBaseDir` 两处                                                         | 两处都读                 | `packages/services/src/zcode-agent/modelTrajectoryFileTail.ts:16-22`             |
+| 轨迹查看器读 model-io                          | 同时扫 `homedir()` 与 `dataBaseDir` 两处                                                         | 两处都读                 | `packages/services/src/raspberrycode-agent/modelTrajectoryFileTail.ts:16-22`             |
 
 结论：存储管理必须同时扫描两个根：
 
@@ -49,7 +49,7 @@ R2 = {dataBaseDir}/.raspberrycode           （仅在设置了数据存储路径
 | `cli/db/backup`, `cli/db/backups`, `cli/db/*.bak`, `cli/db/*.backup-*`                                                                                                  | ≈6 GB    | CLI 库迁移前备份                                                | 备份                                      |
 | `cli/db/db.sqlite(+wal/shm)`                                                                                                                                            | 0.77 GB  | CLI 会话/任务库（在用）                                         | 会话记录与数据库                          |
 | `backup/*`（session-projects、before-\*-restore…）                                                                                                                      | 7.2 GB   | 脚本/迁移备份，含 cli-db 与 v2 全量副本                         | 备份                                      |
-| `v2/dev/stdio-traffic`                                                                                                                                                  | 2.4 GB   | 开发态 stdio 协议抓包（`zcodeStdioTapDevConfig.ts`）            | 开发诊断抓包                              |
+| `v2/dev/stdio-traffic`                                                                                                                                                  | 2.4 GB   | 开发态 stdio 协议抓包（`raspberrycodeStdioTapDevConfig.ts`）            | 开发诊断抓包                              |
 | `v2/migrations`, `v2/backup`, `v2/*.bak`, `v2/setting.json.corrupt-*`, `v2/config.json.pre-*`                                                                           | ≈0.8 GB  | 迁移前快照 / 损坏文件留档                                       | 备份                                      |
 | `v2/acp-config`, `v2/acp-traffic-proxy`, `v2/acp-auth`                                                                                                                  | ≈0.8 GB  | 已退役的 ACP runtime 目录（exportLogs 已按退役目录跳过）        | 开发诊断抓包 / 配置                       |
 | `cli/debug`（开发态）、`cli/rollout`（生产态）                                                                                                                          | 1.35 GB  | 模型调用轨迹 model-io JSONL                                     | 模型调用轨迹                              |
@@ -70,8 +70,8 @@ R2 = {dataBaseDir}/.raspberrycode           （仅在设置了数据存储路径
 
 | 目录                               | 写入方                                                                                | 内容                                                                                                                                                                       | 是否被回读                                                                                                                               |
 | ---------------------------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `cli/artifacts/<sess>/`            | `apps/zcode-cli/packages/adapters/src/storage/index.ts` `createNodeToolArtifactStore` | **不是用户附件**。是工具结果留档：超长 Bash 输出（`.txt`）、Edit/Write 的修改前后快照与 structuredPatch（`.json`）、截图（`.png`），以 `zcode-artifact://<sess>/<id>` 引用 | 是：文件变更 checkpoint 汇总/回滚（`cold-file-change-summaries.ts`）、后续轮次引用历史媒体附件（`prompt-input.ts`）、UI 查看完整工具输出 |
-| `cli/agents/<sess>/<agent>/`       | `apps/zcode-cli/packages/core/src/subagent/runner.ts`                                 | subagent 运行产物：`metadata.json`、`output.txt`、`task.output`、`transcript.jsonl`（单文件可达 64 MB）                                                                    | 仅 resume 进行中的 subagent 时按 `task.outputFile` 回读；已结束会话不再读                                                                |
+| `cli/artifacts/<sess>/`            | `apps/raspberrycode-cli/packages/adapters/src/storage/index.ts` `createNodeToolArtifactStore` | **不是用户附件**。是工具结果留档：超长 Bash 输出（`.txt`）、Edit/Write 的修改前后快照与 structuredPatch（`.json`）、截图（`.png`），以 `raspberrycode-artifact://<sess>/<id>` 引用 | 是：文件变更 checkpoint 汇总/回滚（`cold-file-change-summaries.ts`）、后续轮次引用历史媒体附件（`prompt-input.ts`）、UI 查看完整工具输出 |
+| `cli/agents/<sess>/<agent>/`       | `apps/raspberrycode-cli/packages/core/src/subagent/runner.ts`                                 | subagent 运行产物：`metadata.json`、`output.txt`、`task.output`、`transcript.jsonl`（单文件可达 64 MB）                                                                    | 仅 resume 进行中的 subagent 时按 `task.outputFile` 回读；已结束会话不再读                                                                |
 | `cli/sessions/<sess>/workflows/`   | `script-workflow-tool-port.ts`                                                        | 会话内生成的 workflow 脚本                                                                                                                                                 | 会话内                                                                                                                                   |
 | `v2/sessions/<hash>/<taskId>.json` | `packages/services/src/paths.ts` `getLegacyTaskSessionSnapshotPath`                   | 旧格式任务快照；**仍在用**：`readLegacyTaskSnapshot` 兜底读取，Claude 原生会话导入（`persistImportedClaudeTask.ts`）仍写入这里                                             | 是                                                                                                                                       |
 | `agent/sessions/`、`agent/logs/`   | 当前代码无写入方（2026-04/05 的 ACP 时代残留）                                        | 旧版会话 JSON/JSONL                                                                                                                                                        | 否                                                                                                                                       |
@@ -102,7 +102,7 @@ R2 = {dataBaseDir}/.raspberrycode           （仅在设置了数据存储路径
 | `subagentTranscripts` | 子代理产物         | `cli/agents/<sess>/<agent>/transcript.jsonl`                                                                                                                                                                                                                                                                                                                                           | 是                                          | 只清理**最近 24 小时未更新**的会话目录（避免删掉进行中 subagent 的记录）；按会话目录聚合 |
 | `toolOutputs`         | 工具输出与临时缓存 | `cli/artifacts`, `cli/agents`（除 transcript.jsonl）, `cli/sessions`, `cli/exec`, `cli/image-cache`, `cli/pdf-cache`, `clipboard`, `git-checkpoint-index`, `editor-icon`, `tmp`, `cache`, `v2/coding-plan-cache.json`, `v2/bots-model-cache*.json`, `v2/checkpoints/**/{pending,tmp}`                                                                                                  | 否（2026-09-10 裁决：暂不可删，待逐项确认） | —                                                                                        |
 | `modelTrajectory`     | 模型调用轨迹       | `cli/debug`, `cli/rollout`                                                                                                                                                                                                                                                                                                                                                             | 是                                          | 删除全部 `model-io-*.jsonl`；正在写入的文件删除失败时计入 `failures`，不阻塞             |
-| `devTraces`           | 开发诊断抓包       | `v2/dev`, `v2/acp-traffic-proxy`, `v2/acp-stream-diagnostics`                                                                                                                                                                                                                                                                                                                          | 是                                          | 删除目录内容；保留 `v2/dev/zcode-stdio-tap.json`（开关状态）                             |
+| `devTraces`           | 开发诊断抓包       | `v2/dev`, `v2/acp-traffic-proxy`, `v2/acp-stream-diagnostics`                                                                                                                                                                                                                                                                                                                          | 是                                          | 删除目录内容；保留 `v2/dev/raspberrycode-stdio-tap.json`（开关状态）                             |
 | `logs`                | 日志与崩溃报告     | `v2/logs`, `cli/log`, `logs`, `agent/logs`, `v2/crash`, `v2/perf`, `feedback/logs`, `computer-use/run/*.log`                                                                                                                                                                                                                                                                           | 是                                          | 删除**非当天**日志文件；`v2/crash/live`、`computer-use/run/.tokens` 不删                 |
 | `backups`             | 备份               | `backup`, `v2/backup`, `v2/migrations`, `cli/db/backup`, `cli/db/backups`, `cli/db/*.bak*`, `cli/db/*.backup-*`, `v2/*.bak`, `v2/*.backup.json`, `v2/setting.json.corrupt-*`, `v2/config.json.pre-*`, `cli/config.json.bak-*`                                                                                                                                                          | 是（需二次确认）                            | 全部删除                                                                                 |
 | `exports`             | 导出与反馈包       | `export-log`, `export-log-stage`, `feedback`                                                                                                                                                                                                                                                                                                                                           | 是                                          | 全部删除                                                                                 |
@@ -113,7 +113,7 @@ R2 = {dataBaseDir}/.raspberrycode           （仅在设置了数据存储路径
 约束：
 
 - `cleanable` 的规则只允许删除**规则自身匹配到的路径**，删除前再次用 `path.relative(root, target)` 校验不越界，且拒绝符号链接目标。
-- 受保护文件白名单（`setting.json*`, `credentials.json`, `*.sqlite`, `*.sqlite-wal`, `*.sqlite-shm`, `v2/dev/zcode-stdio-tap.json`）在任何类别里都不删除。
+- 受保护文件白名单（`setting.json*`, `credentials.json`, `*.sqlite`, `*.sqlite-wal`, `*.sqlite-shm`, `v2/dev/raspberrycode-stdio-tap.json`）在任何类别里都不删除。
 - catalog 与 `exportLogs.ts` 里已有的跳过列表（`RETIRED_ACP_RUNTIME_ARCHIVE_PATHS`、`HIGH_VOLUME_RUNTIME_ARCHIVE_PATHS`、`NON_LOG_STATE_ARCHIVE_PATHS`）语义一致；后续可让 exportLogs 引用同一 catalog，本期不改 exportLogs。
 
 ## 4. 数据模型
@@ -192,7 +192,7 @@ export const IStorageService = createServiceDescriptor<IStorageService>("storage
 
 大小口径：`lstat().size` 求和，不跟随符号链接，硬链接/APFS clone 可能重复计数，UI 文案注明「估算值」。
 
-复用：desktop 已有一个只用于遥测的递归大小扫描器（`packages/desktop/src/main/zcodeDataSizeScanner.ts`，Worker 内跑、不跟随符号链接，由 `desktopZCodeDataSizeTelemetry.ts` 调用）。本功能把它下沉到 services 层并扩展为「按 catalog 分类累加 + 进度回调 + 取消」，遥测改为调用同一实现，避免两份目录遍历逻辑。
+复用：desktop 已有一个只用于遥测的递归大小扫描器（`packages/desktop/src/main/raspberrycodeDataSizeScanner.ts`，Worker 内跑、不跟随符号链接，由 `desktopRaspberryCodeDataSizeTelemetry.ts` 调用）。本功能把它下沉到 services 层并扩展为「按 catalog 分类累加 + 进度回调 + 取消」，遥测改为调用同一实现，避免两份目录遍历逻辑。
 
 RPC 接线沿用 `ISettingService` 的既有模式：`packages/shared/src/channels.ts` 增加 `ServiceChannels.Storage` → services 定义描述符与实现 → host collection（`packages/desktop/src/host/remoteConnectionServiceCollection.ts`）`.register` → `packages/client/src/remoteServiceAccess.ts` 增加代理并加进 `IServiceAccessor` → UI 通过 `useServices().storageService` 调用。
 
@@ -226,7 +226,7 @@ Renderer <StorageSection>                 Host StorageService                   
 性能约束（裁决 Q7：实时刷新、性能优先）：
 
 - 生命周期与分区绑定：进入「存储管理」才 `startScan`，切到其他分区 / 关闭设置页 / 窗口失焦超过 60s 立即 `cancelScan`；回来重新开始。不做后台常驻扫描。
-- 遍历跑在 Worker 线程（复用 `zcodeDataSizeScanner.ts` 的 Worker 形态），host 主事件循环只收节流后的进度；Worker 内全部 `fs/promises`，`readdir({ withFileTypes: true })` 减少 stat 次数，目录级有界并发（默认 4，可配），每处理 N 个条目 `setImmediate` 让出一次。
+- 遍历跑在 Worker 线程（复用 `raspberrycodeDataSizeScanner.ts` 的 Worker 形态），host 主事件循环只收节流后的进度；Worker 内全部 `fs/promises`，`readdir({ withFileTypes: true })` 减少 stat 次数，目录级有界并发（默认 4，可配），每处理 N 个条目 `setImmediate` 让出一次。
 - 取消用 `AbortSignal`，每进入一个目录检查一次；取消后 Worker 立即停止而不是跑完再丢弃。
 - 进入分区时若内存里有上一次 `complete` 快照，先展示旧值再在后台重扫（stale-while-revalidate），避免每次进入都从 0 开始跳数字。
 - 进度事件 ≥300ms 一次且只在数字变化时发；快照体积受控：`entries` 只聚合到规则命中的一级路径，不携带逐文件列表。
@@ -339,9 +339,9 @@ contracts/spec/tests: 本文 §3/§4/§5；storage/contract.ts + contract.test.t
 拒绝的形态（对照 ai-guidance 反模式）：
 
 - Renderer 直接 `fs` 扫盘或自建队列 ❌ —— 只走 `IStorageService`。
-- 第二套目录遍历器 ❌ —— desktop main 的 `zcodeDataSizeScanner.ts` 遍历逻辑迁入本模块 adapters，遥测 Worker 改为 import 同一实现。
+- 第二套目录遍历器 ❌ —— desktop main 的 `raspberrycodeDataSizeScanner.ts` 遍历逻辑迁入本模块 adapters，遥测 Worker 改为 import 同一实现。
 - domain 里出现 `fs` / `path.resolve(homedir)` / 定时器 ❌ —— 分类、折叠、清理计划全是纯函数。
-- 深层 import `@zcode/services/src/storage/app/...` ❌ —— 只允许 `contract.ts`。
+- 深层 import `@raspberrycode/services/src/storage/app/...` ❌ —— 只允许 `contract.ts`。
 
 ### 10.2 模块布局与分层
 
@@ -375,7 +375,7 @@ packages/services/src/storage/
 │  ├─ scanJob.ts             单 job 生命周期：jobId、AbortController、300ms 节流、状态机
 │  └─ storageService.ts      createStorageService(deps: ports) → IStorageService；Emitter<snapshot>
 └─ adapters/                 IO 实现
-   ├─ fsWalker.ts            opendir/lstat 遍历（自 desktop main zcodeDataSizeScanner 迁入），有界并发、AbortSignal、setImmediate 让出、产出 (relativePath, bytes, mtimeMs)
+   ├─ fsWalker.ts            opendir/lstat 遍历（自 desktop main raspberrycodeDataSizeScanner 迁入），有界并发、AbortSignal、setImmediate 让出、产出 (relativePath, bytes, mtimeMs)
    ├─ volumeProbe.ts         stat().dev + 向上找挂载点 + statfs → StorageVolume
    ├─ fsCleaner.ts           按 cleanPlan 结果异步有界并发 rm，收集 failures
    └─ scanWorkerProtocol.ts  Worker 消息类型与 isSnapshot 守卫（Worker 入口本身在 desktop 包）
@@ -389,7 +389,7 @@ desktop/src/host/storageScanWorker.ts   (tsup 新增 entry "host/storageScanWork
       import { classify, fold } from services/storage/domain/*     ← 纯函数可在 Worker 内跑
       每 300ms postMessage(部分 snapshot)；收到 abort 消息即停
 desktop/src/host/storageScanWorkerClient.ts  实现 ScanRunnerPort：new Worker(new URL(...)) + terminate on abort
-desktop/src/main/zcodeDataSizeWorker.ts      改为 import services 的 fsWalker（删除 main 里的重复遍历实现）
+desktop/src/main/raspberrycodeDataSizeWorker.ts      改为 import services 的 fsWalker（删除 main 里的重复遍历实现）
 ```
 
 理由：分类与折叠在 Worker 内完成，主线程只收聚合后的快照，不为每个文件跨线程传消息；进程内测试用 `createInProcessScanRunner()` 直接调用同一 walker + domain，保证 Worker 版与测试版走同一条路径。
@@ -417,7 +417,7 @@ desktop/src/main/zcodeDataSizeWorker.ts      改为 import services 的 fsWalker
 | `packages/desktop/src/host/remoteConnectionServiceCollection.ts`                                  | `.register(IStorageService, ...)`（连接级，机器作用域；不注册到 workspace 级 collection）                                                                                                   |
 | `packages/desktop/src/host/storageScanWorker.ts` + `storageScanWorkerClient.ts`                   | Worker 入口与 ScanRunnerPort 实现                                                                                                                                                           |
 | `packages/desktop/tsup.config.ts`                                                                 | host 增加 `"host/storageScanWorker"` entry                                                                                                                                                  |
-| `packages/desktop/src/main/zcodeDataSizeWorker.ts` / `zcodeDataSizeScanner.ts`                    | 遍历实现迁入 services，main 侧只保留 Worker 入口                                                                                                                                            |
+| `packages/desktop/src/main/raspberrycodeDataSizeWorker.ts` / `raspberrycodeDataSizeScanner.ts`                    | 遍历实现迁入 services，main 侧只保留 Worker 入口                                                                                                                                            |
 | `packages/ui/src/hooks/useStorageUsage.ts`                                                        | 订阅 `onScanProgress`，mount 时 `startScan`、unmount/失焦 60s 时 `cancelScan`，按 jobId 过滤                                                                                                |
 | `packages/ui/src/settings/storage/`                                                               | `StorageSection.tsx`、`StorageDiskCard.tsx`、`StorageCategoryList.tsx`、`StorageCategoryDetail.tsx`、`StorageCleanConfirmDialog.tsx`、`storageCategoryPresentation.ts`（图标/文案 id/颜色） |
 | `packages/ui/src/settings/settingsPageConfig.ts`、`lib/settingsNavigation.ts`、`SettingsPage.tsx` | 注册 `storage` 分区（`isDesktop` 门控）                                                                                                                                                     |
@@ -430,7 +430,7 @@ desktop/src/main/zcodeDataSizeWorker.ts      改为 import services 的 fsWalker
 - `IStorageService` 公开方法：`startScan`、`cancelScan`、`getSnapshot`、`onScanProgress`、`clean`，共 5 个。「在文件管理器中显示」复用平台已有的 `openInFileManager` 能力，UI 用 `root.path + relativePath` 直接调用，不经过 storage 服务。
 - 字节格式化复用 UI 现有的大小格式化工具（实现时先 grep `formatBytes`/`formatFileSize`，禁止新写第二个）。
 
-## 11. 实现落点（2026-09-10，z-code-2 staging）
+## 11. 实现落点（2026-09-10，旧版 staging）
 
 > 2026-09-10 迁入资源管理器后的差异：服务实例改由 **desktop main** 持有（不再注册为 host RPC 服务，无 ServiceDescriptor / channel），renderer 通过 preload 的 `window.resourceManager.storage`（`StorageManagementBridge`）调用；数据类型统一放在 `packages/shared/src/storage.ts`；UI 在 `packages/ui/src/resource-manager/storage/`；「在文件管理器中显示」经 `StorageRevealPath` 由 main 校验路径在数据根内后调用 `shell.showItemInFolder`。下表为迁移后的落点。
 
@@ -452,4 +452,4 @@ desktop/src/main/zcodeDataSizeWorker.ts      改为 import services 的 fsWalker
 - 「在文件管理器中显示」走 `StorageRevealPath`，main 用 `isPathInsideStorageRoots` 校验后调用 `shell.showItemInFolder`。
 - 契约类型与 `groupStorageRootsByVolume` 放在 `packages/shared/src/storage.ts`（renderer 桥、main、services 共用，且避免 contract ↔ domain 循环依赖）。
 - 数据大小的 SM-08（切走即停）与 SM-09（24h 保护）由单测覆盖（`useStorageUsage.test.ts`、`storageCleanPlan.test.ts`），E2E 不再重复。
-- desktop main 的遥测扫描器 `zcodeDataSizeScanner.ts` 尚未切到 services 的 `walkStorageRoot`，留作后续小 MR（行为等价替换，需保留 file/time limit partial 语义）。
+- desktop main 的遥测扫描器 `raspberrycodeDataSizeScanner.ts` 尚未切到 services 的 `walkStorageRoot`，留作后续小 MR（行为等价替换，需保留 file/time limit partial 语义）。

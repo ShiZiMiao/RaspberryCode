@@ -56,7 +56,7 @@ Artifacts land in `artifacts/act-verify/` (gitignored): one `result.json` +
 `/tmp/act-verify-e2e-report.md` (override with `--report`).
 
 The per-tool-call **recording ledger** (!179) is enabled per scenario by pointing
-`ZCODE_CUA_LEDGER_DIR` at the scenario's `ledger/` dir; it captures every tool's
+`RASPBERRYCODE_CUA_LEDGER_DIR` at the scenario's `ledger/` dir; it captures every tool's
 redacted input + result/exception + duration + the exact backend method that crossed
 the OS boundary.
 
@@ -68,7 +68,7 @@ The harness refuses to burn billed model calls into a wall. It blocks (exit 0,
 - **screen locked** — `CGSSessionScreenIsLocked == true`. Behind the loginwindow
   shield AX returns `-25211` and AppleEvents time out (`-1712`); no app is
   actuable. (This is the same blocker documented in the MEMORY note
-  `zcode-cua-m09-unlocked-console-verify`: locked-screen live runs are
+  `raspberrycode-cua-m09-unlocked-console-verify`: locked-screen live runs are
   `infra_fail`, not real failures.)
 - **Accessibility not trusted** — `AXIsProcessTrusted() == false` for the python
   executable running the server. `get_app_state` fail-closes with

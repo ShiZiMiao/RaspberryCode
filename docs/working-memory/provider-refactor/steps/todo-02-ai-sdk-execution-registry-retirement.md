@@ -128,8 +128,8 @@ Adapter.createModel
 ```
 
 Adapter 可以忽略 `label`、`visibility`、模型成员等非执行字段；“只消费其中一部分”不构成再声明一个
-`Pick<>` 公共类型或复制执行投影的理由。`@zcode/adapters` 可以依赖纯领域包 `@zcode/provider` 的完整类型；
-不得为了规避该依赖，把 Provider/Model Config 复制到 `@zcode/contracts`。
+`Pick<>` 公共类型或复制执行投影的理由。`@raspberrycode/adapters` 可以依赖纯领域包 `@raspberrycode/provider` 的完整类型；
+不得为了规避该依赖，把 Provider/Model Config 复制到 `@raspberrycode/contracts`。
 
 ### 2.5 Config、绑定选项与执行依赖分工
 

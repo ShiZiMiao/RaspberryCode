@@ -9,7 +9,7 @@
 
 ## 背景
 
-CUA 目前只有一个用户主动入口：`设置 → 电脑控制 (Computer Use)` 的 `zcode-cua` 插件总开关
+CUA 目前只有一个用户主动入口：`设置 → 电脑控制 (Computer Use)` 的 `raspberrycode-cua` 插件总开关
 （`packages/ui/src/settings/ComputerUseSection.tsx`）。用户感知弱、发现成本高，这是 PRD §2.1
 认定的核心问题。
 
@@ -40,7 +40,7 @@ PRD 的完整方案含免费体验引导层与免费额度体系。**本期只�
 | -------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------ |
 | §4.2 / §6.2                | 免费体验引导弹层                         | 产品决策：本期不引入弹层，按钮直接跳设置页                                                 |
 | §7 / §7.1 / §7.2           | 免费额度、试用模型、体验任务、促升级弹窗 | 依赖 z.ai billing 服务端，口径未终审                                                       |
-| §4.2 步骤 2 / §4.3 第 4 项 | `capability-changed` 协议事件            | 需扩展 `@zcode/protocol` + `apps/zcode-cli`，本期用插件 toggling 完成 + Helper health 近似 |
+| §4.2 步骤 2 / §4.3 第 4 项 | `capability-changed` 协议事件            | 需扩展 `@raspberrycode/protocol` + `apps/raspberrycode-cli`，本期用插件 toggling 完成 + Helper health 近似 |
 | §4.5                       | 多任务浮窗                               | 与额度/并发规则耦合                                                                        |
 | §4.6                       | 埋点漏斗                                 | 漏斗主体是引导层转化率，引导层不做则漏斗无意义                                             |
 
@@ -111,8 +111,8 @@ mac 权限行与授权按钮、错误详情、以及「在输入框显示电脑�
 
 | 内部态                | 判定条件                                                                                                                                                                                                                                                                                                                                                    |
 | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `starting`            | `togglingPluginId === ZCODE_CUA_OFFICIAL_PLUGIN_ID`（优先级最高，压过下面所有态）                                                                                                                                                                                                                                                                           |
-| `error`               | ①`pluginManagementStore.error` 非空且本次操作目标是 zcode-cua（归属由 store 的 `lastFailedPluginId` 记录：带 pluginId 的操作失败写该 id，marketplace/validate/load 等无插件目标的失败写 null——CR-01，防止共享 error 把无关失败误映射为按钮错误态）；或 ②mac 下插件已启用但 Helper 状态 `!isCuaPermissionStatusAvailable(status)`（Helper 启动失败／不健康） |
+| `starting`            | `togglingPluginId === RASPBERRYCODE_CUA_OFFICIAL_PLUGIN_ID`（优先级最高，压过下面所有态）                                                                                                                                                                                                                                                                           |
+| `error`               | ①`pluginManagementStore.error` 非空且本次操作目标是 raspberrycode-cua（归属由 store 的 `lastFailedPluginId` 记录：带 pluginId 的操作失败写该 id，marketplace/validate/load 等无插件目标的失败写 null——CR-01，防止共享 error 把无关失败误映射为按钮错误态）；或 ②mac 下插件已启用但 Helper 状态 `!isCuaPermissionStatusAvailable(status)`（Helper 启动失败／不健康） |
 | ~~`plugin-disabled`~~ | ~~`cuaPlugin?.enabled !== true`~~ ——2026-09-11 删除：未启用不再是 UI 态，而是被插件门挡在渲染之外                                                                                                                                                                                                                                                            |
 | `permission-required` | mac + 插件已启用 + Helper 状态可用 + `!isCuaPermissionTccGranted(status)`                                                                                                                                                                                                                                                                                   |
 | `ready`               | 插件已启用，且（Windows）或（mac 且 `isCuaPermissionTccGranted(status)`）                                                                                                                                                                                                                                                                                   |

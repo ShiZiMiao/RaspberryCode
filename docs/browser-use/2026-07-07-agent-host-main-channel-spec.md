@@ -10,7 +10,7 @@
 agent: BrowserControlPort.execute(cmd)   [ProtocolBrowserControlBroker]
   → context.requestClient("interaction/browserExecute", {requestId,sessionId,command}, resultSchema)
       │ stdio JSON-RPC 反向请求
-host: zcodeAgentService client.onRequest case interactionBrowserExecute
+host: raspberrycodeAgentService client.onRequest case interactionBrowserExecute
   → 校验 params → browserControlMainBridge.execute({sessionId,command}) → client.respondResult/respondError
   （纯 RPC 中继：不 emitSessionEvent、不 pending sessionEvent，区别于 permission）
       │ parentPort.postMessage(BrowserExecuteRequest{requestId,payload}) + pending map
@@ -22,35 +22,35 @@ main: desktopHostProcess child.on("message") case BrowserExecuteRequest
 
 ## 2. Leg A：agent broker
 
-- 文件：`apps/zcode-cli/packages/bootstrap/src/zcode-protocol/browser-control-broker.ts`（新）。
+- 文件：`apps/raspberrycode-cli/packages/bootstrap/src/raspberrycode-protocol/browser-control-broker.ts`（新）。
   ```ts
   export function createProtocolBrowserControlBroker(
-    context: ZCodeProtocolAgentServerContext,
+    context: RaspberryCodeProtocolAgentServerContext,
   ): BrowserControlPort {
     return {
       async execute({ sessionId, command }) {
         return context.requestClient(
-          zcodeProtocolMethods.interactionBrowserExecute,
+          raspberrycodeProtocolMethods.interactionBrowserExecute,
           { requestId: randomUUID(), sessionId, command },
-          zcodeBrowserExecuteResultSchema,
+          raspberrycodeBrowserExecuteResultSchema,
         );
       },
     };
   }
   ```
-- 注入：`server-operations.ts` 的 `createWorkspaceZCodeApp(context, workspace, { ... })` options 对象里，与 `permissionBroker: createProtocolInteractionBroker(context)` 并列加
-  `browserControlPort: createProtocolBrowserControlBroker(context)`。`createWorkspaceZCodeApp` 已 `...options` 透传给 createApp（同 providerRuntimeHeadersPort 模式）。
+- 注入：`server-operations.ts` 的 `createWorkspaceRaspberryCodeApp(context, workspace, { ... })` options 对象里，与 `permissionBroker: createProtocolInteractionBroker(context)` 并列加
+  `browserControlPort: createProtocolBrowserControlBroker(context)`。`createWorkspaceRaspberryCodeApp` 已 `...options` 透传给 createApp（同 providerRuntimeHeadersPort 模式）。
 
 ## 3. Leg B：host router + host↔main bridge
 
-### host router（`packages/services/src/zcode-agent/zcodeAgentService.ts` onRequest）
-- 在末尾 `respondError(-32601)` 前加 case `request.method === zcodeProtocolMethods.interactionBrowserExecute`：
-  - `zcodeBrowserExecuteParamsSchema.safeParse(request.params)`，失败 `respondError(-32602)`。
+### host router（`packages/services/src/raspberrycode-agent/raspberrycodeAgentService.ts` onRequest）
+- 在末尾 `respondError(-32601)` 前加 case `request.method === raspberrycodeProtocolMethods.interactionBrowserExecute`：
+  - `raspberrycodeBrowserExecuteParamsSchema.safeParse(request.params)`，失败 `respondError(-32602)`。
   - 调 `browserControlMainBridge.execute({sessionId, command})`（注入的可选依赖）。
   - 成功 `client.respondResult(request.id, result)`；异常 `client.respondError(request.id, {code:-32000,message})`。
   - **不** emitSessionEvent、**不**进 pending sessionEvent map（纯 RPC 中继，与 permission 的 UI 阻塞语义不同）。
   - bridge 缺省（非桌面/远控无 main）→ 返回结构化 `{ok:false, error:{code:"backend_unavailable"}}`（不 throw，模型可读）。
-- `browserControlMainBridge` 作为 `createZCodeAgentService` 的可选依赖注入（`ZCodeAgentServiceDeps` 加字段），desktop host 装配时传入。
+- `browserControlMainBridge` 作为 `createRaspberryCodeAgentService` 的可选依赖注入（`RaspberryCodeAgentServiceDeps` 加字段），desktop host 装配时传入。
 
 ### host↔main bridge（`packages/desktop/src/host/browserControlMainBridge.ts` 新，或并入 host/index.ts）
 - 仿 `createFullFeedbackLogArchiveViaMain`：`pendingBrowserExecute = Map<requestId,{resolve,reject,timer}>`；`execute(payload)` → `parentPort.postMessage({type:HostResponseTypes.BrowserExecuteRequest, requestId, payload})` + 超时（默认 30s，navigate/screenshot 可长）。

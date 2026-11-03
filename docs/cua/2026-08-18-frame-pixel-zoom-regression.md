@@ -56,7 +56,7 @@ coordinate target。
 
 模型只从当前工具结果交付的 raster 读取整数 `(x,y)`，并原样携带相邻的 `frame_id`。所有
 resize、byte-budget、Retina/DPI、crop、window/display origin 和 native dispatch 投影均由
-`@zcode/zcode-cua` 内部完成，不得要求模型计算。
+`@raspberrycode/raspberrycode-cua` 内部完成，不得要求模型计算。
 
 Zoom 不属于常规流程。当前 raster 中的目标清晰可辨时必须直接点击；只有目标过小或存在
 歧义、无法可靠选点时，才把 Zoom 作为最后手段。C07 模型提示与工具 description 使用相同
@@ -122,7 +122,7 @@ request lifetime 修复，以及 `d55c5f3a7713a3499bfd7102fd7d2842b53e71ec` 的 
 
 标准 `pnpm dev:desktop` 构建必须无条件把 CUA plugin 视为开发态 filesystem seed，
 将 `sharp` 及当前平台 native closure 写入 seed source 后再构建 agent。不能要求调用者额外设置
-`ZCODE_CUA_DEV_MODE=1`；否则 bootstrap 会用不含 `sharp` 的同版本 seed 原子替换缓存，
+`RASPBERRYCODE_CUA_DEV_MODE=1`；否则 bootstrap 会用不含 `sharp` 的同版本 seed 原子替换缓存，
 `screenshot`、`zoom` 与 `get_app_state(include_screenshot=true)` 会在真实模型回合中同时失效。
 
 模型可见的 `frame_id` 使用短不透明 token（例如 `frame-a1b2c3d4`），不公开可被模型
@@ -201,12 +201,12 @@ capture/zoom -> final raster + frame_id -> model {frame_id, x, y}
 | RaspberryCode Node 24.14.0                    | 通过                     | `typecheck`；`lint` 0 error、38 条既有 warning                                                                                                                                                    |
 | producer Node 24.14.0                 | 通过                     | `typecheck`；`lint` 0 error、14 条既有 warning                                                                                                                                                    |
 | 插件产品包校验                        | 通过                     | bundled skill provenance、producer SHA、版本与 contract 一致                                                                                                                                      |
-| 独立 `zcode-cua` MCP                  | 通过                     | Node `24.14.0` 以 stdio 启动 `v0.5.6`；canvas marker-grid 的 window 5/5、full、strict-interior Zoom、drag 均由 authenticated DOM oracle 证明命中，全部报告 `window_event`；stale frame 零派发     |
+| 独立 `raspberrycode-cua` MCP                  | 通过                     | Node `24.14.0` 以 stdio 启动 `v0.5.6`；canvas marker-grid 的 window 5/5、full、strict-interior Zoom、drag 均由 authenticated DOM oracle 证明命中，全部报告 `window_event`；stale frame 零派发     |
 | Chrome                                | 已安装                   | `151.0.7922.138`；C07 fixture 可启动并置前台                                                                                                                                                      |
 | Godot                                 | 已安装                   | `4.7.1.stable.official.a13da4feb`；应用可启动                                                                                                                                                     |
 | CUA Helper dev 包装                   | 构建通过                 | 使用 Node `24.14.0` SEA base 与同 ABI `ax_native.node`，provenance `arm64/node_abi=137` 通过并安装到 `~/.raspberrycode/computer-use/dev`                                                                  |
 | macOS C07 runtime                     | 通过                     | 最新 Dev Helper 的 Accessibility/Screen Recording 均为 granted；final-SHA direct C07 与 Calculator M02 AX 均为 100 分                                                                             |
-| Kimi K3 app-server                    | 通过                     | final-SHA gate 的 direct 与 `zcode_agent_core` 两条 lane 均通过；product/release score 100，模型请求确实携带并识别截图                                                                            |
+| Kimi K3 app-server                    | 通过                     | final-SHA gate 的 direct 与 `raspberrycode_agent_core` 两条 lane 均通过；product/release score 100，模型请求确实携带并识别截图                                                                            |
 | Kimi K3 可见 RaspberryCode Desktop            | 通过                     | session `sess_be30c6a3-2ce7-4574-aaac-2fe821e311ed`；窗口 raster `1280×900`、`frame-0c9a96ea`、模型像素 `(641,496)`，DOM oracle 为 `Marker placed at 450, 280`，canvas 无 AX 子元素               |
 | Desktop 插件缓存 sharp                | 通过                     | 首次运行稳定复现缺少 sharp；`sync:cache` 复用产品 staging 后，sharp `0.34.5`/libvips `8.17.3` native load smoke 与全新 MCP/K3 C07 均通过                                                          |
 

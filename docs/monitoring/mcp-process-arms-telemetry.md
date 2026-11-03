@@ -22,7 +22,7 @@ HTTP/SSE MCP 没有本地 OS 子进程，不发 process start/crash 与资源样
 ## 安全标识
 
 - `mcp_source`：按运行时分发渠道分为三类：内置宿主 MCP 与 RaspberryCode Official Marketplace
-  （`zcode-plugins-official`，包含 Builtin Plugin 与 CDN Plugin）声明的 MCP 统一为
+  （`raspberrycode-plugins-official`，包含 Builtin Plugin 与 CDN Plugin）声明的 MCP 统一为
   `builtin`；Personal Source / Inline Plugin 声明的 MCP 为 `plugin`；用户、项目等普通 MCP
   配置为 `custom`。Plugin runtime namespace 只表达工具命名空间，不能单凭
   `plugin:<pluginName>:<serverName>` 推断分发渠道；Plugin loader 必须在公共配置校验之后附加
@@ -99,7 +99,7 @@ AND OS 资源采样仍能观察到该进程
 MCP adapter / pool
   -> process-scoped McpTelemetryTracker
   -> process/mcpTelemetry strict notification
-  -> ZCodeAgentService dynamic event
+  -> RaspberryCodeAgentService dynamic event
   -> trusted Desktop Host relay
   -> Host parentPort strict response
   -> Desktop main ARMS sendCustom
@@ -169,13 +169,13 @@ task snapshot / queue / replay / owner command ------------ X
 | ------------------------------------- | ------------------------------------------------ | ----- | ------------------------- |
 | `createMcpAdapterConnectionPool`      | protocol entrypoint -> session lease             | 2     | process tracker owner     |
 | `NodeMcpAdapter.openServerConnection` | pool adapter -> stdio transport                  | 2     | start/crash/PID authority |
-| `createZCodeProcessResourceSampler`   | protocol notification -> service -> Host -> main | 2     | forwarding pattern        |
+| `createRaspberryCodeProcessResourceSampler`   | protocol notification -> service -> Host -> main | 2     | forwarding pattern        |
 
 ### Graph Drift / Delta
 
 - feature graph 的 `capability.data-observability` 已登记本 spec、`createMcpTelemetryTracker`
   与 `reportMcpTelemetryToArms` 两个 code seed，见
-  `.agents/skills/feature-boundary-planner/references/zcode-feature-graph.yaml`。
+  `.agents/skills/feature-boundary-planner/references/raspberrycode-feature-graph.yaml`。
 - 当前保留三类生命周期事件；CPU / 内存采样与资源属性统一以全进程 spec 为准。
   超过 60 秒的疑似孤儿只保留为 tracker 内部事实。
 

@@ -28,9 +28,9 @@
 
 **Files:**
 
-- Create: `apps/zcode-cli/packages/adapters/tests/openai-responses-json-compat.test.ts`
-- Create: `apps/zcode-cli/packages/adapters/src/model/openai-responses-json-compat.ts`
-- Modify: `apps/zcode-cli/packages/adapters/src/model/registry.ts`
+- Create: `apps/raspberrycode-cli/packages/adapters/tests/openai-responses-json-compat.test.ts`
+- Create: `apps/raspberrycode-cli/packages/adapters/src/model/openai-responses-json-compat.ts`
+- Modify: `apps/raspberrycode-cli/packages/adapters/src/model/registry.ts`
 
 **Interfaces:**
 
@@ -95,7 +95,7 @@ expect(requests[0]?.url).toBe("/responses");
 Run:
 
 ```bash
-pnpm --dir apps/zcode-cli exec vitest run packages/adapters/tests/openai-responses-json-compat.test.ts
+pnpm --dir apps/raspberrycode-cli exec vitest run packages/adapters/tests/openai-responses-json-compat.test.ts
 ```
 
 Expected: FAIL with adapter `Model request failed.`；cause 为 `AI_APICallError: Invalid JSON response`，validation issues 指向 `output[0].id` 与 `output[0].content[0].annotations`。不得是 server、路径或 API key 错误。
@@ -175,11 +175,11 @@ case "openai": {
 Run:
 
 ```bash
-pnpm --dir apps/zcode-cli exec vitest run \
+pnpm --dir apps/raspberrycode-cli exec vitest run \
   packages/adapters/tests/openai-responses-json-compat.test.ts \
   packages/adapters/tests/registry.test.ts
-pnpm --dir apps/zcode-cli --filter @zcode/adapters typecheck
-pnpm --dir apps/zcode-cli --filter @zcode/adapters lint
+pnpm --dir apps/raspberrycode-cli --filter @raspberrycode/adapters typecheck
+pnpm --dir apps/raspberrycode-cli --filter @raspberrycode/adapters lint
 ```
 
 Expected: 两个测试文件、adapter typecheck 和变更文件定向 lint 通过；包级 lint 若命中未改文件的既有基线，留到 Task 3 如实记录。
@@ -190,13 +190,13 @@ Expected: 两个测试文件、adapter typecheck 和变更文件定向 lint 通�
 
 - Modify: `docs/conversation-session-case-catalog.md`
 - Modify: `docs/testing/conversation-session-e2e-coverage-matrix.md`
-- Modify: `apps/zcode-cli/e2e/compact-microcompact/constants.mjs`
-- Modify: `apps/zcode-cli/e2e/compact-microcompact/suite-cases.mjs`
-- Modify: `apps/zcode-cli/e2e/compact-microcompact/case-utils.mjs`
-- Modify: `apps/zcode-cli/e2e/compact-microcompact/run.mjs`
-- Modify: `apps/zcode-cli/e2e/compact-microcompact/scripted-provider.mjs`
-- Modify: `apps/zcode-cli/e2e/compact-microcompact/README.md`
-- Create: `apps/zcode-cli/e2e/compact-microcompact/case-openai-responses-compact.mjs`
+- Modify: `apps/raspberrycode-cli/e2e/compact-microcompact/constants.mjs`
+- Modify: `apps/raspberrycode-cli/e2e/compact-microcompact/suite-cases.mjs`
+- Modify: `apps/raspberrycode-cli/e2e/compact-microcompact/case-utils.mjs`
+- Modify: `apps/raspberrycode-cli/e2e/compact-microcompact/run.mjs`
+- Modify: `apps/raspberrycode-cli/e2e/compact-microcompact/scripted-provider.mjs`
+- Modify: `apps/raspberrycode-cli/e2e/compact-microcompact/README.md`
+- Create: `apps/raspberrycode-cli/e2e/compact-microcompact/case-openai-responses-compact.mjs`
 
 **Interfaces:**
 
@@ -210,7 +210,7 @@ Expected: 两个测试文件、adapter typecheck 和变更文件定向 lint 通�
 
 Responses 缺字段是 F08 手动 compact success 的 provider 输入变体，不新增会话产品状态。catalog
 在 F08 分组下记录兼容边界，coverage matrix 的 F08 备注直接引用
-`apps/zcode-cli/e2e/compact-microcompact/case-openai-responses-compact.mjs` 作为补充证据。
+`apps/raspberrycode-cli/e2e/compact-microcompact/case-openai-responses-compact.mjs` 作为补充证据。
 不得新增 F10、自动化缩写、产品统计或通用 coverage audit 规则；也不扩展 malformed JSON、
 manual/auto、remote 或 provider 名排列。
 
@@ -281,7 +281,7 @@ compact 非流式响应的 output text 固定为：
 把 `openai-responses-compact` 加入 `CASE_NAMES`、`FAKE_CASE_NAMES` 和 `suite-cases.mjs`；README 增加：
 
 ```bash
-pnpm --filter zcode-cli exec tsx ../../apps/zcode-cli/e2e/compact-microcompact/run.mjs \
+pnpm --filter raspberrycode-cli exec tsx ../../apps/raspberrycode-cli/e2e/compact-microcompact/run.mjs \
   --case=openai-responses-compact
 ```
 
@@ -290,9 +290,9 @@ pnpm --filter zcode-cli exec tsx ../../apps/zcode-cli/e2e/compact-microcompact/r
 Run:
 
 ```bash
-pnpm --dir apps/zcode-cli build
-pnpm --filter zcode-cli exec tsx \
-  ../../apps/zcode-cli/e2e/compact-microcompact/run.mjs \
+pnpm --dir apps/raspberrycode-cli build
+pnpm --filter raspberrycode-cli exec tsx \
+  ../../apps/raspberrycode-cli/e2e/compact-microcompact/run.mjs \
   --case=openai-responses-compact
 pnpm audit:conversation-session-coverage
 ```
@@ -319,7 +319,7 @@ Run（只检查生产实现；E2E 对实际 wire pathname 的断言不是协议�
 
 ```bash
 if rg -n 'pathname|endsWith\(.*/responses|request\.method' \
-  apps/zcode-cli/packages/adapters/src/model/openai-responses-json-compat.ts; then
+  apps/raspberrycode-cli/packages/adapters/src/model/openai-responses-json-compat.ts; then
   exit 1
 fi
 ```
@@ -331,8 +331,8 @@ Expected: 无输出且退出码为 0，生产兼容器没有 URL/method guard。
 Run:
 
 ```bash
-pnpm --dir apps/zcode-cli typecheck
-pnpm --dir apps/zcode-cli lint
+pnpm --dir apps/raspberrycode-cli typecheck
+pnpm --dir apps/raspberrycode-cli lint
 pnpm typecheck
 pnpm lint
 git diff --check

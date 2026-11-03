@@ -1,6 +1,6 @@
 # Model Provider JSON Schema
 
-> 历史文档：下一阶段不再使用 `zcode.model-providers.v1` catalog schema，也不再使用
+> 历史文档：下一阶段不再使用 `raspberrycode.model-providers.v1` catalog schema，也不再使用
 > `reasoning.levels[level][kind]` patch 作为新配置主格式。新的权威设计见
 > `docs/model-provider-opencode-config.md`。
 
@@ -21,7 +21,7 @@
 
 ```jsonc
 {
-  "schemaVersion": "zcode.model-providers.v1",
+  "schemaVersion": "raspberrycode.model-providers.v1",
   "providers": [
     {
       "id": "example",
@@ -255,7 +255,7 @@ type ModelProviderKind = "anthropic" | "openai" | "openai-compatible";
 type Modality = "text" | "image" | "video" | "audio";
 
 interface ProviderCatalogFile {
-  schemaVersion: "zcode.model-providers.v1";
+  schemaVersion: "raspberrycode.model-providers.v1";
   providers: ProviderSpec[];
 }
 
@@ -315,7 +315,7 @@ interface FieldUnsetPatch {
 
 ```jsonc
 {
-  "schemaVersion": "zcode.model-providers.v1",
+  "schemaVersion": "raspberrycode.model-providers.v1",
   "providers": [
     {
       "id": "zai",
@@ -423,7 +423,7 @@ interface FieldUnsetPatch {
 - `ReasoningSpec.levels` 只用于投影 reasoning 档位值和默认档位；app 不再把
   `ReasoningSpec.levels[level][kind]` 转换成
   `ModelReasoningCapability.providerOptionsByLevel[level]`。
-- 推理强度档位到供应商请求字段的映射由 zcode-cli 维护，app 侧不再维护
+- 推理强度档位到供应商请求字段的映射由 raspberrycode-cli 维护，app 侧不再维护
   `anthropic` / `openai` / `openaiCompatible` provider options 命名空间转换。
 
 ## OpenAI Compatible 流式 Usage

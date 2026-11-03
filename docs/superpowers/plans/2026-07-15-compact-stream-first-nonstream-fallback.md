@@ -83,11 +83,11 @@ node scripts/audit-conversation-session-case-coverage.mjs --check --json
 
 ### 文件
 
-- `apps/zcode-cli/packages/core/src/runtime/methods/compact-summary-model-request.ts`
-- `apps/zcode-cli/packages/core/src/runtime/methods/compact-active.ts`
-- `apps/zcode-cli/packages/core/tests/compact-summary-model-request.test.ts`
-- `apps/zcode-cli/packages/core/tests/runtime-compact.test.ts`
-- `apps/zcode-cli/packages/core/tests/media-budget.test.ts`
+- `apps/raspberrycode-cli/packages/core/src/runtime/methods/compact-summary-model-request.ts`
+- `apps/raspberrycode-cli/packages/core/src/runtime/methods/compact-active.ts`
+- `apps/raspberrycode-cli/packages/core/tests/compact-summary-model-request.test.ts`
+- `apps/raspberrycode-cli/packages/core/tests/runtime-compact.test.ts`
+- `apps/raspberrycode-cli/packages/core/tests/media-budget.test.ts`
 
 ### Checklist
 
@@ -108,7 +108,7 @@ node scripts/audit-conversation-session-case-coverage.mjs --check --json
 ### 验收
 
 ```bash
-pnpm --filter @zcode/core exec vitest run \
+pnpm --filter @raspberrycode/core exec vitest run \
   tests/compact-summary-model-request.test.ts \
   tests/runtime-compact.test.ts \
   tests/media-budget.test.ts \
@@ -119,10 +119,10 @@ pnpm --filter @zcode/core exec vitest run \
 
 ### 文件
 
-- `apps/zcode-cli/packages/contracts/src/model/index.ts`
-- `apps/zcode-cli/packages/adapters/src/model/streaming-tool-call-assembler.ts`
-- `apps/zcode-cli/packages/adapters/src/model/runner-stream.ts`
-- `apps/zcode-cli/packages/adapters/tests/runner.test.ts`
+- `apps/raspberrycode-cli/packages/contracts/src/model/index.ts`
+- `apps/raspberrycode-cli/packages/adapters/src/model/streaming-tool-call-assembler.ts`
+- `apps/raspberrycode-cli/packages/adapters/src/model/runner-stream.ts`
+- `apps/raspberrycode-cli/packages/adapters/tests/runner.test.ts`
 
 ### Checklist
 
@@ -151,7 +151,7 @@ pnpm --filter @zcode/core exec vitest run \
 ### 验收
 
 ```bash
-pnpm --filter @zcode/adapters exec vitest run \
+pnpm --filter @raspberrycode/adapters exec vitest run \
   tests/runner.test.ts \
   tests/runner-retry.test.ts \
   tests/openai-responses-json-compat.test.ts
@@ -198,8 +198,8 @@ pnpm --dir packages/desktop typecheck:e2e
 
 ### 文件
 
-- `apps/zcode-cli/e2e/compact-microcompact/README.md`
-- `apps/zcode-cli/e2e/compact-microcompact/case-openai-responses-compact.mjs`
+- `apps/raspberrycode-cli/e2e/compact-microcompact/README.md`
+- `apps/raspberrycode-cli/e2e/compact-microcompact/case-openai-responses-compact.mjs`
 - `packages/desktop/test/e2e/conversation-session/conversation-session-compact-stream-fallback.test.ts`
 - `packages/desktop/test/e2e/fixtures/cases/conversation-session/conversation-session-compact-stream-fallback.json`
 - `packages/desktop/test/e2e/fixtures/upstream/conversation-session/conversation-session-compact-stream-fallback.json`
@@ -228,9 +228,9 @@ setup main stream success
 ### 验收
 
 ```bash
-pnpm --dir apps/zcode-cli build
-pnpm --filter zcode-cli exec tsx \
-  ../../apps/zcode-cli/e2e/compact-microcompact/run.mjs \
+pnpm --dir apps/raspberrycode-cli build
+pnpm --filter raspberrycode-cli exec tsx \
+  ../../apps/raspberrycode-cli/e2e/compact-microcompact/run.mjs \
   --case=openai-responses-compact --keep-tmp
 
 pnpm --dir packages/desktop test:e2e:serial -- \
@@ -253,9 +253,9 @@ pnpm --dir packages/desktop test:e2e:serial -- \
 ### 命令
 
 ```bash
-pnpm --dir apps/zcode-cli typecheck
-pnpm --dir apps/zcode-cli build
-pnpm --dir apps/zcode-cli lint
+pnpm --dir apps/raspberrycode-cli typecheck
+pnpm --dir apps/raspberrycode-cli build
+pnpm --dir apps/raspberrycode-cli lint
 
 pnpm --dir packages/desktop typecheck:e2e
 pnpm typecheck

@@ -3,7 +3,7 @@
 ## Scope and evidence levels
 
 This catalog is the product-level index for Computer Use. It maps product cases
-to the producer (`zcode-cua`) and consumer (`z-code`) evidence that proves them.
+to the producer (`raspberrycode-cua`) and consumer (`raspberrycode`) evidence that proves them.
 Passing one platform never implies another platform passed.
 
 Evidence levels:
@@ -84,7 +84,7 @@ model-visible raster -> integer x/y only
 | CU-53 |  P0 | `request_access` permission observation is desktop-continuous/local only; history, recovery, mobile replayable and remote workspaces create no permission side effect | protocol/service delivery-boundary tests + Electron cold/mobile representative                 | consumer integration                          |
 | CU-54 |  P0 | Confirmation rechecks fresh status, opens only exact missing permissions, restarts Helper on return, and never replays or continues the task                        | permission coordinator unit + Electron manual-review                                            | consumer integration + live-macos             |
 | CU-55 |  P0 | Idle Helper has no periodic health probe or timer-triggered recovery; the next CUA resolve boundary performs the bounded on-demand check while agent spawn injects process-stable pure-data credentials with zero Helper IO, without restarting Agent | default services assembly contract + producer resolver health contracts; agentProxyEnv lazy-spawn source contract | consumer integration + live-macos/windows |
-| CU-56 |  P0 | Agent spawn credentials are process-stable pure data (MC-1/3/4/8): darwin stable socket + per-spawn authority; win32 stable pipe + ZCODE_CUA_WIN_HELPER_RECIPE; no Helper IO, no health verdict, no marker, no acquire; authorization-flow managed host does not feed spawn credentials | agentProxyEnv lazy-spawn source contract + stableCuaTransport pipe contracts | consumer integration + live-macos (win32 pending real-machine) |
+| CU-56 |  P0 | Agent spawn credentials are process-stable pure data (MC-1/3/4/8): darwin stable socket + per-spawn authority; win32 stable pipe + RASPBERRYCODE_CUA_WIN_HELPER_RECIPE; no Helper IO, no health verdict, no marker, no acquire; authorization-flow managed host does not feed spawn credentials | agentProxyEnv lazy-spawn source contract + stableCuaTransport pipe contracts | consumer integration + live-macos (win32 pending real-machine) |
 | CU-57 |  P1 | win32 settings getStatus truth chain (MC-9): probe stable pipe -> host fork -> permission_status truth; launch failure degrades to idle:true copy | stableCuaTransport pipe contracts; full chain owned by the live lane | live-windows (pending real-machine) |
 
 ## Deterministic application launch model lane
@@ -204,7 +204,7 @@ Dev Helper:
 
 Retained evidence:
 
-- producer ZGE reports under `evals/zcode-gui-eval/artifacts/`, notably
+- producer ZGE reports under `evals/raspberrycode-gui-eval/artifacts/`, notably
   `cua-internal-frame-direct-core-final.json`,
   `cua-internal-frame-c18-final3.json`, and
   `cua-internal-frame-m12-final.json`;

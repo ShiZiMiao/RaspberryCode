@@ -45,7 +45,7 @@ record 缺少必需字段（`decision` / `grantedAt` / `digestAlgorithm` 等）�
 对同一文件得出同一结论，corrupt 下不展示任何 `trusted_persistent`，Hook 全部按未信任
 软门禁跳过。
 
-`zcode hooks trust status` 对损坏 store 显式返回
+`raspberrycode hooks trust status` 对损坏 store 显式返回
 `reasonCode: workspace_hooks_trust_store_corrupt`（而非 `pending_trust`），且 `grant` /
 `revoke` 会被拒绝直到修复。首次读取时损坏文件会被改名为
 `workspace-hook-trust-v1.json.corrupt-<timestamp>`；恢复方式：从备份还原该文件，或确认

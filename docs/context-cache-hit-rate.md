@@ -40,8 +40,8 @@ recovered cache aggregate.
 
 ## Developer Tools Panel
 
-When localStorage contains `zcode:developer-tools:enabled` or the legacy alias
-`zcode:token-debug:enabled`, the right-side panel add menu shows a Developer Tools
+When localStorage contains `raspberrycode:developer-tools:enabled` or the legacy alias
+`raspberrycode:token-debug:enabled`, the right-side panel add menu shows a Developer Tools
 entry. Values `0`, `false`, `off`, and `no` disable the entry; any other stored value enables it.
 
 The Developer Tools panel is scoped to the active task and includes the token debug view for

@@ -4,7 +4,7 @@
 
 RaspberryCode 当前已经支持把本地用户级 Skills 同步到 SSH 远端主机。MCP 的运行链路与 Skills 有相似处：本地设置页读取本机用户目录中的 MCP 配置，创建或恢复 RaspberryCode Agent session 时把启用的 MCP 配置显式下发给 agent，agent 再在其所在运行时启动 stdio MCP 或连接 HTTP / SSE MCP。
 
-这意味着 SSH 远程 workspace 里，MCP 进程实际运行在远端 zcode-server 所在主机上。当前本地用户级 MCP 可以通过 session 参数临时传给远端 runtime，但远端用户目录并不会持久化这批 MCP 配置。用户在远端主机上重新打开 workspace、手机端通过 shared-host 进入同一远端 workspace、或远端 runtime 自行读取配置时，仍然缺少远端 `~/.raspberrycode/cli/config.json` 中的用户级 MCP 配置。
+这意味着 SSH 远程 workspace 里，MCP 进程实际运行在远端 raspberrycode-server 所在主机上。当前本地用户级 MCP 可以通过 session 参数临时传给远端 runtime，但远端用户目录并不会持久化这批 MCP 配置。用户在远端主机上重新打开 workspace、手机端通过 shared-host 进入同一远端 workspace、或远端 runtime 自行读取配置时，仍然缺少远端 `~/.raspberrycode/cli/config.json` 中的用户级 MCP 配置。
 
 ## 目标
 
@@ -33,13 +33,13 @@ RaspberryCode 当前已经支持把本地用户级 Skills 同步到 SSH 远端�
 
 1. `mcpStore.loadMcpFromUserDirectory()` 通过 `IPlatformService.loadMcpFromUserDirectory()` 读取宿主用户目录。
 2. desktop platform 的实现读取 workspace scope，再读取 user scope；每个 scope 先读 `.raspberrycode`，如果没有 server 再读 `.agents`。
-3. UI 内存里得到 `ZCodeMcpServer[]`，用户可启用、禁用、编辑或删除。
-4. 创建 / 恢复 task 前，`getEnabledMcpServersForZCode()` 把启用的 `zcodeagentmcp` 配置转成 RaspberryCode Protocol 的 `mcpServers` 参数。
-5. service adapter 把 `mcpServers` 传给 zcode-agent create/resume session。
-6. zcode-server / bootstrap 把 protocol MCP 转成 runtime config，agent runtime 再调用 MCP adapter。
+3. UI 内存里得到 `RaspberryCodeMcpServer[]`，用户可启用、禁用、编辑或删除。
+4. 创建 / 恢复 task 前，`getEnabledMcpServersForRaspberryCode()` 把启用的 `raspberrycodeagentmcp` 配置转成 RaspberryCode Protocol 的 `mcpServers` 参数。
+5. service adapter 把 `mcpServers` 传给 raspberrycode-agent create/resume session。
+6. raspberrycode-server / bootstrap 把 protocol MCP 转成 runtime config，agent runtime 再调用 MCP adapter。
 7. stdio MCP 使用 agent runtime 所在机器的 `command` / `args` 启动；HTTP / SSE MCP 使用 URL 和 headers 连接远端服务。
 
-因此 SSH remote 下的 MCP 运行位置是远端 zcode-server 所在机器。本地配置直接传给远端 runtime 可以临时生效，但不能代表远端用户目录已经持久化。
+因此 SSH remote 下的 MCP 运行位置是远端 raspberrycode-server 所在机器。本地配置直接传给远端 runtime 可以临时生效，但不能代表远端用户目录已经持久化。
 
 ## 服务边界
 
@@ -50,7 +50,7 @@ RaspberryCode 当前已经支持把本地用户级 Skills 同步到 SSH 远端�
 - `IMcpSyncService.exportMcpServers({ serverIds })`：本机按候选 id 导出 MCP 配置 DTO，并带上本机 home 路径用于路径改写。
 - `IMcpSyncService.importMcpServers({ servers, localHomeDir, remoteWorkspacePath, localWorkspacePath?, overwrite: false })`：远端写入 `~/.raspberrycode/cli/config.json`，同名存在时跳过；filesystem MCP 在写入前执行路径改写。
 
-服务需要像 skill-sync 一样注册到本地 host 和远端 zcode-server service collection。桌面 renderer 合并 remote workspace services 时，`mcpSyncService` 必须覆盖为 remote service；否则导入会写回本机用户目录。
+服务需要像 skill-sync 一样注册到本地 host 和远端 raspberrycode-server service collection。桌面 renderer 合并 remote workspace services 时，`mcpSyncService` 必须覆盖为 remote service；否则导入会写回本机用户目录。
 
 ## 数据同步内容
 

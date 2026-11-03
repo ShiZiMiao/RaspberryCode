@@ -12,7 +12,7 @@ RaspberryCode 的 ZAI / BigModel 内置模型供应商互斥边界由用户成�
 - `providerFamilyDomain` 只在 WelcomeScreen 中 OAuth 登录成功或 API Key 保存成功后写入。
 - `providerFamilyDomainMigrated` 标记旧数据是否已经迁移过，避免用户退出后又被旧 `oauth:active_provider` 自动恢复。
 - 当前 App OAuth 登录 provider 继续使用 `oauth:active_provider`，只表示认证事实。
-- ZAI 登录镜像使用 `oauth:zai:*`，其中 `zcodejwttoken` 是 ZAI Start Plan runtime 的 JWT。
+- ZAI 登录镜像使用 `oauth:zai:*`，其中 `raspberrycodejwttoken` 是 ZAI Start Plan runtime 的 JWT。
 - BigModel 登录镜像使用 `oauth:bigmodel:*`。
 - 不再使用独立 provider connection 作为事实源。
 
@@ -30,7 +30,7 @@ RaspberryCode 的 ZAI / BigModel 内置模型供应商互斥边界由用户成�
 ## 运行时投影
 
 - Provider registry 只同步当前 `providerFamilyDomain` 对应的 ZAI / BigModel 组。
-- ZAI Start Plan 只有在 `providerFamilyDomain === "zai"` 时，才会把 `zcodejwttoken` 投影到 registry。
+- ZAI Start Plan 只有在 `providerFamilyDomain === "zai"` 时，才会把 `raspberrycodejwttoken` 投影到 registry。
 - Coding Plan key 刷新只应发生在登录或显式 Connect 后，普通 preset metadata 同步不会跨 provider 恢复旧 key。
 
 ## 数据迁移

@@ -41,7 +41,7 @@ build/dev only
 @withfig/autocomplete@2.692.3
         |
         v
-deterministic generator ---> compact generated registry ---> zcode.cjs / SEA
+deterministic generator ---> compact generated registry ---> raspberrycode.cjs / SEA
                                   |
 runtime                           v
 Bash input ---> unbash AST ---> permission rule policy

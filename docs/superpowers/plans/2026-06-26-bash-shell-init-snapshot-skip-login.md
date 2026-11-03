@@ -49,13 +49,13 @@
 ## Validation Commands
 
 ```bash
-pnpm --dir apps/zcode-cli --filter @zcode/adapters exec vitest run \
+pnpm --dir apps/raspberrycode-cli --filter @raspberrycode/adapters exec vitest run \
   tests/shell-init-snapshot.test.ts \
   tests/shell-init-snapshot-cleanup.test.ts \
   tests/bash-startup-script.test.ts \
   tests/exec.test.ts
 
-pnpm --dir apps/zcode-cli --filter @zcode/adapters typecheck
+pnpm --dir apps/raspberrycode-cli --filter @raspberrycode/adapters typecheck
 
 git diff --check
 ```

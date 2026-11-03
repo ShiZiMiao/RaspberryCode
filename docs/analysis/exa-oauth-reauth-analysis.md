@@ -101,14 +101,14 @@
 
 插件根目录另有 `mcp.json:3-9`，URL 参数是 `client=agent-plugin`。但当前 loader 默认查找的是 `.mcp.json`（带前导点），而该目录没有 `.mcp.json`；实际定义来自 manifest。若存在 `.mcp.json`，loader 才会使用 `{ ...fromFile, ...fromManifest }`，并由 manifest 覆盖同名项，见：
 
-- `apps/zcode-cli/packages/adapters/src/plugins/mcp.ts:17-24`
-- `apps/zcode-cli/packages/adapters/src/plugins/mcp.ts:34-42`
+- `apps/raspberrycode-cli/packages/adapters/src/plugins/mcp.ts:17-24`
+- `apps/raspberrycode-cli/packages/adapters/src/plugins/mcp.ts:34-42`
 
 因此当前实际配置和凭据 prefix 对应的是 `claude-code-plugin` URL，根目录的 `mcp.json` 未进入这条加载路径。
 
 manifest 没有显式 OAuth 配置。对于没有 Authorization header 的 HTTP/SSE MCP，RaspberryCode 自动启用 authorization_code discovery：
 
-- `apps/zcode-cli/packages/adapters/src/mcp/index.ts:1012-1025`
+- `apps/raspberrycode-cli/packages/adapters/src/mcp/index.ts:1012-1025`
 
 ### 3.2 2026-08-13 现场 discovery
 
@@ -180,7 +180,7 @@ Exa 明确声明支持 refresh token 和 public client。其 scope 中没有 `of
 真实日志（字段已最小化，未包含 URL、code、token）：
 
 ```text
-~/.raspberrycode/cli/log/zcode-2026-08-11.jsonl
+~/.raspberrycode/cli/log/raspberrycode-2026-08-11.jsonl
 
 3779  11:25:53.335Z authorization.required connection=9df9... callback=54723
 3781  11:25:53.627Z authorization.required connection=06c8... callback=54726 session=yes
@@ -199,9 +199,9 @@ Exa 明确声明支持 refresh token 和 public client。其 scope 中没有 `of
 
 OAuth provider 从同一 credential pair 读取 client 和 tokens：
 
-- `apps/zcode-cli/packages/adapters/src/mcp/oauth.ts:182-199`
-- `apps/zcode-cli/packages/adapters/src/mcp/oauth.ts:213-215`
-- `apps/zcode-cli/packages/adapters/src/mcp/oauth.ts:434-505`
+- `apps/raspberrycode-cli/packages/adapters/src/mcp/oauth.ts:182-199`
+- `apps/raspberrycode-cli/packages/adapters/src/mcp/oauth.ts:213-215`
+- `apps/raspberrycode-cli/packages/adapters/src/mcp/oauth.ts:434-505`
 
 token exchange 或 refresh 后，`saveTokens` 会把：
 
@@ -211,15 +211,15 @@ token exchange 或 refresh 后，`saveTokens` 会把：
 
 通过一次 `saveMany` 发布：
 
-- `apps/zcode-cli/packages/adapters/src/mcp/oauth.ts:217-250`
+- `apps/raspberrycode-cli/packages/adapters/src/mcp/oauth.ts:217-250`
 
 `saveMany` 在一个 read-modify-write 中更新多个 key：
 
-- `apps/zcode-cli/packages/adapters/src/auth/shared-credentials.ts:152-161`
+- `apps/raspberrycode-cli/packages/adapters/src/auth/shared-credentials.ts:152-161`
 
 整个 read-modify-write 受跨进程文件锁保护，再原子写回：
 
-- `apps/zcode-cli/packages/adapters/src/auth/shared-credentials.ts:260-270`
+- `apps/raspberrycode-cli/packages/adapters/src/auth/shared-credentials.ts:260-270`
 
 凭据文件权限现场为 `0600`。
 
@@ -251,7 +251,7 @@ token exchange 或 refresh 后，`saveTokens` 会把：
 
 仓库锁定：
 
-`apps/zcode-cli/packages/adapters/package.json:105`
+`apps/raspberrycode-cli/packages/adapters/package.json:105`
 
 ```text
 @modelcontextprotocol/client 2.0.0
@@ -267,8 +267,8 @@ token exchange 或 refresh 后，`saveTokens` 会把：
 
 RaspberryCode provider 的 invalidate 实现位于：
 
-- `apps/zcode-cli/packages/adapters/src/mcp/oauth.ts:296-305`
-- `apps/zcode-cli/packages/adapters/src/mcp/oauth.ts:334-373`
+- `apps/raspberrycode-cli/packages/adapters/src/mcp/oauth.ts:296-305`
+- `apps/raspberrycode-cli/packages/adapters/src/mcp/oauth.ts:334-373`
 
 因此 access token 失效后的路径是：
 
@@ -341,7 +341,7 @@ credentials.json                              client hash d31ae07a373b
 ### 5.5 运行时间线
 
 ```text
-~/.raspberrycode/cli/log/zcode-2026-08-12.jsonl
+~/.raspberrycode/cli/log/raspberrycode-2026-08-12.jsonl
 
 1816  08:54:49.770Z  Exa connected, tools=2
 1899  09:00:13.958Z  Exa authorization.required, callback=61820
@@ -368,7 +368,7 @@ credentials.json                              client hash d31ae07a373b
 
 Session runtime 定义：
 
-- `apps/zcode-cli/packages/core/src/runtime/methods/mcp.ts:5`
+- `apps/raspberrycode-cli/packages/core/src/runtime/methods/mcp.ts:5`
 
 ```ts
 const MCP_SESSION_OAUTH_AUTHORIZATION_TIMEOUT_MS = 15_000;
@@ -376,7 +376,7 @@ const MCP_SESSION_OAUTH_AUTHORIZATION_TIMEOUT_MS = 15_000;
 
 Session 启动时传入：
 
-- `apps/zcode-cli/packages/core/src/runtime/methods/mcp.ts:37-46`
+- `apps/raspberrycode-cli/packages/core/src/runtime/methods/mcp.ts:37-46`
 
 ```ts
 connectConfiguredServers(servers, {
@@ -387,8 +387,8 @@ connectConfiguredServers(servers, {
 
 adapter 把它传到 OAuth session：
 
-- `apps/zcode-cli/packages/adapters/src/mcp/index.ts:680-719`
-- `apps/zcode-cli/packages/adapters/src/mcp/index.ts:770-787`
+- `apps/raspberrycode-cli/packages/adapters/src/mcp/index.ts:680-719`
+- `apps/raspberrycode-cli/packages/adapters/src/mcp/index.ts:770-787`
 
 ```ts
 authorizationTimeoutMs:
@@ -397,7 +397,7 @@ authorizationTimeoutMs:
 
 等待 callback 时实际使用 `oauthSession.timeoutMs`：
 
-- `apps/zcode-cli/packages/adapters/src/mcp/index.ts:570-600`
+- `apps/raspberrycode-cli/packages/adapters/src/mcp/index.ts:570-600`
 
 ```ts
 withTimeout(
@@ -409,8 +409,8 @@ withTimeout(
 
 OAuth 模块的默认 5 分钟只在调用方没有覆盖时生效：
 
-- `apps/zcode-cli/packages/adapters/src/mcp/oauth.ts:20`
-- `apps/zcode-cli/packages/adapters/src/mcp/oauth.ts:96-107`
+- `apps/raspberrycode-cli/packages/adapters/src/mcp/oauth.ts:20`
+- `apps/raspberrycode-cli/packages/adapters/src/mcp/oauth.ts:96-107`
 
 ```ts
 timeoutMs:
@@ -424,12 +424,12 @@ timeoutMs:
 
 设置页 `mcp/list` 发起后台连接时没有传 `oauthAuthorizationTimeoutMs`：
 
-- `apps/zcode-cli/packages/bootstrap/src/zcode-protocol/mcp.ts:81-105`
+- `apps/raspberrycode-cli/packages/bootstrap/src/raspberrycode-protocol/mcp.ts:81-105`
 
 该连接通常使用默认 5 分钟。日志中多次存在约 `300xxx ms` 后才 timed out 的无 session 连接，例如：
 
 ```text
-~/.raspberrycode/cli/log/zcode-2026-08-11.jsonl:1920
+~/.raspberrycode/cli/log/raspberrycode-2026-08-11.jsonl:1920
 durationMs=300864
 error=MCP server plugin:exa:exa OAuth authorization timed out
 ```
@@ -441,13 +441,13 @@ error=MCP server plugin:exa:exa OAuth authorization timed out
 
 见：
 
-- `apps/zcode-cli/packages/bootstrap/src/zcode-protocol-entrypoint.ts:101-115`
-- `apps/zcode-cli/packages/bootstrap/src/zcode-protocol-entrypoint.ts:126-133`
+- `apps/raspberrycode-cli/packages/bootstrap/src/raspberrycode-protocol-entrypoint.ts:101-115`
+- `apps/raspberrycode-cli/packages/bootstrap/src/raspberrycode-protocol-entrypoint.ts:126-133`
 
 连接池默认 isolation 是 `session`，connection key 对非 workspace-isolated server 使用 `leaseId`：
 
-- `apps/zcode-cli/packages/adapters/src/mcp/pool.ts:296-308`
-- `apps/zcode-cli/packages/adapters/src/mcp/pool.ts:317-328`
+- `apps/raspberrycode-cli/packages/adapters/src/mcp/pool.ts:296-308`
+- `apps/raspberrycode-cli/packages/adapters/src/mcp/pool.ts:317-328`
 
 因此：
 
@@ -470,7 +470,7 @@ session lease
 ### 6.3 2026-08-13 并发运行时证据
 
 ```text
-~/.raspberrycode/cli/log/zcode-2026-08-13.jsonl
+~/.raspberrycode/cli/log/raspberrycode-2026-08-13.jsonl
 
 6657  08:25:15.711Z required
       connection=461a95... session=yes callback=58676 state=17f0...
@@ -526,7 +526,7 @@ Session/设置页       OAuth Provider        凭据文件          MCP SDK     
 
 callback server：
 
-- 随机监听 `127.0.0.1:0`：`apps/zcode-cli/packages/adapters/src/auth/localhost-callback.ts:69-83`
+- 随机监听 `127.0.0.1:0`：`apps/raspberrycode-cli/packages/adapters/src/auth/localhost-callback.ts:69-83`
 - 严格检查 path、state 和 code：`localhost-callback.ts:32-59`
 - `close()` 关闭 HTTP server：`localhost-callback.ts:83-90`
 
@@ -556,16 +556,16 @@ OAuth session：
 
 每次 OAuth session 都创建新 state 和随机端口：
 
-- `apps/zcode-cli/packages/adapters/src/mcp/oauth.ts:67-80`
-- `apps/zcode-cli/packages/adapters/src/auth/localhost-callback.ts:69-83`
+- `apps/raspberrycode-cli/packages/adapters/src/mcp/oauth.ts:67-80`
+- `apps/raspberrycode-cli/packages/adapters/src/auth/localhost-callback.ts:69-83`
 
 DCR metadata 使用当次完整 callback URL：
 
-- `apps/zcode-cli/packages/adapters/src/mcp/oauth.ts:163-175`
+- `apps/raspberrycode-cli/packages/adapters/src/mcp/oauth.ts:163-175`
 
 后续优先读取并复用存储 client：
 
-- `apps/zcode-cli/packages/adapters/src/mcp/oauth.ts:182-199`
+- `apps/raspberrycode-cli/packages/adapters/src/mcp/oauth.ts:182-199`
 
 MCP SDK 构造 authorization request 时使用：
 

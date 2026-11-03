@@ -6,7 +6,7 @@
 
 ## 本次改动
 
-- `IZCodeTaskService.getTaskSnapshot` 支持可选参数：`messageLimit?: number`
+- `IRaspberryCodeTaskService.getTaskSnapshot` 支持可选参数：`messageLimit?: number`
 - 服务端在 RaspberryCode task snapshot 组装时对 `messages` 做尾部裁剪：
   - 不传 `messageLimit`：保持现有全量行为
   - `messageLimit <= 0`：返回空消息数组

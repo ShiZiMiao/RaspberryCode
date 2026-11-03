@@ -202,7 +202,7 @@ stderr 的异步 EPIPE 会再次触发边界并循环写坏管道。现在 stder
 
 ```text
 CLI 异常边界（errorId 唯一事实源）
-  → stderr 单行 [zcode-process-exception] JSON v1
+  → stderr 单行 [raspberrycode-process-exception] JSON v1
   → ProcessManager 校验 / 脱敏 / 绑定当前 runtime_instance_id
   → RuntimeProcessLifecycleReporter.onException
   → Host IPC agent-process-exception（运行时 schema 校验）
@@ -210,7 +210,7 @@ CLI 异常边界（errorId 唯一事实源）
   → RUM JS 错误
 ```
 
-- 共享公开契约为 `@zcode/shared/process-diagnostic`，并从 RaspberryCode Protocol 入口导出。
+- 共享公开契约为 `@raspberrycode/shared/process-diagnostic`，并从 RaspberryCode Protocol 入口导出。
   CLI / SEA 构建 alias 必须精确声明该子路径，避免被通用 shared alias 拼到 index.ts 后。
   字段为 `version/errorId/kind/origin/name/message/stack/occurredAt`；kind/origin 只接受
   uncaughtException / unhandledRejection。名称最多 128 字符，消息 4000，栈 16000，

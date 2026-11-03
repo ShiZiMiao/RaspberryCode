@@ -234,7 +234,7 @@ RaspberryCode CLI |
 ```
 
 - Personal Coding Plan、Team Plan、Start Plan 是三套不同 entitlement 身份，必须拆成独立节点。
-- Start Plan 使用 OAuth zcode JWT 与 balance/daily quota；它不使用 Coding Plan monitor API。
+- Start Plan 使用 OAuth raspberrycode JWT 与 balance/daily quota；它不使用 Coding Plan monitor API。
 - Team Plan 使用 organization/project/project-key 隔离，不能退化为个人 Coding Plan 的显示标签。
 - Plan Quota & Monitor 是远端商业套餐数据；失败时不得回退 App Usage。
 - App Usage 是本地产品使用统计。权威源是 RaspberryCode CLI 默认

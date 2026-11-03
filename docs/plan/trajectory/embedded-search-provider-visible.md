@@ -34,8 +34,8 @@ Windows CMD 和 legacy shell fallback 暂时不启用 embedded branch，回到 d
 
 ## 当前实现边界
 
-- capability helper 位于 `apps/zcode-cli/packages/core/src/embedded-search/capability.ts`，供 runtime 和 tool executor 共用，避免 tool 层反向依赖 runtime helpers。
-- bootstrap 默认注入 `internal-cli` backend；可用 `ZCODE_EMBEDDED_SEARCH_COMMAND` 覆盖一期 backend command。
+- capability helper 位于 `apps/raspberrycode-cli/packages/core/src/embedded-search/capability.ts`，供 runtime 和 tool executor 共用，避免 tool 层反向依赖 runtime helpers。
+- bootstrap 默认注入 `internal-cli` backend；可用 `RASPBERRYCODE_EMBEDDED_SEARCH_COMMAND` 覆盖一期 backend command。
 - `internal-cli` 不手写 `find` / `grep` 参数子集解析；它默认透传 argv、stdin、stdout、stderr 和 exit code，避免模型生成真实参数时被 RaspberryCode shim 拒绝。
 - `internal-cli rg` 复用 `ripgrep` WASM 依赖执行真实 `rg` 参数，并只在 shell 中没有可用 `rg` 时由 prelude 补齐；它不是 `grep` 的替代，也不改变 `Grep` tool 的 provider-visible contract。
 - `grep` shell function 会先按上述 bypass 列表绕回系统 `grep "$@"`；`internal-cli grep` 也保留同一套 bypass，保证直接调用 backend 时仍不混入默认参数。

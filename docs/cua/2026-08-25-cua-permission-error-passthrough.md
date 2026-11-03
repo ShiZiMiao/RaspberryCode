@@ -2,7 +2,7 @@
 
 - 日期：2026-08-25
 - 状态：已实现，待 MR review
-- 关联：producer `zcode-cua` !576、consumer `z-code` !2315
+- 关联：producer `raspberrycode-cua` !576、consumer `raspberrycode` !2315
 
 ## 决策
 

@@ -65,7 +65,7 @@ Model 已绑定的 Access + Base URL
          原远端开关 → HTTPS 约束 → 官方版本请求安全校验 / 重试 / 降级
 ```
 
-- 保留官方 `z.ai`／`bigmodel.cn` 根域及子域、`api.z.ai`／`zcode.z.ai` 精确测试域规则，不扩大 hostname 边界。
+- 保留官方 `z.ai`／`bigmodel.cn` 根域及子域、`api.z.ai`／`raspberrycode.z.ai` 精确测试域规则，不扩大 hostname 边界。
 - 本次仅取消手动特殊 Access 入口；账号个人／团队的原有安全校验规则不随之取消。Start／Off-Peak 优先排除继续有效。
 - 保留现有请求安全校验、开关、缓存、错误与取消语义，不新增第二套校验状态。
 - 本条取代 [Todo111](./todo-111-zhipu-coding-plan-api-key-and-standard-api-templates.md)、Todo136 中手动特殊 Access 独立准入的部分；Todo142 的账号例外保留（这两份文档只在官方版本保留）。
@@ -112,9 +112,9 @@ Model 已绑定的 Access + Base URL
 
 ## 5. 实施入口与验收
 
-配置入口为 `config/provider/zcode-builtin.json`；只编辑生产来源，通过 `pnpm provider:config:sync-test` 生成测试配置，并运行 `pnpm provider:config:check-test`。按实际最新 revision 递增，不固定沿用本轮基线 28，不自动发布线上配置。
+配置入口为 `config/provider/raspberrycode-builtin.json`；只编辑生产来源，通过 `pnpm provider:config:sync-test` 生成测试配置，并运行 `pnpm provider:config:check-test`。按实际最新 revision 递增，不固定沿用本轮基线 28，不自动发布线上配置。
 
-Access 与读取边界重点检查 `packages/provider/src/config/`、`packages/provider/src/resolver.ts`、`packages/provider-node/` 及现有持久化／导入消费者；安全校验准入入口为 `apps/zcode-cli/packages/adapters/src/model/model-execution.ts`。展示入口为 `packages/ui/src/lib/modelVisionBadge.ts`、`modelSelectionGroups.ts`、设置页 `ProviderFormControls.tsx` 及其 props 传递链。
+Access 与读取边界重点检查 `packages/provider/src/config/`、`packages/provider/src/resolver.ts`、`packages/provider-node/` 及现有持久化／导入消费者；安全校验准入入口为 `apps/raspberrycode-cli/packages/adapters/src/model/model-execution.ts`。展示入口为 `packages/ui/src/lib/modelVisionBadge.ts`、`modelSelectionGroups.ts`、设置页 `ProviderFormControls.tsx` 及其 props 传递链。
 
 - [ ] 实施前重新检查基线和用户改动，按命中目录规则做架构影响梳理；更新对应 spec 与历史冲突裁定，不将研究候选写成现行事实。
 - [ ] 先补预期测试：四个智谱模板均为 `api-key`；旧特殊类型读取归一、Key 保存和覆盖不丢失，模板关联与历史选择保留。

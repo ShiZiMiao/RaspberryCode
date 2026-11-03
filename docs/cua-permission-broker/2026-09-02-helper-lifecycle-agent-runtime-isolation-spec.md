@@ -5,7 +5,7 @@
 - 状态：P0/P1/P2 已实现；默认装配的定时健康探测与其自动 recovery 已移除
 - 日期：2026-09-02
 - 最近更新：2026-09-03
-- 适用范围：Desktop 本地 Host、Computer Use Helper、RaspberryCode Agent runtime、`zcode-cua` MCP broker
+- 适用范围：Desktop 本地 Host、Computer Use Helper、RaspberryCode Agent runtime、`raspberrycode-cua` MCP broker
 - 关联问题：`ZCT-2094300783841067008`、`ZCT-2095050283542110208`
 - 替代关系：本规范确认后，替代“Helper ready/recovery 必须 recycle persistent Agent”的旧约定；
   [CUA Helper 恢复期 Agent 启动准入规范](./cua-agent-recovery-admission-gate.md)中的 Agent recycle
@@ -69,9 +69,9 @@ Helper 定时 liveness/recovery（历史路径，现已移除）
 - Agent spawn 环节在 [node.ts](../../packages/services/src/node.ts) 中等待 Helper env 解析；
 - `reconcileRecoveredHelper()` 历史上会执行 persistent-agent recycle；当前仅清理后续 spawn
   admission marker，见
-  [cuaProductMcpResolver.ts](/Users/dev/zcode-cua/src/broker/server/cuaProductMcpResolver.ts)；
+  [cuaProductMcpResolver.ts](/Users/dev/raspberrycode-cua/src/broker/server/cuaProductMcpResolver.ts)；
 - `disposeWorkspace()` 最终以 `workspace-dispose` 清理 Agent，见
-  [zcodeAgentProcessManager.ts](../../packages/services/src/zcode-agent/zcodeAgentProcessManager.ts)；
+  [raspberrycodeAgentProcessManager.ts](../../packages/services/src/raspberrycode-agent/raspberrycodeAgentProcessManager.ts)；
 - 两张工单均出现 `Helper unreachable -> Helper ready -> Agent SIGTERM(workspace-dispose) -> 新 Agent`。
 
 ### 冷启动预占与恢复回收不是同一条路径

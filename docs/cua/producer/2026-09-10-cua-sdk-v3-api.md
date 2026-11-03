@@ -16,7 +16,7 @@
 >   删除 detail」的独立改动。工具面 **30 → 14**，broker 协议 **63 → 49**，详见 §3。
 >   评审确认接受两项能力收缩：「按住 → 观察 → 释放」与剪贴板读取。
 
-本文范围：重构 `@zcode/cua` SDK 的模型可见 API、其内部分层，以及**工具面与 broker 协议的一次显式瘦身**。
+本文范围：重构 `@raspberrycode/cua` SDK 的模型可见 API、其内部分层，以及**工具面与 broker 协议的一次显式瘦身**。
 不改 Helper 鉴权（M1）、Helper 生命周期（M2）、AX 规范化（M3）、node_repl MCP 工具面；
 但**会 bump broker IPC 协议版本**（1 → 2）以删除失去消费者的方法，走 M2 已有的
 `version_mismatch` fail-closed 路径（§7.3）。
@@ -207,7 +207,7 @@ browser 半边（`browsers` / `getBrowser` / `createBrowserTab` / `getTab` /
 
 ### 2.3 语义规则（不只是签名）
 
-模型可见语义按 `apps/zcode-cli/packages/zcode-cua-plugin/docs/computer-use.md` 定义，不做随意化改动：
+模型可见语义按 `apps/raspberrycode-cli/packages/raspberrycode-cua-plugin/docs/computer-use.md` 定义，不做随意化改动：
 
 - **观察方法自动展示结果**，动作方法不展示。`{emit:false}` 关闭。
 - **绑定即观察**：`cua.getApp(...)` 返回前展示该 app 的**全量** AX 树。
@@ -371,7 +371,7 @@ request_access  stop_computer_control
 ```
 
 `cua.computer` 的角色是暴露**平台特定的底层 computer API**（语义见
-`apps/zcode-cli/packages/zcode-cua-plugin/docs/computer-use.md`）。
+`apps/raspberrycode-cli/packages/raspberrycode-cua-plugin/docs/computer-use.md`）。
 模型文档提一句、不展开。
 
 住在这里的 RaspberryCode 独有能力：**窗口寻址**（`list_windows` + `app_ref.window_id`，§4.1）、
@@ -436,11 +436,11 @@ round trip，而是「树被裁剪时模型没有别的出路」：`targeting/fo
 配套的安全声明不可省：`elements()` 观察但不展示，所以必须与 `bindApp` / `getScreenshot` 同档
 传 `tree_shown_to_model: false`，并清掉 SDK 侧的 `treeSeen`（否则下一次 `getAXState` 会给出
 相对一棵未展示树的 diff）。2026-09-16 评审发现这两条当时都漏了，已补齐并有回归测试
-（z-code `tests/sdk.node-test.mjs` 的 "every silent observation declares..."）。
+（raspberrycode `tests/sdk.node-test.mjs` 的 "every silent observation declares..."）。
 
 把 `state_id` 从模型面拿掉是净收益，与结构化视图无关：索引由 SDK 用该 target 当前的
 `stateId` 解析（§5.5），模型不可能再写错 `state_id`，stale 一律 fail-closed，比今天更严。
-z-code 2026-08-25 那条「结构化 AppState 是 Worker 唯一事实来源」的加固，
+raspberrycode 2026-08-25 那条「结构化 AppState 是 Worker 唯一事实来源」的加固，
 其立论前提（模型要自己拼 `{state_id,index}`）在 v3.1 里已不成立，
 降级为**内部**不变量：bridge 收到无结构化 AppState 的响应仍抛
 `CUA_STRUCTURED_STATE_UNAVAILABLE`，只是不再要求透给 Worker。
@@ -544,7 +544,7 @@ function bindTarget(t: number | Vec2, ctx: TargetSession): ResolvedTarget;
 ```
 Worker（模型代码）
   globalThis.cua / App                     ← 重写：scripts/computer-use-client.mjs
-       │  bridge.call(method, input)        ← 不变（Symbol zcode.node-repl.computer-use-bridge）
+       │  bridge.call(method, input)        ← 不变（Symbol raspberrycode.node-repl.computer-use-bridge）
        ▼
 shared host：CuaRuntimePool                 ← 不变
   └─ ComputerUseRuntime.execute({toolName, arguments, context})
@@ -649,30 +649,30 @@ Helper 侧原生实现（macOS NSPasteboard、Windows / Linux 各自剪贴板 AP
 
 | 文件 | 改动 |
 |---|---|
-| `z-code .../zcode-cua-plugin/scripts/computer-use-client.mjs` | **重写**：`cua` 全局、`Target`/`App`、自动 emit、错误映射、`cua.computer`(14)、未文档化成员 |
-| `z-code .../zcode-cua-plugin/docs/computer-use.md` | 重写为 v3.1 参考（去 browser 半边 + per-cell bootstrap 段） |
-| `z-code .../zcode-cua-plugin/skills/computer-use/SKILL.md` | 重写 |
-| `zcode-cua/plugin/skills/computer-use/SKILL.md` | 重写（producer 事实源） |
-| `zcode-cua/src/tools/zoom.ts` | **删除**（480 行） |
-| `zcode-cua/src/broker/server/electronDisplaySelection.ts` | **删除**（S0c；选屏状态层，topology 留在 `lib/display-topology.ts`） |
-| `zcode-cua/src/tools/manifest.ts` | `TOOL_NAMES` 30 → 14；`APP_ASSOCIATION_MODE_BY_TOOL` 同步 |
-| `zcode-cua/src/tools/tier-table.ts` | `TIER_TABLE` / `READ_ONLY_TOOLS` / `SAFETY_CONTROL_TOOLS` 同步（`left_mouse_up` 退出 SAFETY_CONTROL） |
-| `zcode-cua/src/tools/schemas/{observation,pointer,keyboard,runtime}.ts` | 删除 16 个工具的 schema；删 `detail` / `repeat` / `amount` |
-| `zcode-cua/src/tools/{observation,pointer,keyboard-runtime}.ts` | 删除对应 handler；`type`/`key` 去掉 repeat 分支 |
-| `zcode-cua/src/targeting/format.ts` | compact 无条件带 `actions`、永不带 `bounds`；删 `detail` 分支（§3.3） |
-| `zcode-cua/src/targeting/frame-registry.ts` | 不再为 zoom 保留精确栅格字节；错误文案去掉 `zoom` 提示 |
-| `zcode-cua/src/targeting/session.ts` | 删 `selectedDisplayId` 状态 |
-| `zcode-cua/src/tools/observation.ts` | 放开 delta：三态都映射为完整内部 AppState；去掉两处无条件 `force_full:true`（:644、:1092） |
-| `zcode-cua/src/broker/server/axReadOnly.ts` | delta / no_change 响应补齐 `elements` 全表 + 签发新 `state_id` |
-| `zcode-cua/src/runtime/action-settler.ts` | 新增（§6.4） |
-| `zcode-cua/src/runtime/target-session-store.ts` | 新增（§6.5） |
-| `zcode-cua/src/tools/action-policy.ts` | 新增（§6.2），替换 `withKillSwitchPreflight` 调用点 |
-| `zcode-cua/src/tools/target-binder.ts` | 新增（§5.5） |
-| `zcode-cua/src/broker/types.ts` / `ipcVersion.ts` | **S0c**：`BROKER_METHODS` 63 → 49；IPC 版本 1 → 2（§7.3） |
+| `raspberrycode .../raspberrycode-cua-plugin/scripts/computer-use-client.mjs` | **重写**：`cua` 全局、`Target`/`App`、自动 emit、错误映射、`cua.computer`(14)、未文档化成员 |
+| `raspberrycode .../raspberrycode-cua-plugin/docs/computer-use.md` | 重写为 v3.1 参考（去 browser 半边 + per-cell bootstrap 段） |
+| `raspberrycode .../raspberrycode-cua-plugin/skills/computer-use/SKILL.md` | 重写 |
+| `raspberrycode-cua/plugin/skills/computer-use/SKILL.md` | 重写（producer 事实源） |
+| `raspberrycode-cua/src/tools/zoom.ts` | **删除**（480 行） |
+| `raspberrycode-cua/src/broker/server/electronDisplaySelection.ts` | **删除**（S0c；选屏状态层，topology 留在 `lib/display-topology.ts`） |
+| `raspberrycode-cua/src/tools/manifest.ts` | `TOOL_NAMES` 30 → 14；`APP_ASSOCIATION_MODE_BY_TOOL` 同步 |
+| `raspberrycode-cua/src/tools/tier-table.ts` | `TIER_TABLE` / `READ_ONLY_TOOLS` / `SAFETY_CONTROL_TOOLS` 同步（`left_mouse_up` 退出 SAFETY_CONTROL） |
+| `raspberrycode-cua/src/tools/schemas/{observation,pointer,keyboard,runtime}.ts` | 删除 16 个工具的 schema；删 `detail` / `repeat` / `amount` |
+| `raspberrycode-cua/src/tools/{observation,pointer,keyboard-runtime}.ts` | 删除对应 handler；`type`/`key` 去掉 repeat 分支 |
+| `raspberrycode-cua/src/targeting/format.ts` | compact 无条件带 `actions`、永不带 `bounds`；删 `detail` 分支（§3.3） |
+| `raspberrycode-cua/src/targeting/frame-registry.ts` | 不再为 zoom 保留精确栅格字节；错误文案去掉 `zoom` 提示 |
+| `raspberrycode-cua/src/targeting/session.ts` | 删 `selectedDisplayId` 状态 |
+| `raspberrycode-cua/src/tools/observation.ts` | 放开 delta：三态都映射为完整内部 AppState；去掉两处无条件 `force_full:true`（:644、:1092） |
+| `raspberrycode-cua/src/broker/server/axReadOnly.ts` | delta / no_change 响应补齐 `elements` 全表 + 签发新 `state_id` |
+| `raspberrycode-cua/src/runtime/action-settler.ts` | 新增（§6.4） |
+| `raspberrycode-cua/src/runtime/target-session-store.ts` | 新增（§6.5） |
+| `raspberrycode-cua/src/tools/action-policy.ts` | 新增（§6.2），替换 `withKillSwitchPreflight` 调用点 |
+| `raspberrycode-cua/src/tools/target-binder.ts` | 新增（§5.5） |
+| `raspberrycode-cua/src/broker/types.ts` / `ipcVersion.ts` | **S0c**：`BROKER_METHODS` 63 → 49；IPC 版本 1 → 2（§7.3） |
 | Helper 原生层 | **S0c**：删已失去消费者的原生导出；新增原生 `paste`（三平台各一份，§6.6） |
-| `zcode-cua/src/tools/keyboard-runtime.ts` | 键位别名（§6.7）；`select_text` 内容匹配（§6.3） |
-| `zcode-cua/src/tools/legacyToolMap.ts` | 加两列：`computer`（存活的 14）与 `v3`；被删工具标 `removed` + 替代路径 |
-| `zcode-cua/docs/cua-30-tool-e2e-validity.md` | **改名 + 改内容**：30 → 14，`FULL_SURFACE_ORACLE_CHECKS` 集合缩小，写明解冻理由（§4.3） |
+| `raspberrycode-cua/src/tools/keyboard-runtime.ts` | 键位别名（§6.7）；`select_text` 内容匹配（§6.3） |
+| `raspberrycode-cua/src/tools/legacyToolMap.ts` | 加两列：`computer`（存活的 14）与 `v3`；被删工具标 `removed` + 替代路径 |
+| `raspberrycode-cua/docs/cua-30-tool-e2e-validity.md` | **改名 + 改内容**：30 → 14，`FULL_SURFACE_ORACLE_CHECKS` 集合缩小，写明解冻理由（§4.3） |
 
 ---
 
@@ -692,7 +692,7 @@ Helper 侧原生实现（macOS NSPasteboard、Windows / Linux 各自剪贴板 AP
 | `test/manifest.test.ts` 4-way drift gate | 基线 30 → 14，四方仍需一致 |
 | `test/tier-table.test.ts` / `annotations.test.ts` | 同步 |
 | `docs/cua-14-tool-e2e-validity.md`（normative） | `protocol.all_30_tools_have_passing_oracles` → 14；`FULL_SURFACE_ORACLE_CHECKS` 删除对应条目；写明解冻 |
-| `evals/zcode-gui-eval/` | 删除或改写针对被删工具的场景（C18 全表面覆盖用例受影响最大） |
+| `evals/raspberrycode-gui-eval/` | 删除或改写针对被删工具的场景（C18 全表面覆盖用例受影响最大） |
 | `scripts/cua_act_verify*.py` + `docs/cua-act-verify-{,windows-,linux-}scenarios.md` | 三平台场景各扫一遍；`hold_key` / `wait` / `select_text` 出现在场景里，需改写为新形态 |
 | `scripts/windows-*-live-smoke.mjs` / `verify_linux_*.mjs` | 同步 |
 | `test/legacy-tool-map.test.ts` | 加 `removed` 断言 |
@@ -723,15 +723,15 @@ Helper 侧原生实现（macOS NSPasteboard、Windows / Linux 各自剪贴板 AP
 
 | 测试 | 现状断言 | 改动 |
 |---|---|---|
-| `z-code .../zcode-cua-plugin/tests/sdk.node-test.mjs` | `METHOD_NAMES.length === 30` | 改为：`cua.computer` 14 项 + `Target` 12 个成员齐 + `cua` 无任何 browser 成员 |
+| `raspberrycode .../raspberrycode-cua-plugin/tests/sdk.node-test.mjs` | `METHOD_NAMES.length === 30` | 改为：`cua.computer` 14 项 + `Target` 12 个成员齐 + `cua` 无任何 browser 成员 |
 | 同上 | 动作结果含 `action_sent` / `dispatch_status` | 成功 resolve 为 `undefined`；`possibly_sent` reject 且 `actionSent === true` |
-| `zcode-cua/test/skill-keyboard-contract.test.ts` | 钉死 `nodeRepl.write(nextState.text)`、`return_state="none"`、22KB 上限 | 改为钉死「观察方法自动展示」「禁止对观察结果再 write」「per-cell bootstrap」 |
-| `zcode-cua/test/observation-tools.test.ts` | delta / no_change → `null` | 反转：三态都返回完整内部 AppState |
+| `raspberrycode-cua/test/skill-keyboard-contract.test.ts` | 钉死 `nodeRepl.write(nextState.text)`、`return_state="none"`、22KB 上限 | 改为钉死「观察方法自动展示」「禁止对观察结果再 write」「per-cell bootstrap」 |
+| `raspberrycode-cua/test/observation-tools.test.ts` | delta / no_change → `null` | 反转：三态都返回完整内部 AppState |
 | 新增 | —— | surface 精确断言（§7.5）、`target-binder.test.ts`、`action-settler.test.ts`、`key-alias.test.ts`、`paste.test.ts`、`error-mapping.test.ts`、`compact-carries-actions.test.ts` |
 
 ### 7.5 surface 门禁
 
-`apps/zcode-cli/packages/zcode-cua-plugin/tests/sdk.node-test.mjs` 对模型可见面做
+`apps/raspberrycode-cli/packages/raspberrycode-cua-plugin/tests/sdk.node-test.mjs` 对模型可见面做
 surface 精确断言：
 
 1. `Target` 的 12 个交互面成员**存在且位置参数同名同序**；
@@ -745,7 +745,7 @@ surface 精确断言：
 ### 7.6 bootstrap 模板
 
 ```js
-const root = process.env.ZCODE_CUA_PLUGIN_ROOT ?? process.env.ZCODE_PLUGIN_ROOT
+const root = process.env.RASPBERRYCODE_CUA_PLUGIN_ROOT ?? process.env.RASPBERRYCODE_PLUGIN_ROOT
   ?? process.env.CLAUDE_PLUGIN_ROOT;
 const { join } = await import("node:path");
 const { pathToFileURL } = await import("node:url");
@@ -779,7 +779,7 @@ await app.getAXState();
 
 S0a 可以立即开工，不依赖任何模型面决定。S0b 先做能让后续改动面小一半。
 S0c 必须在 S1 之前，因为 `paste` 依赖它。
-灰度开关 `ZCODE_CUA_SDK_SURFACE=v1|v3`（默认 v1，观察期后翻 v3）。
+灰度开关 `RASPBERRYCODE_CUA_SDK_SURFACE=v1|v3`（默认 v1，观察期后翻 v3）。
 
 ---
 
@@ -794,7 +794,7 @@ S0c 必须在 S1 之前，因为 `paste` 依赖它。
 | S0c 回滚会一起回滚 `paste` | S1 起的 `paste` 测试在 `paste` 方法缺失时跳过而非失败（§7.3） |
 | 原生 `paste` 三平台各写一份，工作量与回归面比 host 侧组合大 | 换来的是少两个 broker 原语 + 修掉还原竞态（§6.6）；S0c 只做 `text`，`md`/`html` 推到 S5 |
 | `getAXState()` 返回 string 使「发现元素」多一个 round trip | `app.elements()` 兜底；S4 已结论为提升为文档化成员（§4.2） |
-| `possibly_sent` 从文本提示变 throw，Electron/Chromium 可能高频抛错 | S1 先只**统计**（照旧 resolve + 打点频率），确认基线后再翻；保留 `ZCODE_CUA_POSSIBLY_SENT=throw\|warn` |
+| `possibly_sent` 从文本提示变 throw，Electron/Chromium 可能高频抛错 | S1 先只**统计**（照旧 resolve + 打点频率），确认基线后再翻；保留 `RASPBERRYCODE_CUA_POSSIBLY_SENT=throw\|warn` |
 | 放开 delta 后模型复用旧索引 | delta 也签发新 `stateId`；索引由 SDK 用当前 `stateId` 解析；stale 一律 fail-closed（比今天更严） |
 | 自动 emit 与宿主 structured sink 双写导致重复输出 | 沿用现有 `hostProjectionResult` / `imageAuthorityResult` 边界；`format-model-facing-budget.test.ts` 扩一条重复检测 |
 | 绑定不跨 cell 被误解为「状态丢了」 | 文档明写「每 cell 重新 `getApp`，UI 状态与 stateId 由 host 保留」；reattach 只输出一行 |

@@ -41,7 +41,7 @@ Windows 用户在 RaspberryCode 通过 Computer Use 观察或操作桌面时，�
 - Web/手机端自行渲染提示。
 - 暂停、停止、人工接管等交互按钮。
 - 实时画面、步骤列表、目标窗口标题或 per-action 文案。
-- 修改 `zcode-cua` broker/native wire protocol。
+- 修改 `raspberrycode-cua` broker/native wire protocol。
 
 ## 设计原则
 
@@ -126,10 +126,10 @@ CLI 旁路通知和 Reporter 都是 best-effort 桌面投影旁路。通知构�
 
 ### App ↔ Agent：`computer-use/operation-event`
 
-在 `packages/shared/src/zcode-protocol/index.ts` 新增严格校验的单向通知，method 固定为 `computer-use/operation-event`。`computer-use` 与 `operation-event` 全部使用中划线。Payload 是以下判别联合：
+在 `packages/shared/src/raspberrycode-protocol/index.ts` 新增严格校验的单向通知，method 固定为 `computer-use/operation-event`。`computer-use` 与 `operation-event` 全部使用中划线。Payload 是以下判别联合：
 
 ```ts
-type ZCodeComputerUseOperationEvent =
+type RaspberryCodeComputerUseOperationEvent =
   | {
       kind: "turn-started" | "turn-completed" | "turn-failed";
       eventId: string;
@@ -175,7 +175,7 @@ CLI 在 runtime `onSessionEvent` 入口、任何 `record.deliveryKind` 判断之
 
 职责：
 
-- 消费已经通过 `zcodeComputerUseOperationEventSchema` 校验的临时生命周期通知；
+- 消费已经通过 `raspberrycodeComputerUseOperationEventSchema` 校验的临时生命周期通知；
 - 维护 current turn、tool name 和 active CUA turn；
 - 只在 inactive → active 或 active → inactive 时调用 reporter；
 - workspace/runtime dispose 时清理全部相关状态；
@@ -183,7 +183,7 @@ CLI 在 runtime `onSessionEvent` 入口、任何 `record.deliveryKind` 判断之
 
 它不依赖 UI、Electron 或具体 Helper 实现。
 
-`ZCodeAgentService.wireClient` 校验 `computer-use/operation-event` 后直接交给 tracker。现有 `session/event` 仍服务旧协议消费者，但不再作为 CUA tracker 输入，避免 raw `sequenceNumber` 与协议投影 `seq` 两个序号域互相覆盖。
+`RaspberryCodeAgentService.wireClient` 校验 `computer-use/operation-event` 后直接交给 tracker。现有 `session/event` 仍服务旧协议消费者，但不再作为 CUA tracker 输入，避免 raw `sequenceNumber` 与协议投影 `seq` 两个序号域互相覆盖。
 
 ### Host → Main 消息
 

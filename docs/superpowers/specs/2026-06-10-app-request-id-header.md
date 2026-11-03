@@ -16,7 +16,7 @@ App 侧外部业务 API 已经收敛到 `ApiClient`，错误诊断也会读取�
 
 ## 非目标
 
-- 不新增协议字段，不修改 `@zcode/protocol`。
+- 不新增协议字段，不修改 `@raspberrycode/protocol`。
 - 不给 WebSocket、RPC、IPC、SSH、浏览器本地资源读取添加该 header。
 - 不强制给任意第三方 bot provider、MCP URL 探测、用户配置的 webhook URL 注入该 header，避免破坏第三方兼容或 CORS。
 - 不把 `x-request-id` 写入生产 info 日志；只允许记录 header key，避免高频请求把日志刷爆。

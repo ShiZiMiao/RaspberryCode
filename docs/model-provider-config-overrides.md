@@ -25,7 +25,7 @@ metadata merge。
 - 缺失 metadata 被补齐后，既有 `writeProviderStoreFile` 持久化流程保持不变。
 
 当前补缺数据源使用仓库根目录的
-`models_catalog_china_llm_zcode_2026-06-03.json`。`apps/zcode-cli/api.json` / models-dev
+`models_catalog_china_llm_raspberrycode_2026-06-03.json`。`apps/raspberrycode-cli/api.json` / models-dev
 snapshot 不参与 App config 的 catalog merge。
 
 ## 配置优先级

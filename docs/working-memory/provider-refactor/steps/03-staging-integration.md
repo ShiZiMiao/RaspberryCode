@@ -48,18 +48,18 @@ M3 需要同时完成两件事：
 
 | 名称                           | 建议代码名              | 含义                                                       |
 | ------------------------------ | ----------------------- | ---------------------------------------------------------- |
-| RaspberryCode Built-in Provider Config | `zcodeBuiltinProviders` | RaspberryCode 随产品提供的 Provider 静态默认值和账号 Provider 声明 |
+| RaspberryCode Built-in Provider Config | `raspberrycodeBuiltinProviders` | RaspberryCode 随产品提供的 Provider 静态默认值和账号 Provider 声明 |
 | Account Provider Config        | `accountProviders`      | 对 Built-in 中账号相关 Provider 的账号态补充或约束         |
 | Personal Provider Config       | `personalProviders`     | 用户自定义 Provider，以及对已有 Provider 的最终覆盖        |
 | Effective Provider Config      | `effectiveProviders`    | 三层 Provider 配置叠加后的最终 Provider 集合               |
 
-当前实现中的 `officialProviders` 对应目标语义里的 `zcodeBuiltinProviders`。是否在 M3 内完成机械改名由实现阶段决定，但新增设计和测试统一使用本文词汇。
+当前实现中的 `officialProviders` 对应目标语义里的 `raspberrycodeBuiltinProviders`。是否在 M3 内完成机械改名由实现阶段决定，但新增设计和测试统一使用本文词汇。
 
 ### 3.2 Model 配置
 
 | 名称                              | 建议代码名               | 含义                                                      |
 | --------------------------------- | ------------------------ | --------------------------------------------------------- |
-| RaspberryCode Built-in Model Config Rules | `zcodeBuiltinModelRules` | RaspberryCode 随产品提供的模型静态事实和默认行为规则              |
+| RaspberryCode Built-in Model Config Rules | `raspberrycodeBuiltinModelRules` | RaspberryCode 随产品提供的模型静态事实和默认行为规则              |
 | Personal Model Config Rules       | `personalModelRules`     | 用户对模型事实和行为的追加覆盖规则                        |
 | Effective Model Config Rules      | `effectiveModelRules`    | 两组规则按顺序拼接后的最终规则序列                        |
 | Effective Model Config            | `effectiveModelConfig`   | 针对一个最终 Provider / Model / API type 解析出的模型配置 |
@@ -103,7 +103,7 @@ RaspberryCode Built-in Provider Config                RaspberryCode Built-in Mod
 最终顺序固定为：
 
 ```ts
-effectiveProviders = zcodeBuiltinProviders.overlay(accountProviders).overlay(personalProviders);
+effectiveProviders = raspberrycodeBuiltinProviders.overlay(accountProviders).overlay(personalProviders);
 ```
 
 优先级为：
@@ -153,7 +153,7 @@ Personal Provider.models（存在时）
 
 ```ts
 effectiveModelRules = new ModelConfigRules([
-  ...zcodeBuiltinModelRules.rules(),
+  ...raspberrycodeBuiltinModelRules.rules(),
   ...personalModelRules.rules(),
 ]);
 ```
@@ -418,7 +418,7 @@ M3 按以下顺序执行：
 | 验证范围                                                    | 结果                                                                                                                               |
 | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | `pnpm typecheck`                                            | 通过                                                                                                                               |
-| `pnpm --dir apps/zcode-cli -r --if-present typecheck`       | 通过；具有 typecheck script 的 CLI workspace package 全部通过                                                                      |
+| `pnpm --dir apps/raspberrycode-cli -r --if-present typecheck`       | 通过；具有 typecheck script 的 CLI workspace package 全部通过                                                                      |
 | `pnpm lint`                                                 | 通过；0 error，39 条 staging 既有 warning                                                                                          |
 | Provider / Account / Registry / OffPeak / Settings 聚焦单测 | 9 个文件、117 个测试通过                                                                                                           |
 | CLI Video / reasoning / Registry 聚焦单测                   | 13 个文件、185 个测试通过                                                                                                          |
@@ -427,6 +427,6 @@ M3 按以下顺序执行：
 | 本轮 78 个修改/新增文件的 `oxfmt --check`                   | 通过                                                                                                                               |
 | `git diff --check`                                          | 通过                                                                                                                               |
 
-仓库级 `pnpm fmt:check` 仍会被既有的二进制 `apps/zcode-cli/tests/gb2312.js` 和用于测试解析失败的 Electron HTML fixture 阻断，因此本轮以实际修改/新增文件的格式检查作为变更门禁，没有改写这些无关 fixture。
+仓库级 `pnpm fmt:check` 仍会被既有的二进制 `apps/raspberrycode-cli/tests/gb2312.js` 和用于测试解析失败的 Electron HTML fixture 阻断，因此本轮以实际修改/新增文件的格式检查作为变更门禁，没有改写这些无关 fixture。
 
 本轮只生成本地 merge commit，不 push、不改写远端分支。

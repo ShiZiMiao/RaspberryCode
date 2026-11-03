@@ -4,25 +4,25 @@
 
 ## 准备 source Helper
 
-先在 `zcode-cua` source 根目录构建 JavaScript Helper 和本机 N-API addon：
+先在 `raspberrycode-cua` source 根目录构建 JavaScript Helper 和本机 N-API addon：
 
 ```powershell
-$zcodeCuaRoot = 'D:\path\to\zcode-cua'
-Set-Location $zcodeCuaRoot
+$raspberrycodeCuaRoot = 'D:\path\to\raspberrycode-cua'
+Set-Location $raspberrycodeCuaRoot
 pnpm install
 pnpm rebuild:native
 pnpm build
 pnpm test
 ```
 
-构建完成后，`package.json.zcodeCuaRuntime.windows` 声明的两个文件必须存在。当前契约示例为：
+构建完成后，`package.json.raspberrycodeCuaRuntime.windows` 声明的两个文件必须存在。当前契约示例为：
 
 ```text
-<zcode-cua>\dist\windows-helper.js
-<zcode-cua>\build\Release\ax_native.node
+<raspberrycode-cua>\dist\windows-helper.js
+<raspberrycode-cua>\build\Release\ax_native.node
 ```
 
-每次修改 `zcode-cua` source 后都要再次执行 `pnpm rebuild:native`（改动 native addon 时）和 `pnpm build`。不需要重新打包 RaspberryCode 产品。
+每次修改 `raspberrycode-cua` source 后都要再次执行 `pnpm rebuild:native`（改动 native addon 时）和 `pnpm build`。不需要重新打包 RaspberryCode 产品。
 
 若 Windows Smart App Control 处于强制模式，新编译且未由 Trusted Root Program CA
 签名的 `ax_native.node` 会被 Code Integrity 拒绝加载；成功编译不等于当前机器可执行。
@@ -32,24 +32,24 @@ unavailable。不要为源码验收自动关闭系统安全策略；使用具备
 
 ## 启动桌面开发环境
 
-官方 `zcode-cua` plugin 必须已启用。随后在 RaspberryCode source 根目录运行：
+官方 `raspberrycode-cua` plugin 必须已启用。随后在 RaspberryCode source 根目录运行：
 
 ```powershell
-$zcodeRoot = 'D:\path\to\z-code'
-Set-Location $zcodeRoot
-$env:ZCODE_CUA_DEV_MODE='1'
-$env:ZCODE_CUA_DEV_ROOT=$zcodeCuaRoot
+$raspberrycodeRoot = 'D:\path\to\raspberrycode'
+Set-Location $raspberrycodeRoot
+$env:RASPBERRYCODE_CUA_DEV_MODE='1'
+$env:RASPBERRYCODE_CUA_DEV_ROOT=$raspberrycodeCuaRoot
 pnpm dev:desktop:prod
 ```
 
-`ZCODE_CUA_DEV_MODE=1` 是现有的 one-knob bundle：它同时启用内部开发 feature。不要把它替换或拆分为新的环境变量。`ZCODE_CUA_DEV_ROOT` 只用于解析 source 构建产物，且只允许 desktop-local Windows Host 使用。
+`RASPBERRYCODE_CUA_DEV_MODE=1` 是现有的 one-knob bundle：它同时启用内部开发 feature。不要把它替换或拆分为新的环境变量。`RASPBERRYCODE_CUA_DEV_ROOT` 只用于解析 source 构建产物，且只允许 desktop-local Windows Host 使用。
 
-`ZCODE_CUA_DEV_ROOT` 必须直接指向物理 source root：根目录不能是 symlink/junction，
+`RASPBERRYCODE_CUA_DEV_ROOT` 必须直接指向物理 source root：根目录不能是 symlink/junction，
 `package.json`、契约 entry 和 nativeAddon 也必须是非链接普通文件，且 `realpath` 必须位于
 该 root 内。准入失败时不会回退安装包资源；请修正目录布局，不要用链接绕过隔离。
 
-若不设置 `ZCODE_CUA_DEV_ROOT`，`pnpm dev:desktop:prod` 会缺省绑定本仓库已安装的 producer
-（`<repo>\node_modules\@zcode\zcode-cua`，即 `pnpm-workspace.yaml` catalog pin 的那一版，与
+若不设置 `RASPBERRYCODE_CUA_DEV_ROOT`，`pnpm dev:desktop:prod` 会缺省绑定本仓库已安装的 producer
+（`<repo>\node_modules\@raspberrycode\raspberrycode-cua`，即 `pnpm-workspace.yaml` catalog pin 的那一版，与
 产品 staging 同源），对应 `scripts/dev-desktop-cua-env.mjs`。这只是缺省值：本手册要验证自己
 的 producer 改动时，按上面显式设置该变量即可，显式取值永远优先。dev 下 Electron 的
 `process.resourcesPath` 指向 `node_modules/electron/dist/resources`，其中没有
@@ -61,16 +61,16 @@ pnpm dev:desktop:prod
 RaspberryCode desktop Host Process
   └─ Node/Electron child: package.json 声明的 entry
        ├─ package.json 声明的 nativeAddon
-       └─ \\.\pipe\zcode-cua-<random>
+       └─ \\.\pipe\raspberrycode-cua-<random>
 
-official zcode-cua plugin ── authenticated broker RPC ──┘
+official raspberrycode-cua plugin ── authenticated broker RPC ──┘
 ```
 
 broker token 鉴权已被 node_repl 重构整体删除：连接门改为 native peer-identity（code-signature /
-`parentProcessPid`），Helper 环境不再注入任何 broker token。`ZCODE_CUA_PERMISSION_BROKER_TOKEN`
+`parentProcessPid`），Helper 环境不再注入任何 broker token。`RASPBERRYCODE_CUA_PERMISSION_BROKER_TOKEN`
 现在只作为**必须被剥离的敌意输入**存在（见 `windowsCuaDevRuntime.test.ts` 的 `must-not-be-forwarded`
-与 cli 侧 `zcode-cua-plugin-host-authority` 测试），不再是凭据来源；源码中已无任何注入方。不要把它
-与 browser-use 的 `ZCODE_NODE_REPL_BROWSER_BROKER_TOKEN` 混为一谈，后者属于 node_repl browser
+与 cli 侧 `raspberrycode-cua-plugin-host-authority` 测试），不再是凭据来源；源码中已无任何注入方。不要把它
+与 browser-use 的 `RASPBERRYCODE_NODE_REPL_BROWSER_BROKER_TOKEN` 混为一谈，后者属于 node_repl browser
 broker，是另一条链路。正式凭据只剩 socket + `pluginAuthority` 二元组，由 Host 通过
 `buildCuaProductHelperAgentEnv()` 交给官方 plugin，不接受用户编写的 plugin 配置覆盖。
 `pluginAuthority` 是当前唯一的敏感凭据，不得出现在 child argv、进程标题、日志、错误文本、
@@ -81,26 +81,26 @@ telemetry 或可复制 UI 文本中。
 先确认 source Helper 已按上节构建，再执行 opt-in 真机测试：
 
 ```powershell
-Set-Location $zcodeRoot
-$env:ZCODE_CUA_DEV_MODE='1'
-$env:ZCODE_CUA_DEV_ROOT=$zcodeCuaRoot
+Set-Location $raspberrycodeRoot
+$env:RASPBERRYCODE_CUA_DEV_MODE='1'
+$env:RASPBERRYCODE_CUA_DEV_ROOT=$raspberrycodeCuaRoot
 pnpm exec vitest run packages/services/test/windowsCuaDevHelper.integration.test.ts
 ```
 
-`ZCODE_CUA_DEV_MODE=1` 在这里和启动桌面开发环境时同样必需：它是启用内部开发 runtime/feature
-的 one-knob bundle（见上文），不能只设 `ZCODE_CUA_DEV_ROOT`。
+`RASPBERRYCODE_CUA_DEV_MODE=1` 在这里和启动桌面开发环境时同样必需：它是启用内部开发 runtime/feature
+的 one-knob bundle（见上文），不能只设 `RASPBERRYCODE_CUA_DEV_ROOT`。
 
 broker 的连接门是 native peer-identity（`getPeerCredentials` / code-signature /
 `parentProcessPid`），Windows 侧的 peer 校验尚未落地。**自 producer `37a0c9ef` 起该门在
 Windows 上被临时放开**（producer 侧常量 `WINDOWS_PEER_IDENTITY_GATE_TEMPORARILY_OPEN`，
-否则打包版结构上拿不到 dev 豁免——`app.isPackaged` 注入的 `ZCODE_RUNTIME_ENV=production`
+否则打包版结构上拿不到 dev 豁免——`app.isPackaged` 注入的 `RASPBERRYCODE_RUNTIME_ENV=production`
 让所有 localDev 判据恒为 false，Helper 必然启动失败）。因此现在 broker 不再因缺 opt-in 而
 报 `refusing to start an unauthenticated broker`，而是带一行 stderr 告警
 （`peer identity verification temporarily disabled`）以无鉴权状态启动：Windows 上任何本机
 进程都能连这条 named pipe。M5 的原生 peer 原语落地后该常量回收，门自动重新闭合，上述拒绝
 启动的行为也随之恢复。
 
-该测试仅在四项都满足时运行：Windows、已设置 `ZCODE_CUA_DEV_ROOT`、生产者契约有效、
+该测试仅在四项都满足时运行：Windows、已设置 `RASPBERRYCODE_CUA_DEV_ROOT`、生产者契约有效、
 契约声明的 entry/nativeAddon 存在。它验证真实 child、随机 named pipe、health/`broker_info`、
 只读应用列举、官方 plugin 环境二元组、`pluginAuthority` 不泄露，以及 `stop()` 后 child 退出。对外 MCP
 tool 名为 `list_apps`；source broker 的实际只读 RPC 名为 `list_applications`，测试按该既有
@@ -114,23 +114,23 @@ tool 名为 `list_apps`；source broker 的实际只读 RPC 名为 `list_applica
 ## 验证 packaged resources
 
 产品资源验收与 source override 是两条独立路径。构建产品时必须移除
-`ZCODE_CUA_DEV_ROOT`，并为 `--dir` 命令显式传入仓库配置文件：
+`RASPBERRYCODE_CUA_DEV_ROOT`，并为 `--dir` 命令显式传入仓库配置文件：
 
 ```powershell
-Set-Location $zcodeRoot
-Remove-Item Env:ZCODE_CUA_DEV_ROOT -ErrorAction SilentlyContinue
-$env:ZCODE_CUA_HELPER_RUNTIME_PACKAGE_DIR=$zcodeCuaRoot
-$env:ZCODE_SKIP_REMOTE_ASSETS='1'
-$env:ZCODE_TARGET_OS='win32'
-$env:ZCODE_TARGET_ARCH='x64'
-pnpm --filter @zcode/desktop build
-pnpm --filter @zcode/desktop exec electron-builder `
+Set-Location $raspberrycodeRoot
+Remove-Item Env:RASPBERRYCODE_CUA_DEV_ROOT -ErrorAction SilentlyContinue
+$env:RASPBERRYCODE_CUA_HELPER_RUNTIME_PACKAGE_DIR=$raspberrycodeCuaRoot
+$env:RASPBERRYCODE_SKIP_REMOTE_ASSETS='1'
+$env:RASPBERRYCODE_TARGET_OS='win32'
+$env:RASPBERRYCODE_TARGET_ARCH='x64'
+pnpm --filter @raspberrycode/desktop build
+pnpm --filter @raspberrycode/desktop exec electron-builder `
   --config electron-builder.config.js --win --x64 --dir
-Remove-Item Env:ZCODE_CUA_HELPER_RUNTIME_PACKAGE_DIR
+Remove-Item Env:RASPBERRYCODE_CUA_HELPER_RUNTIME_PACKAGE_DIR
 ```
 
-`ZCODE_CUA_HELPER_RUNTIME_PACKAGE_DIR` 只选择构建期 producer，不会开启安装包的 source
-runtime override；运行期仍只认 `ZCODE_CUA_DEV_ROOT`。本地 producer commit 尚未 push 时必须使用
+`RASPBERRYCODE_CUA_HELPER_RUNTIME_PACKAGE_DIR` 只选择构建期 producer，不会开启安装包的 source
+runtime override；运行期仍只认 `RASPBERRYCODE_CUA_DEV_ROOT`。本地 producer commit 尚未 push 时必须使用
 前者完成 staging，同时保持 workspace/lockfile 指向可远端获取的上游 commit。
 
 Windows 原生文件在 electron-builder 复制 `extraResources` 时完成签名，因此 staging
@@ -145,12 +145,12 @@ win32/arch，再基于最终已签名字节刷新 hash 并严格复验。目标�
 真实生命周期验收使用两个显式变量，避免测试意外读取开发目录或当前进程：
 
 ```powershell
-$env:ZCODE_CUA_PRODUCT_RESOURCES_PATH = `
-  (Join-Path $zcodeRoot 'packages\desktop\dist\win-unpacked\resources')
-$env:ZCODE_CUA_PRODUCT_EXECUTABLE = '<可运行的 Electron 41.0.3 x64 executable>'
+$env:RASPBERRYCODE_CUA_PRODUCT_RESOURCES_PATH = `
+  (Join-Path $raspberrycodeRoot 'packages\desktop\dist\win-unpacked\resources')
+$env:RASPBERRYCODE_CUA_PRODUCT_EXECUTABLE = '<可运行的 Electron 41.0.3 x64 executable>'
 pnpm exec vitest run packages/services/test/windowsCuaProductHelper.integration.test.ts
-Remove-Item Env:ZCODE_CUA_PRODUCT_RESOURCES_PATH
-Remove-Item Env:ZCODE_CUA_PRODUCT_EXECUTABLE
+Remove-Item Env:RASPBERRYCODE_CUA_PRODUCT_RESOURCES_PATH
+Remove-Item Env:RASPBERRYCODE_CUA_PRODUCT_EXECUTABLE
 ```
 
 测试先用 resources path、当前架构和 Electron `41.0.3` 解析产品 manifest，只覆盖解析结果的
@@ -170,12 +170,12 @@ exe lifecycle。2026-07-29 的具体路径、版本、hash、live smoke 与本�
 Windows 指针实机冒烟必须在已解锁的交互桌面上显式 opt in：
 
 ```powershell
-Set-Location $zcodeCuaRoot
+Set-Location $raspberrycodeCuaRoot
 pnpm rebuild:native
 pnpm build
-$env:ZCODE_CUA_WINDOWS_POINTER_LIVE='1'
+$env:RASPBERRYCODE_CUA_WINDOWS_POINTER_LIVE='1'
 pnpm smoke:windows:pointer
-Remove-Item Env:ZCODE_CUA_WINDOWS_POINTER_LIVE
+Remove-Item Env:RASPBERRYCODE_CUA_WINDOWS_POINTER_LIVE
 ```
 
 冒烟只接受一个 `active=true` 的 live 前台应用，使用其精确
@@ -187,12 +187,12 @@ Remove-Item Env:ZCODE_CUA_WINDOWS_POINTER_LIVE
 Windows 原生文本剪贴板冒烟同样必须在已解锁的交互桌面上显式 opt in：
 
 ```powershell
-Set-Location $zcodeCuaRoot
+Set-Location $raspberrycodeCuaRoot
 pnpm rebuild:native
 pnpm build
-$env:ZCODE_CUA_WINDOWS_CLIPBOARD_LIVE='1'
+$env:RASPBERRYCODE_CUA_WINDOWS_CLIPBOARD_LIVE='1'
 pnpm smoke:windows:clipboard
-Remove-Item Env:ZCODE_CUA_WINDOWS_CLIPBOARD_LIVE
+Remove-Item Env:RASPBERRYCODE_CUA_WINDOWS_CLIPBOARD_LIVE
 ```
 
 该脚本启动自己唯一可识别的 Helper，确认 `clipboard=true` 后读取原始文本、写入随机 marker、
@@ -204,12 +204,12 @@ token 或 pipe。脚本默认关闭，不设置 opt-in 时会在启动 Helper �
 Windows WGC 视觉冒烟也必须在已解锁的普通交互桌面上显式 opt in：
 
 ```powershell
-Set-Location $zcodeCuaRoot
+Set-Location $raspberrycodeCuaRoot
 pnpm rebuild:native
 pnpm build
-$env:ZCODE_CUA_WINDOWS_SCREEN_CAPTURE_LIVE='1'
+$env:RASPBERRYCODE_CUA_WINDOWS_SCREEN_CAPTURE_LIVE='1'
 pnpm smoke:windows:screen-capture
-Remove-Item Env:ZCODE_CUA_WINDOWS_SCREEN_CAPTURE_LIVE
+Remove-Item Env:RASPBERRYCODE_CUA_WINDOWS_SCREEN_CAPTURE_LIVE
 ```
 
 它只创建两个受控 WPF 窗口：绿色/洋红 checkerboard target 与不透明蓝色 occluder。
@@ -223,12 +223,12 @@ Helper/fixture 干净退出。stdout 只打印布尔值、尺寸、固定结果�
 Windows canonical 30-tool 总验收在同一受控桌面上运行：
 
 ```powershell
-Set-Location $zcodeCuaRoot
+Set-Location $raspberrycodeCuaRoot
 pnpm rebuild:native
 pnpm build
-$env:ZCODE_CUA_WINDOWS_TOOL_SURFACE_LIVE='1'
+$env:RASPBERRYCODE_CUA_WINDOWS_TOOL_SURFACE_LIVE='1'
 pnpm smoke:windows:tool-surface
-Remove-Item Env:ZCODE_CUA_WINDOWS_TOOL_SURFACE_LIVE
+Remove-Item Env:RASPBERRYCODE_CUA_WINDOWS_TOOL_SURFACE_LIVE
 ```
 
 该脚本通过官方 `buildServer` + MCP client 直接调用 28 个非剪贴板工具，验证
@@ -241,23 +241,23 @@ held input、等待 Helper/fixture 干净退出；默认关闭或预检失败时
 再验证官方 plugin 的 fail-closed 边界：
 
 ```powershell
-pnpm --filter @zcode/zcode-cua-plugin test
+pnpm --filter @raspberrycode/raspberrycode-cua-plugin test
 ```
 
-该命令会直接执行 `tests/zcode-cua-plugin-host-authority.node-test.ts`。该文件只包含 Host authority 凭据边界测试；脚本不再依赖 Node 的 `--test-name-pattern`，因此文件缺失、无法加载或断言失败都会使验证命令失败，不能产生零匹配的假绿。
+该命令会直接执行 `tests/raspberrycode-cua-plugin-host-authority.node-test.ts`。该文件只包含 Host authority 凭据边界测试；脚本不再依赖 Node 的 `--test-name-pattern`，因此文件缺失、无法加载或断言失败都会使验证命令失败，不能产生零匹配的假绿。
 
 应核对三项：没有 broker 凭据时可用 CUA 工具为零或返回明确 unavailable；Host 注入的有效凭据保留官方 server 配置；用户手写 plugin 配置中的 token 永远不会被接受。
 
-该命令会先运行 plugin launcher 自身的测试，再构建 CLI 依赖并运行官方 `__zcode-plugin-host` 的权威凭据测试。后者验证 Host 注入的 canonical product/broker/socket 配置被保留，并拒绝用户 authored env 或 argv 对 broker 凭据的覆盖；它不接受用户 token 作为凭据来源。
+该命令会先运行 plugin launcher 自身的测试，再构建 CLI 依赖并运行官方 `__raspberrycode-plugin-host` 的权威凭据测试。后者验证 Host 注入的 canonical product/broker/socket 配置被保留，并拒绝用户 authored env 或 argv 对 broker 凭据的覆盖；它不接受用户 token 作为凭据来源。
 
 Windows 上运行通用 broker 单测时，live server/client 用例必须连接每例唯一的
-`\\.\pipe\zcode-cua-test-<random>`，不能把临时目录下的 `b.sock` 交给 Node
+`\\.\pipe\raspberrycode-cua-test-<random>`，不能把临时目录下的 `b.sock` 交给 Node
 `net.listen()`。认证、协议、dispatch、超时与关闭时序仍应在真实 named pipe 上执行；
 `0600/0700`、symlink、stale Unix socket 与 unlink 等依赖 POSIX 文件节点的断言只在
 macOS/Linux 执行。对应边界如下：
 
 ```text
-win32 ──> \\.\pipe\zcode-cua-test-<random> ──> live transport / protocol tests
+win32 ──> \\.\pipe\raspberrycode-cua-test-<random> ──> live transport / protocol tests
 posix ──> <private tmpdir>/broker.sock       ──> live transport + fs security tests
 ```
 
@@ -293,13 +293,13 @@ Host authority 校验的官方 server 接受模型偶发生成的 `mcp__computer
 
 ## 实机验收记录（2026-07-29）
 
-本轮在 Windows 11 10.0.26200 x64、交互式 Session 1、Node 24.18.0（ABI 137）和 pnpm 10.33.2 上，从 source desktop 启动并验证了官方 `computer-use@zcode-plugins-official` 链路。验收限定为本地 desktop continuous 链路；未启动或附着 SSH、WSL、Docker、远程 workspace、手机 `/remote`，Phase 1 全程未请求截图。
+本轮在 Windows 11 10.0.26200 x64、交互式 Session 1、Node 24.18.0（ABI 137）和 pnpm 10.33.2 上，从 source desktop 启动并验证了官方 `computer-use@raspberrycode-plugins-official` 链路。验收限定为本地 desktop continuous 链路；未启动或附着 SSH、WSL、Docker、远程 workspace、手机 `/remote`，Phase 1 全程未请求截图。
 
 实机首先暴露出两个 Windows 启动身份缺陷：默认 runner 的 `windowsHide: true` 使现代 Notepad 进程成功但首个 GUI 窗口以隐藏状态启动；现代 Notepad 又会把 `spawn` 返回的 launcher PID 转交给另一个持有可见窗口的 child PID。最终修复让 runner 显式显示 GUI，并以“启动前 PID snapshot + launcher 完整 executable path + 启动后新增 PID + `applicationInfo` live 再验证 + 唯一候选”完成 Windows-only rebind。旧 active 同名窗口、不同路径同 basename、多候选和 name-only identity 都由 RED tests 锁定为 fail closed。
 
 官方插件 live smoke 的保留结果如下：
 
-- Managed Host 注入 socket/token/authority 后，`__zcode-plugin-host` 成功初始化 `zcode-cua` MCP，列出 30 个工具；
+- Managed Host 注入 socket/token/authority 后，`__raspberrycode-plugin-host` 成功初始化 `raspberrycode-cua` MCP，列出 30 个工具；
 - `list_apps`、无 shell 的 `open_application(notepad.exe)`、无截图的 UIA `get_app_state` 成功；
 - 编辑器以 element target 点击，`type` 写入 `RaspberryCode Windows CUA Phase 1` 后由刷新 UIA state 精确验证；
 - `Ctrl+A` 成功后只做只读重观察，未重放该动作；replacement `type` 写入 `RaspberryCode Windows CUA Phase 1 Replacement`，再由刷新 UIA state 精确验证；
@@ -311,7 +311,7 @@ provider-driven task 仍未完成：等待退避窗口后的首次 bounded retry
 
 完成 Windows CUA 单测可移植性治理并再次退避后，于 source desktop 新建 task `sess_70f5f0a4-f1de-4bda-9840-e9693cb6e3da`，仍只发送一次完整 Notepad 指令。该 task 的唯一 `main_turn` model I/O 在 941ms 后限流；请求已注入 48 个工具，其中 30 个是 official `mcp__computer-use__*` 工具，但响应仍为 `tool_use=0`、`tool_result=0`。UI 显示“已工作 2 秒”后返回同一 rate-limit 文本。session title 生成器另有 6 次内部、无工具的限流重试；它们不是用户指令重发，也没有进入 CUA。Notepad 未启动，任何写动作都未 dispatch。退出时先通过非持久化 main-process setting 关闭本次进程的 close-to-tray，再走正式 `before-quit -> Host dispose -> agent/plugin/Helper cleanup`；最终 source Electron、Windows Helper、source CUA plugin-host、app-server、watcher、5174/9229 端口和 Notepad 均无遗留，用户持久化的 close-to-tray 仍为 `true`。本轮仍不能完成 provider-driven Notepad 验收，状态继续保持 `BLOCKED/NEEDS_CONTEXT`，且不得自动再次发送。
 
-此前 Task 8 门禁中，zcode-cua 的 typecheck、lint、build 和全量 test 均为 exit 0；当时全量为 107 passed / 6 skipped files、1952 passed / 67 skipped / 18 todo tests。两轮复审补强后的 C1 focused 为 2 files / 24 tests，C2 delivery-state focused 为 4 files / 116 tests，均 exit 0。`pnpm test:unit:affected` 在当时 HEAD 与隔离 clean worktree 的 exact `bb8798db1c` 上使用同一 Windows / Node / pnpm / lockfile 环境运行：base 为 29 failed files / 100 failed tests / 1 unhandled，HEAD 本次为 31 / 102 / 1。集合差分显示 29/100 的 baseline failure 全部仍在 HEAD；HEAD-only 是 `animatedSidePanePanelLayout` 的 30 秒 timeout 和 `workspaceShellRemoteMobileLayout` 的 15 秒 timeout，两者都不在 Task 8 代码路径，且独立 review 先前在同一 HEAD 得到 29/100，属于 full-suite 负载相关的非稳定 timeout。该对照没有发现 C1/C2 回归，但不能把 brief 的 exit-0 gate 自行改成通过；仍需 gate owner 明确 waiver 或独立治理 Windows 全量基线。
+此前 Task 8 门禁中，raspberrycode-cua 的 typecheck、lint、build 和全量 test 均为 exit 0；当时全量为 107 passed / 6 skipped files、1952 passed / 67 skipped / 18 todo tests。两轮复审补强后的 C1 focused 为 2 files / 24 tests，C2 delivery-state focused 为 4 files / 116 tests，均 exit 0。`pnpm test:unit:affected` 在当时 HEAD 与隔离 clean worktree 的 exact `bb8798db1c` 上使用同一 Windows / Node / pnpm / lockfile 环境运行：base 为 29 failed files / 100 failed tests / 1 unhandled，HEAD 本次为 31 / 102 / 1。集合差分显示 29/100 的 baseline failure 全部仍在 HEAD；HEAD-only 是 `animatedSidePanePanelLayout` 的 30 秒 timeout 和 `workspaceShellRemoteMobileLayout` 的 15 秒 timeout，两者都不在 Task 8 代码路径，且独立 review 先前在同一 HEAD 得到 29/100，属于 full-suite 负载相关的非稳定 timeout。该对照没有发现 C1/C2 回归，但不能把 brief 的 exit-0 gate 自行改成通过；仍需 gate owner 明确 waiver 或独立治理 Windows 全量基线。
 
 随后继续治理 Windows 单测基线：通用 broker/auth/Node Helper live tests 改用每例唯一 named pipe，macOS `.app`、LaunchServices、codesign、`/usr/bin/unzip` 和 POSIX mode/symlink 断言按平台精确分类。独立审查后又把 broker round-trip/lifecycle、installer 注入状态机、Helper PID evidence、owner/reaper 纯决策逻辑恢复为 Windows 必跑；`pnpm exec vitest run packages/services/test/cua` 现为 38 files passed、788 tests passed、35 platform skips、2 todo，exit 0。所有认证、NDJSON、dispatch、超时、graceful-stop 和 Node Helper 生命周期仍在 Windows 真实 named pipe 上运行。再次执行 `pnpm test:unit:affected` 后从 31 files / 102 tests / 1 unhandled 降为 17 files / 17 tests / 0 unhandled，936 files / 8017 tests passed；剩余失败均不在 CUA 文件，门禁仍保持 exit 1，不宣称全仓通过。
 
@@ -330,7 +330,7 @@ access denied；同一环境的前台应用为 `LockApp`。脚本没有写入 ma
 随机 Unicode marker 后精确恢复原文本，Helper 均以 0 退出。运行前的只读格式检查为
 `formatCount=2`、`textOnly=true`；这次证据只证明文本剪贴板闭环，不外推到图片或文件格式。
 
-剪贴板实现完成后的最新门禁中，zcode-cua 的原生重建、typecheck、lint、build 和全量
+剪贴板实现完成后的最新门禁中，raspberrycode-cua 的原生重建、typecheck、lint、build 和全量
 test 均为 exit 0；剪贴板相关 focused 为 8 files / 139 tests，全量为 115 passed /
 6 skipped files、2016 passed / 67 skipped / 18 todo tests。RaspberryCode source Helper 真子进程
 集成为 1 file / 2 tests，CUA 服务回归为 38 files / 788 passed / 35 skipped / 2 todo，
@@ -368,11 +368,11 @@ timer；两个 WPF fixture 均保留 UTF-8 BOM 回归断言。最小化信号只
 `IsIconic(HWND)` 为真后才确认，
 不能再用“信号已消费”代替 Win32 状态事实。
 
-最新源码门禁为：zcode-cua Windows focused 16 files / 158 tests，全量 122 passed /
+最新源码门禁为：raspberrycode-cua Windows focused 16 files / 158 tests，全量 122 passed /
 6 skipped files、2105 passed / 67 skipped / 18 todo tests，native rebuild、build、
 typecheck、lint 均 exit 0；screen、pointer、clipboard、30-tool surface 四套实机 smoke
 全部 exit 0，剪贴板文本和光标均恢复，无 Helper/fixture 孤儿。RaspberryCode focused integration
-为 4 files / 175 passed / 1 skipped，`pnpm --filter @zcode/zcode-cua-plugin test`
+为 4 files / 175 passed / 1 skipped，`pnpm --filter @raspberrycode/raspberrycode-cua-plugin test`
 共 6 tests，主仓 typecheck/lint 均 exit 0。裸跑 plugin 的 `node --test` 不是有效门禁，
 因为它缺少 package `build` 前置；必须使用上述 package test 命令。
 

@@ -109,7 +109,7 @@ Anthropic 的真实 thinking block、空 thinking、signature 和 redacted think
 2026-09-10 补充：历史签名兼容判断与上述 block 编码规则分开。旧 Coding Plan ID 与同服务的 Individual/Team ID
 可以通过 Adapter 内集中、精确枚举的纯函数判为回放兼容；模型 ID 仍须一致。Z.ai、BigModel 分组隔离，其他
 Provider 保留精确 ID 判断，不新增配置或持久化字段、不重写历史身份，也不把该函数用于选型和鉴权。
-完整边界与验证见 [Reasoning History Replay](../../../../../apps/zcode-cli/docs/design/v2/model/anthropic-reasoning-history-replay.md#coding-plan-provider-identity-compatibility)。
+完整边界与验证见 [Reasoning History Replay](../../../../../apps/raspberrycode-cli/docs/design/v2/model/anthropic-reasoning-history-replay.md#coding-plan-provider-identity-compatibility)。
 
 ### 3.4 Z.ai text/tool block signature：候选实现不采用
 
@@ -190,9 +190,9 @@ Off-Peak 的排队、Ticket 和失效重试属于访问该产品服务的执行�
 
 ### 5.4 Coding Plan 请求来源归因 Header
 
-所有模型请求在 Adapter 的 per-request 层发送 `x-zcode-session-type`，值域为 `main`、`subagent`、
+所有模型请求在 Adapter 的 per-request 层发送 `x-raspberrycode-session-type`，值域为 `main`、`subagent`、
 `side_chat`、`other`。它表示宿主会话类型；标题、Memory 与工具内部请求继承宿主，调用用途通过
-`x-zcode-query-source` 独立表达。连接测试等工作区独立请求归为 `other`。
+`x-raspberrycode-query-source` 独立表达。连接测试等工作区独立请求归为 `other`。
 
 该 Header 是请求级来源归因，不是 Provider/Model 静态能力，也不是鉴权材料：
 
@@ -239,8 +239,8 @@ Off-Peak 的排队、Ticket 和失效重试属于访问该产品服务的执行�
 - 当前 `@ai-sdk/openai-compatible@2.0.60` 的
   `convert-to-openai-compatible-chat-messages.ts` 会把 assistant reasoning parts 编码为 `reasoning_content`；SDK
   changelog 自 2.0.20 起明确包含多轮 tool call 的 reasoning content；
-- `apps/zcode-cli/packages/adapters/src/model/anthropic-reasoning-metadata.ts` 是当前 synthetic empty thinking 实现；
-  `apps/zcode-cli/docs/design/v2/model/anthropic-reasoning-history-replay.md` 保存历史内部设计主张，但不是外部服务证据；
+- `apps/raspberrycode-cli/packages/adapters/src/model/anthropic-reasoning-metadata.ts` 是当前 synthetic empty thinking 实现；
+  `apps/raspberrycode-cli/docs/design/v2/model/anthropic-reasoning-history-replay.md` 保存历史内部设计主张，但不是外部服务证据；
 - 当前 DeepSeek Replay fixtures 的 `syntheticReason` 明确表明相关 wire shape 是构造数据，不能单独证明服务端约束；
 - text/tool block signature 候选提交 `70546bde31` 只位于
   `origin/anthropic-block-signature-replay-staging-latest`，不是当前 HEAD 或 `origin/staging` 的祖先；

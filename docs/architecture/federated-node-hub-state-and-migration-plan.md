@@ -31,7 +31,7 @@
 1. Task 列表持久行来自各 endpoint 的 `tasks-index.sqlite`，Session runtime 和正文仍由 CLI
    Session Store 权威持有。当前 UI 会把每个 endpoint 的 active / pinned / archived 全量拉回，
    再在 renderer 合并、排序和裁剪。
-2. `ZCodeTaskListQuery` 只有 `limit`，没有 cursor；当前“显示更多”仍会重新读取完整前缀。
+2. `RaspberryCodeTaskListQuery` 只有 `limit`，没有 cursor；当前“显示更多”仍会重新读取完整前缀。
 3. 自定义分组当前存于单个 `tasks-index.sqlite` 的
    `task_groups / task_group_members / task_group_view_node_orders`，排序是用户显式顺序，
    不是时间排序；当前 Grouped 视图明确不聚合 remote endpoint。
@@ -53,11 +53,11 @@ remote:ssh:<host>:<port>:<username>:<workspacePath>
 同一目标机经不同 hostname、端口、用户名或 SSH alias 连接，会形成不同 key。
 
 8. 当前 SSH / WSL / Docker 虽已复用
-   `IRemoteBackend -> deployServer -> connectRemote -> zcode-server`，进程复用和回收仍不一致：
+   `IRemoteBackend -> deployServer -> connectRemote -> raspberrycode-server`，进程复用和回收仍不一致：
    - SSH：同窗口、同 SSH 身份共享 Host，通常留到窗口关闭；
    - WSL：同窗口、同 distro / user 共享 Host，使用 workspace generation 和 60 秒 idle TTL；
    - Docker：每个 remote session 独立 Host，session 关闭即回收整套 runtime。
-9. 当前 SSH / WSL / Docker 启动的是前台 stdio `zcode-server`。它由 Desktop Host 持有生命周期，
+9. 当前 SSH / WSL / Docker 启动的是前台 stdio `raspberrycode-server`。它由 Desktop Host 持有生命周期，
    不监听长期端口；连接 EOF 或 Host 退出会触发 Server 和 Agent 清理。
 10. 当前 RaspberryCode Lite 使用 `entry-http.js` 创建另一种长期 HTTP / WebSocket Server；它与 stdio Server
     都调用 `createLocalServices()`，但入口、认证、连接复用和生命周期仍是两套。
@@ -193,7 +193,7 @@ Desktop 必须复用它，不能再启动第二个 SQLite / Agent owner。
 ### RaspberryCode Lite / Browser Web 进程模型
 
 ```text
-zcode-lite serve
+raspberrycode-lite serve
 ┌──────────────────────────────────────────────────────────────┐
 │ Lite Supervisor                                              │
 │ ├─ Node Core / Node Process                                  │
@@ -237,7 +237,7 @@ MVP 可以让 Node Core、Hub Core 和 HTTP Gateway 同处一个 Node.js 进程�
 | per-window Remote Host                    | 窗口级 SSH / WSL pool，Docker dedicated         | app-wide Hub connector pool                               |
 | Desktop Main mobile bridge                | relay frame 接到某个窗口已有 Host               | relay device transport 接到 Hub logical attachment        |
 
-当前 Browser Web 只读取一个 `ZCODE_SERVER_WORKSPACE`，不能管理动态 workspace catalog；普通 Web
+当前 Browser Web 只读取一个 `RASPBERRYCODE_SERVER_WORKSPACE`，不能管理动态 workspace catalog；普通 Web
 也不能完整处理长文本临时附件。目标 Hub / Workspace Registry 和 Resource Store 必须先补齐这些合同，
 再开放跨 Node Web 管理，不能只把 UI 入口显示出来。
 
@@ -259,14 +259,14 @@ TUI on A
 建议最终发布同一套 runtime，以子命令区分角色：
 
 ```text
-zcode node serve       # 长期 Node daemon
-zcode node connect     # 只做 stdio <-> local Node socket 字节桥
-zcode hub serve        # 可独立运行的 Hub Gateway
-zcode lite serve       # 监督 local Node + Hub + Web 静态入口
-zcode tui              # 本机 UI，直接连接 local Node
+raspberrycode node serve       # 长期 Node daemon
+raspberrycode node connect     # 只做 stdio <-> local Node socket 字节桥
+raspberrycode hub serve        # 可独立运行的 Hub Gateway
+raspberrycode lite serve       # 监督 local Node + Hub + Web 静态入口
+raspberrycode tui              # 本机 UI，直接连接 local Node
 ```
 
-`zcode node connect` 不调用 `createLocalServices()`，也不启动 Agent；它只是 SSH / WSL / Docker
+`raspberrycode node connect` 不调用 `createLocalServices()`，也不启动 Agent；它只是 SSH / WSL / Docker
 无法直接转发本地 socket 时的 transport shim。
 
 ### Authority 与 Transport 正交
@@ -313,7 +313,7 @@ Authority profile:
    └─ NodeId / version / capability / endpoint
 
 统一 RPC / frame 层
-└─ @zcode/rpc IMessagePassingProtocol + typed runtime schema
+└─ @raspberrycode/rpc IMessagePassingProtocol + typed runtime schema
 
 Transport adapter
 ├─ MessagePort
@@ -429,19 +429,19 @@ interface NodeBootstrapResult {
 ```text
 ssh2
   1. 上传/升级统一 Node runtime
-  2. 启动或发现 zcode node serve
+  2. 启动或发现 raspberrycode node serve
   3. Node 仅监听远端 loopback
   4. ssh2.forwardOut 建 direct-tcpip tunnel
   5. tunnel 上运行与 direct WSS 相同的 Node frame
 ```
 
-若目标环境无法使用 direct-tcpip，则执行 `zcode node connect`，把 SSH stdio 纯转发到 Node local
+若目标环境无法使用 direct-tcpip，则执行 `raspberrycode node connect`，把 SSH stdio 纯转发到 Node local
 socket。旧 `entry-stdio.ts -> createLocalServices()` 只保留一个迁移周期，不作为长期架构。
 
 ### WSL
 
 ```text
-wsl.exe ... zcode node connect
+wsl.exe ... raspberrycode node connect
   -> distro 内 Unix socket
   -> persistent Node daemon
 ```
@@ -452,7 +452,7 @@ wsl.exe ... zcode node connect
 ### Docker
 
 ```text
-docker exec -i <container> zcode node connect
+docker exec -i <container> raspberrycode node connect
   -> container 内 Unix socket
   -> persistent Node daemon
 ```
@@ -463,7 +463,7 @@ tunnel，不要求用户重建容器增加 `-p`。Node 生命周期跟随容器�
 
 ### 手动安装的 Lite / Headless Node
 
-用户通过 `zcode lite serve` 或 `zcode node serve` 启动后：
+用户通过 `raspberrycode lite serve` 或 `raspberrycode node serve` 启动后：
 
 - Browser Web 连接本机 Hub endpoint；
 - Desktop 使用 direct URL 连接同端口的 Node endpoint；
@@ -599,7 +599,7 @@ Conversation lifetime        = Agent session store，不等于任何进程连接
 
 ### 目标拆分
 
-历史 `ZCodeProviderRegistrySnapshot` 曾同时包含 metadata 和 raw secret；该快照链已经删除。多 Node
+历史 `RaspberryCodeProviderRegistrySnapshot` 曾同时包含 metadata 和 raw secret；该快照链已经删除。多 Node
 目标设计仍需把期望配置、Credential Binding 和执行时 Lease 保持为三条独立链：
 
 ```text
@@ -1004,7 +1004,7 @@ prepared
 
 - SSH / WSL / Docker 只负责安装、启动、升级、发现和连接 Node daemon。
 - Direct URL、Browser Web、Desktop 和 TUI 使用同一 Node API。
-- SSH 使用 direct-tcpip，WSL / Docker 使用 `zcode node connect` 到 local socket。
+- SSH 使用 direct-tcpip，WSL / Docker 使用 `raspberrycode node connect` 到 local socket。
 - 引入统一 `WorkspaceLeaseManager`，消除三种不同 Host / Agent 回收语义。
 - 长文本、图片和外部文件统一进入 Node Resource Store。
 - 旧 stdio business server 保留一个兼容周期；compat shim 只做 transport。
@@ -1093,10 +1093,10 @@ prepared
 
 - `packages/shared/src/remote-workspace-identity.ts`
 - `packages/shared/src/remoteTarget.ts`
-- `packages/shared/src/zcode-protocol/index.ts`
+- `packages/shared/src/raspberrycode-protocol/index.ts`
 - `packages/services/src/session/taskIndexRepo.ts`
 - `packages/services/src/session/automationRepo.ts`
-- `apps/zcode-cli/packages/adapters/src/storage/session-store/`
+- `apps/raspberrycode-cli/packages/adapters/src/storage/session-store/`
 - `packages/ui/src/hooks/useWorkspaceTaskLists.ts`
 - `packages/ui/src/hooks/useGlobalTaskList.ts`
 - `packages/ui/src/hooks/useGroupedTaskView.ts`
@@ -1116,8 +1116,8 @@ prepared
 - `packages/server/src/remote/wsl-backend.ts`
 - `packages/server/src/remote/docker-backend.ts`
 - `packages/services/src/node.ts`
-- `packages/services/src/zcode-agent/zcodeAgentProcessManager.ts`
-- `scripts/build-zcode-lite.mjs`
+- `packages/services/src/raspberrycode-agent/raspberrycodeAgentProcessManager.ts`
+- `scripts/build-raspberrycode-lite.mjs`
 
 ### should-inspect
 

@@ -24,9 +24,9 @@
 
 **Files:**
 
-- Modify: `packages/shared/src/zcode-protocol-v4/transport.ts`
-- Modify: `apps/zcode-cli/packages/bootstrap/src/zcode-protocol-v4/conversation-topic-publisher.ts`
-- Test: `apps/zcode-cli/packages/bootstrap/tests/conversation-topic-publisher.test.ts`
+- Modify: `packages/shared/src/raspberrycode-protocol-v4/transport.ts`
+- Modify: `apps/raspberrycode-cli/packages/bootstrap/src/raspberrycode-protocol-v4/conversation-topic-publisher.ts`
+- Test: `apps/raspberrycode-cli/packages/bootstrap/tests/conversation-topic-publisher.test.ts`
 - Modify fixtures that construct `V4ConversationRowsRangeResult` in affected tests.
 
 **Interfaces:**
@@ -40,7 +40,7 @@ Assert that `publisher.getRowsRange(...)` returns both `atLogEpoch` and the curr
 
 - [ ] **Step 2: Run the focused test and verify RED**
 
-Run: `pnpm vitest run apps/zcode-cli/packages/bootstrap/tests/conversation-topic-publisher.test.ts`
+Run: `pnpm vitest run apps/raspberrycode-cli/packages/bootstrap/tests/conversation-topic-publisher.test.ts`
 
 Expected: FAIL because `atRevision` is absent.
 
@@ -56,7 +56,7 @@ Return `snapshot.revision` from `getRowsRange`. Update typed fixtures mechanical
 
 - [ ] **Step 4: Run the focused test and verify GREEN**
 
-Run: `pnpm vitest run apps/zcode-cli/packages/bootstrap/tests/conversation-topic-publisher.test.ts`
+Run: `pnpm vitest run apps/raspberrycode-cli/packages/bootstrap/tests/conversation-topic-publisher.test.ts`
 
 Expected: PASS.
 

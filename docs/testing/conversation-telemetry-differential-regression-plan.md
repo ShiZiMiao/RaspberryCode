@@ -1,6 +1,6 @@
 # 对话埋点新旧版本差分与回归测试计划
 
-本文定义 `z-code-2` 与 V4 conversation 主链路的运行时埋点差分方法，以及差分确认后必须保留的
+本文定义 `旧版` 与 V4 conversation 主链路的运行时埋点差分方法，以及差分确认后必须保留的
 自动化回归合同。目标不是只做一次人工抓包，而是把旧版兼容口径转成可重复执行的 golden、integration
 和 Electron E2E，防止后续再次因 conversation 重构删除埋点或业务触发入口。
 
@@ -9,11 +9,11 @@
 | 字段 | 结论 |
 | --- | --- |
 | 变更性质 | V4 conversation 重构后的兼容恢复与回归保护 |
-| 兼容基准 | `~/workspace/z-code-2` 的实际桌面运行行为；已确认的 V4 spec 例外优先 |
+| 兼容基准 | `~/workspace/旧版` 的实际桌面运行行为；已确认的 V4 spec 例外优先 |
 | 主要 surface | V4 composer、session pane、assistant feedback、quota banner、错误 banner |
 | 实际上报端 | `/event/report` 与 ARMS custom event |
 | 客户端范围 | desktop `desktop-continuous` 实际上报；Web/手机仅验证 no-op 和隔离 |
-| Provider 范围 | 通用埋点使用任意 scripted provider；quota 使用 Start Plan 等价类；官方版本安全校验 case 使用 `zcode-plan` endpoint 等价类 |
+| Provider 范围 | 通用埋点使用任意 scripted provider；quota 使用 Start Plan 等价类；官方版本安全校验 case 使用 `raspberrycode-plan` endpoint 等价类 |
 | 非目标 | 购买产品/周期/支付/结果、启动性能、输入框卡顿、ARMS 全局稳定性/资源/网络 |
 
 ## 澄清记录
@@ -74,7 +74,7 @@ case-local provider fixture / synthetic fault
         +----------+----------+
         |                     |
         v                     v
- legacy z-code-2        current z-code V4
+ legacy 旧版        current raspberrycode V4
  isolated E2E home      isolated E2E home
         |                     |
         +----------+----------+
@@ -118,7 +118,7 @@ case-local provider fixture / synthetic fault
 | delivery | live、duplicate live、initial、hydration、recovery | 只有 live 可产生 fact |
 | timing | first token 负值、stall 3000/3001、tool 清除 stall、permission wait | 精确边界用 fake clock/recorded stream，不复制所有耗时值 |
 | model network | started、completed、failed、retry_scheduled、stream_stalled | 不从 accepted/queued/apiRetry 推断 |
-| provider | generic、custom hostname、Start Plan、`zcode-plan` endpoint | 不按具体模型名或供应商品牌全排列 |
+| provider | generic、custom hostname、Start Plan、`raspberrycode-plan` endpoint | 不按具体模型名或供应商品牌全排列 |
 | compaction | success、failed、interrupted、non-terminal、duplicate | terminal status 做 golden；前后台做代表 E2E |
 | error banner | visible、suppressed、same-key duplicate、new key、3007 | mount 内去重；不可见不报 |
 | workspace | local、相同 path 不同 identity/remoteSession、service generation replacement | 路径展示不与身份隔离混用 |
@@ -170,7 +170,7 @@ payload。这里的“已验证”不等于 formal E2E 晋升：新差分 spec �
 - TDP01-TDP15、TDP18-TDP19 默认使用本地 scripted provider；不需要真实账号、API key 或 GLM。
 - custom provider case 只需要 endpoint hostname/path 的 fixture，用于证明只上报 hostname、不泄漏 path/query。
 - TDP16 使用 Start Plan provider ID 与 entitlement fixture；不依赖真实 quota 账号。
-- TDP17 使用 endpoint 以 `/zcode-plan` 或 `/zcode-plan/anthropic` 结尾的 provider fixture；
+- TDP17 使用 endpoint 以 `/raspberrycode-plan` 或 `/raspberrycode-plan/anthropic` 结尾的 provider fixture；
   安全校验配置与 3007 由本地服务模拟，不要求模型名为 GLM（仅官方版本适用）。
 - 真实账号/模型只用于全部自动化通过后的可选 production smoke，不进入 CI 合同。
 
@@ -178,7 +178,7 @@ payload。这里的“已验证”不等于 formal E2E 晋升：新差分 spec �
 
 ### 隔离运行
 
-旧版和当前版本使用独立的 `ZCODE_E2E_HOME_DIR`、network capture、artifact 和 runtime log 目录。
+旧版和当前版本使用独立的 `RASPBERRYCODE_E2E_HOME_DIR`、network capture、artifact 和 runtime log 目录。
 同一 case 配对串行运行，避免端口、协议注册、provider replay 与机器负载互相干扰。每次 artifact 记录：
 
 - legacy/current git SHA、构建版本和 case ID。
@@ -265,9 +265,9 @@ Diff 分类固定为：`MISSING_EVENT`、`EXTRA_EVENT`、`MISSING_FIELD`、`EXTR
 1. **Vertical slice**：以 TDP02 建立双仓 runner、最终捕获点、归一化器和结构化 diff。
 2. **Golden 完整性**：完成 TDP04-TDP08、TDP10-TDP13 的完整 payload/fake-clock 测试。
 3. **生命周期 E2E**：完成 TDP01-TDP03、TDP09、TDP11、TDP14-TDP19 的 pending specs。
-4. **旧版认证**：逐 case 运行 `z-code-2` 与当前版本，处理所有非白名单 diff。
+4. **旧版认证**：逐 case 运行 `旧版` 与当前版本，处理所有非白名单 diff。
 5. **Legacy golden**：人工 review 后提交脱敏 normalized golden；日常 CI 只跑当前版本，不依赖
-   `~/workspace/z-code-2`。
+   `~/workspace/旧版`。
 6. **正式晋升**：pending fixture check -> explicit replay -> default replay -> isolated Docker ->
    human review/promotion -> Docker preset admission。
 7. **最终验证**：运行 focused tests、desktop E2E typecheck、`pnpm typecheck`、`pnpm lint`，再做一次

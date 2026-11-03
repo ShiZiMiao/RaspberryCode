@@ -6,7 +6,7 @@
 >
 > 范围：Windows 本地 desktop continuous 源码开发链路
 >
-> 关联仓库：`z-code`、`C:\Users\dev\zcode-cua`
+> 关联仓库：`z-code`、`C:\Users\dev\raspberrycode-cua`
 
 ## 1. 背景
 
@@ -102,7 +102,7 @@ MCP pointer tool
   | resolve target -> screen point + app_ref
   | reject missing/mismatched scope
   v
-official zcode-cua plugin
+official raspberrycode-cua plugin
   |
   | broker action RPC
   | { point/start/end, app_ref, session_key, ... }
@@ -360,7 +360,7 @@ TERMINAL
 
 ## 12. 强制验证
 
-`zcode-cua`：
+`raspberrycode-cua`：
 
 ```powershell
 pnpm typecheck

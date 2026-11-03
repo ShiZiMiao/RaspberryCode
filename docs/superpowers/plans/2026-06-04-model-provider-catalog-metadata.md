@@ -18,25 +18,25 @@
 
 **Files:**
 - Modify: `packages/shared/src/model-provider-types.ts`
-- Modify: `packages/shared/src/zcode-protocol/index.ts`
-- Test: `packages/shared/test/zcodeProtocol.test.ts`
+- Modify: `packages/shared/src/raspberrycode-protocol/index.ts`
+- Test: `packages/shared/test/raspberrycodeProtocol.test.ts`
 
 - [ ] **Step 1: Write failing schema and projection tests**
 
-Add tests for parsing a `zcode.model-providers.v1` catalog file, parsing a v2 provider store file, migrating a legacy bare provider array to v2, and projecting context window, image modality, max output tokens, kind-aware model id, and reasoning provider options.
+Add tests for parsing a `raspberrycode.model-providers.v1` catalog file, parsing a v2 provider store file, migrating a legacy bare provider array to v2, and projecting context window, image modality, max output tokens, kind-aware model id, and reasoning provider options.
 
 - [ ] **Step 2: Run focused tests and verify failure**
 
-Run: `pnpm vitest run packages/shared/test/zcodeProtocol.test.ts`
+Run: `pnpm vitest run packages/shared/test/raspberrycodeProtocol.test.ts`
 Expected: FAIL because catalog/provider v2 schemas and new projection helpers do not exist yet.
 
 - [ ] **Step 3: Implement shared types, schemas, migration helpers, and projection**
 
-Add `ModelProviderKind`, `ModelProviderCatalogFile`, `ModelProviderModelConfig`, `ModelProviderStoreFile`, display order state types, model helper functions, legacy migration, endpoint/kind resolution, reasoning patch application, and v2-aware `convertModelProviderConfigToZCodeProviderInput`.
+Add `ModelProviderKind`, `ModelProviderCatalogFile`, `ModelProviderModelConfig`, `ModelProviderStoreFile`, display order state types, model helper functions, legacy migration, endpoint/kind resolution, reasoning patch application, and v2-aware `convertModelProviderConfigToRaspberryCodeProviderInput`.
 
 - [ ] **Step 4: Run focused tests and verify pass**
 
-Run: `pnpm vitest run packages/shared/test/zcodeProtocol.test.ts`
+Run: `pnpm vitest run packages/shared/test/raspberrycodeProtocol.test.ts`
 Expected: PASS.
 
 ### Task 2: Service Storage, Catalog Sources, And Display Order
@@ -113,7 +113,7 @@ Record local China catalog source, future CDN migration point, v2 store migratio
 - [ ] **Step 2: Run code verification**
 
 Run:
-- `pnpm vitest run packages/shared/test/zcodeProtocol.test.ts packages/services/test/modelProviderService.test.ts packages/ui/test/chatInputToolbarModelGroups.test.ts packages/ui/test/modelProviderCodingPlan.test.ts`
+- `pnpm vitest run packages/shared/test/raspberrycodeProtocol.test.ts packages/services/test/modelProviderService.test.ts packages/ui/test/chatInputToolbarModelGroups.test.ts packages/ui/test/modelProviderCodingPlan.test.ts`
 - `pnpm typecheck`
 - `pnpm lint`
 

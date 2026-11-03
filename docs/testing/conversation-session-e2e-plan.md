@@ -20,8 +20,8 @@ F09、G11、G12 的产品语义已于 2026-07-05 裁决，不再属于 undefined
 
 | 层                     | 用途                                 | 运行方式                                                                                                         |
 | ---------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| desktop capture        | 连接线上 DeepSeek，验证真实桌面链路  | `E2E_PROVIDER_HTTP_MODE=capture E2E_PROVIDER_API_KEY=... pnpm --filter @zcode/desktop test:e2e -- --spec <spec>` |
-| desktop replay         | 本地快速认证，使用已录制 SSE fixture | `pnpm --filter @zcode/desktop test:e2e -- --spec <spec>`                                                         |
+| desktop capture        | 连接线上 DeepSeek，验证真实桌面链路  | `E2E_PROVIDER_HTTP_MODE=capture E2E_PROVIDER_API_KEY=... pnpm --filter @raspberrycode/desktop test:e2e -- --spec <spec>` |
+| desktop replay         | 本地快速认证，使用已录制 SSE fixture | `pnpm --filter @raspberrycode/desktop test:e2e -- --spec <spec>`                                                         |
 | docker replay-isolated | 隔离网络后的最终可复现认证           | `E2E_NETWORK_MODE=replay-isolated E2E_SPEC=<spec> bash scripts/test-desktop-e2e-container.sh`                    |
 
 当前先放大桌面端 case，Docker 只作为阶段性认证，不阻塞 case 编写。
@@ -37,7 +37,7 @@ conversation 主路径 spec 先统一放在 `packages/desktop/test/e2e/conversat
 3. 产品预期确认后，补充确定性断言和需要的 `data-testid` / 协议 / 日志 / 抓包 / snapshot 校验。
 4. 断言稳定后，把 spec 移回 `packages/desktop/test/e2e/conversation-session/`，并同步更新 [conversation-session-e2e-coverage-matrix.md](./conversation-session-e2e-coverage-matrix.md)。
 
-WDIO 默认全量 E2E 会排除 `manual-review`；显式传入 `manual-review` spec 或设置 `ZCODE_E2E_MANUAL_REVIEW=1` 时才运行这些人工 review case。`ZCODE_E2E_MANUAL_REVIEW=1` 且没有显式 `--spec` 时，默认只运行 `manual-review/**/*.test.ts`。
+WDIO 默认全量 E2E 会排除 `manual-review`；显式传入 `manual-review` spec 或设置 `RASPBERRYCODE_E2E_MANUAL_REVIEW=1` 时才运行这些人工 review case。`RASPBERRYCODE_E2E_MANUAL_REVIEW=1` 且没有显式 `--spec` 时，默认只运行 `manual-review/**/*.test.ts`。
 
 ## Spec 拆分
 

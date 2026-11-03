@@ -54,8 +54,8 @@
   ): Promise<RemoteDeployLockHandle>;
   ```
 
-  stdout 只在看到 `zcode-deploy-lock-acquired:<owner>` 后 resolve；stream 提前关闭则 reject。release 写入
-  `zcode-deploy-lock-release:<owner>\n` 并结束 stdin，随后等待 lock-holder close。
+  stdout 只在看到 `raspberrycode-deploy-lock-acquired:<owner>` 后 resolve；stream 提前关闭则 reject。release 写入
+  `raspberrycode-deploy-lock-release:<owner>\n` 并结束 stdin，随后等待 lock-holder close。
 
 - [x] **Step 4: 运行测试并确认 GREEN**
 
@@ -97,7 +97,7 @@
 
 **Files:**
 - Modify: `packages/server/src/remote/remoteAssetInstaller.ts`
-- Modify: `packages/server/src/remote/zcodeAgentDevDeploy.ts`
+- Modify: `packages/server/src/remote/raspberrycodeAgentDevDeploy.ts`
 - Test: `packages/server/test/remoteAssetInstaller.test.ts`
 - Test: `packages/server/test/remoteDeploy.test.ts`
 

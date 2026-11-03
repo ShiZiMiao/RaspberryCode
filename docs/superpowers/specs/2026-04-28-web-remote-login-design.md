@@ -15,10 +15,10 @@
 
 | 约束项 | 说明 |
 |--------|------|
-| 部署域名 | `https://zcode.z.ai`（已在 ZAI OAuth 白名单内） |
-| OAuth 提供方 | ZAI（`chat.z.ai/auth`），**不走桌面端 deep-link `zcode://`** |
-| Token 存储 | Web 的 `localStorage`，核心 key 与桌面端保持一致：`zcodejwttoken`、`oauth:zai:access_token`、`oauth:zai:user_info`、`oauth:active_provider` |
-| 生产态同域 | 远控页面部署在 `zcode.z.ai` 下，调用 `zcode.z.ai/api/v1/oauth/token` 同源，无 CORS 问题 |
+| 部署域名 | `https://raspberrycode.z.ai`（已在 ZAI OAuth 白名单内） |
+| OAuth 提供方 | ZAI（`chat.z.ai/auth`），**不走桌面端 deep-link `raspberrycode://`** |
+| Token 存储 | Web 的 `localStorage`，核心 key 与桌面端保持一致：`raspberrycodejwttoken`、`oauth:zai:access_token`、`oauth:zai:user_info`、`oauth:active_provider` |
+| 生产态同域 | 远控页面部署在 `raspberrycode.z.ai` 下，调用 `raspberrycode.z.ai/api/v1/oauth/token` 同源，无 CORS 问题 |
 | 开发态 | 通过环境变量注入本地 origin，ZAI 回调先回到生产域名再转发回局域网 IP；本地 token 交换必须走 Vite proxy 或后端 CORS 白名单，不能假设本地 Vite origin 天然拥有 `/api/v1/oauth/token` |
 
 ## 本期范围与联调边界
@@ -28,13 +28,13 @@
 1. Web 远控页面未登录时展示登录页。
 2. 发起 ZAI OAuth 登录。
 3. 处理 ZAI OAuth callback。
-4. 将后端返回的 `zcodejwttoken` 与 ZAI OAuth 相关存储写入 `localStorage`。
+4. 将后端返回的 `raspberrycodejwttoken` 与 ZAI OAuth 相关存储写入 `localStorage`。
 
 后端同事会补齐以下能力，本设计只预留联调边界，不在本期实现：
 
-1. 凭 `zcodejwttoken` 获取当前账号可连接的设备/远控入口列表。
+1. 凭 `raspberrycodejwttoken` 获取当前账号可连接的设备/远控入口列表。
 2. 设备选择后的真实远控连接建立。
-3. relay / server 侧对 `zcodejwttoken` 的鉴权与 session 绑定。
+3. relay / server 侧对 `raspberrycodejwttoken` 的鉴权与 session 绑定。
 
 因此，本期前端的 `localStorage` 登录门禁只负责 UI 入口收敛，不等价于完整服务端鉴权。登录成功后的落点按 URL 分流：
 
@@ -46,34 +46,34 @@
 当前代码里已经存在一条“桌面端生成远控链接 → 手机打开链接直连该次远控 session”的链路：
 
 - `remoteControlToken`：relay 为一次 Web 远控会话生成的一次性 session token。Web 端会用它请求 `/api/remote-control/bootstrap/:token`，拿到 `wsUrl`、workspace 信息、初始 task 信息，然后连接 `/ws/remote-control/:token`。
-- `relayOrigin`：relay 服务的 origin。Web 页面可能部署在 `zcode.z.ai`，但 relay 可以是另一台服务；因此 Web 端需要用 `relayOrigin` 拼出 bootstrap、workspace list、workspace switch、platform proxy 等 relay API 地址。未传时默认使用 `window.location.origin`。
+- `relayOrigin`：relay 服务的 origin。Web 页面可能部署在 `raspberrycode.z.ai`，但 relay 可以是另一台服务；因此 Web 端需要用 `relayOrigin` 拼出 bootstrap、workspace list、workspace switch、platform proxy 等 relay API 地址。未传时默认使用 `window.location.origin`。
 
 这两个参数是当前直连远控 session 的入口参数，不是 ZAI 登录 JWT，也不代表用户身份。加登录功能后它们仍然需要保留：如果用户打开的是带 `remoteControlToken` 的旧远控链接，OAuth 跳转回来后必须还能拿到原始 `remoteControlToken` / `relayOrigin`，否则旧链接会丢失要连接的 relay session。
 
-后续后端设备列表接口完成后，新的“登录后选设备”流程可以不依赖 URL 上预置 `remoteControlToken`，而是由后端按 `zcodejwttoken` 返回可连接设备。但这不影响本期对旧链接参数的兼容。
+后续后端设备列表接口完成后，新的“登录后选设备”流程可以不依赖 URL 上预置 `remoteControlToken`，而是由后端按 `raspberrycodejwttoken` 返回可连接设备。但这不影响本期对旧链接参数的兼容。
 
 ## 数据流
 
 ### 生产态（标准路径）
 
 ```
-用户访问 https://zcode.z.ai/web-remote?remoteControlToken=xxx&relayOrigin=https%3A%2F%2Frelay.example
+用户访问 https://raspberrycode.z.ai/web-remote?remoteControlToken=xxx&relayOrigin=https%3A%2F%2Frelay.example
    ↓ 检测缓存会话不完整
 全屏登录页
    ↓ 点击"用 ZAI 登录"
 跳转 https://chat.z.ai/api/oauth/authorize
-  ?redirect_uri=https%3A%2F%2Fzcode.z.ai%2Fweb-remote%2Fcallback
+  ?redirect_uri=https%3A%2F%2Fraspberrycode.z.ai%2Fweb-remote%2Fcallback
   &response_type=code
   &client_id=xxx
-  &state=<base64url({nonce, app_return_to: "https://zcode.z.ai/web-remote?remoteControlToken=xxx&relayOrigin=..."})>
+  &state=<base64url({nonce, app_return_to: "https://raspberrycode.z.ai/web-remote?remoteControlToken=xxx&relayOrigin=..."})>
    ↓ 用户在 ZAI 授权页同意
-回到 https://zcode.z.ai/web-remote/callback?code=xxx&state=yyy
+回到 https://raspberrycode.z.ai/web-remote/callback?code=xxx&state=yyy
    ↓ 检测 return_to 不存在或等于 self.origin，直接换 token
-POST https://zcode.z.ai/api/v1/oauth/token
+POST https://raspberrycode.z.ai/api/v1/oauth/token
   {code, redirect_uri, state}
    ↓
 返回 {code: 0, data: {token: "eyJ...", zai: {access_token: "zai_..."}, user: {...}}}
-   ↓ 存入 localStorage['zcodejwttoken'] = "eyJ..."
+   ↓ 存入 localStorage['raspberrycodejwttoken'] = "eyJ..."
    ↓ 存入 localStorage['oauth:zai:access_token'] = "zai_..."
    ↓ 存入 localStorage['oauth:zai:user_info'] = data.user 原始结构，并在恢复展示态时映射为 UserInfo
    ↓ 存入 localStorage['oauth:active_provider'] = "zai"
@@ -90,21 +90,21 @@ POST https://zcode.z.ai/api/v1/oauth/token
 全屏登录页
    ↓ 点击"用 ZAI 登录"
 跳转 https://chat.z.ai/api/oauth/authorize
-  ?redirect_uri=https%3A%2F%2Fzcode.z.ai%2Fweb-remote%2Fcallback
+  ?redirect_uri=https%3A%2F%2Fraspberrycode.z.ai%2Fweb-remote%2Fcallback
   &state=<base64url({
     nonce,
     return_to: "http://192.168.x.x:5173/web-remote/callback",
     app_return_to: "http://192.168.x.x:5173/web-remote?remoteControlToken=xxx&relayOrigin=..."
   })>
    ↓ 用户在 ZAI 授权页同意
-回到 https://zcode.z.ai/web-remote/callback?code=xxx&state=yyy
+回到 https://raspberrycode.z.ai/web-remote/callback?code=xxx&state=yyy
    ↓ 解 state，检测 return_to 存在且 ≠ self.origin
    ↓ 生产中转页不校验本地 nonce、不换 token，只负责白名单校验和转发
 302 Location: http://192.168.x.x:5173/web-remote/callback?code=xxx&state=yyy
    ↓ 手机浏览器访问局域网 IP
 http://192.168.x.x:5173/web-remote/callback?code=xxx&state=yyy
    ↓ 最终本地页验证 nonce
-   ↓ 通过 Vite proxy 或后端 CORS 白名单 POST https://zcode.z.ai/api/v1/oauth/token 换 token
+   ↓ 通过 Vite proxy 或后端 CORS 白名单 POST https://raspberrycode.z.ai/api/v1/oauth/token 换 token
 存入 localStorage → replace 到 app_return_to，保留 remoteControlToken / relayOrigin
 ```
 
@@ -139,7 +139,7 @@ interface OAuthStatePayload {
 
 `app_return_to` 用于登录完成后恢复原业务页面，必须用 URL API 校验，不能直接拼接跳转：
 
-1. 生产态：`app_return_to.origin === "https://zcode.z.ai"`，且 pathname 只能是 `/web-remote` 或 `/web-remote/`
+1. 生产态：`app_return_to.origin === "https://raspberrycode.z.ai"`，且 pathname 只能是 `/web-remote` 或 `/web-remote/`
 2. 开发态：`app_return_to.origin` 必须等于发起登录的本地 origin；如果同时存在 `return_to`，则必须与 `return_to` 同 origin
 3. 只允许保留业务需要的 query 参数，当前至少包括 `remoteControlToken`、`relayOrigin`；其它参数如果后续需要，必须显式列入允许列表
 4. 校验失败时回退到 `/web-remote`，不得跳转到任意外部 URL
@@ -155,7 +155,7 @@ interface OAuthStatePayload {
 3. `returnToUrl.origin !== window.location.origin`（目标 origin 不是当前 callback 页 origin）
 4. `return_to` 匹配私网段正则：`/^https?:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|192\.168\.\d+\.\d+)(:\d+)?(\/|$)/`
 5. `return_to` pathname 必须是 `/web-remote/callback`
-6. 当前构建或部署环境显式允许开发态中转。线上正式生产构建默认关闭；如果必须让 `https://zcode.z.ai` 承担本地开发中转，需要增加后端签名或专用测试部署，不能在公开生产环境接受任意未签名的私网 `return_to`
+6. 当前构建或部署环境显式允许开发态中转。线上正式生产构建默认关闭；如果必须让 `https://raspberrycode.z.ai` 承担本地开发中转，需要增加后端签名或专用测试部署，不能在公开生产环境接受任意未签名的私网 `return_to`
 
 不满足则不执行跨 origin 转发，继续按当前 callback 页处理：如果当前页就是本地开发 callback，因为 `returnToUrl.origin === window.location.origin`，必须进入 nonce 校验和 token 交换分支，不能再 replace 回自己；如果当前页是生产 callback 且没有有效 dev `return_to`，则按生产态正常回调直接走 token 交换流程。
 
@@ -201,7 +201,7 @@ sessionStorage.removeItem("oauth_pending_nonce");
 location.replace(resolveSafeAppReturnTo(payload.app_return_to) ?? "/web-remote");
 ```
 
-> 注意：`sessionStorage` 不跨 origin 共享。开发态发起页是 `http://192.168.x.x:5173`，生产中转页是 `https://zcode.z.ai`，两者不能共享 `sessionStorage`；因此 nonce 校验只能发生在最终回到本地 origin 之后。
+> 注意：`sessionStorage` 不跨 origin 共享。开发态发起页是 `http://192.168.x.x:5173`，生产中转页是 `https://raspberrycode.z.ai`，两者不能共享 `sessionStorage`；因此 nonce 校验只能发生在最终回到本地 origin 之后。
 
 ## 新增文件
 
@@ -225,9 +225,9 @@ location.replace(resolveSafeAppReturnTo(payload.app_return_to) ?? "/web-remote")
 Web ZAI OAuth 配置：
 
 - authorize URL：`https://chat.z.ai/api/oauth/authorize`
-- token URL：生产态为 `/api/v1/oauth/token`；开发态可通过 Vite proxy 指到 `https://zcode.z.ai/api/v1/oauth/token`
+- token URL：生产态为 `/api/v1/oauth/token`；开发态可通过 Vite proxy 指到 `https://raspberrycode.z.ai/api/v1/oauth/token`
 - client id：复用 ZAI OAuth client id
-- redirect URI：始终使用 `https://zcode.z.ai/web-remote/callback`
+- redirect URI：始终使用 `https://raspberrycode.z.ai/web-remote/callback`
 - dev return 中转开关：默认关闭；仅开发/测试部署或带后端签名的生产中转允许打开
 
 ### `packages/web/src/auth/zaiWebOAuthProvider.ts`
@@ -243,7 +243,7 @@ Provider 模块，负责 ZAI 协议细节：
 
 Repo 模块，封装浏览器存储，不允许业务层散落读写 `localStorage` / `sessionStorage`：
 
-- `saveTokenSet(tokenSet)` — 保存 `oauth:zai:access_token` 和 `zcodejwttoken`
+- `saveTokenSet(tokenSet)` — 保存 `oauth:zai:access_token` 和 `raspberrycodejwttoken`
 - `saveUserInfo(user)` — 保存 `oauth:zai:user_info`
 - `setActiveProvider("zai")`
 - `loadCachedSession()`
@@ -252,7 +252,7 @@ Repo 模块，封装浏览器存储，不允许业务层散落读写 `localStora
 `loadCachedSession()` 成功条件必须同时满足：
 
 1. `oauth:active_provider === "zai"`
-2. `zcodejwttoken` 存在且 trim 后非空
+2. `raspberrycodejwttoken` 存在且 trim 后非空
 3. `oauth:zai:access_token` 存在且 trim 后非空
 4. `oauth:zai:user_info` 可解析，并能映射为 `UserInfo`
 
@@ -275,7 +275,7 @@ UI 约束：
 
 - 修改或新增 UI 前必须遵守根目录 `DESIGN.md`。
 - 使用语义颜色 token（如 `bg-background`、`text-foreground`、`bg-card`、`border-border`），兼容由 Zai 接管的 Light Theme / Dark Theme。
-- 文案必须兼容 `zh-CN` / `en-US`；因为登录页发生在完整 `ZCodeIntlProvider` 之前，需要提供轻量 locale resolver 或复用已有 i18n 字典。
+- 文案必须兼容 `zh-CN` / `en-US`；因为登录页发生在完整 `RaspberryCodeIntlProvider` 之前，需要提供轻量 locale resolver 或复用已有 i18n 字典。
 - 按现有按钮体系实现主按钮，不写死临时颜色、圆角、字号。
 - 布局需要适配手机竖屏、桌面宽屏和较长英文文案。
 
@@ -369,7 +369,7 @@ async function bootstrapWebApp() {
 
 | localStorage key | 值 | 用途 |
 |-----------------|-----|------|
-| `zcodejwttoken` | 后端 JWT 字符串，即 `data.token` | 业务 API 鉴权；后续设备列表接口也凭它识别当前用户 |
+| `raspberrycodejwttoken` | 后端 JWT 字符串，即 `data.token` | 业务 API 鉴权；后续设备列表接口也凭它识别当前用户 |
 | `oauth:zai:access_token` | ZAI access token，即 `data.zai.access_token` | 与桌面端 ZAI OAuth token set 结构保持一致 |
 | `oauth:zai:user_info` | JSON；优先保存后端 `data.user` 原始结构，恢复展示态时映射为 `UserInfo` | 显示用户名/头像，并兼容现有 `OAuthCredentialRepo` 的 ZAI user_info 恢复逻辑 |
 | `oauth:active_provider` | `"zai"` | 标识当前登录方式 |
@@ -379,19 +379,19 @@ async function bootstrapWebApp() {
 |--------------------|-----|------|
 | `oauth_pending_nonce` | UUID | CSRF 防护 |
 
-> 存储 key 与 `OAuthCredentialRepo` 现有命名一致。前端展示使用 `@zcode/shared` 的 `UserInfo` 类型，不从 `@zcode/ui` 反向导入类型。
+> 存储 key 与 `OAuthCredentialRepo` 现有命名一致。前端展示使用 `@raspberrycode/shared` 的 `UserInfo` 类型，不从 `@raspberrycode/ui` 反向导入类型。
 
 ## Token 交换接口
 
 ### 请求
 
 ```http
-POST https://zcode.z.ai/api/v1/oauth/token
+POST https://raspberrycode.z.ai/api/v1/oauth/token
 Content-Type: application/json
 
 {
   "code": "<ZAI auth code>",
-  "redirect_uri": "https://zcode.z.ai/web-remote/callback",
+  "redirect_uri": "https://raspberrycode.z.ai/web-remote/callback",
   "state": "<state>"
 }
 ```
@@ -437,14 +437,14 @@ VITE_DEV_ORIGIN=http://192.168.100.12:5173
 
 开发态还需要配置 token 交换路径。推荐在 Vite dev server 配置 proxy。
 
-当前 `packages/web/vite.config.ts` 已有 `/api` 通配代理到本地 `http://localhost:3030`，因此 `/api/v1/oauth/token` 专用代理必须放在 `/api` 之前；否则本地 token 交换可能被错误转发到本地 server，而不是 `https://zcode.z.ai`。
+当前 `packages/web/vite.config.ts` 已有 `/api` 通配代理到本地 `http://localhost:3030`，因此 `/api/v1/oauth/token` 专用代理必须放在 `/api` 之前；否则本地 token 交换可能被错误转发到本地 server，而不是 `https://raspberrycode.z.ai`。
 
 ```typescript
 // packages/web/vite.config.ts
 server: {
   proxy: {
     "/api/v1/oauth/token": {
-      target: "https://zcode.z.ai",
+      target: "https://raspberrycode.z.ai",
       changeOrigin: true,
       secure: true,
     },
@@ -462,20 +462,20 @@ server: {
 const DEV_RETURN_TO = import.meta.env.VITE_DEV_ORIGIN;
 ```
 
-`VITE_DEV_ORIGIN` 只负责让本地页面发起 OAuth 时把 `return_to` 写入 state。真正收到 ZAI callback 的是 `https://zcode.z.ai/web-remote/callback` 所在部署；该部署是否允许开发态 `return_to` 中转，不能由本地 `.env.local` 决定。若团队需要使用线上域名作为本地开发中转，必须在 callback 所在部署增加显式开关、专用测试部署或后端签名校验。
+`VITE_DEV_ORIGIN` 只负责让本地页面发起 OAuth 时把 `return_to` 写入 state。真正收到 ZAI callback 的是 `https://raspberrycode.z.ai/web-remote/callback` 所在部署；该部署是否允许开发态 `return_to` 中转，不能由本地 `.env.local` 决定。若团队需要使用线上域名作为本地开发中转，必须在 callback 所在部署增加显式开关、专用测试部署或后端签名校验。
 
 ### 生产构建
 
 `VITE_DEV_ORIGIN` 未定义，`startLogin` 不传 `return_to`，`state` 中无 `return_to` 字段。正式生产构建默认不接受未签名的开发态 `return_to` 中转。
 
-生产态 token URL 使用同源 `/api/v1/oauth/token`；开发态也优先请求同一路径，由 Vite proxy 转发到 `https://zcode.z.ai`，避免浏览器 CORS 差异。
+生产态 token URL 使用同源 `/api/v1/oauth/token`；开发态也优先请求同一路径，由 Vite proxy 转发到 `https://raspberrycode.z.ai`，避免浏览器 CORS 差异。
 
 ## 测试计划
 
 ### 单元测试
 
 - `oauthStateCodec.ts`：正向编解码、非法 base64/JSON 兜底、`-` / `_` / 缺 padding 的 base64url 边界覆盖、`return_to` 私网白名单、`app_return_to` 同源/路径/query allowlist 覆盖
-- `browserOAuthCredentialRepo.ts`：验证 `zcodejwttoken`、`oauth:zai:access_token`、`oauth:zai:user_info`、`oauth:active_provider` 写入/清理；缺任一关键 key 时 `loadCachedSession()` 返回 null 并清理残缺状态
+- `browserOAuthCredentialRepo.ts`：验证 `raspberrycodejwttoken`、`oauth:zai:access_token`、`oauth:zai:user_info`、`oauth:active_provider` 写入/清理；缺任一关键 key 时 `loadCachedSession()` 返回 null 并清理残缺状态
 - `webAuthService.ts`：mock `fetch` 响应，验证 token 交换成功/失败路径；缺少 `data.token` 或 `data.zai.access_token` 时不得写入半登录态；登录成功后返回安全的 `appReturnTo`
 - `WebCallbackPage.tsx`：验证 `state.return_to` 中转分支不校验生产 origin 的 sessionStorage，最终本地 callback 才校验 nonce；验证同 origin `return_to` 不会 replace 回自己，而是继续 token 交换；验证 `?error=...&state=...` 能显示登录失败并允许重试
 
@@ -503,4 +503,4 @@ const DEV_RETURN_TO = import.meta.env.VITE_DEV_ORIGIN;
 - 其他 OAuth provider（如 BigModel）
 - 登录状态与桌面端同步（同一浏览器跨端）
 - 后端设备列表接口完成后，登录成功页接入“获取可连接设备 → 选择设备 → 建立远控连接”流程
-- relay / server 侧完成 `zcodejwttoken` 鉴权后，前端把 token 或后端下发的短期连接票据接入 bootstrap / WebSocket 连接流程
+- relay / server 侧完成 `raspberrycodejwttoken` 鉴权后，前端把 token 或后端下发的短期连接票据接入 bootstrap / WebSocket 连接流程

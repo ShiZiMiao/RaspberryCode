@@ -18,7 +18,7 @@ macOS release DMG 是用户从浏览器下载后直接交给 Gatekeeper 评估�
 2. `electron-builder` 打包并签 `RaspberryCode.app`，产出 `RaspberryCode-<version>-mac-<arch>.dmg`。
 3. `ci-collect-artifacts` 将 DMG 收集为 `*.unnotarized.dmg`。
 4. `scripts/notarize-macos.sh` 对 `*.unnotarized.dmg` 执行 DMG 签名、公证、staple、重命名和验收。
-5. `scripts/notarize-macos.sh` 在严格 release 中还会通过 `ZCODE_MACOS_RELEASE_APP_PATH` 或 `ZCODE_DESKTOP_DIST_DIR` 定位打包出的 `RaspberryCode.app`，复用 `scripts/doctor-macos-release-app.sh` 验收主 app；找不到 app 路径时 fail-closed。CUA/Helper release gate 额外设置 `ZCODE_CUA_REQUIRE_HELPER=1`，并显式验收最终 app 内 `Contents/Resources/cua-helper/RaspberryCode Computer Use.app`；缺失时 fail-closed。
+5. `scripts/notarize-macos.sh` 在严格 release 中还会通过 `RASPBERRYCODE_MACOS_RELEASE_APP_PATH` 或 `RASPBERRYCODE_DESKTOP_DIST_DIR` 定位打包出的 `RaspberryCode.app`，复用 `scripts/doctor-macos-release-app.sh` 验收主 app；找不到 app 路径时 fail-closed。CUA/Helper release gate 额外设置 `RASPBERRYCODE_CUA_REQUIRE_HELPER=1`，并显式验收最终 app 内 `Contents/Resources/cua-helper/RaspberryCode Computer Use.app`；缺失时 fail-closed。
 6. `scripts/upload-oss.sh` 正式发布时只接受已完成上述流程的 `*.dmg`。
 
 ### 临时 keychain 搜索列表约束
@@ -46,30 +46,30 @@ macOS release DMG 是用户从浏览器下载后直接交给 Gatekeeper 评估�
 ## Computer Use Helper 的独立签名与架构约束
 
 `RaspberryCode Computer Use.app` 虽随主 app 打包并在运行时复制到用户目录，仍是独立的 TCC 责任主体（bundle id
-`dev.zcode.cua-helper`），必须与主 app **分开**签名，才能在系统里拿到属于自己的 Accessibility /
+`dev.raspberrycode.cua-helper`），必须与主 app **分开**签名，才能在系统里拿到属于自己的 Accessibility /
 Screen Recording 授权条目。相关约束：
 
 - **Helper 随 RaspberryCode.app 交付，但作为独立 bundle 运行。** 发布包中的来源固定为
   `RaspberryCode.app/Contents/Resources/cua-helper/RaspberryCode Computer Use.app`；产品安装器校验后把它复制到
-  `${ZCODE_HOME:-$HOME/.raspberrycode}/computer-use/RaspberryCode Computer Use.app`。不接受网络下载、`/Applications`、
+  `${RASPBERRYCODE_HOME:-$HOME/.raspberrycode}/computer-use/RaspberryCode Computer Use.app`。不接受网络下载、`/Applications`、
   `~/Applications` 或 `RaspberryCode.app/Contents/Library/Helpers` 作为产品兜底；来源缺失必须 fail-closed。
 - **Helper 是独立 bundle，但复用 RaspberryCode 的发布身份。** 独立 Helper 发布链路必须用
-  `build/entitlements.helper.plist` + hardened runtime 签成 `dev.zcode.cua-helper`；签名身份仍使用与
+  `build/entitlements.helper.plist` + hardened runtime 签成 `dev.raspberrycode.cua-helper`；签名身份仍使用与
   `RaspberryCode.app` 相同的 Developer ID Application team/identity，不需要额外证书或额外 Apple 账号成本。同一
   release payload 内的 `RaspberryCode.app` 与 `RaspberryCode Computer Use.app` 必须走同一次 notarization/staple 验收链路；
   验收通过后，Helper 可以作为独立 `.app` 被安装器/脚本拷贝到
-  `${ZCODE_HOME:-$HOME/.raspberrycode}/computer-use/`。RaspberryCode.app 只负责发现、LaunchServices 启动、health check，
+  `${RASPBERRYCODE_HOME:-$HOME/.raspberrycode}/computer-use/`。RaspberryCode.app 只负责发现、LaunchServices 启动、health check，
   以及给 MCP 子进程注入随机 socket/token。
 - **helper 主可执行必须是 SEA Mach-O。** `scripts/build-cua-helper-app.mjs` 用 Node SEA 把 helper 入口
   注入到一份拷贝的 Node 可执行里（替换旧的 shell wrapper），签名/公证前必须已是 Mach-O。
 - **plain-node ABI 的 `ax_native.node` 必须先编好。** SEA helper 运行时用内嵌 Node（非 Electron）加载
-  pinned `@zcode/zcode-cua/build/Release/ax_native.node`，因此需要 **plain-node ABI**（node-gyp rebuild，
-  而非 `@electron/rebuild` 的 Electron ABI）。`@zcode/zcode-cua` 已加入 `pnpm-workspace.yaml` 的
+  pinned `@raspberrycode/raspberrycode-cua/build/Release/ax_native.node`，因此需要 **plain-node ABI**（node-gyp rebuild，
+  而非 `@electron/rebuild` 的 Electron ABI）。`@raspberrycode/raspberrycode-cua` 已加入 `pnpm-workspace.yaml` 的
   `allowBuilds`；独立 Helper 构建/验收必须显式检查该统一 addon 存在并可加载。
 - **跨架构（x64 在 Apple Silicon runner 上打包）。** 打包进程的 `process.execPath` 在 Apple Silicon runner
   上是 arm64 Node，若 x64 job 不另行指定 Node，SEA helper 会被打成 arm64。`build-cua-helper-app.mjs` 的
   `assertHelperSeaBaseNodeArch` 会在 SEA 组装前 fail-closed，并提示：为 x64 job 设置
-  `ZCODE_CUA_HELPER_NODE_PATH` 指向一份为目标架构编译的 SEA-capable Node，并为目标架构编译
+  `RASPBERRYCODE_CUA_HELPER_NODE_PATH` 指向一份为目标架构编译的 SEA-capable Node，并为目标架构编译
   pinned producer 的 `build/Release/ax_native.node`（目标 `--arch=x64`）。原生 arm64 job 无需额外设置。
 
 ## 本地无 Developer ID 的 Helper 调试
@@ -78,10 +78,10 @@ Screen Recording 授权条目。相关约束：
 Helper-owned CUA 链路，但必须显式标记为本地 dev，不得当作 release 证据：
 
 1. 本地构建 `RaspberryCode Computer Use Dev.app`，并安装到
-   `${ZCODE_HOME:-$HOME/.raspberrycode}/computer-use/dev/RaspberryCode Computer Use Dev.app`。
+   `${RASPBERRYCODE_HOME:-$HOME/.raspberrycode}/computer-use/dev/RaspberryCode Computer Use Dev.app`。
 2. 从终端启动 RaspberryCode App，并只在该进程环境里设置：
-   `ZCODE_CUA_HELPER_ALLOW_UNSIGNED_LOCAL=1`。产品 Helper resolver 正式版与本地/dist 构建默认启用；
-   仅显式设置 `ZCODE_CUA_PRODUCT_HELPER=0|false|off` 才关闭。
+   `RASPBERRYCODE_CUA_HELPER_ALLOW_UNSIGNED_LOCAL=1`。产品 Helper resolver 正式版与本地/dist 构建默认启用；
+   仅显式设置 `RASPBERRYCODE_CUA_PRODUCT_HELPER=0|false|off` 才关闭。
    desktop 会把该确定性的本地路径作为 bundled source 注入 utility host；缺失时直接失败，
    不会回退网络下载。
 3. RaspberryCode.app 仍然通过 LaunchServices `open -n -g <Helper.app> --args --socket <path> --token-file <path> --launcher-pid <pid>`
@@ -106,7 +106,7 @@ spctl -a -t open --context context:primary-signature RaspberryCode-<version>-mac
 
 ```bash
 pnpm run doctor:macos-release -- "/Applications/RaspberryCode.app"
-ZCODE_CUA_REQUIRE_HELPER=1 pnpm run doctor:macos-release -- "/Applications/RaspberryCode.app"
+RASPBERRYCODE_CUA_REQUIRE_HELPER=1 pnpm run doctor:macos-release -- "/Applications/RaspberryCode.app"
 ```
 
 该命令会依次执行：

@@ -7,14 +7,14 @@
 > 来源：RaspberryCode Built-in Config 内容整理中已经确认的新增 Provider 范围；从 Todo 21 拆出，避免配置职责重构与新
 > Provider/Access 接入互相阻塞
 >
-> 相关任务：[`21`](./todo-21-zcode-builtin-config-ownership-and-model-activation-order.md)
+> 相关任务：[`21`](./todo-21-raspberrycode-builtin-config-ownership-and-model-activation-order.md)
 >
 > 相关设计：[`Provider 与 Model 配置体系综述`](../design/registry/provider-and-model-configuration-overview.md)、
 > [`configuration.md`](../design/registry/configuration.md)
 
 ## 0. 任务定位
 
-本 Todo 独立承接尚未进入当前 `config/provider/zcode-builtin.json` 的普通聚合网关和云平台 Provider。Todo 21 继续
+本 Todo 独立承接尚未进入当前 `config/provider/raspberrycode-builtin.json` 的普通聚合网关和云平台 Provider。Todo 21 继续
 收口 Provider/Model 配置职责、启用、排序、Settings 和 Access 归属；不因等待新的 Provider Adapter 或 Access Type
 而扩大实施关键路径。
 

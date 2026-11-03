@@ -1,6 +1,6 @@
 # V4 对话埋点兼容规范
 
-本文冻结 V4 conversation 主链路的对话埋点口径。实现以 `z-code-2` 的生产行为为兼容基准，
+本文冻结 V4 conversation 主链路的对话埋点口径。实现以 `旧版` 的生产行为为兼容基准，
 只恢复旧版已经存在的数据，不借迁移修改字段类型、指标公式或采集范围。
 
 ## 目标与非目标
@@ -44,7 +44,7 @@ persisted hydration / initial / recovery
                MUST NOT emit telemetry facts
 ```
 
-不得复活旧 `zcodeTaskRuntimeMonitor`，也不得把 supervisor 放在 `SessionPane`、
+不得复活旧 `raspberrycodeTaskRuntimeMonitor`，也不得把 supervisor 放在 `SessionPane`、
 `SessionDataLayer` 或受 30 秒 keep-warm 控制的 connection 上。supervisor 归属于窗口的
 workspace/service attachment，隔离 key 为：
 
@@ -295,7 +295,7 @@ conversation 正式用例编号与剪枝结论见 case catalog 的 `TEL` 分组�
 它只表示会话运行实例创建时采用的 App Memory 设置，不表示 CLI memory 最终生效、
 记忆读取命中或写入成功；不新增 read/write 指标，不改变 Memory 开关行为。
 
-唯一数据源为 CLI `ZCodeProtocolSessionRecord.memoryEnabled`，不在发送或完成时重新读取
+唯一数据源为 CLI `RaspberryCodeProtocolSessionRecord.memoryEnabled`，不在发送或完成时重新读取
 App 当前设置。用户中途修改设置不会改变存量运行实例；新建/冷恢复实例使用其创建期值。
 
 ```text

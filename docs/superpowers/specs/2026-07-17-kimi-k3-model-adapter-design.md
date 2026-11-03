@@ -34,7 +34,7 @@ Kimi K3 已进入 Moonshot 官方模型列表。首发时官方 API 文档只开
 
 - 在中国模型目录与 bundled models.dev snapshot 中维护 `kimi-k3`、`k3` 和
   `k3-256k` 的基础能力。
-- 在 zcode-cli 默认策略和 App 动态 provider overlay 中把三个 K3 模型建模为
+- 在 raspberrycode-cli 默认策略和 App 动态 provider overlay 中把三个 K3 模型建模为
   `low` / `high` / `max`，默认 `max`。
 - OpenAI-compatible 请求把所选档位映射为 `openaiCompatible.reasoningEffort`，由 AI SDK 输出顶层 `reasoning_effort`。
 - Anthropic-compatible 请求使用 `anthropic.effort`，由 AI SDK 输出 `output_config.effort`；不注入 K2.x `thinking.type`。
@@ -75,17 +75,17 @@ Anthropic-compatible: anthropic.effort=level ──► output_config.effort="low
 工具 contract: $ref="#/properties/..."
           │  K3 adapter 提升引用目标到根 $defs
           ▼
-provider wire: $defs={zcode_ref_0: ...}, $ref="#/$defs/zcode_ref_0"
+provider wire: $defs={raspberrycode_ref_0: ...}, $ref="#/$defs/raspberrycode_ref_0"
 ```
 
 模型能力是唯一事实源；UI 只根据 option 数量派生是否可切换，不按模型 ID 硬编码 K3，也不保存额外 React 状态。
 
 ## 实现
 
-1. 更新 `models_catalog_china_llm_zcode_2026-06-03.json`，保留 `kimi-k3` 的
+1. 更新 `models_catalog_china_llm_raspberrycode_2026-06-03.json`，保留 `kimi-k3` 的
    1M 上下文，新增同能力的 `k3`，并把 256K 模型改名为 `k3-256k`；三个模型都使用
    多模态输入、131072 输出预算和 `low` / `high` / `max` 三档，默认 `max`。
-2. 更新 `apps/zcode-cli/api.json` 并重新生成 `models-dev-snapshot.ts`，保证纯 CLI
+2. 更新 `apps/raspberrycode-cli/api.json` 并重新生成 `models-dev-snapshot.ts`，保证纯 CLI
    catalog 也能取得三个 K3 模型的基础能力。
 3. reasoning/default policy 为 OpenAI-compatible 与 Anthropic-compatible K3 分别生成三档 request patch。
 4. workspace dynamic provider overlay 在读取入站 metadata 前按 transport 收敛 K3 能力，避免旧配置中的单 `max` 或通用 thinking toggle 污染结果。
@@ -166,7 +166,7 @@ provider wire: $defs={zcode_ref_0: ...}, $ref="#/$defs/zcode_ref_0"
 | Seed                                           | Query                           | Direct callers / key path                         | Depth | Interpretation                       |
 | ---------------------------------------------- | ------------------------------- | ------------------------------------------------- | ----- | ------------------------------------ |
 | `KIMI_K3_MODEL_ID` / `isKimiK3ModelId`         | explore / affected tests        | default policy、tool transform、workspace overlay | 2     | 必须统一扩展三个模型名               |
-| `loadLocalChinaLlmZCodeCatalog`                | explore / callers               | model provider service、store metadata migration  | 2     | catalog 同时驱动候选与 metadata 补齐 |
+| `loadLocalChinaLlmRaspberryCodeCatalog`                | explore / callers               | model provider service、store metadata migration  | 2     | catalog 同时驱动候选与 metadata 补齐 |
 | `buildModelSelectGroups` / `useModelProviders` | graph declaration + live source | 对话、自动化、Subagent、Repo Wiki                 | 2     | 共享候选来源，无需修改 UI            |
 
 ### Graph Drift Candidates

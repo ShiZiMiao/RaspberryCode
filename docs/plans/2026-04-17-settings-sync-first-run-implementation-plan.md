@@ -67,7 +67,7 @@ Batch 1：Task 1 ~ Task 3
 
 ### 验证
 
-- `pnpm typecheck --filter @zcode/shared` 若不支持则走根级 `pnpm typecheck`
+- `pnpm typecheck --filter @raspberrycode/shared` 若不支持则走根级 `pnpm typecheck`
 
 ## Task 2：建立 services 骨架与注册链路
 

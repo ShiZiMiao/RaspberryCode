@@ -4,7 +4,7 @@
 >
 > 历史说明：本 Todo 当时完成的 `builtinModelIds/modelIds` 与 Properties 完整性仍有效；Model
 > `enabled/visibility`、重复成员冲突和设置交互已由
-> [`Todo 21`](./todo-21-zcode-builtin-config-ownership-and-model-activation-order.md) 重新裁决。
+> [`Todo 21`](./todo-21-raspberrycode-builtin-config-ownership-and-model-activation-order.md) 重新裁决。
 >
 > 日期：2026-08-24
 >

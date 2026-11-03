@@ -31,7 +31,7 @@ RaspberryCode 为减少行为变化，继续使用现有 64K 作为默认值，�
 ### 纳入本次修复
 
 - 用户 provider config 的 `model.limit.output` 优先；catalog/models.dev 只补缺失能力事实。
-- 新增独立全局请求上限 `ZCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX`，仅接受正整数，未配置或非法时默认 64,000。
+- 新增独立全局请求上限 `RASPBERRYCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX`，仅接受正整数，未配置或非法时默认 64,000。
 - 正常请求的有效预算为 `min(modelLimit ?? globalCap, globalCap)`。
 - 主轮次和 Target Completion Verification 都属于正常模型请求，使用相同预算策略。
 - OpenAI Compatible、OpenAI Responses、Anthropic 都通过通用 `maxOutputTokens` 进入 AI SDK，并验证最终请求体字段。
@@ -65,7 +65,7 @@ catalog 只填充缺失值，不覆盖用户已经显式配置的值；缺失 me
 ### 请求预算
 
 ```ts
-const globalCap = positiveInteger(adapterEnv.ZCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX) ?? 64_000;
+const globalCap = positiveInteger(adapterEnv.RASPBERRYCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX) ?? 64_000;
 const modelLimit = positiveInteger(model.maxOutputTokens);
 const effectiveMaxOutputTokens = Math.min(modelLimit ?? globalCap, globalCap);
 ```
@@ -121,7 +121,7 @@ const effectiveMaxOutputTokens = Math.min(modelLimit ?? globalCap, globalCap);
 pnpm exec vitest run packages/services/test/modelProviderService.test.ts
 ```
 
-- [x] 从 `readZCodeConfigProviders` 移除 `maxOutputTokens` catalog override 白名单；删除仅服务于该覆盖行为的类型、常量和条件分支，使 `applyCatalogModelMetadata` 对该字段恢复 fill-only。
+- [x] 从 `readRaspberryCodeConfigProviders` 移除 `maxOutputTokens` catalog override 白名单；删除仅服务于该覆盖行为的类型、常量和条件分支，使 `applyCatalogModelMetadata` 对该字段恢复 fill-only。
 - [x] 保持旧 `model-providers.json` 迁移路径和其他 metadata 补缺逻辑不变。
 - [x] 重跑目标 service 测试并确认通过。
 
@@ -129,18 +129,18 @@ pnpm exec vitest run packages/services/test/modelProviderService.test.ts
 
 **Files:**
 
-- Modify: `apps/zcode-cli/packages/contracts/src/model/index.ts`
-- Modify: `apps/zcode-cli/packages/core/src/runtime/types.ts`
-- Modify: `apps/zcode-cli/packages/core/src/runtime/methods/turn-model-step.ts`
-- Modify: `apps/zcode-cli/packages/core/src/runtime/methods/model.ts`
-- Delete: `apps/zcode-cli/packages/core/src/runtime/methods/model-output-tokens.ts`
-- Add: `apps/zcode-cli/packages/core/src/runtime/methods/compact-output-tokens.ts`
-- Modify: `apps/zcode-cli/packages/core/src/runtime/methods/compact-active.ts`
-- Modify: `apps/zcode-cli/packages/core/src/runtime/methods/target-completion-verification.ts`
-- Modify: `apps/zcode-cli/packages/adapters/src/model/model-request-output-tokens.ts`
-- Test: `apps/zcode-cli/packages/adapters/tests/runner-options.test.ts`
-- Test: `apps/zcode-cli/packages/core/tests/runtime-model-anomaly.test.ts`
-- Test: `apps/zcode-cli/packages/core/tests/runtime-tool-loop.test.ts`
+- Modify: `apps/raspberrycode-cli/packages/contracts/src/model/index.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/types.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/methods/turn-model-step.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/methods/model.ts`
+- Delete: `apps/raspberrycode-cli/packages/core/src/runtime/methods/model-output-tokens.ts`
+- Add: `apps/raspberrycode-cli/packages/core/src/runtime/methods/compact-output-tokens.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/methods/compact-active.ts`
+- Modify: `apps/raspberrycode-cli/packages/core/src/runtime/methods/target-completion-verification.ts`
+- Modify: `apps/raspberrycode-cli/packages/adapters/src/model/model-request-output-tokens.ts`
+- Test: `apps/raspberrycode-cli/packages/adapters/tests/runner-options.test.ts`
+- Test: `apps/raspberrycode-cli/packages/core/tests/runtime-model-anomaly.test.ts`
+- Test: `apps/raspberrycode-cli/packages/core/tests/runtime-tool-loop.test.ts`
 
 - [x] 先为 adapter 增加预算真值表测试，generate/stream 共用同一组期望：
   - 模型 32,768 + 默认全局 64,000 → 32,768；
@@ -153,7 +153,7 @@ pnpm exec vitest run packages/services/test/modelProviderService.test.ts
 - [x] Target Completion Verification 改为传递原始模型能力值并设置 `maxOutputTokensSource: "model-capability"`，不再在 core 预先截断到 64K。
 - [x] `model.ts` 对 `model-capability` 不再调用 core 的固定 64K precap，让 adapter 统一计算；其他未标记调用保持现状。
 - [x] 将原有固定 cap 收窄为 `compact-output-tokens.ts` 中的 Compact 专用 64K 保护；普通请求不再复用该常量。
-- [x] 在 adapter 中集中解析 `ZCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX`，按行为契约计算正常请求预算；不要根据 `providerKind` 省略 `openai`、`openai-compatible`、`gateway` 或 `custom` 的正常预算。
+- [x] 在 adapter 中集中解析 `RASPBERRYCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX`，按行为契约计算正常请求预算；不要根据 `providerKind` 省略 `openai`、`openai-compatible`、`gateway` 或 `custom` 的正常预算。
 - [x] Anthropic 在有效预算计算完成后继续执行现有 fixed thinking budget 扣减；默认环境下现有 64K 行为不变。
 - [x] `compact-active.ts` 仅改为调用 Compact 专用裁剪函数，并用 compact 测试确认 summary budget 仍为 20,000、来源仍为 `runtime-default`。
 - [x] 用 core 测试确认主轮次和 Target Completion Verification 的来源均为 `model-capability`，并确认现有模型异常处理断言没有变化。
@@ -161,15 +161,15 @@ pnpm exec vitest run packages/services/test/modelProviderService.test.ts
 目标测试：
 
 ```bash
-pnpm --dir apps/zcode-cli --filter @zcode/adapters test -- runner-options
-pnpm --dir apps/zcode-cli --filter @zcode/core test -- runtime-model-anomaly runtime-tool-loop runtime-compact
+pnpm --dir apps/raspberrycode-cli --filter @raspberrycode/adapters test -- runner-options
+pnpm --dir apps/raspberrycode-cli --filter @raspberrycode/core test -- runtime-model-anomaly runtime-tool-loop runtime-compact
 ```
 
 ### Task 4：验证三种协议的最终请求体
 
 **Files:**
 
-- Add: `apps/zcode-cli/packages/adapters/tests/model-output-tokens-wire.test.ts`
+- Add: `apps/raspberrycode-cli/packages/adapters/tests/model-output-tokens-wire.test.ts`
 - Modify only if reusable setup is needed: existing adapter test helpers
 
 - [x] 使用本地 fake fetch 捕获 AI SDK 最终 JSON request body，不只断言 `runner-options` 中间对象。
@@ -182,16 +182,16 @@ pnpm --dir apps/zcode-cli --filter @zcode/core test -- runtime-model-anomaly run
 Run:
 
 ```bash
-pnpm --dir apps/zcode-cli --filter @zcode/adapters test -- model-output-tokens-wire
+pnpm --dir apps/raspberrycode-cli --filter @raspberrycode/adapters test -- model-output-tokens-wire
 ```
 
 ### Task 4.1：加入已验证的 provider 例外
 
 **Files:**
 
-- Add: `apps/zcode-cli/packages/adapters/src/model/model-request-output-token-compat.ts`
-- Modify: `apps/zcode-cli/packages/adapters/src/model/runner-options.ts`
-- Add: `apps/zcode-cli/packages/adapters/tests/model-output-token-provider-compat.test.ts`
+- Add: `apps/raspberrycode-cli/packages/adapters/src/model/model-request-output-token-compat.ts`
+- Modify: `apps/raspberrycode-cli/packages/adapters/src/model/runner-options.ts`
+- Add: `apps/raspberrycode-cli/packages/adapters/tests/model-output-token-provider-compat.test.ts`
 
 - [x] 增加 provider/model family 的精确行为用例。
 - [x] generate/stream 在同一 adapter 兼容函数中应用规则：
@@ -203,11 +203,11 @@ pnpm --dir apps/zcode-cli --filter @zcode/adapters test -- model-output-tokens-w
 
 **Files:**
 
-- Modify: `apps/zcode-cli/packages/adapters/src/model/model-request-output-token-compat.ts`
-- Add: `apps/zcode-cli/packages/adapters/src/model/model-request-body-compat.ts`
-- Modify: `apps/zcode-cli/packages/adapters/src/model/registry.ts`
-- Modify: `apps/zcode-cli/packages/adapters/tests/model-output-token-provider-compat.test.ts`
-- Modify: `apps/zcode-cli/packages/adapters/tests/model-output-tokens-wire.test.ts`
+- Modify: `apps/raspberrycode-cli/packages/adapters/src/model/model-request-output-token-compat.ts`
+- Add: `apps/raspberrycode-cli/packages/adapters/src/model/model-request-body-compat.ts`
+- Modify: `apps/raspberrycode-cli/packages/adapters/src/model/registry.ts`
+- Modify: `apps/raspberrycode-cli/packages/adapters/tests/model-output-token-provider-compat.test.ts`
+- Modify: `apps/raspberrycode-cli/packages/adapters/tests/model-output-tokens-wire.test.ts`
 
 - [x] provider id 精确为 `openai` 时省略 `maxOutputTokens`；相似但不相等的 provider id 保持发送。
 - [x] `snowflake-cortex` 只在最终 JSON body 存在 `max_tokens` 时改名为 `max_completion_tokens`。
@@ -218,9 +218,9 @@ pnpm --dir apps/zcode-cli --filter @zcode/adapters test -- model-output-tokens-w
 目标测试：
 
 ```bash
-pnpm --dir apps/zcode-cli --filter @zcode/adapters test -- model-output-token-provider-compat
-pnpm --dir apps/zcode-cli --filter @zcode/adapters test
-pnpm --dir apps/zcode-cli typecheck
+pnpm --dir apps/raspberrycode-cli --filter @raspberrycode/adapters test -- model-output-token-provider-compat
+pnpm --dir apps/raspberrycode-cli --filter @raspberrycode/adapters test
+pnpm --dir apps/raspberrycode-cli typecheck
 ```
 
 ### Task 5：全量验证与提交
@@ -229,9 +229,9 @@ pnpm --dir apps/zcode-cli typecheck
 
 ```bash
 pnpm exec vitest run packages/services/test/modelProviderService.test.ts
-pnpm --dir apps/zcode-cli --filter @zcode/adapters test
-pnpm --dir apps/zcode-cli --filter @zcode/core test
-pnpm --dir apps/zcode-cli --filter @zcode/contracts test
+pnpm --dir apps/raspberrycode-cli --filter @raspberrycode/adapters test
+pnpm --dir apps/raspberrycode-cli --filter @raspberrycode/core test
+pnpm --dir apps/raspberrycode-cli --filter @raspberrycode/contracts test
 ```
 
 - [x] 执行两个 workspace 的机械检查：
@@ -239,8 +239,8 @@ pnpm --dir apps/zcode-cli --filter @zcode/contracts test
 ```bash
 pnpm typecheck
 pnpm lint
-pnpm --dir apps/zcode-cli typecheck
-pnpm --dir apps/zcode-cli lint
+pnpm --dir apps/raspberrycode-cli typecheck
+pnpm --dir apps/raspberrycode-cli lint
 ```
 
 - [x] 最终 diff 检查必须满足：
@@ -256,7 +256,7 @@ pnpm --dir apps/zcode-cli lint
 ## 验收标准
 
 - 用户配置 `limit.output = 131072` 时，App 不再把它改写成 catalog 的 64000。
-- 默认全局上限下，模型能力 131072 的正常请求发送 64000；设置 `ZCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX=131072` 后发送 131072。
+- 默认全局上限下，模型能力 131072 的正常请求发送 64000；设置 `RASPBERRYCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX=131072` 后发送 131072。
 - 未提供模型能力时，正常请求发送默认 64000。
 - OpenAI Compatible、OpenAI Responses、Anthropic 的最终请求体分别出现正确标准字段。
 - 已验证的 OpenAI Compatible provider/model 组合以及 provider id 为 `openai` 的请求省略输出上限；通用 OpenAI Compatible 和自定义 Responses provider 保持发送。

@@ -19,7 +19,7 @@ C:\Users\dev\.raspberrycode\workspace\default\screenshot.png   518252 bytes
 实际请求的是
 
 ```text
-C:/Users/dev.zcode/workspace/default/screenshot.png
+C:/Users/dev.raspberrycode/workspace/default/screenshot.png
 ```
 
 `\.raspberrycode` 变成了 `.raspberrycode` —— 少了一个反斜杠。
@@ -33,7 +33,7 @@ CommonMark 规定链接目标里的反斜杠转义**只对 ASCII 标点生效**�
 源码   [screenshot.png](C:\Users\dev\.raspberrycode\workspace\default\screenshot.png)
                           ↑U    ↑z   ↑.      ↑w        ↑d       ↑s
                           留    留   吃掉    留        留       留
-mdast  url = C:\Users\dev.zcode\workspace\default\screenshot.png
+mdast  url = C:\Users\dev.raspberrycode\workspace\default\screenshot.png
 ```
 
 实测（`remark-parse`）确认：只有 `\.` 这一处塌掉，其余反斜杠全部存活。
@@ -116,7 +116,7 @@ markdown 源文本
 ### 挂载
 
 `message.tsx` 里 `messageRemarkPlugins` 目前只在
-`renderZCodeFileCitations && workspacePath` 时才显式提供，否则传 `undefined`
+`renderRaspberryCodeFileCitations && workspacePath` 时才显式提供，否则传 `undefined`
 （走 Streamdown 默认）。本插件必须**无条件**生效，因此改为始终显式提供
 `defaultRemarkPlugins + windowsFileLinkEscapeRemarkPlugin`，citation 插件仍按原
 条件追加。显式传入默认插件是既有约定（见该处既有注释：不带默认插件会让表格退化）。

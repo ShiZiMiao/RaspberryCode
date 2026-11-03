@@ -142,6 +142,6 @@ Todo 33 的生命周期保持不变：仅当 `provider_config.json` 不存在时
 - 后续生命周期 Review 发现 Standalone CLI importer 仍引用已经删除的 Effective→Personal projection；现已同步
   改为直接生成 `standard-personal` Provider，并同样只保留模型成员、顺序与合法 `contextWindow`，避免 CLI
   启动时因缺失导出而把迁移静默降级为空配置；
-- 定向 Services 测试 13 条、`@zcode/provider` 151 条、`@zcode/provider-node` 44 条全部通过；根
+- 定向 Services 测试 13 条、`@raspberrycode/provider` 151 条、`@raspberrycode/provider-node` 44 条全部通过；根
   `pnpm typecheck` 与 `pnpm lint` 通过，lint 仅报告 33 条本轮无关既存 warning；全量 `pnpm test:unit`
   1486 个文件通过、1 个跳过，12672 条测试通过、25 条跳过。

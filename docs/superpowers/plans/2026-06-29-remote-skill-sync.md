@@ -6,7 +6,7 @@
 
 **Architecture:** Add a narrow `skill-sync` RPC service registered on local and remote service collections. The UI opens one reusable dialog from SSH workspace header, `Settings > Skills`, and the connected SSH directory step; the dialog uses base services for local export and the current remote workspace services for remote status/import.
 
-**Tech Stack:** TypeScript, React, Zustand service context, `@zcode/rpc` ProxyChannel services, Node `fs/promises`, Node `zlib`, Vitest, existing shadcn/radix UI primitives.
+**Tech Stack:** TypeScript, React, Zustand service context, `@raspberrycode/rpc` ProxyChannel services, Node `fs/promises`, Node `zlib`, Vitest, existing shadcn/radix UI primitives.
 
 ---
 
@@ -123,8 +123,8 @@ import type {
   SkillSyncCandidateListResult,
   SkillSyncImportResult,
   SkillSyncRemoteStatusResult,
-} from "@zcode/shared";
-import { ServiceChannels } from "@zcode/shared";
+} from "@raspberrycode/shared";
+import { ServiceChannels } from "@raspberrycode/shared";
 import { createServiceDescriptor } from "../descriptors.js";
 
 export interface ISkillSyncService {
@@ -219,7 +219,7 @@ import {
 } from "../src/skill-sync/skillSyncArchive.js";
 
 async function tempDir() {
-  return await mkdtemp(join(tmpdir(), "zcode-skill-sync-"));
+  return await mkdtemp(join(tmpdir(), "raspberrycode-skill-sync-"));
 }
 
 describe("skill sync archive", () => {
@@ -397,7 +397,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createSkillSyncService } from "../src/skill-sync/skillSyncService.js";
 
 function makeHome() {
-  return mkdtempSync(join(tmpdir(), "zcode-skill-sync-home-"));
+  return mkdtempSync(join(tmpdir(), "raspberrycode-skill-sync-home-"));
 }
 
 async function writeSkill(home: string, directoryName: string, name = directoryName) {
@@ -414,7 +414,7 @@ describe("skill sync service", () => {
     originalHome = process.env.HOME;
   });
 
-  it("lists only local user zcode skills as candidates", async () => {
+  it("lists only local user raspberrycode skills as candidates", async () => {
     const home = makeHome();
     process.env.HOME = home;
     await writeSkill(home, "review");
@@ -486,7 +486,7 @@ import type {
   SkillSyncCandidateListResult,
   SkillSyncImportResult,
   SkillSyncRemoteStatusResult,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 import type { ISkillSyncService } from "./skillSync.js";
 import {
   createSkillSyncArchive,
@@ -508,7 +508,7 @@ export function createSkillSyncService(options?: {
       };
     },
     async listRemoteUserSkillStatuses(params) {
-      const root = getUserZcodeSkillRoot();
+      const root = getUserRaspberrycodeSkillRoot();
       return {
         statuses: params.directoryNames.map((directoryName) => {
           const path = join(root, directoryName);
@@ -555,7 +555,7 @@ export function createSkillSyncService(options?: {
 Add these helper functions in the same file with the listed behavior:
 
 - `resolveUserHomeDir()` uses `HOME`, `USERPROFILE`, then `homedir()`.
-- `getUserZcodeSkillRoot()` returns `join(resolveUserHomeDir(), ".raspberrycode", "skills")`.
+- `getUserRaspberrycodeSkillRoot()` returns `join(resolveUserHomeDir(), ".raspberrycode", "skills")`.
 - `collectUserSkillCandidates()` scans immediate child directories under `~/.raspberrycode/skills`, requires `SKILL.md`, parses frontmatter `name` and `description`, computes `id` as sha256 of the absolute skill directory path, and computes recursive size.
 - `importArchive()` extracts to a temp dir under `~/.raspberrycode/skills/.sync-tmp-<uuid>`, verifies each child contains `SKILL.md`, copies each missing child to `~/.raspberrycode/skills/<directoryName>`, skips existing children, and removes the temp dir in `finally`.
 
@@ -678,8 +678,8 @@ Expected: fail because component does not exist.
 Create `packages/ui/src/settings/RemoteSkillSyncDialog.tsx`. The public props must be:
 
 ```tsx
-import type { RemoteTarget, SkillSyncCandidate, SkillSyncRemoteStatus } from "@zcode/shared";
-import type { ISkillSyncService } from "@zcode/services";
+import type { RemoteTarget, SkillSyncCandidate, SkillSyncRemoteStatus } from "@raspberrycode/shared";
+import type { ISkillSyncService } from "@raspberrycode/services";
 
 interface RemoteSkillSyncDialogProps {
   open: boolean;

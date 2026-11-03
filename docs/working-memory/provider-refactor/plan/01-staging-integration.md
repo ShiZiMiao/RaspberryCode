@@ -17,7 +17,7 @@
 - 当前 Provider Refactor 相对最新 staging 独有 172 个提交，staging 独有 88 个提交。
 - 当前工作区位于 detached HEAD；本地 `provider-refactor-m2` 被另一个 worktree 占用。本阶段不移动或覆盖另一个 worktree 的分支引用。
 - 集成前虚拟合并已知存在两个文本冲突：
-  - `packages/services/src/zcode-agent/zcodeAgentService.ts`
+  - `packages/services/src/raspberrycode-agent/raspberrycodeAgentService.ts`
   - `packages/ui/src/v4/SessionPane.tsx`
 - 其余同时修改的协议、鉴权、Session、Trajectory、Telemetry 和 UI 文件即使自动合并，也需要语义复核。
 
@@ -34,7 +34,7 @@
 
 ## 4. 已知冲突处理
 
-### 4.1 `zcodeAgentService.ts`
+### 4.1 `raspberrycodeAgentService.ts`
 
 正确结果是组合双方有效语义：
 
@@ -123,17 +123,17 @@ typecheck + lint + affected tests
 
 2026-08-25 已把 `origin/staging` `8a7eca86aa` 合入 Provider Refactor。实际文本冲突与预审一致，只有：
 
-- `packages/services/src/zcode-agent/zcodeAgentService.ts`
+- `packages/services/src/raspberrycode-agent/raspberrycodeAgentService.ts`
 - `packages/ui/src/v4/SessionPane.tsx`
 
-`zcodeAgentService` 保留了 staging 的 session open timing，同时把其旧的完整 Provider Registry 同步替换为唯一允许跨 Host/Worker 边界的 Account Provider Config 顺序屏障。`SessionPane` 保留 staging 的 Platform/session-open telemetry，同时没有恢复已退役的 `modelProviderService`。
+`raspberrycodeAgentService` 保留了 staging 的 session open timing，同时把其旧的完整 Provider Registry 同步替换为唯一允许跨 Host/Worker 边界的 Account Provider Config 顺序屏障。`SessionPane` 保留 staging 的 Platform/session-open telemetry，同时没有恢复已退役的 `modelProviderService`。
 
 自动合并重叠文件已经按 Protocol、Auth、Transcript、Trajectory、UI 和 Feature Graph 分组复核。生产代码扫描没有重新出现：
 
 - `ensureLocalProviderRegistrySynced`
 - `ModelConnectionPort` / `ModelConnectionInfo`
 - `AiSdkModelRegistry`
-- `ZCodeModelRef`
+- `RaspberryCodeModelRef`
 - `ModelInputMediaCapabilities` 或 Runtime capability map
 - 按具体模型识别 reasoning 强度或静态格式能力的执行策略
 
@@ -146,11 +146,11 @@ typecheck + lint + affected tests
 - 根 `pnpm test:unit`：1466 个文件通过、1 个跳过；12416 项通过、25 项跳过。
 - `git diff --check` 和本次相关文件的 `oxfmt --check` 通过；同时格式化 staging 新增的 OpenAPI 文件。
 
-仓库级 `pnpm fmt:check` 仍会被既有 `apps/zcode-cli/tests/gb2312.js` 编码文件和 vendored Electron fiddle HTML 的非法标记阻断。本次新增、冲突解决和直接调整的文件均已单独通过格式检查；全仓 formatter baseline 不在阶段 A 修改第三方 fixture 兜底，继续作为阶段 B 的门禁基线问题记录。
+仓库级 `pnpm fmt:check` 仍会被既有 `apps/raspberrycode-cli/tests/gb2312.js` 编码文件和 vendored Electron fiddle HTML 的非法标记阻断。本次新增、冲突解决和直接调整的文件均已单独通过格式检查；全仓 formatter baseline 不在阶段 A 修改第三方 fixture 兜底，继续作为阶段 B 的门禁基线问题记录。
 
 ### 阶段 B 移交问题
 
-CLI 子工作区的完整 typecheck 尚不能在当前安装状态下形成有效结果。直接运行 Adapter/Bootstrap `tsc` 会先读取旧的依赖 `dist`；按 Turbo 依赖顺序构建时，`@zcode/contracts` 又从根工作区解析到 Zod v4，而该 CLI 包声明并依赖 Zod v3。由此产生的 Plugin、Workflow、Workspace Hook 和 Tool Display 类型错误不是 Provider 冲突路径的失败，而是 CLI 子工作区 install/lock/门禁未闭环的直接证据。
+CLI 子工作区的完整 typecheck 尚不能在当前安装状态下形成有效结果。直接运行 Adapter/Bootstrap `tsc` 会先读取旧的依赖 `dist`；按 Turbo 依赖顺序构建时，`@raspberrycode/contracts` 又从根工作区解析到 Zod v4，而该 CLI 包声明并依赖 Zod v3。由此产生的 Plugin、Workflow、Workspace Hook 和 Tool Display 类型错误不是 Provider 冲突路径的失败，而是 CLI 子工作区 install/lock/门禁未闭环的直接证据。
 
 该问题不在阶段 A 修改业务源码兜底。阶段 B 必须先恢复可复现的 CLI workspace 安装和依赖解析，再把 Core、Adapter、Bootstrap 的 build/typecheck/test 纳入自动阻断门禁。
 

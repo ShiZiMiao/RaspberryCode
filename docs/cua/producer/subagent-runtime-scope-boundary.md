@@ -1,7 +1,7 @@
 # Subagent runtime scope boundary
 
-The zcode-cua MCP server is shared by the parent and child runtime in some launch
-paths. The request metadata namespace `com.zcode/request-context` therefore carries
+The raspberrycode-cua MCP server is shared by the parent and child runtime in some launch
+paths. The request metadata namespace `com.raspberrycode/request-context` therefore carries
 the trusted `runtime_scope` value from the RaspberryCode MCP adapter.
 
 When the nested value is exactly `subagent`, the registration middleware returns an

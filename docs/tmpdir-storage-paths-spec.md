@@ -15,8 +15,8 @@
 
 | 场景                      | 新路径                                                                                             | 生命周期                                       |
 | ------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| zcode-cli Bash 持久化输出 | `<os.tmpdir()>/zcode-bash-<随机标识>/<session>/<tool>-stdout.log`；降级到 `<storageRoot>/cli/exec` | 具名临时文件，沿用前后台保留规则，接受系统清理 |
-| zcode-cli 剪贴板图片      | `~/.raspberrycode/clipboard`                                                                               | 单次读取后删除                                 |
+| raspberrycode-cli Bash 持久化输出 | `<os.tmpdir()>/raspberrycode-bash-<随机标识>/<session>/<tool>-stdout.log`；降级到 `<storageRoot>/cli/exec` | 具名临时文件，沿用前后台保留规则，接受系统清理 |
+| raspberrycode-cli 剪贴板图片      | `~/.raspberrycode/clipboard`                                                                               | 单次读取后删除                                 |
 | 日志导出 staging          | `~/.raspberrycode/export-log-stage`                                                                        | 打包完成后删除，异常退出允许残留               |
 | 日志导出结果              | `~/.raspberrycode/export-log`                                                                              | 用户可见导出结果，默认保留                     |
 | feedback 附件和日志包     | `~/.raspberrycode/feedback`                                                                                | 上传完成后删除                                 |
@@ -28,8 +28,8 @@
 - 写入前须准备业务子目录，不能依赖 `mkdtemp` 自动创建父目录。Bash 的系统 tmp 父目录不存在时按 `ENOENT` 降级，不自行创建系统 tmp 根。
 - 短生命周期目录必须使用单次唯一子目录，结束后在 `finally` 中清理；Bash retained 输出不随 adapter 关闭删除。
 - 失败清理不能影响主流程结果。Bash tmp 输出暂不纳入 App 存储占用统计或清理，其余目录沿用现有管理范围。
-- Bash 的自定义 `ZCODE_STORAGE_DIR` / `storageRoot` 也仅作为降级位置；其他文件仍优先使用解析后的 `storageRoot`。
-- service / desktop 侧使用现有 data base dir 语义，默认落到 `~/.raspberrycode`，配置了 `ZCODE_DATA_BASE_DIR` 时落到 `{dataBaseDir}/.raspberrycode`。
+- Bash 的自定义 `RASPBERRYCODE_STORAGE_DIR` / `storageRoot` 也仅作为降级位置；其他文件仍优先使用解析后的 `storageRoot`。
+- service / desktop 侧使用现有 data base dir 语义，默认落到 `~/.raspberrycode`，配置了 `RASPBERRYCODE_DATA_BASE_DIR` 时落到 `{dataBaseDir}/.raspberrycode`。
 
 ## Bash 输出例外
 
@@ -50,6 +50,6 @@ stdout/stderr 继续直接写同一文件，输出编码只解析一次。准备
 
 ## 非目标
 
-- 不清理已有 `$TMPDIR/zcode-*` 残留。
+- 不清理已有 `$TMPDIR/raspberrycode-*` 残留。
 - 不修改 remote asset cache fallback。
-- 不修改 `apps/zcode-cli/packages/ios-simulator-plugin` 与 `apps/zcode-cli/packages/android-emulator-plugin` 的数据目录。
+- 不修改 `apps/raspberrycode-cli/packages/ios-simulator-plugin` 与 `apps/raspberrycode-cli/packages/android-emulator-plugin` 的数据目录。

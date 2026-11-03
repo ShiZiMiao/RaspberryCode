@@ -332,7 +332,7 @@ Automation、Subagent 与 Repo Wiki 只共享 Registry 模型候选，不拥有 
 
 ### Step D：删除跨层 selection 透传
 
-- 删除 ZCodeTask、ZCodeSession、Agent、workspace prepare、Repo Wiki、thought catalog 中的 selected keys 参数；
+- 删除 RaspberryCodeTask、RaspberryCodeSession、Agent、workspace prepare、Repo Wiki、thought catalog 中的 selected keys 参数；
 - Runtime 只通过 Registry 中的 Provider/Model 取得执行 Access；
 - Renderer 只在 Provider Settings 修改 selection，不把它塞进 ModelSelection 或 Session state；
 - Remote Workspace 继续由目标 Environment 的 Account Source 产生 Account Built-in Config。

@@ -43,7 +43,7 @@ CLI 命令解析 ── JSONL control contract ──> Supervisor
 
 ## SSH 远端部署验证（第 2 层，R3 SSH Transport 预演）
 
-`packages/zcode-server-cli/scripts/verify-remote-ssh.mjs` 把 staged 发行包部署到带 sshd 的
+`packages/raspberrycode-server-cli/scripts/verify-remote-ssh.mjs` 把 staged 发行包部署到带 sshd 的
 Ubuntu 22.04 容器，从本机经 `ssh -L` 隧道验证完整链路。R3 收尾后该脚本与真实
 `proxy-stdio` 容器验证保留为发布前人工 Transport 门禁，不进入默认 GitLab CI。默认路径使用 systemd
 user service 验证注册、自启动与状态；本地环境无法运行 privileged systemd 容器时可显式传
@@ -51,19 +51,19 @@ user service 验证注册、自启动与状态；本地环境无法运行 privil
 
 此外，已使用 `linux-amd64-dev`（SSH 用户 `dev`）完成 Linux x64 实机验证：解压约 74 MB
 发行包后，`serve --daemon`、status/stop、在线全量更新及 Supervisor/Core/Agent release 收敛、带 archive SHA 与内容 hash 校验的
-组件增量更新、坏 release 回滚、`node-pty`、`@zcode/tui`/`playwright-core`/`koffi` 动态加载，
+组件增量更新、坏 release 回滚、`node-pty`、`@raspberrycode/tui`/`playwright-core`/`koffi` 动态加载，
 以及 bfs/rg/ugrep 和七个随包官方插件均已通过。
 
 ```bash
-pnpm --filter @zcode/server-cli stage --target linux-arm64
-node packages/zcode-server-cli/scripts/verify-remote-ssh.mjs --target linux-arm64   # --keep 保留现场
+pnpm --filter @raspberrycode/server-cli stage --target linux-arm64
+node packages/raspberrycode-server-cli/scripts/verify-remote-ssh.mjs --target linux-arm64   # --keep 保留现场
 ```
 
 ```text
 本机                                     容器 (ubuntu 22.04 + sshd)
 ────                                     ─────────────────────────
-stage 产物 tar.gz ──scp──────────────>   解压 /root/zcode-server
-ssh "bin/zcode serve --daemon --json" >  Supervisor+Core ready（仅回环+动态端口）
+stage 产物 tar.gz ──scp──────────────>   解压 /root/raspberrycode-server
+ssh "bin/raspberrycode serve --daemon --json" >  Supervisor+Core ready（仅回环+动态端口）
 ssh -L <local>:127.0.0.1:<port> ─────>   隧道（Core 只监听回环，隧道是唯一到达路径）
 fetch /api/server-info               ✓
 WS /ws replayable 升级               ✓
@@ -91,7 +91,7 @@ ssh status → stop → stopped          ✓
 - update 进入 ready timeout 时必须先停止仍存活的新 Core，再恢复旧 current pointer 并启动旧 Core；SIGKILL 后仍未观察到 exit/close 则进入 `stop-failed` 并保留锁，禁止双 Core 并存。
 - update 的候选 Core ready 只完成第一阶段验证；旧 Supervisor 退出、目标 release daemon ready 且 control runtime identity 全部一致后才能返回成功。identity 不一致必须停止候选 daemon、恢复 previous pointer 并重启旧 release。
 - `serve --daemon` 只允许一个 OS service owner；服务 entry 不得重复注册或并行启动第二个 Supervisor，注册失败必须返回错误，显式 fallback 必须报告 `serviceRegistered=false`。
-- service descriptor 必须使用 `<serverRoot>/bin/zcode` 稳定入口并显式携带 `--server-root`；service identity 与 descriptor 文件名按 canonical root 隔离，自定义 root 的真实 daemon 测试必须确认默认 root 没有副作用。
+- service descriptor 必须使用 `<serverRoot>/bin/raspberrycode` 稳定入口并显式携带 `--server-root`；service identity 与 descriptor 文件名按 canonical root 隔离，自定义 root 的真实 daemon 测试必须确认默认 root 没有副作用。
 - POSIX stable launcher 必须用物理路径计算 root，与写入 `current.json` 的 canonical root 一致；经符号链接别名调用时仍执行 `releases/` 下的合法 release，越界 release 仍 fail-closed。
 - Core-local activity tracker 必须从 Agent turn lifecycle facts 同时统计 desktop continuous 与 Web replayable；测试不得只伪造 Task facade 的 `activePromptInputIds`。
 - launchd 正常 stop 不得因无条件 KeepAlive 被自动拉起；异常退出仍保留服务管理器的重启能力。
