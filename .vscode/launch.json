@@ -6,7 +6,7 @@
       "type": "pwa-node",
       "request": "attach",
       "port": 9231,
-      "preLaunchTask": "zcode: start electron (debug)",
+      "preLaunchTask": "raspberrycode: start electron (debug)",
       "restart": true,
       "timeout": 30000,
       "outFiles": [
@@ -27,7 +27,7 @@
       "type": "pwa-node",
       "request": "attach",
       "port": 9231,
-      "preLaunchTask": "zcode: start electron (debug with host inspect)",
+      "preLaunchTask": "raspberrycode: start electron (debug with host inspect)",
       "restart": true,
       "timeout": 30000,
       "outFiles": [
