@@ -157,6 +157,11 @@ CREATE TABLE permission (
         data text not null
       );
 
+CREATE TABLE raspberrycode_database_identity (
+      scope TEXT PRIMARY KEY,
+      identity TEXT NOT NULL
+    );
+
 CREATE TABLE "schema_migration" (id text primary key, checksum text not null, app_version text, "time_applied" integer not null);
 
 CREATE TABLE session (
@@ -398,11 +403,6 @@ CREATE TABLE workflow_run (
         time_updated integer not null,
         time_completed integer
       );
-
-CREATE TABLE raspberrycode_database_identity (
-      scope TEXT PRIMARY KEY,
-      identity TEXT NOT NULL
-    );
 
 CREATE INDEX dwf_actor_run_idx on dwf_actor(run_id);
 
