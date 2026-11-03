@@ -42,6 +42,6 @@ RaspberryCode 是自有品牌发行版，不再沿用上游的 Z.ai / BigModel �
 ## 明确不做（后续精简建议）
 
 - 不删除 `oauthService` 服务层（401 自动登出、RPC 装配仍依赖）。
-- 不动 CLI（`zcode login`）与 Web 远控浏览器侧登录（`packages/web/src/auth`），
+- 不动 CLI（`raspberrycode login`）与 Web 远控浏览器侧登录（`packages/web/src/auth`），
   它们是独立体系，另行决定去留。
 - Coding Plan 订阅购买、Rewards、营销触达等 Z.ai 账号绑定功能整体移除属后续任务。
