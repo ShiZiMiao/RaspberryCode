@@ -110,6 +110,9 @@ async function ensureRuntimeTool(input: {
   await rm(temporaryDirectory, {
     force: true,
     recursive: true,
+    // Windows 文件句柄短暂占用会让清理抛 ENOTEMPTY/EPERM；与 prebuilt-binary-extract 同策略带重试。
+    maxRetries: 5,
+    retryDelay: 100,
   });
   await mkdir(temporaryDirectory, {
     recursive: true,
@@ -140,6 +143,8 @@ async function ensureRuntimeTool(input: {
     await rm(temporaryDirectory, {
       force: true,
       recursive: true,
+      maxRetries: 5,
+      retryDelay: 100,
     });
   }
 }
@@ -160,6 +165,8 @@ async function installCacheDirectory(
       await rm(cacheDirectory, {
         force: true,
         recursive: true,
+        maxRetries: 5,
+        retryDelay: 100,
       });
     }
   }
@@ -234,7 +241,16 @@ async function isCacheCurrent(
     const binaryPath = join(cacheDirectory, expected.binaryName);
     const binaryStat = await stat(binaryPath);
     if (!binaryStat.isFile() || binaryStat.size !== expected.size) return false;
-    if (platform !== "win32" && (binaryStat.mode & 0o111) === 0) return false;
+    // Bugfix: 执行位校验只在「目标按 POSIX 语义使用执行位」且「宿主文件系统支持执行位」时生效。
+    // Windows chmod 不映射 POSIX 位；跨目标提取（如 darwin 工具落 win32 缓存）若按目标平台校验，
+    // 缓存会被恒判失效并反复重装（同 inode 复用失效、并发安装竞态）。
+    if (
+      platform !== "win32" &&
+      process.platform !== "win32" &&
+      (binaryStat.mode & 0o111) === 0
+    ) {
+      return false;
+    }
 
     const actualSha256 = createHash("sha256")
       .update(await readFile(binaryPath))
@@ -281,9 +297,11 @@ function getSeaModule(): SeaRuntimeModule | undefined {
 }
 
 function isDirectoryReplaceRace(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    ["EEXIST", "ENOTEMPTY"].includes(String((error as NodeJS.ErrnoException).code))
-  );
+  if (typeof error !== "object" || error === null) return false;
+  const code = String((error as NodeJS.ErrnoException).code);
+  if (["EEXIST", "ENOTEMPTY"].includes(code)) return true;
+  // Bugfix: Windows rename 对已存在目标恒报 EPERM（POSIX 是空目录可覆盖、非空报 ENOTEMPTY）。
+  // 不分类会让「修复损坏缓存/重装」路径直接抛错；按替换竞态处理（复查缓存 → 清目标 → 重试一次），
+  // 与 POSIX 语义对齐。AV 锁定临时目录等真 EPERM 会在重试后再抛，不会被吞。
+  return process.platform === "win32" && code === "EPERM";
 }

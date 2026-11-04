@@ -62,7 +62,10 @@ test("extracts target tools into version and hash addressed cache directories", 
         ),
       );
       assert.deepEqual(await readFile(binaryPath), tool.bytes);
-      assert.notEqual((await stat(binaryPath)).mode & 0o111, 0);
+      // Windows 无 POSIX 执行位（chmod 只映射只读属性），执行位断言仅在 POSIX 平台验证。
+      if (process.platform !== "win32") {
+        assert.notEqual((await stat(binaryPath)).mode & 0o111, 0);
+      }
     }
   } finally {
     await rm(storageRoot, { force: true, recursive: true });
@@ -123,7 +126,10 @@ test("repairs caches with invalid size, hash, marker, or executable mode", async
 
   try {
     const first = await ensureSeaRuntimeTools(options);
-    await chmod(assertPath(first.RASPBERRYCODE_BFS_BINARY), 0o644);
+    // Windows chmod 不映射 POSIX 执行位，「剥离执行位」的破坏子项只在 POSIX 宿主验证。
+    if (process.platform !== "win32") {
+      await chmod(assertPath(first.RASPBERRYCODE_BFS_BINARY), 0o644);
+    }
     await writeFile(assertPath(first.RASPBERRYCODE_RG_BINARY), "short");
     await writeFile(
       join(assertPath(first.RASPBERRYCODE_UGREP_BINARY), "..", ".raspberrycode-runtime-tool.json"),
@@ -132,7 +138,9 @@ test("repairs caches with invalid size, hash, marker, or executable mode", async
 
     const repaired = await ensureSeaRuntimeTools(options);
 
-    assert.notEqual((await stat(assertPath(repaired.RASPBERRYCODE_BFS_BINARY))).mode & 0o111, 0);
+    if (process.platform !== "win32") {
+      assert.notEqual((await stat(assertPath(repaired.RASPBERRYCODE_BFS_BINARY))).mode & 0o111, 0);
+    }
     for (const tool of fixture.tools) {
       assert.deepEqual(await readFile(assertPath(repaired[envVarFor(tool.id)])), tool.bytes);
     }
