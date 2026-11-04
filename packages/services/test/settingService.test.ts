@@ -74,6 +74,7 @@ describe("settingService", () => {
       const retained = {
         recentProjects: ["/example/project"],
         memoryEnabled: true,
+        // providerFamilyDomain 随账号域 family 体系退役：旧文件里的该组键读兼容、静默丢弃（见 validationAppSettings）。
         providerFamilyDomain: "zai",
         providerFamilyConnectionSelections: { zai: { kind: "individual-coding-plan" } },
         sourceServers: [
@@ -85,6 +86,8 @@ describe("settingService", () => {
           },
         ],
       };
+      // 退役键不参与“保留”断言；下文显式断言其被丢弃。
+      const { providerFamilyDomain: _retiredDomain, ...expectedRetained } = retained;
       await mkdir(join(taskHome, ".raspberrycode/v2"), { recursive: true });
       await writeFile(
         file,
@@ -103,11 +106,12 @@ describe("settingService", () => {
       }
       const persisted = JSON.parse(await readFile(file, "utf8"));
       expect(persisted).toMatchObject({
-        ...retained,
+        ...expectedRetained,
         remoteBoundaryOnboardingVersion: 2,
         remoteBoundaryIntroAcknowledgedVersion: 1,
         ...(concurrent ? { localePreference: "en-US" } : {}),
       });
+      expect(persisted).not.toHaveProperty("providerFamilyDomain");
       await service.get();
       expect(JSON.parse(await readFile(file, "utf8"))).toEqual(persisted);
     },
@@ -259,151 +263,40 @@ describe("settingService", () => {
     process.env.RASPBERRYCODE_DESKTOP_HOME_DIR = desktopHome;
     process.env.RASPBERRYCODE_ENV = "production";
     const service = await createSettingServiceInHome(ordinaryHome);
-    await service.update({ providerFamilyDomain: "bigmodel" });
+    await service.update({ memoryEnabled: true });
     expect(existsSync(join(desktopHome, ".raspberrycode", "v2", "setting.json"))).toBe(true);
     expect(existsSync(join(ordinaryHome, ".raspberrycode", "v2", "setting.json"))).toBe(false);
-    expect((await service.get()).providerFamilyDomain).toBe("bigmodel");
+    expect((await service.get()).memoryEnabled).toBe(true);
   });
-  it("完整连接映射写入必须携带 CAS 版本，不能绕过 Composer 的已提交选择", async () => {
-    const service = await createSettingServiceInHome(makeTempHome());
-    await expect(service.update({ providerFamilyConnectionSelections: {} })).rejects.toThrow(
-      "Account connection CAS required",
-    );
-    const before = await service.get();
-    await expect(
-      service.update(
-        { providerFamilyConnectionSelections: {} },
-        {
-          providerFamilyDomain: before.providerFamilyDomain,
-          providerFamilyConnectionSelections: before.providerFamilyConnectionSelections,
-        },
-      ),
-    ).rejects.toThrow("Account connection CAS required");
-  });
-
-  it("两条写入路径共享锁内版本，后写旧快照明确失败", async () => {
-    const home = makeTempHome();
-    const first = await createSettingServiceInHome(home);
-    const second = await createSettingServiceInHome(home);
-    const before = await first.get();
-    const expected = {
-      providerFamilyDomain: before.providerFamilyDomain,
-      providerFamilyConnectionSelections: before.providerFamilyConnectionSelections,
-      providerFamilyDomainUpdatedAt: before.providerFamilyDomainUpdatedAt ?? 0,
-    };
-    const patch = {
-      providerFamilyDomain: "bigmodel" as const,
-      providerFamilyConnectionSelections: {
-        bigmodel: { kind: "individual-coding-plan" as const },
-      },
-    };
-    await first.update(patch, expected);
-    const saved = await first.get();
-    expect(saved.providerFamilyDomainUpdatedAt).toBeGreaterThan(
-      expected.providerFamilyDomainUpdatedAt,
-    );
-    await expect(second.update(patch, expected)).rejects.toThrow(
-      "Account connection settings changed",
-    );
-    expect(await second.get()).toEqual(saved);
-  });
-
-  it("账号连接值相同但操作版本更新时，锁内 CAS 拒绝旧回滚", async () => {
-    const service = await createSettingServiceInHome(makeTempHome());
-    const selection = {
-      kind: "team-coding-plan" as const,
-      productId: "p",
-      organizationId: "o",
-      projectId: "j",
-    };
-    await service.update(
-      {
-        providerFamilyDomain: "bigmodel",
-        providerFamilyDomainUpdatedAt: 1,
-        providerFamilyConnectionSelections: { bigmodel: selection },
-      },
-      { providerFamilyDomainUpdatedAt: 0 },
-    );
-    const before = await service.get();
-    await service.update({ providerFamilyDomainUpdatedAt: 2 });
-    await expect(
-      service.update(
-        { providerFamilyConnectionSelections: { bigmodel: { kind: "individual-coding-plan" } } },
-        {
-          providerFamilyDomain: before.providerFamilyDomain,
-          providerFamilyConnectionSelections: before.providerFamilyConnectionSelections,
-          providerFamilyDomainUpdatedAt: before.providerFamilyDomainUpdatedAt,
-        },
-      ),
-    ).rejects.toThrow("Account connection settings changed");
-    expect((await service.get()).providerFamilyConnectionSelections?.bigmodel).toEqual(selection);
-  });
-
-  it("未写过账号操作版本时，0 是可通过 RPC 传输的初始 CAS 版本", async () => {
-    const service = await createSettingServiceInHome(makeTempHome());
-    const before = await service.get();
-    await service.update(
-      { providerFamilyDomainUpdatedAt: 1 },
-      {
-        providerFamilyDomain: before.providerFamilyDomain,
-        providerFamilyConnectionSelections: before.providerFamilyConnectionSelections,
-        providerFamilyDomainUpdatedAt: 0,
-      },
-    );
-    await expect(
-      service.update(
-        { providerFamilyDomainUpdatedAt: 2 },
-        {
-          providerFamilyDomain: before.providerFamilyDomain,
-          providerFamilyConnectionSelections: before.providerFamilyConnectionSelections,
-          providerFamilyDomainUpdatedAt: 0,
-        },
-      ),
-    ).rejects.toThrow("Account connection settings changed");
-  });
-
-  it("账号查询的迟到保存不能覆盖用户手动切换的连接", async () => {
+  it("账号连接选择经 update 直写并持久化（账号 CAS 已随账号迁移链移除）", async () => {
     const home = makeTempHome();
     const service = await createSettingServiceInHome(home);
-    await service.update(
-      {
-        providerFamilyDomain: "bigmodel",
-        providerFamilyConnectionSelections: { bigmodel: { kind: "start-plan" } },
-      },
-      { providerFamilyDomainUpdatedAt: 0 },
-    );
-    const original = await service.get();
-    await service.update(
-      {
-        providerFamilyConnectionSelections: {
-          bigmodel: {
-            kind: "team-coding-plan",
-            productId: "p",
-            organizationId: "o",
-            projectId: "j",
-          },
-        },
-      },
-      {
-        providerFamilyDomain: original.providerFamilyDomain,
-        providerFamilyConnectionSelections: original.providerFamilyConnectionSelections,
-        providerFamilyDomainUpdatedAt: original.providerFamilyDomainUpdatedAt ?? 0,
-      },
-    );
-    await expect(
-      service.update(
-        { providerFamilyConnectionSelections: { bigmodel: { kind: "individual-coding-plan" } } },
-        {
-          providerFamilyDomain: original.providerFamilyDomain,
-          providerFamilyConnectionSelections: original.providerFamilyConnectionSelections,
-          providerFamilyDomainUpdatedAt: original.providerFamilyDomainUpdatedAt ?? 0,
-        },
-      ),
-    ).rejects.toThrow("Account connection settings changed");
-    expect((await service.get()).providerFamilyConnectionSelections?.bigmodel?.kind).toBe(
-      "team-coding-plan",
-    );
+    await service.update({
+      providerFamilyConnectionSelections: { bigmodel: { kind: "individual-coding-plan" } },
+    });
+    const reloadedService = await createSettingServiceInHome(home);
+    await expect(reloadedService.get()).resolves.toMatchObject({
+      providerFamilyConnectionSelections: { bigmodel: { kind: "individual-coding-plan" } },
+    });
   });
+
+  it("providerFamilyDomain 系退役键写入被静默丢弃，不落盘（读兼容）", async () => {
+    const home = makeTempHome();
+    const service = await createSettingServiceInHome(home);
+    await service.update({ providerFamilyDomain: "bigmodel", providerFamilyDomainUpdatedAt: 1 });
+    const settings = await service.get();
+    expect(settings).not.toHaveProperty("providerFamilyDomain");
+    expect(settings).not.toHaveProperty("providerFamilyDomainUpdatedAt");
+    const persisted = JSON.parse(
+      await readFile(join(home, ".raspberrycode/v2/setting.json"), "utf8"),
+    );
+    expect(persisted).not.toHaveProperty("providerFamilyDomain");
+    expect(persisted).not.toHaveProperty("providerFamilyDomainUpdatedAt");
+  });
+
+
+
+
   it("缺少 setting.json 时返回默认值", async () => {
     const home = makeTempHome();
     const service = await createSettingServiceInHome(home);

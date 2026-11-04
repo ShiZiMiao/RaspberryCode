@@ -79,8 +79,11 @@ function envelope(syncId: string, key: string): ProviderProvisioningEnvelope {
     syncId,
     personalConfig: config.config,
     accountSettings: {
-      providerFamilyDomain: syncId === "baseline" ? "bigmodel" : "zai",
-      providerFamilyConnectionSelections: {},
+      // providerFamilyDomain 随账号域 family 体系退役（wire schema 拒收）；用保留的选择字段区分基线与失败信封。
+      providerFamilyConnectionSelections:
+        syncId === "baseline"
+          ? { bigmodel: { kind: "individual-coding-plan" } }
+          : { zai: { kind: "individual-coding-plan" } },
     },
     credentials: [{ scope: "oauth-session", key: "oauth:zai:access_token", value: key }],
   };
@@ -147,7 +150,7 @@ async function createFixture(root: string) {
     stateFilePath: state,
     listProvisioningCredentialKeys: async () => ["oauth:zai:access_token"],
   });
-  await settings.update({ locale: "en-US", providerFamilyDomain: "bigmodel" });
+  await settings.update({ locale: "en-US" });
   await credentials.save("ssh:r3-sentinel", "not-provisioned");
   const baseline = await target.apply(envelope("baseline", "old-value"));
   expect(baseline).toMatchObject({ status: "applied" });
@@ -211,7 +214,7 @@ describe("R3A-PRV-08/09 正式磁盘Store与Registry事务", () => {
       expect(await fixture.credentials.load("ssh:r3-sentinel")).toBe("not-provisioned");
       expect(await fixture.settings.get()).toMatchObject({
         locale: "en-US",
-        providerFamilyDomain: "bigmodel",
+        providerFamilyConnectionSelections: { bigmodel: { kind: "individual-coding-plan" } },
       });
       expect(fixture.runtime.registryService.validateSelection(selection).ok).toBe(true);
       const snapshot = await fixture.runtime.configService.read();
@@ -280,7 +283,6 @@ function customEnvelope(
     syncId,
     personalConfig: config.config,
     accountSettings: input.accountSettings ?? {
-      providerFamilyDomain: "bigmodel",
       providerFamilyConnectionSelections: {},
     },
     credentials: input.credentials ?? [
@@ -410,7 +412,6 @@ describe("R3A-PRV-05/06/07/10/11 完整替换、allowlist 凭据、窄设置与�
         models: ModelConfigRules.empty().setExact("r3-store", "r3-model", completeModel()),
         defaultModelSelection: selection,
         accountSettings: {
-          providerFamilyDomain: "zai",
           providerFamilyConnectionSelections: { zai: { kind: "individual-coding-plan" } },
         },
       }),
@@ -420,7 +421,6 @@ describe("R3A-PRV-05/06/07/10/11 完整替换、allowlist 凭据、窄设置与�
     expect(settings).toMatchObject({
       locale: "zh-CN",
       terminalInheritSystemProfile: false,
-      providerFamilyDomain: "zai",
       providerFamilyConnectionSelections: { zai: { kind: "individual-coding-plan" } },
     });
     expect(await readFile(fixture.builtin, "utf8")).toBe(builtinBefore);
@@ -514,7 +514,15 @@ describe("R3A-PRV-05/06/07/10/11 完整替换、allowlist 凭据、窄设置与�
   });
 
   it("PRV-02 Target 结果只会是 applied / already-applied / failed / rollback_failed 之一，失败不登记", async () => {
-    vi.spyOn(fixture.account, "refresh").mockRejectedValueOnce(new Error("R3_FIRST_APPLY_FAULT"));
+    // 账号迁移链拆除后 apply 不再刷新 account.refresh，原注入点已消失；
+    // 改为 personal 提交后注入失败，覆盖同一失败状态机（failed → 回滚 → 不登记 → 可重试）。
+    const originalUpdate = fixture.personalRepository.update.bind(fixture.personalRepository);
+    vi.spyOn(fixture.personalRepository, "update").mockImplementationOnce((async (
+      ...args: unknown[]
+    ) => {
+      await (originalUpdate as (...args: unknown[]) => Promise<unknown>)(...args);
+      throw new Error("R3_FIRST_APPLY_FAULT");
+    }) as never);
     const failed = await fixture.target.apply(envelope("first-apply-failed", "v2"));
     expect(failed).toMatchObject({ status: "failed", rolledBack: true });
     expect(await readFile(fixture.state, "utf8")).not.toContain("first-apply-failed");
