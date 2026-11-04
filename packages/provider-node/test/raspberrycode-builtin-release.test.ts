@@ -72,6 +72,38 @@ describe("RaspberryCode Built-in Release", () => {
       source.dispose();
     }
   });
+  it("占位端点静默跳过刷新：不发请求、不写控制文件、不报失败", async () => {
+    const root = await temporaryRoot();
+    const bundledFilePath = join(root, "bundled.json");
+    const controlFilePath = join(root, "control.json");
+    await writeRelease(bundledFilePath, 1, "model-a");
+    const source = new NodeRaspberryCodeBuiltinProviderConfigSource({
+      bundledFilePath,
+      watch: false,
+    });
+    const events = vi.fn();
+    const fetchRelease = vi.fn(async () => null);
+    const sync = new RaspberryCodeBuiltinRemoteSynchronizer({
+      source,
+      controlFilePath,
+      resolveEndpointKey: () => "https://your-server.example",
+      fetchRelease,
+      onRefreshResult: events,
+    });
+    try {
+      await expect(sync.refresh()).resolves.toBe("skipped");
+      await expect(sync.refresh({ force: true })).resolves.toBe("skipped");
+      expect(fetchRelease).not.toHaveBeenCalled();
+      expect(events).toHaveBeenLastCalledWith({
+        result: "skipped",
+        reason: "placeholder-endpoint",
+      });
+      await expect(readFile(controlFilePath, "utf8")).rejects.toMatchObject({ code: "ENOENT" });
+    } finally {
+      sync.dispose();
+      source.dispose();
+    }
+  });
   it("严格解析两层 Release，并拒绝缺字段和旧单层形状", () => {
     const release = decodeRaspberryCodeBuiltinRelease(releaseObject(2, "model-b"));
 

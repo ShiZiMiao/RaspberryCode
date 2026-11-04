@@ -42,6 +42,10 @@ RaspberryCode 是独立发行的 CodingAgent 工具，模型供应商生态必�
    必须按协议/格式门控，不得渗入产品能力逻辑。
 7. **保留兼容面**：历史数据读兼容（`zhipu-account`、`zhipu-coding-plan-api-key` 旧值、
    session migration 映射、MCP `http_headers` 旧字段）与按格式的 provider 适配保留不动。
+8. **占位端点无服务端语义**：默认端点 `https://your-server.example`（RFC 2606 保留域）
+   表示「未配置服务端」。面向服务端的后台交互（如内置模板目录 CDN 刷新）在占位端点下
+   必须静默跳过——不发请求、不报错、不以刷新失败告警打扰用户；真实端点下按原契约执行
+   （TTL/租约/失败回退快照不变）。
 
 ## 状态所有者
 
@@ -55,6 +59,8 @@ RaspberryCode 是独立发行的 CodingAgent 工具，模型供应商生态必�
 - 远端 server 根解析：`packages/server/src/remote/deployShared.ts`（部署侧，SSH 远端）与
   `packages/raspberrycode-server-cli/src/runtime/paths.ts`（运行侧，远端本机）——两处必须实现同一条解析规则。
 - daemon 服务名：`packages/raspberrycode-server-cli/src/platform/serviceManager.ts`。
+- 占位端点判定：`packages/shared/src/raspberrycodeEndpoint.ts`（`isPlaceholderRaspberryCodeEndpointOrigin`）；
+  内置模板刷新跳过：`packages/provider-node/src/raspberrycode-builtin-remote-synchronizer.ts`。
 
 ## 命名迁移与旧名读兼容台账
 
@@ -91,3 +97,5 @@ RaspberryCode 是独立发行的 CodingAgent 工具，模型供应商生态必�
 5. 全新发行终态：部署侧/运行侧/Shell 侧三处 server 根解析结果一致（缺省 `~/.raspberrycode/server`）；
    历史布局不再探测或续用（历史机器按新布局重新部署），旧名读兼容仅限台账「仍保留的旧名读兼容」
    表所列四类且只读不写；`pnpm typecheck`、`pnpm lint` 与 `node scripts/audit-neutrality.mjs` 保持通过。
+6. 占位端点（未配置服务端）下启动 agent 链路不发起内置模板 CDN 刷新、不输出刷新失败告警；
+   配置真实端点后刷新按原契约执行（TTL/租约/回退快照不变）。

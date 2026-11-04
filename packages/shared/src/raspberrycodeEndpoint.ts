@@ -44,6 +44,18 @@ export function normalizeRaspberryCodeEndpointOrigin(value: string): string {
   return parsed.origin;
 }
 
+/**
+ * 占位端点（RFC 2606 保留域）表示「未配置服务端」：面向服务端的后台交互应静默跳过，
+ * 而不是把必然失败以告警打扰用户（产品规则见 specs/provider-neutrality.md 规则 8）。
+ */
+export function isPlaceholderRaspberryCodeEndpointOrigin(origin: string): boolean {
+  try {
+    return normalizeRaspberryCodeEndpointOrigin(origin) === DEFAULT_RASPBERRYCODE_ENDPOINT_ORIGIN;
+  } catch {
+    return false;
+  }
+}
+
 export function resolveRaspberryCodeEndpointOrigin(options?: {
   env?: RaspberryCodeEnv;
   envBaseOrigin?: string | null;

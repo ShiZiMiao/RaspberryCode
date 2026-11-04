@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { isPlaceholderRaspberryCodeEndpointOrigin } from "@raspberrycode/shared";
 import { atomicWritePrivateTextFile, withFileLock } from "@raspberrycode/shared/node";
 import type { NodeRaspberryCodeBuiltinProviderConfigSource } from "./raspberrycode-builtin-provider-config-source.js";
 import type { RaspberryCodeBuiltinRelease } from "./raspberrycode-builtin-release.js";
@@ -32,7 +33,7 @@ export interface RaspberryCodeBuiltinRemoteSynchronizerOptions {
 
 export interface RaspberryCodeBuiltinRefreshEvent {
   readonly result: RaspberryCodeBuiltinRefreshResult;
-  readonly reason?: "lease-held" | "not-due" | "endpoint-changed";
+  readonly reason?: "lease-held" | "not-due" | "endpoint-changed" | "placeholder-endpoint";
   readonly revision?: number;
 }
 
@@ -82,6 +83,12 @@ export class RaspberryCodeBuiltinRemoteSynchronizer {
     const endpointKey = (await this.#options.resolveEndpointKey()).trim();
     if (this.#disposed) return "disposed";
     if (!endpointKey) throw new Error("RaspberryCode Built-in 远端 Endpoint 不能为空");
+    // 占位端点 = 未配置服务端：静默跳过刷新（specs/provider-neutrality.md 规则 8），
+    // 不发请求、不写控制文件，也不产生刷新失败告警。
+    if (isPlaceholderRaspberryCodeEndpointOrigin(endpointKey)) {
+      this.#report({ result: "skipped", reason: "placeholder-endpoint" });
+      return "skipped";
+    }
     const leaseId = randomUUID();
     const acquired = await withFileLock(this.#options.controlFilePath, async () => {
       const now = this.#now();
