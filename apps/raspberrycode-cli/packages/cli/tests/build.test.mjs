@@ -13,6 +13,7 @@ import {
   resolveBuildAliases,
   resolveBuildOptions,
   resolveBuildExternal,
+  resolveCliBuildVersion,
 } from "../scripts/build.mjs";
 
 async function withZodFixture(run) {
@@ -174,6 +175,35 @@ test("rejects missing root package versions during CLI builds", async () => {
       }),
       /Root package\.json must define a non-empty string version/,
     );
+  } finally {
+    await rm(directory, {
+      force: true,
+      recursive: true,
+    });
+  }
+});
+
+test("release builds override the CLI version with RASPBERRYCODE_RELEASE_VERSION", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "raspberrycode-root-version-"));
+
+  try {
+    await writeFile(join(directory, "package.json"), JSON.stringify({ version: "9.8.7" }));
+
+    assert.equal(
+      await resolveCliBuildVersion({
+        rootDirectory: directory,
+        env: { RASPBERRYCODE_RELEASE_VERSION: " 3.3.3-dev.1 " },
+      }),
+      "3.3.3-dev.1",
+    );
+    assert.equal(
+      await resolveCliBuildVersion({
+        rootDirectory: directory,
+        env: { RASPBERRYCODE_RELEASE_VERSION: "   " },
+      }),
+      "9.8.7",
+    );
+    assert.equal(await resolveCliBuildVersion({ rootDirectory: directory, env: {} }), "9.8.7");
   } finally {
     await rm(directory, {
       force: true,

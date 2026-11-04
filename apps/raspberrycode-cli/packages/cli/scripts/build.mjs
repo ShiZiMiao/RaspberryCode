@@ -121,6 +121,14 @@ export const readRootPackageVersion = async ({ root = projectRoot } = {}) => {
   return packageJson.version;
 };
 
+// 统一分发包（外层 scripts/build-raspberrycode.mjs）经 RASPBERRYCODE_RELEASE_VERSION
+// 注入发行线版本，保证 tar.gz 内 doctor/--version 与发行 manifest 同源；
+// SEA 发行线不设该变量，仍用 CLI 工作区根 package.json 版本。
+export const resolveCliBuildVersion = ({ rootDirectory = projectRoot, env = process.env } = {}) => {
+  const releaseVersion = env.RASPBERRYCODE_RELEASE_VERSION?.trim();
+  return releaseVersion || readRootPackageVersion({ root: rootDirectory });
+};
+
 export const resolveBuildOptions = (args = [], env = process.env) => {
   const desktopAgent = args.includes(desktopAgentBuildFlag);
   const e2eCoverage = env.RASPBERRYCODE_E2E_COVERAGE === "1";
@@ -157,8 +165,9 @@ export const buildCli = async ({
   minify = false,
   sourcemap = true,
   env = process.env,
-  version = readRootPackageVersion({
-    root: rootDirectory,
+  version = resolveCliBuildVersion({
+    rootDirectory,
+    env,
   }),
 } = {}) => {
   const cliVersion = await version;

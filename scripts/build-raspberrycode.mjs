@@ -11,6 +11,7 @@ import {
   stageTuiRuntime,
 } from "./raspberrycode-distribution/assets.mjs";
 import { installScriptSource } from "./raspberrycode-distribution/installer.mjs";
+import { system32FirstEnv } from "./spawn-command.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 const defaultOutDir = resolve(root, "dist", "raspberrycode");
@@ -142,13 +143,16 @@ async function assertDirectory(directory, label) {
   }
 }
 
-async function buildOutputs(skipBuild) {
+async function buildOutputs(skipBuild, version) {
   if (skipBuild) {
     console.log("[raspberrycode] skipping build; reusing existing outputs");
     return;
   }
 
-  run("pnpm", ["--filter", "@raspberrycode/cli...", "build"]);
+  run("pnpm", ["--filter", "@raspberrycode/cli...", "build"], {
+    // 发行线版本注入 agent 构建：tar.gz 内 doctor/--version 与发行 manifest 同源。
+    env: { ...process.env, RASPBERRYCODE_RELEASE_VERSION: version },
+  });
   await rm(resolve(root, "packages", "server", "dist"), {
     force: true,
     recursive: true,
@@ -223,7 +227,8 @@ async function createTarball({ packageParent, releaseDir, tarballName }) {
   await rm(tarball, {
     force: true,
   });
-  run("tar", ["-czf", tarball, "-C", packageParent, packageDirName]);
+  // System32 优先解析到 bsdtar，避开 Git Bash 注入的 GNU tar 盘符冒号问题。
+  run("tar", ["-czf", tarball, "-C", packageParent, packageDirName], { env: system32FirstEnv() });
   return tarball;
 }
 
@@ -242,7 +247,7 @@ async function main() {
     throw new Error("Unable to resolve RaspberryCode version.");
   }
 
-  await buildOutputs(options.skipBuild);
+  await buildOutputs(options.skipBuild, version);
 
   const outDir = options.outDir;
   const workDir = resolve(outDir, ".work");

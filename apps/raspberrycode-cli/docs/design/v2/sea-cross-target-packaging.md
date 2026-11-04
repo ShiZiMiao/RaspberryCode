@@ -135,6 +135,8 @@ ESM/CommonJS 的实际目标文件，不能用全局 `zod` alias 把 v3 重定�
 
 普通 Node CLI bundle 和 SEA binary 必须使用仓库根目录 `package.json` 的 `version` 注入 `__CLI_VERSION__`。`packages/cli/package.json` 只是 workspace 子包元数据，不能作为 `raspberrycode --version`、`raspberrycode version`、`raspberrycode doctor --json`、RaspberryCode app-server 初始化版本字段、MCP client initialize `version`，或 `session.version` 的来源。
 
+例外——统一分发包发行线：外层 `scripts/build-raspberrycode.mjs` 打包 tar.gz 时经 `RASPBERRYCODE_RELEASE_VERSION` 把发行线版本传入 agent 构建（`scripts/build.mjs` 的 `resolveCliBuildVersion` 优先采用），使包内 `doctor`/`--version` 与发行 manifest（tar.gz 根 `package.json`）保持单一版本口径；SEA 发行线不设该变量，仍用仓库根 `package.json` 版本。
+
 构建脚本读取根 `package.json` 失败，或 `version` 不是非空字符串时，应中止构建并报告根版本元数据异常。源码测试环境未经过 bundle 注入时，运行时仍保留 `0.0.0` fallback，便于直接测试 `packages/cli/src/run.ts`。
 
 ## 注入与签名契约

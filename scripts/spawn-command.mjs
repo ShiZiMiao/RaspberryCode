@@ -1,7 +1,20 @@
 import { spawnSync } from "node:child_process";
+import { join } from "node:path";
 
 const windowsShellCommandPattern = /\.(cmd|bat)$/i;
 const windowsShellCommandNames = new Set(["npm", "pnpm"]);
+
+// Bugfix: Git Bash 会把 /usr/bin（GNU tar 1.35）注入 PATH 最前，构建脚本子进程 spawn "tar"
+// 会解析到 GNU tar——它把归档参数里的盘符冒号（C:）当远程主机名（"Cannot connect to C"）。
+// 真实 Windows 用户 PATH 中 System32 本就靠前（自带 bsdtar）；tar 类 spawn 用本函数恢复
+// 同样顺序，与 vitest.setup.ts 的测试入口修复同语义（那边覆盖测试进程，这边覆盖构建子进程）。
+export function system32FirstEnv(env = process.env, platform = process.platform) {
+  if (platform !== "win32") return env;
+  const system32 = join(env.SystemRoot ?? "C:\\Windows", "System32");
+  const entries = (env.PATH ?? "").split(";");
+  const rest = entries.filter((entry) => entry.toLowerCase() !== system32.toLowerCase());
+  return { ...env, PATH: [system32, ...rest].join(";") };
+}
 
 export function resolveSpawnRuntimeOptions(command, platform = process.platform) {
   if (

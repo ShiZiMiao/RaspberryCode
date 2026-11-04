@@ -11,7 +11,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import process from "node:process";
-import { runCommand } from "./spawn-command.mjs";
+import { runCommand, system32FirstEnv } from "./spawn-command.mjs";
 
 // Bugfix: Windows GNU tar（Git Bash）会把绝对路径里的盘符冒号（C:）当成远程主机名，
 // 反斜杠路径也会被 MSYS 参数转换破坏。tar 参数统一转正斜杠，归档路径优先改用
@@ -58,7 +58,8 @@ export function extractPrebuiltArchive({ archivePath, archiveExt, extractDir, cw
   runCommand(
     "tar",
     ["-xzf", resolveTarArchiveArg(archivePath, tarCwd), "-C", toTarPosixPath(extractDir)],
-    { cwd: tarCwd },
+    // System32 优先解析到 bsdtar，避开 Git Bash 注入的 GNU tar 盘符冒号问题。
+    { cwd: tarCwd, env: system32FirstEnv() },
   );
 }
 

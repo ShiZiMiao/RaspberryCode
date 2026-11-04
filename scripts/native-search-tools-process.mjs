@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { system32FirstEnv } from "./spawn-command.mjs";
 
 function formatCommand(command, args) {
   return [command, ...args].join(" ");
@@ -77,7 +78,8 @@ export function downloadAndExtractSources({ sources, workDir, env, quiet }) {
     const sourcePath = join(sourcesDir, source.id);
     mkdirSync(sourcePath, { recursive: true });
     run("tar", ["-xzf", archivePath, "-C", sourcePath, "--strip-components=1"], {
-      env,
+      // System32 优先解析到 bsdtar，避开 Git Bash 注入的 GNU tar 盘符冒号问题。
+      env: system32FirstEnv(env),
       quiet,
     });
     sourcePaths[source.id] = sourcePath;
