@@ -56,18 +56,29 @@ RaspberryCode 是独立发行的 CodingAgent 工具，模型供应商生态必�
   `packages/raspberrycode-server-cli/src/runtime/paths.ts`（运行侧，远端本机）——两处必须实现同一条解析规则。
 - daemon 服务名：`packages/raspberrycode-server-cli/src/platform/serviceManager.ts`。
 
-## 命名迁移台账（新名 + 旧名读兼容）
+## 命名迁移与旧名读兼容台账
 
-规则 6 的迁移约定落地明细；旧名只读不写，新代码一律新名：
+规则 6 的落地终态（全新独立发行）。台账只记录两类事实：仍在生效的旧名读兼容
+（读侧归一、写入只写新名），与已收敛为唯一命名的终态面。历史旧名原文保存在
+`docs/archive/` 与中立性审计报告（历史文档豁免），本文件遵守「活跃文档零旧产品名」口径。
 
-| 面                  | 旧名（读兼容保留）                                         | 新名（唯一写入）                                                 | 解析规则                                                                                                                                     |
-| ------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| 远端 server 根      | `~/.raspberrycode/server`                                          | `~/.raspberrycode/server`                                        | 显式配置（`RASPBERRYCODE_SERVER_RUNTIME_ROOT` / `RASPBERRYCODE_DATA_BASE_DIR`）优先；否则旧根目录存在即继续用旧根（含已部署 wrapper 持续生效），不存在用新根 |
-| 远端 agent 资源目录 | `agents/glm/`、组件 id `glm`、`.asset-components/glm.json` | `agents/agent/`、组件 id `agent`、`.asset-components/agent.json` | 旧组件缓存由 remoteAssetInstaller 的 legacy-component 清理逻辑回收                                                                           |
-| agent provider 标识 | `glm`（历史 modelSelection/session 迁移值）                | `agent`                                                          | 读侧归一化映射（`model-selection.ts`、`taskIndexRepo.ts`），旧值只读                                                                         |
-| daemon 服务名       | `com.zhipu.raspberrycode.server(.<hash>)`                          | `com.raspberrycode.server(.<hash>)`                              | 注册/管理识别新旧两个名字；同 root 旧服务先注销再以新名注册                                                                                  |
-| 主题内部代号        | `zai-light`、`zai-dark`（localStorage 旧值）                       | `light`、`dark`、`system`                                        | `useTheme.ts` 的 `LEGACY_THEME_MAP` 读侧归一，写入只写新值；renderer 初始化（main.tsx）复用同一归一函数，避免旧值用户首帧错亮主题            |
-| 本地数据目录        | `~/.raspberrycode`（仅迁移残留）                                   | `~/.raspberrycode`                                               | 既有读兼容；新写入只落 `.raspberrycode`                                                                                                      |
+### 仍保留的旧名读兼容（只读不写）
+
+| 面                   | 旧值（只读兼容）                                       | 新值（唯一写入）                  | 解析规则                                                                                             |
+| -------------------- | ------------------------------------------------------ | --------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| agent provider 标识  | `glm`（历史 modelSelection/session 迁移值）            | `agent`                           | 读侧归一化映射（`model-selection.ts` 等），旧值只读                                                   |
+| 主题内部代号         | `zai-light`、`zai-dark`（localStorage 旧值）           | `light`、`dark`、`system`         | `useTheme.ts` 的 `LEGACY_THEME_MAP` 读侧归一，写入只写新值；renderer 初始化（main.tsx）复用同一归一函数 |
+| agent 二进制环境变量 | `GLM_BINARY_PATH`（用户残留 `.env` 的读兼容兜底）        | `RASPBERRYCODE_AGENT_BINARY_PATH` | 桌面端读兼容旧名（`desktopRuntimeEnv.ts`，且不下发给 host）；文档与写入只用新名                            |
+| 历史数据旧值         | `zhipu-account`、`zhipu-coding-plan-api-key` 等旧配置值 | 现行 api-key / metered-api-key 体系 | 规则 7 的读兼容面（session migration 映射、MCP `http_headers` 旧字段同此）                            |
+
+### 全新发行终态（历史布局兼容已移除）
+
+| 面                   | 终态唯一命名                        | 说明                                                                                                                                                                            |
+| -------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 远端 server 根       | `~/.raspberrycode/server`           | 部署侧（`deployShared.resolveRemoteServerBase`）、运行侧（`paths.ts getDefaultServerDataRoot`）、Shell 侧（`sourceServerProbe`）同一条规则：缺省固定新根（运行侧另有 `RASPBERRYCODE_DATA_BASE_DIR` 显式覆盖），不探测、不续用历史布局 |
+| 远端 agent 资源目录  | `agents/` + 组件 id `agent`         | 组件元数据 `.asset-components/agent.json`；旧组件缓存的 legacy 清理逻辑已随历史布局兼容一并移除，旧工作树残留由 prepare 脚本重建覆盖                                             |
+| daemon 服务名        | `com.raspberrycode.server(.<hash>)` | 注册/管理只使用该名；旧名服务不再识别                                                                                                                                            |
+| 本地数据目录         | `~/.raspberrycode`                  | 唯一数据根；历史布局目录不再读取（含旧产品名目录，遵守「发版零旧产品名」口径）                                                                                                   |
 
 ## 验收场景
 
@@ -77,5 +88,6 @@ RaspberryCode 是独立发行的 CodingAgent 工具，模型供应商生态必�
 3. provider 列表顺序等于配置声明顺序，无品牌置顶；任意内置模板可按统一规则处理删除。
 4. 全仓运行时源码（排除兼容映射、测试 fixture、历史迁移）无品牌能力分支；
    `pnpm typecheck`、`pnpm lint` 通过，受影响单测更新后通过。
-5. 命名迁移后：旧布局机器（`~/.raspberrycode/server`、`agents/glm`、`com.zhipu.raspberrycode.server`）
-   继续可用且不迁移数据；新装机器一律落新名；两端（部署侧/运行侧）解析结果一致。
+5. 全新发行终态：部署侧/运行侧/Shell 侧三处 server 根解析结果一致（缺省 `~/.raspberrycode/server`）；
+   历史布局不再探测或续用（历史机器按新布局重新部署），旧名读兼容仅限台账「仍保留的旧名读兼容」
+   表所列四类且只读不写；`pnpm typecheck`、`pnpm lint` 与 `node scripts/audit-neutrality.mjs` 保持通过。
