@@ -38,6 +38,8 @@ describe("Bash cwd policy", () => {
         exitCode: 0,
         resolvedCwd: "/repo/subdir",
         workspaceRoot: "/repo",
+        // 显式声明 POSIX 语义：缺省平台取宿主，断言期望按固定语义不随宿主漂移。
+        platform: "linux",
         runtimeScope: "main",
       }),
     ).toEqual({ nextWorkingDirectory: "/repo/subdir" });
@@ -50,6 +52,7 @@ describe("Bash cwd policy", () => {
         exitCode: 0,
         resolvedCwd: "/tmp/outside",
         workspaceRoot: "/repo",
+        platform: "linux",
         runtimeScope: "main",
       }),
     ).toEqual({
@@ -77,6 +80,7 @@ describe("Bash cwd policy", () => {
         exitCode: 0,
         resolvedCwd: "/private/tmp/repo/subdir",
         workspaceRoot: "/tmp/repo",
+        platform: "darwin",
         runtimeScope: "main",
       }),
     ).toEqual({ nextWorkingDirectory: "/tmp/repo/subdir" });
@@ -196,6 +200,8 @@ describe("Bash cwd policy", () => {
         exitCode: 0,
         resolvedCwd: "/repo/..cache",
         workspaceRoot: "/repo",
+        // 显式声明 POSIX 语义：缺省平台取宿主，Windows 宿主会按 win32 规范化反斜杠。
+        platform: "linux",
         runtimeScope: "main",
       }),
     ).toEqual({ nextWorkingDirectory: "/repo/..cache" });

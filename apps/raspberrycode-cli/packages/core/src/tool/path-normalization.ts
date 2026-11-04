@@ -2,7 +2,7 @@
 // Tool Path Normalization Helpers
 // ============================================================
 
-import path, { normalize } from "node:path";
+import path from "node:path";
 import { platform as currentPlatform } from "node:process";
 
 export type ToolPathPlatform = NodeJS.Platform;
@@ -16,8 +16,11 @@ export function normalizeToolPathForComparison(
   filePath: string,
   platform: ToolPathPlatform = currentPlatform,
 ): string {
+  // Bugfix: 非 win32 声明必须用 posix 归一化。此前用宿主 path.normalize，Windows 宿主
+  // 处理 POSIX 语义路径（如 Windows 桌面连远程 Linux 工作区）会把 /repo 归一成 \repo，
+  // 令 Bash cwd 边界比较与工具路径比较在跨平台场景错乱。
   const normalized =
-    platform === "win32" ? normalizeWindowsToolPath(filePath) : normalize(filePath);
+    platform === "win32" ? normalizeWindowsToolPath(filePath) : path.posix.normalize(filePath);
   return normalized.normalize("NFC");
 }
 
