@@ -5,6 +5,20 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createNodeCustomCommandAdapter } from "../src/commands/index.js";
 
+// Windows 无开发者模式时创建 symlink 会 EPERM；symlink 主题用例按能力探测跳过
+// （与 provider-node model-selection-config-repository.test.ts 同一惯例，覆盖由 CI Linux 承担）。
+const canCreateSymlink = await (async () => {
+  const probeRoot = await mkdtemp(join(tmpdir(), "raspberrycode-symlink-probe-"));
+  try {
+    await symlink(probeRoot, join(probeRoot, "link"), "dir");
+    return true;
+  } catch {
+    return false;
+  } finally {
+    await rm(probeRoot, { force: true, recursive: true });
+  }
+})();
+
 describe("NodeCustomCommandAdapter", () => {
   it("discovers project custom commands with frontmatter", async () => {
     const dir = await mkdtemp(join(tmpdir(), "raspberrycode-commands-"));
@@ -180,7 +194,9 @@ describe("NodeCustomCommandAdapter", () => {
       await rm(dir, { force: true, recursive: true });
     }
   });
-  it("discovers commands imported as file symlinks", async () => {
+  (canCreateSymlink ? it : it.skip)(
+    "discovers commands imported as file symlinks",
+    async () => {
     // 回归测试：外部 agent 导入默认 importMode="symlink"，命令文件是指向源文件的软链。
     // 旧逻辑只检查 entry.isFile() 会漏掉 symlink（readdir 报告为 isSymbolicLink()）。
     const dir = await mkdtemp(join(tmpdir(), "raspberrycode-commands-"));
@@ -210,7 +226,7 @@ describe("NodeCustomCommandAdapter", () => {
     }
   });
 
-  it("discovers commands inside a symlinked directory", async () => {
+  (canCreateSymlink ? it : it.skip)("discovers commands inside a symlinked directory", async () => {
     const dir = await mkdtemp(join(tmpdir(), "raspberrycode-commands-"));
     const sourceDir = join(dir, "source-commands");
     const commandRoot = join(dir, ".raspberrycode", "commands");
@@ -231,7 +247,9 @@ describe("NodeCustomCommandAdapter", () => {
     }
   });
 
-  it("skips dangling command symlinks without failing the scan", async () => {
+  (canCreateSymlink ? it : it.skip)(
+    "skips dangling command symlinks without failing the scan",
+    async () => {
     const dir = await mkdtemp(join(tmpdir(), "raspberrycode-commands-"));
     const commandDir = join(dir, ".raspberrycode", "commands");
 

@@ -7,7 +7,17 @@ import { stageE2EAppOutput } from "./e2e/helpers/e2e-app-output-stage.js";
 const testDirs: string[] = [];
 
 afterEach(async () => {
-  await Promise.all(testDirs.splice(0).map((dir) => rm(dir, { force: true, recursive: true })));
+  // Windows 文件锁/批量删除守卫会让 rm 偶发失败；暂存目录是 gitignore 的测试夹具，
+  // 清理失败只告警不判失败（与 prebuilt-binary-extract 的临时目录清理同语义）。
+  await Promise.all(
+    testDirs.splice(0).map(async (dir) => {
+      try {
+        await rm(dir, { force: true, recursive: true });
+      } catch (error) {
+        console.warn(`[warn] 清理测试暂存目录失败（可忽略）: ${dir}`, error);
+      }
+    }),
+  );
 });
 
 async function createTestDirs() {

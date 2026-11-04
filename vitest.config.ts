@@ -80,6 +80,8 @@ export default defineConfig({
     },
   },
   test: {
+    // 先于 worker 启动关闭 WorkBuddy 删除护栏（详见文件内注释），避免测试清理被误拦。
+    globalSetup: ["./vitest.global-setup.ts"],
     setupFiles: ["./vitest.setup.ts"],
     // 官方 affected 图不额外追踪 setupFiles；公共 setup 必须触发全量选择，再由入口跳过 UT 并成功退出。
     forceRerunTriggers: [

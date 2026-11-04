@@ -6,6 +6,19 @@ import { getGenUiOutputDirectory } from "@raspberrycode/shared/node";
 import { readGenUiDocument } from "./files.js";
 
 const roots: string[] = [];
+// Windows 无开发者模式时创建文件 symlink 会 EPERM（junction 无需特权）；
+// 文件 symlink 断言按能力探测降级，junction 断言保持常跑（同 provider-node 探测惯例）。
+const canCreateSymlink = await (async () => {
+  const probeRoot = await mkdtemp(join(tmpdir(), "raspberrycode-symlink-probe-"));
+  try {
+    await symlink(probeRoot, join(probeRoot, "link"), "dir");
+    return true;
+  } catch {
+    return false;
+  } finally {
+    await rm(probeRoot, { force: true, recursive: true });
+  }
+})();
 afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
@@ -60,8 +73,10 @@ describe("Gen UI executor file reader", () => {
     await expect(readGenUiDocument({ ...target, path: oldPath }, outputRoot)).rejects.toThrow(
       "host output directory",
     );
-    await symlink(oldPath, target.path);
-    await expect(readGenUiDocument(target, outputRoot)).rejects.toThrow("symbolic links");
+    if (canCreateSymlink) {
+      await symlink(oldPath, target.path);
+      await expect(readGenUiDocument(target, outputRoot)).rejects.toThrow("symbolic links");
+    }
     await rm(directory, { recursive: true });
     await symlink(target.workspacePath, directory, "junction");
     await expect(readGenUiDocument(target, outputRoot)).rejects.toThrow("symbolic links");
