@@ -8,6 +8,9 @@
     "declarationMap": true,
     "sourceMap": true,
     "composite": true,
+    // 构建产物（dist）统一剥离注释：白名单源码注释里的历史厂商/旧产品名字样
+    // 会随编译镜像进发行产物，触发中立性审计的产物层报告项；源码注释保留，产物不带。
+    "removeComments": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
