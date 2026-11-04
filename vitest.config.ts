@@ -60,7 +60,7 @@ const forkIsolatedTests = [
 export default defineConfig({
   // 测试固定注入事件上报端点，使遥测上报链路在单测中可验证；真实构建由 scripts/build-time-config.mjs 决定。
   define: {
-    __RASPBERRYCODE_TELEMETRY_REPORT_ENDPOINT__: JSON.stringify("https://raspberrycode.z.ai/api/v1/event/report"),
+    __RASPBERRYCODE_TELEMETRY_REPORT_ENDPOINT__: JSON.stringify("https://raspberrycode.example.com/api/v1/event/report"),
   },
   resolve: {
     alias: {
