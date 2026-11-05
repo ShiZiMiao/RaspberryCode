@@ -878,7 +878,10 @@ export class RemoteDownloadAssetInstaller implements RemoteAssetInstaller {
       // 远端下载中断可能留下 .lock 目录。持锁进程定期刷新 mtime，等待方只清理超过 10 分钟没有心跳的锁，
       // 避免用户断开后再次选择远端下载时一直等待，同时不误伤仍在慢速下载的正常进程。
       `while ! mkdir ${quotedLockDir} 2>/dev/null; do if [ -e ${quotePosixPathArg(readyPath)} ]; then rm -rf ${quotePosixPathArg(stagingDir)}; exit 0; fi; lock_mtime=$({ stat -c %Y ${quotedLockDir} || stat -f %m ${quotedLockDir}; } 2>/dev/null || printf 0); lock_now=$(date +%s); if [ "$lock_mtime" -gt 0 ] && [ $((lock_now - lock_mtime)) -ge 600 ]; then echo ${quotePosixShellArg(`[remote-assets] stale lock for ${component.id}@${component.version}, retrying`)} >&2; rm -rf ${quotedLockDir}; continue; fi; sleep 1; done`,
-      `lock_heartbeat_pid=; (while :; do touch ${quotedLockDir} 2>/dev/null || exit 0; sleep 30; done) & lock_heartbeat_pid=$!`,
+      // Bugfix: 心跳子 shell 不需要输出，必须丢弃 stdout/stderr——否则它的 `sleep 30` 孤儿进程
+      // 会继承管道，主脚本退出后 close 仍要等管道 EOF（最多 30 秒），拖慢 local/docker 后端收口，
+      // 测试夹具按 close 判定收口会直接超时。
+      `lock_heartbeat_pid=; (while :; do touch ${quotedLockDir} 2>/dev/null || exit 0; sleep 30; done) >/dev/null 2>&1 & lock_heartbeat_pid=$!`,
       `trap ${quotePosixShellArg(cleanupCommand)} EXIT`,
       `if [ -e ${quotePosixPathArg(readyPath)} ]; then exit 0; fi`,
       downloadCommand,

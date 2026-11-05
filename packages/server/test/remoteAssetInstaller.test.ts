@@ -107,7 +107,15 @@ class ShellInstallerBackend extends InstallerBackend {
       '"$HOME"',
       quotePosixShellArg(toLocalShellPath(this.rootDir)),
     );
-    const child = spawn(localShellCommand!, ["-c", `${this.prelude}\n${isolatedCommand}`], {
+    // Bugfix: Windows 下 Node 的 argv 转义与 bash.exe 的 MSVCRT 解引用在「反斜杠+引号」处
+    // 不一致，含 printf '%s' 等片段的大脚本经 `bash -c <argv>` 会被啃坏引号（unexpected EOF）。
+    // 真实 backend 均经 stdin 注入脚本；夹具改为临时脚本文件执行，语义等价且避开 argv 转义。
+    const scriptPath = join(
+      tmpdir(),
+      `raspberrycode-shell-exec-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}.sh`,
+    );
+    await writeFile(scriptPath, `${this.prelude}\n${isolatedCommand}`, "utf8");
+    const child = spawn(localShellCommand!, [scriptPath], {
       detached: process.platform !== "win32",
     });
     let stdout = "";
@@ -131,6 +139,7 @@ class ShellInstallerBackend extends InstallerBackend {
       child.once("error", reject);
       child.once("close", (exitCode) => resolve(exitCode ?? 1));
     });
+    await rm(scriptPath, { force: true }).catch(() => undefined);
     return createClosedStream([stdout], code, stderr);
   }
 }
