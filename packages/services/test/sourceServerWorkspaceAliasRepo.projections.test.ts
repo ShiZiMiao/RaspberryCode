@@ -240,6 +240,7 @@ describe("Source Server duplicate task projections", () => {
     const db = new DatabaseSync(taskDbPath);
     try {
       // 旧版本回填先更新索引列，后续 snapshot 同步才补齐 meta_json。
+      db.exec("PRAGMA busy_timeout = 5000");
       db.prepare(
         "UPDATE tasks SET cron_automation_id = 'legacy-auto', off_peak_task_id = 'legacy-off-peak' WHERE workspace_key = ?",
       ).run(sourceKey);
@@ -253,9 +254,18 @@ describe("Source Server duplicate task projections", () => {
     await expect(index.getTaskMeta(task(canonicalKey))).resolves.toMatchObject({
       cronAutomationId: "legacy-auto",
     });
-    const legacyColumns = new DatabaseSync(taskDbPath)
-      .prepare("SELECT off_peak_task_id FROM tasks WHERE workspace_key = ?")
-      .get(canonicalKey) as { off_peak_task_id: string | null };
+    // Bugfix: 裸连接必须 close——泄漏句柄会让 WAL 的 -shm/-wal 残留（清理 EBUSY）；
+    // busy_timeout 让写入在索引并发写锁下等待而不是立刻 SQLITE_BUSY。
+    const legacyDb = new DatabaseSync(taskDbPath);
+    legacyDb.exec("PRAGMA busy_timeout = 5000");
+    let legacyColumns: { off_peak_task_id: string | null };
+    try {
+      legacyColumns = legacyDb
+        .prepare("SELECT off_peak_task_id FROM tasks WHERE workspace_key = ?")
+        .get(canonicalKey) as { off_peak_task_id: string | null };
+    } finally {
+      legacyDb.close();
+    }
     expect(legacyColumns.off_peak_task_id).toBe("legacy-off-peak");
   });
 
