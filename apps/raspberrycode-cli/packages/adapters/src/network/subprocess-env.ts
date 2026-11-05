@@ -76,9 +76,7 @@ function applyProxyEnv(
 ): void {
   const configuredProxy = normalizeProxyValue(network.httpProxy);
   if (configuredProxy) {
-    for (const key of ALL_PROXY_KEYS) {
-      setEnvKey(env, key, configuredProxy, platform);
-    }
+    setEnvKeyGroup(env, ALL_PROXY_KEYS, configuredProxy, platform);
     return;
   }
 
@@ -86,9 +84,7 @@ function applyProxyEnv(
     getFirstEnvValue(sourceEnv, [RASPBERRYCODE_HTTP_PROXY_ENV_KEY], platform),
   );
   if (raspberrycodeProxy) {
-    for (const key of ALL_PROXY_KEYS) {
-      setEnvKey(env, key, raspberrycodeProxy, platform);
-    }
+    setEnvKeyGroup(env, ALL_PROXY_KEYS, raspberrycodeProxy, platform);
     return;
   }
 }
@@ -105,9 +101,7 @@ function applyNoProxyEnv(
   if (!noProxy) {
     return;
   }
-  for (const key of NO_PROXY_KEYS) {
-    setEnvKey(env, key, noProxy, platform);
-  }
+  setEnvKeyGroup(env, NO_PROXY_KEYS, noProxy, platform);
 }
 
 function applyCaEnv(
@@ -165,6 +159,33 @@ function setEnvKey(
 ): void {
   deleteEnvKey(env, key, platform);
   env[key] = value;
+}
+
+/**
+ * 按大小写变体成组写入同值。POSIX 上大小写是不同变量（curl 读大写、wget 读小写），
+ * 全部写入；Windows env 大小写不敏感，同名键去重后只保留首个规范拼写（列表大写在前）。
+ * Bugfix：此前逐键 setEnvKey，win32 的去重会让后写的小写拼写覆盖先写的大写，
+ * 使 stdio 子进程 env 在 Windows 上只剩小写键（与测试契约及大写惯例不一致）。
+ */
+function setEnvKeyGroup(
+  env: Record<string, string>,
+  keys: readonly string[],
+  value: string,
+  platform: NodeJS.Platform,
+): void {
+  if (platform !== "win32") {
+    for (const key of keys) {
+      setEnvKey(env, key, value, platform);
+    }
+    return;
+  }
+  const seen = new Set<string>();
+  for (const key of keys) {
+    const lowerKey = key.toLowerCase();
+    if (seen.has(lowerKey)) continue;
+    seen.add(lowerKey);
+    setEnvKey(env, key, value, platform);
+  }
 }
 
 function deleteEnvKey(env: Record<string, string>, key: string, platform: NodeJS.Platform): void {

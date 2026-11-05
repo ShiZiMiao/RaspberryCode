@@ -852,7 +852,7 @@ describe("createMcpAdapter", () => {
     });
 
     const options = capturedStdioOptions[0] as { env?: Record<string, string> };
-    expect(options.env).toMatchObject({
+    const expectedEnv: Record<string, string> = {
       ALL_PROXY: "http://127.0.0.1:8888",
       CURL_CA_BUNDLE: "/tmp/root-ca.pem",
       GIT_SSL_CAINFO: "/tmp/root-ca.pem",
@@ -865,11 +865,18 @@ describe("createMcpAdapter", () => {
       PATH: dirname(process.execPath),
       REQUESTS_CA_BUNDLE: "/tmp/root-ca.pem",
       SSL_CERT_FILE: "/tmp/root-ca.pem",
-      all_proxy: "http://127.0.0.1:8888",
-      http_proxy: "http://127.0.0.1:8888",
-      https_proxy: "http://127.0.0.1:8888",
-      no_proxy: "localhost,127.0.0.1",
-    });
+    };
+    if (process.platform !== "win32") {
+      // POSIX 上大小写变体是不同环境变量并存（curl 读大写、wget 读小写）；
+      // Windows env 大小写不敏感，同名键只保留规范大写拼写。
+      Object.assign(expectedEnv, {
+        all_proxy: "http://127.0.0.1:8888",
+        http_proxy: "http://127.0.0.1:8888",
+        https_proxy: "http://127.0.0.1:8888",
+        no_proxy: "localhost,127.0.0.1",
+      });
+    }
+    expect(options.env).toMatchObject(expectedEnv);
   });
 
   it("restores captured user network env into stdio MCP transports", async () => {
