@@ -73,7 +73,9 @@ beforeEach(async () => {
 
 afterEach(async () => {
   index.close();
-  await rm(root, { recursive: true, force: true });
+  // Windows 上 SQLite 的 -shm/-wal 文件在 close 后仍可能被短暂持锁（EBUSY），
+  // 清理带重试，避免瞬态文件锁把用例判失败。
+  await rm(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 });
 
 describe("Source Server duplicate task projections", () => {
@@ -108,7 +110,9 @@ describe("Source Server duplicate task projections", () => {
       const sourceWins = order !== "canonical-newer";
       const expectedMeta = {
         status: sourceWins ? "completed" : "error",
-        provider: "glm",
+        // provider 身份值随品牌改名 glm→agent（17728a47）：夹具写入的 "glm" 是旧值读兼容输入，
+        // 按「写入只写新名」策略投影落库即归一为 agent（见 raspberrycode-agent-policy 归一）。
+        provider: "agent",
         mode: sourceWins ? "plan" : "default",
         model: sourceWins ? "model-new" : "model-old",
         migrationSource: "claudeCode",
