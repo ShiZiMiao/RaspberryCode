@@ -1,4 +1,4 @@
-!include nsDialogs.nsh
+﻿!include nsDialogs.nsh
 !include FileFunc.nsh
 
 !ifndef RASPBERRYCODE_INSTALLER_DEFAULT_LOG_PATH

@@ -25,7 +25,14 @@ export function createEncodedPowerShellArgs(script, values = []) {
         `$raspberrycodeArg${index}=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${encodeUtf8Value(value)}'));`,
     )
     .join("");
-  const encodedCommand = Buffer.from(`${valueBindings}${script}`, "utf16le").toString("base64");
+  // Bugfix: PowerShell 5.1 默认按系统 OEM 代码页写 stdout，中文 Windows 上非 ASCII 值
+  // 会被调用方的 UTF-8 解码读成乱码；序言固定输出编码为 UTF-8（现调用方输出均为
+  // base64/ASCII 不受影响，未来非 ASCII 输出由此保持往返保真）。
+  const outputEncoding = "[Console]::OutputEncoding=[Text.Encoding]::UTF8;";
+  const encodedCommand = Buffer.from(
+    `${outputEncoding}${valueBindings}${script}`,
+    "utf16le",
+  ).toString("base64");
   return [...POWERSHELL_COMMON_ARGS, "-EncodedCommand", encodedCommand];
 }
 

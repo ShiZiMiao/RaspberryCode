@@ -49,10 +49,18 @@ describe("NSIS installSection template patch", () => {
     const path = join(root, "installSection.nsh");
     try {
       // 只修改隔离副本，不污染开发依赖；真实模板锚点变更不能被手写 fixture 掩盖。
+      // node_modules 模板可能已被构建期补丁打点（构建中断未还原时残留幂等标记）；
+      // 已补丁态下首次调用是幂等 no-op，两种状态的补丁产物与还原闭环断言一致。
       await writeFile(path, source);
+      const prePatched = source.includes(PATCH_MARKER);
       const first = await patchNsisInstallSectionFile(path);
-      expect(first.changed).toBe(true);
-      expect(first.originalSource).toBe(source);
+      expect(first.changed).toBe(!prePatched);
+      if (prePatched) {
+        // 已补丁态首次调用是幂等 no-op：无 originalSource，文件字节保持不变。
+        expect(first.originalSource).toBeNull();
+      } else {
+        expect(first.originalSource).toBe(source);
+      }
       const patched = await readFile(path, "utf8");
       const sequence = [
         "!insertmacro customInstallSectionStarted",
@@ -74,7 +82,9 @@ describe("NSIS installSection template patch", () => {
         changed: false,
         originalSource: null,
       });
-      restoreNsisInstallSectionFileSync({ filePath: path, originalSource: first.originalSource });
+      if (!prePatched) {
+        restoreNsisInstallSectionFileSync({ filePath: path, originalSource: first.originalSource! });
+      }
       expect(await readFile(path, "utf8")).toBe(source);
     } finally {
       await rm(root, { recursive: true, force: true });

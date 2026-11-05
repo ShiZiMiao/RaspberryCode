@@ -1,4 +1,4 @@
-Unicode true
+﻿Unicode true
 Name "RaspberryCode installer.nsh smoke"
 OutFile "${OUTPUT_FILE}"
 InstallDir "$TEMP\raspberrycode-installer-nsh-smoke"
