@@ -18,7 +18,11 @@ describe("service manager adapters", () => {
     vi.mocked(childProcess.spawn).mockReset();
   });
 
-  it("finishes a timed-out probe while a descendant still holds its pipes", async () => {
+  // Windows 上父进程被杀后管道句柄级联回收，后代（继承 stdout）会随 EPIPE 退出，
+  // 「后代持管存活」场景无法构造；该超时收口语义的覆盖由 CI Linux 承担。
+  it.skipIf(process.platform === "win32")(
+    "finishes a timed-out probe while a descendant still holds its pipes",
+    async () => {
     const { spawn } = await vi.importActual<typeof childProcess>("node:child_process");
     let descendantPid = 0;
     let settled = false;
@@ -55,7 +59,14 @@ describe("service manager adapters", () => {
       await vi.waitFor(() => expect(settled).toBe(true), { timeout: 500 });
       expect(await probe).toBe(false);
     } finally {
-      if (descendantPid > 0) process.kill(descendantPid, "SIGKILL");
+      if (descendantPid > 0) {
+        // Windows 上探测超时后子进程可能已自行退出，清理 kill 报 ESRCH 属正常，不判失败。
+        try {
+          process.kill(descendantPid, "SIGKILL");
+        } catch {
+          /* 已退出 */
+        }
+      }
       await probe;
     }
   });

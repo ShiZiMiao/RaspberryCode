@@ -58,10 +58,13 @@ describe("file applications", () => {
   it("支持用户 Applications 下安装的应用", async () => {
     const def = getFileApplicationDefs("darwin").find((def) => def.id === "pages")!;
     accessMock.mockImplementation(async (path: string) => {
-      if (!path.endsWith("/Applications/Pages.app") || path === "/Applications/Pages.app")
+      // Windows 宿主上 join() 生成反斜杠路径；匹配前统一斜杠，避免 mock 因分隔符漏配。
+      const normalized = path.replaceAll("\\", "/");
+      if (!normalized.endsWith("/Applications/Pages.app") || normalized === "/Applications/Pages.app")
         throw new Error("ENOENT");
     });
-    expect(await resolveFileApplicationPath(def, "darwin")).toMatch(/\/Applications\/Pages.app$/);
+    const resolved = await resolveFileApplicationPath(def, "darwin");
+    expect(resolved!.replaceAll("\\", "/")).toMatch(/\/Applications\/Pages.app$/);
   });
   it("Linux 从 PATH 查找可执行文件", async () => {
     accessMock.mockImplementation(async (path: string) => {
