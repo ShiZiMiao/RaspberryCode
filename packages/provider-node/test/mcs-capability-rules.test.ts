@@ -62,31 +62,7 @@ describe("MCS published capability boundaries", () => {
         provider.config.access.mode !== "off-peak",
       );
     }
-    for (const baseUrl of [
-      "https://raspberrycode.example.com/api/v1/off-peak/anthropic/",
-      "https://raspberrycode.example.com/api/v1/raspberrycode-plan/anthropic/",
-    ]) {
-      expect(
-        rules.resolve({
-          providerId: "fixture",
-          modelId: "unknown",
-          apiType: "anthropic-messages",
-          baseUrl,
-        }).properties?.supportsMidConversationSystem,
-      ).toBe(true);
-      for (const negative of [
-        `${baseUrl}extra`,
-        baseUrl.replace("raspberrycode.example.com", "raspberrycode.example.com.evil.example"),
-      ]) {
-        expect(
-          rules.resolve({
-            providerId: "fixture",
-            modelId: "unknown",
-            apiType: "anthropic-messages",
-            baseUrl: negative,
-          }).properties?.supportsMidConversationSystem,
-        ).toBe(false);
-      }
-    }
+    // 官方 plan/off-peak 网关已随账号订阅链拆除（server 无对应路由），网关精确端点的
+    // 授予用例随之退役；数据侧的死网关规则同步清理（BYOK 厂商授予与防仿冒断言保留在上方）。
   });
 });

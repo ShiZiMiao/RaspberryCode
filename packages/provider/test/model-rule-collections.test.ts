@@ -201,19 +201,17 @@ describe("Todo104 规则集合读写与应用", () => {
         apiType,
         baseUrl,
       }).properties;
+    // 官方 plan 网关（raspberrycode.example.com 占位的网关家族）已随账号订阅链拆除，
+    // 数据侧死网关规则与断言同步清理；BYOK 厂商精确端点授予与防仿冒负例保留。
     for (const baseUrl of [
       "https://api.z.ai/api/anthropic",
       "https://open.bigmodel.cn/api/anthropic",
-      "https://raspberrycode.example.com/api/v1/raspberrycode-plan/anthropic",
     ]) {
       expect(resolve(baseUrl)?.inputFormat).toMatchObject({
         supportsImage: true,
         supportsVideo: true,
       });
     }
-    expect(resolve("https://raspberrycode.example.com/api/v1/raspberrycode-plan/anthropic")?.supportsNativeWebSearch).toBe(
-      true,
-    );
     expect(resolve("https://api.z.ai/api/anthropic")?.supportsNativeWebSearch).toBe(true);
     expect(resolve("https://open.bigmodel.cn/api/anthropic")?.supportsMidConversationSystem).toBe(
       true,

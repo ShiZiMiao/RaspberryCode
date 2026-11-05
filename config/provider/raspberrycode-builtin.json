@@ -4144,30 +4144,6 @@
           }
         },
         {
-          "modelMatch": ".*",
-          "baseUrlMatch": "https://raspberrycode\\.z\\.ai/api/v1/raspberrycode-plan/anthropic/?",
-          "config": {
-            "properties": {
-              "inputFormat": {
-                "supportsImage": true,
-                "supportsVideo": true
-              }
-            }
-          }
-        },
-        {
-          "modelMatch": ".*",
-          "baseUrlMatch": "https://raspberrycode\\.z\\.ai/api/v1/highspeed/anthropic/?",
-          "config": {
-            "properties": {
-              "inputFormat": {
-                "supportsImage": true,
-                "supportsVideo": true
-              }
-            }
-          }
-        },
-        {
           "modelMatch": ".*claude-.*",
           "apiTypeMatch": "anthropic-messages",
           "baseUrlMatch": "(?:https://api\\.anthropic\\.com/v1)",
@@ -4225,39 +4201,6 @@
           "modelMatch": ".*",
           "apiTypeMatch": "anthropic-messages",
           "baseUrlMatch": "https://open\\.bigmodel\\.cn/api/anthropic/?",
-          "config": {
-            "properties": {
-              "supportsNativeWebSearch": true,
-              "supportsMidConversationSystem": true
-            }
-          }
-        },
-        {
-          "modelMatch": ".*",
-          "apiTypeMatch": "anthropic-messages",
-          "baseUrlMatch": "https://raspberrycode\\.z\\.ai/api/v1/raspberrycode-plan/anthropic/?",
-          "config": {
-            "properties": {
-              "supportsNativeWebSearch": true,
-              "supportsMidConversationSystem": true
-            }
-          }
-        },
-        {
-          "modelMatch": ".*",
-          "apiTypeMatch": "anthropic-messages",
-          "baseUrlMatch": "https://raspberrycode\\.z\\.ai/api/v1/off-peak/anthropic/?",
-          "config": {
-            "properties": {
-              "supportsNativeWebSearch": false,
-              "supportsMidConversationSystem": true
-            }
-          }
-        },
-        {
-          "modelMatch": ".*",
-          "apiTypeMatch": "anthropic-messages",
-          "baseUrlMatch": "https://raspberrycode\\.z\\.ai/api/v1/highspeed/anthropic/?",
           "config": {
             "properties": {
               "supportsNativeWebSearch": true,

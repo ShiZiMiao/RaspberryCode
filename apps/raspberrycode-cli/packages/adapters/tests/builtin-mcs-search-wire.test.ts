@@ -17,35 +17,10 @@ import { buildProviderRequestMessages } from "../../core/src/runtime/helpers/pro
 import { AiSdkModelAdapter } from "../src/model/runner.js";
 
 describe("Published MCS and search final Anthropic wire", () => {
+  // 官方 plan/off-peak/highspeed 网关已随账号订阅链拆除（server 无对应路由），
+  // 其上的 account:* 计划种类与网关授予用例随之退役（17728a47 改名曾撕裂数据/测试口径，
+  // 现按全新发行终态清理死载体规则与断言）。BYOK 厂商授予用例保留。
   it.each([
-    [
-      "account:zai-start-plan",
-      "https://plan.example.test/api/v1/plan/anthropic",
-      "GLM-5.3-Flash",
-      true,
-      true,
-    ],
-    [
-      "account:bigmodel-start-plan",
-      "https://plan.example.test/api/v1/plan/anthropic",
-      "GLM-5.3-Flash",
-      true,
-      true,
-    ],
-    [
-      "account:idle-plan-provider",
-      "https://plan.example.test/api/v1/plan/anthropic",
-      "GLM-5.3-Flash",
-      true,
-      false,
-    ],
-    [
-      "account:bigmodel-offpeak-idle-plan",
-      "https://plan.example.test/api/v1/plan/anthropic",
-      "GLM-5.3-Flash",
-      true,
-      false,
-    ],
     ["fixture", "https://api.anthropic.com/v1", "claude-sonnet-5", false, true],
     ["fixture", "https://proxy.invalid/v1", "vendor/claude-opus-4-8", true, false],
     ["personal-off", "https://proxy.invalid/v1", "vendor/claude-opus-4-8", false, false],
