@@ -2,19 +2,42 @@ import { spawn } from "node:child_process";
 import { appendFile, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createInterface } from "node:readline";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 // 非 CLI 进程（Electron/Host、存储准备 Worker）只加载模块，不拦截原始入口。
 if (process.argv.includes("app-server") && process.argv.includes("--stdio")) {
   // 仅由本组 WDIO 预加载的透明 stdio 代理。真实 Host/CLI 完成保存、解析和执行；
   // 故障位于传输边界，不修改业务对象，也不记录其他 RPC 的鉴权或模型凭据。
-  const preload = `--import=${JSON.stringify(fileURLToPath(import.meta.url))}`;
+  // 去掉指向本模块的 --import 预加载（Windows 下 --import 必须是 file:// URL，
+  // 但历史调用点也可能传盘符路径），保留其他 Node 参数，防止递归启动代理。
+  const selfUrls = new Set([
+    import.meta.url,
+    pathToFileURL(fileURLToPath(import.meta.url)).href,
+  ]);
+  const keptNodeOptions = (process.env.NODE_OPTIONS ?? "")
+    .split(/\s+/u)
+    .filter(Boolean)
+    .filter((token) => {
+      if (!token.startsWith("--import=")) return true;
+      const raw = token.slice("--import=".length).replace(/^"|"$/gu, "");
+      let normalized = raw;
+      try {
+        normalized = new URL(raw).href;
+      } catch {
+        try {
+          normalized = pathToFileURL(raw).href;
+        } catch {
+          return true;
+        }
+      }
+      return !selfUrls.has(normalized);
+    })
+    .join(" ");
   const child = spawn(process.execPath, process.argv.slice(1), {
     stdio: ["pipe", "pipe", "inherit"],
-    // 只移除当前代理预加载，保留覆盖采集等其他 Node 参数，防止递归启动代理。
     env: {
       ...process.env,
-      NODE_OPTIONS: (process.env.NODE_OPTIONS ?? "").replace(preload, "").trim(),
+      NODE_OPTIONS: keptNodeOptions,
     },
   });
   const root = process.env.RASPBERRYCODE_E2E_ARTIFACT_DIR;

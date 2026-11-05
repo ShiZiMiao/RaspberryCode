@@ -399,7 +399,9 @@ describe("filterMentionItems CJK queries", () => {
   });
 
   it("keeps subsequence matching for ASCII queries", () => {
-    expect(filterMentionItems(pluginItems, "bru").map((item) => item.id)).toEqual([
+    // "bru" 也会子序列命中 raspberrrycode-cua（b-r-u），断言唯一命中需选排他查询；
+    // "brw" 是 browser-use 的非连续子序列（非子串），验证 ASCII 子序列语义且排他。
+    expect(filterMentionItems(pluginItems, "brw").map((item) => item.id)).toEqual([
       "plugin:browser-use@raspberrycode-plugins-official",
     ]);
   });

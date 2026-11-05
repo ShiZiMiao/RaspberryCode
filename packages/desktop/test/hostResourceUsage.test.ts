@@ -50,7 +50,7 @@ describe("hostResourceUsage", () => {
           pid: 100,
           category: "base",
           groupKey: "cli",
-          name: "raspberrycode-agent-glm-demo",
+          name: "raspberrycode-agent-agent-demo",
         }),
         expect.objectContaining({
           pid: 120,

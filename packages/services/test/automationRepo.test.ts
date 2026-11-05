@@ -270,7 +270,10 @@ describe("AutomationRepo 调度状态机", () => {
       )
       .get(created.automationId);
     persistedDb.close();
-    expect(row).toMatchObject({ model: legacyModel, provider: "agent", thought_level: "high" });
+    // model/provider/thought_level 旧三列是冻结回滚字段，逐字保留旧标识（见 update 的
+    // “旧三列只供回滚保留”）：seed 写入的 'glm' 应原样保留，不参与新名归一
+    // （072122da 标识迁移曾机械替换此处期望导致确定性失败）。
+    expect(row).toMatchObject({ model: legacyModel, provider: "glm", thought_level: "high" });
     expect(JSON.parse(String(row?.model_selection))).toEqual(expected);
     repo = new AutomationRepo(dbPath);
     expect((await repo.get(created.automationId))?.modelSelection).toEqual(expected);

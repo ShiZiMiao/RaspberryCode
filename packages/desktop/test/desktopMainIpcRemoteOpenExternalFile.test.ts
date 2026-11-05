@@ -1,4 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { PlatformChannels } from "@raspberrycode/shared";
 
 type IpcHandler = (...args: unknown[]) => unknown;
@@ -127,7 +130,9 @@ describe("OpenExternal 对 file URL 的分流", () => {
     const { listener } = await registerOpenExternalListener();
     const sender = { getURL: vi.fn(() => "about:blank") };
 
-    listener({ sender }, "file:///tmp/report.html#section");
+    // 夹具用宿主可转换的 file URL：Windows 上无盘符路径会被 fileURLToPath 拒绝
+    // （ERR_INVALID_FILE_URL_PATH），tmpdir() 派生保证两平台语义一致。
+    listener({ sender }, `${pathToFileURL(join(tmpdir(), "report.html")).href}#section`);
 
     await vi.waitFor(() => expect(h.shellOpenPath).toHaveBeenCalledTimes(1));
     expect(h.shellOpenPath).not.toHaveBeenCalledWith(expect.stringContaining("#"));
@@ -149,7 +154,11 @@ describe("OpenExternal 对 file URL 的分流", () => {
     const { listener, options } = await registerOpenExternalListener();
     const sender = { getURL: vi.fn(() => "about:blank") };
 
-    listener({ sender }, "file://server/share/page.html");
+    // 转换失败形态随宿主而异：Windows 上无盘符 file URL 抛 ERR_INVALID_FILE_URL_PATH，
+    // POSIX 上带非空 host 的 file URL 抛 ERR_INVALID_FILE_URL_HOST。
+    listener({
+      sender,
+    }, process.platform === "win32" ? "file:///tmp/report.html" : "file://server/share/page.html");
 
     await vi.waitFor(() => expect(options.logger.warn).toHaveBeenCalledTimes(1));
     expect(h.shellOpenPath).not.toHaveBeenCalled();

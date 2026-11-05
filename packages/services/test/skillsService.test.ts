@@ -487,11 +487,14 @@ body`,
     const result = await service.list({ workspacePath, provider: "agent" });
 
     expect(result.capability).toEqual({ userScopeAvailable: true });
+    // 列表契约是 name→scope→path 稳定排序（skillsService sort）；此处验证两个用户级
+    // root 都被读取（agents-global/copied-global 来自 ~/.agents，raspberrycode-global
+    // 来自 ~/.raspberrycode，同名 shared-review 去重后仍出现一次），不锚定扫描先后。
     expect(result.skills.map((skill) => skill.name)).toEqual([
       "agents-global",
       "copied-global",
-      "shared-review",
       "raspberrycode-global",
+      "shared-review",
     ]);
     expect(result.skills.find((skill) => skill.name === "copied-global")?.path).toContain(
       join(home, ".raspberrycode", "skills", "copied-global"),

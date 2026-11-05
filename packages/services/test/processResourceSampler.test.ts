@@ -212,7 +212,7 @@ describe("attributeHostProcessTree", () => {
 
     expect(rows.map((row) => [row.pid, row.category, row.groupKey, row.name])).toEqual([
       [70, "base", "host", "zsh"],
-      [100, "base", "cli", "raspberrycode-agent-glm-demo"],
+      [100, "base", "cli", "raspberrycode-agent-agent-demo"],
       [110, "base", "cli", "pnpm"],
       [120, "builtin-plugin", "builtin:computer-use", "plugin:computer-use:computer-use"],
       [121, "builtin-plugin", "builtin:computer-use", "node"],
@@ -238,7 +238,7 @@ describe("attributeHostProcessTree", () => {
       agents: [{ pid: 100, provider: "agent", workspacePath: "C:\\work\\demo", children: [] }],
     });
     expect(rows.map((row) => [row.pid, row.groupKey, row.name])).toEqual([
-      [100, "cli", "raspberrycode-agent-glm-demo"],
+      [100, "cli", "raspberrycode-agent-agent-demo"],
       [101, "cli", "mcp-server"],
     ]);
   });
