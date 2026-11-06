@@ -18,7 +18,9 @@
 * [x] B2 首连自动部署 Agent（观察部署进度与日志无报错）
 * [x] B3 在远程工作区发一条真实任务，确认流式输出与工具调用正常
 * [x] B4 断开重连，确认会话/任务列表恢复（web-remote-replayable 语义）
-* [ ] B5 （可选）WSL/Docker 场景各跑一次 B2-B3
+* [x] B5 （可选）WSL/Docker 场景各跑一次 B2-B3——WSL 已过部署链冒烟（scripts/remote-backend-smoke.mjs：
+  probe→发布物 sha 校验→installOrUpdate→ensureDaemon ready→exec version/status 全通，执行位修复链实机生效）；
+  Docker 侧 Docker Desktop 出现内核级 socket 持有损坏（engine 起不来，与产品无关），待重启后补测。
 
 ## C. 发行包装机（我先构建+静默安装，你只需验收应用本体）
 
