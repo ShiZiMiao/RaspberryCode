@@ -80,6 +80,15 @@ export function buildRemoteChmodExecutableCommand(filePath: string): string {
   return `command chmod +x ${quotePosixPathArg(filePath)}`;
 }
 
+export function buildRestoreExecutableBitsCommand(directoryPath: string): string {
+  // Bug 原因：Windows 宿主打包的组件归档丢失执行位（NTFS 不存 Unix 权限位，
+  // 同 componentCache.restoreExecutableBits 的家族问题）；远端 tar 解压后
+  // node/rg/bfs/ugrep/spawn-helper/*.sh 全是 666，agent 启动即 Permission denied。
+  // shell 解压链无法魔数嗅探，按已知可执行文件名/扩展名补 0755（.node 由 dlopen
+  // 加载不需要执行位，不入名单）。
+  return `find ${quotePosixPathArg(directoryPath)} -type f \\( -name node -o -name spawn-helper -o -name rg -o -name bfs -o -name ugrep -o -name '*.sh' \\) -exec chmod 755 {} +`;
+}
+
 export function buildRemoteExecutableReplaceCommand(
   sourcePath: string,
   targetPath: string,
