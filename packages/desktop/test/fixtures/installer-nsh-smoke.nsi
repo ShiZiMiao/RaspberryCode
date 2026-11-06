@@ -18,6 +18,9 @@ SilentInstall silent
 !define APP_FILENAME "RaspberryCode"
 !define APP_ID "dev.raspberrycode.installer-nsh-smoke"
 !define UNINSTALL_FILENAME "uninstaller.exe"
+; 对齐 electron-builder 真实生成脚本（common.nsh/installer.nsi）的编译期常量：
+; customRemoveFiles 的快捷方式兜底清理依赖 SHORTCUT_NAME。
+!define SHORTCUT_NAME "RaspberryCode"
 ; This fixture invokes the cleanup macro from a normal section; electron-builder's real uninstaller uses un.*.
 !ifdef BUILD_UNINSTALLER
   !define RASPBERRYCODE_UNINSTALLER_FUNCTION_PREFIX ""

@@ -18,6 +18,15 @@
   !define RASPBERRYCODE_INSTALL_MANIFEST_NAME ".raspberrycode-install-manifest"
 !endif
 
+!ifndef isKeepShortcuts
+  ; Bug 原因：上游 uninstaller.nsh 用 `${ifNot} ${isKeepShortcuts}` 门控快捷方式删除，
+  ; 但 isKeepShortcuts 在整个模板树里无任何定义——未定义符号被 makensis 展开成非空
+  ; 字面量，LogicLib 条件恒真，删除段被恒跳过，手动卸载后桌面/开始菜单残留死链接
+  ; （实机验收 C3 两次卸载稳定复现）。本产品自动更新已随中立化拆除，`--keep-shortcuts`
+  ; 参数没有真实调用方，这里补上恒假定义让删除段恢复执行。
+  !define isKeepShortcuts `0`
+!endif
+
 !ifndef RASPBERRYCODE_UNINSTALLER_LOG_PATH
   !define RASPBERRYCODE_UNINSTALLER_LOG_PATH "$TEMP\RaspberryCode-uninstaller.log"
 !endif
@@ -72,6 +81,29 @@
 !endif
 
 !macro customRemoveFiles
+  ; Bug 原因：上游 uninstaller.nsh 的快捷方式删除段被 `${ifNot} ${isKeepShortcuts}` 门控，
+  ; 该符号在模板树零定义（构建期被渲染插值成非空字面量→LogicLib 条恒真→删除段恒跳过），
+  ; 手动卸载后桌面/开始菜单残留死链接（实机验收 C3 稳定复现）。本兜底与上游门控解耦：
+  ; - 名字用编译期 ${SHORTCUT_NAME}（PRODUCT_FILENAME 带版本号会删错）；
+  ; - current/all 两个 ShellVarContext 都清（卸载器 context 由 multiUser 初始化决定）；
+  ; - SetFileAttributes NORMAL 先行（WinShell 管理的 .lnk 可能带只读/系统属性）；
+  ; - 不做 WinShell::Uninst* 注销（实测该插件调用会吞掉其后的删除指令，且卸载器
+  ;   上游删除段本身带同样的注销，取舍为"文件必删"优先）。
+  SetShellVarContext current
+  SetFileAttributes "$DESKTOP\${SHORTCUT_NAME}.lnk" NORMAL
+  Delete "$DESKTOP\${SHORTCUT_NAME}.lnk"
+  SetFileAttributes "$SMPROGRAMS\${SHORTCUT_NAME}.lnk" NORMAL
+  Delete "$SMPROGRAMS\${SHORTCUT_NAME}.lnk"
+  ; 开始菜单 .lnk 处于 shell 命名空间（带 AUMID 缓存），实测无锁无只读但 NSIS Delete
+  ; 对其静默失败（桌面同语句有效）；用系统 del 兜底绕开该怪癖。
+  nsExec::Exec 'cmd /c del /f /q "$SMPROGRAMS\${SHORTCUT_NAME}.lnk"'
+  SetShellVarContext all
+  SetFileAttributes "$DESKTOP\${SHORTCUT_NAME}.lnk" NORMAL
+  Delete "$DESKTOP\${SHORTCUT_NAME}.lnk"
+  SetFileAttributes "$SMPROGRAMS\${SHORTCUT_NAME}.lnk" NORMAL
+  Delete "$SMPROGRAMS\${SHORTCUT_NAME}.lnk"
+  nsExec::Exec 'cmd /c del /f /q "$SMPROGRAMS\${SHORTCUT_NAME}.lnk"'
+  SetShellVarContext current
   ; Bugfix：electron-builder 默认在更新时递归删除整个 $INSTDIR，用户放入的无关文件也会被清掉。
   ; 只按上一版本随包生成的所有权清单删除，清单缺失时迁移旧版本采用 fail-open 保留策略。
   ${if} ${isUpdated}
