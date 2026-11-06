@@ -15,7 +15,16 @@ async function run(
   env: NodeJS.ProcessEnv,
 ): Promise<void> {
   await new Promise<void>((resolvePromise, rejectPromise) => {
-    const child = spawn(command, [...args], { cwd, env, stdio: "inherit" });
+    // Bugfix: Windows 只有 pnpm.cmd 而无裸 pnpm 可执行，spawn("pnpm") 直接 ENOENT；
+    // 按仓库惯例（bootstrap.mjs/dev-desktop-env.mjs）平台化命令名并用 shell 拉起 .cmd。
+    const isWindows = process.platform === "win32";
+    const resolvedCommand = isWindows && command === "pnpm" ? "pnpm.cmd" : command;
+    const child = spawn(resolvedCommand, [...args], {
+      cwd,
+      env,
+      stdio: "inherit",
+      ...(isWindows ? { shell: true } : {}),
+    });
     child.once("error", rejectPromise);
     child.once("exit", (code) => {
       if (code === 0) resolvePromise();

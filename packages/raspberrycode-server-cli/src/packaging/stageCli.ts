@@ -103,9 +103,16 @@ async function ensureNodeBinary(repoRoot: string, target: ServerTarget): Promise
     const archivePath = join(tempDir, archiveName);
     await downloadFile(url, archivePath);
     await mkdir(cacheDir, { recursive: true });
+    // Bugfix: Git Bash 的 GNU tar（MSYS 构建）把 `C:\...` 操作数按 POSIX 路径解析直接
+    // ENOENT，也不认 zip；Windows 一律走系统自带 bsdtar（System32\tar.exe，Win10+ 内建），
+    // 盘符路径与 zip/tar.xz 均可。POSIX 平台维持 PATH tar。
+    const tarCommand =
+      process.platform === "win32"
+        ? join(process.env["SystemRoot"] ?? "C:\\Windows", "System32", "tar.exe")
+        : "tar";
     if (isWindows) {
       await runCommand(
-        "tar",
+        tarCommand,
         [
           "-xf",
           archivePath,
@@ -118,7 +125,7 @@ async function ensureNodeBinary(repoRoot: string, target: ServerTarget): Promise
       );
     } else {
       await runCommand(
-        "tar",
+        tarCommand,
         [
           "-xJf",
           archivePath,
