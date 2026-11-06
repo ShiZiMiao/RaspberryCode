@@ -106,6 +106,7 @@ async function resolveRemoteDescriptor(
   remoteAssets: WindowRemoteAssetDirs,
   cacheRoot: string | null,
   remoteAssetNetwork?: RemoteAssetNetworkPort,
+  triedLocalReleaseDirs: readonly string[] = [],
 ): Promise<ResolvedDescriptor> {
   const releaseBases = buildReleaseBaseCandidates(
     remoteAssets.remoteCdnBaseUrls ??
@@ -138,7 +139,20 @@ async function resolveRemoteDescriptor(
       releaseBases,
     };
   }
-  throw new Error("Unable to resolve Source Server release descriptor", { cause: lastError });
+  // 规则 6：三源皆缺或都不可达时必须显式失败并指出配置面，不得回退默认域名。
+  // 目录必须带引号进入消息：脱敏层对无引号路径会一路吞到行尾（connectionLog
+  // 的无引号路径规则），引号是精确边界，正文才得以保留。
+  const sourceSummary = [
+    triedLocalReleaseDirs.length > 0
+      ? `local release dir missing ${SOURCE_SERVER_RELEASE_DESCRIPTOR_FILE_NAME}: ${triedLocalReleaseDirs.map((dir) => `'${dir}'`).join(", ")}`
+      : "no local release dir configured (RASPBERRYCODE_REMOTE_ASSET_LOCAL_RELEASE_DIR)",
+    releaseBases.length > 0
+      ? `HTTP release roots unreachable: ${releaseBases.map((base) => `'${base}'`).join(", ")}`
+      : "no HTTP release roots configured (RASPBERRYCODE_REMOTE_ASSET_CDN_BASE_URL)",
+  ].join("; ");
+  throw new Error(`Unable to resolve Source Server release descriptor (${sourceSummary})`, {
+    cause: lastError,
+  });
 }
 
 async function downloadArchive(
@@ -238,12 +252,14 @@ async function resolveReleaseAsset(
     };
   }
 
+  // mockCdnDir 语义是「本地发布根」（开发态仓库 staging；打包态可由
+  // RASPBERRYCODE_REMOTE_ASSET_LOCAL_RELEASE_DIR 显式配置），布局同为 releases/<version>。
+  const localReleaseDirs = remoteAssets.mockCdnDir
+    ? [join(remoteAssets.mockCdnDir, "releases", RASPBERRYCODE_VERSION)]
+    : [];
   if (installMode === "local-download-upload") {
     // Bug 原因：开发态曾直接信任 gitignore 的 dist-release；同版本源码变化后仍会部署旧包。
     // 现在只接受本轮 staging 写入 mock-cdn 且通过 descriptor SHA/size 校验的本地产物。
-    const localReleaseDirs = remoteAssets.mockCdnDir
-      ? [join(remoteAssets.mockCdnDir, "releases", RASPBERRYCODE_VERSION)]
-      : [];
     for (const releaseDir of localReleaseDirs) {
       const local = await resolveLocalDescriptor(releaseDir, target);
       if (!local) continue;
@@ -262,6 +278,7 @@ async function resolveReleaseAsset(
     remoteAssets,
     cacheRoot,
     remoteAssetNetwork,
+    localReleaseDirs,
   );
   const archive = findArchive(resolvedDescriptor.descriptor, target);
   const urls = resolveArchiveUrls(resolvedDescriptor.releaseBases, archive);

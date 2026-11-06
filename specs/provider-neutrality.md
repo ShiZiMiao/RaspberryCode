@@ -36,6 +36,13 @@ RaspberryCode 是独立发行的 CodingAgent 工具，模型供应商生态必�
 6. **命名与资产中立**：产品运行时路径、环境变量、自有协议字段、内置资源不得以品牌命名
    （glm/bigmodel/zai 等）；内置资源（图标等）不得外链品牌 CDN，须随包或自托管。
    已有命名按兼容策略迁移（保留旧名读取），新代码不再引入品牌命名。
+   **远程资产发布根来源**（`remoteCdn.ts` / `sourceServerReleaseResolver.ts`）：远程
+   安装物（Source Server 发布归档与组件归档）的解析根不内置任何默认域名，来源仅限三处
+   显式配置——构建期注入 `__RASPBERRYCODE_REMOTE_CDN_RELEASE_ROOTS__`、运行期
+   `RASPBERRYCODE_REMOTE_ASSET_CDN_BASE_URL`（HTTP 发布根）、运行期
+   `RASPBERRYCODE_REMOTE_ASSET_LOCAL_RELEASE_DIR`（自托管本地发布目录，mock-cdn 布局
+   `releases/<version>/`，产物经 descriptor SHA/size 校验后走本地上传，不发网络请求）。
+   三者皆缺时必须显式失败并提示配置项，不得静默回退任何默认域名。
    **例外——对外 wire 互操作契约**：与第三方服务/已发布插件之间的 wire 常量
    （如官方 Server MCP 的 `X-Bigmodel-*` 身份头、`com.raspberrycode/official-mcp-auth` meta 键）
    是互操作协议事实，改名即协议破坏，按数据事实保留并注明协议边界；它们的消费分支
@@ -58,6 +65,8 @@ RaspberryCode 是独立发行的 CodingAgent 工具，模型供应商生态必�
   （按 provider 声明的错误码数据，BigModel 码表是数据来源之一，不是分支条件）。
 - 远端 server 根解析：`packages/server/src/remote/deployShared.ts`（部署侧，SSH 远端）与
   `packages/raspberrycode-server-cli/src/runtime/paths.ts`（运行侧，远端本机）——两处必须实现同一条解析规则。
+- 远程资产发布根：`packages/desktop/src/main/remoteCdn.ts`（CDN 根列表）与
+  `packages/desktop/src/host/sourceServerReleaseResolver.ts`（发布归档解析，含本地发布目录通道）；
 - daemon 服务名：`packages/raspberrycode-server-cli/src/platform/serviceManager.ts`。
 - 占位端点判定：`packages/shared/src/raspberrycodeEndpoint.ts`（`isPlaceholderRaspberryCodeEndpointOrigin`）；
   内置模板刷新跳过：`packages/provider-node/src/raspberrycode-builtin-remote-synchronizer.ts`。

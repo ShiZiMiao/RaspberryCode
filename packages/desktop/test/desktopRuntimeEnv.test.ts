@@ -147,6 +147,7 @@ vi.mock("@raspberrycode/services/node", () => ({
 const originalUseCdnSwitch = process.env["RASPBERRYCODE_DEV_REMOTE_ASSET_USE_CDN"];
 const originalCdnBaseUrl = process.env["RASPBERRYCODE_REMOTE_ASSET_CDN_BASE_URL"];
 const originalRemoteAssetCacheDir = process.env["RASPBERRYCODE_REMOTE_ASSET_CACHE_DIR"];
+const originalLocalReleaseDir = process.env["RASPBERRYCODE_REMOTE_ASSET_LOCAL_RELEASE_DIR"];
 const originalNodeNoWarnings = process.env["NODE_NO_WARNINGS"];
 const originalNodeEnv = process.env["NODE_ENV"];
 const originalRaspberryCodeRuntimeEnv = process.env["RASPBERRYCODE_RUNTIME_ENV"];
@@ -260,6 +261,7 @@ describe("desktopRuntimeEnv resolveRemoteAssetDirs", () => {
     delete process.env["RASPBERRYCODE_DEV_REMOTE_ASSET_USE_CDN"];
     delete process.env["RASPBERRYCODE_REMOTE_ASSET_CDN_BASE_URL"];
     delete process.env["RASPBERRYCODE_REMOTE_ASSET_CACHE_DIR"];
+    delete process.env["RASPBERRYCODE_REMOTE_ASSET_LOCAL_RELEASE_DIR"];
   });
 
   afterAll(() => {
@@ -279,6 +281,12 @@ describe("desktopRuntimeEnv resolveRemoteAssetDirs", () => {
       delete process.env["RASPBERRYCODE_REMOTE_ASSET_CACHE_DIR"];
     } else {
       process.env["RASPBERRYCODE_REMOTE_ASSET_CACHE_DIR"] = originalRemoteAssetCacheDir;
+    }
+
+    if (originalLocalReleaseDir == null) {
+      delete process.env["RASPBERRYCODE_REMOTE_ASSET_LOCAL_RELEASE_DIR"];
+    } else {
+      process.env["RASPBERRYCODE_REMOTE_ASSET_LOCAL_RELEASE_DIR"] = originalLocalReleaseDir;
     }
 
     if (originalNodeNoWarnings == null) {
@@ -352,6 +360,25 @@ describe("desktopRuntimeEnv resolveRemoteAssetDirs", () => {
     expect(dirs.remoteCdnBaseUrl).toBe("https://cdn.example.com/releases");
     expect(dirs.remoteCdnBaseUrls).toEqual(["https://cdn.example.com/releases"]);
     expect(dirs.remoteCacheDir).toMatch(/[\\/]userData[\\/]remote-assets-cache$/);
+  });
+
+  it("生产态显式配置自托管本地发布目录后作为本地上传根装配（规则 6 第三源）", async () => {
+    appMock.isPackaged = true;
+    const localReleaseDir = join(tmpdir(), "raspberrycode-prod-local-release");
+    process.env["RASPBERRYCODE_REMOTE_ASSET_LOCAL_RELEASE_DIR"] = localReleaseDir;
+    const { resolveRemoteAssetDirs } = await import("../src/main/desktopRuntimeEnv.js");
+    const dirs = resolveRemoteAssetDirs({});
+
+    expect(dirs.mockCdnDir).toBe(localReleaseDir);
+    expect(dirs.sourceServerArtifactPolicy).toBeUndefined();
+  });
+
+  it("生产态未配置本地发布目录时不内置默认路径（三源皆缺保持空）", async () => {
+    appMock.isPackaged = true;
+    const { resolveRemoteAssetDirs } = await import("../src/main/desktopRuntimeEnv.js");
+    const dirs = resolveRemoteAssetDirs({});
+
+    expect(dirs.mockCdnDir).toBeUndefined();
   });
 
   it("remote asset cache 目录支持环境变量覆盖", async () => {

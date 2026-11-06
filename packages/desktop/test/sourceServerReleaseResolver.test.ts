@@ -231,10 +231,31 @@ describe("Source Server release resolver", () => {
         { fetch: remoteAssetFetch },
       ),
     ).rejects.toMatchObject({
-      message: "Unable to resolve Source Server release descriptor",
+      message: expect.stringContaining("Unable to resolve Source Server release descriptor"),
       cause: expect.objectContaining({ message: "proxy unavailable" }),
     });
     expect(remoteAssetFetch).toHaveBeenCalled();
     expect(directFetch).not.toHaveBeenCalled();
+  });
+
+  it("三源皆缺时显式失败并提示两个配置项（规则 6 不回退默认域名）", async () => {
+    const fetch = vi.fn<typeof fetch>();
+    await expect(resolveSourceServerReleaseAsset(probe, {}, target, { fetch })).rejects.toThrow(
+      /Unable to resolve Source Server release descriptor \(no local release dir configured \(RASPBERRYCODE_REMOTE_ASSET_LOCAL_RELEASE_DIR\); no HTTP release roots configured \(RASPBERRYCODE_REMOTE_ASSET_CDN_BASE_URL\)\)/u,
+    );
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("配置了本地发布目录但 descriptor 缺失时报出目录路径并保持 fail-closed", async () => {
+    const root = await mkdtemp(join(tmpdir(), "raspberrycode-source-release-missing-"));
+    const fetch = vi.fn<typeof fetch>();
+    // 消息经脱敏层后路径会归并为 [redacted-path]；此处锚定「哪一面缺 descriptor」与
+    // 另一源的配置提示，目录本体由 fail-closed 行为与日志承载。
+    await expect(
+      resolveSourceServerReleaseAsset(probe, { mockCdnDir: root }, target, { fetch }),
+    ).rejects.toThrow(
+      /Unable to resolve Source Server release descriptor \(local release dir missing source-server-release\.json.*no HTTP release roots configured \(RASPBERRYCODE_REMOTE_ASSET_CDN_BASE_URL\)\)/u,
+    );
+    expect(fetch).not.toHaveBeenCalled();
   });
 });

@@ -324,6 +324,14 @@ function resolveRemoteAssetCacheDir(localEnv: LocalRuntimeEnv = {}): string {
   return join(getElectronAppPath("userData"), "remote-assets-cache");
 }
 
+function resolveConfiguredLocalReleaseDir(localEnv: LocalRuntimeEnv = {}): string | undefined {
+  // 规则 6 第三源：自托管本地发布目录（mock-cdn 布局 releases/<version>/，经 descriptor SHA/size
+  // 校验后走本地上传）。只认显式配置，缺失时保持空并由解析层显式报「未配置发布根」，
+  // 不内置默认路径。打包态专用：开发态已有仓库 staging（mock-cdn）的内容寻址通道。
+  const raw = resolveEnvValue("RASPBERRYCODE_REMOTE_ASSET_LOCAL_RELEASE_DIR", localEnv);
+  return raw ? resolve(raw) : undefined;
+}
+
 export function resolveRemoteAssetDirs(
   options: ResolveRemoteCdnOptions = {},
   localEnv: LocalRuntimeEnv = {},
@@ -338,7 +346,11 @@ export function resolveRemoteAssetDirs(
   // 功能开关：开发态默认继续走 mock-cdn，只有显式打开开关才切到公网 CDN。
   // 这样能兼容离线开发场景，同时允许在开发环境提前验证真实 CDN 下载链路。
   if (isElectronAppPackaged() || shouldUseRemoteCdnInDevelopment(localEnv)) {
+    // 规则 6 第三源：自托管本地发布目录仅在显式配置时作为本地上传根进入装配，
+    // 与 mock-cdn 同布局（releases/<version>/），沿用 descriptor SHA/size 校验链。
+    const configuredLocalReleaseDir = resolveConfiguredLocalReleaseDir(localEnv);
     return {
+      ...(configuredLocalReleaseDir ? { mockCdnDir: configuredLocalReleaseDir } : {}),
       remoteCdnBaseUrl,
       remoteCdnBaseUrls,
       remoteCacheDir: resolveRemoteAssetCacheDir(localEnv),
