@@ -322,6 +322,9 @@ class BackendSourceServerTransportAdapter implements SourceServerTransportAdapte
       `rm -rf ${bootstrapDirShell}`,
       `mkdir -p ${bootstrapDirShell}`,
       `tar -xzf ${remoteArchiveShell} -C ${bootstrapDirShell} --strip-components=1`,
+      // Bug 原因：Windows 宿主打包的归档丢失执行位（见 componentCache.restoreExecutableBits），
+      // bootstrap 要直接 exec launcher 与随包 Node，必须在调用前显式补 0755。
+      `chmod 755 ${bootstrapDirShell}/bin/raspberrycode ${bootstrapDirShell}/runtime/node`,
       // Bug 原因：update 现在会重启完整 daemon；若不把既有 transport 能力边界传给目标
       // bootstrap CLI，WSL/Docker 会在 handoff 时误尝试注册不可用的 systemd user service。
       `${this.kind === "ssh" ? "" : "RASPBERRYCODE_SERVER_SKIP_SERVICE_REGISTRATION=1 "}${bootstrapDirShell}/bin/raspberrycode update --from-archive ${remoteArchiveShell}${options.force ? " --force" : ""} --server-root ${rootShell} --json --progress`,

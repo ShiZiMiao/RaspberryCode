@@ -3,7 +3,7 @@ import { access, mkdir, mkdtemp, readFile, stat, symlink, writeFile } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { ComponentCache } from "../src/runtime/componentCache.js";
+import { ComponentCache, extractArchiveSafely } from "../src/runtime/componentCache.js";
 import { resolveServerLayout } from "../src/runtime/paths.js";
 
 async function archiveSha256(path: string): Promise<string> {
@@ -11,6 +11,38 @@ async function archiveSha256(path: string): Promise<string> {
 }
 
 describe("component cache", () => {
+  // Windows 宿主的 chmod 是空操作、stat 也不表达执行位，mode 断言只能在 POSIX 宿主验证；
+  // Windows 上被测行为的真实验证走 SSH 远端安装链（实机验收 B）。
+  it.skipIf(process.platform === "win32")(
+    "解压后按魔数恢复执行位（Windows 宿主打包的归档丢执行位）",
+    async () => {
+      const root = await mkdtemp(join(tmpdir(), "raspberrycode-extract-modes-"));
+      const source = join(root, "source");
+      await mkdir(join(source, "bin"), { recursive: true });
+      await mkdir(join(source, "runtime"), { recursive: true });
+      await writeFile(join(source, "bin", "launcher"), "#!/bin/sh\nexit 0\n", { mode: 0o644 });
+      await writeFile(join(source, "runtime", "node"), Buffer.from([0x7f, 0x45, 0x4c, 0x46, 0x02]), {
+        mode: 0o644,
+      });
+      await writeFile(join(source, "runtime", "data.txt"), "plain", { mode: 0o644 });
+      const archive = join(root, "archive.tar.gz");
+      const { execFile } = await import("node:child_process");
+      await new Promise<void>((resolve, reject) =>
+        execFile("tar", ["-czf", archive, "."], { cwd: source }, (error) =>
+          error ? reject(error) : resolve(),
+        ),
+      );
+      const destination = join(root, "out");
+      await mkdir(destination, { recursive: true });
+      await extractArchiveSafely(archive, destination);
+
+      const execBits = async (path: string) => (await stat(path)).mode & 0o111;
+      await expect(execBits(join(destination, "bin", "launcher"))).resolves.not.toBe(0);
+      await expect(execBits(join(destination, "runtime", "node"))).resolves.not.toBe(0);
+      await expect(execBits(join(destination, "runtime", "data.txt"))).resolves.toBe(0);
+    },
+  );
+
   it("reuses a content-addressed component and assembles an atomic release directory", async () => {
     const root = await mkdtemp(join(tmpdir(), "raspberrycode-component-cache-"));
     const layout = resolveServerLayout(join(root, "server"));

@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import { createWriteStream } from "node:fs";
-import { cp, mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
+import { cp, chmod, mkdir, open, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, resolve, sep, win32 } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { open as openZip, type Entry, type ZipFile } from "yauzl";
@@ -190,6 +190,53 @@ export async function extractArchiveSafely(
   }
   validateArchiveEntries(listing);
   await run("tar", ["-xzf", archivePath, "-C", destination], destination);
+  await restoreExecutableBits(destination);
+}
+
+// Mach-O 32/64 双端序与 fat binary 的魔数（首4字节大端读值）。
+const MACHO_MAGICS = new Set([
+  0xfeedface, 0xcefaedfe, 0xfeedfacf, 0xcffaedfe, 0xcafebabe, 0xbebafeca, 0xcafebabf, 0xbfbafeca,
+]);
+
+/**
+ * Bug 原因：发布归档在 Windows 宿主上打包时，NTFS 不保存 Unix 权限位（staging 里的
+ * chmod(0o755) 是空操作），tar 条目全部记为 666；远端解压后 bin/raspberrycode、
+ * runtime/node 与 native tools 都不可执行，bootstrap 一执行就 `<path> Permission denied`。
+ * 解压后按魔数（shebang / ELF / Mach-O）恢复 0755，与打包宿主无关；纯数据文件不动。
+ */
+async function restoreExecutableBits(root: string): Promise<void> {
+  const pending = [root];
+  while (pending.length > 0) {
+    const dir = pending.pop() as string;
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      const entryPath = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        pending.push(entryPath);
+        continue;
+      }
+      if (!entry.isFile()) continue;
+      if (await looksExecutableByMagic(entryPath)) {
+        await chmod(entryPath, 0o755).catch(() => undefined);
+      }
+    }
+  }
+}
+
+async function looksExecutableByMagic(path: string): Promise<boolean> {
+  const handle = await open(path, "r").catch(() => null);
+  if (!handle) return false;
+  try {
+    const header = Buffer.alloc(4);
+    const { bytesRead } = await handle.read(header, 0, 4, 0);
+    if (bytesRead >= 2 && header[0] === 0x23 && header[1] === 0x21) return true; // #!
+    if (bytesRead < 4) return false;
+    if (header[0] === 0x7f && header[1] === 0x45 && header[2] === 0x4c && header[3] === 0x46) {
+      return true; // ELF
+    }
+    return MACHO_MAGICS.has(header.readUInt32BE(0));
+  } finally {
+    await handle.close();
+  }
 }
 
 export class ComponentCache {
