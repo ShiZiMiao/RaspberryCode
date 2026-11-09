@@ -118,8 +118,10 @@ import {
   getDesktopMenuLabel as getDesktopMenuLabelByLocale,
   rebuildApplicationMenu,
   resolveSystemApplicationLocale,
+  updateCheckForUpdateMenuState,
   updateRaspberryCodeStdioTapDevMenuState,
 } from "./desktopApplicationMenu.js";
+import { disposeAutoUpdateService, initAutoUpdateService, isAutoUpdateMode } from "./autoUpdate/index.js";
 import { applyAppIcon } from "./desktopWindowChrome.js";
 import { resolveWindowsAppUserModelIdForFlavor } from "../../scripts/desktop-product-identity.mjs";
 import type { DesktopWindowSize } from "./desktopWindowSize.js";
@@ -664,7 +666,6 @@ const disposingHostProcessTimers = new WeakMap<
   ElectronUtilityProcess,
   ReturnType<typeof setTimeout>
 >();
-let updateStatusWindow: BrowserWindow | null = null;
 const mainSettingService = createSettingService();
 const appLaunchGate = createAppLaunchGate();
 const appLaunchCoordinator = createAppLaunchCoordinator(appLaunchGate);
@@ -954,6 +955,7 @@ async function prepareAppQuit(reason: string, kind: AppShutdownKind = "normal"):
   }
 
   markForceQuit(reason);
+  disposeAutoUpdateService();
   windowsCuaOperationIndicator.dispose();
   browserScreenshotSurfaceCoordinator.dispose();
   // Bug 根因：资源样本改为 5 分钟窗口后，退出仍直接 stop 会清空未满窗口的数据。
@@ -1161,6 +1163,57 @@ function logWindowsPackagedResourceWritableProbe(stage: string) {
       )}`,
     );
   }
+}
+
+/**
+ * Windows 更新安装前的随包资源锁清理（spec：specs/client-github-self-update.md 事件顺序）。
+ * prepareAppQuit 已用退出屏障回收每窗口唯一 Host；这里只清理实时扫描仍引用随包资源的
+ * runtime 进程，降低 NSIS 覆盖 resources/agent 等目录时因句柄占用形成半更新的概率。
+ */
+async function prepareWindowsProcessesForUpdateInstall() {
+  const trackedAgentCount = listRegisteredHostAgentProcessIds().length;
+
+  logger.info(`[auto-update] preparing Windows update install: trackedAgent=${trackedAgentCount}`);
+  logWindowsPackagedResourceSnapshot("before-dispose");
+
+  const resourceLockMarkers = resolveWindowsPackagedResourceLockMarkers(process.resourcesPath);
+  const cleanup = await runWindowsUpdateProcessCleanup({
+    resourceLockMarkers,
+    lockReleaseGraceMs: WINDOWS_UPDATE_LOCK_RELEASE_GRACE_MS,
+    scan: findWindowsProcessesReferencingResourceMarkers,
+    terminate: forceTerminateWindowsAgentProcesses,
+    delay,
+  });
+
+  logger.info(
+    `[auto-update] Windows resource lock scan: matches=${cleanup.initialLockProcesses.length} trackedAgent=${trackedAgentCount} details=${JSON.stringify(
+      cleanup.initialLockProcesses,
+    )}`,
+  );
+  for (const error of cleanup.errors) {
+    logger.warn(`[auto-update] Windows process cleanup degraded: ${error}`);
+  }
+
+  if (cleanup.terminationPids.length === 0) {
+    logWindowsPackagedResourceWritableProbe("no-lock-processes");
+    return;
+  }
+
+  logger.info(
+    `[auto-update] Windows taskkill results: ${JSON.stringify(cleanup.terminationResults)}`,
+  );
+  logger.info(
+    `[auto-update] Windows resource lock release grace elapsed: ${WINDOWS_UPDATE_LOCK_RELEASE_GRACE_MS}ms`,
+  );
+
+  if (cleanup.remainingLockProcesses.length > 0) {
+    logger.warn(
+      `[auto-update] Windows resource lock processes still alive after taskkill: ${JSON.stringify(
+        cleanup.remainingLockProcesses,
+      )}`,
+    );
+  }
+  logWindowsPackagedResourceWritableProbe("after-taskkill");
 }
 
 function logWindowsBundledRuntimeIntegrityDiagnostic() {
@@ -1658,6 +1711,32 @@ app.whenReady().then(async () => {
   }
 
   logWindowsBundledRuntimeIntegrityDiagnostic();
+
+  // 启动自动更新检查（后台执行，不阻塞主界面；spec：specs/client-github-self-update.md）。
+  // 更新源为 GitHub Releases，仅打包态启用；开发态由服务自身降级为 enabled=false。
+  initAutoUpdateService({
+    settingService: mainSettingService,
+    broadcastState: (updateState) => {
+      for (const win of BrowserWindow.getAllWindows()) {
+        if (!win.isDestroyed()) {
+          win.webContents.send(PlatformChannels.UpdateStateChanged, updateState);
+        }
+      }
+      // 自动更新模式下全程无感（spec 产品规则 7）：菜单保持静态「检查更新」，
+      // 不投影发现/下载/就绪等动态标签；手动点击仍走 CheckForUpdates 命令出 toast。
+      updateCheckForUpdateMenuState(
+        isAutoUpdateMode() ? { kind: "idle", enabled: true } : updateState,
+        currentApplicationLocale,
+      );
+    },
+    onBeforeQuitAndInstall: async () => {
+      notifyStabilityLifecycle("update_install");
+      await prepareAppQuit("auto-update quitAndInstall", "update-install");
+      if (process.platform === "win32") {
+        await prepareWindowsProcessesForUpdateInstall();
+      }
+    },
+  });
 
   if (process.platform === "darwin" || process.platform === "win32") {
     app.clearRecentDocuments();

@@ -1,4 +1,8 @@
-import type { DesktopWindowChromeState, IPlatformService } from "@raspberrycode/shared";
+import type {
+  DesktopWindowChromeState,
+  IPlatformService,
+  UpdateStatePayload,
+} from "@raspberrycode/shared";
 import { useEffect, useRef, useState } from "react";
 import { logger } from "@/logger.js";
 import { toast } from "@/components/ui/toast.js";
@@ -68,8 +72,133 @@ export function useAppChromeState({
   const [windowsWindowControlsRightPaddingPx, setWindowsWindowControlsRightPaddingPx] = useState(
     () => initialWindowControlsPadding.rightPaddingPx,
   );
+  const [updateState, setUpdateState] = useState<UpdateStatePayload | null>(null);
+  const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(false);
   const sidebarContainerRef = useRef<HTMLElement | null>(null);
+  const hasShownUpdateToastRef = useRef(false);
+  const updateStateEventRevisionRef = useRef(0);
   const { intl } = useRaspberryCodeIntl();
+
+  useEffect(() => {
+    let cancelled = false;
+    // 「自动更新」开关（默认开）：开启时静默流程，入口/提示整体隐藏（spec 产品规则 7）。
+    const refresh = () => {
+      void platform.getAutoUpdatePreferences?.().then(
+        (preferences) => {
+          if (!cancelled) setAutoUpdateEnabled(preferences.autoDownloadAndInstallUpdates);
+        },
+        (error) => {
+          logger.warn("[App] 同步自动更新偏好失败", { error });
+        },
+      );
+    };
+    refresh();
+    const disposeSettingsChanged = platform.onSettingsChanged?.(refresh) ?? (() => {});
+    return () => {
+      cancelled = true;
+      disposeSettingsChanged();
+    };
+  }, [platform]);
+
+  // 静默模式下不投影更新入口；手动「检查更新」toast 是用户主动发起，不受此掩蔽影响。
+  const visibleUpdateState = autoUpdateEnabled ? null : updateState;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    // 更新状态事实由 desktop main 的 autoUpdateService 持有（spec：specs/client-github-self-update.md）；
+    // 这里只做订阅快照，供 WorkspaceShellLayout 派发给更新入口。
+    if (platform.getUpdateState) {
+      const requestRevision = updateStateEventRevisionRef.current;
+      void platform.getUpdateState().then(
+        (payload) => {
+          if (!cancelled && updateStateEventRevisionRef.current === requestRevision) {
+            setUpdateState(payload);
+          }
+        },
+        (error) => {
+          logger.warn("[App] 同步自动更新状态失败", { error });
+        },
+      );
+    }
+
+    if (!platform.onUpdateStateChanged) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const dispose = platform.onUpdateStateChanged((payload) => {
+      updateStateEventRevisionRef.current += 1;
+      setUpdateState(payload);
+    });
+    return () => {
+      cancelled = true;
+      dispose();
+    };
+  }, [platform]);
+
+  useEffect(() => {
+    // 手动「检查更新」结果统一在此转 toast（菜单点击与设置页按钮共用一条通路）。
+    return (
+      platform.onUpdateCheckResult?.((result) => {
+        switch (result.kind) {
+          case "up-to-date":
+            toast(
+              intl.formatMessage({ id: "update.toast.upToDate" }, { version: result.currentVersion }),
+            );
+            return;
+          case "available":
+            toast(intl.formatMessage({ id: "update.toast.available" }, { version: result.version }));
+            return;
+          case "downloading":
+            toast(
+              intl.formatMessage({ id: "update.toast.downloading" }, { version: result.version }),
+            );
+            return;
+          case "already-downloading":
+            toast(
+              intl.formatMessage(
+                { id: "update.toast.alreadyDownloading" },
+                { progress: result.progress },
+              ),
+            );
+            return;
+          case "ready":
+            toast(intl.formatMessage({ id: "update.toast.ready" }, { version: result.version }));
+            return;
+          case "dev-skipped":
+            toast(intl.formatMessage({ id: "update.toast.devSkipped" }));
+            return;
+          case "error":
+            toast(intl.formatMessage({ id: "update.toast.error" }, { error: result.message }));
+            return;
+        }
+      }) ?? (() => {})
+    );
+  }, [intl, platform]);
+
+  useEffect(() => {
+    // Windows 上更新下载完成给一次轻提示，不阻塞主界面；其余平台靠更新入口自明。
+    // 自动更新模式全程无感，不提示（spec 产品规则 7）。
+    if (
+      !isWindowsDesktop ||
+      autoUpdateEnabled ||
+      visibleUpdateState?.kind !== "update-downloaded" ||
+      hasShownUpdateToastRef.current
+    ) {
+      return;
+    }
+    hasShownUpdateToastRef.current = true;
+    toast(
+      intl.formatMessage({ id: "update.toast.ready" }, { version: visibleUpdateState.version }),
+      {
+        durationMs: 4000,
+        position: "bottom-left",
+        variant: "update",
+      },
+    );
+  }, [autoUpdateEnabled, intl, isWindowsDesktop, visibleUpdateState]);
 
   useEffect(() => {
     if (!isDesktop || !isMacDesktop) {
@@ -167,5 +296,8 @@ export function useAppChromeState({
     macWindowControlsLeftPaddingPx,
     windowsWindowControlsRightPaddingPx,
     sidebarContainerRef,
+    updateState: visibleUpdateState,
+    updateReadyVersion:
+      visibleUpdateState?.kind === "update-downloaded" ? visibleUpdateState.version : null,
   };
 }

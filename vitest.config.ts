@@ -18,6 +18,11 @@ const forkIsolatedTests = [
   "packages/services/src/gen-ui/adapters/stateStorage.test.ts",
   // electron-builder 下载 NSIS 时把进程 stdio 传给子进程，不能使用 threads 的虚拟 stdio。
   "packages/desktop/test/windowsInstallerCompile.test.ts",
+  // NSIS makensis 编译属重资源子进程：两个安装器用例并发编译曾互相打挂（单跑均过）。
+  "packages/desktop/test/windowsInstallerNshSmoke.test.ts",
+  "packages/desktop/test/windowsInstallerPreserveFiles.test.ts",
+  // 原生 fs.watch 通知在批量并发下曾等不到（单跑过），沿用 stateStorage 先例串行验证真实接线。
+  "packages/services/test/subagentRuntimeConfigWatcher.test.ts",
   "packages/desktop/test/cdnPreloadScript.test.ts",
   "packages/desktop/test/desktopRuntimeEnv.test.ts",
   "packages/desktop/test/e2eDesktopBuildCache.test.ts",
@@ -115,7 +120,9 @@ export default defineConfig({
           include: [
             "packages/*/test/**/*.test.ts",
             // 架构治理要求 managed 模块自带 contract.test.ts（见 architecture-policy.yaml），放在模块目录内。
-            "packages/*/src/**/contract.test.ts",
+            // 源码旁回归（plugin-sandbox/gen-ui 等目录）同样必须进默认入口执行，
+            // 避免只在手动定向运行时生效（历史教训：src 旁置测试曾整族失联）。
+            "packages/*/src/**/*.test.ts",
             // Gen UI 目录回归位于源码旁，默认入口也必须执行，避免只在手动定向运行时生效。
             "packages/shared/src/node/genUiPaths.test.ts",
             "packages/services/src/gen-ui/**/*.test.ts",

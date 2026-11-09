@@ -1,4 +1,4 @@
-Unicode true
+﻿Unicode true
 Name "RaspberryCode preserve-files smoke"
 OutFile "${OUTPUT_FILE}"
 InstallDir "$TEMP\raspberrycode-preserve-files-smoke"
@@ -13,6 +13,10 @@ SilentInstall silent
 !define APP_FILENAME "RaspberryCode"
 !define APP_ID "dev.raspberrycode.preserve-files-smoke"
 !define UNINSTALL_FILENAME "uninstaller.exe"
+; 对齐 electron-builder 真实生成脚本（common.nsh/installer.nsi）的编译期常量：
+; customRemoveFiles 的快捷方式兜底清理依赖 SHORTCUT_NAME，缺 define 会触发
+; warning 6000 并把 ${SHORTCUT_NAME} 当字面量（/WX 下直接编译失败）。
+!define SHORTCUT_NAME "RaspberryCode"
 !define isUpdated `1 == 1`
 ; This fixture has no electron-builder uninstaller.nsh section; use a normal function for log smoke coverage.
 !ifdef BUILD_UNINSTALLER

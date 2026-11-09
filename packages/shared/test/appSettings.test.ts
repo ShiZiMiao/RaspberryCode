@@ -335,6 +335,19 @@ describe("app settings", () => {
     ).toThrow();
   });
 
+  it("defaults auto-update mode to on and accepts explicit patches", () => {
+    // 「自动更新」总开关默认开启（spec：specs/client-github-self-update.md 产品规则 5）。
+    expect(appSettingsSchema.parse({}).autoDownloadAndInstallUpdates).toBe(true);
+    expect(
+      appSettingsSchema.parse({ autoDownloadAndInstallUpdates: false })
+        .autoDownloadAndInstallUpdates,
+    ).toBe(false);
+    expect(
+      appSettingsPatchSchema.parse({ autoDownloadAndInstallUpdates: false })
+        .autoDownloadAndInstallUpdates,
+    ).toBe(false);
+  });
+
   it("preserves localized pending post-update release notes", () => {
     const payload = {
       version: "3.1.4",

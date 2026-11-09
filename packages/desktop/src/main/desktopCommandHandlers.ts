@@ -23,6 +23,7 @@ import { app, BrowserWindow, dialog, shell } from "electron";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { showAboutDialog } from "./about.js";
+import { checkForUpdateManually } from "./autoUpdate/index.js";
 import { resolveCuaOsSupport } from "./cuaOsSupport.js";
 import { syncWindowControlsOverlayForZoomLevel } from "./desktopWindowButtonPosition.js";
 import {
@@ -469,6 +470,13 @@ export async function executeDesktopCommand(options: {
         logger: options.logger,
       });
       return;
+    case DesktopCommandIds.CheckForUpdates: {
+      // 手动检查结果单独走 UpdateCheckResult 推送（spec：specs/client-github-self-update.md），
+      // 不与启动静默检查的状态广播混用。
+      const result = await checkForUpdateManually();
+      targetWindow?.webContents.send(PlatformChannels.UpdateCheckResult, result);
+      return;
+    }
     case DesktopCommandIds.GetCuaOsSupport:
       return resolveCuaOsSupport();
   }

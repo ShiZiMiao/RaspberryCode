@@ -87,6 +87,14 @@ const skippedElectronUpdateVersionsSchema = z
   .partialRecord(electronReleaseChannelSchema, nonEmptyStringSchema)
   .default({});
 
+// GitHub 更新源 slug（owner/repo）：仅允许仓库名片段，空串/缺省表示回退默认仓库。
+const updateFeedGithubSlugSchema = z
+  .string()
+  .trim()
+  .max(100)
+  .regex(/^[A-Za-z0-9._-]*$/)
+  .optional();
+
 const remoteWorkspaceTargetSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("ssh"),
@@ -556,8 +564,12 @@ const appSettingsObjectSchema = z.object({
   dataBaseDir: z.string().trim().min(1).optional(),
   pendingPostUpdateReleaseNotes: postUpdateReleaseNotesPayloadSchema.optional(),
   receivePreviewUpdates: z.boolean().default(false),
-  autoDownloadAndInstallUpdates: z.boolean().default(false),
+  // 「自动更新」总开关（spec：specs/client-github-self-update.md 产品规则 7）：
+  // 默认开启——启动检查、后台静默差量下载、退出静默安装，用户下次启动即新版本。
+  autoDownloadAndInstallUpdates: z.boolean().default(true),
   skippedElectronUpdateVersions: skippedElectronUpdateVersionsSchema,
+  updateFeedGithubOwner: updateFeedGithubSlugSchema,
+  updateFeedGithubRepo: updateFeedGithubSlugSchema,
   settingsSyncFirstRunPromptHandled: z.boolean().optional(),
   raspberrycodeEndpointOrigin: raspberrycodeEndpointOriginSchema.optional(),
 });
@@ -684,6 +696,8 @@ export const appSettingsPatchSchema = z.object({
   skippedElectronUpdateVersions: z
     .partialRecord(electronReleaseChannelSchema, nonEmptyStringSchema)
     .optional(),
+  updateFeedGithubOwner: updateFeedGithubSlugSchema,
+  updateFeedGithubRepo: updateFeedGithubSlugSchema,
   settingsSyncFirstRunPromptHandled: z.boolean().optional(),
   raspberrycodeEndpointOrigin: raspberrycodeEndpointOriginSchema.optional(),
 });

@@ -24,13 +24,16 @@ declare global {
   }
 }
 
-type Theme = "light" | "dark" | "light" | "dark" | "system";
+// 修复：本文件曾因品牌改名把 "zai-light"/"zai-dark" 机械替换成 "light"/"dark"，
+// 形成重复联合成员与重复比较（`theme === "dark" || theme === "dark"`），
+// 后者在 || 右侧重载处被窄化成 "light" 触发 TS2367。这里还原为去重后的单一判别。
+type Theme = "light" | "dark" | "system";
 
 function resolveTheme(theme: Theme): "light" | "dark" {
   if (theme === "system") {
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   }
-  return theme === "dark" || theme === "dark" ? "dark" : "light";
+  return theme === "dark" ? "dark" : "light";
 }
 
 function applyResourceManagerTheme(): void {

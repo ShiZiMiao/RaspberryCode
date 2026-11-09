@@ -357,6 +357,8 @@ export function App({
     macWindowControlsLeftPaddingPx,
     windowsWindowControlsRightPaddingPx,
     sidebarContainerRef,
+    updateReadyVersion,
+    updateState,
   } = useAppChromeState({
     isDesktop,
     isMacDesktop,
@@ -1178,6 +1180,8 @@ export function App({
           workspaceRemoteSessionId={workspaceRemoteSessionId}
           workspaceIdentity={workspaceIdentity}
           isWorkspaceVisible={isWorkspaceVisible}
+          updateReadyVersion={updateReadyVersion}
+          updateState={updateState}
           isDesktop={isDesktop}
           isMacDesktop={isMacDesktop}
           isWindowsDesktop={isWindowsDesktop}

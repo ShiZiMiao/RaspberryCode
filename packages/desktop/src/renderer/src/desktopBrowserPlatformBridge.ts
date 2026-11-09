@@ -43,7 +43,13 @@ export const desktopBrowserPlatformBridge = {
   onBrowserViewRestore: (handler) => window.raspberrycode.onBrowserViewRestore?.(handler) ?? (() => {}),
   browserViewAttachGuest: (payload) =>
     window.raspberrycode.browserViewAttachGuest?.(payload) ??
-    Promise.resolve({ ok: false, reason: "not-found", recoveryRequested: false }),
+    // 兜底字面量经显式泛型收窄（"not-found" 是合法拒绝原因）；裸 Promise.resolve 会把
+    // 字面量类型拓宽成 { ok: boolean; reason: string }，与判别联合不兼容（TS2322）。
+    Promise.resolve<import("@raspberrycode/shared").BrowserGuestAttachResult>({
+      ok: false,
+      reason: "not-found",
+      recoveryRequested: false,
+    }),
   browserViewDetachGuest: (payload) =>
     window.raspberrycode.browserViewDetachGuest?.(payload) ?? Promise.resolve(false),
   browserViewCloseTab: (payload) =>
@@ -60,7 +66,8 @@ export const desktopBrowserPlatformBridge = {
     window.raspberrycode.browserViewUpdateViewport?.(payload) ?? Promise.resolve(),
   importChromeBrowserData: (options) =>
     window.raspberrycode.importChromeBrowserData?.(options) ??
-    Promise.resolve({
+    // 同上：兜底对象经显式泛型收窄，避免字面量拓宽后与结果类型不兼容（TS2322）。
+    Promise.resolve<import("@raspberrycode/shared").ChromeBrowserDataImportResult>({
       success: false,
       cookies: { imported: 0, skipped: 0, failed: 0 },
       localStorage: {
@@ -69,7 +76,7 @@ export const desktopBrowserPlatformBridge = {
         originsSkipped: 0,
         originsFailed: 0,
       },
-      error: "unsupported",
+      error: "chrome_browser_data_import_unavailable",
     }),
   clearEmbeddedBrowserData: (mode) =>
     window.raspberrycode.clearEmbeddedBrowserData?.(mode) ??

@@ -149,6 +149,30 @@ export function createDesktopPlatform(options: {
     getDesktopSessionActivity: () =>
       window.raspberrycode.getDesktopSessionActivity?.() ??
       Promise.resolve({ runningAgentSessionCount: 0 }),
+    getUpdateState: () =>
+      window.raspberrycode.getUpdateState?.() ?? Promise.resolve({ kind: "idle", enabled: false }),
+    onUpdateStateChanged: (handler) =>
+      window.raspberrycode.onUpdateStateChanged?.(handler) ?? (() => {}),
+    onUpdateCheckResult: (handler) =>
+      window.raspberrycode.onUpdateCheckResult?.(handler) ?? (() => {}),
+    downloadUpdate: () => window.raspberrycode.downloadUpdate?.() ?? Promise.resolve(),
+    cancelUpdateDownload: () => window.raspberrycode.cancelUpdateDownload?.() ?? Promise.resolve(),
+    quitAndInstallUpdate: () =>
+      window.raspberrycode.quitAndInstallUpdate?.() ?? Promise.resolve(),
+    skipUpdateVersion: (version) =>
+      window.raspberrycode.skipUpdateVersion?.(version) ?? Promise.resolve(),
+    getAutoUpdatePreferences: () =>
+      window.raspberrycode.getAutoUpdatePreferences?.() ??
+      Promise.resolve({
+        autoDownloadAndInstallUpdates: false,
+        skippedUpdateVersion: null,
+        updateFeedGithubOwner: "",
+        updateFeedGithubRepo: "",
+      }),
+    setAutoDownloadAndInstallUpdates: (enabled) =>
+      window.raspberrycode.setAutoDownloadAndInstallUpdates?.(enabled) ?? Promise.resolve(),
+    setUpdateFeedGithub: (payload) =>
+      window.raspberrycode.setUpdateFeedGithub?.(payload) ?? Promise.resolve(),
     getRaspberryCodeStdioTapDevState: () =>
       window.raspberrycode.getRaspberryCodeStdioTapDevState?.() ??
       Promise.resolve({ enabled: false, visible: false, logDir: "", statePath: "" }),

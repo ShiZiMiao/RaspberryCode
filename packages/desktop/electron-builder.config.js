@@ -1009,14 +1009,17 @@ export default {
     installerHeaderIcon: "build/icon_installer.ico",
   },
   detectUpdateChannel: false,
+  // 更新源为 GitHub Releases（spec：specs/client-github-self-update.md）。
+  // 运行时 autoUpdateService 仍按设置页 updateFeedGithub* setFeedURL 覆盖此处默认仓库；
+  // 发布 CI 需把安装包、.blockmap、latest*.yml 一并上传到 Release 资产（差量更新依赖 blockmap）。
   publish: {
-    provider: "generic",
-    // 当前 OSS/CDN 对多 Range 请求返回 206，但 Content-Type 仍是 application/x-msdownload，
-    // electron-updater 会因缺少 multipart/byteranges 直接回退整包下载。关闭 multiple range 后仍走差分，
-    // 只是按单 Range 顺序拉取差异块，避免 Windows 用户更新时从约 15MB 退化成 300MB+ 全量包。
+    provider: "github",
+    owner: "ShiZiMiao",
+    repo: "RaspberryCode",
+    releaseType: "release",
+    // GitHub 资产存储不支持 multipart/byteranges，多 Range 探测会回退整包下载。
+    // 关闭 multiple range 后仍走差分，只是按单 Range 顺序拉取差异块，
+    // 避免 Windows 用户更新时从约 15MB 退化成 300MB+ 全量包。
     useMultipleRangeRequest: false,
-    // 新客户端运行时使用服务端 manifest provider；这里仅保留 electron-builder 必需的
-    // generic publish 占位，避免打包产物继续携带可配置的旧 stable feed。
-    url: "http://localhost:8081",
   },
 };

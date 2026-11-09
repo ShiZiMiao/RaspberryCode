@@ -37,6 +37,7 @@ import { useOptionalServices } from "@/hooks/useServices.js";
 import { ProactiveSuggestionsSetting } from "@/settings/ProactiveSuggestionsSetting.js";
 import { DynamicWorkflowModeSetting } from "@/settings/DynamicWorkflowModeSetting.js";
 import { EndpointOriginSetting } from "@/settings/EndpointOriginSetting.js";
+import { UpdateSettingsSection } from "@/client-update/index.js";
 import { normalizeInterfaceMode, type InterfaceMode } from "@/lib/interfaceMode.js";
 import {
   createSettingsPageConfig,
@@ -819,6 +820,10 @@ export function GeneralSectionContent({
         {hasServices ? <DynamicWorkflowModeSetting /> : null}
         {/* C2：端点设置扶正到设置页（原隐藏弹窗/帮助菜单入口已下线）。 */}
         {hasServices ? <EndpointOriginSetting /> : null}
+        {/* 客户端 GitHub 自更新设置（spec：specs/client-github-self-update.md）；仅桌面端展示。
+            与 EndpointOriginSetting 同挂 hasServices 门后：本组件依赖 Settings/Platform 上下文，
+            无服务上下文的渲染环境（如单测直渲 GeneralSectionContent）不得强制挂载。 */}
+        {hasServices ? <UpdateSettingsSection isDesktop={isDesktop} /> : null}
         <SettingsRow
           label={intl.formatMessage({ id: "settings.modelIoFullRetention" })}
           description={intl.formatMessage({

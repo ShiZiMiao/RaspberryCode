@@ -1,5 +1,5 @@
 import { SidebarTooltipProvider } from "@/ControlHintTooltip.js";
-import type { IPlatformService, } from "@raspberrycode/shared";
+import type { IPlatformService, UpdateStatePayload } from "@raspberrycode/shared";
 import { cn } from "@/components/lib/utils.js";
 import {
   ArrowLeftIcon,
@@ -9,6 +9,7 @@ import {
   PanelLeftOpen,
 } from "lucide-react";
 import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
+import { UpdateStatusButton } from "@/client-update/index.js";
 import { DesktopTopOverlayActionButton } from "@/DesktopTopOverlayActionButton.js";
 import { RaspberryCodeStartupLogoBadge } from "@/root/RootStartupLoading.js";
 import {
@@ -25,6 +26,8 @@ interface DesktopTopOverlayProps {
   macWindowControlsLeftPaddingPx?: number;
   windowsWindowControlsRightPaddingPx?: number;
   isSidebarVisible: boolean;
+  updateReadyVersion: string | null;
+  updateState: UpdateStatePayload | null;
   toggleSidebarShortcutLabel: string;
   newTaskShortcutLabel: string;
   goBackShortcutLabel: string;
@@ -53,6 +56,8 @@ export function DesktopTopOverlay({
   macWindowControlsLeftPaddingPx,
   windowsWindowControlsRightPaddingPx,
   isSidebarVisible,
+  updateReadyVersion,
+  updateState,
   toggleSidebarShortcutLabel,
   newTaskShortcutLabel,
   goBackShortcutLabel,
@@ -204,6 +209,15 @@ export function DesktopTopOverlay({
               </DesktopTopOverlayActionButton>
             </div>
 
+            {/* 侧栏收起后，更新按钮不能跟着“展开态的容器宽度阈值”一起被隐藏；
+                  收起态把操作集中到顶部浮层，更新入口必须始终可见。 */}
+            <UpdateStatusButton
+              platform={platform}
+              version={updateReadyVersion}
+              updateState={updateState}
+              isMacDesktop={isMacDesktop}
+              isWindowsDesktop={isWindowsDesktop}
+            />
           </div>
         </div>
       </div>

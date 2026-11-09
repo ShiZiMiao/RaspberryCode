@@ -7,6 +7,11 @@ import type {
 } from "./index.js";
 import type { OAuthStateRegistration } from "./oauth.js";
 import type { AppSettings, Locale } from "./protocol.js";
+import type {
+  AutoUpdatePreferences,
+  UpdateCheckResultPayload,
+  UpdateStatePayload,
+} from "./client-update/contract.js";
 import type { StorageCleanRequest, StorageCleanResult, StorageUsageSnapshot } from "./storage.js";
 import type {
   ArmsCustomEventPayload,
@@ -440,6 +445,26 @@ export const PlatformChannels = {
   /** Renderer → Main：迁移旧版 Common MCP 配置 */
   /** Renderer → Main：获取当前设备的稳定标识符（deviceMid） */
   GetDeviceId: "raspberrycode:get-device-id",
+  /** Renderer → Main：读取自动更新状态快照（spec：specs/client-github-self-update.md） */
+  GetUpdateState: "raspberrycode:get-update-state",
+  /** Main → Renderer：自动更新状态快照变化 */
+  UpdateStateChanged: "raspberrycode:update-state-changed",
+  /** Main → Renderer：手动「检查更新」的结果（toast 用，不与静默检查混用） */
+  UpdateCheckResult: "raspberrycode:update-check-result",
+  /** Renderer → Main：下载当前已发现的更新 */
+  DownloadUpdate: "raspberrycode:download-update",
+  /** Renderer → Main：取消正在下载的更新 */
+  CancelUpdateDownload: "raspberrycode:cancel-update-download",
+  /** Renderer → Main：退出并安装已下载的更新 */
+  QuitAndInstallUpdate: "raspberrycode:quit-and-install-update",
+  /** Renderer → Main：跳过指定版本的更新提醒 */
+  SkipUpdateVersion: "raspberrycode:skip-update-version",
+  /** Renderer → Main：读取自动更新偏好 */
+  GetAutoUpdatePreferences: "raspberrycode:get-auto-update-preferences",
+  /** Renderer → Main：写入“自动下载并安装更新”偏好 */
+  SetAutoDownloadAndInstallUpdates: "raspberrycode:set-auto-download-and-install-updates",
+  /** Renderer → Main：写入 GitHub 更新源 owner/repo（空值恢复默认仓库） */
+  SetUpdateFeedGithub: "raspberrycode:set-update-feed-github",
 } as const;
 
 export type PlatformChannelName = (typeof PlatformChannels)[keyof typeof PlatformChannels];
@@ -1171,6 +1196,46 @@ export interface PlatformChannelMap {
   };
   [PlatformChannels.SetTitleBarTheme]: {
     request: DesktopTitleBarTheme;
+    response: void;
+  };
+  [PlatformChannels.GetUpdateState]: {
+    request: void;
+    response: UpdateStatePayload;
+  };
+  [PlatformChannels.UpdateStateChanged]: {
+    request: UpdateStatePayload;
+    response: void;
+  };
+  [PlatformChannels.UpdateCheckResult]: {
+    request: UpdateCheckResultPayload;
+    response: void;
+  };
+  [PlatformChannels.DownloadUpdate]: {
+    request: void;
+    response: void;
+  };
+  [PlatformChannels.CancelUpdateDownload]: {
+    request: void;
+    response: void;
+  };
+  [PlatformChannels.QuitAndInstallUpdate]: {
+    request: void;
+    response: void;
+  };
+  [PlatformChannels.SkipUpdateVersion]: {
+    request: string;
+    response: void;
+  };
+  [PlatformChannels.GetAutoUpdatePreferences]: {
+    request: void;
+    response: AutoUpdatePreferences;
+  };
+  [PlatformChannels.SetAutoDownloadAndInstallUpdates]: {
+    request: boolean;
+    response: void;
+  };
+  [PlatformChannels.SetUpdateFeedGithub]: {
+    request: { owner: string; repo: string };
     response: void;
   };
 }

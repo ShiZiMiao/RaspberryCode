@@ -1,6 +1,12 @@
+// 修复：renderer 工程的 lib 不含 Node 全局（setImmediate 声明在 @types/node 全局区），
+// 不能用 `/// <reference types="node" />` 全局引入——Node 的 setInterval/setTimeout 全局重载
+// 会覆盖 DOM 返回值类型（number → Timeout），污染整个 renderer 工程的 timer 类型。
+// 这里把 `new Promise(setImmediate)` 换成等价的 setTimeout 宏任务让渡，语义对测试无差。
 import { readFile } from "node:fs/promises";
 import { runInNewContext } from "node:vm";
 import { expect, it } from "vitest";
+
+const flushMacrotask = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 async function setup(send: (name: string, message: any) => Promise<unknown>) {
   const document = {};
@@ -66,11 +72,11 @@ it("serializes registration ACKs, applies previews, and restores original values
   });
   panel.addSlider(values, "size", { min: 0, max: 40 });
   panel.addToggle(values, "enabled");
-  await new Promise(setImmediate);
+  await flushMacrotask();
   expect(calls).toHaveLength(1);
   gate.resolve();
   await second.promise;
-  await new Promise(setImmediate);
+  await flushMacrotask();
   expect(calls[1].type).toBe("update");
   expect(calls[1].annotationControls.controls).toHaveLength(2);
   const control = calls[0].annotationControls.controls[0];
@@ -90,7 +96,7 @@ it("serializes registration ACKs, applies previews, and restores original values
   expect(values.size).toBe(12);
   runtime.globals(command(20));
   panel.dispose();
-  await new Promise(setImmediate);
+  await flushMacrotask();
   expect(values.size).toBe(12);
   expect(calls.at(-1).type).toBe("dispose");
   expect(seen).toEqual([20, 12, 20, 12]);
@@ -107,7 +113,7 @@ it("rejects invalid bindings before sending and rolls back a rejected registrati
   expect(calls).toHaveLength(0);
   panel.addToggle({ enabled: true }, "enabled");
   panel.addToggle({ enabled: false }, "enabled");
-  await new Promise(setImmediate);
+  await flushMacrotask();
   expect(calls.map((call) => call.type)).toEqual(["register", "dispose"]);
   expect(() => panel.addToggle({ enabled: true }, "enabled")).toThrow();
 });

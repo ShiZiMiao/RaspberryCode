@@ -13,6 +13,11 @@ import type {
 } from "./mcp.js";
 import type { OAuthStateRegistration } from "./oauth.js";
 import type { AppSettings, Locale } from "./protocol.js";
+import type {
+  AutoUpdatePreferences,
+  UpdateCheckResultPayload,
+  UpdateStatePayload,
+} from "./client-update/contract.js";
 import type { ArmsCustomEventPayload, RendererTelemetryEventPayload } from "./telemetry.js";
 import type {
   RendererActionTraceBatchV1,
@@ -625,6 +630,7 @@ export const DesktopCommandIds = {
   ToggleRaspberryCodeStdioTapDevProxy: "toggleRaspberryCodeStdioTapDevProxy",
   ClearAllData: "clearAllData",
   GetCuaOsSupport: "getCuaOsSupport",
+  CheckForUpdates: "checkForUpdates",
 } as const;
 
 export type DesktopCommandId = (typeof DesktopCommandIds)[keyof typeof DesktopCommandIds];
@@ -1065,6 +1071,29 @@ export interface IPlatformService {
   getDesktopSessionActivity?(): Promise<{
     runningAgentSessionCount: number;
   }>;
+
+  // ---- 客户端 GitHub 自更新（spec：specs/client-github-self-update.md；仅 Desktop 实现） ----
+
+  /** 读取自动更新状态快照。 */
+  getUpdateState?(): Promise<UpdateStatePayload>;
+  /** 订阅更新状态快照变化，返回 disposer。 */
+  onUpdateStateChanged?(callback: (payload: UpdateStatePayload) => void): () => void;
+  /** 订阅手动「检查更新」结果（toast），返回 disposer。 */
+  onUpdateCheckResult?(callback: (payload: UpdateCheckResultPayload) => void): () => void;
+  /** 下载当前已发现的更新。 */
+  downloadUpdate?(): Promise<void>;
+  /** 取消正在下载的更新。 */
+  cancelUpdateDownload?(): Promise<void>;
+  /** 跳过指定版本的更新提醒。 */
+  skipUpdateVersion?(version: string): Promise<void>;
+  /** 退出并安装已下载的更新（先退出准备，后交安装器）。 */
+  quitAndInstallUpdate?(): Promise<void>;
+  /** 读取自动更新偏好。 */
+  getAutoUpdatePreferences?(): Promise<AutoUpdatePreferences>;
+  /** 写入“自动下载并安装更新”偏好。 */
+  setAutoDownloadAndInstallUpdates?(enabled: boolean): Promise<void>;
+  /** 写入 GitHub 更新源 owner/repo；空值恢复默认仓库。 */
+  setUpdateFeedGithub?(payload: { owner: string; repo: string }): Promise<void>;
 
   /** 开发环境 stdio tap proxy 开关状态；非桌面平台可不实现 */
   getRaspberryCodeStdioTapDevState?(): Promise<RaspberryCodeStdioTapDevState>;

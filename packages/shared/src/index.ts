@@ -127,6 +127,7 @@ export * from "./remoteAppConfig.js";
 export * from "./helpAppConfig.js";
 export * from "./remoteAssetInstallMode.js";
 export * from "./onboardingRecord.js";
+export * from "./client-update/index.js";
 export * from "./remoteResourcePackages.js";
 export {
   BROWSER_SCREENSHOT_SURFACE_PREPARE_TIMEOUT_MS,
@@ -235,6 +236,8 @@ export type {
   TaskNotificationPayload,
   WSLDistro,
   WindowControlsOverlayReadyPayload,
+  WindowControlsOverlayMetrics,
+  DesktopZoomState,
   RaspberryCodeStdioTapDevState,
 } from "./platform.js";
 export type {

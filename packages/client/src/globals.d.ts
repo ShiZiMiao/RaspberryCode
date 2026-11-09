@@ -71,9 +71,10 @@ declare global {
         options: RemoteTarget,
         requestId?: string,
         context?: {
-          workspacePath: string;
+          workspacePath?: string;
           workspaceIdentity?: string;
           connectTrigger?: import("@raspberrycode/shared").RemoteWorkspaceConnectTrigger;
+          confirmSourceServerInstall?: boolean;
         },
       ): Promise<{ success: boolean; error?: string; sessionId?: string }>;
       requestSourceSettingsAttachment?(sourceServerId: string): Promise<{ attachmentId: string }>;
@@ -112,7 +113,7 @@ declare global {
       /** 将当前页面的 print 媒体版面导出为 PDF（Chromium 打印引擎，矢量文本） */
       printPageToPdf?(): Promise<import("@raspberrycode/shared").PrintPageToPdfResult>;
       /** 从系统拖拽/文件输入得到的 Web File 解析真实本地路径 */
-      getPathForFile?(file: File): string | null;
+      getPathForFile?(file: unknown): string | null;
       /** dwf 产物「作为文件打开」：把某一版的字节落成本机副本，返回其路径 */
       materializeWorkflowArtifactFile(
         payload: import("@raspberrycode/shared").MaterializeWorkflowArtifactFileRequest,
@@ -275,7 +276,7 @@ declare global {
         remoteSessionId?: string;
         sessionId?: string;
         residencyGeneration?: number;
-      }): Promise<void>;
+      }): Promise<import("@raspberrycode/shared").BrowserGuestAttachResult>;
       /** 重建 `<webview>` 前让 main 精确断开旧 guest 的 CDP。 */
       browserViewDetachGuest?(payload: { key: string; webContentsId: number }): Promise<boolean>;
       browserViewCloseTab?(payload: BrowserViewCloseTabRequest): Promise<void>;
@@ -304,6 +305,75 @@ declare global {
       getDesktopSessionActivity?(): Promise<{
         runningAgentSessionCount: number;
       }>;
+      /** ---- 客户端 GitHub 自更新（spec：specs/client-github-self-update.md）---- */
+      /** 读取自动更新状态快照 */
+      getUpdateState?(): Promise<import("@raspberrycode/shared").UpdateStatePayload>;
+      /** 注册自动更新状态快照变化，返回 disposer */
+      onUpdateStateChanged?(
+        callback: (payload: import("@raspberrycode/shared").UpdateStatePayload) => void,
+      ): () => void;
+      /** 注册手动「检查更新」结果回调，返回 disposer */
+      onUpdateCheckResult?(
+        callback: (payload: import("@raspberrycode/shared").UpdateCheckResultPayload) => void,
+      ): () => void;
+      /** 下载当前已发现的更新 */
+      downloadUpdate?(): Promise<void>;
+      /** 取消正在下载的更新 */
+      cancelUpdateDownload?(): Promise<void>;
+      /** 退出并安装已下载的更新 */
+      quitAndInstallUpdate?(): Promise<void>;
+      /** 跳过指定版本的更新提醒 */
+      skipUpdateVersion?(version: string): Promise<void>;
+      /** 读取自动更新偏好 */
+      getAutoUpdatePreferences?(): Promise<import("@raspberrycode/shared").AutoUpdatePreferences>;
+      /** 写入“自动下载并安装更新”偏好 */
+      setAutoDownloadAndInstallUpdates?(enabled: boolean): Promise<void>;
+      /** 写入 GitHub 更新源 owner/repo（空值恢复默认仓库） */
+      setUpdateFeedGithub?(payload: { owner: string; repo: string }): Promise<void>;
+      /** ---- 以下为 preload bridge 已有但历史上漏声明的方法（renderer 纳入 typecheck 后补齐）---- */
+      /** 读取宿主 CLI MCP 用户目录配置 */
+      loadMcpFromUserDirectory(
+        payload?: import("@raspberrycode/shared").LoadCliMcpFromUserDirectoryRequest,
+      ): Promise<import("@raspberrycode/shared").LoadCliMcpFromUserDirectoryResult>;
+      /** 写入宿主 CLI MCP 用户目录配置 */
+      saveMcpToUserDirectory(
+        payload: import("@raspberrycode/shared").SaveCliMcpToUserDirectoryRequest,
+      ): Promise<{ success: boolean; error?: string }>;
+      /** 长文本粘贴落盘为真正的本地附件 */
+      createTempTextAttachment(
+        payload: import("@raspberrycode/shared").CreateTempTextAttachmentRequest,
+      ): Promise<import("@raspberrycode/shared").CreateTempTextAttachmentResult>;
+      /** 订阅 Source 自动重连后的 logical session 换代事件 */
+      onRemoteSessionReconnected?(
+        callback: (event: import("@raspberrycode/shared").RemoteSessionReconnectedEvent) => void,
+      ): () => void;
+      /** 快捷键设置页录制态开关 */
+      setShortcutRecordingActive?(active: boolean): void;
+      /** 注册 main 进程请求关闭当前上下文的回调，返回 disposer */
+      onCloseActiveContextRequest?(callback: () => void): () => void;
+      /** 注册 main 进程打开内置反馈对话框事件，返回 disposer */
+      onOpenFeedbackDialog?(callback: () => void): () => void;
+      /** 注册 main 进程打开我的工单面板事件，返回 disposer */
+      onOpenTicketsPanel?(callback: () => void): () => void;
+      /** 同步读取当前原生窗口控制区安全边距 */
+      getWindowControlsOverlayMetrics?(): import("@raspberrycode/shared").WindowControlsOverlayMetrics;
+      /** 注册原生窗口控制区安全边距变化回调，返回 disposer */
+      onWindowControlsOverlayChanged?(
+        callback: (metrics: import("@raspberrycode/shared").WindowControlsOverlayMetrics) => void,
+      ): () => void;
+      /** 通过宿主上报 ARMS 自定义事件 */
+      reportArmsCustomEvent(payload: {
+        name: string;
+        group: string;
+        value?: number;
+        properties?: Record<string, string | number | boolean | undefined>;
+      }): Promise<void>;
+      /** 发送已结束的本地 TTFT 批次（fire-and-forget） */
+      reportLocalTtftBatch(batch: import("@raspberrycode/shared").LocalTtftBatch): void;
+      /** 读取开发态 stdio tap proxy 开关状态 */
+      getRaspberryCodeStdioTapDevState?(): Promise<
+        import("@raspberrycode/shared").RaspberryCodeStdioTapDevState
+      >;
       /** 获取已安装的编辑器/终端列表（含图标） */
       getInstalledEditors(filePath?: string): Promise<EditorInfo[]>;
       /** 按兼容 bundle id 或结构化 locator 获取系统应用图标 */

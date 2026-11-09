@@ -23,6 +23,16 @@ import {
 } from "@raspberrycode/shared";
 import { getInstalledEditors } from "./editors.js";
 import { getApplicationIcon } from "./applicationIcons.js";
+import {
+  cancelUpdateDownload,
+  downloadAvailableUpdate,
+  getAutoUpdatePreferences,
+  getUpdateState,
+  quitAndInstallUpdate,
+  setAutoDownloadAndInstallUpdates,
+  setUpdateFeedGithub,
+  skipAvailableUpdateVersion,
+} from "./autoUpdate/index.js";
 import { exportLogs } from "./exportLogs.js";
 import { resolveCommunityUrl } from "./desktopCommandHandlers.js";
 import { openInEditor } from "./openInEditor.js";
@@ -353,6 +363,41 @@ export function registerPlatformIpcHandlers(options: {
   ipcMain.handle(PlatformChannels.GetDesktopSessionActivity, () =>
     options.getDesktopSessionActivity(),
   );
+
+  // ---- 客户端 GitHub 自更新（spec：specs/client-github-self-update.md）----
+  ipcMain.handle(PlatformChannels.GetUpdateState, () => getUpdateState());
+  ipcMain.handle(PlatformChannels.DownloadUpdate, () => {
+    downloadAvailableUpdate("renderer");
+  });
+  ipcMain.handle(PlatformChannels.CancelUpdateDownload, () => {
+    cancelUpdateDownload();
+  });
+  ipcMain.handle(PlatformChannels.QuitAndInstallUpdate, () => quitAndInstallUpdate());
+  ipcMain.handle(PlatformChannels.SkipUpdateVersion, async (_event, version: unknown) => {
+    const validatedVersion = nonEmptyStringSchema.parse(version);
+    await skipAvailableUpdateVersion(validatedVersion);
+  });
+  ipcMain.handle(PlatformChannels.GetAutoUpdatePreferences, () => getAutoUpdatePreferences());
+  ipcMain.handle(
+    PlatformChannels.SetAutoDownloadAndInstallUpdates,
+    async (_event, enabled: unknown) => {
+      if (typeof enabled !== "boolean") {
+        return;
+      }
+      await setAutoDownloadAndInstallUpdates(enabled);
+    },
+  );
+  ipcMain.handle(PlatformChannels.SetUpdateFeedGithub, async (_event, payload: unknown) => {
+    const candidate = payload as { owner?: unknown; repo?: unknown } | null;
+    if (
+      !candidate ||
+      typeof candidate.owner !== "string" ||
+      typeof candidate.repo !== "string"
+    ) {
+      return;
+    }
+    await setUpdateFeedGithub({ owner: candidate.owner, repo: candidate.repo });
+  });
   ipcMain.handle(PlatformChannels.GetDesktopZoomLevel, (event) => {
     const senderWindow = BrowserWindow.fromWebContents(event.sender);
     if (!senderWindow || senderWindow.isDestroyed()) {

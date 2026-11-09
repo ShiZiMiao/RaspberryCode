@@ -413,6 +413,10 @@ export interface AppSettings {
   autoDownloadAndInstallUpdates?: boolean;
   /** 用户跳过的 Electron 自动更新版本；按通道隔离，避免 stable / preview 互相遮挡。 */
   skippedElectronUpdateVersions?: Partial<Record<ElectronReleaseChannel, string>>;
+  /** GitHub 更新源 owner；空/缺省使用默认仓库（spec：specs/client-github-self-update.md）。 */
+  updateFeedGithubOwner?: string;
+  /** GitHub 更新源 repo；空/缺省使用默认仓库。 */
+  updateFeedGithubRepo?: string;
   /** 首次启动设置同步提示是否已消费；只表示弹窗不再出现，不代表导入成功。 */
   settingsSyncFirstRunPromptHandled?: boolean;
   /** 设置页里的临时 endpoint override；正式/测试默认 base url 由 RASPBERRYCODE_BASE_URL env 管理。 */

@@ -2,12 +2,14 @@ import { app, BrowserWindow, Menu } from "electron";
 import {
   DesktopCommandIds,
   desktopMenuMessageIds,
+  formatDesktopMenuMessage,
   getDesktopMenuMessage,
   isValidShortcutBinding,
   RASPBERRYCODE_ENV,
   RASPBERRYCODE_PRODUCT_FLAVOR,
   type DesktopCommandId,
   type Locale,
+  type UpdateStatePayload,
 } from "@raspberrycode/shared";
 import { readRaspberryCodeStdioTapDevState } from "@raspberrycode/services/node";
 import {
@@ -26,6 +28,59 @@ export function getDesktopMenuLabel(
   id: (typeof desktopMenuMessageIds)[keyof typeof desktopMenuMessageIds],
 ) {
   return getDesktopMenuMessage(locale, id);
+}
+
+export const CHECK_FOR_UPDATE_MENU_ID = "help.check-for-update";
+
+/**
+ * 按更新状态快照同步「检查更新」菜单项标签与可用性（spec：specs/client-github-self-update.md）。
+ * 状态事实由 autoUpdateService 持有，这里只做展示投影。
+ */
+export function updateCheckForUpdateMenuState(state: UpdateStatePayload, locale: Locale) {
+  const menu = Menu.getApplicationMenu();
+  const item = menu?.getMenuItemById(CHECK_FOR_UPDATE_MENU_ID);
+  if (!item) {
+    return;
+  }
+  switch (state.kind) {
+    case "checking":
+      item.label = formatDesktopMenuMessage(
+        locale,
+        desktopMenuMessageIds.helpCheckingForUpdates,
+      );
+      item.enabled = false;
+      return;
+    case "update-available":
+      item.label = formatDesktopMenuMessage(
+        locale,
+        desktopMenuMessageIds.helpUpdateAvailableVersion,
+        { version: state.version },
+      );
+      item.enabled = state.enabled;
+      return;
+    case "download-progress":
+      item.label = formatDesktopMenuMessage(
+        locale,
+        desktopMenuMessageIds.helpDownloadingUpdateVersion,
+        { version: state.version ?? "…" },
+      );
+      item.enabled = state.enabled;
+      return;
+    case "update-downloaded":
+      item.label = formatDesktopMenuMessage(
+        locale,
+        desktopMenuMessageIds.helpRestartToUpdate,
+        { version: state.version },
+      );
+      item.enabled = state.enabled;
+      return;
+    default:
+      item.label = formatDesktopMenuMessage(
+        locale,
+        desktopMenuMessageIds.helpCheckForUpdates,
+      );
+      item.enabled = state.enabled;
+  }
 }
 
 export function resolveSystemApplicationLocale(): Locale {
@@ -114,7 +169,11 @@ function buildApplicationMenuTemplate(options: {
                 label: getLabel(desktopMenuMessageIds.helpAbout),
                 click: () => void options.executeDesktopCommand(DesktopCommandIds.ShowAbout),
               },
-              // 更新入口跟随产品身份：Preview 禁用更新器，生产后端的 Preview 也不例外。
+              {
+                id: CHECK_FOR_UPDATE_MENU_ID,
+                label: getLabel(desktopMenuMessageIds.helpCheckForUpdates),
+                click: () => void options.executeDesktopCommand(DesktopCommandIds.CheckForUpdates),
+              },
               { type: "separator" as const },
               {
                 label: getLabel(desktopMenuMessageIds.appServices),
@@ -245,6 +304,11 @@ function buildApplicationMenuTemplate(options: {
               {
                 label: getLabel(desktopMenuMessageIds.helpAbout),
                 click: () => void options.executeDesktopCommand(DesktopCommandIds.ShowAbout),
+              },
+              {
+                id: CHECK_FOR_UPDATE_MENU_ID,
+                label: getLabel(desktopMenuMessageIds.helpCheckForUpdates),
+                click: () => void options.executeDesktopCommand(DesktopCommandIds.CheckForUpdates),
               },
               { type: "separator" as const },
             ]

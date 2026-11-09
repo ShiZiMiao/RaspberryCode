@@ -12,6 +12,7 @@ import type {
   RemoteTarget,
   SourceServerUpdateTarget,
   RemoteWorkspaceSessionEntry,
+  UpdateStatePayload,
   UserInfo,
 } from "@raspberrycode/shared";
 import type { IFeedbackService, IServiceAccessor } from "@raspberrycode/services";
@@ -223,6 +224,10 @@ export interface WorkspaceShellLayoutProps extends Omit<AppProps, "baseFeedbackS
   desktopWindowChromeState: DesktopWindowChromeState | null;
   macWindowControlsLeftPaddingPx: number;
   windowsWindowControlsRightPaddingPx: number;
+  /** 已下载待安装的更新版本（兼容旧入口缓存语义）；无则 null。 */
+  updateReadyVersion: string | null;
+  /** 自动更新状态快照（事实由 desktop main 持有）。 */
+  updateState: UpdateStatePayload | null;
   sidebarContainerRef: RefObject<HTMLElement | null>;
   toggleSidebarShortcutLabel: string;
   newTaskShortcutLabel: string;
