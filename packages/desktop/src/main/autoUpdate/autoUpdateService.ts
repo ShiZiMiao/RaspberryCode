@@ -324,11 +324,16 @@ export function initAutoUpdateService(options: InitAutoUpdateServiceOptions): vo
   updater.autoDownload = false; // 下载由命令显式驱动，跳过版本/静默模式依赖该裁决点
   updater.allowDowngrade = false;
   patchSingleRangeDifferential(updater);
-  void readPreferences().then((preferences) => {
-    // 静默增量语义：自动模式下下载完成后随应用退出静默安装（NSIS install(true,false)，
-    // 不拉起应用），用户下次启动即新版本（spec 产品规则 7）。
-    if (updater) updater.autoInstallOnAppQuit = preferences.autoDownloadAndInstallUpdates;
-  });
+  void readPreferences()
+    .then((preferences) => {
+      // 静默增量语义：自动模式下下载完成后随应用退出静默安装（NSIS install(true,false)，
+      // 不拉起应用），用户下次启动即新版本（spec 产品规则 7）。
+      if (updater) updater.autoInstallOnAppQuit = preferences.autoDownloadAndInstallUpdates;
+    })
+    .catch((error: unknown) => {
+      // 浮动 promise 必须收口，否则污染 unhandledRejection 通道掩盖真实启动错误。
+      logger.warn("[auto-update] read preferences failed", error);
+    });
 
   updater.on("checking-for-update", () => {
     if (quitAndInstallState === "idle" && state.kind !== "download-progress" && state.kind !== "update-downloaded") {

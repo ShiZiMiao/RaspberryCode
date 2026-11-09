@@ -279,7 +279,8 @@ if (!shouldUseElectronDefaultUserDataPath) {
 process.title = runtimeApplicationName;
 
 process.on("unhandledRejection", (reason) => {
-  logger.error("unhandledRejection:", reason);
+  // 修复：logger 的 JSON 化对 Error 只会输出 {}，丢掉一切线索；显式带 stack。
+  logger.error("unhandledRejection:", reason, (reason as Error | undefined)?.stack ?? "");
 });
 
 const iconPath =
@@ -1969,6 +1970,10 @@ app.whenReady().then(async () => {
   // ARMS init 完成后首次写入 user.name（落 device_mid）
   void armsUserIdentitySync.refresh();
 
+  // 修复：遥测注册块里任一 configure/register 同步抛错都会让整条启动链在首窗口之前
+  // 中断（v0.1.0 Windows 实机：unhandledRejection 后日志再无「创建主窗口」，应用无窗口
+  // 空转）。遥测是旁路能力，不允许阻塞启动；失败只落带堆栈的错误日志。
+  try {
   configureDesktopStabilityTelemetry({
     deviceMid,
     platform: process.platform,
@@ -2014,6 +2019,9 @@ app.whenReady().then(async () => {
     stateFile: join(app.getPath("userData"), "raspberrycode-data-size-telemetry.json"),
   });
   registerDesktopNetworkTelemetry(logger);
+  } catch (error) {
+    logger.error("[startup] telemetry registration failed (non-fatal):", error);
+  }
 
   logger.info("[startup] 创建主窗口");
   await primaryWindowCoordinator.ensurePrimaryWindow("app-ready");
