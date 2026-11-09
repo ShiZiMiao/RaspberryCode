@@ -1,4 +1,4 @@
-import { cpSync, existsSync, mkdirSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 
@@ -68,4 +68,32 @@ export function resolvePackagedNodePtyPrebuildPath({ resourcesDir, platformKey }
     platformKey,
     "pty.node",
   );
+}
+
+/**
+ * 注入 staging 的 node-pty 拷贝按目标平台裁剪（对齐 desktop-native-package-policy 的
+ * files 规则：仅保留目标 prebuilds，删除 build/bin/其他平台 prebuilds/pdb），
+ * 避免闭包注入绕过 files 裁剪后把跨平台 native 与调试符号带进安装包（包体曾膨胀数百 MiB）。
+ */
+export function pruneStagedNodePtyPayload({ stagedModuleRoot, targetPlatformKey }) {
+  const prebuildsRoot = resolve(stagedModuleRoot, "prebuilds");
+  for (const dir of ["build", "bin"]) {
+    rmSync(resolve(stagedModuleRoot, dir), { force: true, recursive: true });
+  }
+  if (!existsSync(prebuildsRoot)) {
+    return;
+  }
+  for (const entry of readdirSync(prebuildsRoot, { withFileTypes: true })) {
+    if (entry.isDirectory() && entry.name !== targetPlatformKey) {
+      rmSync(resolve(prebuildsRoot, entry.name), { force: true, recursive: true });
+    }
+  }
+  const targetPrebuildsDir = resolve(prebuildsRoot, targetPlatformKey);
+  if (existsSync(targetPrebuildsDir)) {
+    for (const entry of readdirSync(targetPrebuildsDir, { withFileTypes: true })) {
+      if (entry.isFile() && entry.name.toLowerCase().endsWith(".pdb")) {
+        rmSync(resolve(targetPrebuildsDir, entry.name), { force: true });
+      }
+    }
+  }
 }

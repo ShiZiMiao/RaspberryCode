@@ -14,6 +14,7 @@ import { collectRuntimeModuleClosureEntries } from "./scripts/runtime-dependency
 import {
   resolvePackagedNodePtyPrebuildPath,
   restoreTargetNodePtyPrebuild,
+  pruneStagedNodePtyPayload,
 } from "./scripts/node-pty-package-assets.mjs";
 import { cleanupPackagedSourcemaps } from "./scripts/packaged-sourcemap-cleanup.mjs";
 import { getTargetPlatform } from "./scripts/target-platform.mjs";
@@ -144,6 +145,13 @@ const REQUIRED_ASAR_RUNTIME_MODULES = [
   // 已在线上触发安装包启动即报 Cannot find module 'ms'（Require stack: debug/src/common.js），
   // 自动更新链路直接崩。ms 是叶子包，显式注入即可让 debug 在 app.asar 内稳定解析。
   "ms",
+  // Bugfix: node-pty 是终端 pty 运行时的直接生产依赖，但 electron-builder 的 pnpm collector
+  // 在 hoisted 布局下没有把它收进 app.asar（实测 asar 零条目 → asarUnpack 匹配不到
+  // prebuilds/win32-x64 → 侧车为空 → assertPackagedNodePtyPrebuild 报 pty.node 缺失）。
+  // 以 node-pty 为闭包根注入（拷贝后按目标平台裁剪其他平台 prebuild/build/bin/pdb，
+  // 维持 desktop-native-package-policy 的包体约束），让 repack 的 --unpack-dir
+  // 把目标 prebuild 解进 app.asar.unpacked，接回原设计链路。
+  "node-pty",
 ];
 // pacman 依赖必须使用 Arch 官方仓库中的包名。electron-builder 的历史默认集合包含
 // 已移除的 libappindicator-gtk3/http-parser，且缺少 Electron 实际需要的运行库；显式
@@ -469,6 +477,13 @@ async function injectHoistedRuntimeModulesIntoAsar(context) {
         mkdirSync(dirname(targetModulePath), { recursive: true });
         rmSync(targetModulePath, { force: true, recursive: true });
         cpSync(sourceModulePath, targetModulePath, { recursive: true });
+        if (moduleName === "node-pty") {
+          // 闭包注入绕过 files 裁剪，这里对 node-pty 补目标平台裁剪（跨平台 prebuild/pdb 不入包）。
+          pruneStagedNodePtyPayload({
+            stagedModuleRoot: targetModulePath,
+            targetPlatformKey: targetPlatform.key,
+          });
+        }
       }
     });
 
@@ -1012,14 +1027,13 @@ export default {
   // 更新源为 GitHub Releases（spec：specs/client-github-self-update.md）。
   // 运行时 autoUpdateService 仍按设置页 updateFeedGithub* setFeedURL 覆盖此处默认仓库；
   // 发布 CI 需把安装包、.blockmap、latest*.yml 一并上传到 Release 资产（差量更新依赖 blockmap）。
+  // 差量的单 Range 策略由运行时 patchSingleRangeDifferential 强制（github provider 的
+  // electron-builder schema 不接受 useMultipleRangeRequest，且 electron-updater 运行时
+  // 对 github 分支也会忽略它）。
   publish: {
     provider: "github",
     owner: "ShiZiMiao",
     repo: "RaspberryCode",
     releaseType: "release",
-    // GitHub 资产存储不支持 multipart/byteranges，多 Range 探测会回退整包下载。
-    // 关闭 multiple range 后仍走差分，只是按单 Range 顺序拉取差异块，
-    // 避免 Windows 用户更新时从约 15MB 退化成 300MB+ 全量包。
-    useMultipleRangeRequest: false,
   },
 };
