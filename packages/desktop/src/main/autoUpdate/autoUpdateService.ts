@@ -7,12 +7,52 @@
  * ShiZiMiao/RaspberryCode，用户可在设置页覆盖 owner/repo。
  */
 import { app } from "electron";
-import updaterSingleton, {
-  CancellationToken,
-  type ProgressInfo,
-  type UpdateDownloadedEvent,
-  type UpdateInfo,
-} from "electron-updater";
+import { createRequire } from "node:module";
+import { CancellationToken, type ProgressInfo, type UpdateDownloadedEvent, type UpdateInfo } from "electron-updater";
+
+/**
+ * 修复：electron-updater 的 `autoUpdater` 是 CJS 惰性 getter
+ * （`Object.defineProperty(exports, "autoUpdater", { get: () => _autoUpdater || doLoadAutoUpdater() })`），
+ * 且该模块只在 Electron 运行时才导出这个键。打包产物是 ESM，`import x from` / `import { autoUpdater }`
+ * 在 Electron 的 ESM 互操作下都拿不到 getter 求值结果——此前拿到的是命名空间包装对象，
+ * `updater.on(...)` 抛 `TypeError: ae.on is not a function`，把整条 app.whenReady() 启动链
+ * 打断在首窗口之前（v0.1.0 Windows 实机：进程活着、窗口永不创建、点图标无反应）。
+ * 用 createRequire 走 CJS 通路读取，getter 会被正确求值，拿到真正的 NsisUpdater 实例。
+ */
+const requireFromHere = createRequire(import.meta.url);
+
+/**
+ * 生产缺省的 updater 解析器；测试可通过 __setBundledAutoUpdaterResolverForTest 替换，
+ * 避免 vi.mock 无法拦截 createRequire 的 CJS 通路（真实模块在无 electron 环境下会崩）。
+ */
+let bundledAutoUpdaterResolver = (): AutoUpdaterLike => {
+  const module_ = requireFromHere("electron-updater") as { autoUpdater?: AutoUpdaterLike };
+  const instance = module_.autoUpdater;
+  if (!instance || typeof (instance as { on?: unknown }).on !== "function") {
+    // 明确报错而不是把半个对象塞进启动链：调用方已有 try/catch 兜底为 non-fatal。
+    throw new Error("electron-updater autoUpdater unavailable (missing .on)");
+  }
+  return instance;
+};
+
+/** 仅测试使用：替换生产缺省 upater 解析器，返回还原函数。 */
+export function __setBundledAutoUpdaterResolverForTest(
+  resolver: (() => AutoUpdaterLike) | null,
+): () => void {
+  const previous = bundledAutoUpdaterResolver;
+  bundledAutoUpdaterResolver =
+    resolver ??
+    (() => {
+      throw new Error("bundled auto updater resolver not configured");
+    });
+  return () => {
+    bundledAutoUpdaterResolver = previous;
+  };
+}
+
+function resolveBundledAutoUpdater(): AutoUpdaterLike {
+  return bundledAutoUpdaterResolver();
+}
 import type {
   AppSettings,
   AutoUpdatePreferences,
@@ -320,7 +360,7 @@ export function initAutoUpdateService(options: InitAutoUpdateServiceOptions): vo
 
   // 生产缺省注入 electron-updater 单例（bugfix：此前 options.updater 缺省时误走禁用分支，
   // 打包态更新器从未激活；只有测试显式注入假更新器才能工作）。
-  updater = options.updater ?? (updaterSingleton as unknown as AutoUpdaterLike);
+  updater = options.updater ?? resolveBundledAutoUpdater();
   updater.autoDownload = false; // 下载由命令显式驱动，跳过版本/静默模式依赖该裁决点
   updater.allowDowngrade = false;
   patchSingleRangeDifferential(updater);

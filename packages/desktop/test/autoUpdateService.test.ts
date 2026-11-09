@@ -16,8 +16,11 @@ vi.mock("electron-updater", () => {
       this.cancelled = true;
     }
   }
-  // 生产缺省注入的 electron-updater 单例（默认导出）的最小假实现。
-  const fakeSingleton = {
+  // 复刻真实模块的导出形态：electron-updater 是 CJS，autoUpdater 通过
+  // Object.defineProperty + getter 惰性求值，**没有 default 导出实例**。
+  // 早前 mock 直接给 `default: fakeSingleton`，掩盖了生产代码用默认导入取值后
+  // 拿到命名空间对象、updater.on(...) 抛 TypeError 打断启动链的 bug。
+  const fakeAutoUpdater = {
     autoDownload: true,
     autoInstallOnAppQuit: true,
     allowDowngrade: true,
@@ -27,7 +30,13 @@ vi.mock("electron-updater", () => {
     quitAndInstall: vi.fn(),
     on: vi.fn(),
   };
-  return { CancellationToken: FakeCancellationToken, default: fakeSingleton };
+  const namespace: Record<string, unknown> = { CancellationToken: FakeCancellationToken };
+  Object.defineProperty(namespace, "autoUpdater", {
+    enumerable: true,
+    get: () => fakeAutoUpdater,
+  });
+  // 故意不提供 default：与真实 ESM 互操作结果一致（默认导入得到包装对象，非实例）。
+  return namespace;
 });
 
 import {
@@ -49,6 +58,7 @@ import {
   skipAvailableUpdateVersion,
   type AutoUpdaterLike,
   type GithubFeedOptions,
+  __setBundledAutoUpdaterResolverForTest,
 } from "../src/main/autoUpdate/index.js";
 import type { AppSettings, UpdateStatePayload } from "@raspberrycode/shared";
 
@@ -344,15 +354,25 @@ describe("autoUpdateService 状态机", () => {
   });
 
   it("生产缺省注入 electron-updater 单例（bugfix：缺省不再误走禁用分支）", async () => {
-    initAutoUpdateService({
-      settingService: fakeSettings.service,
-      isPackaged: true,
-      currentVersion: "1.0.0",
-      silentCheckDelayMs: 600_000,
-      broadcastState: (state) => broadcasts.push(state),
-    });
-    expect(getUpdateState()).toEqual({ kind: "idle", enabled: true });
-    expect(await checkForUpdateManually()).toEqual({ kind: "up-to-date", currentVersion: "1.0.0" });
+    // createRequire 的 CJS 通路无法被 vi.mock 拦截，真实模块在无 electron 环境下会崩；
+    // 通过测试钩子替换缺省解析器，覆盖"未显式注入 updater"这条生产分支。
+    const restoreResolver = __setBundledAutoUpdaterResolverForTest(() => fakeUpdater);
+    try {
+      initAutoUpdateService({
+        settingService: fakeSettings.service,
+        isPackaged: true,
+        currentVersion: "1.0.0",
+        silentCheckDelayMs: 600_000,
+        broadcastState: (state) => broadcasts.push(state),
+      });
+      expect(getUpdateState()).toEqual({ kind: "idle", enabled: true });
+      expect(await checkForUpdateManually()).toEqual({
+        kind: "up-to-date",
+        currentVersion: "1.0.0",
+      });
+    } finally {
+      restoreResolver();
+    }
   });
 
   it("手动检查无更新返回 up-to-date；feed 与偏好读写走设置", async () => {

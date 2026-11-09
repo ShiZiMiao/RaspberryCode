@@ -1715,7 +1715,11 @@ app.whenReady().then(async () => {
 
   // 启动自动更新检查（后台执行，不阻塞主界面；spec：specs/client-github-self-update.md）。
   // 更新源为 GitHub Releases，仅打包态启用；开发态由服务自身降级为 enabled=false。
-  initAutoUpdateService({
+  // 修复：自动更新是旁路能力，任何初始化异常都不得打断 ready 链把首窗口吞掉
+  // （v0.1.0 实机：electron-updater 默认导入取到命名空间对象 → updater.on 抛 TypeError
+  //  → app.whenReady() 整链中断 → 进程活着但永不建窗，用户观感是"点击无反应"）。
+  try {
+    initAutoUpdateService({
     settingService: mainSettingService,
     broadcastState: (updateState) => {
       for (const win of BrowserWindow.getAllWindows()) {
@@ -1737,12 +1741,14 @@ app.whenReady().then(async () => {
         await prepareWindowsProcessesForUpdateInstall();
       }
     },
-  });
+    });
+  } catch (error) {
+    logger.error("[startup] auto update init failed (non-fatal):", error);
+  }
 
   if (process.platform === "darwin" || process.platform === "win32") {
     app.clearRecentDocuments();
   }
-
   rebuildMenu();
   configureDockMenu(
     () =>
