@@ -10,7 +10,7 @@ import { loadBuiltinProviderConfig } from "../../scripts/builtin-provider-config
 import { noticesFileName, stageElectronNotices } from "../../scripts/third-party-notices.mjs";
 import { resolveNativeSearchReleasePlan } from "../../scripts/native-search-tools-config.mjs";
 import { getBuildMetadata } from "./scripts/build-metadata.mjs";
-import { collectRuntimeModuleClosureEntries } from "./scripts/runtime-dependency-closure.mjs";
+import { collectRuntimeModuleClosureEntries, collectBundleExternalPackageNames } from "./scripts/runtime-dependency-closure.mjs";
 import {
   resolvePackagedNodePtyPrebuildPath,
   restoreTargetNodePtyPrebuild,
@@ -151,8 +151,13 @@ const REQUIRED_ASAR_RUNTIME_MODULES = [
   // 以 node-pty 为闭包根注入（拷贝后按目标平台裁剪其他平台 prebuild/build/bin/pdb，
   // 维持 desktop-native-package-policy 的包体约束），让 repack 的 --unpack-dir
   // 把目标 prebuild 解进 app.asar.unpacked，接回原设计链路。
+  // 压缩产物的真实外部依赖全集由 collectBundleExternalPackageNames 机械扫描补充，
+  // 该数组只保留安全下限与历史 bugfix 语境，新增运行时依赖无需再手改两份清单。
   "node-pty",
 ];
+
+/** bundle 产物目录（外部依赖扫描的输入；相对本配置文件所在目录）。 */
+const DESKTOP_BUNDLE_OUT_DIRS = ["out/main", "out/host", "out/preload", "out/plugin-sandbox"];
 // pacman 依赖必须使用 Arch 官方仓库中的包名。electron-builder 的历史默认集合包含
 // 已移除的 libappindicator-gtk3/http-parser，且缺少 Electron 实际需要的运行库；显式
 // 维护最小运行时闭包，避免 pacman -U 无法解析依赖或启动时才暴露缺库。
@@ -392,8 +397,19 @@ function resolveMissingRuntimeModules(appAsarPath) {
     .filter(Boolean);
   const asarEntrySet = new Set(asarEntries);
 
+  // 事实来源 = 手工清单（安全下限）∪ bundle 产物扫描出的真实外部依赖全集。
+  // 手工清单曾与 bundle.mjs 互相漂移并双双漏掉 yaml/electron-updater/ssh2 等，
+  // 安装包能生成但启动即 Cannot find module（v0.1.0 Windows 实机复现）。
+  const runtimeModuleRoots = [
+    ...new Set([
+      ...REQUIRED_ASAR_RUNTIME_MODULES,
+      ...collectBundleExternalPackageNames(
+        DESKTOP_BUNDLE_OUT_DIRS.map((dir) => resolve(import.meta.dirname, dir)),
+      ),
+    ]),
+  ];
   const runtimeModules = collectRuntimeModuleClosureEntries(
-    REQUIRED_ASAR_RUNTIME_MODULES,
+    runtimeModuleRoots,
     runtimeModuleLookupRoots,
   );
   const resolvableRuntimeModules = runtimeModules.filter((entry) => {

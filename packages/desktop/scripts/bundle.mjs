@@ -11,7 +11,7 @@ import { createRequire } from "node:module";
 import process from "node:process";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { collectRuntimeModuleClosureEntries } from "./runtime-dependency-closure.mjs";
+import { collectRuntimeModuleClosureEntries, collectBundleExternalPackageNames } from "./runtime-dependency-closure.mjs";
 import { resolveDesktopProductIdentity } from "./desktop-product-identity.mjs";
 import {
   findDesktopNativePackageViolations,
@@ -673,7 +673,19 @@ function verifyPackagedRuntimeDependencies(os, arch) {
   }
 
   const runtimeModules = collectRuntimeModuleClosureEntries(
-    requiredRuntimeModules,
+    // 事实来源 = 手工清单（安全下限）∪ bundle 产物扫描出的真实外部依赖全集。
+    // 手工清单曾与 electron-builder.config 互相漂移并双双漏掉 yaml 等外部依赖，
+    // 让"启动即 Cannot find module"的坏包流出（v0.1.0 Windows 实机复现）。
+    [
+      ...new Set([
+        ...requiredRuntimeModules,
+        ...collectBundleExternalPackageNames(
+          ["out/main", "out/host", "out/preload", "out/plugin-sandbox"].map((dir) =>
+            resolve(desktopRoot, dir),
+          ),
+        ),
+      ]),
+    ],
     runtimeModuleLookupRoots,
   );
   const resolvableRuntimeModules = runtimeModules.filter((entry) => {
