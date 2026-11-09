@@ -760,6 +760,20 @@ async function main() {
     verifyPackagedRuntimeDependencies(os, arch),
   );
 
+  // 启动冒烟：静态清单校验只能证明"模块都在包里"，证明不了"应用能拉起来"。
+  // v0.1.0 Windows 实机教训：缺 yaml 的坏包畅通流出。这里在打包链内真机启动一次产物
+  // （观察进程树/异常弹窗/stderr），把"安装后无法使用"挡在发版前。
+  // RASPBERRYCODE_SKIP_PACKAGED_SMOKE=1 可显式跳过（仅限无桌面会话的特殊构建机）。
+  if (os === "win") {
+    runTimedSync("bundle:smoke-packaged-app", () =>
+      run(process.execPath, [
+        resolve(desktopRoot, "scripts", "smoke-packaged-app.mjs"),
+        "--app-dir",
+        resolve(desktopDistRoot, "win-unpacked"),
+      ]),
+    );
+  }
+
   const artifactPath = findBuiltArtifact(os, arch);
   runTimedSync("bundle:audit-bundle-size", () =>
     run(process.execPath, [
