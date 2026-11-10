@@ -9,7 +9,7 @@ import { logger } from "@/logger.js";
  *
  * 兜底语义（docs/onboarding-record-spec.md §6，2026-10 第二次修订）：超时、rejection、
  * record 服务不可用一律保守判 false——失败只代表"结果未知"，不得据此打扰用户。旧实现
- * 退回 settings 判定（!onboardingOccupation），会把没填过引导的老用户误判成需要引导
+ * 退回 settings 判定（!onboardingCompleted），会把没填过引导的老用户误判成需要引导
  * （线上 dev 案例：登录瞬间判定早于任务索引回填，shouldOnboard 返回 true 误弹老用户；
  * settings 兜底是同一冲突的第二入口）。真新用户在故障场景最坏晚一次启动再弹；真实结果
  * 到达后照常覆盖。3 秒放行预算与判定轮次分离：截止时刻在首个未决判定轮建立并跨轮共享
@@ -101,7 +101,7 @@ export function useOnboardingTrigger(options: {
         },
         (cause) => {
           // 判定失败只代表"结果未知"，保守判不引导：旧实现退回 settings 判定
-          // （!onboardingOccupation），没填过引导的老用户会被误弹——与"老用户一定
+          // （!onboardingCompleted），没填过引导的老用户会被误弹——与"老用户一定
           // 不弹"冲突，且失败时 settings 快照可信度同样存疑。
           logger.warn("[occupation-onboarding] shouldOnboard 检查失败，保守判定为不引导", {
             error: String(cause),

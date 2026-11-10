@@ -50,7 +50,7 @@ export async function seedRemoteOnboardingFixture(options: {
     JSON.stringify(
       {
         ...settings,
-        onboardingOccupation: "developer",
+        onboardingCompleted: true,
         memoryEnabled: false,
         proactiveSuggestionsEnabled: false,
       },

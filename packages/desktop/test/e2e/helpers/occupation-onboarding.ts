@@ -1,7 +1,7 @@
 import { TID_TASK_SETTINGS_BUTTON } from "@raspberrycode/shared/test-ids";
 import { sel } from "./selectors.js";
 
-// 新隔离 profile 的职业引导会覆盖工作区；通过真实 UI 完成，不伪造业务记录。
+// 新隔离 profile 的引导会覆盖工作区；通过真实 UI 完成，不伪造业务记录。
 export async function skipOccupationOnboardingIfPresent() {
   await browser.waitUntil(
     async () =>
@@ -9,10 +9,10 @@ export async function skipOccupationOnboardingIfPresent() {
       (await $(sel(TID_TASK_SETTINGS_BUTTON)).isExisting()),
     { timeout: 30000 },
   );
-  // 新隔离 profile 可能进入职业引导，按真实 UI 跳过三步，不改全局测试夹具。
+  // 新隔离 profile 可能进入引导，按真实 UI 跳过两步（UI 模式 + 助手偏好），不改全局测试夹具。
   for (
     let step = 0;
-    step < 3 && (await $('[data-testid="onboarding-page"]').isExisting());
+    step < 2 && (await $('[data-testid="onboarding-page"]').isExisting());
     step++
   ) {
     const skip = $('//button[normalize-space(.)="Skip" or normalize-space(.)="跳过"]');

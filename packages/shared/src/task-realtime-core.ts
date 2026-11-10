@@ -29,6 +29,8 @@ const raspberrycodeTaskModeRealtimeValues = [
 ] as const satisfies readonly RaspberryCodeTaskMode[];
 const raspberrycodeTaskMigrationSourceRealtimeValues = [
   "claudeCode",
+  "codexCli",
+  "openCode",
 ] as const satisfies readonly RaspberryCodeTaskMigrationSource[];
 const raspberrycodeTaskChangeSummaryRealtimeSchema = z
   .object({

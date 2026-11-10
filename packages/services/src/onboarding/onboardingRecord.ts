@@ -4,17 +4,14 @@ import type {
   OnboardingRecordFile,
   OnboardingDecision,
 } from "@raspberrycode/shared";
-import { ServiceChannels, type AppSettings } from "@raspberrycode/shared";
+import { ServiceChannels } from "@raspberrycode/shared";
 import { createServiceDescriptor } from "../descriptors.js";
 
 /** 登录态变化时按 record 回填 settings 的字段范围（settings 仍是运行时唯一事实源）。 */
 export interface OnboardingSettingsSyncPatch {
-  onboardingOccupation?: AppSettingsPatchOccupation;
   proactiveSuggestionsEnabled?: boolean;
   memoryEnabled?: boolean;
 }
-
-type AppSettingsPatchOccupation = NonNullable<AppSettings["onboardingOccupation"]>;
 
 export interface IOnboardingRecordService {
   /**
@@ -36,8 +33,8 @@ export interface IOnboardingRecordService {
   /** 当前用户最近一条作答（引导再次打开时预填用）；无记录返回 null。 */
   getLatestEntry(): Promise<OnboardingRecordEntry | null>;
   /**
-   * 把当前用户在 record 里最近一条作答同步回 settings（换账号恢复该用户的职业/偏好，
-   * 推荐区内容随之切换）。跳过页记 null 的字段按保守默认回填（职业 other、偏好关），
+   * 把当前用户在 record 里最近一条作答同步回 settings（换账号恢复该用户的偏好，
+   * 推荐区内容随之切换）。跳过页记 null 的字段按保守默认回填（偏好关），
    * 与引导跳过行为一致；用户没有记录时不改 settings。
    */
   syncSettingsFromRecord(): Promise<OnboardingSettingsSyncPatch | null>;

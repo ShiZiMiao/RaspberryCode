@@ -72,6 +72,7 @@ export function MigrationCandidatesCard({
   supportState,
   candidates,
   selectedSessionIds,
+  selectedProviders,
   selectedCount,
   importError,
   lastImportResult,
@@ -85,12 +86,14 @@ export function MigrationCandidatesCard({
   supportState: ClaudeSessionMigrationSupportState;
   candidates: RaspberryCodeImportableSessionCandidate[];
   selectedSessionIds: string[];
+  /** 与 selectedSessionIds 一一对应的来源；用于同 id 跨来源时区分勾选态。 */
+  selectedProviders: string[];
   selectedCount: number;
   importError: string | null;
   lastImportResult: RaspberryCodeImportSessionsResult | null;
   isImporting: boolean;
   dateTimeFormatter: Intl.DateTimeFormat;
-  onToggleSelection: (sessionId: string) => void;
+  onToggleSelection: (provider: string, sessionId: string) => void;
   onSelectAll: () => void;
   onClearSelection: () => void;
   onImportSelected: () => void;
@@ -203,11 +206,14 @@ export function MigrationCandidatesCard({
         ) : (
           <div className="space-y-2">
             {candidates.map((candidate) => {
-              const isSelected = selectedSessionIds.includes(candidate.sessionId);
+              const isSelected =
+                selectedSessionIds.includes(candidate.sessionId) &&
+                // provider 参与判定：不同来源的原始 id 可能相同。
+                selectedProviders.includes(candidate.provider);
 
               return (
                 <button
-                  key={candidate.sessionId}
+                  key={`${candidate.provider}:${candidate.sessionId}`}
                   type="button"
                   disabled={isImporting}
                   className={cn(
@@ -216,7 +222,7 @@ export function MigrationCandidatesCard({
                       ? "border-primary bg-accent"
                       : "border-border bg-background hover:bg-surface",
                   )}
-                  onClick={() => onToggleSelection(candidate.sessionId)}
+                  onClick={() => onToggleSelection(candidate.provider, candidate.sessionId)}
                 >
                   <div className="flex items-start gap-3">
                     <div

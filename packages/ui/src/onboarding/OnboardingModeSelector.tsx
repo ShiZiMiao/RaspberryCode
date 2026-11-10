@@ -1,7 +1,12 @@
-import { Check } from "lucide-react";
-import { modeOptionIcons } from "@/onboarding/occupationOptions.js";
+import { Check, Code2, PanelsTopLeft } from "lucide-react";
 import { cn } from "@/components/lib/utils.js";
 import type { InterfaceMode } from "@/lib/interfaceMode.js";
+
+/** 模式选择用的图标：coding / office。 */
+const modeOptionIcons = {
+  coding: Code2,
+  office: PanelsTopLeft,
+} as const;
 
 interface ModeSelectorProps {
   mode: InterfaceMode | null;

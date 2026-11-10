@@ -332,7 +332,8 @@ const enUS: Record<string, string> = {
   "remote.log.sessionReady":
     "Remote session created successfully. You can choose a directory next.",
   "settings.subagents.table.name": "Name",
-  "raspberrycode.error.STALE_TASK_OWNER_COMMAND": "This action belongs to an older run and was ignored.",
+  "raspberrycode.error.STALE_TASK_OWNER_COMMAND":
+    "This action belongs to an older run and was ignored.",
   "chat.toolCall.respondToCoordinator.denied": "Reply denied",
   "bots.unbindSuccess": "Bot unbound",
   "settings.source.unidentifiedProfilesDescription":
@@ -621,7 +622,8 @@ const enUS: Record<string, string> = {
   "raspberrycode.error.MEDIA_BUDGET_CURRENT_ATTACHMENT_TOO_LARGE":
     "Current attachments are too large for one request. Remove or compress attachments and try again.",
   "raspberrycode.error.NO_ACTIVE_TASK_OWNER": "No active task owner is available for this action.",
-  "raspberrycode.error.TASK_OWNED_BY_OTHER_HOST": "This task is already running in another connected view.",
+  "raspberrycode.error.TASK_OWNED_BY_OTHER_HOST":
+    "This task is already running in another connected view.",
   "chat.permission.fileChange.mixedMany": "Update {count} files",
   "chat.permission.fileChange.addMany": "Creates {count} files",
   "chat.permission.fileChange.add": "Create",
@@ -1431,37 +1433,25 @@ const enUS: Record<string, string> = {
   "chat.officeSuggestions.closeDescription": "You can turn them on again in Settings.",
   "chat.officeSuggestions.closeError": "Could not turn off suggestions. Please try again.",
   "occupationOnboarding.suggestionsHeading": "Suggested tasks",
-  "occupationOnboarding.infrastructure": "QA / Operations / Security",
-  "occupationOnboarding.product": "Product / Project / Solutions",
-  "occupationOnboarding.design": "UI / UX / Visual Design",
-  "occupationOnboarding.creator": "Media / Content Creation",
-  "occupationOnboarding.operations": "Operations / Commerce / Customer Service",
-  "occupationOnboarding.marketing": "Marketing / Brand / PR",
-  "occupationOnboarding.finance": "Finance / Accounting / Consulting",
-  "occupationOnboarding.independent": "Entrepreneurship / Freelancing / OPC",
-  "occupationOnboarding.accounting": "Accounting / Audit / Tax",
-  "occupationOnboarding.legal": "Legal / Administration / HR",
   "occupationOnboarding.skip": "Skip",
   "occupationOnboarding.start": "Get started",
   "occupationOnboarding.continue": "Next",
   "occupationOnboarding.saving": "Saving…",
   "occupationOnboarding.back": "Back",
   "occupationOnboarding.error": "Failed to save. Please try again.",
-  "occupationOnboarding.stepRole": "Your work",
   "occupationOnboarding.stepPreferences": "Preferences",
   "occupationOnboarding.heroTitle": "Simple, Fast, Vibe‑Ready!",
   "occupationOnboarding.heroDescription":
     "Tackle complex goals with multiple agents.\nStay in control, wherever you are.",
-  "occupationOnboarding.title": "What do you do?",
-  "occupationOnboarding.description": "Choose the closest match to your everyday work.",
-  "occupationOnboarding.office": "Office professional",
-  "occupationOnboarding.developer": "Software / Data / AI",
-  "occupationOnboarding.student": "Students / Teaching / Research",
-  "occupationOnboarding.other": "Other professions",
   "occupationOnboarding.preferences": "Personalize your work assistant",
   "occupationOnboarding.preferencesDescription": "Choose which features to enable.",
   "occupationOnboarding.migration": "Migrate conversations",
-  "occupationOnboarding.migrationDescription": "Migrate conversation history from Claude Code",
+  "occupationOnboarding.migrationDescription":
+    "Select one or more tools to import conversation history from. Only the selected tools are imported.",
+  "occupationOnboarding.migrationSource_claude": "Claude Code",
+  "occupationOnboarding.migrationSource_codex": "Codex",
+  "occupationOnboarding.migrationSource_opencode": "OpenCode",
+
   "occupationOnboarding.memory": "Enable Workspace Memory",
   "occupationOnboarding.memoryDescription":
     "Let RaspberryCode remember your preferences and work context.",
@@ -3290,7 +3280,11 @@ const enUS: Record<string, string> = {
   "settings.migration.unsupported.desktopOnly": "Migration is currently available on desktop only.",
   "settings.migration.filtersTitle": "Filters",
   "settings.migration.filtersDescription":
-    "Filter by workspace, recent activity, and result size, then manually fetch the candidate sessions.",
+    "Pick a source tool (Claude Code / Codex / OpenCode), filter by workspace, recent activity, and result size, then manually fetch the candidate sessions.",
+  "settings.migration.sourceLabel": "Source tool",
+  "settings.migration.source.claude": "Claude Code",
+  "settings.migration.source.codex": "Codex",
+  "settings.migration.source.opencode": "OpenCode",
   "settings.migration.workspaceFilterLabel": "Workspace filter",
   "settings.migration.workspaceFilter.all": "All workspaces",
   "settings.migration.workspaceFilter.current": "Current workspace only",
@@ -4407,7 +4401,8 @@ const enUS: Record<string, string> = {
   "settings.workspaceFileSearch.transformFailed":
     "Failed to apply the section operation; check the logs",
   "settings.workspaceFileSearch.reveal": "Reveal file location",
-  "settings.workspaceFileSearch.revealHint": "Save first; .raspberrycodeignore lives at the workspace root",
+  "settings.workspaceFileSearch.revealHint":
+    "Save first; .raspberrycodeignore lives at the workspace root",
   "settings.workspaceFileSearch.unsaved": "Unsaved changes",
   "settings.workspaceFileSearch.noWorkspace":
     "No workspace is open, so search ignore rules cannot be configured.",
@@ -5891,7 +5886,8 @@ const enUS: Record<string, string> = {
     "Claude Code does not recognize {command}. Check the command name, or switch to an Agent/skill that supports it and try again.",
   "raspberrycode.error.CLAUDE_UNKNOWN_COMMAND_WITH_ARGS":
     "Claude Code does not recognize {command} (args: {args}). Check the command name, or switch to an Agent/skill that supports it and try again.",
-  "raspberrycode.error.providerBusiness.1006": "Your login session has expired. Please sign in again.",
+  "raspberrycode.error.providerBusiness.1006":
+    "Your login session has expired. Please sign in again.",
   "raspberrycode.error.providerBusiness.1005":
     "Today's free plan quota has been used up. Upgrade to continue now, or wait for the quota to reset.",
   "raspberrycode.error.providerBusiness.3006":

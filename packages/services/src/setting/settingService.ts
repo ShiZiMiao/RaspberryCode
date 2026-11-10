@@ -84,7 +84,10 @@ function shouldPersistSettingsMigrations(rawValue: unknown): boolean {
     raw.remoteBoundaryOnboardingVersion === 3 ||
     raw.closeToTrayOnWindowsMigrationInitialized !== true ||
     raw.messageStreamShowReasoningMigrationInitialized !== true ||
-    raw.taskAutoArchiveResetVersion !== 1
+    raw.taskAutoArchiveResetVersion !== 1 ||
+    // 引导不再采集职业：旧配置里还有 onboardingOccupation 就说明迁移未落盘，
+    // 否则每次读取都要在内存里反复搬一次（且磁盘保留已废弃字段）。
+    "onboardingOccupation" in raw
   );
 }
 

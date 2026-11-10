@@ -23,6 +23,7 @@ import {
   persistTaskNotificationSoundEnabled,
 } from "@/lib/taskNotificationPreferences.js";
 import type { Theme } from "../useTheme.js";
+import type { SessionMigrationSource } from "../hooks/useClaudeSessionMigration.js";
 import { applyTheme, normalizeThemePreference, resolveTheme } from "../useTheme.js";
 
 import {
@@ -144,7 +145,12 @@ export interface RaspberryCodeState {
   newUserOnboardingOpen: boolean;
   setNewUserOnboardingOpen: (open: boolean) => void;
   onboardingDialogRequested: boolean | "migration";
-  requestOnboardingDialog: (entry?: "migration") => void;
+  /** 引导偏好页选定的迁移来源集合；只对「进入迁移」请求有意义，空数组表示不迁移。 */
+  onboardingMigrationSources: SessionMigrationSource[];
+  requestOnboardingDialog: (
+    entry?: "migration",
+    migrationSources?: SessionMigrationSource[],
+  ) => void;
   clearOnboardingDialogRequest: () => void;
 }
 
@@ -205,9 +211,9 @@ export function createRaspberryCodeStore(
       writeSafeLocalStorage(INTERFACE_MODE_STORAGE_KEY, interfaceMode);
       set({ interfaceMode });
     },
-    // 默认主题统一收敛到深色，避免首次启动时 store 与其他主题入口表现不一致。
+    // 默认主题跟随系统：首次启动没有本地偏好时用 system，由 matchMedia 解析成亮/暗。
     // 仍然优先尊重 localStorage 中已保存的用户选择，不覆盖已有偏好。
-    theme: normalizeThemePreference((readSafeLocalStorage("raspberrycode-theme") as Theme) || "dark"),
+    theme: normalizeThemePreference(readSafeLocalStorage("raspberrycode-theme")),
     setTheme: (theme: Theme) => {
       const normalizedTheme = normalizeThemePreference(theme);
       writeSafeLocalStorage("raspberrycode-theme", normalizedTheme);
@@ -299,8 +305,14 @@ export function createRaspberryCodeStore(
     newUserOnboardingOpen: false,
     setNewUserOnboardingOpen: (open) => set({ newUserOnboardingOpen: open }),
     onboardingDialogRequested: false,
-    requestOnboardingDialog: (entry) => set({ onboardingDialogRequested: entry ?? true }),
-    clearOnboardingDialogRequest: () => set({ onboardingDialogRequested: false }),
+    onboardingMigrationSources: [],
+    requestOnboardingDialog: (entry, migrationSources) =>
+      set({
+        onboardingDialogRequested: entry ?? true,
+        onboardingMigrationSources: entry === "migration" ? (migrationSources ?? []) : [],
+      }),
+    clearOnboardingDialogRequest: () =>
+      set({ onboardingDialogRequested: false, onboardingMigrationSources: [] }),
   }));
 
   syncSystemThemeListener = (theme: Theme) => {

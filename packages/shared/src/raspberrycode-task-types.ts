@@ -113,8 +113,11 @@ export interface RaspberryCodeSwitchAgentResult {
   reusedBinding: boolean;
 }
 
-/** 外部原生 session 导入的来源 provider；与 agent runtime 的 RaspberryCodeProvider 解耦，当前仅 Claude Code。 */
-export type RaspberryCodeImportSessionSourceProvider = "claude";
+/**
+ * 外部原生 session 导入的来源 provider；与 agent runtime 的 RaspberryCodeProvider 解耦。
+ * 目前支持 Claude Code、Codex、OpenCode 三个来源。
+ */
+export type RaspberryCodeImportSessionSourceProvider = "claude" | "codex" | "opencode";
 
 /** 外部原生 session 的导入候选。 */
 export interface RaspberryCodeImportableSessionCandidate {

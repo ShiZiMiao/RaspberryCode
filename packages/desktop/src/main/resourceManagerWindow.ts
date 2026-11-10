@@ -1,4 +1,4 @@
-import { app, BrowserWindow, webContents as electronWebContents } from "electron";
+import { app, BrowserWindow, nativeTheme, webContents as electronWebContents } from "electron";
 import type { UtilityProcess as ElectronUtilityProcess } from "electron";
 import os from "node:os";
 import { join } from "node:path";
@@ -267,7 +267,8 @@ export function openResourceManager(): void {
     minHeight: 420,
     title: RESOURCE_MANAGER_WINDOW_TITLE,
     // 不继承主窗口的自定义标题栏，使用系统默认标题栏
-    backgroundColor: "#1e1e1e",
+    // 底色跟随系统亮暗：界面主题默认 system，写死深色会在浅色系统上首帧闪黑。
+    backgroundColor: nativeTheme.shouldUseDarkColors ? "#1e1e1e" : "#f8f8f8",
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,
@@ -405,7 +406,13 @@ function collectElectronProcesses(): ResourceUsageProcess[] {
     if (child.pid == null) continue;
     const { cpuPercent, memoryBytes } = metricsOf(child.pid);
     push(
-      baseProcess(child.pid, formatRaspberryCodeHostProcessName(label), "host", cpuPercent, memoryBytes),
+      baseProcess(
+        child.pid,
+        formatRaspberryCodeHostProcessName(label),
+        "host",
+        cpuPercent,
+        memoryBytes,
+      ),
     );
   }
 

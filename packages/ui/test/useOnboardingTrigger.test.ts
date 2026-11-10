@@ -89,7 +89,7 @@ describe("useOnboardingTrigger", () => {
   });
 
   it("挂载首跑不回填 settings；userId 运行时变化才按 record 回填", async () => {
-    const patch: OnboardingSettingsSyncPatch = { onboardingOccupation: "finance" };
+    const patch: OnboardingSettingsSyncPatch = { proactiveSuggestionsEnabled: true };
     const sync = vi.fn(async () => patch);
     const service = createRecordService({
       shouldOnboard: async () => false,
@@ -108,13 +108,13 @@ describe("useOnboardingTrigger", () => {
     await waitFor(() => expect(sync).toHaveBeenCalled());
     await waitFor(() =>
       expect(update).toHaveBeenCalledWith(
-        expect.objectContaining({ onboardingOccupation: "finance" }),
+        expect.objectContaining({ proactiveSuggestionsEnabled: true }),
       ),
     );
   });
 
   it("登出（id→null）也按 null 用户的 record 回填", async () => {
-    const patch: OnboardingSettingsSyncPatch = { onboardingOccupation: "other" };
+    const patch: OnboardingSettingsSyncPatch = { proactiveSuggestionsEnabled: false };
     const sync = vi.fn(async () => patch);
     const service = createRecordService({
       shouldOnboard: async () => false,
@@ -176,7 +176,7 @@ describe("useOnboardingTrigger", () => {
   );
 
   it("shouldOnboard 失败保守判不引导，不退回 settings 判定", async () => {
-    // rejection 兜底若读 settings（!onboardingOccupation），没填过引导的老用户
+    // rejection 兜底若读 settings（!onboardingCompleted），没填过引导的老用户
     // 会被误判成需要引导；未知结果必须判 false。
     const service = createRecordService({
       shouldOnboard: () => Promise.reject(new Error("rpc failed")),

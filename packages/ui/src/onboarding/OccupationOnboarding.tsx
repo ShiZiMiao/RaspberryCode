@@ -1,9 +1,7 @@
 import { useOnboardingTelemetry } from "@/onboarding/useOnboardingTelemetry.js";
 import { OnboardingHeader } from "@/onboarding/OnboardingHeader.js";
 import { OccupationOnboardingVisual } from "@/onboarding/OccupationOnboardingVisual.js";
-import { occupations, type OccupationValue } from "@/onboarding/occupationOptions.js";
 import { OnboardingModeSelector } from "@/onboarding/OnboardingModeSelector.js";
-import { OnboardingOccupationGrid } from "@/onboarding/OnboardingOccupationGrid.js";
 import { useOnboardingTrigger } from "@/onboarding/useOnboardingTrigger.js";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useSettings } from "@/hooks/useSettingService.js";
@@ -14,6 +12,11 @@ import { matchesShortcutBinding } from "@/shortcuts/bindings.js";
 import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { Button } from "@/components/ui/button.js";
 import { Checkbox } from "@/components/ui/checkbox.js";
+import { cn } from "@/components/lib/utils.js";
+import {
+  SESSION_MIGRATION_SOURCES,
+  type SessionMigrationSource,
+} from "@/hooks/useClaudeSessionMigration.js";
 import { useRaspberryCodeStore } from "@/store/StoreProvider.js";
 import type { InterfaceMode } from "@/lib/interfaceMode.js";
 import { logger } from "@/logger.js";
@@ -57,15 +60,18 @@ export function OccupationOnboarding({
   const userId = useRaspberryCodeStore((state) => state.user?.id) ?? null;
   const { intl } = useRaspberryCodeIntl();
   const t = (key: string) => intl.formatMessage({ id: `occupationOnboarding.${key}` });
-  const [occupation, setOccupation] = useState<OccupationValue | null>("developer");
   const savedInterfaceMode = useRaspberryCodeStore((state) => state.interfaceMode);
   const setInterfaceMode = useRaspberryCodeStore((state) => state.setInterfaceMode);
   // mode 为 null 表示模式页被"跳过"（跳过是显式答案，记录里保留 null 而非兜底值）。
   const [mode, setMode] = useState<InterfaceMode | null>(savedInterfaceMode);
-  const [step, setStep] = useState<0 | 1 | 2>(0);
-  const preferences = step === 2;
+  // 引导已收敛为两步：0 = UI 模式，1 = 助手偏好。
+  const [step, setStep] = useState<0 | 1>(0);
+  const preferences = step === 1;
   const requestOnboardingDialog = useRaspberryCodeStore((state) => state.requestOnboardingDialog);
-  const [migration, setMigration] = useState(false);
+  // 迁移来源支持多选：用户勾选几个就只导这几个，空数组表示「不迁移」。
+  const [migrationSources, setMigrationSources] = useState<SessionMigrationSource[]>([]);
+  // 唯一的「是否迁移」事实源由来源集合派生，避免两个 state 互相打架。
+  const migration = migrationSources.length > 0;
   const [memory, setMemory] = useState(savedInterfaceMode === "office");
   const [suggestions, setSuggestions] = useState(savedInterfaceMode === "office");
   const suggestionsEditedRef = useRef(false);
@@ -83,12 +89,8 @@ export function OccupationOnboarding({
   const onboardingVisible = requested || (needsOnboarding === true && !dismissed);
   const captureEnd = useOnboardingTelemetry({
     platform,
-    visible:
-      Boolean(settings) &&
-      onboardingVisible &&
-      (requested || needsOnboarding !== null || Boolean(settings?.onboardingOccupation)),
+    visible: Boolean(settings) && onboardingVisible && (requested || needsOnboarding !== null),
     step,
-    occupation,
     mode,
     memory,
     suggestions,
@@ -185,17 +187,13 @@ export function OccupationOnboarding({
   const applyLatestEntry = () => {
     const entry = latestEntry;
     setStep(0);
-    setOccupation(
-      entry?.occupation && (occupations as readonly string[]).includes(entry.occupation)
-        ? (entry.occupation as OccupationValue)
-        : "developer",
-    );
     const initialMode = entry?.interfaceMode ?? savedInterfaceMode;
     setMode(initialMode);
     // 编程模式默认关闭主动工作记忆；办公模式才恢复该用户之前的勾选。
     setMemory(initialMode === "office" && (entry?.memoryEnabled ?? true));
     setSuggestions(entry?.proactiveSuggestionsEnabled ?? initialMode === "office");
-    setMigration(false);
+    // 迁移来源不做预填：每次打开引导都要用户重新确认从哪些软件导入。
+    setMigrationSources([]);
     setError(false);
   };
   useEffect(() => {
@@ -212,9 +210,9 @@ export function OccupationOnboarding({
   }, [latestEntry]);
   if (!settings) return showChildrenWhileLoading ? <>{children}</> : null;
   // 判定进行中先不渲染，避免引导闪现后立即消失（判定为需引导）或先闪引导再进主界面。
-  // 只有疑似首跑（settings 里也没有职业）才等待记录判定；存量用户（已有
-  // onboardingOccupation）不等 RPC 直接进主界面，杜绝黑屏。
-  if (!requested && needsOnboarding === null && !settings.onboardingOccupation) return null;
+  // 存量用户（settings 已标记完成过引导）不等记录判定直接进主界面，杜绝黑屏；
+  // 引导不再采集职业，因此改用独立的 onboardingCompleted 标记，不再借用职业字段。
+  if (!requested && needsOnboarding === null && !settings.onboardingCompleted) return null;
   if (!onboardingVisible) return <>{children}</>;
   const save = async (skip = false) => {
     if (savingRef.current) return;
@@ -226,9 +224,11 @@ export function OccupationOnboarding({
       if (mode) setInterfaceMode(mode);
       logger.info("[occupation-onboarding] 保存偏好", { interfaceMode: mode });
       await update({
-        // settings 侧保持既有语义：跳过落保守默认值（职业 other / 偏好关），
+        // settings 侧保持既有语义：跳过落保守默认值（偏好关），
         // "跳过也算答案"的区分度只体现在 onboarding-record.json 里。
-        onboardingOccupation: occupation ?? "other",
+        // onboardingCompleted 是独立标记：它同时代表"老用户免等待记录判定"与
+        // "已完整走过引导"，不再借用已删除的职业字段。
+        onboardingCompleted: true,
         memoryEnabled: skip ? false : memory,
         proactiveSuggestionsEnabled: !skip && mode === "office" && suggestions,
       });
@@ -237,16 +237,14 @@ export function OccupationOnboarding({
       setStep(0);
       setDismissed(true);
       setRequested(false);
-      if (!skip && migration) requestOnboardingDialog("migration");
+      if (!skip && migration) requestOnboardingDialog("migration", migrationSources);
       logger.info("[occupation-onboarding] 偏好保存完成", { interfaceMode: mode });
       if (onboardingRecord) {
         try {
           // 追加本地引导记录（userId 由 host 按登录态补全），后续上传服务器。
           // appendRecord 走 RPC，channel 缺失时会挂起导致保存按钮永远转圈，加超时保护。
-          // 跳过是显式答案：该页被跳过时记 null（occupation 在第 1 步跳过时已是 null，
-          // mode 在第 2 步跳过时置 null，偏好页整体跳过时两个布尔记 null）。
+          // 跳过是显式答案：模式页跳过记 null，偏好页整体跳过时两个布尔记 null。
           await appendOnboardingRecord(onboardingRecord, platform.getDeviceId(), {
-            occupation,
             interfaceMode: mode,
             memoryEnabled: skip ? null : memory,
             proactiveSuggestionsEnabled: skip ? null : mode === "office" && suggestions,
@@ -268,7 +266,7 @@ export function OccupationOnboarding({
   };
   return (
     <main
-      aria-label={t("title")}
+      aria-label={t("modeTitle")}
       data-testid="onboarding-page"
       className="relative flex h-dvh w-full min-h-0 flex-col overflow-hidden bg-background text-foreground"
     >
@@ -285,7 +283,7 @@ export function OccupationOnboarding({
             step={step}
             saving={saving}
             t={t}
-            onBack={() => setStep(step === 2 ? 1 : 0)}
+            onBack={() => setStep(0)}
             onClose={closeOnboarding}
           />
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-6 py-4 sm:px-10">
@@ -294,18 +292,83 @@ export function OccupationOnboarding({
               <section className="flex w-full flex-col">
                 <div className="w-full">
                   <h1 className="text-ui-xl font-semibold tracking-tight text-center">
-                    {t(preferences ? "preferences" : step === 1 ? "modeTitle" : "title")}
+                    {t(preferences ? "preferences" : "modeTitle")}
                   </h1>
                   <p className="mx-auto mt-3 max-w-md text-center text-ui-base leading-relaxed text-foreground-subtle">
-                    {t(
-                      preferences
-                        ? "preferencesDescription"
-                        : step === 1
-                          ? "modeDescription"
-                          : "description",
-                    )}
+                    {t(preferences ? "preferencesDescription" : "modeDescription")}
                   </p>
-                  {step === 1 ? (
+                  {preferences ? (
+                    <div className="mt-8 space-y-3">
+                      {(["suggestions", "memory"] as const)
+                        .filter((key) => key !== "suggestions" || mode === "office")
+                        .map((key) => (
+                          <label
+                            key={key}
+                            className="grid cursor-pointer grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 rounded-xl border border-card-border bg-card dark:bg-surface/40 p-5 text-ui-base transition-colors hover:bg-surface-hover"
+                          >
+                            <Checkbox
+                              checked={key === "memory" ? memory : suggestions}
+                              disabled={saving}
+                              onCheckedChange={(checked) => {
+                                markUserEdited();
+                                if (key === "memory") setMemory(checked === true);
+                                else {
+                                  suggestionsEditedRef.current = true;
+                                  setSuggestions(checked === true);
+                                }
+                              }}
+                            />
+                            <span className="font-medium">{t(key)}</span>
+                            <span className="col-start-2 text-ui-sm font-normal text-foreground-subtle">
+                              {t(`${key}Description`)}
+                            </span>
+                          </label>
+                        ))}
+                      {/*
+                        迁移来源为多选：勾选几个就只导这几个，全不勾即不迁移。
+                      */}
+                      <fieldset
+                        disabled={saving}
+                        className="rounded-xl border border-card-border bg-card p-5 dark:bg-surface/40"
+                      >
+                        <legend className="px-1 text-ui-base font-medium">{t("migration")}</legend>
+                        <p className="mt-1 text-ui-sm font-normal text-foreground-subtle">
+                          {t("migrationDescription")}
+                        </p>
+                        <div className="mt-3 grid gap-2">
+                          {SESSION_MIGRATION_SOURCES.map((source) => {
+                            const checked = migrationSources.includes(source);
+                            return (
+                              <label
+                                key={source}
+                                className={cn(
+                                  "flex cursor-pointer items-center gap-3 rounded-lg border p-3 text-ui-base transition-colors",
+                                  checked
+                                    ? "border-primary bg-accent"
+                                    : "border-border bg-background hover:bg-surface-hover",
+                                )}
+                              >
+                                <Checkbox
+                                  checked={checked}
+                                  onCheckedChange={(next) => {
+                                    markUserEdited();
+                                    setMigrationSources((previous) =>
+                                      next === true
+                                        ? [...new Set([...previous, source])]
+                                        : previous.filter((item) => item !== source),
+                                    );
+                                  }}
+                                />
+                                <span className="font-medium">
+                                  {t(`migrationSource_${source}`)}
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </fieldset>
+                    </div>
+                  ) : (
                     <OnboardingModeSelector
                       mode={mode}
                       saving={saving}
@@ -321,52 +384,6 @@ export function OccupationOnboarding({
                       }}
                       label={t("modeTitle")}
                       formatLabel={(key) => t(key)}
-                    />
-                  ) : preferences ? (
-                    <div className="mt-8 space-y-3">
-                      {(["suggestions", "memory", "migration"] as const)
-                        .filter((key) => key !== "suggestions" || mode === "office")
-                        .map((key) => (
-                          <label
-                            key={key}
-                            className="grid cursor-pointer grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 rounded-xl border border-card-border bg-card dark:bg-surface/40 p-5 text-ui-base transition-colors hover:bg-surface-hover"
-                          >
-                            <Checkbox
-                              checked={
-                                key === "migration"
-                                  ? migration
-                                  : key === "memory"
-                                    ? memory
-                                    : suggestions
-                              }
-                              disabled={saving}
-                              onCheckedChange={(checked) => {
-                                markUserEdited();
-                                if (key === "migration") setMigration(checked === true);
-                                else if (key === "memory") setMemory(checked === true);
-                                else {
-                                  suggestionsEditedRef.current = true;
-                                  setSuggestions(checked === true);
-                                }
-                              }}
-                            />
-                            <span className="font-medium">{t(key)}</span>
-                            <span className="col-start-2 text-ui-sm font-normal text-foreground-subtle">
-                              {t(`${key}Description`)}
-                            </span>
-                          </label>
-                        ))}
-                    </div>
-                  ) : (
-                    <OnboardingOccupationGrid
-                      occupation={occupation}
-                      saving={saving}
-                      onSelect={(value) => {
-                        markUserEdited();
-                        setOccupation(value);
-                      }}
-                      label={t("title")}
-                      formatLabel={(value) => t(value)}
                     />
                   )}
                   {error ? (
@@ -384,9 +401,9 @@ export function OccupationOnboarding({
                       markUserEdited();
                       if (preferences) void save(true);
                       else {
-                        if (step === 0) setOccupation(null);
-                        else setMode(null);
-                        setStep(step === 0 ? 1 : 2);
+                        // 跳过模式页：显式记 null，再进入偏好页。
+                        setMode(null);
+                        setStep(1);
                       }
                     }}
                   >
@@ -394,10 +411,10 @@ export function OccupationOnboarding({
                   </Button>
                   <div className="flex w-full gap-3">
                     <Button
-                      disabled={saving || (step === 0 && !occupation)}
+                      disabled={saving}
                       className="h-11 flex-1 rounded-xl px-5 text-ui-base"
                       onClick={() => {
-                        if (!preferences) setStep(step === 0 ? 1 : 2);
+                        if (!preferences) setStep(1);
                         else void save();
                       }}
                     >

@@ -19,25 +19,6 @@ import {
   sourceServerWorkspaceHistoryEntrySchema,
 } from "./source-server/contracts.js";
 
-/** 引导职业枚举；单独导出供 onboarding 记录回填 settings 时做窄化校验。 */
-const appSettingsOccupationSchema = z.enum([
-  "office",
-  "developer",
-  "independent",
-  "infrastructure",
-  "product",
-  "design",
-  "student",
-  "creator",
-  "operations",
-  "marketing",
-  "finance",
-  "accounting",
-  "legal",
-  "other",
-]);
-export const appSettingsOccupationEnum = appSettingsOccupationSchema;
-
 const nonEmptyStringSchema = z.string().trim().min(1);
 
 export const localeSchema = z.enum(["zh-CN", "en-US"]);
@@ -307,8 +288,30 @@ function migrateLegacyLocalePreference(value: unknown): unknown {
   };
 }
 
-const legacyRemoteWorkspaceHistoryEntrySchema = z.object({
-  id: nonEmptyStringSchema,
+/**
+ * 引导不再采集职业：旧的 onboardingOccupation 是"已完成过引导"的唯一痕迹，
+ * 迁移成独立的 onboardingCompleted 布尔，避免老用户在升级后被重新弹一次引导。
+ * occupation 本身直接丢弃（没有任何消费方了）。
+ */
+function migrateLegacyOnboardingOccupation(value: unknown): unknown {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return value;
+  }
+
+  const raw = value as Record<string, unknown>;
+  if (!("onboardingOccupation" in raw)) {
+    return value;
+  }
+
+  const { onboardingOccupation, ...rest } = raw;
+  // 只有真正落过值才算完成过（null/undefined 表示当时跳过了职业页或从未引导）。
+  if (onboardingOccupation == null) {
+    return rest;
+  }
+  return { ...rest, onboardingCompleted: true };
+}
+
+const legacyRemoteWorkspaceHistoryEntrySchema = z.object({  id: nonEmptyStringSchema,
   workspacePath: nonEmptyStringSchema,
   localWorkspacePath: nonEmptyStringSchema.optional(),
   workspaceIdentity: nonEmptyStringSchema.optional(),
@@ -542,7 +545,8 @@ const appSettingsObjectSchema = z.object({
   providerFamilyConnectionSelections: providerFamilyConnectionSelectionSettingsSchema.default({}),
   nativeSearchEnhancementsEnabled: z.boolean().default(true),
   toolSearchMode: appToolSearchModeSchema.default("off"),
-  onboardingOccupation: appSettingsOccupationSchema.nullish(),
+  /** 已完成过引导：用于老用户免等待记录判定的 UI 放行，不再借用职业字段。 */
+  onboardingCompleted: z.boolean().default(false),
   proactiveSuggestionsEnabled: z.boolean().optional(),
   memoryEnabled: z.boolean().default(false),
   lastWorkspaceSession: z.array(appWorkspaceSessionEntrySchema).default([]),
@@ -598,11 +602,13 @@ export const appSettingsSchema = z.preprocess(
         sanitizeDesktopWindowSize(
           migrateMessageStreamShowReasoningDefault(
             migrateCloseToTrayOnWindowsDefault(
-              migrateLegacyLocalePreference(
-                sanitizeRaspberryCodeEndpointOrigin(
-                  migrateLegacyWorkspaceSession(
-                    migrateLegacyBuiltinAgentCliProviders(
-                      migrateRemoteBoundaryIntroAcknowledgement(migrateTaskAutoArchiveReset(value)),
+              migrateLegacyOnboardingOccupation(
+                migrateLegacyLocalePreference(
+                  sanitizeRaspberryCodeEndpointOrigin(
+                    migrateLegacyWorkspaceSession(
+                      migrateLegacyBuiltinAgentCliProviders(
+                        migrateRemoteBoundaryIntroAcknowledgement(migrateTaskAutoArchiveReset(value)),
+                      ),
                     ),
                   ),
                 ),
@@ -655,24 +661,7 @@ export const appSettingsPatchSchema = z.object({
   providerFamilyConnectionSelections: providerFamilyConnectionSelectionSettingsSchema.optional(),
   nativeSearchEnhancementsEnabled: z.boolean().optional(),
   toolSearchMode: appToolSearchModeSchema.optional(),
-  onboardingOccupation: z
-    .enum([
-      "office",
-      "developer",
-      "independent",
-      "infrastructure",
-      "product",
-      "design",
-      "student",
-      "creator",
-      "operations",
-      "marketing",
-      "finance",
-      "accounting",
-      "legal",
-      "other",
-    ])
-    .nullish(),
+  onboardingCompleted: z.boolean().optional(),
   proactiveSuggestionsEnabled: z.boolean().optional(),
   memoryEnabled: z.boolean().optional(),
   lastWorkspaceSession: z.array(appWorkspaceSessionEntrySchema).optional(),

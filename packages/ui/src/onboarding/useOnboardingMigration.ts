@@ -31,12 +31,21 @@ export function shouldAutoScanOnboardingSessions(params: {
   );
 }
 
-function groupWorkspaceCandidates(
+export function groupWorkspaceCandidates(
   workspacePaths: string[],
   allCandidates: ReturnType<typeof useClaudeSessionMigration>["candidates"],
+  /**
+   * 只导入用户选定的来源集合（多选）。候选理论上已按所选来源扫描过，
+   * 但这里必须再收敛一次：跨来源的 session id 可能重复，
+   * 一旦把未勾选的来源混进同一批 sessionIds，就会变成导入用户没选的软件。
+   */
+  expectedProviders: readonly string[],
 ) {
+  const allowed = new Set(expectedProviders);
   return workspacePaths.flatMap((workspacePath) => {
-    const matches = allCandidates.filter((candidate) => candidate.workspacePath === workspacePath);
+    const matches = allCandidates.filter(
+      (candidate) => candidate.workspacePath === workspacePath && allowed.has(candidate.provider),
+    );
     if (matches.length === 0) {
       return [];
     }
@@ -76,6 +85,7 @@ export function useOnboardingMigration(
     const selectedWorkspaceGroups = groupWorkspaceCandidates(
       selectedWorkspacePaths,
       sessionMigration.candidates,
+      sessionMigration.sources,
     );
 
     setFinishExecution({

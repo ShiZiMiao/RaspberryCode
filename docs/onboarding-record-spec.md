@@ -5,8 +5,8 @@
 
 ## 1. 背景与目标
 
-新用户引导（OccupationOnboarding，三步向导：职业 / 模式 / 偏好）目前只在完成后把偏好写入
-`~/.raspberrycode/v2/setting.json`（`onboardingOccupation` 等字段），没有独立的"引导完成记录"。
+新用户引导（OccupationOnboarding，两步向导：UI 模式 / 偏好）目前只在完成后把偏好写入
+`~/.raspberrycode/v2/setting.json`（`onboardingCompleted` 等字段），没有独立的"引导完成记录"。
 产品需要：
 
 1. 把三页收集的信息持久化到**独立的本地 JSON 文件**，后续开放上传给服务器；
@@ -24,7 +24,6 @@ Schema 定义在 `packages/shared/src/onboardingRecord.ts`（类型 + zod，独�
 ```ts
 interface OnboardingRecordEntry {
   userId: string | null; // OAuth user_id；apikey/未登录为 null
-  occupation: string; // developer | ... | other（非空字符串，向前兼容）
   interfaceMode: "coding" | "office";
   memoryEnabled: boolean;
   proactiveSuggestionsEnabled: boolean;
@@ -48,7 +47,9 @@ interface OnboardingRecordFile {
 `entries` 仍是问卷答案及后续上传队列；`decisions` 只表达本机展示资格，不进入答案上传。
 v1 文件不做启动迁移：读取时视为 `decisions: []`，下一次业务写入时自然落为 v2。
 
-**跳过语义**：跳过是显式答案。某页被跳过时该字段记 `null`（职业页跳过 → `occupation: null`；模式页跳过 → `interfaceMode: null`；偏好页跳过 → 两个布尔记 `null`），与"明确选择了值"区分。settings 侧跳过仍落保守默认值（职业 `other` / 偏好关），区分度只体现在本记录文件。
+**跳过语义**：跳过是显式答案。某页被跳过时该字段记 `null`（模式页跳过 → `interfaceMode: null`；偏好页跳过 → 两个布尔记 `null`），与"明确选择了值"区分。settings 侧跳过仍落保守默认值（偏好关），区分度只体现在本记录文件。
+
+**职业字段已移除**（2026-11）：引导第一步（工作方向）整体删除，因为没有生效中的消费方。旧记录的 `occupation` 由 zod 剥离未知字段的行为丢弃，不会让文件校验失败；settings 里的旧 `onboardingOccupation` 在 schema 预迁移中转换为 `onboardingCompleted: true`，避免老用户升级后被重新弹一次引导。
 
 存储位置：`getAppConfigDir()/onboarding-record.json`（即 `getDataBaseDir()/.raspberrycode/v2/`，默认 `~/.raspberrycode/v2/`；用户自定义数据目录时跟随 dataBaseDir，与 telemetry-state.json 等设备级数据一致。注意与 setting.json 不同——setting.json 固定留在 home，因为启动引导需要从固定位置读取 dataBaseDir）。原子写。
 
@@ -200,12 +201,12 @@ settings 判定而误弹引导。修复只补服务装配；引导触发规则�
 
 - 顶部导航使用等宽左右列与居中进度列：返回在左、步骤进度在正中、关闭在右，按钮垂直居中且左右外边距一致；首步隐藏返回仍保留其列，不移动进度。
 
-- 职业选项图标使用 20px（size-5），选中圆圈保持 16px。
+
 - 跳过与下一步按钮字号统一使用 text-ui-base（默认 14px）。
 
 - 布局：桌面双栏由外层统一提供 4px 四周留白与栏间距；右侧插画面板复用主界面圆角规则
   （Windows 5px、macOS 26+ 12px、旧版或未知 macOS 6px、其他平台 12px）。
-  左侧职业、模式、偏好选择卡片统一使用首层容器圆角 rounded-xl；本页面按设计要求将下一步、上一步、跳过、关闭等按钮统一为 rounded-xl，与选择卡片一致，不修改全局按钮默认圆角。
+  左侧模式与偏好选择卡片统一使用首层容器圆角 rounded-xl；本页面按设计要求将下一步、上一步、跳过、关闭等按钮统一为 rounded-xl，与选择卡片一致，不修改全局按钮默认圆角。
   右侧 Hero 覆盖 1px 主题边框，沿用面板圆角，不占布局空间、不接收指针。
   Hero 使用左对齐的品牌介绍布局：Logo、标题、副文案共享左边线，内容组垂直居中，最大宽度 640px。
   面板左右留白随窗口宽度在 64–72px 之间变化，上下留白保持 32–72px，Logo 与标题间距 40px，标题与副文案间距 24px。
@@ -223,7 +224,7 @@ settings 判定而误弹引导。修复只补服务装配；引导触发规则�
 
 - 显示 gating：`requested || (needsOnboarding === true && !dismissed)`；
   `needsOnboarding` 为异步判定结果。**判定不得无限期拦截主界面**：存量用户
-  （settings 已有 `onboardingOccupation`）不等判定直接进主界面；疑似首跑用户最多等
+  （settings 里 `onboardingCompleted` 为 true）不等判定直接进主界面；疑似首跑用户最多等
   3 秒。`appendRecord` 同样带 5 秒超时，channel 缺失时不会让保存按钮永久转圈。
 - 兜底判定语义（2026-10 修订）：
   - **3 秒超时 → 保守判"不需要引导"**。原实现超时退回 settings 判定，但兜底闭包在
@@ -243,10 +244,10 @@ settings 判定而误弹引导。修复只补服务装配；引导触发规则�
   老用户"判成需要引导——与"老用户一定不弹"冲突，且 settings 快照在 effect 首跑时必未
   加载，历史上有过按陈旧快照误弹的缺陷。失败只代表"结果未知"，不得据此打扰用户；
   真新用户在故障场景最坏晚一次启动再弹（与超时语义同代价）。
-- **settings 不再参与兜底判定**：`settingsLoaded` / `onboardingOccupation` 从触发 hook
+- **settings 不再参与兜底判定**：`settingsLoaded` / `onboardingCompleted` 从触发 hook
   移除，hook 依赖收窄为 record 服务、userId、deviceMid。settings 侧的
-  `onboardingOccupation` 仍只用于"存量用户不等判定直接进主界面"的 UI 放行（§6 显示
-  gating）与推荐区内容，不再是引导资格的事实源。
+  `onboardingCompleted` 仍只用于"存量用户不等判定直接进主界面"的 UI 放行（§6 显示
+  gating），不再是引导资格的事实源。
 - **3 秒放行预算与判定轮次分离**：身份变化（userId / record 服务实例）触发的判定重跑
   只刷新判定上下文，不重新授予主界面阻塞时间。截止时刻在首个未决判定轮建立并跨轮
   共享，重跑只使用剩余预算，预算耗尽立即保守放行——主界面总等待不超过首轮建立的
@@ -258,15 +259,14 @@ settings 判定而误弹引导。修复只补服务装配；引导触发规则�
   页手动打开引导。
 - `save()`：现有 settings update 成功后调 `appendRecord()`；追加失败仅 warn 日志，
   不阻塞引导主流程、不向用户报错。
-- `onboardingOccupation` 等 settings 字段照旧写入（推荐 prompt 池仍依赖它），
-  语义变为"当前用户最近一次选择的职业"。
+- settings 侧改写 `onboardingCompleted: true` 作为"已完成过引导"的持久标记，
+  它不再承载任何问卷内容。
 
 ## 6.5 引导再次打开时的预填与直接退出
 
 - **预填**：从设置入口（或快捷键）手动打开引导、以及再次触发的引导，用该 userId 在
   record 里的最近作答初始化三页选项（`getLatestEntry()`）。跳过页记 null 的字段预填
-  默认值（职业 developer / 偏好默认）；record 的职业不在当前列表（列表演进）时同样落
-  默认。编程模式下主动工作记忆始终预填为关闭，即使此前在设置中手动开启并保存；办公
+  默认值（偏好默认）。编程模式下主动工作记忆始终预填为关闭，即使此前在设置中手动开启并保存；办公
   模式下按最近作答预填，未作答时默认开启。预填数据异步后到时，若用户已交互则不覆盖其选择。
 - **重新完成引导**：本次引导的选择作为新的配置写入 settings 和 record，覆盖此前在设置页
   或上次引导中保存的偏好。用户在编程模式下重开引导并直接保存，也会把此前手动开启的
@@ -279,8 +279,7 @@ settings 判定而误弹引导。修复只补服务装配；引导触发规则�
 
 settings 不分用户，A 答完后 B 触发引导会把 settings 顶成 B 的答案。因此登录态变化
 （或启动）判定"不需要引导"时，调 `syncSettingsFromRecord()` 把当前 userId 在 record 里
-**最近一条**作答回填到 settings 的 `onboardingOccupation / proactiveSuggestionsEnabled /
-memoryEnabled`，推荐区内容随之切换。约定：
+**最近一条**作答回填到 settings 的 `proactiveSuggestionsEnabled / memoryEnabled`，推荐区内容随之切换。约定：
 
 - 回填时机（CR-03 修订）：**仅 userId 运行时变化后**（换号/登录）执行；挂载首跑（含启动时
   OAuth 异步恢复引起的 null→id）只做触发判定不回写——否则用户手动关闭的推荐/记忆开关
@@ -288,9 +287,7 @@ memoryEnabled`，推荐区内容随之切换。约定：
 - 手动修改回写 record（CR-03 修订）：推荐区关闭按钮、设置页建议/记忆开关在更新 settings
   的同时调 `updateRecordPreferences()` 回写当前用户条目（失败仅 warn 不阻塞），record 始终
   等于"该用户最新偏好"，回填因此不会覆盖任何手动修改。
-- 跳过页记 null 的字段回填保守默认（职业 `other`、偏好关），与引导跳过写 settings 一致。
-- record 的职业是非枚举字符串（职业列表会演进），回填前经 `appSettingsOccupationEnum`
-  窄化，未知值落 `other`。
+- 跳过页记 null 的字段回填保守默认（偏好关），与引导跳过写 settings 一致。
 - 当前用户无记录时不改 settings；同步失败仅 warn 日志。
 
 ## 7. 上传预留（待服务端接口确定后实现）

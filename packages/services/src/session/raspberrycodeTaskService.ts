@@ -582,6 +582,26 @@ export interface IRaspberryCodeTaskService {
     sessionIds: string[];
   }): Promise<RaspberryCodeImportSessionsResult>;
 
+  /**
+   * 扫描 Codex / OpenCode 原生会话历史。providers 必须显式给出，
+   * 空或缺省返回空数组——不允许默认把多个来源一起扫进来。
+   */
+  scanImportableExternalSessions(params: {
+    providers: Array<"codex" | "opencode">;
+    workspacePath?: string;
+    workspaceIdentity?: string;
+    modifiedSince?: number;
+    limit?: number;
+  }): Promise<RaspberryCodeImportableSessionCandidate[]>;
+
+  /** 导入选中的 Codex / OpenCode 会话；复用 Claude 导入的 snapshot 与索引写入链。 */
+  importExternalSessions(params: {
+    provider: "codex" | "opencode";
+    workspacePath?: string;
+    workspaceIdentity?: string;
+    sessionIds: string[];
+  }): Promise<RaspberryCodeImportSessionsResult>;
+
   /** 切换 task 模式 */
   setMode(params: { taskId: string; mode: RaspberryCodeTaskMode }): Promise<void>;
 

@@ -1595,7 +1595,11 @@ app.whenReady().then(async () => {
     if (bootstrapSettings.dataBaseDir) {
       setDataBaseDir(bootstrapSettings.dataBaseDir);
     }
-    if (bootstrapSettings.locale) {
+    // 界面语言默认跟随系统：偏好为 system 时不采用 setting.json 里那句 schema 默认的
+    // locale（"zh-CN"）作为事实，否则英文系统首次启动的原生菜单会是中文。
+    // 这里保持 loadedBootstrapLocale=false，交给下方 resolveSystemApplicationLocale 解析。
+    // 显式选过语言的用户 localePreference 不再是 system，仍按存储的语言走。
+    if (bootstrapSettings.localePreference !== "system" && bootstrapSettings.locale) {
       loadedBootstrapLocale = true;
       currentApplicationLocale = bootstrapSettings.locale;
     }

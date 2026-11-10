@@ -49,7 +49,6 @@ import {
 import { raspberrycodeTaskModeSchema } from "./raspberrycode-task-mode-schema.js";
 
 export {
-  appSettingsOccupationEnum,
   appSettingsPatchSchema,
   appSettingsSchema,
   localeSchema,
@@ -707,7 +706,7 @@ export const hostLogResponseSchema = z.object({
 
 export { raspberrycodeProviderSchema };
 
-export const raspberrycodeTaskMigrationSourceSchema = z.enum(["claudeCode"]);
+export const raspberrycodeTaskMigrationSourceSchema = z.enum(["claudeCode", "codexCli", "openCode"]);
 
 export const hostAgentProcessSpawnedResponseSchema = z.object({
   type: z.literal("agent-process-spawned"),

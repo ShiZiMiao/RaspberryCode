@@ -26,7 +26,9 @@ export function resolveTheme(theme: Theme): ResolvedTheme {
 export function normalizeThemePreference(theme: Theme | string | null | undefined): Theme {
   if (theme === "dark" || theme === "light" || theme === "system") return theme;
   const legacy = theme ? LEGACY_THEME_MAP[theme] : undefined;
-  return legacy ?? "dark";
+  // 无持久化值（首次启动）/无法识别时统一落到 system：界面主题默认跟随操作系统亮暗，
+  // 不再把深色写死成产品默认值（见 docs/ui/default-theme.md）。
+  return legacy ?? "system";
 }
 
 function setThemeMetaContent(name: "theme-color" | "color-scheme", content: string) {
@@ -62,8 +64,10 @@ function syncBrowserThemeSurface(resolved: ResolvedTheme) {
 
 export function applyTheme(theme: Theme) {
   const resolved = resolveTheme(theme);
-  const appliedTheme =
-    theme === "system" ? resolved : normalizeThemePreference(theme);
+  // appliedTheme 必须落到确定的 light/dark：normalizeThemePreference 在无值/无法识别时
+  // 返回 system，若原样用于 class 判断会让 theme-light/theme-dark 同时缺失。
+  const normalized = normalizeThemePreference(theme);
+  const appliedTheme = normalized === "system" ? resolved : normalized;
   document.documentElement.classList.toggle("dark", resolved === "dark");
   document.documentElement.classList.toggle("theme-light", appliedTheme === "light");
   document.documentElement.classList.toggle("theme-dark", appliedTheme === "dark");

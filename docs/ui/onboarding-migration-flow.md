@@ -26,9 +26,47 @@ The current visible step order is:
 
 ## Session Scan Source
 
-- Desktop onboarding / settings migration scan reads native Claude Code history from `{HOME}/.claude/projects/**/*.jsonl` (also tries `os.homedir()` and `RASPBERRYCODE_DATA_BASE_DIR` as HOME candidates).
-- Implementation: `packages/services/src/session/claude-native/claudeNativeSessionImportRepo.ts`, wired through `IRaspberryCodeTaskService.scanImportableClaudeSessions`.
-- Imported tasks are indexed with `provider: "claude"` and `migrationSource: "claudeCode"`. RaspberryCode Agent task lists filter to `glm` by default but also include rows with `migration_source = claudeCode`, so migrated history appears in the sidebar without mixing in stale non-migrated Claude index rows.
+迁移来源为**多选**：用户勾选哪些软件，就只导哪些；一个都不勾即不迁移。
+
+- 引导偏好页：`迁移会话数据` 是三选一的**多选复选组**（Claude Code / Codex / OpenCode），
+  勾选集合经 `requestOnboardingDialog("migration", sources)` 带到弹窗，
+  再落到扫描 hook（必须在 `clearOnboardingDialogRequest` 之前写入，否则来源被清掉）。
+- 引导会话页与设置页「迁移」都用**可切换按钮组**表达来源（`aria-pressed`），
+  增删来源会清空候选与勾选并触发一次自动重扫。
+- 扫描：每个来源独立查询后合并。`limit` 是「每来源」上限语义，合并后按活跃时间排序，
+  避免某个来源把其它来源挤出列表。
+- 导入：按 `provider` 分组，逐组串行调用各自接口（Claude / 外部），
+  最后把结果合并成一个 `RaspberryCodeImportSessionsResult` 返回。
+  provider 从**全量 candidates** 反查而非 `selectedCandidates` —— 引导流程按 workspace
+  传 sessionIds 时 `selectedKeys` 可能为空，用后者会让所有会话退化成默认来源。
+- 勾选键是 `provider:sessionId`（不同来源的原始 session id 可能相同）。
+- `groupWorkspaceCandidates` 会再按勾选的来源集合过滤一次：跨来源 session id 可能重复，
+  混进同一批 `sessionIds` 就会导入用户没勾选的软件。
+- `scanImportableExternalSessions` 的 `providers` 必须显式给出，缺省返回空数组而不是「两个都扫」。
+
+| 来源 | 读取位置 | 扫描入口 |
+| --- | --- | --- |
+| Claude Code | `{HOME}/.claude/projects/**/*.jsonl` | `scanImportableClaudeSessions` |
+| Codex | `{HOME}/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl` | `scanImportableExternalSessions({providers:["codex"]})` |
+| OpenCode | `{HOME}/.local/share/opencode/opencode.db`（SQLite，只读） | `scanImportableExternalSessions({providers:["opencode"]})` |
+
+三个来源都额外尝试 `os.homedir()` / `HOME` / `RASPBERRYCODE_DATA_BASE_DIR` 作为 HOME 候选；
+OpenCode 还尝试 `XDG_DATA_HOME` 与 `{HOME}/.opencode`。
+
+导入后的任务统一带 `provider: "claude"`（沿用既有索引约定）与各自的 `migrationSource`：
+`claudeCode` / `codexCli` / `openCode`。任务列表按 `migration_source` 识别迁移来源。
+会话事实丢失时，三种来源都会按各自 `migrationSource` 重建 protocol session 再恢复。
+
+### Codex 与 OpenCode 的格式差异
+
+- **Codex**（`codexSessionParser.ts`）：`session_meta` 行给 `cwd` 与 session id；
+  对话只在 `response_item` + `payload.type === "message"` 里。`developer` / `system` 角色是
+  Codex 注入的提示词，必须丢弃；更隐蔽的是 **`<environment_context>` 等环境信息以 `user` 角色注入**，
+  仅按 role 过滤会把整段 XML 当成用户提问和会话标题，因此按标签整体剥离后再判断是否还有正文。
+- **OpenCode**（`opencodeSessionReader.ts`）：SQLite 三表 `session` / `message` / `part`，
+  `message.data` 与 `part.data` 都是 JSON；只有 `part.data.type === "text"` 进入正文，
+  同一 message 的多个 text part 按序合并成一条消息，避免导入后对话被碎片化。
+  库文件缺失或表结构不存在时返回空数组而不是抛错。
 
 ## Claude → RaspberryCode Session Import
 

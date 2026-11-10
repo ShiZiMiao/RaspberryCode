@@ -9,11 +9,12 @@ import {
   SelectValue,
 } from "@/components/ui/select.js";
 import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
-import type {
-  ClaudeMigrationRange,
-  useClaudeSessionMigration,
+import {
+  SESSION_MIGRATION_SOURCES,
+  UNLIMITED_SCAN_LIMIT_INPUT,
+  type ClaudeMigrationRange,
+  type useClaudeSessionMigration,
 } from "@/hooks/useClaudeSessionMigration.js";
-import { UNLIMITED_SCAN_LIMIT_INPUT } from "@/hooks/useClaudeSessionMigration.js";
 import { SettingsSyncSelectionStep } from "@/settings-sync/SettingsSyncSelectionStep.js";
 import type { useSettingsSync } from "@/hooks/useSettingsSync.js";
 import { Badge } from "@/components/ui/badge.js";
@@ -85,6 +86,30 @@ export function OnboardingSessionsStep(props: {
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col gap-6">
       <div className="flex flex-wrap items-center gap-3">
+        {/* 来源为多选：用一组可切换按钮，比下拉更直观地表达「可同时选多个」。 */}
+        <div
+          role="group"
+          aria-label={intl.formatMessage({ id: "settings.migration.sourceLabel" })}
+          className="flex flex-wrap items-center gap-2"
+        >
+          {SESSION_MIGRATION_SOURCES.map((option) => {
+            const active = props.migration.sources.includes(option);
+            return (
+              <Button
+                key={option}
+                type="button"
+                size="lg"
+                variant={active ? "default" : "secondary"}
+                aria-pressed={active}
+                className="h-9 px-4 text-ui-base"
+                disabled={props.migration.isScanning || props.migration.isImporting}
+                onClick={() => props.migration.toggleSource(option, !active)}
+              >
+                {intl.formatMessage({ id: `settings.migration.source.${option}` })}
+              </Button>
+            );
+          })}
+        </div>
         <Select
           value={props.migration.range}
           onValueChange={(value) => props.migration.setRange(value as ClaudeMigrationRange)}

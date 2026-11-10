@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Onboarding 完成记录（三步向导：职业 / 模式 / 偏好）。
+ * Onboarding 完成记录（两步向导：UI 模式 / 偏好）。
  *
  * 设计约束：
  * - 独立本地 JSON（~/.raspberrycode/v2/onboarding-record.json），不混入 AppSettings；
@@ -10,14 +10,12 @@ import { z } from "zod";
  * - 跳过是显式答案：某页被跳过时该字段记 null，与"明确选择了值"区分。
  */
 
-/** occupation 用非空字符串而非枚举：职业列表会演进，旧记录不能因枚举收窄而校验失败。 */
-export const onboardingOccupationSchema = z.string().min(1).nullable();
-
 export const onboardingInterfaceModeSchema = z.enum(["coding", "office"]).nullable();
 
+// 引导已不再采集职业：旧记录里的 occupation 由 zod 默认剥离未知字段的行为丢弃，
+// 无需额外读兼容 schema，也不会让旧文件校验失败。
 export const onboardingRecordEntrySchema = z.object({
   userId: z.string().min(1).nullable(),
-  occupation: onboardingOccupationSchema,
   interfaceMode: onboardingInterfaceModeSchema,
   memoryEnabled: z.boolean().nullable(),
   proactiveSuggestionsEnabled: z.boolean().nullable(),

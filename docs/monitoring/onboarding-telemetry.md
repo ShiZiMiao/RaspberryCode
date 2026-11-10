@@ -44,40 +44,25 @@
 
 | 字段 | 逻辑取值 | 含义 |
 | --- | --- | --- |
-| work_direction | 下表枚举 / null | 已展示页面的当前工作方向；跳过且未重选为 null |
 | ui_mode | work / code / null | 办公 / 编程；未展示或跳过且未重选为 null |
 | proactive_task_recommendations_enabled | boolean / null | 主动任务推荐勾选状态，仅办公模式展示 |
 | workspace_memory_enabled | boolean / null | 工作区记忆勾选状态 |
 | claude_code_history_migration_selected | boolean / null | 迁移会话数据勾选状态，不表示迁移完成 |
 | exit_action | start / skip / close | 结束入口 |
-| exit_step | 1 / 2 / 3 | 结束时所在页；start / skip 为 3，close 可为任意页 |
+| exit_step | 1 / 2 | 结束时所在页；start / skip 为 2，close 可为任意页 |
 
 模式只在埋点边界映射：内部 `office -> work`、`coding -> code`；不更名 settings、store 或 record 中的模式。
 
-偏好字段：展示且勾选为 true，展示但未勾选为 false，未展示为 null。编程模式或跳过模式页导致推荐选项隐藏时，推荐字段为 null，不能算作主动关闭。默认或预填勾选也计入最终状态，不表示主动点选。第三页点击 skip 仍上传当时三个选项的状态，不统一置空，也不表示这些选项已应用。
+偏好字段：展示且勾选为 true，展示但未勾选为 false，未展示为 null。编程模式或跳过模式页导致推荐选项隐藏时，推荐字段为 null，不能算作主动关闭。默认或预填勾选也计入最终状态，不表示主动点选。偏好页点击 skip 仍上传当时三个选项的状态，不统一置空，也不表示这些选项已应用。
 
-close 同样记录当前选择，不要求当前页先点下一步：例如首次进入第一页面后关闭，上传当页已显示的默认/预填或手动选择，模式和三个偏好字段为 null；第二页关闭可上传工作方向与当前模式，尚未展示的偏好为 null。已访问后返回的页面保留本次选择，不能仅根据 exit_step 推断哪些页展示过。返回修改模式时应使与新模式不一致的旧偏好快照失效，未在新模式下展示确认的偏好记 null。以上均为选择快照，不代表保存或启用成功。
+close 同样记录当前选择，不要求当前页先点下一步：例如首次进入模式页后关闭，上传当页已显示的默认/预填或手动选择（模式局面板本身即展示内容），偏好字段为 null；偏好页关闭可上传当前模式与偏好快照。已访问后返回的页面保留本次选择，不能仅根据 exit_step 推断哪些页展示过。返回修改模式时应使与新模式不一致的旧偏好快照失效，未在新模式下展示确认的偏好记 null。以上均为选择快照，不代表保存或启用成功。
 
-**传输格式**：现有 `TelemetryEventPayload.eventExtraDetail` 为 `Record<string, string>`。复用此接口，各值编码为字符串：布尔为 `"true"` / `"false"`，空值为 `"null"`，页码为 `"1"` / `"2"` / `"3"`。不省略空字段、不传 JS undefined，也不把整个对象二次 JSON 序列化。上述逻辑类型用于解释含义；实际查询按字符串比较。若未来采用原生布尔/null，需整体评估并升级公共接口，不能只在本事件强制类型转换。
+**传输格式**：现有 `TelemetryEventPayload.eventExtraDetail` 为 `Record<string, string>`。复用此接口，各值编码为字符串：布尔为 `"true"` / `"false"`，空值为 `"null"`，页码为 `"1"` / `"2"`。不省略空字段、不传 JS undefined，也不把整个对象二次 JSON 序列化。上述逻辑类型用于解释含义；实际查询按字符串比较。若未来采用原生布尔/null，需整体评估并升级公共接口，不能只在本事件强制类型转换。
 
-### 工作方向映射
+### 工作方向字段已移除
 
-| 中文文案 | 内部 occupation | work_direction |
-| --- | --- | --- |
-| 软件开发/数据/AI | developer | software_data_ai |
-| 创业/自由职业/OPC | independent | entrepreneurship_freelance_opc |
-| 测试/运维/安全 | infrastructure | qa_operations_security |
-| 产品/项目/解决方案 | product | product_project_solutions |
-| UI/UX/视觉设计 | design | ui_ux_visual_design |
-| 学生/教师/科研 | student | education_research |
-| 金融/财务/咨询 | finance | finance_accounting_consulting |
-| 自媒体/内容创作 | creator | media_content_creation |
-| 运营/电商/客户服务 | operations | business_operations_ecommerce_customer_service |
-| 市场营销/品牌/公关 | marketing | marketing_brand_pr |
-| 法律/行政/人力资源 | legal | legal_administration_hr |
-| 其他职业 | other | other |
-
-不修改内部职业枚举。显示文案或语言变化不能改变上报枚举。other 只表示明确选择其他职业，不能替代未作答。
+引导第一步（职业/工作方向）已整体删除，`work_direction` 不再上报。历史数据仍保留该字段，
+查询侧需要按「字段可能缺失」处理；不要用缺失反推为跳过。
 
 ## 公共身份字段与链路
 
@@ -108,7 +93,6 @@ OccupationOnboarding
   "user_id": "<current-user-id>",
   "device_mid": "<shared-telemetry-device-id>",
   "event_extra_detail": {
-    "work_direction": "product_project_solutions",
     "ui_mode": "work",
     "proactive_task_recommendations_enabled": "true",
     "workspace_memory_enabled": "true",
@@ -145,7 +129,7 @@ UI 通过现有平台抽象调用，Web/手机沿用自身适配器能力，不�
 | 用例 | 设置与操作 | 断言 | 自动化位置 |
 | --- | --- | --- | --- |
 | ONBT-01 | 首次自动/手动打开、StrictMode、切页、重开 | 每次实际打开一次曝光，未展示无曝光 | UI occupationOnboardingTelemetry.test.ts |
-| ONBT-02 | 三步选择后 start/skip，保存失败重试 | 成功后一次 end，点击时的答案和语言保持，迁移意愿不等于成功 | 同上 |
+| ONBT-02 | 两步选择后 start/skip，保存失败重试 | 成功后一次 end，点击时的答案和语言保持，迁移意愿不等于成功 | 同上 |
 | ONBT-03 | 任意页关闭、返回改模式再关闭 | close 与页码正确，未展示/失效偏好为空，不保存 | 同上 |
 | ONBT-04 | 公共 Core 上报匿名/登录事件 | 顶层 user_id/device_mid，重建 Core 后设备标识一致 | services telemetryService.test.ts |
 | ONBT-05 | 桌面真实引导重开，close/start/skip | 实际请求体与接收端事件，身份及字段完整 | 用户手动验证 |

@@ -351,22 +351,8 @@ export interface AppSettings {
   toolSearchMode?: AppToolSearchMode;
   /** 新建或冷恢复 Session 是否启用 Memory；默认关闭。 */
   memoryEnabled?: boolean;
-  onboardingOccupation?:
-    | "office"
-    | "developer"
-    | "independent"
-    | "infrastructure"
-    | "product"
-    | "design"
-    | "student"
-    | "creator"
-    | "operations"
-    | "marketing"
-    | "finance"
-    | "accounting"
-    | "legal"
-    | "other"
-    | null;
+  /** 已完成过引导（老用户免等待记录判定用）；引导不再采集职业。 */
+  onboardingCompleted?: boolean;
   proactiveSuggestionsEnabled?: boolean;
   /** 新版只保存活动执行目录；不表达项目/连接成员，null 表示明确清空。 */
   lastActiveWorkspace?: PersistedWorkspaceSessionEntry | null;

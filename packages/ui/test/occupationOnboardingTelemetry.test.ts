@@ -20,7 +20,7 @@ vi.mock("@/hooks/usePlatform.js", () => ({
 }));
 vi.mock("@/hooks/useSettingService.js", () => ({
   useSettings: () => ({
-    settings: mocks.settingsReady ? { onboardingOccupation: "developer" } : null,
+    settings: mocks.settingsReady ? { onboardingCompleted: true } : null,
     update: mocks.update,
   }),
 }));
@@ -70,8 +70,8 @@ function mount() {
 function next() {
   fireEvent.click(screen.getByRole("button", { name: mocks.locale === "zh" ? "下一步" : "Next" }));
 }
+/** 引导已收敛为两步：模式页 → 偏好页。 */
 function preferences() {
-  next();
   next();
 }
 beforeEach(() => {
@@ -120,29 +120,6 @@ describe("onboarding telemetry through real component interactions", () => {
     expect(mocks.update).not.toHaveBeenCalled();
   });
 
-  it.each([
-    ["developer", "software_data_ai"],
-    ["independent", "entrepreneurship_freelance_opc"],
-    ["infrastructure", "qa_operations_security"],
-    ["product", "product_project_solutions"],
-    ["design", "ui_ux_visual_design"],
-    ["student", "education_research"],
-    ["finance", "finance_accounting_consulting"],
-    ["creator", "media_content_creation"],
-    ["operations", "business_operations_ecommerce_customer_service"],
-    ["marketing", "marketing_brand_pr"],
-    ["legal", "legal_administration_hr"],
-    ["other", "other"],
-  ])("maps %s to a stable English work direction", (occupation, expected) => {
-    mount();
-    fireEvent.click(
-      screen.getByRole("button", { name: zhCN[`occupationOnboarding.${occupation}`] }),
-    );
-    fireEvent.keyDown(window, { key: "Escape" });
-    expect(events("onboarding_end")[0]?.eventExtraDetail.work_direction).toBe(expected);
-    expect(events("onboarding_expose")[0]).toMatchObject({ eventRegion: "app.onboarding" });
-    expect(events("onboarding_end")[0]).toMatchObject({ eventRegion: "app.onboarding" });
-  });
   it("reports automatic onboarding and ignores unmount as close", () => {
     mocks.requested = false;
     mocks.needs = true;
@@ -151,7 +128,7 @@ describe("onboarding telemetry through real component interactions", () => {
     view.unmount();
     expect(events("onboarding_end")).toHaveLength(0);
   });
-  it("a new opening after visiting preferences starts with no visited mode/preferences", () => {
+  it("a new opening after visiting preferences starts with no visited preferences", () => {
     const view = mount();
     preferences();
     fireEvent.keyDown(window, { key: "Escape" });
@@ -160,8 +137,9 @@ describe("onboarding telemetry through real component interactions", () => {
       createElement(StrictMode, null, createElement(OccupationOnboarding, { children: "Home" })),
     );
     fireEvent.keyDown(window, { key: "Escape" });
+    // 模式页是新的第一步：重开后立即算已展示模式，但偏好页未访问仍记 null。
     expect(events("onboarding_end")[1]?.eventExtraDetail).toMatchObject({
-      ui_mode: "null",
+      ui_mode: "work",
       workspace_memory_enabled: "null",
       exit_step: "1",
     });
@@ -183,9 +161,10 @@ describe("onboarding telemetry through real component interactions", () => {
   it.each(["start", "skip"])("reports %s snapshot only after successful save", async (action) => {
     mount();
     preferences();
+    // 偏好页现在只有「主动推荐」「工作区记忆」两个复选框；迁移已改成来源单选。
     const checks = screen.getAllByRole("checkbox");
     fireEvent.click(checks[0]!);
-    fireEvent.click(checks[2]!);
+    fireEvent.click(screen.getByRole("checkbox", { name: "Claude Code" }));
     let finish!: () => void;
     mocks.update.mockImplementationOnce(
       () =>
@@ -203,19 +182,22 @@ describe("onboarding telemetry through real component interactions", () => {
       expect.objectContaining({
         eventText: action === "start" ? "开始使用" : "跳过",
         eventExtraDetail: {
-          work_direction: "software_data_ai",
           ui_mode: "work",
           proactive_task_recommendations_enabled: "false",
           workspace_memory_enabled: "true",
           claude_code_history_migration_selected: "true",
           exit_action: action,
-          exit_step: "3",
+          exit_step: "2",
         },
       }),
     ]);
+    // 勾了来源才请求迁移，并且必须把来源集合一起带出去，否则弹窗不知道导哪些软件。
     expect(mocks.store.requestOnboardingDialog).toHaveBeenCalledTimes(action === "start" ? 1 : 0);
+    if (action === "start") {
+      expect(mocks.store.requestOnboardingDialog).toHaveBeenCalledWith("migration", ["claude"]);
+    }
   });
-  it.each([0, 1, 2])("close on step %s includes only visited answers without saving", (step) => {
+  it.each([0, 1])("close on step %s includes only visited answers without saving", (step) => {
     mount();
     for (let i = 0; i < step; i++) next();
     fireEvent.keyDown(window, { key: "Escape" });
@@ -225,9 +207,9 @@ describe("onboarding telemetry through real component interactions", () => {
     expect(end[0]?.eventExtraDetail).toMatchObject({
       exit_action: "close",
       exit_step: String(step + 1),
-      work_direction: "software_data_ai",
-      ui_mode: step ? "work" : "null",
-      workspace_memory_enabled: step === 2 ? "true" : "null",
+      // 模式页现在是第一步：打开即已展示过模式，故 ui_mode 恒有值。
+      ui_mode: "work",
+      workspace_memory_enabled: step === 1 ? "true" : "null",
     });
     expect(mocks.update).not.toHaveBeenCalled();
     fireEvent.keyDown(window, { key: "Escape" });
@@ -251,12 +233,10 @@ describe("onboarding telemetry through real component interactions", () => {
     mocks.store.interfaceMode = "coding";
     mount();
     fireEvent.click(screen.getByRole("button", { name: "跳过" }));
-    next();
     fireEvent.click(screen.getByRole("button", { name: "开始使用" }));
     await waitFor(() => expect(events("onboarding_end")).toHaveLength(1));
     expect(events("onboarding_end")[0]?.eventExtraDetail).toMatchObject({
-      work_direction: "null",
-      ui_mode: "code",
+      ui_mode: "null",
       proactive_task_recommendations_enabled: "null",
     });
   });

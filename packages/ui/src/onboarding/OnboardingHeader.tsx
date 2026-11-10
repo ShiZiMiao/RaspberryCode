@@ -9,7 +9,7 @@ export function OnboardingHeader({
   onBack,
   onClose,
 }: {
-  step: 0 | 1 | 2;
+  step: 0 | 1;
   saving: boolean;
   t: (key: string) => string;
   onBack: () => void;
@@ -30,9 +30,9 @@ export function OnboardingHeader({
       ) : null}
       <ol
         aria-label={t("preferences")}
-        className="col-start-2 row-start-1 flex w-28 items-center gap-2"
+        className="col-start-2 row-start-1 flex w-20 items-center gap-2"
       >
-        {["stepRole", "stepMode", "stepPreferences"].map((key, index) => (
+        {["stepMode", "stepPreferences"].map((key, index) => (
           <li
             key={key}
             aria-current={step === index ? "step" : undefined}

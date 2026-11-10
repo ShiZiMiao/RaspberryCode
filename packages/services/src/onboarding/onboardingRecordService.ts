@@ -5,7 +5,6 @@ import {
   onboardingRecordEntrySchema,
   onboardingRecordFileSchema,
 } from "@raspberrycode/shared";
-import { appSettingsOccupationEnum } from "@raspberrycode/shared";
 import type {
   OnboardingRecordEntry,
   OnboardingRecordEntryInput,
@@ -202,12 +201,8 @@ export function createOnboardingRecordService(
         if (entry.userId === userId) latest = entry;
       }
       if (!latest) return null;
-      // 跳过页记 null：回填保守默认，与引导跳过写 settings 的行为一致（职业 other、偏好关）。
-      // record 的 occupation 是非枚举字符串（职业列表会演进），窄化到 settings 的枚举；
-      // 旧版本可能落过已收窄/未知的职业值，未知值回填 other，与推荐池的兜底一致。
-      const occupation = appSettingsOccupationEnum.safeParse(latest.occupation);
+      // 跳过页记 null：回填保守默认，与引导跳过写 settings 的行为一致（偏好关）。
       return {
-        onboardingOccupation: (occupation.success ? occupation.data : null) ?? "other",
         proactiveSuggestionsEnabled: latest.proactiveSuggestionsEnabled ?? false,
         memoryEnabled: latest.memoryEnabled ?? false,
       };

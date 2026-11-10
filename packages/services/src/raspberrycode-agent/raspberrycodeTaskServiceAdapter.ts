@@ -131,9 +131,7 @@ import type {
   RaspberryCodeTaskTerminalOutcome,
 } from "../session/raspberrycodeTaskService.js";
 import { createServiceLogger } from "#src/logger/serviceLogger.js";
-import {
-  AUTOMATION_MUTATION_TOOL_NAMES,
-} from "#src/raspberrycode-agent/automationToolPolicy.js";
+import { AUTOMATION_MUTATION_TOOL_NAMES } from "#src/raspberrycode-agent/automationToolPolicy.js";
 import type { ISettingService } from "#src/setting/setting.js";
 import type {
   SessionMessageDeliveryResult,
@@ -151,7 +149,10 @@ import type {
   RaspberryCodeTaskIndexTerminalEvent,
 } from "./raspberrycodeTaskIndexSyncer.js";
 import { readModelTrajectory } from "./modelTrajectory.js";
-import { errorAttributionSchema, type CommandPayloadMap } from "@raspberrycode/shared/raspberrycode-protocol-v4";
+import {
+  errorAttributionSchema,
+  type CommandPayloadMap,
+} from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import {
   assertV4CommandAckOk,
   createHostCommandEnvelope,
@@ -162,7 +163,10 @@ import {
   getLegacyTaskSessionSnapshotPath,
 } from "#src/paths.js";
 import { claudeNativeSessionImportRepo } from "#src/session/claude-native/claudeNativeSessionImportRepo.js";
+import type { ClaudeNativeImportedSessionSource } from "#src/session/claude-native/claudeNativeImportedSessionTypes.js";
 import { importClaudeNativeSessions } from "#src/session/claude-native/claudeNativeSessionImportService.js";
+import { externalSessionImportRepo } from "#src/session/claude-native/externalSessionImportRepo.js";
+import { importExternalNativeSessions } from "#src/session/claude-native/importExternalNativeSessions.js";
 import { repairImportedClaudeSessionSnapshot } from "#src/session/claude-native/importedClaudeHistoryRepair.js";
 import { safeParseLegacyTaskSessionFile } from "#src/session/legacyTaskSessionFile.js";
 import {
@@ -205,7 +209,10 @@ interface TaskTargetWithMcpServers extends TaskTarget {
 }
 
 type WorkspaceEventInput = string | RaspberryCodeWorkspaceEventSubscriptionParams;
-type RaspberryCodeSendPromptRuntimeCommand = Extract<RaspberryCodeTaskRuntimeCommand, { type: "send_prompt" }>;
+type RaspberryCodeSendPromptRuntimeCommand = Extract<
+  RaspberryCodeTaskRuntimeCommand,
+  { type: "send_prompt" }
+>;
 type RaspberryCodeTerminalStreamEvent =
   | Extract<RaspberryCodeStreamEvent, { type: "task_complete" }>
   | Extract<RaspberryCodeStreamEvent, { type: "task_error" }>;
@@ -247,7 +254,10 @@ export function createRaspberryCodeTaskServiceAdapter(
 ): IRaspberryCodeTaskService {
   // Bot 原来绕过连接 facade，导致真实附件 admission 缺少可信身份；复用既有 scope，
   // 同一 Bot 接入的附件、命令及对账共用连接，不改变桌面与手机各自的传输模式。
-  const botConnectionScopes = new Map<string, ReturnType<typeof createRaspberryCodeAgentConnectionScope>>();
+  const botConnectionScopes = new Map<
+    string,
+    ReturnType<typeof createRaspberryCodeAgentConnectionScope>
+  >();
   function botAgent(workspace: RaspberryCodeAgentWorkspaceTarget) {
     const key = JSON.stringify([resolveWorkspaceKey(workspace), workspace.remoteSessionId ?? ""]);
     let scope = botConnectionScopes.get(key);
@@ -269,7 +279,10 @@ export function createRaspberryCodeTaskServiceAdapter(
   const runtimeCommands = new Map<string, RaspberryCodeTaskRuntimeCommand[]>();
   const runtimeCommandDrains = new Map<string, Promise<void>>();
   const apiRetryByTaskKey = new Map<string, RaspberryCodeApiRetryStatus | null>();
-  const backgroundTaskControlsByTaskKey = new Map<string, RaspberryCodeBackgroundTaskControlItem[]>();
+  const backgroundTaskControlsByTaskKey = new Map<
+    string,
+    RaspberryCodeBackgroundTaskControlItem[]
+  >();
   const streamedTurnText = new Map<string, { messageId?: string; text: string }>();
   const activePromptInputIds = new Map<string, InputId>();
   const toolProjectionMemoryByTaskKey = new Map<string, RaspberryCodeToolProjectionMemory>();
@@ -286,6 +299,57 @@ export function createRaspberryCodeTaskServiceAdapter(
   const taskIndexRepo = options.taskIndexRepo ?? new TaskIndexRepo();
   const taskIndexSyncer = options.taskIndexSyncer;
 
+  /**
+   * Claude / Codex / OpenCode 三个来源共用的导入 session 创建器。
+   *
+   * 三者只在来源解析与 migrationSource 上不同；落盘必须是同一路径：
+   * 真实 RaspberryCode session + snapshot 备份 + migrationSource 标记，
+   * 否则续聊（setModel / sendPrompt）会打不到 runtime，或列表把迁移历史当成本地新会话。
+   */
+  function createImportedSessionFromSource(params: {
+    workspacePath?: string;
+    workspaceIdentity?: string;
+  }) {
+    return async (source: ClaudeNativeImportedSessionSource): Promise<RaspberryCodeTaskMeta> => {
+      const targetWorkspaceIdentity = params.workspacePath ? params.workspaceIdentity : undefined;
+      const migrationSource = source.migrationSource ?? "claudeCode";
+      const snapshot = await options.raspberrycodeAgentService.createSession({
+        workspacePath: source.workspacePath,
+        workspaceIdentity: targetWorkspaceIdentity,
+        // 显式重新导入产生新 CLI 会话，不能用来源 hash 覆盖已删除或已继续对话的记录。
+        sessionTraceId: createSessionTraceId(),
+        persistence: "immediate",
+        importedHistory: {
+          source: migrationSource,
+          title: source.title,
+          createdAt: source.createdAt,
+          updatedAt: source.updatedAt,
+          messages: source.messages.map((message) => ({
+            role: message.role,
+            content: message.content,
+            timestamp: message.timestamp,
+          })),
+        },
+      });
+      const meta = await syncTaskIndexSnapshot(snapshot);
+      return updateIndexedPresentation({ ...meta, migrationSource });
+    };
+  }
+
+  function notifyImportedTask(meta: RaspberryCodeTaskMeta): void {
+    rememberIndexedTaskMeta(meta);
+    emitWorkspaceTaskListChanged(
+      {
+        workspacePath: meta.workspacePath,
+        workspaceIdentity: meta.workspaceIdentity,
+        taskId: meta.taskId,
+      },
+      meta,
+      // 导入沿用 task_meta_changed 旧语义。
+      "task_meta_changed",
+    );
+  }
+
   // 之前 adapter 自带 notifySyncerSession 时把 syncer 视为可选；现在 syncer 是构造必填项，
   // 简化为直接调用，避免每个 callsite 都做空判断。
   function notifySyncerSession(target: TaskTarget): void {
@@ -298,7 +362,9 @@ export function createRaspberryCodeTaskServiceAdapter(
 
   function unsupported(name: string): never {
     throw Object.assign(
-      new Error(`RaspberryCode task service adapter does not support IRaspberryCodeTaskService.${name} yet.`),
+      new Error(
+        `RaspberryCode task service adapter does not support IRaspberryCodeTaskService.${name} yet.`,
+      ),
       {
         code: "RASPBERRYCODE_AGENT_UNSUPPORTED_LEGACY_TASK_METHOD",
       },
@@ -488,7 +554,10 @@ export function createRaspberryCodeTaskServiceAdapter(
     }
   }
 
-  function setRuntimeCommands(params: TaskTarget, commands: RaspberryCodeTaskRuntimeCommand[]): void {
+  function setRuntimeCommands(
+    params: TaskTarget,
+    commands: RaspberryCodeTaskRuntimeCommand[],
+  ): void {
     const key = taskKey(params);
     if (commands.length === 0) {
       runtimeCommands.delete(key);
@@ -1003,7 +1072,9 @@ export function createRaspberryCodeTaskServiceAdapter(
 
   // Bugfix: workspace emitter 已上提到 syncer，adapter 通过 syncer 获取共享 emitter，
   // 保证 task adapter 路径和 desktop-continuous 路径走同一份订阅，UI 不会漏事件。
-  function getWorkspaceEmitter(workspace: WorkspaceEventInput): Emitter<RaspberryCodeWorkspaceEvent> {
+  function getWorkspaceEmitter(
+    workspace: WorkspaceEventInput,
+  ): Emitter<RaspberryCodeWorkspaceEvent> {
     return taskIndexSyncer.getWorkspaceEmitter(workspace);
   }
 
@@ -1161,7 +1232,9 @@ export function createRaspberryCodeTaskServiceAdapter(
     return /\bSession (not found|is not active):/i.test(message);
   }
 
-  async function readLegacyTaskSnapshot(params: TaskTarget): Promise<RaspberryCodeTaskSnapshot | null> {
+  async function readLegacyTaskSnapshot(
+    params: TaskTarget,
+  ): Promise<RaspberryCodeTaskSnapshot | null> {
     const paths = [
       getLegacyTaskSessionSnapshotPath(
         params.workspacePath,
@@ -1249,7 +1322,14 @@ export function createRaspberryCodeTaskServiceAdapter(
       if (!legacySnapshot) {
         throw error;
       }
-      if (legacySnapshot.meta.migrationSource === "claudeCode") {
+      // 三个外部来源的导入任务都可能只剩 legacy snapshot（会话事实丢失），
+      // 必须按各自来源重建，否则 Codex / OpenCode 导入的任务在会话丢失后无法升级恢复。
+      const legacyMigrationSource = legacySnapshot.meta.migrationSource;
+      if (
+        legacyMigrationSource === "claudeCode" ||
+        legacyMigrationSource === "codexCli" ||
+        legacyMigrationSource === "openCode"
+      ) {
         try {
           const mcpServers = await resolveProductMcpServers(params.mcpServers);
           const snapshot = await options.raspberrycodeAgentService.createSession({
@@ -1262,7 +1342,7 @@ export function createRaspberryCodeTaskServiceAdapter(
             ...(mcpServers ? { mcpServers } : {}),
             ...(params.toolDenylist ? { toolDenylist: params.toolDenylist } : {}),
             importedHistory: {
-              source: "claudeCode",
+              source: legacyMigrationSource,
               title: legacySnapshot.meta.title,
               createdAt: legacySnapshot.meta.createdAt,
               updatedAt: legacySnapshot.meta.updatedAt,
@@ -1274,16 +1354,16 @@ export function createRaspberryCodeTaskServiceAdapter(
             },
           });
           const meta = await syncTaskIndexSnapshot(snapshot);
-          await updateIndexedPresentation({ ...meta, migrationSource: "claudeCode" });
+          await updateIndexedPresentation({ ...meta, migrationSource: legacyMigrationSource });
           logger.info(
             undefined,
-            `legacy Claude 导入 task 已升级为 RaspberryCode session taskId=${params.taskId}`,
+            `legacy ${legacyMigrationSource} 导入 task 已升级为 RaspberryCode session taskId=${params.taskId}`,
           );
           return { kind: "session", snapshot };
         } catch (upgradeError) {
           logger.warn(
             undefined,
-            `legacy Claude 导入 task 升级为 RaspberryCode session 失败，继续只读恢复 taskId=${params.taskId}`,
+            `legacy ${legacyMigrationSource} 导入 task 升级为 RaspberryCode session 失败，继续只读恢复 taskId=${params.taskId}`,
             upgradeError,
           );
         }
@@ -1385,16 +1465,11 @@ export function createRaspberryCodeTaskServiceAdapter(
     };
   }
 
-  async function updateIndexedPresentation(meta: RaspberryCodeTaskMeta): Promise<RaspberryCodeTaskMeta> {
-    const {
-      mode,
-      model,
-      thoughtLevel,
-      lastError,
-      target,
-      migrationSource,
-      cronAutomationId,
-    } = meta;
+  async function updateIndexedPresentation(
+    meta: RaspberryCodeTaskMeta,
+  ): Promise<RaspberryCodeTaskMeta> {
+    const { mode, model, thoughtLevel, lastError, target, migrationSource, cronAutomationId } =
+      meta;
     const presentation = Object.fromEntries(
       Object.entries({
         mode,
@@ -1434,7 +1509,10 @@ export function createRaspberryCodeTaskServiceAdapter(
     });
   }
 
-  function updateTaskApiRetryFromStreamEvent(params: TaskTarget, event: RaspberryCodeStreamEvent): void {
+  function updateTaskApiRetryFromStreamEvent(
+    params: TaskTarget,
+    event: RaspberryCodeStreamEvent,
+  ): void {
     const key = taskKey(params);
     if (event.type === "session_info_update" && event.apiRetry !== undefined) {
       apiRetryByTaskKey.set(key, event.apiRetry ?? null);
@@ -1489,9 +1567,12 @@ export function createRaspberryCodeTaskServiceAdapter(
         ),
       ),
     );
-    const pendingPermissions: RaspberryCodePermissionRequest[] = snapshot.projection.pendingPermissions
-      .filter((permission) => !isUserInputBackedPermissionToolName(permission.toolName))
-      .map((permission) => pendingPermissionToStreamEvent(snapshot.session.sessionId, permission));
+    const pendingPermissions: RaspberryCodePermissionRequest[] =
+      snapshot.projection.pendingPermissions
+        .filter((permission) => !isUserInputBackedPermissionToolName(permission.toolName))
+        .map((permission) =>
+          pendingPermissionToStreamEvent(snapshot.session.sessionId, permission),
+        );
     const pendingElicitations = snapshot.projection.pendingPermissions
       .filter((permission) => isUserInputBackedPermissionToolName(permission.toolName))
       .map((permission) =>
@@ -2695,7 +2776,9 @@ export function createRaspberryCodeTaskServiceAdapter(
       const assistantMessages = snapshot.messages.filter((message) => message.role === "assistant");
       const targetMessage = assistantMessages[params.turnIndex];
       if (targetMessage) {
-        targetMessage.feedback = params.feedback as RaspberryCodeAssistantMessageFeedback | undefined;
+        targetMessage.feedback = params.feedback as
+          | RaspberryCodeAssistantMessageFeedback
+          | undefined;
       }
       return snapshot;
     },
@@ -2734,46 +2817,47 @@ export function createRaspberryCodeTaskServiceAdapter(
         workspacePath: params.workspacePath,
         workspaceIdentity: params.workspaceIdentity,
         sessionIds: params.sessionIds,
-        createImportedSession: async (source) => {
-          const targetWorkspaceIdentity = params.workspacePath
-            ? params.workspaceIdentity
-            : undefined;
-          const snapshot = await options.raspberrycodeAgentService.createSession({
-            workspacePath: source.workspacePath,
-            workspaceIdentity: targetWorkspaceIdentity,
-            // 显式重新导入产生新 CLI 会话，不能用来源 hash 覆盖已删除或已继续对话的记录。
-            sessionTraceId: createSessionTraceId(),
-            persistence: "immediate",
-            importedHistory: {
-              source: "claudeCode",
-              title: source.title,
-              createdAt: source.createdAt,
-              updatedAt: source.updatedAt,
-              messages: source.messages.map((message) => ({
-                role: message.role,
-                content: message.content,
-                timestamp: message.timestamp,
-              })),
-            },
-          });
-          const meta = await syncTaskIndexSnapshot(snapshot);
-          // 导入后的任务必须是真实 RaspberryCode session，setModel/sendPrompt 才能继续命中 runtime。
-          // 同时保留 migrationSource，避免任务列表把 Claude Code 迁移历史当成本地新会话。
-          return updateIndexedPresentation({ ...meta, migrationSource: "claudeCode" });
-        },
-        onTaskImported: (meta) => {
-          rememberIndexedTaskMeta(meta);
-          emitWorkspaceTaskListChanged(
-            {
-              workspacePath: meta.workspacePath,
-              workspaceIdentity: meta.workspaceIdentity,
-              taskId: meta.taskId,
-            },
-            meta,
-            // 导入沿用 task_meta_changed 旧语义。
-            "task_meta_changed",
-          );
-        },
+        createImportedSession: createImportedSessionFromSource(params),
+        onTaskImported: notifyImportedTask,
+      });
+    },
+
+    async scanImportableExternalSessions(params: {
+      providers?: Array<"codex" | "opencode">;
+      workspacePath?: string;
+      workspaceIdentity?: string;
+      modifiedSince?: number;
+      limit?: number;
+    }): Promise<RaspberryCodeImportableSessionCandidate[]> {
+      // workspaceIdentity 只影响导入落盘目录，扫描按来源记录里的 cwd/directory 过滤。
+      void params.workspaceIdentity;
+      // providers 必须由调用方显式给出：原先缺省成 [codex, opencode] 会让任何漏传
+      // 的调用点静默变成「一次把多个软件全扫进来」。
+      if (!params.providers || params.providers.length === 0) {
+        return [];
+      }
+      return externalSessionImportRepo.scanExternalSessions({
+        providers: params.providers,
+        ...(params.workspacePath ? { workspacePath: params.workspacePath } : {}),
+        ...(params.modifiedSince !== undefined ? { modifiedSince: params.modifiedSince } : {}),
+        ...(params.limit !== undefined ? { limit: params.limit } : {}),
+      });
+    },
+
+    async importExternalSessions(params: {
+      provider: "codex" | "opencode";
+      workspacePath?: string;
+      workspaceIdentity?: string;
+      sessionIds: string[];
+    }): Promise<RaspberryCodeImportSessionsResult> {
+      return importExternalNativeSessions({
+        taskIndexRepo,
+        provider: params.provider,
+        workspacePath: params.workspacePath,
+        workspaceIdentity: params.workspaceIdentity,
+        sessionIds: params.sessionIds,
+        createImportedSession: createImportedSessionFromSource(params),
+        onTaskImported: notifyImportedTask,
       });
     },
 
@@ -2881,7 +2965,10 @@ export function createRaspberryCodeTaskServiceAdapter(
         );
       }
       if (params.mode?.trim()) {
-        await switchCollaborationModeViaProtocol(target, toRaspberryCodeMode(params.mode) ?? "build");
+        await switchCollaborationModeViaProtocol(
+          target,
+          toRaspberryCodeMode(params.mode) ?? "build",
+        );
       }
       const snapshot = await resumeSnapshot(target);
       await syncTaskIndexSnapshot(snapshot);
@@ -3278,7 +3365,9 @@ function parseModelPickerValue(value: string): ModelSelection {
   return parseSharedModelSelection(value);
 }
 
-function toRaspberryCodeMode(mode: RaspberryCodeTaskMode | undefined): RaspberryCodeSessionMode | undefined {
+function toRaspberryCodeMode(
+  mode: RaspberryCodeTaskMode | undefined,
+): RaspberryCodeSessionMode | undefined {
   switch (mode) {
     case "plan":
       return "plan";
@@ -3491,7 +3580,9 @@ function backgroundTaskNotificationToolUpdateFromInput(params: {
   if (!parsed) {
     return null;
   }
-  const status = raspberrycodeBackgroundTaskNotificationToolUpdateStatus(parsed.notification.status);
+  const status = raspberrycodeBackgroundTaskNotificationToolUpdateStatus(
+    parsed.notification.status,
+  );
   return {
     type: "tool_call_update",
     taskId: params.taskId,
@@ -3576,7 +3667,9 @@ function mapPromptAttachmentsFromParts(
   parts: readonly RaspberryCodeMessagePart[],
 ): RaspberryCodePromptAttachment[] | undefined {
   const attachments = parts
-    .filter((part): part is Extract<RaspberryCodeMessagePart, { type: "file" }> => part.type === "file")
+    .filter(
+      (part): part is Extract<RaspberryCodeMessagePart, { type: "file" }> => part.type === "file",
+    )
     .map(mapPromptAttachmentFromFilePart)
     .filter((attachment): attachment is RaspberryCodePromptAttachment => attachment !== undefined);
   return attachments.length > 0 ? attachments : undefined;
@@ -3812,7 +3905,8 @@ function textFromParts(parts: readonly RaspberryCodeMessagePart[]): string {
 function reasoningFromParts(parts: readonly RaspberryCodeMessagePart[]): string | undefined {
   const text = parts
     .filter(
-      (part): part is Extract<RaspberryCodeMessagePart, { type: "reasoning" }> => part.type === "reasoning",
+      (part): part is Extract<RaspberryCodeMessagePart, { type: "reasoning" }> =>
+        part.type === "reasoning",
     )
     .map((part) => part.text)
     .join("");
@@ -3839,7 +3933,9 @@ function fromRaspberryCodeGoal(goal: unknown): RaspberryCodeTaskGoal {
   };
 }
 
-function isRaspberryCodeTaskGoalStatus(status: string | undefined): status is RaspberryCodeTaskGoal["status"] {
+function isRaspberryCodeTaskGoalStatus(
+  status: string | undefined,
+): status is RaspberryCodeTaskGoal["status"] {
   return (
     status === "active" ||
     status === "paused" ||
@@ -5118,7 +5214,10 @@ function updateTaskBackgroundTaskControlCacheFromPayload(
   if (!cache) {
     return parsedJobs;
   }
-  const nextJobs = mergeRaspberryCodeBackgroundTaskControlItems(cache.get(cacheKey) ?? [], parsedJobs);
+  const nextJobs = mergeRaspberryCodeBackgroundTaskControlItems(
+    cache.get(cacheKey) ?? [],
+    parsedJobs,
+  );
   cache.set(cacheKey, nextJobs);
   return nextJobs;
 }
@@ -5202,7 +5301,9 @@ function permissionPayloadToStreamEvent(
   };
 }
 
-function permissionOptionsFromPayload(payload: Record<string, unknown>): RaspberryCodePermissionOption[] {
+function permissionOptionsFromPayload(
+  payload: Record<string, unknown>,
+): RaspberryCodePermissionOption[] {
   return Array.isArray(payload.options) ? (payload.options as RaspberryCodePermissionOption[]) : [];
 }
 
@@ -5443,7 +5544,9 @@ function apiRetryFromSessionInfoPayload(
     return runtimeRetry;
   }
 
-  const metaRetry = normalizeRaspberryCodeApiRetryStatus(asRecord(asRecord(payload._meta).raspberrycode).apiRetry);
+  const metaRetry = normalizeRaspberryCodeApiRetryStatus(
+    asRecord(asRecord(payload._meta).raspberrycode).apiRetry,
+  );
   if (metaRetry !== undefined) {
     return metaRetry;
   }

@@ -1091,6 +1091,26 @@ export const raspberrycodeSessionImportHistorySchema = z.discriminatedUnion("sou
       messages: z.array(raspberrycodeSessionImportMessageSchema).min(1),
     })
     .strict(),
+  // Codex 的 rollout 记录与 OpenCode 的 SQLite 消息都归一成同一消息形状，
+  // 各自用独立 source 值便于任务列表与统计区分迁移来源。
+  z
+    .object({
+      source: z.literal("codexCli"),
+      title: z.string().optional(),
+      createdAt: timestampMsSchema.optional(),
+      updatedAt: timestampMsSchema.optional(),
+      messages: z.array(raspberrycodeSessionImportMessageSchema).min(1),
+    })
+    .strict(),
+  z
+    .object({
+      source: z.literal("openCode"),
+      title: z.string().optional(),
+      createdAt: timestampMsSchema.optional(),
+      updatedAt: timestampMsSchema.optional(),
+      messages: z.array(raspberrycodeSessionImportMessageSchema).min(1),
+    })
+    .strict(),
   z
     .object({
       source: z.literal("sharedContext"),

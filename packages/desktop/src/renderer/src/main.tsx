@@ -60,8 +60,9 @@ const launchMarks: LaunchMarks | null = parseLaunchMarks(
     __RASPBERRYCODE_LAUNCH_MARKS__?: LaunchMarks | null;
   }
 ).__RASPBERRYCODE_RENDERER_START__ = rendererStartedAt;
-(window as Window & { __RASPBERRYCODE_LAUNCH_MARKS__?: LaunchMarks | null }).__RASPBERRYCODE_LAUNCH_MARKS__ =
-  launchMarks;
+(
+  window as Window & { __RASPBERRYCODE_LAUNCH_MARKS__?: LaunchMarks | null }
+).__RASPBERRYCODE_LAUNCH_MARKS__ = launchMarks;
 registerE2EStoreBridgesIfEnabled();
 
 function registerE2EStoreBridgesIfEnabled() {
@@ -76,11 +77,12 @@ function registerE2EStoreBridgesIfEnabled() {
   });
 }
 
-// 初始化主题：默认深色，后续由 useTheme hook 接管
+// 初始化主题：默认跟随系统，后续由 useTheme hook 接管
 {
   // 旧值归一复用 useTheme 的 normalizeThemePreference（含 zai-* 旧代号读兼容），
   // 保证初始化分支与 hook/store 使用同一套迁移规则，避免旧值用户首帧错亮主题。
-  const saved = normalizeThemePreference(localStorage.getItem("raspberrycode-theme") || "dark");
+  // 没有持久化值时归一为 system，按系统亮暗解析首帧，避免深色系统闪白/浅色系统闪黑。
+  const saved = normalizeThemePreference(localStorage.getItem("raspberrycode-theme"));
   const resolved =
     saved === "system"
       ? window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -99,7 +101,7 @@ function registerE2EStoreBridgesIfEnabled() {
         : saved === "light"
           ? "light"
           : saved;
-  if (resolved === "dark") document.documentElement.classList.add("dark");
+  document.documentElement.classList.toggle("dark", resolved === "dark");
   document.documentElement.classList.toggle("theme-light", appliedTheme === "light");
   document.documentElement.classList.toggle("theme-dark", appliedTheme === "dark");
 }
@@ -200,21 +202,21 @@ function enterAppIfPrepared(): void {
   if (port) initializeBusinessRoot(port);
 }
 const firstStartupStateTimer = setTimeout(() => {
-        if (databaseStartupAdmission.state) return;
-        const now = Date.now();
-        databaseStartupAdmission.state = {
-          schemaVersion: 1,
-          startupId: "unavailable",
-          attemptId: "startup-channel-unavailable",
-          sequence: 0,
-          startedAt: rendererStartedAt,
-          updatedAt: now,
-          phase: "failed",
-          errorCode: "startup_status_timeout",
-          disk: [],
-        };
-        renderDatabaseStartup();
-      }, 30_000);
+  if (databaseStartupAdmission.state) return;
+  const now = Date.now();
+  databaseStartupAdmission.state = {
+    schemaVersion: 1,
+    startupId: "unavailable",
+    attemptId: "startup-channel-unavailable",
+    sequence: 0,
+    startedAt: rendererStartedAt,
+    updatedAt: now,
+    phase: "failed",
+    errorCode: "startup_status_timeout",
+    disk: [],
+  };
+  renderDatabaseStartup();
+}, 30_000);
 
 function registerRemoteWorkspaceServicePort(params: RemoteWorkspaceServicePortRegistration) {
   if (!baseServicesForRemoteSessions) {
@@ -259,8 +261,9 @@ function flushPendingRemoteWorkspaceServicePorts(): void {
 function StartupReadyNotifier() {
   useEffect(() => {
     // T5:React 首次 commit。供启动分阶段耗时计算 react_commit 段。
-    (window as Window & { __RASPBERRYCODE_REACT_COMMIT_AT__?: number }).__RASPBERRYCODE_REACT_COMMIT_AT__ =
-      Date.now();
+    (
+      window as Window & { __RASPBERRYCODE_REACT_COMMIT_AT__?: number }
+    ).__RASPBERRYCODE_REACT_COMMIT_AT__ = Date.now();
     // HTML 启动壳的弹出动画结束时，React 首屏可能还没 commit，直接移除壳会露出空白。
     // 这里在 React commit 后通知 index.html，再由启动壳统一判断动画和 React ready 两个条件后退场。
     window.dispatchEvent(new Event("raspberrycode-react-startup-ready"));

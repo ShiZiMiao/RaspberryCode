@@ -59,7 +59,7 @@ vi.mock("@/components/ui/toast.js", () => ({ dismissToast, toast }));
 // 推荐容器新增共享偏好读取；单测沿用独立 hook mock，避免依赖真实 ServiceProvider。
 vi.mock("@/hooks/useSettingService.js", () => {
   const value = {
-    settings: { proactiveSuggestionsEnabled: false, onboardingOccupation: null },
+    settings: { proactiveSuggestionsEnabled: false },
     update: vi.fn(),
   };
   return { useSettings: () => value };

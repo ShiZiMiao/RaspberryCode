@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { applyTheme } from "@/useTheme.js";
+import { applyTheme, normalizeThemePreference } from "@/useTheme.js";
 
 beforeEach(() => {
   document.head.innerHTML = "";
@@ -16,6 +16,26 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+});
+
+describe("normalizeThemePreference", () => {
+  it("没有持久化值（首次启动）默认跟随系统", () => {
+    expect(normalizeThemePreference(null)).toBe("system");
+    expect(normalizeThemePreference(undefined)).toBe("system");
+    expect(normalizeThemePreference("")).toBe("system");
+  });
+
+  it("保留用户显式选择的主题，含 zai-* 旧代号读兼容", () => {
+    expect(normalizeThemePreference("light")).toBe("light");
+    expect(normalizeThemePreference("dark")).toBe("dark");
+    expect(normalizeThemePreference("system")).toBe("system");
+    expect(normalizeThemePreference("zai-light")).toBe("light");
+    expect(normalizeThemePreference("zai-dark")).toBe("dark");
+  });
+
+  it("无法识别的值也回落到 system，而不是深色", () => {
+    expect(normalizeThemePreference("sunset")).toBe("system");
+  });
 });
 
 describe("applyTheme", () => {
@@ -56,7 +76,9 @@ describe("applyTheme", () => {
 
     expect(document.documentElement.classList.contains("dark")).toBe(true);
     expect(document.documentElement.classList.contains("theme-dark")).toBe(true);
-    expect(document.documentElement.getAttribute("data-raspberrycode-browser-theme-surface")).toBe("dark");
+    expect(document.documentElement.getAttribute("data-raspberrycode-browser-theme-surface")).toBe(
+      "dark",
+    );
     expect(document.querySelector('meta[name="theme-color"]')?.getAttribute("content")).toBe(
       "#161616",
     );

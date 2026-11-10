@@ -18,7 +18,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select.js";
-import { useClaudeSessionMigration } from "@/hooks/useClaudeSessionMigration.js";
+import {
+  SESSION_MIGRATION_SOURCES,
+  useClaudeSessionMigration,
+} from "@/hooks/useClaudeSessionMigration.js";
 import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { MigrationCandidatesCard } from "@/settings/MigrationCandidatesCard.js";
 
@@ -45,8 +48,11 @@ export function MigrationSection({
     limitInput,
     setLimitInput,
     scanLimit,
+    sources,
+    toggleSource,
     candidates,
     selectedSessionIds,
+    selectedProviders,
     selectedCount,
     scanError,
     importError,
@@ -118,7 +124,31 @@ export function MigrationSection({
             </Alert>
           ) : null}
 
-          <div className="grid gap-4 xl:grid-cols-3">
+          <div className="grid gap-4 xl:grid-cols-4">
+            <div className="space-y-2">
+              <div className="text-ui-base font-medium text-foreground">
+                {intl.formatMessage({ id: "settings.migration.sourceLabel" })}
+              </div>
+              {/* 来源多选：可同时勾选多个软件，导入时按来源分组执行。 */}
+              <div className="flex flex-wrap gap-2">
+                {SESSION_MIGRATION_SOURCES.map((option) => {
+                  const active = sources.includes(option);
+                  return (
+                    <Button
+                      key={option}
+                      type="button"
+                      size="sm"
+                      variant={active ? "default" : "outline"}
+                      aria-pressed={active}
+                      disabled={!supportState.supported || isScanning || isImporting}
+                      onClick={() => toggleSource(option, !active)}
+                    >
+                      {intl.formatMessage({ id: `settings.migration.source.${option}` })}
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
             <div className="space-y-2">
               <div className="text-ui-base font-medium text-foreground">
                 {intl.formatMessage({ id: "settings.migration.workspaceFilterLabel" })}
@@ -210,6 +240,7 @@ export function MigrationSection({
         supportState={supportState}
         candidates={candidates}
         selectedSessionIds={selectedSessionIds}
+        selectedProviders={selectedProviders}
         selectedCount={selectedCount}
         importError={importError}
         lastImportResult={lastImportResult}

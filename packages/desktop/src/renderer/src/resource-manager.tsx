@@ -37,7 +37,8 @@ function resolveTheme(theme: Theme): "light" | "dark" {
 }
 
 function applyResourceManagerTheme(): void {
-  const savedTheme = (localStorage.getItem("raspberrycode-theme") as Theme | null) ?? "dark";
+  // 与主窗口一致：没有持久化偏好时跟随系统，不再把深色当默认值。
+  const savedTheme = (localStorage.getItem("raspberrycode-theme") as Theme | null) ?? "system";
   const resolvedTheme = resolveTheme(savedTheme);
   const appliedTheme =
     savedTheme === "system"

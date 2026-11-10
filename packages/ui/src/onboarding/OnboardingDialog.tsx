@@ -62,8 +62,15 @@ export function OnboardingDialog(props: {
     workspacePath: props.workspacePath ?? null,
     isDesktop: props.isDesktop,
   });
-  const onboardingDialogRequested = useRaspberryCodeStore((state) => state.onboardingDialogRequested);
-  const clearOnboardingDialogRequest = useRaspberryCodeStore((state) => state.clearOnboardingDialogRequest);
+  const onboardingDialogRequested = useRaspberryCodeStore(
+    (state) => state.onboardingDialogRequested,
+  );
+  const onboardingMigrationSources = useRaspberryCodeStore(
+    (state) => state.onboardingMigrationSources,
+  );
+  const clearOnboardingDialogRequest = useRaspberryCodeStore(
+    (state) => state.clearOnboardingDialogRequest,
+  );
   const [view, setView] = useState<OnboardingView>("welcome");
   const [wizardStep, setWizardStep] = useState<OnboardingWizardStep>("session");
   const [selectedWorkspacePaths, setSelectedWorkspacePaths] = useState<string[]>([]);
@@ -171,23 +178,40 @@ export function OnboardingDialog(props: {
       return;
     }
 
+    // 偏好页选定的来源集合要在清空请求之前落到扫描 hook，否则 clear 之后就读不到了。
+    // 只依赖稳定的 setSources：sessionMigration 每次渲染都是新对象，放进依赖会反复触发。
+    if (
+      onboardingDialogRequested === "migration" &&
+      onboardingMigrationSources &&
+      onboardingMigrationSources.length > 0
+    ) {
+      sessionMigration.setSources(onboardingMigrationSources);
+    }
     setView(onboardingDialogRequested === "migration" ? "wizard" : "welcome");
     setWizardStep("session");
     resetFinishExecution();
     settingsSync.actions.reopen();
     clearOnboardingDialogRequest();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- setSources 是 useCallback([]) 稳定引用
   }, [
     clearOnboardingDialogRequest,
     onboardingDialogRequested,
+    onboardingMigrationSources,
     resetFinishExecution,
+    sessionMigration.setSources,
     settingsSync.actions,
   ]);
 
   useEffect(() => {
     if (view !== "wizard" || wizardStep !== "session") {
       autoScannedSessionStepRef.current = false;
+      return;
     }
-  }, [view, wizardStep]);
+    // 来源变了就允许再自动扫一次：切换来源会清空候选，
+    // 若不重置标志，用户会停在一个空列表上还得手动点扫描。
+    autoScannedSessionStepRef.current = false;
+    // 数组身份每次渲染都可能变，用拼接串作为稳定依赖。
+  }, [view, wizardStep, sessionMigration.sources.join(",")]);
 
   useEffect(() => {
     if (

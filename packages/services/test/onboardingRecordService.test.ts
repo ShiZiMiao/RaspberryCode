@@ -35,7 +35,6 @@ function makeEntry(
   overrides: Partial<Parameters<IOnboardingRecordService["appendRecord"]>[1]> = {},
 ) {
   return {
-    occupation: "developer",
     interfaceMode: "coding",
     memoryEnabled: false,
     proactiveSuggestionsEnabled: true,
@@ -130,19 +129,19 @@ describe("onboardingRecordService", () => {
     const service = await createServiceInHome(home, "u1");
     await service.appendRecord("device-a", makeEntry());
     // 同一用户再次完成引导：覆盖而不是追加
-    await service.appendRecord("device-b", makeEntry({ occupation: "student" }));
+    await service.appendRecord("device-b", makeEntry({ interfaceMode: "coding" }));
     // 换用户：新增一条
     const serviceU2 = await createServiceInHome(home, "u2");
-    await serviceU2.appendRecord("device-c", makeEntry({ occupation: "finance" }));
+    await serviceU2.appendRecord("device-c", makeEntry({ interfaceMode: "office" }));
 
     const file = JSON.parse(readFileSync(recordFilePath(home), "utf-8"));
     expect(file.deviceMid).toBe("device-a");
     expect(file.entries).toHaveLength(2);
-    expect(file.entries.find((e: { userId: string }) => e.userId === "u1")?.occupation).toBe(
-      "student",
+    expect(file.entries.find((e: { userId: string }) => e.userId === "u1")?.interfaceMode).toBe(
+      "coding",
     );
-    expect(file.entries.find((e: { userId: string }) => e.userId === "u2")?.occupation).toBe(
-      "finance",
+    expect(file.entries.find((e: { userId: string }) => e.userId === "u2")?.interfaceMode).toBe(
+      "office",
     );
   });
 
@@ -183,11 +182,13 @@ describe("onboardingRecordService", () => {
     expect(await loggedAgain.shouldOnboard("device-a")).toBe(false);
   });
 
-  it("非法 entry（空职业）被 schema 拒绝且不落盘", async () => {
+  it("非法 entry（缺失模式字段）被 schema 拒绝且不落盘", async () => {
     const home = mkdtempSync(join(tmpdir(), "raspberrycode-onboarding-home-"));
     tempHomes.push(home);
     const service = await createServiceInHome(home, "u1");
-    await expect(service.appendRecord("device-a", makeEntry({ occupation: "" }))).rejects.toThrow();
+    await expect(
+      service.appendRecord("device-a", { ...makeEntry(), interfaceMode: "invalid" } as never),
+    ).rejects.toThrow();
     expect(existsSync(recordFilePath(home))).toBe(false);
   });
 
@@ -242,7 +243,6 @@ describe("onboardingRecordService", () => {
     await service.appendRecord(
       "device-a",
       makeEntry({
-        occupation: null,
         interfaceMode: null,
         memoryEnabled: null,
         proactiveSuggestionsEnabled: null,
@@ -251,7 +251,6 @@ describe("onboardingRecordService", () => {
     const file = JSON.parse(readFileSync(recordFilePath(home), "utf-8"));
     expect(file.entries[0]).toMatchObject({
       userId: null,
-      occupation: null,
       interfaceMode: null,
       memoryEnabled: null,
       proactiveSuggestionsEnabled: null,
@@ -263,24 +262,24 @@ describe("onboardingRecordService", () => {
     tempHomes.push(home);
     // 匿名答一次
     const anonymous = await createServiceInHome(home, null);
-    await anonymous.appendRecord("device-a", makeEntry({ occupation: "student" }));
+    await anonymous.appendRecord("device-a", makeEntry({ interfaceMode: "office" }));
     // 登录 A：移交（数组只有 null 一项时 null 变成 A）
     const serviceA = await createServiceInHome(home, "u1");
     await serviceA.claimAnonymousRecord();
     expect(await serviceA.getRecords()).toMatchObject({
-      entries: [{ userId: "u1", occupation: "student" }],
+      entries: [{ userId: "u1", interfaceMode: "office" }],
     });
     // A 已有条目：幂等空操作
     await serviceA.claimAnonymousRecord();
     expect((await serviceA.getRecords())?.entries).toHaveLength(1);
     // 登出后匿名态再答一条：[A, null]；登录 B 认领 null → [A, B]
-    await anonymous.appendRecord("device-a", makeEntry({ occupation: "finance" }));
+    await anonymous.appendRecord("device-a", makeEntry({ interfaceMode: "coding" }));
     const serviceB = await createServiceInHome(home, "u2");
     await serviceB.claimAnonymousRecord();
     const entries = (await serviceB.getRecords())?.entries ?? [];
-    expect(entries.map((e) => [e.userId, e.occupation])).toEqual([
-      ["u1", "student"],
-      ["u2", "finance"],
+    expect(entries.map((e) => [e.userId, e.interfaceMode])).toEqual([
+      ["u1", "office"],
+      ["u2", "coding"],
     ]);
   });
 
@@ -290,13 +289,12 @@ describe("onboardingRecordService", () => {
     const service = await createServiceInHome(home, "u1");
     await service.appendRecord(
       "device-a",
-      makeEntry({ occupation: "finance", memoryEnabled: true }),
+      makeEntry({ interfaceMode: "office", memoryEnabled: true }),
     );
     // 第二次完成（跳过语义的全 null 条目）覆盖第一次作答
     await service.appendRecord(
       "device-a",
       makeEntry({
-        occupation: null,
         interfaceMode: null,
         memoryEnabled: null,
         proactiveSuggestionsEnabled: null,
@@ -304,7 +302,6 @@ describe("onboardingRecordService", () => {
     );
 
     expect(await service.syncSettingsFromRecord()).toEqual({
-      onboardingOccupation: "other",
       proactiveSuggestionsEnabled: false,
       memoryEnabled: false,
     });
@@ -319,10 +316,9 @@ describe("onboardingRecordService", () => {
     const service = await createServiceInHome(home, "u1");
     await service.appendRecord(
       "device-a",
-      makeEntry({ occupation: "finance", memoryEnabled: true, proactiveSuggestionsEnabled: true }),
+      makeEntry({ interfaceMode: "office", memoryEnabled: true, proactiveSuggestionsEnabled: true }),
     );
     expect(await service.syncSettingsFromRecord()).toEqual({
-      onboardingOccupation: "finance",
       proactiveSuggestionsEnabled: true,
       memoryEnabled: true,
     });
@@ -344,7 +340,7 @@ describe("onboardingRecordService", () => {
       proactiveSuggestionsEnabled: false,
       memoryEnabled: true,
       // 未指定的字段保持原值
-      occupation: "developer",
+      interfaceMode: "coding",
     });
 
     // 其他用户条目不受影响；无条目用户忽略
