@@ -11,9 +11,9 @@
 
 | key                                                     | 下游用途                                                                                                    |
 | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `zcode/nodeReplCuaApp`                                  | 工具卡显示被操作应用的图标（`docs/cua/cua-tool-app-identity-summary.md`）                                   |
-| `zcode/browserScreenshotContentIndices`                 | core 据此判断哪些图片是模型显式截的浏览器截图，决定是否落盘原图                                             |
-| `zcode/nodeReplBrowserUse`、`zcode/nodeReplComputerUse` | core 据此打会话能力标签 `browser_use` / `computer_use`（`docs/design/v2/model/session-features-header.md`） |
+| `raspberrycode/nodeReplCuaApp`                                  | 工具卡显示被操作应用的图标（`docs/cua/cua-tool-app-identity-summary.md`）                                   |
+| `raspberrycode/browserScreenshotContentIndices`                 | core 据此判断哪些图片是模型显式截的浏览器截图，决定是否落盘原图                                             |
+| `raspberrycode/nodeReplBrowserUse`、`raspberrycode/nodeReplComputerUse` | core 据此打会话能力标签 `browser_use` / `computer_use`（`docs/design/v2/model/session-features-header.md`） |
 
 原来这几项由 Worker 里的 bridge 记进运行状态，再随结果消息发给主线程（后两项由 MR !3207 新增，初版
 同样如此）。cell 能用完整的 Node `require`：它可以经
@@ -29,13 +29,13 @@
 
 - 可信事实只由主线程在**真实收到调用请求**时记录，冒充 Worker 的结果消息不能让它成立。这条保证的范围见
   「可信边界」：cell 仍可经 `node:inspector` 影响主线程。
-- broker 使用的会话信息只来自 core 发出的 MCP 请求（`com.zcode/request-context`），不采信 Worker 自报的值。
+- broker 使用的会话信息只来自 core 发出的 MCP 请求（`com.raspberrycode/request-context`），不采信 Worker 自报的值。
 - 模型可见行为不变：工具结果的内容、错误文案、浏览器和 Computer Use 的执行结果都与原来一致。
 
 ## 非目标
 
-- 不改变其他 `_meta` key 的可信程度。`zcode/browserUse`、`zcode/toolSurface`、
-  `zcode/browserTurnScreenshot` 等仍由 Worker 写入，仍然可以被 cell 伪造；它们不作为可信事实。
+- 不改变其他 `_meta` key 的可信程度。`raspberrycode/browserUse`、`raspberrycode/toolSurface`、
+  `raspberrycode/browserTurnScreenshot` 等仍由 Worker 写入，仍然可以被 cell 伪造；它们不作为可信事实。
 - 不阻止 cell 直接连 broker 发请求：那本身就是一次真实调用，账本照常记录。
 - 不处理 core 里的内置 `js` 工具（`core/src/tool/handlers/node-repl.ts`）。它不在生产路径上，
   `NodeReplSession` 的记录接口保持不变供它使用。
@@ -57,7 +57,7 @@ CUA Helper                                                             │
   │ token → 账本条目；会话信息取自条目的 requestMeta；换成上游 token
   │ list / execute 即记 facts.browserUse；转发，截图响应 → facts.browserScreenshots
   ▼
-ZCode 主进程的浏览器 broker（bootstrap）
+RaspberryCode 主进程的浏览器 broker（bootstrap）
 
 Worker 结果消息（可能被冒充）──▶ toMcpRunResult(run, facts)
                                    可信 key 只取 facts，忽略 run 里的同名字段
@@ -90,8 +90,8 @@ tools/call 结束 ──▶ ledger 条目关闭：之后带这个 token 的请�
 ### 浏览器代理 broker
 
 - 主线程新增一个本机 socket 服务（Linux/macOS 为 `.sock` 文件，Windows 为命名管道），转发 Worker 的
-  浏览器请求到 ZCode 主进程的浏览器 broker。上游地址和 token 仍由 ZCode 经环境变量
-  `ZCODE_NODE_REPL_BROWSER_BROKER_SOCKET` / `_TOKEN` 交给 node-repl-host，只在主线程读取；
+  浏览器请求到 RaspberryCode 主进程的浏览器 broker。上游地址和 token 仍由 RaspberryCode 经环境变量
+  `RASPBERRYCODE_NODE_REPL_BROWSER_BROKER_SOCKET` / `_TOKEN` 交给 node-repl-host，只在主线程读取；
   启动 Worker 时从它的环境里去掉这两个变量。
 - 转发时用条目的 `requestMeta` 重写 `runtimeScope`、`sessionId`、`turnId`、trace，并换成上游 token。
   其余字段原样转发，上游的 schema 校验与错误不变。
@@ -110,11 +110,11 @@ tools/call 结束 ──▶ ledger 条目关闭：之后带这个 token 的请�
 
 `toMcpRunResult(run, facts)`：
 
-- `zcode/nodeReplCuaApp` 取 `facts.cuaApps` 的最后一个；`run.cuaApp` 忽略。
-- `zcode/browserScreenshotContentIndices` 用 `run.images` 与 `facts.browserScreenshots` 逐字节匹配得出
+- `raspberrycode/nodeReplCuaApp` 取 `facts.cuaApps` 的最后一个；`run.cuaApp` 忽略。
+- `raspberrycode/browserScreenshotContentIndices` 用 `run.images` 与 `facts.browserScreenshots` 逐字节匹配得出
   （匹配规则与 `NodeReplSession` 原有的规则相同，抽成 core 的公开纯函数复用）；`run.browserScreenshotImageIndices`
   忽略。cell 即使冒充结果、在 `images` 里放进真实截图的字节，被标出的也确实是那张截图。
-- `zcode/nodeReplBrowserUse`、`zcode/nodeReplComputerUse` 只在 `facts.browserUse`、`facts.computerUse` 为真时
+- `raspberrycode/nodeReplBrowserUse`、`raspberrycode/nodeReplComputerUse` 只在 `facts.browserUse`、`facts.computerUse` 为真时
   写 `true`；`run` 上没有对应字段，冒充的结果消息里带上同名字段也不采信。
 - 对 sandbox meta 通道（`setResponseMeta`、`emitStructuredResult`、内嵌 `_meta`）写入的同名 key 先删除，
   处置与原来相同。
@@ -149,6 +149,6 @@ tools/call 结束 ──▶ ledger 条目关闭：之后带这个 token 的请�
   Worker 断开时上游连接被关闭；未知 token 被拒绝；`list`、`execute`（含上游 `ok: false`、上游断开）记
   `browserUse`，未知 token 不记。
 - 结果组装：`run.cuaApp`、`run.browserScreenshotImageIndices` 被忽略，可信 key 只取 facts；sandbox 通道写入的
-  `zcode/nodeReplBrowserUse`、`zcode/nodeReplComputerUse` 被删除。
+  `raspberrycode/nodeReplBrowserUse`、`raspberrycode/nodeReplComputerUse` 被删除。
 - 真实 Worker 回归（`bundle-smoke.test.ts`）：cell 经 `worker_threads` 冒充结果，带上 `cuaApp`、截图下标、
   `browserUse` / `computerUse` 字段和两个会话能力 key，工具结果里不出现这四个可信 key。

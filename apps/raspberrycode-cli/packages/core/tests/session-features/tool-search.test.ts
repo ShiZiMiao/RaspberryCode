@@ -8,7 +8,7 @@ import {
   createSessionId,
   type MessageWithParts,
   type SessionId,
-} from "@zcode/contracts";
+} from "@raspberrycode/contracts";
 import {
   sessionFeatureFromToolSearchExposure,
   sessionFeaturesFromPersistedMessages,
@@ -98,7 +98,7 @@ function toolMessage(
       id: messageId,
       sessionID: sessionId,
       role: "assistant",
-      agent: "zcode-agent",
+      agent: "raspberrycode-agent",
       time: { created: 2, completed: 3 },
       tokens: { input: 1, output: 1, reasoning: 0, cache: { read: 0, write: 0 } },
     },

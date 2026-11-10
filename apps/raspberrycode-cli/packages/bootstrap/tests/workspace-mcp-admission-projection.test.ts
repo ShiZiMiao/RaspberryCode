@@ -4,15 +4,15 @@ import {
   SessionEventType,
   type SessionEvent,
   type SessionId,
-} from "@zcode/contracts";
+} from "@raspberrycode/contracts";
 import {
   applyConversationDeltas,
   conversationSnapshotSchema,
   DELIVERY_PROFILES,
   filterConversationDeltasForProfile,
   statePatchSchema,
-} from "@zcode/shared/zcode-protocol-v4";
-import { ProductProjection } from "../src/zcode-protocol-v4/index.js";
+} from "@raspberrycode/shared/raspberrycode-protocol-v4";
+import { ProductProjection } from "../src/raspberrycode-protocol-v4/index.js";
 
 it("MCP 待审核状态经桌面 continuous 和手机 replayable 快照一致投影，恢复清理旧状态", () => {
   const source = new ProductProjection("session-1", "epoch-1");

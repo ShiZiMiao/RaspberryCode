@@ -18,7 +18,7 @@ import {
 
 describe("Node logging adapter", () => {
   it("生产等级保留 TTFT，使用异步写入并沿用脱敏", async () => {
-    const logDir = await mkdtemp(join(tmpdir(), "zcode-ttft-"));
+    const logDir = await mkdtemp(join(tmpdir(), "raspberrycode-ttft-"));
     try {
       const logger = createNodeLoggerFactory({ logDir, minLevel: LogLevel.Info }).createLogger(
         "model",

@@ -8,7 +8,7 @@
 //   =======
 //       async measureSessionData(params) { ...新增方法... },
 //       async purgeSessionData({...}) { ... },
-//       async getTaskTokenUsage(params: ZCodeAgentTaskTokenUsageParams) {
+//       async getTaskTokenUsage(params: RaspberryCodeAgentTaskTokenUsageParams) {
 //   >>>>>>>
 //
 // 解法：取上游整段（含新方法），然后把上游片段里的品牌标识符改回我方口径。
@@ -44,7 +44,7 @@ const RULES = [
   [/\bZcode([A-Z][A-Za-z0-9]*)/gu, "Raspberrycode$1"],
   [/\buseZCode([A-Z][A-Za-z0-9]*)/gu, "useRaspberryCode$1"],
   [/\bZCode([A-Z][A-Za-z0-9]*)/gu, "RaspberryCode$1"],
-  [/([a-z0-9])ZCode([A-Z][A-Za-z0-9]*)/gu, "$1RaspberryCode$2"],
+  [/([a-z0-9])RaspberryCode([A-Z][A-Za-z0-9]*)/gu, "$1RaspberryCode$2"],
   [/\bZCode\b/gu, "RaspberryCode"],
   [/\bZ Code\b/gu, "RaspberryCode"],
   [/\bzcode(?![A-Za-z0-9])/gu, "raspberrycode"],

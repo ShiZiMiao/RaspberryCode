@@ -16,16 +16,16 @@ describe("model provider restart runtime", () => {
       hostId: "local",
       projectId: "project-a",
     };
-    const recentKey = 'zcode-composer-recent:v2:["desktop","local","project-a"]';
+    const recentKey = 'raspberrycode-composer-recent:v2:["desktop","local","project-a"]';
     vi.stubGlobal("browser", {
       execute: async (script: (...args: unknown[]) => unknown, ...args: unknown[]) =>
         Reflect.apply(script, undefined, args),
     });
     return import("./e2e/helpers/desktop-app.js").then(({ getE2EAppDataPaths }) => {
-      const mappingKey = `zcode-composer-workspace-scope:v1:${JSON.stringify(["desktop", getE2EAppDataPaths().workspace])}`;
+      const mappingKey = `raspberrycode-composer-workspace-scope:v1:${JSON.stringify(["desktop", getE2EAppDataPaths().workspace])}`;
       const values = { [mappingKey]: JSON.stringify(scope), ...records };
       vi.stubGlobal("window", {
-        __zcodeSessionStoreE2E: {
+        __raspberrycodeSessionStoreE2E: {
           getState: () => ({
             workspaces: { [getE2EAppDataPaths().workspace]: { draftProjectId: scope.projectId } },
           }),
@@ -43,12 +43,12 @@ describe("model provider restart runtime", () => {
 
   it("读取当前项目的 Recent，忽略其他项目和旧 workspace 选择", async () => {
     const { values, recentKey } = await installStorage({
-      'zcode-composer-recent:v2:["desktop","local","project-b"]': JSON.stringify({
+      'raspberrycode-composer-recent:v2:["desktop","local","project-b"]': JSON.stringify({
         modelSelection: { providerId: "wrong", modelId: "wrong" },
       }),
     });
     const { getE2EAppDataPaths } = await import("./e2e/helpers/desktop-app.js");
-    values[`zcode-model-selection-recent-v1:${getE2EAppDataPaths().workspace}`] = JSON.stringify({
+    values[`raspberrycode-model-selection-recent-v1:${getE2EAppDataPaths().workspace}`] = JSON.stringify({
       providerId: "legacy",
       modelId: "legacy",
     });
@@ -70,7 +70,7 @@ describe("model provider restart runtime", () => {
 
   it("播种当前项目结构化 Recent，保留已有权限且不覆盖其他项目", async () => {
     const { values, recentKey } = await installStorage();
-    const otherKey = 'zcode-composer-recent:v2:["desktop","local","project-b"]';
+    const otherKey = 'raspberrycode-composer-recent:v2:["desktop","local","project-b"]';
     const otherSelection = JSON.stringify({
       modelSelection: { providerId: "other", modelId: "other" },
     });
@@ -94,7 +94,7 @@ describe("model provider restart runtime", () => {
     expect((await readLastSelectedAgentConfig())?.thoughtLevel).toBe("max");
     expect(values[otherKey]).toBe(otherSelection);
     expect(
-      Object.keys(values).some((key) => key.startsWith("zcode-model-selection-recent-v1")),
+      Object.keys(values).some((key) => key.startsWith("raspberrycode-model-selection-recent-v1")),
     ).toBe(false);
   });
 
@@ -109,7 +109,7 @@ describe("model provider restart runtime", () => {
       reasoningLevel: "high",
     });
     expect(
-      JSON.parse(values['zcode-composer-recent:v2:["desktop","local",null]']!).modelSelection
+      JSON.parse(values['raspberrycode-composer-recent:v2:["desktop","local",null]']!).modelSelection
         .modelId,
     ).toBe("model-a");
   });

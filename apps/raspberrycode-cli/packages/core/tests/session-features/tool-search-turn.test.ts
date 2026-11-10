@@ -13,7 +13,7 @@ import {
   type SessionEntryInfo,
   type SessionStorePort,
   type ToolSearchMode,
-} from "@zcode/contracts";
+} from "@raspberrycode/contracts";
 import type { AgentRuntimeInternal } from "../../src/runtime/internal.js";
 import { readSessionFeatures } from "../../src/runtime/session-features/contract.js";
 import { createToolRegistry } from "../../src/tool/registry.js";

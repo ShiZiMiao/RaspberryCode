@@ -4616,7 +4616,7 @@ describe("session-owned subagent shutdown", () => {
   it.each(["foreground", "background", "auto-background", "resume", "startup"])(
     "closes %s admission and waits for actual child cleanup",
     async (mode) => {
-      const outputRootDir = await mkdtemp(join(tmpdir(), "zcode-owned-agent-"));
+      const outputRootDir = await mkdtemp(join(tmpdir(), "raspberrycode-owned-agent-"));
       const ready = createDeferred<void>();
       const cancelled = createDeferred<void>();
       const cleanup = createDeferred<void>();
@@ -4681,7 +4681,7 @@ describe("session-owned subagent shutdown", () => {
     },
   );
   it("closing one owner leaves an independent background agent running", async () => {
-    const outputRootDir = await mkdtemp(join(tmpdir(), "zcode-owner-isolation-"));
+    const outputRootDir = await mkdtemp(join(tmpdir(), "raspberrycode-owner-isolation-"));
     const signals: AbortSignal[] = [];
     const makeOwner = () =>
       createExploreSubagentPort({

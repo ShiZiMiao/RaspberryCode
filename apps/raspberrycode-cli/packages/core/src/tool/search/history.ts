@@ -3,7 +3,7 @@ import {
   toolSearchNameForMode,
   TOOL_SEARCH_NAME,
   LOCAL_TOOL_SEARCH_NAME,
-} from "@zcode/contracts";
+} from "@raspberrycode/contracts";
 import { renderToolSearchAnnouncement } from "./description.js";
 import type { RuntimeMessageEntry } from "../../agent/message-history.js";
 import type {

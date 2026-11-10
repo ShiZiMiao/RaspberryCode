@@ -515,7 +515,7 @@ export function observeProviderFetch(
       init?.headers ?? (input instanceof Request ? input.headers : undefined),
     );
     const requestId = headers.get("x-request-id");
-    const querySource = headers.get("x-zcode-query-source");
+    const querySource = headers.get("x-raspberrycode-query-source");
     if (!requestId || (querySource !== "main_turn" && querySource !== "compact"))
       return fetch(input, init);
     const start = performance.timeOrigin + performance.now();
@@ -529,8 +529,8 @@ export function observeProviderFetch(
           providerId,
           queryId: headers.get("x-query-id") ?? undefined,
           sessionId: headers.get("x-session-id") ?? undefined,
-          traceId: (headers.get("x-zcode-trace-id") ?? undefined) as
-            | import("@zcode/contracts").TraceId
+          traceId: (headers.get("x-raspberrycode-trace-id") ?? undefined) as
+            | import("@raspberrycode/contracts").TraceId
             | undefined,
           at,
           durationMs: at - start,

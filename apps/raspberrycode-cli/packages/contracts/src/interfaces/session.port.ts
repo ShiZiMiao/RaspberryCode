@@ -1,4 +1,4 @@
-import type { GenUiModelContext } from "@zcode/shared/gen-ui";
+import type { GenUiModelContext } from "@raspberrycode/shared/gen-ui";
 import type { RuntimeInputPresentation } from "./runtime-input-presentation.js";
 // ============================================================
 // Session Ports - Core interfaces for session management

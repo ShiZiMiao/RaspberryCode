@@ -178,22 +178,22 @@ describe("mcp/list connection revalidation", () => {
   });
 });
 
-import { convertToZCodeAgentMcpServer, zcodeProtocolMcpServerSchema } from "@zcode/shared";
-import { protocolMcpServersToRuntimeMcpConfig } from "../src/zcode-protocol/protocol-mcp-config.js";
+import { convertToRaspberryCodeAgentMcpServer, raspberrycodeProtocolMcpServerSchema } from "@raspberrycode/shared";
+import { protocolMcpServersToRuntimeMcpConfig } from "../src/raspberrycode-protocol/protocol-mcp-config.js";
 
 it("preserves workspace provenance and cwd from Host DTO to runtime; rejects arbitrary runtime source", () => {
-  const dto = convertToZCodeAgentMcpServer(
+  const dto = convertToRaspberryCodeAgentMcpServer(
     "probe",
     { type: "stdio", command: "node", cwd: "tools", args: ["server.mjs"], env: { TEST: "1" } },
     "workspace",
   );
-  const parsed = zcodeProtocolMcpServerSchema.parse(dto);
+  const parsed = raspberrycodeProtocolMcpServerSchema.parse(dto);
   expect(protocolMcpServersToRuntimeMcpConfig([parsed])?.servers.probe).toMatchObject({
     source: { kind: "workspace" },
     cwd: "tools",
     env: { TEST: "1" },
   });
-  expect(zcodeProtocolMcpServerSchema.safeParse({ ...dto, source: { kind: "user" } }).success).toBe(
+  expect(raspberrycodeProtocolMcpServerSchema.safeParse({ ...dto, source: { kind: "user" } }).success).toBe(
     false,
   );
 });

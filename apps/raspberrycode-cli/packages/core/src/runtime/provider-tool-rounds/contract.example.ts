@@ -1,7 +1,7 @@
 /**
  * provider-tool-rounds 标准调用示例：服务端执行完内置工具后，把收起的轮次写成回放 entries。
  */
-import type { ModelToolCall } from "@zcode/contracts";
+import type { ModelToolCall } from "@raspberrycode/contracts";
 import type { RuntimeMessageEntry } from "../../agent/message-history.js";
 import {
   createProviderToolRoundEntries,

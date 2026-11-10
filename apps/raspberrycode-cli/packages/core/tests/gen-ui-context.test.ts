@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { genUiModelContextSchema, selectGenUiModelContext } from "@zcode/shared/gen-ui";
+import { genUiModelContextSchema, selectGenUiModelContext } from "@raspberrycode/shared/gen-ui";
 import {
   attachGenUiContext,
   createRuntimeUserEntry,

@@ -656,7 +656,7 @@ describe("有 owner 确认的 browser control scope", () => {
     }));
     const context = createContext(
       vi.fn(async (method, params) => {
-        if (method === zcodeProtocolMethods.interactionBrowserList)
+        if (method === raspberrycodeProtocolMethods.interactionBrowserList)
           return {
             browsers: [{ ...IAB_DESCRIPTOR, metadata: { controlScopes: "1" } }],
           };

@@ -1,4 +1,4 @@
-import { normalizeGenUiInput } from "@zcode/core";
+import { normalizeGenUiInput } from "@raspberrycode/core";
 import type {
   BackgroundResultOriginMeta,
   HighspeedMessageMetadata,
@@ -90,7 +90,7 @@ export interface CanonicalUserIntentFact extends CanonicalConversationFactBase {
   admittedAt?: number;
   requestedDelivery?: "auto" | "startNow" | "queue" | "guide";
   admittedDelivery?: "startNow" | "queue" | "guide";
-  genUiContext?: import("@zcode/contracts").TurnInputIntentMetadata["genUiContext"];
+  genUiContext?: import("@raspberrycode/contracts").TurnInputIntentMetadata["genUiContext"];
   sharedContextRefs?: readonly { kind: "shared_context_import"; context_id: string }[];
   fallbackReasonCode?: string;
   modelSelection?: TurnInputIntentMetadata["modelSelection"];

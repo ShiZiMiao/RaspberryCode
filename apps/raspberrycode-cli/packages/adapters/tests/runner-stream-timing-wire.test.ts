@@ -3,8 +3,8 @@ import {
   runWithModelInvocationContext,
   type ModelNetworkStatusEvent,
   type ModelStreamEvent,
-} from "@zcode/contracts";
-import { calculateOutputTps } from "@zcode/shared";
+} from "@raspberrycode/contracts";
+import { calculateOutputTps } from "@raspberrycode/shared";
 import { createProviderBusinessErrorFetch } from "../src/model/model-execution.js";
 import { TestAiSdkModelAdapter, TestProviderConfigFixture } from "./test-provider-config.js";
 
@@ -116,7 +116,7 @@ function harness(kind: "anthropic" | "openai-compatible" = "anthropic") {
   const status: ModelNetworkStatusEvent[] = [];
   const visible: Array<{ at: number; event: ModelStreamEvent }> = [];
   const adapter = new TestAiSdkModelAdapter({
-    env: { ZCODE_RUNTIME_ENV: "test" },
+    env: { RASPBERRYCODE_RUNTIME_ENV: "test" },
     registry: new TestProviderConfigFixture({
       env: {},
       providers: {

@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { promisify } from "node:util";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { Logger } from "@zcode/contracts";
+import type { Logger } from "@raspberrycode/contracts";
 import { createMcpAdapter } from "../src/mcp/index.js";
 import {
   applyMcpNodeFallbackEnv,
@@ -24,7 +24,7 @@ const isPosix = process.platform !== "win32";
 const fakeElectronExecPath = process.execPath;
 // 模拟“用户机器没有装 Node”：PATH 只有一个不存在的目录。shim 只依赖绝对路径
 // （/bin/sh、/usr/bin/env），所以 Linux CI 上即便 /usr/bin/node 存在，用例也不会误绿。
-const POSIX_PATH_WITHOUT_NODE = join(tmpdir(), "zcode-node-fallback-empty-path");
+const POSIX_PATH_WITHOUT_NODE = join(tmpdir(), "raspberrycode-node-fallback-empty-path");
 const runningNodeNpmRoot = resolveRunningNodeNpmRoot();
 
 const tempRoots: string[] = [];
@@ -101,7 +101,7 @@ describe("renderNodeFallbackShims", () => {
 
 describe("ensureNodeFallbackShimDir", () => {
   it("writes the shims once and leaves identical files untouched", async () => {
-    const binDir = join(await makeTempRoot("zcode-node-fallback-"), "bin");
+    const binDir = join(await makeTempRoot("raspberrycode-node-fallback-"), "bin");
 
     await ensureNodeFallbackShimDir(binDir, process.platform);
     const shims = renderNodeFallbackShims(process.platform);
@@ -117,7 +117,7 @@ describe("ensureNodeFallbackShimDir", () => {
   });
 
   it("repairs changed content and lost exec bits", async () => {
-    const binDir = join(await makeTempRoot("zcode-node-fallback-"), "bin");
+    const binDir = join(await makeTempRoot("raspberrycode-node-fallback-"), "bin");
     await ensureNodeFallbackShimDir(binDir, process.platform);
     const [firstShim] = renderNodeFallbackShims(process.platform);
     const shimPath = join(binDir, firstShim!.name);
@@ -131,7 +131,7 @@ describe("ensureNodeFallbackShimDir", () => {
   });
 
   it("is safe when several agents prepare the same directory at once", async () => {
-    const binDir = join(await makeTempRoot("zcode-node-fallback-"), "bin");
+    const binDir = join(await makeTempRoot("raspberrycode-node-fallback-"), "bin");
 
     await Promise.all(
       Array.from({ length: 8 }, () => ensureNodeFallbackShimDir(binDir, process.platform)),
@@ -145,7 +145,7 @@ describe("ensureNodeFallbackShimDir", () => {
 
 describe("resolveBundledNpmRoot", () => {
   it("returns the first candidate that has both npm entry files", async () => {
-    const root = await makeTempRoot("zcode-node-fallback-npm-");
+    const root = await makeTempRoot("raspberrycode-node-fallback-npm-");
     const incomplete = join(root, "incomplete");
     await mkdir(join(incomplete, "bin"), { recursive: true });
     await writeFile(join(incomplete, "bin", "npm-cli.js"), "");
@@ -165,8 +165,8 @@ describe("applyMcpNodeFallbackEnv", () => {
   const fallback = {
     binDir: "/storage/node-fallback/v1",
     env: {
-      [NODE_FALLBACK_EXEC_PATH_ENV_KEY]: "/Applications/ZCode.app/Helper",
-      [NODE_FALLBACK_NPM_ROOT_ENV_KEY]: "/Applications/ZCode.app/npm",
+      [NODE_FALLBACK_EXEC_PATH_ENV_KEY]: "/Applications/RaspberryCode.app/Helper",
+      [NODE_FALLBACK_NPM_ROOT_ENV_KEY]: "/Applications/RaspberryCode.app/npm",
     },
   };
 
@@ -184,7 +184,7 @@ describe("applyMcpNodeFallbackEnv", () => {
   });
 
   describe("on Windows", () => {
-    const winFallback = { ...fallback, binDir: "C:\\Users\\dev\\.zcode\\node-fallback\\v1" };
+    const winFallback = { ...fallback, binDir: "C:\\Users\\dev\\.raspberrycode\\node-fallback\\v1" };
     const hostPath = "C:\\Windows\\System32";
 
     // 复现真实链路：MCP SDK StdioClientTransport 以 `{ PATH: process.env.PATH, ...env }` spawn；
@@ -223,11 +223,11 @@ describe("applyMcpNodeFallbackEnv", () => {
     it("compares entries case-insensitively", () => {
       expect(
         applyMcpNodeFallbackEnv(
-          { Path: "c:\\users\\dev\\.zcode\\node-fallback\\v1\\" },
+          { Path: "c:\\users\\dev\\.raspberrycode\\node-fallback\\v1\\" },
           winFallback,
           "win32",
         ),
-      ).toEqual({ PATH: "c:\\users\\dev\\.zcode\\node-fallback\\v1\\", ...fallback.env });
+      ).toEqual({ PATH: "c:\\users\\dev\\.raspberrycode\\node-fallback\\v1\\", ...fallback.env });
     });
   });
 
@@ -285,7 +285,7 @@ describe("node fallback preparation inside the connection budget", () => {
 
 describe("createMcpNodeFallbackProvider", () => {
   it("prepares the shim directory once and reports the bundled npm", async () => {
-    const root = await makeTempRoot("zcode-node-fallback-provider-");
+    const root = await makeTempRoot("raspberrycode-node-fallback-provider-");
     const npmRoot = await writeFakeNpmPackage(root);
     const { info, logger, warn } = createLoggerSpy();
     const provider = createMcpNodeFallbackProvider({
@@ -315,7 +315,7 @@ describe("createMcpNodeFallbackProvider", () => {
   });
 
   it("omits the npm root when no bundled npm is found", async () => {
-    const root = await makeTempRoot("zcode-node-fallback-provider-");
+    const root = await makeTempRoot("raspberrycode-node-fallback-provider-");
     const provider = createMcpNodeFallbackProvider({
       execPath: fakeElectronExecPath,
       npmRootCandidates: [join(root, "missing")],
@@ -329,7 +329,7 @@ describe("createMcpNodeFallbackProvider", () => {
   });
 
   it("logs one warning and disables the fallback when the directory cannot be written", async () => {
-    const root = await makeTempRoot("zcode-node-fallback-provider-");
+    const root = await makeTempRoot("raspberrycode-node-fallback-provider-");
     // storageRoot 是普通文件：mkdir 必然失败。
     const blockedStorageRoot = join(root, "file");
     await writeFile(blockedStorageRoot, "");
@@ -353,7 +353,7 @@ describe("createMcpNodeFallbackProvider", () => {
 
 describe.runIf(isPosix)("node fallback shims (real processes)", () => {
   async function prepareShims(npmRoot?: string) {
-    const root = await makeTempRoot("zcode-node-fallback-run-");
+    const root = await makeTempRoot("raspberrycode-node-fallback-run-");
     const fallback = await createMcpNodeFallbackProvider({
       execPath: fakeElectronExecPath,
       npmRootCandidates: npmRoot ? [npmRoot] : [],
@@ -427,7 +427,7 @@ describe.runIf(isPosix)("node fallback shims (real processes)", () => {
   );
 
   it("connects a stdio MCP server with command node through the fallback", async () => {
-    const root = await makeTempRoot("zcode-node-fallback-mcp-");
+    const root = await makeTempRoot("raspberrycode-node-fallback-mcp-");
     const serverPath = join(root, "server.mjs");
     const mcpServerModule = import.meta.resolve("@modelcontextprotocol/server");
     const stdioServerTransportModule = import.meta.resolve("@modelcontextprotocol/server/stdio");

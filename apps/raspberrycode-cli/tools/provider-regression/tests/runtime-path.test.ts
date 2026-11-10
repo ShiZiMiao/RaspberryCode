@@ -23,8 +23,8 @@ describe("product runtime regression", () => {
         transport: async (_url, init) => {
           const body = JSON.parse(String(init?.body));
           requests.push(body);
-          expect(new Headers(init?.headers).get("x-title")).toBe("Z Code@electron");
-          expect(new Headers(init?.headers).get("x-zcode-app-version")).toMatch(/^\d+\.\d+\.\d+/);
+          expect(new Headers(init?.headers).get("x-title")).toBe("RaspberryCode@electron");
+          expect(new Headers(init?.headers).get("x-raspberrycode-app-version")).toMatch(/^\d+\.\d+\.\d+/);
           expect(body.stream).toBe(true);
           expect(body.messages.some((m: { role: string }) => m.role === "system")).toBe(true);
           return chatResponse();
@@ -144,7 +144,7 @@ it("无效 PDF 沿产品附件降级，不将无效文件直接送到供应商",
 
 it("1 pass 保留产品瞬态错误重试，报告记录实际请求次数", async () => {
   const f = await fixture();
-  vi.stubEnv("ZCODE_MODEL_RETRY_BASE_DELAY_MS", "0");
+  vi.stubEnv("RASPBERRYCODE_MODEL_RETRY_BASE_DELAY_MS", "0");
   try {
     await writeFile(
       f.options.listFile,

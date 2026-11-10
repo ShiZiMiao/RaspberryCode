@@ -15,9 +15,9 @@ export const AGENT_BUNDLE_SOURCE_RELATIVE = "apps/raspberrycode-cli/packages/cli
 
 /**
  * 修复原因（2026-10-24 真机）：node_repl MCP server（含内联的 CUA agent runtime）
- * 不在 zcode.cjs 里 —— agent 从 ~/.zcode plugin cache 启动它。dev 的 zcode.cjs 是
+ * 不在 raspberrycode.cjs 里 —— agent 从 ~/.raspberrycode plugin cache 启动它。dev 的 raspberrycode.cjs 是
  * 纯 esbuild bundle（无 SEA 资产），bootstrap 的 filesystem seed rootCandidates 又
- * 解析不到 apps/zcode-cli/packages/node-repl-host（cwd 是工作区不是仓库布局），
+ * 解析不到 apps/raspberrycode-cli/packages/node-repl-host（cwd 是工作区不是仓库布局），
  * 于是 dev agent 只能消费 cache 现有内容；cache 的唯一写入者是生产版 agent 的
  * SEA seed（内嵌旧副本），agent 侧改动在 dev 里永远跑不上。
  * 与生产包布局对齐：把源码包 stage 到 glm/packages/node-repl-host，dev agent 的
@@ -27,7 +27,7 @@ export const AGENT_BUNDLE_SOURCE_RELATIVE = "apps/raspberrycode-cli/packages/cli
  * 打包链（prepare-agent-node-bundle.mjs）随后会用更完整的 officialPluginPackages
  * 逻辑重 stage 同一目录，这里重复暂存同源内容无害。
  */
-const STAGED_NODE_REPL_HOST_ENTRIES = ["dist", ".zcode-plugin", "package.json", "README.md", "scripts"];
+const STAGED_NODE_REPL_HOST_ENTRIES = ["dist", ".raspberrycode-plugin", "package.json", "README.md", "scripts"];
 
 export function resolveAgentBundlePaths({ repoRoot, platformKey }) {
   const agentDir = resolve(repoRoot, "packages", "desktop", "bundled-agents", platformKey, "agent");
@@ -65,7 +65,7 @@ export function stageAgentBundle({ repoRoot, platformKey, log = console.log }) {
   // node-repl-host 暂存（见 STAGED_NODE_REPL_HOST_ENTRIES 注释）：dist 缺失说明调用方
   // 还没构建它（build-desktop-agent-cli 的 defaultBuildFilters 会先建再 stage），跳过
   // 并留给打包链报错，不在共享实现里重复校验。
-  const nodeReplHostSource = resolve(repoRoot, "apps", "zcode-cli", "packages", "node-repl-host");
+  const nodeReplHostSource = resolve(repoRoot, "apps", "raspberrycode-cli", "packages", "node-repl-host");
   const nodeReplHostTarget = resolve(glmDir, "packages", "node-repl-host");
   if (existsSync(resolve(nodeReplHostSource, "dist", "mcp", "server.js"))) {
     mkdirSync(nodeReplHostTarget, { recursive: true });

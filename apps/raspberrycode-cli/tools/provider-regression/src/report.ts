@@ -42,7 +42,7 @@ export function renderReport(report: RegressionReport): string {
     `清单指纹：${report.listHash}`,
     "",
     counts,
-    "执行路径：session = ZCode 会话；websearch-handler = 产品搜索；adapter-probe = 底层专项。review = 待复核；专项失败不直接代表 App 故障。",
+    "执行路径：session = RaspberryCode 会话；websearch-handler = 产品搜索；adapter-probe = 底层专项。review = 待复核；专项失败不直接代表 App 故障。",
     "",
     `思考题：${report.reasoningTask.id} · 配置输出预算：${report.reasoningTask.maxOutputTokens ?? "模型上限"} token（实际受模型上限约束） · 超时：${report.reasoningTask.timeoutMs} ms`,
     "",

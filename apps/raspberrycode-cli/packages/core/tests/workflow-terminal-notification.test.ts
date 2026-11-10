@@ -258,7 +258,7 @@ describe("formatWorkflowProviderStopError：按 kind 的文案表", () => {
       // 有重置时刻的额度停止会自动续跑（bootstrap 的 dynamic-workflow-quota-resume.ts）：
       // 主代理该做的是告诉用户、别抢先 Resume。
       second:
-        /ZCode resumes this run by itself a minute after the reset, while this session is open or the next time it is opened\. Tell the user; do not call ResumeWorkflowRun before the reset, and do not rebuild the workflow\./,
+        /RaspberryCode resumes this run by itself a minute after the reset, while this session is open or the next time it is opened\. Tell the user; do not call ResumeWorkflowRun before the reset, and do not rebuild the workflow\./,
       extra: { providerCode: "1308", reason: "rate_limited", resetAt: Date.UTC(2026, 8, 13, 12) },
     },
     {

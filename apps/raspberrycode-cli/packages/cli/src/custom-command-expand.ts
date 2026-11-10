@@ -1,4 +1,4 @@
-import { handOffCustomCommandShellBlocks } from "@zcode/contracts";
+import { handOffCustomCommandShellBlocks } from "@raspberrycode/contracts";
 
 interface CliCustomCommandContent {
   content: string;

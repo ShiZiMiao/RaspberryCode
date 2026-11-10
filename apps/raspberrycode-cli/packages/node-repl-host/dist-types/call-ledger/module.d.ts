@@ -4,7 +4,7 @@
  */
 export declare const nodeReplCallLedgerModule: {
     readonly id: "node-repl-call-ledger";
-    readonly requires: readonly ["zcode-cli"];
+    readonly requires: readonly ["raspberrycode-cli"];
     readonly provides: readonly ["node-repl-call-ledger"];
     readonly publicEntrypoints: readonly ["contract.ts"];
 };

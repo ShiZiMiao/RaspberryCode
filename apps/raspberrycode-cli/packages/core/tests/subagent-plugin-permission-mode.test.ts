@@ -3,7 +3,7 @@ import {
   createSessionId,
   type CollaborationMode,
   type PermissionBrokerRequest,
-} from "@zcode/contracts";
+} from "@raspberrycode/contracts";
 import { createManualPermissionBroker } from "../src/permission/broker.js";
 import type { AgentProfile } from "../src/subagent/profile.js";
 import { createTestAgentRuntime } from "./test-agent-runtime.js";

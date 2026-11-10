@@ -68,7 +68,7 @@ export async function findE2EBashOutputPath(
   }: { tempRoot?: string; storageRoot?: string } = {},
 ): Promise<string | null> {
   const directories = (await readdir(tempRoot, { withFileTypes: true }))
-    .filter((entry) => entry.isDirectory() && entry.name.startsWith("zcode-bash-"))
+    .filter((entry) => entry.isDirectory() && entry.name.startsWith("raspberrycode-bash-"))
     .map((entry) => join(tempRoot, entry.name));
   const candidates = [...directories, join(storageRoot, "cli", "exec")].map((root) =>
     join(root, sessionId, `${toolCallId}-stdout.log`),

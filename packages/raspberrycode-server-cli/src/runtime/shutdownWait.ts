@@ -1,4 +1,4 @@
-import { SOURCE_SERVER_STOP_FAILED_ERROR_CODE } from "@zcode/shared";
+import { SOURCE_SERVER_STOP_FAILED_ERROR_CODE } from "@raspberrycode/shared";
 import { SERVER_STOP_WAIT_TIMEOUT_MS, type ServerStatus } from "../contracts.js";
 import { isControlEndpointUnavailable, requestControl } from "../ipc/controlClient.js";
 import { DataRootLock } from "./lock.js";

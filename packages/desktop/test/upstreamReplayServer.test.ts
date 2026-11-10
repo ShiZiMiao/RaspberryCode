@@ -21,7 +21,7 @@ afterEach(async () => {
 
 describe("Upstream replay server", () => {
   it("分阶段工具参数必须逐次释放，第一次释放不能越过第二个观察点", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "zcode-replay-stages-"));
+    const dir = await mkdtemp(join(tmpdir(), "raspberrycode-replay-stages-"));
     tempDirs.push(dir);
     const fixture = join(dir, "fixture.json");
     await writeFile(
@@ -72,7 +72,7 @@ describe("Upstream replay server", () => {
   });
 
   it("从最新真实 workflow-hole 通知绑定 run ID，缺失通知时拒绝伪造 FillWorkflowHole", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "zcode-workflow-hole-replay-"));
+    const dir = await mkdtemp(join(tmpdir(), "raspberrycode-workflow-hole-replay-"));
     tempDirs.push(dir);
     const fixture = join(dir, "fixture.json");
     await writeFile(
@@ -123,7 +123,7 @@ describe("Upstream replay server", () => {
   });
 
   it("按请求的 stream 属性选择 SSE 或 JSON 响应格式", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "zcode-replay-response-format-"));
+    const dir = await mkdtemp(join(tmpdir(), "raspberrycode-replay-response-format-"));
     tempDirs.push(dir);
     const fixture = join(dir, "fixture.json");
     await writeFile(

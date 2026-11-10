@@ -1,6 +1,6 @@
-/* 官方插件命令进程的本地代理端点（ZCode Sites 技术方案 5.8）。
+/* 官方插件命令进程的本地代理端点（RaspberryCode Sites 技术方案 5.8）。
    CLI 不持有任何登录凭证：它把请求发到这里，端点按 session token 认出 session，
-   向 host 现取官方身份头补上，再转发给 zcode-server，响应原样返回。
+   向 host 现取官方身份头补上，再转发给 raspberrycode-server，响应原样返回。
    凭证只在本进程内存里用于这一次转发，不缓存、不落盘、不进 env、不进日志。
    这样即使 session token 泄漏，也只能在 agent 存活期间调用放行的接口，拿不到 JWT。 */
 import { randomBytes } from "node:crypto";
@@ -10,21 +10,21 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Readable } from "node:stream";
 import {
-  ZCODE_OFFICIAL_ENDPOINT_ENV_KEY,
-  ZCODE_OFFICIAL_ENDPOINT_TOKEN_ENV_KEY,
-} from "@zcode/shared";
+  RASPBERRYCODE_OFFICIAL_ENDPOINT_ENV_KEY,
+  RASPBERRYCODE_OFFICIAL_ENDPOINT_TOKEN_ENV_KEY,
+} from "@raspberrycode/shared";
 import type {
   ExecutionPort,
   ExecutionRequest,
   Logger,
   OfficialMcpAuthHeadersResult,
-} from "@zcode/contracts";
+} from "@raspberrycode/contracts";
 import {
   supportsBackgroundTaskWaiter,
   supportsBashBackgroundLifecycle,
   type BackgroundTaskWaiterExecutionPort,
   type BashBackgroundLifecycleExecutionPort,
-} from "@zcode/core";
+} from "@raspberrycode/core";
 import {
   OFFICIAL_COMMAND_ROUTES,
   OFFICIAL_ENDPOINT_ERROR_HEADER,
@@ -59,10 +59,10 @@ export function createOfficialCommandEndpoint(
     listening ??= (async () => {
       // UDS 放在只有当前用户可进的临时目录里；Windows 用随机名的命名管道。
       const dir =
-        platform === "win32" ? undefined : await mkdtemp(join(tmpdir(), "zcode-official-"));
+        platform === "win32" ? undefined : await mkdtemp(join(tmpdir(), "raspberrycode-official-"));
       const address = dir
         ? join(dir, "endpoint.sock")
-        : `\\\\.\\pipe\\zcode-official-${process.pid}-${randomBytes(8).toString("hex")}`;
+        : `\\\\.\\pipe\\raspberrycode-official-${process.pid}-${randomBytes(8).toString("hex")}`;
       const server = createServer((req, res) => {
         void handle(req, res);
       });
@@ -74,7 +74,7 @@ export function createOfficialCommandEndpoint(
         });
       });
       options.logger?.info("Official command endpoint listening", {
-        event: "zcode_protocol.official_command_endpoint.listening",
+        event: "raspberrycode_protocol.official_command_endpoint.listening",
       });
       return { address, server, ...(dir ? { dir } : {}) };
     })();
@@ -102,7 +102,7 @@ export function createOfficialCommandEndpoint(
       if (!res.writableFinished) abort.abort();
     });
 
-    const origin = options.resolveZCodeApiOrigin();
+    const origin = options.resolveRaspberryCodeApiOrigin();
     // host 按 workspace 把请求路由到本 CLI 拥有的工作区；共享 CLI 的进程 cwd 不是任何工作区，
     // 曾因此被 host 拒绝并误报为未登录。必须用发起命令的会话自己的 workspace。
     const workspace = workspaceBySession.get(sessionId)!;
@@ -117,14 +117,14 @@ export function createOfficialCommandEndpoint(
         (): OfficialMcpAuthHeadersResult => ({ ok: false, reason: "official_auth_unavailable" }),
       );
     if (!auth.ok) {
-      // 没有登录身份时和 zcode-server 的未登录一样回 401，CLI 提示用户登录。
+      // 没有登录身份时和 raspberrycode-server 的未登录一样回 401，CLI 提示用户登录。
       if (auth.reason === "official_auth_unavailable") {
         res.writeHead(401, { [OFFICIAL_ENDPOINT_ERROR_HEADER]: "unauthenticated" }).end();
       } else {
         reject(res, 502, "auth", auth.reason);
       }
       options.logger?.info("Official command endpoint has no identity", {
-        event: "zcode_protocol.official_command_endpoint.auth_unavailable",
+        event: "raspberrycode_protocol.official_command_endpoint.auth_unavailable",
         pluginId: route.pluginId,
         reason: auth.reason,
         sessionId,
@@ -138,7 +138,7 @@ export function createOfficialCommandEndpoint(
       if (typeof value === "string") headers.set(name, value);
     }
     for (const [name, value] of Object.entries(auth.headers)) headers.set(name, value);
-    if (options.appVersion) headers.set("X-ZCode-App-Version", options.appVersion);
+    if (options.appVersion) headers.set("X-RaspberryCode-App-Version", options.appVersion);
 
     const method = (req.method ?? "GET").toUpperCase();
     const hasBody = method !== "GET" && method !== "HEAD";
@@ -155,9 +155,9 @@ export function createOfficialCommandEndpoint(
       } as RequestInit);
     } catch (error) {
       if (abort.signal.aborted) return;
-      options.logger?.warn("Official command endpoint cannot reach zcode-server", {
+      options.logger?.warn("Official command endpoint cannot reach raspberrycode-server", {
         error: error instanceof Error ? error.message : String(error),
-        event: "zcode_protocol.official_command_endpoint.network_error",
+        event: "raspberrycode_protocol.official_command_endpoint.network_error",
         pluginId: route.pluginId,
       });
       reject(res, 502, "network", error instanceof Error ? error.message : String(error));
@@ -195,8 +195,8 @@ export function createOfficialCommandEndpoint(
         sessionByToken.set(token, sessionId);
       }
       return {
-        [ZCODE_OFFICIAL_ENDPOINT_ENV_KEY]: address,
-        [ZCODE_OFFICIAL_ENDPOINT_TOKEN_ENV_KEY]: token,
+        [RASPBERRYCODE_OFFICIAL_ENDPOINT_ENV_KEY]: address,
+        [RASPBERRYCODE_OFFICIAL_ENDPOINT_TOKEN_ENV_KEY]: token,
       };
     },
     async close() {
@@ -220,7 +220,7 @@ function readBearerToken(header: string | undefined): string | undefined {
   return match?.[1];
 }
 
-/** 端点自己的错误沿用 zcode-server 的错误体，code 用 2007（上游错误），CLI 不用另写分支。 */
+/** 端点自己的错误沿用 raspberrycode-server 的错误体，code 用 2007（上游错误），CLI 不用另写分支。 */
 function reject(
   res: ServerResponse,
   status: number,
@@ -251,7 +251,7 @@ export function withOfficialCommandEnv(
     const set = await resolveEnv().catch((error: unknown) => {
       logger?.warn("Official command endpoint env unavailable", {
         error: error instanceof Error ? error.message : String(error),
-        event: "zcode_protocol.official_command_endpoint.env_unavailable",
+        event: "raspberrycode_protocol.official_command_endpoint.env_unavailable",
       });
       return {};
     });

@@ -5,7 +5,7 @@ import {
   createToolCallId,
   createTurnId,
   type SubagentPort,
-} from "@zcode/contracts";
+} from "@raspberrycode/contracts";
 import { createInMemoryHookRunner } from "../src/hooks/index.js";
 import { PermissionService, defaultPermissionConfig } from "../src/permission/service.js";
 import { createToolExecutor } from "../src/tool/executor.js";

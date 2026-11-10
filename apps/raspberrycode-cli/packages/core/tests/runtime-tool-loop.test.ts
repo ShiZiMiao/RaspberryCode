@@ -5219,7 +5219,7 @@ describe("AgentRuntime tool loop", () => {
 
   it("keeps the Read truncation notice when Stop interrupts the checkpoint, live and after resume", async () => {
     const sessionId = createSessionId("runtime-read-notice-during-tool-checkpoint");
-    const workingDirectory = "/tmp/zcode-read-notice-checkpoint";
+    const workingDirectory = "/tmp/raspberrycode-read-notice-checkpoint";
     const sessionStore = new RecordingSessionStore();
     const eventStore = createTestSessionEventStore();
     const checkpointStarted = deferred();
@@ -6276,7 +6276,7 @@ describe("AgentRuntime tool loop", () => {
     let modelCallCount = 0;
     const runtime = createTestAgentRuntime(
       sessionId,
-      { mode: "build", workingDirectory: "/tmp/zcode-runtime-target" },
+      { mode: "build", workingDirectory: "/tmp/raspberrycode-runtime-target" },
       {
         eventStore: createTestSessionEventStore(),
         modelFactory: createTestModelFactory({

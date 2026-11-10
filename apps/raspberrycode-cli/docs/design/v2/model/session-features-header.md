@@ -1,4 +1,4 @@
-# 会话能力归因 Header：`x-zcode-session-features`
+# 会话能力归因 Header：`x-raspberrycode-session-features`
 
 ## 背景
 
@@ -7,15 +7,15 @@
 
 | Header                 | 回答的问题               | 取值                       |
 | ---------------------- | ------------------------ | -------------------------- |
-| `x-zcode-session-type` | 请求属于哪类会话         | 4 个固定值，服务端已在使用 |
-| `x-zcode-query-source` | 本次请求由哪个调用点发出 | 单值、互斥                 |
+| `x-raspberrycode-session-type` | 请求属于哪类会话         | 4 个固定值，服务端已在使用 |
+| `x-raspberrycode-query-source` | 本次请求由哪个调用点发出 | 单值、互斥                 |
 
 "用过哪些能力"是多值的，并且随会话推进而累积，上面两个头都表达不了。没有专门的头时，统计方只能
 扫描请求体文本。请求体在长上下文时会被截断或置空，扫描既慢又漏。
 
 ## 目标
 
-- 所有会话内的出站模型请求都发送 `x-zcode-session-features`，值为本会话**至今**用过的能力标签。
+- 所有会话内的出站模型请求都发送 `x-raspberrycode-session-features`，值为本会话**至今**用过的能力标签。
 - 标签只增不减：compact、rewind、冷恢复都不撤销已有标签。
 - 每个 session 只报自己用过的能力。子 agent、workflow 子 actor 是独立 session，出生时没有标签，
   也不继承父会话的标签。
@@ -26,7 +26,7 @@
 
 - 不修改 provider 静态配置里的 headers。
 - 不在 header 里放代码、路径、工具参数等内容，只放固定的标签名。
-- 不把子会话的标签上卷到父会话。统计方按 `x-zcode-trace-id` 自行聚合。
+- 不把子会话的标签上卷到父会话。统计方按 `x-raspberrycode-trace-id` 自行聚合。
 
 ## Header 格式
 
@@ -81,7 +81,7 @@ BUA/CUA 标签的补充规则：
   选中，样本里的失败率就会偏低。所以只要请求到达主线程 broker 就打，结果是 `ok: false`、`isError`、
   抛错都不影响；整个工具结果是否 `isError` 也不看：一个 cell 可能先调用成功、后面的代码再出错。
 - node_repl 在 `node-repl-host` 子进程里执行，core 只能从工具结果的 `_meta` 得知调用过运行时。两个 key
-  由 node_repl 调用账本产出（`docs/design/v2/tool/20-node-repl-call-ledger.md`），与 `zcode/nodeReplCuaApp`、
+  由 node_repl 调用账本产出（`docs/design/v2/tool/20-node-repl-call-ledger.md`），与 `raspberrycode/nodeReplCuaApp`、
   截图下标同一来源：
   - 浏览器代理 broker 收到带本次调用 token 的 `list` / `execute` 请求时记 `facts.browserUse`。记在检查
     上游和转发之前，所以上游报错、命令 `ok: false` 也算。
@@ -90,7 +90,7 @@ BUA/CUA 标签的补充规则：
   - token 无效（伪造、过期、调用已结束）的请求不记。
   - `toMcpRunResult` 先删除 `_meta` 里的同名 key（模型可以经 `nodeRepl.setResponseMeta`、
     `nodeRepl.emitStructuredResult` 或内嵌的 `_meta` 写入），再只根据账本的 facts 写回
-    `zcode/nodeReplBrowserUse: true` / `zcode/nodeReplComputerUse: true`。Worker 发来的结果消息只当作内容，
+    `raspberrycode/nodeReplBrowserUse: true` / `raspberrycode/nodeReplComputerUse: true`。Worker 发来的结果消息只当作内容，
     cell 经 `require("node:worker_threads").parentPort.postMessage(...)` 冒充结果也写不出这两个 key
     （MR !3207 评审 CR-01）。
   - core 只在工具名为 `mcp__node_repl__js` 时读这两个 key。第三方 MCP 也能在自己的结果里写同名 key，
@@ -105,7 +105,7 @@ BUA/CUA 标签的补充规则：
   - subagent 里的 CUA 尝试：Worker 侧 bridge 在引导和每次方法调用前检查 `runtime_scope`，发现是 subagent
     就直接报 `Computer Use is not available in subagent`。broker 侧的同名检查只兜住绕过 bridge、直接连
     socket 的请求，这类请求计入。
-  - node-repl-host 没有拿到 CUA Helper 凭据，或 ZCode 没有配置浏览器上游时：Worker 里没有 broker 地址，
+  - node-repl-host 没有拿到 CUA Helper 凭据，或 RaspberryCode 没有配置浏览器上游时：Worker 里没有 broker 地址，
     bridge 直接报不可用。
   - kernel 重置后旧 cell 的调用：bridge 报 binding stale，不发请求。
 - 已知边界：超时、崩溃、停止时不产出可信 key。记账在 broker 侧，超时之前已到达 broker 的请求也已记进
@@ -117,7 +117,7 @@ BUA/CUA 标签的补充规则：
   一直起不来。统计方可以用不依赖本标签的随机样本估计这类会话的占比。补上的方案是让超时、崩溃返回带
   facts 的 `isError` 结果；这会改变所有 node_repl 超时时模型看到的内容（现在只有一行错误，超时前的日志也
   会丢失），另开 MR 评估。
-- 不复用现有的 `zcode/browserUse`：它在浏览器后端返回 meta 时就写，命令失败也会写，而且是 Browser Use
+- 不复用现有的 `raspberrycode/browserUse`：它在浏览器后端返回 meta 时就写，命令失败也会写，而且是 Browser Use
   meta 契约的一部分（`docs/browser-use/2026-07-10-browser-use-spec.md`），含义不随本规则改变。
 - 到达浏览器代理的调用全部来自模型代码，包括 `browser.finalize()`、`nameSession()` 这类 SDK 方法；
   closeSession、turnEnded 等生命周期命令由宿主经 `browserControlPort` 发出，不经过 Worker 里的 bridge 和
@@ -165,7 +165,7 @@ BUA/CUA 标签的补充规则：
 | compact                     | 不变。标签在 runtime 内存和 entry 中，与消息裁剪无关                                                                                                                                                              |
 | rewind                      | 不变。"用过"不随分支回退                                                                                                                                                                                          |
 | 冷恢复                      | 标签 = entry 中的标签 ∪ 从全部持久化消息（含 rewind 前的）推出的标签。并集比 entry 多时补写 entry                                                                                                                 |
-| fork                        | 不复制父会话的 entry。fork 子会话恢复时从复制过来的历史推出标签，所以继承到 fork 点为止已有的标签。辅助对话（side chat，`x-zcode-session-type: side_chat`）也经 fork 创建，同样继承；统计方可按 session-type 区分 |
+| fork                        | 不复制父会话的 entry。fork 子会话恢复时从复制过来的历史推出标签，所以继承到 fork 点为止已有的标签。辅助对话（side chat，`x-raspberrycode-session-type: side_chat`）也经 fork 创建，同样继承；统计方可按 session-type 区分 |
 | subagent、workflow 子 actor | 新 runtime 出生时为空，只记录自己用过的能力                                                                                                                                                                       |
 | 热恢复                      | 复用同一 runtime，标签不变                                                                                                                                                                                        |
 

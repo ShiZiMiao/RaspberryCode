@@ -1,14 +1,14 @@
 // 项目数据彻底删除的 CLI 执行面（v4/storage/sessionData/*）。
 // 规格：docs/superpowers/specs/2026-10-24-project-management.md「彻底删除数据」。
-import type { SessionId } from "@zcode/contracts";
+import type { SessionId } from "@raspberrycode/contracts";
 import {
   v4SessionDataParamsSchema,
   type V4SessionDataMeasureResult,
   type V4SessionDataParams,
   type V4SessionDataPurgeResult,
-} from "@zcode/shared/zcode-protocol-v4";
+} from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import { createSessionResidentPoolHost, deactivateSessionRecord } from "../session-residency.js";
-import { parseParams, type ZCodeProtocolAgentServerContext } from "../server-types.js";
+import { parseParams, type RaspberryCodeProtocolAgentServerContext } from "../server-types.js";
 import type { SessionDataHost } from "./contract.js";
 
 export type { SessionDataHost } from "./contract.js";
@@ -49,7 +49,7 @@ export async function measureSessionDataWith(
 
 /**
  * 附件仍被本次不删除的会话引用的树整棵保留：fork、回退、工作流转录按值复制 part，
- * `zcode-artifact://<源会话>/…` 仍指向源会话的附件目录。保留一棵会让它也成为引用方，迭代到不动点。
+ * `raspberrycode-artifact://<源会话>/…` 仍指向源会话的附件目录。保留一棵会让它也成为引用方，迭代到不动点。
  */
 async function referencedRoots(
   host: SessionDataHost,
@@ -127,7 +127,7 @@ export async function purgeSessionDataWith(
   return result;
 }
 
-function hostFromContext(context: ZCodeProtocolAgentServerContext): SessionDataHost {
+function hostFromContext(context: RaspberryCodeProtocolAgentServerContext): SessionDataHost {
   const store = context.deps.sessionStore;
   const files = context.deps.sessionDataFiles;
   if (!store?.listOwnedSessionTrees || !store.listArtifactReferrers || !store.purgeSessions || !files)
@@ -155,20 +155,20 @@ function hostFromContext(context: ZCodeProtocolAgentServerContext): SessionDataH
 }
 
 export async function measureSessionData(
-  context: ZCodeProtocolAgentServerContext,
+  context: RaspberryCodeProtocolAgentServerContext,
   rawParams: unknown,
 ): Promise<V4SessionDataMeasureResult> {
   return measureSessionDataWith(hostFromContext(context), parseParams(v4SessionDataParamsSchema, rawParams));
 }
 
 export async function purgeSessionData(
-  context: ZCodeProtocolAgentServerContext,
+  context: RaspberryCodeProtocolAgentServerContext,
   rawParams: unknown,
 ): Promise<V4SessionDataPurgeResult> {
   const params = parseParams(v4SessionDataParamsSchema, rawParams);
   const result = await purgeSessionDataWith(hostFromContext(context), params);
   context.logger?.info("Session data purged", {
-    event: "zcode_protocol.session_data.purged",
+    event: "raspberrycode_protocol.session_data.purged",
     deleted: result.deleted.length,
     kept: result.kept.length,
     failed: result.failed.length,

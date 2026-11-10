@@ -1,5 +1,5 @@
 import { useWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { useCallback, useRef, useState } from "react";
 import type { IServiceAccessor } from "@raspberrycode/services";
 import type { RaspberryCodeProvider } from "@raspberrycode/shared";
@@ -197,7 +197,7 @@ export function useSessionRuntimeRestart(
     remoteSessionId ?? undefined,
     workspaceIdentity,
   );
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const key = `${workspaceIdentity || workspacePath}\0${sessionId ?? ""}`;
   const flight = useRef<{ key: string; promise: Promise<boolean> } | null>(null);
@@ -205,7 +205,7 @@ export function useSessionRuntimeRestart(
     if (!sessionId) return Promise.resolve(false);
     if (flight.current?.key === key) return flight.current.promise;
     setPendingKey(key);
-    const request = services.zcodeAgentService
+    const request = services.raspberrycodeAgentService
       .restartSessionRuntime({
         workspacePath,
         sessionId,
@@ -235,6 +235,6 @@ export function useSessionRuntimeRestart(
       });
     flight.current = { key, promise: request };
     return request;
-  }, [key, services.zcodeAgentService, workspacePath, workspaceIdentity, sessionId, intl]);
+  }, [key, services.raspberrycodeAgentService, workspacePath, workspaceIdentity, sessionId, intl]);
   return { restart, pending: pendingKey === key };
 }

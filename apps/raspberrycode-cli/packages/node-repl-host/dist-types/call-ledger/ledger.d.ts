@@ -1,4 +1,4 @@
-import type { NodeReplCuaAppIdentity, NodeReplImage, NodeReplRequestMeta } from "@zcode/core/repl";
+import type { NodeReplCuaAppIdentity, NodeReplImage, NodeReplRequestMeta } from "@raspberrycode/core/repl";
 /** 一次 js 调用里由 broker 记下的可信事实。 */
 export interface NodeReplCallFacts {
     /** CUA broker 从 runtime 结果读到的目标应用身份，按出现顺序。 */

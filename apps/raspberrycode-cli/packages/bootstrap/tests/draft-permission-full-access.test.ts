@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { createInMemorySessionEventStore, createSqliteSessionStore } from "@zcode/adapters/storage";
-import { createSessionId, SessionEventType } from "@zcode/contracts";
+import { createInMemorySessionEventStore, createSqliteSessionStore } from "@raspberrycode/adapters/storage";
+import { createSessionId, SessionEventType } from "@raspberrycode/contracts";
 import { createRegistryBackedTestApp } from "./helpers/registry-backed-test-app.js";
 
 async function fixture() {

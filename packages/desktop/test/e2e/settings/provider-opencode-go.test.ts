@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import {
-  decodeZCodeBuiltinRelease,
+  decodeRaspberryCodeBuiltinRelease,
   NodePersonalProviderConfigRepository,
 } from "@raspberrycode/provider-node";
 import {
@@ -29,7 +29,7 @@ describe("Todo149 OpenCode Go 模板创建", () => {
     const builtinPath =
       process.env.RASPBERRYCODE_BUILTIN_PROVIDER_CONFIG_FILE?.trim() ||
       resolve(process.cwd(), "../../config/provider/raspberrycode-builtin.json");
-    const release = decodeZCodeBuiltinRelease(JSON.parse(await readFile(builtinPath, "utf8")));
+    const release = decodeRaspberryCodeBuiltinRelease(JSON.parse(await readFile(builtinPath, "utf8")));
     const repository = new NodePersonalProviderConfigRepository({
       filePath: getE2EAppDataPaths().configFile,
       pollingIntervalMs: false,

@@ -8,7 +8,7 @@ import {
   type SessionStorePort,
   type SessionId,
   type UserMessageInfo,
-} from "@zcode/contracts";
+} from "@raspberrycode/contracts";
 
 export const SURVIVOR_ID = createSessionId("transaction-survivor");
 export const EXISTING_ID = createSessionId("transaction-existing");

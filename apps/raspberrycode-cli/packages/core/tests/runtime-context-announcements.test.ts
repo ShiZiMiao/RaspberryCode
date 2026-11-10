@@ -11,7 +11,7 @@ import {
   type ModelRequest,
   type ModelResult,
   type SkillPort,
-} from "@zcode/contracts";
+} from "@raspberrycode/contracts";
 import { createTestAgentRuntime } from "./test-agent-runtime.js";
 import { createTestModelSelection } from "./test-model-selection.js";
 import { createTestSessionEventStore } from "./test-event-store.js";

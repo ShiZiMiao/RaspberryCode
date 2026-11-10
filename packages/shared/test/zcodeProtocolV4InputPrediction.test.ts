@@ -6,7 +6,7 @@ import {
   helloMessageSchema,
   v4ConversationInputPredictionParamsSchema,
   v4ConversationInputPredictionResultSchema,
-} from "../src/zcode-protocol-v4/index.js";
+} from "../src/raspberrycode-protocol-v4/index.js";
 
 describe("v4/conversation/inputPrediction 线格式", () => {
   it("方法名固定", () => {

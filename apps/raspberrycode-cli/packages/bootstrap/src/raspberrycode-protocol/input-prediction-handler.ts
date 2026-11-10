@@ -6,7 +6,7 @@
 // - 按 (sessionId, revision, draft) 小 LRU 缓存终态结果，重连/重发不重复打模型；
 // - 会话不在内存 / 轮数不够 → suppress_no_context；无模型、超时、模型失败 → unavailable。
 // 只读、不做 CAS：预测是建议，不是状态。
-import type { Logger, MessageWithParts, SessionId, SessionStorePort } from "@zcode/contracts";
+import type { Logger, MessageWithParts, SessionId, SessionStorePort } from "@raspberrycode/contracts";
 import {
   decideInputPrediction,
   generateInputPredictionCandidates,
@@ -14,14 +14,14 @@ import {
   normalizeInputPredictionDraft,
   type InputPredictionModelCall,
   type InputPredictionTurnContext,
-} from "@zcode/core";
-import { isConversationRealUserTurnStarter } from "@zcode/shared";
+} from "@raspberrycode/core";
+import { isConversationRealUserTurnStarter } from "@raspberrycode/shared";
 import {
   emptyInputPredictionResult,
   v4ConversationInputPredictionParamsSchema,
   type V4ConversationInputPredictionResult,
-} from "@zcode/shared/zcode-protocol-v4";
-import type { ZCodeProtocolSessionRecord } from "./server-types.js";
+} from "@raspberrycode/shared/raspberrycode-protocol-v4";
+import type { RaspberryCodeProtocolSessionRecord } from "./server-types.js";
 
 /** 终态结果缓存条数（跨会话共享）。 */
 const INPUT_PREDICTION_CACHE_MAX_ENTRIES = 16;
@@ -136,8 +136,8 @@ export class ConversationInputPredictionHandler {
   private warn(reason: string, sessionId: string, error: unknown): void {
     // 只记错误类型与消息，绝不记草稿和会话内容。
     this.deps.logger?.warn("v4 input prediction degraded", {
-      event: `zcode_protocol.v4.input_prediction_${reason}`,
-      module: "bootstrap.zcode_protocol",
+      event: `raspberrycode_protocol.v4.input_prediction_${reason}`,
+      module: "bootstrap.raspberrycode_protocol",
       sessionId,
       error: error instanceof Error ? error.message : String(error),
     });
@@ -182,7 +182,7 @@ function visibleText(message: MessageWithParts): string {
 
 /** 生产 loader：会话必须驻留在本进程（手机正在看的会话一定驻留）。 */
 export function createInputPredictionSessionLoader(input: {
-  sessions: ReadonlyMap<string, ZCodeProtocolSessionRecord>;
+  sessions: ReadonlyMap<string, RaspberryCodeProtocolSessionRecord>;
   sessionStore?: SessionStorePort;
 }): ConversationInputPredictionHandlerDeps["loadSession"] {
   return async (sessionId) => {

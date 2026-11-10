@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, it } from "vitest";
-import { createSessionId, type ModelRequest, type TurnInputIntentMetadata } from "@zcode/contracts";
+import { createSessionId, type ModelRequest, type TurnInputIntentMetadata } from "@raspberrycode/contracts";
 import { createSqliteSessionStore } from "../../adapters/src/storage/session-store/sqlite-session-store.js";
 import { createTestAgentRuntime } from "../../core/tests/test-agent-runtime.js";
 import { createTestModelFactory } from "../../core/tests/test-runtime-model.js";

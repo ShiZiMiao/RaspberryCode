@@ -486,8 +486,8 @@ async function isDraftRegenerationSendFailure(since: number): Promise<boolean> {
             properties?: Record<string, unknown>;
           };
           const events =
-            (window as Window & { __zcodeArmsCustomEventsE2E?: SendFunnelEvent[] })
-              .__zcodeArmsCustomEventsE2E ?? [];
+            (window as Window & { __raspberrycodeArmsCustomEventsE2E?: SendFunnelEvent[] })
+              .__raspberrycodeArmsCustomEventsE2E ?? [];
           const click = events.find(
             (event) => event.name === "send_click" && (event.recordedAt ?? 0) >= sinceMs,
           );

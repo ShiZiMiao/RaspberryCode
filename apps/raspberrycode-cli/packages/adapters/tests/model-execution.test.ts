@@ -72,7 +72,7 @@ describe("AI SDK Provider execution", () => {
     const headers = {
       "x-request-id": "attempt-1",
       "x-query-id": "command",
-      "x-zcode-query-source": "main_turn",
+      "x-raspberrycode-query-source": "main_turn",
       authorization: "secret",
     };
     expect(await fetch("https://example.com/messages", { headers })).toBe(response);
@@ -702,7 +702,7 @@ describe("createAnthropicCompatFetch", () => {
     // 才能作为 provider 执行的调用和结果进入历史与界面。
     expect(text).not.toContain('"type":"server_tool_use"');
     expect(text).toContain(
-      '{"type":"mcp_tool_use","id":"call_image","name":"analyze_image","input":{},"server_name":"zcode-provider-builtin"}',
+      '{"type":"mcp_tool_use","id":"call_image","name":"analyze_image","input":{},"server_name":"raspberrycode-provider-builtin"}',
     );
     expect(text).toContain(
       '{"type":"mcp_tool_result","tool_use_id":"call_image","is_error":false,"content":[{"type":"text","text":"[\\"您尚未登录\\"]"}]}',
@@ -837,7 +837,7 @@ describe("createAnthropicCompatFetch", () => {
         id: "call_j",
         name: "analyze_image",
         input: { prompt: "p" },
-        server_name: "zcode-provider-builtin",
+        server_name: "raspberrycode-provider-builtin",
       },
       {
         type: "mcp_tool_result",

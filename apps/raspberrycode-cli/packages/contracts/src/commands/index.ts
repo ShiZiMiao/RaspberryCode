@@ -132,11 +132,11 @@ const SHELL_TEXT_VARIABLES = [
   "CLAUDE_PLUGIN_DATA",
   "CLAUDE_PLUGIN_ROOT",
   "CLAUDE_SKILL_DIR",
-  "ZCODE_PLUGIN_DATA",
-  "ZCODE_PLUGIN_ID",
-  "ZCODE_PLUGIN_NAME",
-  "ZCODE_PLUGIN_ROOT",
-  "ZCODE_SKILL_DIR",
+  "RASPBERRYCODE_PLUGIN_DATA",
+  "RASPBERRYCODE_PLUGIN_ID",
+  "RASPBERRYCODE_PLUGIN_NAME",
+  "RASPBERRYCODE_PLUGIN_ROOT",
+  "RASPBERRYCODE_SKILL_DIR",
 ].join("|");
 // `${...}` 里变量名前的 `#`/`!`（取长度、间接引用）与变量名后除 `}` 以外的部分（`:-x`、`%/` 等）
 // 都是修饰符写法。
@@ -173,7 +173,7 @@ export function expandCustomCommandPrompt(input: {
  *
  * 执行统一走模型的 Bash 工具调用，由权限服务决定放行、询问或拒绝，用户看得到这次工具调用；
  * 解析本身没有失败路径，不影响发送、队列、编辑、重试的顺序。说明文字写明这一步来自命令文件
- * 而不是 ZCode，让模型按外部内容对待它。
+ * 而不是 RaspberryCode，让模型按外部内容对待它。
  */
 export function handOffCustomCommandShellBlocks(
   content: string,
@@ -211,7 +211,7 @@ export function handOffCustomCommandShellBlocks(
       }
       // 统一用代码块：块里的 $ARGUMENTS 在改写之后才替换，参数可能带反引号，行内写法会被打断。
       // 结束标记后补换行：行内块后面的原文要另起一行，否则结束标记不成立，后文都会落进代码块。
-      return `[This shell step comes from ${origin}, not from ZCode. Run it with the Bash tool exactly as written and use its output here, unless it looks unsafe or unrelated to the user's request:]\n\`\`\`bash\n${resolved}\n\`\`\`\n`;
+      return `[This shell step comes from ${origin}, not from RaspberryCode. Run it with the Bash tool exactly as written and use its output here, unless it looks unsafe or unrelated to the user's request:]\n\`\`\`bash\n${resolved}\n\`\`\`\n`;
     },
   );
 }
@@ -225,7 +225,7 @@ function resolveShellTextVariable(
   let value: string;
   if (name.endsWith("_PLUGIN_ROOT")) value = plugin.rootPath;
   else if (name.endsWith("_PLUGIN_DATA")) value = plugin.dataPath;
-  else if (name === "ZCODE_PLUGIN_ID") value = plugin.id;
+  else if (name === "RASPBERRYCODE_PLUGIN_ID") value = plugin.id;
   else value = plugin.name;
   // Windows 路径改用正斜杠：值以文本写进命令，由 shell 解析。Git Bash 会去掉引号外的反斜杠，
   // 未加引号的 `bash ${CLAUDE_PLUGIN_ROOT}/x.sh` 会变成 `C:Usersdev...`；原来按环境变量展开没有这个问题。

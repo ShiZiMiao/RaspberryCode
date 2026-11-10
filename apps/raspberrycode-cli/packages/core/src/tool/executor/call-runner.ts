@@ -1,4 +1,4 @@
-import { toolSearchNameForMode } from "@zcode/contracts";
+import { toolSearchNameForMode } from "@raspberrycode/contracts";
 import { resolveDeferredToolCall } from "../deferred-call.js";
 import {
   type AgentTelemetryErrorCategory,

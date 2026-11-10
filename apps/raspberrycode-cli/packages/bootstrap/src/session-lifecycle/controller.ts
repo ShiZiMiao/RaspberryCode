@@ -1,4 +1,4 @@
-import type { ZCodeWorkspaceRef } from "@zcode/shared";
+import type { RaspberryCodeWorkspaceRef } from "@raspberrycode/shared";
 import {
   SessionLifecycleError,
   type SessionLifecycle,
@@ -13,9 +13,9 @@ interface Entry {
   flight?: {
     operation: SessionLifecycleOperation;
     promise: Promise<void>;
-    workspace?: ZCodeWorkspaceRef;
+    workspace?: RaspberryCodeWorkspaceRef;
   };
-  restartWorkspace?: ZCodeWorkspaceRef;
+  restartWorkspace?: RaspberryCodeWorkspaceRef;
   restartAfterStartup?: Promise<void>;
 }
 
@@ -44,7 +44,7 @@ export class SessionLifecycleController implements SessionLifecycle {
     return { ...snapshot, lastError: snapshot.lastError ? { ...snapshot.lastError } : null };
   }
 
-  ensureReady(sessionId: string, workspace?: ZCodeWorkspaceRef): Promise<void> {
+  ensureReady(sessionId: string, workspace?: RaspberryCodeWorkspaceRef): Promise<void> {
     const entry = this.entry(sessionId);
     const conflict = this.workspaceConflict(entry, workspace);
     if (conflict) return Promise.reject(conflict);
@@ -70,7 +70,7 @@ export class SessionLifecycleController implements SessionLifecycle {
   initialize(
     sessionId: string,
     activate: () => Promise<void>,
-    workspace?: ZCodeWorkspaceRef,
+    workspace?: RaspberryCodeWorkspaceRef,
     kind: "create" | "restore" = "restore",
   ): Promise<void> {
     const entry = this.entry(sessionId);
@@ -99,7 +99,7 @@ export class SessionLifecycleController implements SessionLifecycle {
     });
   }
 
-  restart(sessionId: string, workspace?: ZCodeWorkspaceRef): Promise<void> {
+  restart(sessionId: string, workspace?: RaspberryCodeWorkspaceRef): Promise<void> {
     const entry = this.entry(sessionId);
     const conflict = this.workspaceConflict(entry, workspace);
     if (conflict) return Promise.reject(conflict);
@@ -143,7 +143,7 @@ export class SessionLifecycleController implements SessionLifecycle {
     sessionId: string,
     operation: SessionLifecycleOperation,
     work: () => Promise<void>,
-    workspace?: ZCodeWorkspaceRef,
+    workspace?: RaspberryCodeWorkspaceRef,
   ): Promise<void> {
     const entry = this.entry(sessionId);
     const conflict = this.workspaceConflict(entry, workspace);
@@ -209,8 +209,8 @@ export class SessionLifecycleController implements SessionLifecycle {
   private join(
     sessionId: string,
     promise: Promise<void>,
-    ownerWorkspace?: ZCodeWorkspaceRef,
-    workspace?: ZCodeWorkspaceRef,
+    ownerWorkspace?: RaspberryCodeWorkspaceRef,
+    workspace?: RaspberryCodeWorkspaceRef,
   ): Promise<void> {
     // 旧入口没有登记归属时，共享启动不能替代加入者的校验；等创建落盘后验证，不再激活。
     return workspace && !ownerWorkspace
@@ -220,7 +220,7 @@ export class SessionLifecycleController implements SessionLifecycle {
 
   private workspaceConflict(
     entry: Entry,
-    workspace?: ZCodeWorkspaceRef,
+    workspace?: RaspberryCodeWorkspaceRef,
   ): SessionLifecycleError | undefined {
     // 启动与排队重启的归属都必须匹配，后登记的请求不能遮蔽原启动的身份。
     if (

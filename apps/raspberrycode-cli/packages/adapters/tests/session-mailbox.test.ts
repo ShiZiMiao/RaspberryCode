@@ -1,5 +1,5 @@
 import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
-import type { SessionId } from "@zcode/contracts";
+import type { SessionId } from "@raspberrycode/contracts";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -10,7 +10,7 @@ describe("NodeSessionMailboxAdapter", () => {
     "session_0123456789abcdef0123456789abcdef",
     "session_12345678-1234-4234-8234-123456789abc",
   ])("drains legacy mailbox %s without reading the sess_ directory", async (id) => {
-    const rootDir = await mkdtemp(join(tmpdir(), "zcode-mailbox-legacy-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "raspberrycode-mailbox-legacy-"));
     const canonicalId = id.replace(/^session_/, "sess_");
     const envelope = {
       version: 1,

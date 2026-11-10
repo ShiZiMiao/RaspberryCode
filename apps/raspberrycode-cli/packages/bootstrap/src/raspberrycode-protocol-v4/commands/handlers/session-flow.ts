@@ -1,4 +1,4 @@
-import { normalizeGenUiInput } from "@zcode/core";
+import { normalizeGenUiInput } from "@raspberrycode/core";
 // 会话流命令组：sendText / stop（模式样板）。
 // 每个命令组一个文件：handler 纯函数 (host, envelope) → CommandResult|undefined，
 // 决策逻辑直驱 core，环境能力走 host 钩子（见 ../types.ts 的过渡标注）。

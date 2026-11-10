@@ -123,7 +123,7 @@ describe("Windows Authenticode 有效性校验", () => {
         ).toBeNull();
         const args = spy.mock.calls[0]![1] as string[];
         const command = decodeCommand(args);
-        expect(command).toContain("Get-AuthenticodeSignature -LiteralPath $zcodeArg0");
+        expect(command).toContain("Get-AuthenticodeSignature -LiteralPath $raspberrycodeArg0");
         expect(command).not.toContain("Example';&.exe");
       } finally {
         spy.mockRestore();

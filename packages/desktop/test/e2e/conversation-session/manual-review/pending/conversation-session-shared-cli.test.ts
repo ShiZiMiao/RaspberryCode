@@ -92,7 +92,7 @@ describe("无项目工作区共享 CLI", () => {
     const agentsA = await readAgents();
     const shared = agentsA.find((agent) => agent.name.endsWith("-raspberrycode"));
     expect(shared).toBeDefined();
-    expect(agentsA.some((agent) => agent.name.endsWith("-zcodeproject"))).toBe(true);
+    expect(agentsA.some((agent) => agent.name.endsWith("-raspberrycodeproject"))).toBe(true);
 
     await startNewV4Draft();
     await sendV4Prompt("E2E_SHARED_CLI_B reply briefly");

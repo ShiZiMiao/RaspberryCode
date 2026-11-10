@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "caseName": "conversation-session-workspace-zcodeignore",
-  "spec": "./test/e2e/conversation-session/conversation-session-workspace-zcodeignore.test.ts",
+  "caseName": "conversation-session-workspace-raspberrycodeignore",
+  "spec": "./test/e2e/conversation-session/conversation-session-workspace-raspberrycodeignore.test.ts",
   "providerFixtures": [
     "./test/e2e/fixtures/upstream/common.json",
-    "./test/e2e/fixtures/upstream/conversation-session/conversation-session-workspace-zcodeignore.json"
+    "./test/e2e/fixtures/upstream/conversation-session/conversation-session-workspace-raspberrycodeignore.json"
   ],
   "providerRequestPolicy": "none",
   "fileFixtures": [],

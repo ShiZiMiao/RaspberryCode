@@ -7,7 +7,7 @@ import {
   type MessageWithParts,
   type PermissionRuleset,
   type SessionStorePort,
-} from "@zcode/contracts";
+} from "@raspberrycode/contracts";
 import { hydrateReadFileStateFromSession } from "../src/agent/read-file-state-hydrator.js";
 import { PermissionService, defaultPermissionConfig } from "../src/permission/service.js";
 import { restorePostCompactFiles } from "../src/runtime/helpers/compact-post-reminders.js";
@@ -18,7 +18,7 @@ import { createToolRegistry } from "../src/tool/registry.js";
 import type { ReadFileStateMap } from "../src/tool/types.js";
 import { MemoryFileSystem } from "./memory-test-utils.js";
 
-const workspace = "/tmp/zcode-read-deny-probe";
+const workspace = "/tmp/raspberrycode-read-deny-probe";
 const denied = `${workspace}/secret.env`;
 const asked = `${workspace}/asked.ts`;
 const plain = `${workspace}/plain.ts`;

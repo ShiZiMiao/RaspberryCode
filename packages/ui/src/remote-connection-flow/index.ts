@@ -1323,7 +1323,7 @@ export function useRemoteConnectionFlow(options: RemoteConnectionFlowOptions) {
     deviceBusy: reinstallDeviceBusy,
     installState: reinstallServer?.installState,
     lastSeenVersion: reinstallServer?.lastSeenVersion,
-    localVersion: ZCODE_VERSION,
+    localVersion: RASPBERRYCODE_VERSION,
   });
   const reinstallAvailable =
     Boolean(reinstallProfile) && reinstallAvailability.visible && reinstallAvailability.enabled;
@@ -1337,7 +1337,7 @@ export function useRemoteConnectionFlow(options: RemoteConnectionFlowOptions) {
           recognizedDeviceName ??
           activeProfileName ??
           formatRemoteLinkRailTarget(pendingRemoteTarget),
-        version: ZCODE_VERSION,
+        version: RASPBERRYCODE_VERSION,
         formatMessage: intl.formatMessage,
       }),
     );

@@ -5039,7 +5039,7 @@ describe("RaspberryCodeProtocolAgentServer", () => {
       resolveSendInputStarted = resolve;
     });
     const server = new RaspberryCodeProtocolAgentServer({
-      createZCodeApp: (options) =>
+      createRaspberryCodeApp: (options) =>
         createFakeApp(options, {
           sendInput: async (_input, sendOptions) => {
             receivedAutomationId = sendOptions?.automationId;
@@ -5089,7 +5089,7 @@ describe("RaspberryCodeProtocolAgentServer", () => {
       resolveSendInputStarted = resolve;
     });
     const server = new RaspberryCodeProtocolAgentServer({
-      createZCodeApp: (options) =>
+      createRaspberryCodeApp: (options) =>
         createFakeApp(options, {
           sendInput: async (_input, options) => {
             receivedAutomationId = options?.automationId;

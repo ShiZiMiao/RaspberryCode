@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 // 品牌中立性审计（棘轮）：把 2026-11-03 终检的扫描口径固化为可复跑的机器判据。
-// 动机：人工逐轮扫描反复漏掉变体（Z Code 空格、ZCODE 全大写、z-code 连字符、codegeex 第二品牌），
+// 动机：人工逐轮扫描反复漏掉变体（RaspberryCode 空格、ZCODE 全大写、z-code 连字符、codegeex 第二品牌），
 // "每次检查都发现新遗漏"说明口径没有收敛；本脚本用穷举变体 + 显式豁免清单收敛到可验证状态。
 //
 // 三档判据：
-//   P0 产品自名残留（zcode 全变体）——运行时源码与构建产物必须为 0（豁免清单除外）
+//   P0 产品自名残留（raspberrycode 全变体）——运行时源码与构建产物必须为 0（豁免清单除外）
 //   P1 厂商信息盘点（Z.ai/zhipu/智谱/codegeex/chatglm/bigmodel）——内置供应商接口/模板/
 //      模型 ID/logo/用量数据属产品接入能力（2026-11-03 用户口径：中立=无特权无偏袒，
 //      不是抹掉厂商信息），仅作盘点基线（防意外引入），不判负；白名单注记来源分类
@@ -31,8 +31,8 @@ const textExtensions = new Set([
 ]);
 
 // P0：产品自名全变体。前边界排除误报子串（bizCode、TikZ code、tz code 等）；
-// 字符类枚举 z[-_ ]?code，-i 覆盖 ZCode/ZCODE/z_Code 等大小写组合。
-// 历史教训：「Z Code」带空格变体曾躲过所有 zcode 词扫描（退出确认框残留）。
+// 字符类枚举 z[-_ ]?code，-i 覆盖 RaspberryCode/ZCODE/z_Code 等大小写组合。
+// 历史教训：「RaspberryCode」带空格变体曾躲过所有 raspberrycode 词扫描（退出确认框残留）。
 const productSelfName = /(?<![a-z0-9])z[-_ ]?code\b/iu;
 
 // P1：品牌词。zai 用词边界避免误伤（raspberrycode 拼写天然不含，但仍防 czai 类子串）。
@@ -55,6 +55,13 @@ const p0ExemptPaths = [
   /^\.workbuddy\//u,
   /^scripts\/audit-neutrality\.mjs$/u,
   /^scripts\/audit-raspberrycode-agent-remnants\.mjs$/u,
+  // 上游同步工具族：内含品牌反向映射表（从 raspberrycode 还原旧路径以匹配祖先版本），
+  // 是工具内部的机械映射，不进入产品运行时。
+  /^scripts\/sync\//u,
+  // wire：站点发布网关保留目录名 `.__zcode/`（外部服务端约定，改名即发布失败）
+  /^apps\/raspberrycode-cli\/packages\/raspberrycode-site-plugin\//u,
+  // wire：官方命令端点测试建模协议头（X-Zcode-Plan 为服务端读取的头名）
+  /^apps\/raspberrycode-cli\/packages\/bootstrap\/tests\/official-command-endpoint\//u,
 ];
 
 // P1 白名单：wire 协议事实与平铺数据声明（specs/provider-neutrality.md 规则 1/6/7 的例外与数据面）。
@@ -91,6 +98,10 @@ const p1AllowedFiles = [
   { path: /^config\/provider\//u, note: "data: 内置供应商接口模板（接入便利，平铺无特权）" },
   { path: /^packages\/ui\/src\/assets\/provider-icons\//u, note: "data: 厂商 logo 资产库（平铺随包）" },
   { path: /^packages\/shared\/src\/channels\.ts$/u, note: "data: 平台渠道声明" },
+  // wire：站点发布网关的保留目录名（外部服务端约定，改名即发布失败）
+  { path: /^apps\/raspberrycode-cli\/packages\/raspberrycode-site-plugin\//u, note: "wire: .__zcode 网关保留目录" },
+  // wire：官方命令端点测试建模协议头（X-Zcode-Plan 为服务端读取的头名）
+  { path: /^apps\/raspberrycode-cli\/packages\/bootstrap\/tests\/official-command-endpoint\//u, note: "test: wire 头互通夹具" },
 ];
 
 // ---------- 构建产物边界（P0 硬边界：用户可见面） ----------

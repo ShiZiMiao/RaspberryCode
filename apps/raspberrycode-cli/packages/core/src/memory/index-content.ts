@@ -1,4 +1,4 @@
-import { dropTrailingHighSurrogate } from "@zcode/contracts";
+import { dropTrailingHighSurrogate } from "@raspberrycode/contracts";
 import { Lexer } from "marked";
 
 /** 记忆目录里的索引文件名；上下文前缀注入它，compaction 补回据此排除它。 */

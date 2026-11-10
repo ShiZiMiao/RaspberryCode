@@ -344,7 +344,7 @@ describe("script workflow runtime", () => {
       scriptPath,
       `export const meta = { name: "owned", description: "Close owned child" }; return await agent("Wait for cancellation");`,
     );
-    const app = await createZCodeApp({
+    const app = await createRaspberryCodeApp({
       modelExecutor: {
         setModelIoFullRetentionEnabled() {},
         async generateText(request: { abortSignal?: AbortSignal }) {
@@ -637,7 +637,7 @@ it("legacy workflow keeps a successful activity when child cleanup fails, then r
       };
       return child;
     });
-  const app = await createZCodeApp({
+  const app = await createRaspberryCodeApp({
     skipUserConfig: true,
     sessionStore: store,
     runtimeConfig: { workingDirectory: root },

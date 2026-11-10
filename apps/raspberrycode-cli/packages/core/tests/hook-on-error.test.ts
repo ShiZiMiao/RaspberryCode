@@ -19,7 +19,7 @@ import {
   type HookRunLifecyclePayload,
   type Logger,
   type SessionEvent,
-} from "@zcode/contracts";
+} from "@raspberrycode/contracts";
 import {
   WorkspaceHookTrustCoordinator,
   createConfiguredHookRunner,
@@ -281,10 +281,10 @@ describe("workspace PreToolUse hook onError", () => {
       discoveredAt: "2026-10-19T00:00:00.000Z",
       sourceFiles: [
         {
-          canonicalPath: "/workspace/.zcode/config.json",
+          canonicalPath: "/workspace/.raspberrycode/config.json",
           baseDir: "/workspace",
           discoveryOrder: 0,
-          configFileKind: ".zcode/config.json",
+          configFileKind: ".raspberrycode/config.json",
           explicitProjectConfig: false,
           editable: true,
           hooksRoot: { enabled: true },
@@ -297,7 +297,7 @@ describe("workspace PreToolUse hook onError", () => {
           matcherIndex: 0,
           hookIndex: 0,
           sourceFileIndex: 0,
-          sourceRelativePath: ".zcode/config.json",
+          sourceRelativePath: ".raspberrycode/config.json",
           matcher: "CreateWorkflow",
           type: "command",
           command: "node guard.mjs",

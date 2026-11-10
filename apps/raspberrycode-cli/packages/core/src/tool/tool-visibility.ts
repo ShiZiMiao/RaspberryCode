@@ -1,4 +1,4 @@
-import { LOCAL_TOOL_SEARCH_NAME, TOOL_SEARCH_NAME } from "@zcode/contracts";
+import { LOCAL_TOOL_SEARCH_NAME, TOOL_SEARCH_NAME } from "@raspberrycode/contracts";
 
 export function normalizeToolNameAlias(toolName: string): string {
   if (toolName === LOCAL_TOOL_SEARCH_NAME) return TOOL_SEARCH_NAME;

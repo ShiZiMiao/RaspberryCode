@@ -1,5 +1,5 @@
-import { getConversationModelOnlyTurnTriggerSource } from "@zcode/shared";
-import type { GenUiModelContext } from "@zcode/shared/gen-ui";
+import { getConversationModelOnlyTurnTriggerSource } from "@raspberrycode/shared";
+import type { GenUiModelContext } from "@raspberrycode/shared/gen-ui";
 import { attachGenUiContext } from "../../agent/message-history.js";
 import { activeSessionMessages, modelMessageContentToText } from "../deps.js";
 import { buildPromptAttachmentBlocks } from "../../system-reminder/prompt-attachment.js";

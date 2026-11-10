@@ -341,7 +341,7 @@ describe("createMcpAdapter", () => {
 
     const meta = clientCallToolMock.mock.calls.at(-1)?.[0]._meta;
     expect(meta).toMatchObject({ root_session_id: "session-1", session_id: "subagent-1" });
-    expect(meta["com.zcode/request-context"]).toMatchObject({
+    expect(meta["com.raspberrycode/request-context"]).toMatchObject({
       root_session_id: "session-1",
       session_id: "subagent-1",
     });
@@ -1022,7 +1022,7 @@ describe("createMcpAdapter", () => {
   it("appends the injected node fallback after the server env", async () => {
     const resolve = vi.fn(async () => ({
       binDir: "/fallback/bin",
-      env: { ZCODE_NODE_FALLBACK_EXEC_PATH: "/electron" },
+      env: { RASPBERRYCODE_NODE_FALLBACK_EXEC_PATH: "/electron" },
     }));
     const adapter = createMcpAdapter({
       env: { PATH: dirname(process.execPath) },
@@ -1038,7 +1038,7 @@ describe("createMcpAdapter", () => {
 
     const options = capturedStdioOptions[0] as { env?: Record<string, string> };
     expect(options.env?.PATH).toBe(["/plugin/bin", "/fallback/bin"].join(delimiter));
-    expect(options.env?.ZCODE_NODE_FALLBACK_EXEC_PATH).toBe("/electron");
+    expect(options.env?.RASPBERRYCODE_NODE_FALLBACK_EXEC_PATH).toBe("/electron");
     expect(resolve).toHaveBeenCalledTimes(1);
   });
 

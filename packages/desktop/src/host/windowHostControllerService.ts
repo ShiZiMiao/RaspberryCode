@@ -7,7 +7,6 @@ import type {
   WindowHostTaskAddress,
 } from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import {
-  CONTROLLER_TASKS_INDEX_TOPIC,
   matchesTaskListMembershipKind,
   windowHostTaskAddressSchema,
 } from "@raspberrycode/shared/raspberrycode-protocol-v4";
@@ -140,8 +139,6 @@ function liveStatusFromMeta(meta: RaspberryCodeTaskMeta): WindowHostControllerTa
  * 对应 source 的 tasks-index 重建投影，断连时只冻结最后一次成功的内存快照。
  */
 export function createWindowHostControllerRuntime(options: {
-  onRunStarted?: (run: import("@raspberrycode/shared/web-remote-relay").MobilePushRun) => void;
-  onNotification?: (event: import("@raspberrycode/shared/web-remote-relay").MobilePushEvent) => void;
   createId: () => string;
   readHostTaskList: IZCodeTaskService["listTaskList"];
   resolveSource: (scope: RaspberryCodeTaskListWorkspaceScope) => ResolvedWindowHostControllerSource | null;
@@ -214,20 +211,6 @@ export function createWindowHostControllerRuntime(options: {
         ...(resolved.scope.workspaceIdentity
           ? { workspaceIdentity: resolved.scope.workspaceIdentity }
           : {}),
-      },
-      onRunStarted: (run) => {
-        if (
-          sourceSessionObservers.get(key)?.observer === observer &&
-          sourceAvailability.get(key) === "online"
-        )
-          options.onRunStarted?.(run);
-      },
-      onNotification: (event) => {
-        if (
-          sourceSessionObservers.get(key)?.observer === observer &&
-          sourceAvailability.get(key) === "online"
-        )
-          options.onNotification?.(event);
       },
       onSessionsChange: (sessions) => {
         if (sourceSessionObservers.get(key)?.observer !== observer) return;
@@ -941,11 +924,6 @@ export function createWindowHostControllerRuntime(options: {
   return {
     service,
     createAttachmentService,
-    /** 手机项目树叠加实时交互：只读当前投影行，不触发 source 刷新。 */
-    readTaskRows: (): WindowHostControllerTaskRow[] => projection.getTasks(),
-    /** 投影行任一变化即回调；订阅时会立即收到一次快照回调。 */
-    subscribeTaskRows: (onChange: () => void): { dispose(): void } =>
-      projection.subscribe({ topic: CONTROLLER_TASKS_INDEX_TOPIC, onFrame: () => onChange() }),
     replaceDisconnectedSource,
     async resolveTaskAddress(params: {
       taskId: string;

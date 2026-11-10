@@ -1,14 +1,14 @@
 // v4/conversation/inputPrediction 的 CLI 处理器（docs/web-remote-control/mobile-input-prediction.md）。
 import { describe, expect, it, vi } from "vitest";
-import type { MessageWithParts } from "@zcode/contracts";
-import type { InputPredictionModelCall } from "@zcode/core";
-import { V4_METHODS } from "@zcode/shared/zcode-protocol-v4";
-import { ZCodeProtocolAgentServer } from "../src/zcode-protocol/server.js";
+import type { MessageWithParts } from "@raspberrycode/contracts";
+import type { InputPredictionModelCall } from "@raspberrycode/core";
+import { V4_METHODS } from "@raspberrycode/shared/raspberrycode-protocol-v4";
+import { RaspberryCodeProtocolAgentServer } from "../src/raspberrycode-protocol/server.js";
 import {
   ConversationInputPredictionHandler,
   collectInputPredictionTurns,
   type InputPredictionSessionMaterial,
-} from "../src/zcode-protocol/input-prediction-handler.js";
+} from "../src/raspberrycode-protocol/input-prediction-handler.js";
 
 const SHOW_RESPONSE = '{"candidates":[{"text":"提交代码","confidence":0.9}]}';
 
@@ -216,9 +216,9 @@ describe("collectInputPredictionTurns", () => {
 
 describe("server 分发 v4/conversation/inputPrediction", () => {
   it("会话不在本进程时回 suppress_no_context 并回显 requestId；非法参数回协议错误", async () => {
-    const server = new ZCodeProtocolAgentServer({
+    const server = new RaspberryCodeProtocolAgentServer({
       cwd: process.cwd(),
-      createZCodeApp: async () => {
+      createRaspberryCodeApp: async () => {
         throw new Error("不应为预测创建 app");
       },
     });

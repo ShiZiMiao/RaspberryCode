@@ -114,7 +114,7 @@ export function canUpdatePluginItem(
  */
 export function needsPluginUpdate(
   state: {
-    installedPlugins: readonly Pick<ZCodeInstalledPluginSummary, "id" | "updateStatus">[];
+    installedPlugins: readonly Pick<RaspberryCodeInstalledPluginSummary, "id" | "updateStatus">[];
     activeOperations: readonly { id: string }[];
   },
   pluginId: string,

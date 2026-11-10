@@ -57,7 +57,7 @@ describe("OutputCollector — requested tail", () => {
 
 describe("NodeExecutionAdapter — requested tail", () => {
   it("runs a large-output process to exit with no inline text and the tail of each stream", async () => {
-    const root = await mkdtemp(join(tmpdir(), "zcode-exec-tail-"));
+    const root = await mkdtemp(join(tmpdir(), "raspberrycode-exec-tail-"));
     const adapter = new NodeExecutionAdapter({ outputRootDir: root });
     try {
       // 1 MiB 的 stdout 加尾标记、stderr 同理，然后非零退出：inline 为 0 时只能从 tail 拿到尾巴。

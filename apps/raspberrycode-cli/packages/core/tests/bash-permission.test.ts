@@ -9,7 +9,7 @@ import {
   createToolCallId,
   type ExecutionPort,
   type SessionEvent,
-} from "@zcode/contracts";
+} from "@raspberrycode/contracts";
 import {
   defaultPermissionConfig,
   PermissionService,

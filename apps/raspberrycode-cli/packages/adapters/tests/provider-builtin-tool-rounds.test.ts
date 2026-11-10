@@ -13,13 +13,13 @@ import {
   createRootTraceContext,
   createSessionId,
   type SessionId,
-} from "@zcode/contracts";
+} from "@raspberrycode/contracts";
 import {
   createRegistryModelConfig,
   createRegistryProviderConfig,
   parseModelConfig,
   parseProviderConfig,
-} from "@zcode/provider";
+} from "@raspberrycode/provider";
 import { createSqliteSessionStore } from "../src/storage/session-store/sqlite-session-store.js";
 import { AiSdkModelAdapter } from "../src/model/runner.js";
 import { createTestModelProperties } from "./test-model-format.js";
@@ -137,7 +137,7 @@ function conversation(body: WireBody | undefined): WireMessage[] {
 
 describe("provider built-in tool rounds", () => {
   it("replays a server-executed analyze_image as its own round, live and after cold resume", async () => {
-    const root = await mkdtemp(join(tmpdir(), "zcode-provider-builtin-"));
+    const root = await mkdtemp(join(tmpdir(), "raspberrycode-provider-builtin-"));
     const sessionID = createSessionId("provider-builtin");
     const fixture = await readFile(FIXTURE, "utf8");
     const bodies: WireBody[] = [];
@@ -257,7 +257,7 @@ function eventStream(body: string): Response {
 }
 
 async function openScenario(respond: (index: number, fixture: string, body: WireBody) => Response) {
-  const root = await mkdtemp(join(tmpdir(), "zcode-provider-builtin-"));
+  const root = await mkdtemp(join(tmpdir(), "raspberrycode-provider-builtin-"));
   const sessionID = createSessionId("provider-builtin-regression");
   const fixture = await readFile(FIXTURE, "utf8");
   const bodies: WireBody[] = [];

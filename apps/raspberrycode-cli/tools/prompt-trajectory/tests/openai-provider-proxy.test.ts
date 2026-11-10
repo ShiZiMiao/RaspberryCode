@@ -44,7 +44,7 @@ describe("prompt trajectory OpenAI provider proxy", () => {
   let upstream: Server | undefined;
 
   beforeEach(async () => {
-    dir = await mkdtemp(join(tmpdir(), "zcode-prompt-trajectory-proxy-test-"));
+    dir = await mkdtemp(join(tmpdir(), "raspberrycode-prompt-trajectory-proxy-test-"));
     ledgerPath = join(dir, "trajectory.jsonl");
     ledger = await MessageLedger.open(ledgerPath);
   });

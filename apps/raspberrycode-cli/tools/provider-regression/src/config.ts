@@ -9,8 +9,8 @@ import {
   ProviderRegistry,
   parsePersonalProviderConfigMap,
   parsePersonalModelConfigRules,
-} from "@zcode/provider";
-import { decodeZCodeBuiltinRelease } from "@zcode/provider-node";
+} from "@raspberrycode/provider";
+import { decodeRaspberryCodeBuiltinRelease } from "@raspberrycode/provider-node";
 
 const nonempty = z.string().trim().min(1);
 const ids = z
@@ -83,7 +83,7 @@ export async function loadConfiguration(providersFile: string, listFile: string)
   const config = providerFileSchema.parse(JSON.parse(providerText));
   const list = listSchema.parse(JSON.parse(listText));
   const builtinText = await readFile(resolve(dirname(providersFile), config.builtinFile), "utf8");
-  const builtin = decodeZCodeBuiltinRelease(JSON.parse(builtinText));
+  const builtin = decodeRaspberryCodeBuiltinRelease(JSON.parse(builtinText));
   const original = parsePersonalProviderConfigMap({ providerRules: config.providerRules });
   const missingKeys = new Set<string>();
   const secrets: string[] = [];
@@ -109,9 +109,9 @@ export async function loadConfiguration(providersFile: string, listFile: string)
     };
   });
   const resolution = new ProviderConfigResolver().resolve({
-    zcodeBuiltinProviders: ProviderConfigMap.empty(),
-    zcodeBuiltinProviderTemplates: builtin.config.providerTemplates,
-    zcodeBuiltinModelRules: builtin.config.modelConfigRules,
+    raspberrycodeBuiltinProviders: ProviderConfigMap.empty(),
+    raspberrycodeBuiltinProviderTemplates: builtin.config.providerTemplates,
+    raspberrycodeBuiltinModelRules: builtin.config.modelConfigRules,
     personalProviders: parsePersonalProviderConfigMap({ providerRules: rules }),
     personalModels:
       config.modelConfigRules === undefined

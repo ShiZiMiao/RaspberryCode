@@ -78,7 +78,7 @@ describe(`${MARKER}: 远端分享账号权威与未登录拒绝`, () => {
             displayName: "SSH guide local",
             username: "ssh-guide-local-user",
           }),
-          zcodejwttoken: LOCAL_TOKEN,
+          raspberrycodejwttoken: LOCAL_TOKEN,
         });
         await writeFile(localPath, JSON.stringify(local), { mode: 0o600 });
       },

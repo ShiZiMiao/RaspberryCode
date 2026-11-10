@@ -4,7 +4,7 @@
  */
 export const sessionFeaturesModule = {
   id: "session-features",
-  requires: ["zcode-cli"],
+  requires: ["raspberrycode-cli"],
   provides: ["session-features"],
   publicEntrypoints: ["contract.ts"],
 } as const;

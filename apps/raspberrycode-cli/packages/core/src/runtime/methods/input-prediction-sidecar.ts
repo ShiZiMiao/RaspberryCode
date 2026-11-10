@@ -7,7 +7,7 @@
 import {
   INPUT_PREDICTION_MAX_CANDIDATES,
   INPUT_PREDICTION_MAX_TEXT_CHARS,
-} from "@zcode/shared/zcode-protocol-v4";
+} from "@raspberrycode/shared/raspberrycode-protocol-v4";
 
 export const INPUT_PREDICTION_QUERY_SOURCE = "input_prediction";
 

@@ -1,12 +1,12 @@
 import { mkdtemp, rm, readFile, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { createZCodeApp } from "@zcode/bootstrap";
-import type { AiSdkModelAdapter } from "@zcode/adapters/model";
-import type { ProviderRegistry } from "@zcode/provider";
-import type { TurnAttachment, ToolEntry } from "@zcode/core";
+import { createRaspberryCodeApp } from "@raspberrycode/bootstrap";
+import type { AiSdkModelAdapter } from "@raspberrycode/adapters/model";
+import type { ProviderRegistry } from "@raspberrycode/provider";
+import type { TurnAttachment, ToolEntry } from "@raspberrycode/core";
 import { z } from "zod";
-import type { ModelStreamingPayload, SessionEvent } from "@zcode/contracts";
+import type { ModelStreamingPayload, SessionEvent } from "@raspberrycode/contracts";
 import type { RegressionRow } from "#contract";
 import type { TestList } from "#regression/config";
 import type { RegressionCase } from "#regression/cases";
@@ -75,8 +75,8 @@ export async function executeSessionCase(input: {
 }): Promise<{ answer: string; expected?: string }> {
   const { row, test, signal } = input;
   const started = performance.now();
-  const directory = await mkdtemp(join(tmpdir(), "zcode-provider-case-"));
-  let app: Awaited<ReturnType<typeof createZCodeApp>> | undefined;
+  const directory = await mkdtemp(join(tmpdir(), "raspberrycode-provider-case-"));
+  let app: Awaited<ReturnType<typeof createRaspberryCodeApp>> | undefined;
   let previousHighSurrogate = false;
   // SYSTEM 包含两轮；共用监听，避免字符和首正文只统计第二轮。
   const onEvent = (event: SessionEvent) => {
@@ -93,8 +93,8 @@ export async function executeSessionCase(input: {
   };
   try {
     signal.throwIfAborted();
-    app = await createZCodeApp({
-      env: { ...process.env, ZCODE_STORAGE_DIR: directory },
+    app = await createRaspberryCodeApp({
+      env: { ...process.env, RASPBERRYCODE_STORAGE_DIR: directory },
       skipUserConfig: true,
       pluginStorageRoot: join(directory, "plugins"),
       sourceTitle: "electron",

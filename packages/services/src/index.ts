@@ -97,9 +97,7 @@ export {
   type WindowProjectDirectoryServices,
 } from "#src/window-project-directory/contract.js";
 export {
-  createWebRemoteProjectTreeActivityBridge,
   createWindowProjectChangesService,
-  type WebRemoteProjectTask,
 } from "#src/window-project-directory/index.js";
 export type {
   WindowHostControllerFrame,

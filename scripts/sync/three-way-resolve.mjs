@@ -2,7 +2,7 @@
 
 // 上游同步冲突的三方融合器。
 //
-// 背景：本仓库把上游 zcode→raspberrycode 全量改名，且改名同时修改了文件内容，
+// 背景：本仓库把上游 raspberrycode→raspberrycode 全量改名，且改名同时修改了文件内容，
 // 导致 git 无法把上游对旧路径的改动映射到新路径；叠加上游 v3.17 大幅删测试，
 // 单次 merge 产生约 2000 个冲突，其中大量是「我们已改名、上游改旧路径」的机械冲突。
 //
@@ -10,11 +10,11 @@
 //   stage 1 = 共同祖先（旧品牌路径的原始内容）
 //   stage 2 = 我们的版本（已改名 + 业务拆除）
 //   stage 3 = 上游的版本（新功能实现）
-// 先把 stage 1 与 stage 3 都做品牌规范化（zcode→raspberrycode、路径改名），
+// 先把 stage 1 与 stage 3 都做品牌规范化（raspberrycode→raspberrycode、路径改名），
 // 使两侧品牌口径一致，再按「我们的品牌与业务语义务必保留、上游功能改动尽量吸收」
 // 的规则做三方合并。
 //
-// 品牌规范化只做保守替换：标识符、路径、字符串里的 zcode 变体。
+// 品牌规范化只做保守替换：标识符、路径、字符串里的 raspberrycode 变体。
 // 不碰 wire 协议字面量与兼容读值（由 audit-neutrality 的豁免清单兜底）。
 //
 // 用法：
@@ -47,7 +47,7 @@ const BRAND_REPLACEMENTS = [
   [/\bzcode-cua\b/gu, "raspberrycode-cua"],
   [/\bzcode-protocol\b/gu, "raspberrycode-protocol"],
   // 数据目录与运行时路径
-  [/\.zcode\b/gu, ".raspberrycode"],
+  [/\.raspberrycode\b/gu, ".raspberrycode"],
   [/\bZCODE_([A-Z0-9_]+)\b/gu, "RASPBERRYCODE_$1"],
   // 标识符（驼峰/小驼峰/大驼峰）
   [/\bzcode([A-Z][A-Za-z0-9]*)/gu, "raspberrycode$1"],
@@ -66,15 +66,15 @@ function normalizeBrand(text) {
 // 同一路径上的对应旧路径（用于取祖先版本）
 function legacyPathOf(relPath) {
   return relPath
-    .replace(/(^|\/)apps\/raspberrycode-cli\//u, "$1apps/zcode-cli/")
-    .replace(/\braspberrycode-cli\b/gu, "zcode-cli")
-    .replace(/\braspberrycode-server-cli\b/gu, "zcode-server-cli")
-    .replace(/\braspberrycode-cua\b/gu, "zcode-cua")
-    .replace(/\braspberrycode-protocol\b/gu, "zcode-protocol")
-    .replace(/\braspberrycode([A-Z])/gu, "zcode$1")
+    .replace(/(^|\/)apps\/raspberrycode-cli\//u, "$1apps/raspberrycode-cli/")
+    .replace(/\braspberrycode-cli\b/gu, "raspberrycode-cli")
+    .replace(/\braspberrycode-server-cli\b/gu, "raspberrycode-server-cli")
+    .replace(/\braspberrycode-cua\b/gu, "raspberrycode-cua")
+    .replace(/\braspberrycode-protocol\b/gu, "raspberrycode-protocol")
+    .replace(/\braspberrycode([A-Z])/gu, "raspberrycode$1")
     .replace(/\bRaspberrycode([A-Z])/gu, "Zcode$1")
-    .replace(/\bRaspberryCode\b/gu, "ZCode")
-    .replace(/\braspberrycode\b/gu, "zcode");
+    .replace(/\bRaspberryCode\b/gu, "RaspberryCode")
+    .replace(/\braspberrycode\b/gu, "raspberrycode");
 }
 
 function readStage(stage, relPath) {

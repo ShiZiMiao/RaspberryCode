@@ -1,4 +1,4 @@
-import type { SessionLifecycleSnapshot } from "@zcode/shared";
+import type { SessionLifecycleSnapshot } from "@raspberrycode/shared";
 import { getLocalTtftObserver } from "@/v4/telemetry/local-ttft/contract.js";
 /* eslint-disable max-lines -- projection/base/recovery/optimistic 必须共享一个原子 store 状态机，拆分会重新引入跨对象竞态。 */
 // Per-session projection store（只读 projection store）。

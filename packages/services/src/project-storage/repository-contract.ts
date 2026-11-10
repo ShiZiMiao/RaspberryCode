@@ -26,7 +26,7 @@ export interface ProjectTaskRef {
   workspaceIdentity?: string;
   taskId: string;
 }
-export type ProjectTask = import("@zcode/shared").ZCodeTaskMeta & {
+export type ProjectTask = import("@raspberrycode/shared").RaspberryCodeTaskMeta & {
   projectId: string | null;
   hostId: string;
   pinned: boolean;

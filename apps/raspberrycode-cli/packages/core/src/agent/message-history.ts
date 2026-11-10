@@ -1,4 +1,4 @@
-import { genUiModelContextSchema, type GenUiModelContext } from "@zcode/shared/gen-ui";
+import { genUiModelContextSchema, type GenUiModelContext } from "@raspberrycode/shared/gen-ui";
 // ============================================================
 // Message History - Maintains conversation context across turns
 // ============================================================

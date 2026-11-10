@@ -10,8 +10,8 @@ import type { RequestEntry, TrajectoryJsonlEntry } from "../src/types.js";
 // 本文件跑真实录制，与 `record` 命令一样依赖已构建的 bootstrap dist。
 // 临时目录指向测试自己的沙箱：录制用的隔离家目录和工作区都落在沙箱里，结束后整体删除。
 
-const ENV_KEYS = ["HOME", "USERPROFILE", "ZCODE_STORAGE_DIR", "TMPDIR", "TMP", "TEMP"] as const;
-const ISOLATED_HOME_PREFIX = "zcode-prompt-trajectory-home-";
+const ENV_KEYS = ["HOME", "USERPROFILE", "RASPBERRYCODE_STORAGE_DIR", "TMPDIR", "TMP", "TEMP"] as const;
+const ISOLATED_HOME_PREFIX = "raspberrycode-prompt-trajectory-home-";
 
 function fixture(overrides: Partial<PromptTrajectoryFixture> = {}): PromptTrajectoryFixture {
   return {
@@ -54,7 +54,7 @@ describe("prompt trajectory recording environment", () => {
   let runIndex = 0;
 
   before(async () => {
-    sandbox = await mkdtemp(join(tmpdir(), "zcode-prompt-trajectory-record-test-"));
+    sandbox = await mkdtemp(join(tmpdir(), "raspberrycode-prompt-trajectory-record-test-"));
     for (const key of ["TMPDIR", "TMP", "TEMP"] as const) process.env[key] = sandbox;
   });
 
@@ -92,7 +92,7 @@ describe("prompt trajectory recording environment", () => {
     const storage = join(sandbox, "user-storage");
     process.env.HOME = home;
     delete process.env.USERPROFILE;
-    process.env.ZCODE_STORAGE_DIR = storage;
+    process.env.RASPBERRYCODE_STORAGE_DIR = storage;
     const homesBefore = await isolatedHomes();
 
     await record(fixture());
@@ -100,13 +100,13 @@ describe("prompt trajectory recording environment", () => {
     // 录制期间的会话库落在新建的隔离家目录，录制前的家目录和存储目录都没有被创建。
     const created = (await isolatedHomes()).filter((name) => !homesBefore.includes(name));
     equal(created.length, 1);
-    ok(await exists(join(sandbox, created[0]!, ".zcode", "cli", "db", "db.sqlite")));
+    ok(await exists(join(sandbox, created[0]!, ".raspberrycode", "cli", "db", "db.sqlite")));
     equal(await exists(home), false);
     equal(await exists(storage), false);
     // 恢复原值；原来没有的变量要删掉，不能留下字符串 "undefined"。
     equal(process.env.HOME, home);
     equal(Object.hasOwn(process.env, "USERPROFILE"), false);
-    equal(process.env.ZCODE_STORAGE_DIR, storage);
+    equal(process.env.RASPBERRYCODE_STORAGE_DIR, storage);
   });
 
   it("restores the environment when recording fails", async () => {
@@ -114,12 +114,12 @@ describe("prompt trajectory recording environment", () => {
     const profile = join(sandbox, "failing-profile");
     process.env.HOME = home;
     process.env.USERPROFILE = profile;
-    delete process.env.ZCODE_STORAGE_DIR;
+    delete process.env.RASPBERRYCODE_STORAGE_DIR;
 
     await rejects(record({ name: "missing-model", steps: [] }), /missing upstreamBaseURL/u);
 
     deepStrictEqual(
-      [process.env.HOME, process.env.USERPROFILE, Object.hasOwn(process.env, "ZCODE_STORAGE_DIR")],
+      [process.env.HOME, process.env.USERPROFILE, Object.hasOwn(process.env, "RASPBERRYCODE_STORAGE_DIR")],
       [home, profile, false],
     );
   });

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { CallToolResult } from "@modelcontextprotocol/server";
-import type { NodeReplRequestMeta } from "@zcode/core/repl";
+import type { NodeReplRequestMeta } from "@raspberrycode/core/repl";
 
 const SAME_CALL_FIRST_HINT = 5;
 const NO_PROGRESS_FIRST_HINT = 10;

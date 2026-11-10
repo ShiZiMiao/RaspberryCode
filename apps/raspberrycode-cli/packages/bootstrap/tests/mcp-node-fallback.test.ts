@@ -41,7 +41,7 @@ describe("resolveMcpNodeFallbackProvider", () => {
   });
 
   it("uses the Electron executable and the staged npm next to the agent bundle", async () => {
-    const root = await mkdtemp(join(tmpdir(), "zcode-bootstrap-node-fallback-"));
+    const root = await mkdtemp(join(tmpdir(), "raspberrycode-bootstrap-node-fallback-"));
     tempRoots.push(root);
     const glmDir = join(root, "resources", "glm");
     await writeNpmPackage(join(glmDir, "node-runtime", "npm"));
@@ -58,8 +58,8 @@ describe("resolveMcpNodeFallbackProvider", () => {
     await expect(provider?.resolve()).resolves.toEqual({
       binDir: join(root, "cli", "node-fallback", "v1"),
       env: {
-        ZCODE_NODE_FALLBACK_EXEC_PATH: process.execPath,
-        ZCODE_NODE_FALLBACK_NPM_ROOT: join(glmDir, "node-runtime", "npm"),
+        RASPBERRYCODE_NODE_FALLBACK_EXEC_PATH: process.execPath,
+        RASPBERRYCODE_NODE_FALLBACK_NPM_ROOT: join(glmDir, "node-runtime", "npm"),
       },
     });
   });

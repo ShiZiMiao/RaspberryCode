@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sessionLifecycleParamsSchema, sessionLifecycleSnapshotSchema } from "@zcode/shared";
+import { sessionLifecycleParamsSchema, sessionLifecycleSnapshotSchema } from "@raspberrycode/shared";
 
 describe("session lifecycle wire contract", () => {
   it("accepts terminal failure with diagnostics without inventing a cleanup-specific state", () => {

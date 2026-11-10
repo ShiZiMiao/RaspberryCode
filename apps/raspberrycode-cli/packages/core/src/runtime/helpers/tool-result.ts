@@ -1,4 +1,4 @@
-import type { ModelCallWrapper } from "@zcode/contracts";
+import type { ModelCallWrapper } from "@raspberrycode/contracts";
 import { modelMessageContentToText } from "../deps.js";
 import { isBashOutputProviderError } from "../../tool/handlers/bash-model-content.js";
 import {

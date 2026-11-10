@@ -4844,7 +4844,7 @@
         {
           "modelMatch": "glm-5\\.3",
           "apiTypeMatch": "anthropic-messages",
-          "baseUrlMatch": "https://zcode\\.z\\.ai/api/v1/highspeed/anthropic/?",
+          "baseUrlMatch": "https://raspberrycode\\.z\\.ai/api/v1/highspeed/anthropic/?",
           "config": {
             "properties": {
               "inputFormat": {
@@ -4856,7 +4856,7 @@
         {
           "modelMatch": "glm-5\\.3",
           "apiTypeMatch": "anthropic-messages",
-          "baseUrlMatch": "https://zcode\\.z\\.ai/api/v1/highspeed/anthropic/?",
+          "baseUrlMatch": "https://raspberrycode\\.z\\.ai/api/v1/highspeed/anthropic/?",
           "config": {
             "properties": {
               "inputFormat": {

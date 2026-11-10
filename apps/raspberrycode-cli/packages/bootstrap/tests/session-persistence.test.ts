@@ -85,7 +85,7 @@ describe("session persistence", () => {
       };
       try {
         const app = await createRaspberryCodeApp({
-          env: { ZCODE_STORAGE_DIR: tempRoot },
+          env: { RASPBERRYCODE_STORAGE_DIR: tempRoot },
           loggerFactory,
           ...(modelSelectionMode ? { modelSelectionMode } : {}),
           modelExecutor: {

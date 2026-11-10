@@ -48,7 +48,7 @@ export interface SubagentWaitOptions {
 export interface SubagentStopOptions {
   /**
    * 谁在停：TaskStop 传 "model"，App 停止传 "user"，系统路径（rewind、闲时任务收尾）不传。
-   * 后台 agent 的 killed 通知据此写 "was stopped by ZCode" / "by user" / "was stopped"。
+   * 后台 agent 的 killed 通知据此写 "was stopped by RaspberryCode" / "by user" / "was stopped"。
    */
   initiator?: "user" | "model";
   signal?: AbortSignal;

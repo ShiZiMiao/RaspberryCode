@@ -53,7 +53,7 @@ const execFileAsync = promisify(execFile);
 
 describe("NodePluginAdapter", () => {
   it("retains the first discovered agent source and rejects paths outside the plugin", async () => {
-    const temporaryRoot = await mkdtemp(join(tmpdir(), "zcode-agent-component-source-"));
+    const temporaryRoot = await mkdtemp(join(tmpdir(), "raspberrycode-agent-component-source-"));
     const root = join(temporaryRoot, "plugin");
     try {
       for (const directory of ["agents", "custom", "absolute"])

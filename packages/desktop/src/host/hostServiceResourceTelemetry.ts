@@ -1,4 +1,4 @@
-import { HostResponseTypes } from "@zcode/shared";
+import { HostResponseTypes } from "@raspberrycode/shared";
 import { registerHostToolExecResourceTelemetry } from "./hostToolExecResourceTelemetry.js";
 import { registerHostMcpResourceTelemetry } from "./hostMcpResourceTelemetry.js";
 import type { IDisposable } from "@raspberrycode/rpc";

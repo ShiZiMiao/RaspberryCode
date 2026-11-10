@@ -114,7 +114,7 @@ describe("帮助配置 client/configs", () => {
 
   it("HC-01-copy-device-mid: 真实帮助菜单复制当前设备 MID", async () => {
     const expected = await browser.execute(async () => {
-      return (window as unknown as { zcode: DesktopBridge }).zcode.getDeviceId();
+      return (window as unknown as { raspberrycode: DesktopBridge }).raspberrycode.getDeviceId();
     });
     await $('button[aria-label="Help"]').click();
     await $('[role="menuitem"]*=Copy device MID').click();

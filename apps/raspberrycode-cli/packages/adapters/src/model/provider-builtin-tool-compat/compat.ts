@@ -8,7 +8,7 @@
 // 并去掉与结构化块重复的 markdown 渲染；没有配对上的裸 tool_result 仍交给上层丢弃。
 
 /** 改写后 mcp_tool_use 的 server_name；下游据此识别 provider 内置工具。 */
-export const PROVIDER_BUILTIN_TOOL_SERVER_NAME = "zcode-provider-builtin";
+export const PROVIDER_BUILTIN_TOOL_SERVER_NAME = "raspberrycode-provider-builtin";
 
 // @ai-sdk/anthropic 3.0.81 自己能解析的 server_tool_use 名称，保持原样。
 const SDK_KNOWN_SERVER_TOOL_NAMES = new Set([

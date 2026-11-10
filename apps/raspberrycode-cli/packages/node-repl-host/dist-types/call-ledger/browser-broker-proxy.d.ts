@@ -1,4 +1,4 @@
-import type { Logger } from "@zcode/contracts";
+import type { Logger } from "@raspberrycode/contracts";
 import type { NodeReplCallLedger } from "./ledger.js";
 export interface NodeReplBrowserBrokerUpstream {
     socketPath: string;

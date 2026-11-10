@@ -100,7 +100,7 @@ export type OfficialMcpAuthPortFailureReason =
 
 /**
  * 身份头的消费方类型。`mcp-server` 是官方 MCP（缺省，旧版 agent 不带该字段）；
- * `plugin-command` 是官方插件的命令进程，经 agent 侧代理端点访问 zcode-server（技术方案 5.8）。
+ * `plugin-command` 是官方插件的命令进程，经 agent 侧代理端点访问 raspberrycode-server（技术方案 5.8）。
  */
 export const OFFICIAL_AUTH_CONSUMER_KINDS = ["mcp-server", "plugin-command"] as const;
 

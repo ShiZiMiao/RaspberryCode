@@ -1,5 +1,5 @@
 import type { CallToolResult } from "@modelcontextprotocol/server";
-import type { NodeReplRequestMeta } from "@zcode/core/repl";
+import type { NodeReplRequestMeta } from "@raspberrycode/core/repl";
 export type NoProgressHintKind = "same_call" | "no_progress" | "call_volume";
 export interface NoProgressHint {
     kind: NoProgressHintKind;

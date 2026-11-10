@@ -4,7 +4,7 @@
  */
 export const providerToolRoundsModule = {
   id: "provider-tool-rounds",
-  requires: ["zcode-cli"],
+  requires: ["raspberrycode-cli"],
   provides: ["provider-tool-rounds"],
   publicEntrypoints: ["contract.ts"],
 } as const;

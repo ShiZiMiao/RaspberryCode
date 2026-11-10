@@ -41,7 +41,7 @@ snapshot 包含 sessionId、state、generation、revision 和 lastError（operat
 
 协议方法为 `session/lifecycle/getState`、`session/lifecycle/ensureReady`、`session/lifecycle/stop` 和
 `session/lifecycle/restart`。参数共用严格 schema `{ sessionId }`；查询返回 snapshot，变更成功返回
-`{ completed: true }`。客户端经已连接 workspace 的 `ZCodeProtocolClient.sessionLifecycle` 调用，
+`{ completed: true }`。客户端经已连接 workspace 的 `RaspberryCodeProtocolClient.sessionLifecycle` 调用，
 查询按 observation 处理，不参与业务 idle 续期或 watchdog。四个请求不进入传输层普通串行队列，
 同 session 的互斥由生命周期 owner 决定，不同 session 不因长请求相互阻塞。
 单 session 变更超时只返回请求超时，不触发客户端的 workspace watchdog；超时也不取消后端

@@ -191,8 +191,8 @@ describe("session lifecycle shutdown reentry", () => {
   it("reserves the shutdown promise before synchronous abort listeners reenter", async () => {
     const { app } = fakeApp();
     const controller = new AbortController();
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: async () => app,
+    const server = new RaspberryCodeProtocolAgentServer({
+      createRaspberryCodeApp: async () => app,
       cwd: "/workspace",
     });
     const context = (server as unknown as { context: { sessions: Map<string, unknown> } }).context;

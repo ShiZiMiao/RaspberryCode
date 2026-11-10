@@ -1,15 +1,15 @@
-import { zcodeProtocolMethods, zcodeRuntimeCapabilitiesSchema } from "@zcode/shared";
-import type { ZCodeProtocolClient } from "../zcodeProtocolClient.js";
+import { raspberrycodeProtocolMethods, raspberrycodeRuntimeCapabilitiesSchema } from "@raspberrycode/shared";
+import type { RaspberryCodeProtocolClient } from "../raspberrycodeProtocolClient.js";
 
 const residentRowsChecks = new WeakMap<object, Promise<boolean>>();
 /** 旧 CLI 的 rowsRange 会剥掉 residency 并冷恢复；确认执行端认识它才转发只读热会话请求。 */
 export function supportsResidentRowsRange(
-  client: Pick<ZCodeProtocolClient, "request">,
+  client: Pick<RaspberryCodeProtocolClient, "request">,
 ): Promise<boolean> {
   const existing = residentRowsChecks.get(client);
   if (existing) return existing;
   const check = client
-    .request(zcodeProtocolMethods.runtimeCapabilities, {}, zcodeRuntimeCapabilitiesSchema)
+    .request(raspberrycodeProtocolMethods.runtimeCapabilities, {}, raspberrycodeRuntimeCapabilitiesSchema)
     .then((result) => result.residentRowsRange === true)
     .catch(() => {
       residentRowsChecks.delete(client);

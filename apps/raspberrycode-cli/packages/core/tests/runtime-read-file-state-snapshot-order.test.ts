@@ -6,7 +6,7 @@ import {
   SessionEventType,
   type SessionStorePort,
   type ToolPart,
-} from "@zcode/contracts";
+} from "@raspberrycode/contracts";
 import { createReadFileStatePathKey } from "../src/tool/read-file-state.js";
 import { parseReadFileStateMetadata } from "../src/tool/read-file-state-metadata.js";
 import type { ReadFileStateMap } from "../src/tool/types.js";
@@ -58,7 +58,7 @@ class HeldFullReadFileSystem extends MemoryFileSystem {
 
 function createFixture(returnOrder: ReturnOrder) {
   const sessionId = createSessionId(`read-state-snapshot-order-${returnOrder}`);
-  const workingDirectory = resolve("/tmp/zcode-read-state-snapshot-order");
+  const workingDirectory = resolve("/tmp/raspberrycode-read-state-snapshot-order");
   const file = resolve(workingDirectory, "notes.txt");
   const store = {
     ...createRecordingMessageStore(),

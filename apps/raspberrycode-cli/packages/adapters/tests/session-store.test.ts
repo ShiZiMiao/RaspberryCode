@@ -243,19 +243,19 @@ describe("virtual project CLI session facts", () => {
         sessionID,
         role: "user",
         time: { created: 1 },
-        agent: "zcode-agent",
+        agent: "raspberrycode-agent",
         model: { providerID: "p" as ModelProviderId, modelID: "m" as ModelId },
       });
       await store.savePart({ id: createPartId(`${sessionID}-p`), sessionID, messageID, type: "text", text, time: { start: 1, end: 1 } });
     };
     for (const id of [fork, deletedFork, other])
       await store.createSession({ ...base, id, slug: id, parentID: source.session.id, taskType: "fork" });
-    const uri = `zcode-artifact://${source.session.id}/art_1`;
+    const uri = `raspberrycode-artifact://${source.session.id}/art_1`;
     await refer(fork, `image ${uri} and again ${uri}`);
     await refer(deletedFork, uri);
     await store.softDeleteSession(deletedFork);
     // 引用自身附件不算外部引用；没有引用的会话不出现在结果里。
-    await refer(other, `zcode-artifact://${other}/own`);
+    await refer(other, `raspberrycode-artifact://${other}/own`);
 
     const referrers = await store.listArtifactReferrers?.([source.session.id, other]);
     expect(referrers?.get(source.session.id)).toEqual([fork]);

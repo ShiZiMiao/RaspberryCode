@@ -6871,7 +6871,7 @@ describe("dynamic workflow run service — 脚本读到的 run 身份", () => {
 
   it("新 run 无前驱；amend 得新 id 并指向前驱；resume 沿用 id 与前驱", async () => {
     // amend 要读前驱的消息边界，所以会话真的落库（同「前缀零派发命中」那条用例）。
-    const tempRoot = await mkdtemp(join(tmpdir(), "zcode-dwf-run-identity-"));
+    const tempRoot = await mkdtemp(join(tmpdir(), "raspberrycode-dwf-run-identity-"));
     const store = await createSqliteSessionStore({ dbPath: join(tempRoot, "session.sqlite") });
     try {
       await runIdentityLifecycle(store);
@@ -9042,7 +9042,7 @@ describe("dynamic workflow run service — 留白（FillWorkflowHole）", () => 
 });
 
 describe("dynamic workflow run service — 额度停止后到点自动续跑", () => {
-  // apps/zcode-cli/packages/dynamic-workflow/docs/execution-engine.md「Resuming after a quota
+  // apps/raspberrycode-cli/packages/dynamic-workflow/docs/execution-engine.md「Resuming after a quota
   // reset」：真实格式的 1308 原文（没有 Retry-After）→ 停止记录带上重置时刻 → 到点自动续跑。
   const SCRIPT = [
     "interface Answer { text: string }",

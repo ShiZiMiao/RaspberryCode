@@ -3,7 +3,7 @@ import {
   measureSessionDataWith,
   purgeSessionDataWith,
   type SessionDataHost,
-} from "../src/zcode-protocol/session-data/index.js";
+} from "../src/raspberrycode-protocol/session-data/index.js";
 
 function harness(
   options: {

@@ -10,7 +10,7 @@ import {
   type ExecutionPort,
   type HttpClientPort,
   type PermissionBrokerRequest,
-} from "@zcode/contracts";
+} from "@raspberrycode/contracts";
 import { PermissionService, defaultPermissionConfig } from "../src/permission/service.js";
 import { createTestAgentRuntime } from "./test-agent-runtime.js";
 import { createTestModelFactory } from "./test-runtime-model.js";
@@ -225,7 +225,7 @@ describe("subagent plan reminder after compact", () => {
         mode: "build",
         planEnabled: true,
         subagents: {
-          outputRootDir: await mkdtemp(join(tmpdir(), "zcode-subagent-plan-compact-")),
+          outputRootDir: await mkdtemp(join(tmpdir(), "raspberrycode-subagent-plan-compact-")),
           profiles: [
             {
               name: "plan-reviewer",
@@ -342,7 +342,7 @@ describe("resumed subagent recomputes its mode from the parent", () => {
           display: { name: "bash" },
         },
         subagents: {
-          outputRootDir: await mkdtemp(join(tmpdir(), "zcode-subagent-resume-mode-")),
+          outputRootDir: await mkdtemp(join(tmpdir(), "raspberrycode-subagent-resume-mode-")),
           profiles: [
             {
               name: "fixture-child",

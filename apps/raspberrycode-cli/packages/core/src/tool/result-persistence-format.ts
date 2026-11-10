@@ -1,4 +1,4 @@
-import { dropLeadingLowSurrogate, dropTrailingHighSurrogate } from "@zcode/contracts";
+import { dropLeadingLowSurrogate, dropTrailingHighSurrogate } from "@raspberrycode/contracts";
 
 const PERSISTED_OUTPUT_OPEN_TAG = "<persisted-output>";
 const PERSISTED_OUTPUT_CLOSE_TAG = "</persisted-output>";

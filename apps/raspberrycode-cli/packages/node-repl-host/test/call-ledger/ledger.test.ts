@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createNodeReplCallLedger } from "../../src/call-ledger/contract.js";
 
-// 规格：apps/zcode-cli/docs/design/v2/tool/20-node-repl-call-ledger.md「账本与 token」。
+// 规格：apps/raspberrycode-cli/docs/design/v2/tool/20-node-repl-call-ledger.md「账本与 token」。
 describe("node_repl call ledger", () => {
   it("gives every call its own token and keeps facts per call", () => {
     const ledger = createNodeReplCallLedger();

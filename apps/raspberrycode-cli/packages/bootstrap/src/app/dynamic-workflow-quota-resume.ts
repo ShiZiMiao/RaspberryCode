@@ -1,7 +1,7 @@
 // ============================================================
 // 额度停止的 run 到点自动续跑
 // ============================================================
-// 规格：apps/zcode-cli/packages/dynamic-workflow/docs/execution-engine.md「Resuming after a quota
+// 规格：apps/raspberrycode-cli/packages/dynamic-workflow/docs/execution-engine.md「Resuming after a quota
 // reset」。
 //
 // 问题：子代理撞上 1308 / 1310（5 小时、周 / 月额度用完）时整个 run 停成 stopped(provider)，
@@ -38,9 +38,9 @@ import type {
   DynamicWorkflowRunResumeErrorReason,
   DynamicWorkflowRunResumeResult,
   Logger,
-} from "@zcode/contracts";
-import type { JournalStorePort, RunRecord } from "@zcode/dynamic-workflow";
-import type { DwfRunSessionListItem } from "@zcode/adapters/storage";
+} from "@raspberrycode/contracts";
+import type { JournalStorePort, RunRecord } from "@raspberrycode/dynamic-workflow";
+import type { DwfRunSessionListItem } from "@raspberrycode/adapters/storage";
 import { defaultSchedule } from "./workflow-driver-helpers.js";
 
 /** 重置时刻之后再等一分钟：服务端窗口按秒取整，各端时钟也有偏差，早到只会再撞一次额度。 */

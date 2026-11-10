@@ -91,17 +91,17 @@ export async function prepareOfficialMcpAuthRoutingFixture(options: {
     if (!address || typeof address === "string") throw new Error("Missing MCP fixture address");
     const baseUrl = `http://127.0.0.1:${address.port}`;
     const envPatch = {
-      ZCODE_E2E_OFFICIAL_AUTH_ROUTING_URL: baseUrl,
-      ZCODE_OFFICIAL_MCP_DEV_TRUSTED_ORIGINS: baseUrl,
+      RASPBERRYCODE_E2E_OFFICIAL_AUTH_ROUTING_URL: baseUrl,
+      RASPBERRYCODE_OFFICIAL_MCP_DEV_TRUSTED_ORIGINS: baseUrl,
     };
     previous = Object.fromEntries(Object.keys(envPatch).map((key) => [key, process.env[key]]));
     Object.assign(process.env, envPatch);
     const storageRoot = dirname(dirname(options.credentialsFile));
     const pluginId = `${OFFICIAL_AUTH_ROUTING_PLUGIN}@e2e-fixture`;
     const pluginRoot = join(storageRoot, "cli", "e2e-fixtures", OFFICIAL_AUTH_ROUTING_PLUGIN);
-    await mkdir(join(pluginRoot, ".zcode-plugin"), { recursive: true });
+    await mkdir(join(pluginRoot, ".raspberrycode-plugin"), { recursive: true });
     await writeFile(
-      join(pluginRoot, ".zcode-plugin", "plugin.json"),
+      join(pluginRoot, ".raspberrycode-plugin", "plugin.json"),
       JSON.stringify({
         name: OFFICIAL_AUTH_ROUTING_PLUGIN,
         version: "0.0.0",
@@ -110,7 +110,7 @@ export async function prepareOfficialMcpAuthRoutingFixture(options: {
             type: "http",
             url: `${baseUrl}/mcp`,
             protocolVersion: "legacy",
-            auth: { type: "zcode_official", provider: "jwt_token" },
+            auth: { type: "raspberrycode_official", provider: "jwt_token" },
           },
         },
       }),

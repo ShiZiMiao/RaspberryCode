@@ -475,14 +475,14 @@ describe("bundled official plugin cache resilience", () => {
     const storageRoot = await createStorageRoot(cleanups);
     resolveOfficialPluginRoots({ storageRoot });
     const browserRoot = join(storageRoot, BROWSER_CACHE_SUFFIX);
-    const markerPath = join(browserRoot, ".zcode-plugin-seed.json");
+    const markerPath = join(browserRoot, ".raspberrycode-plugin-seed.json");
     const staleMarker = `${await readFile(markerPath, "utf8")}\n`;
     await writeFile(markerPath, staleMarker.replace('"hash": "', '"hash": "stale-'));
     const logger = createLogger();
     faults.crossDeviceBackupTargetSuffix = BROWSER_CACHE_SUFFIX;
 
     expect(() =>
-      resolveZCodePlugins({
+      resolveRaspberryCodePlugins({
         logger,
         pluginStorageRoot: storageRoot,
         skipUserConfig: true,
@@ -492,13 +492,13 @@ describe("bundled official plugin cache resilience", () => {
 
     // 镜像下层的旧缓存无法 rename 成 backup，但仍须被替换成当前内容，而不是每次启动都失败。
     expect(await readFile(markerPath, "utf8")).not.toContain('"hash": "stale-');
-    expect(existsSync(join(browserRoot, ".zcode-plugin", "plugin.json"))).toBe(true);
+    expect(existsSync(join(browserRoot, ".raspberrycode-plugin", "plugin.json"))).toBe(true);
     await expectNoSeedBackups(browserRoot);
     const siblings = await readdir(dirname(browserRoot));
     expect(siblings.filter((entry) => entry.includes(".tmp-"))).toEqual([]);
     expect(logger.warn).not.toHaveBeenCalledWith(
       "Official plugin cache operation degraded",
-      expect.objectContaining({ pluginId: "browser-use@zcode-plugins-official" }),
+      expect.objectContaining({ pluginId: "browser-use@raspberrycode-plugins-official" }),
     );
   });
 
@@ -523,7 +523,7 @@ describe("bundled official plugin cache resilience", () => {
         degraded: true,
         errorCode: "EXDEV",
         operation: "seed_plugin",
-        pluginId: "browser-use@zcode-plugins-official",
+        pluginId: "browser-use@raspberrycode-plugins-official",
       }),
     );
   });
@@ -532,8 +532,8 @@ describe("bundled official plugin cache resilience", () => {
     const storageRoot = await createStorageRoot(cleanups);
     resolveOfficialPluginRoots({ storageRoot });
     const browserRoot = join(storageRoot, BROWSER_CACHE_SUFFIX);
-    const markerPath = join(browserRoot, ".zcode-plugin-seed.json");
-    const manifestPath = join(browserRoot, ".zcode-plugin", "plugin.json");
+    const markerPath = join(browserRoot, ".raspberrycode-plugin-seed.json");
+    const manifestPath = join(browserRoot, ".raspberrycode-plugin", "plugin.json");
     // marker 仍是当前 hash，但 manifest 已丢失：走「当前缓存不可用 → 重新 seed」分支。
     await rm(manifestPath, { force: true });
     faults.crossDeviceBackupTargetSuffix = BROWSER_CACHE_SUFFIX;

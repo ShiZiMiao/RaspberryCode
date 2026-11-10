@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ModelRequestSessionFeature } from "@zcode/contracts";
+import type { ModelRequestSessionFeature } from "@raspberrycode/contracts";
 import { TestAiSdkModelAdapter, TestProviderConfigFixture } from "./test-provider-config.js";
 import { executeAdapterGenerateText, executeAdapterStreamText } from "./test-adapter-model.js";
 
 // 规格：docs/design/v2/model/session-features-header.md。经正式 SDK 发出的 HTTP 请求验证。
-const SESSION_FEATURES_HEADER = "x-zcode-session-features";
+const SESSION_FEATURES_HEADER = "x-raspberrycode-session-features";
 const CAPTURE_ERROR = "session features captured";
 afterEach(() => vi.unstubAllGlobals());
 const providerKinds = ["anthropic", "openai", "openai-compatible"] as const;
@@ -69,14 +69,14 @@ function createCapture(providerKind: (typeof providerKinds)[number], retry = fal
   vi.stubGlobal("fetch", transport);
   const registry = new TestProviderConfigFixture({
     env: {},
-    defaultHeaders: { "X-ZCode-Session-Features": "stale_default" },
+    defaultHeaders: { "X-RaspberryCode-Session-Features": "stale_default" },
     providers: {
       fixture: {
         kind: providerKind,
         apiKey: "fake-key",
         baseURL: "https://provider.example.test/v1",
         headers: {
-          "x-zcode-session-features": "stale_provider",
+          "x-raspberrycode-session-features": "stale_provider",
           "x-static-marker": "preserved",
         },
       },

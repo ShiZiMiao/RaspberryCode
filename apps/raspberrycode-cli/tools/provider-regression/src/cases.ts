@@ -1,4 +1,4 @@
-import type { ModelProperties } from "@zcode/contracts";
+import type { ModelProperties } from "@raspberrycode/contracts";
 
 export type CaseKind =
   | "text"

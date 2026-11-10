@@ -540,7 +540,7 @@ describe("background task control", () => {
       expect(notifications).toHaveLength(1);
       expect(notifications[0]).toContain("<status>killed</status>");
       // TaskStop 传入的停止者进入通知；killed 通知不带 usage。
-      expect(notifications[0]).toContain('<summary>Agent "Stop me" was stopped by ZCode</summary>');
+      expect(notifications[0]).toContain('<summary>Agent "Stop me" was stopped by RaspberryCode</summary>');
       expect(notifications[0]).not.toContain("<usage>");
       // 终态随 originMeta 结构化下发；killed 不带 error。
       expect(notificationOriginMetas).toEqual([
@@ -568,7 +568,7 @@ describe("background task control", () => {
 
   // 停止者全链路：停止入口 → runtime.stopBackgroundTask → subagent stopTask → killed 通知 summary。
   it.each([
-    { initiator: "model", summary: "was stopped by ZCode" },
+    { initiator: "model", summary: "was stopped by RaspberryCode" },
     { initiator: "user", summary: "was stopped by user" },
   ])(
     "carries the $initiator stop initiator from the stop entry into the killed notification",
@@ -576,7 +576,7 @@ describe("background task control", () => {
       const sessionId = createSessionId(`background-control-agent-initiator-${initiator}`);
       const turnId = createTurnId(`turn_background_control_agent_initiator_${initiator}`);
       const outputRootDir = await mkdtemp(
-        join(tmpdir(), "zcode-background-control-agent-initiator-"),
+        join(tmpdir(), "raspberrycode-background-control-agent-initiator-"),
       );
       const aborted = deferred();
       const notifications: string[] = [];

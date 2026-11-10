@@ -520,7 +520,7 @@ export function useRootWorkspaceActions({
       const origin = tabStoreApi.getState();
       const readOriginDraft = () =>
         origin.activeWorkspacePath
-          ? useZCodeSessionStore
+          ? useRaspberryCodeSessionStore
               .getState()
               .getWorkspaceState(
                 origin.activeWorkspacePath,

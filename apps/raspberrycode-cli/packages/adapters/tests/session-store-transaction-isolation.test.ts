@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { DatabaseSync } from "node:sqlite";
 import { afterEach, describe, expect, it } from "vitest";
-import { createSessionId, type SharedContextImportCommitBundle } from "@zcode/contracts";
+import { createSessionId, type SharedContextImportCommitBundle } from "@raspberrycode/contracts";
 import { createSqliteSessionStore } from "../src/storage/index.js";
 import {
   CHILD_ID,

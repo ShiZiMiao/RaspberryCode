@@ -272,7 +272,7 @@ function AssistantPreviewCardRow({
   onOpenCodeViewer?: (source: CodeViewerSource) => void;
   compactForOverlay?: boolean;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   const filePath = getAssistantPreviewCardFilePath(card);
   const renderAsFile = shouldRenderAssistantPreviewCardAsFile(card, {
     workspaceIdentity,

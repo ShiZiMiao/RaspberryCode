@@ -1,4 +1,4 @@
-import { CoreErrorType, type TraceContext } from "@zcode/contracts";
+import { CoreErrorType, type TraceContext } from "@raspberrycode/contracts";
 import { traceContextToLogContext, type ToolExecutionResult } from "../deps.js";
 import { INTERRUPT_MARKER_SOURCE, type RuntimeMessageEntry } from "../../agent/message-history.js";
 import type { AgentRuntimeInternal } from "../internal.js";

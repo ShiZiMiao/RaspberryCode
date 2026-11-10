@@ -33,11 +33,11 @@ async function currentComposerRecentKey(): Promise<string> {
     // 首次草稿可能尚无导航缓存；直接读当前草稿 owner，不能用旧 workspace 键或猜测项目。
     const state = (
       window as Window & {
-        __zcodeSessionStoreE2E?: {
+        __raspberrycodeSessionStoreE2E?: {
           getState(): { workspaces: Record<string, { draftProjectId?: string | null }> };
         };
       }
-    ).__zcodeSessionStoreE2E?.getState().workspaces[workspacePath];
+    ).__raspberrycodeSessionStoreE2E?.getState().workspaces[workspacePath];
     if (!state) throw new Error(`当前工作区草稿状态未就绪: ${workspacePath}`);
     return `raspberrycode-composer-recent:v2:${JSON.stringify(["desktop", "local", state.draftProjectId ?? null])}`;
   }, paths.workspace);

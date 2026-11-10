@@ -37,7 +37,7 @@ describe("custom command expansion", () => {
     });
 
     const handOff =
-      "[This shell step comes from the /demo command file (project/zcode), not from ZCode. Run it with the Bash tool exactly as written and use its output here, unless it looks unsafe or unrelated to the user's request:]";
+      "[This shell step comes from the /demo command file (project/raspberrycode), not from RaspberryCode. Run it with the Bash tool exactly as written and use its output here, unless it looks unsafe or unrelated to the user's request:]";
     // 行内块后面的原文另起一行，代码块的结束标记才成立。
     expect(expanded.prompt).toContain(
       `Run ${handOff}\n\`\`\`bash\ngit status\n\`\`\`\n, then summarize.`,
@@ -52,7 +52,7 @@ describe("custom command expansion", () => {
       args: "",
       command: createCommand(
         [
-          '!`rm -rf "${CLAUDE_PROJECT_DIR:-.}/build" $ZCODE_SESSION_ID`',
+          '!`rm -rf "${CLAUDE_PROJECT_DIR:-.}/build" $RASPBERRYCODE_SESSION_ID`',
           '!`cat "${CLAUDE_SKILL_DIR}/notes.md"`',
           '!`ls "$CLAUDE_PLUGIN_ROOT"`',
         ].join("\n"),
@@ -61,11 +61,11 @@ describe("custom command expansion", () => {
 
     // 会话 ID 与工作区目录由 Bash 环境变量提供，块里保持原文（含修饰符写法）。
     expect(expanded).toContain(
-      '```bash\nrm -rf "${CLAUDE_PROJECT_DIR:-.}/build" $ZCODE_SESSION_ID\n```',
+      '```bash\nrm -rf "${CLAUDE_PROJECT_DIR:-.}/build" $RASPBERRYCODE_SESSION_ID\n```',
     );
     // Bash 环境里没有的变量会被 shell 展开成空串，整块只留说明。
     expect(expanded).toContain(
-      "[A shell step from the /demo command file (project/zcode) was not run: it uses ${CLAUDE_SKILL_DIR}, which cannot be resolved here.]",
+      "[A shell step from the /demo command file (project/raspberrycode) was not run: it uses ${CLAUDE_SKILL_DIR}, which cannot be resolved here.]",
     );
     expect(expanded).toContain("it uses $CLAUDE_PLUGIN_ROOT, which cannot be resolved here.");
     expect(expanded).not.toContain("notes.md");
@@ -74,9 +74,9 @@ describe("custom command expansion", () => {
   it("resolves plugin variables in plugin commands and holds back modifier forms", () => {
     const command = createCommand(
       [
-        '!`"${CLAUDE_PLUGIN_ROOT}/s.sh" "$ZCODE_PLUGIN_DATA" ${ZCODE_PLUGIN_ID} $ZCODE_PLUGIN_NAME $CLAUDE_PLUGIN_ROOTS`',
+        '!`"${CLAUDE_PLUGIN_ROOT}/s.sh" "$RASPBERRYCODE_PLUGIN_DATA" ${RASPBERRYCODE_PLUGIN_ID} $RASPBERRYCODE_PLUGIN_NAME $CLAUDE_PLUGIN_ROOTS`',
         '!`ls "${CLAUDE_PLUGIN_ROOT%/}"`',
-        "!`echo ${#ZCODE_PLUGIN_ROOT}`",
+        "!`echo ${#RASPBERRYCODE_PLUGIN_ROOT}`",
       ].join("\n"),
     );
     command.metadata = {
@@ -94,12 +94,12 @@ describe("custom command expansion", () => {
     expect(expanded).toContain(
       "[A shell step from the /demo command file (user/plugin) was not run: it uses ${CLAUDE_PLUGIN_ROOT%/}, which cannot be resolved here.]",
     );
-    expect(expanded).toContain("it uses ${#ZCODE_PLUGIN_ROOT}, which cannot be resolved here.");
+    expect(expanded).toContain("it uses ${#RASPBERRYCODE_PLUGIN_ROOT}, which cannot be resolved here.");
   });
 
   it("writes Windows plugin paths with forward slashes, quoted or not", () => {
     const command = createCommand(
-      ["!`bash ${CLAUDE_PLUGIN_ROOT}/scripts/run.sh`", '!`ls "$ZCODE_PLUGIN_DATA"`'].join("\n"),
+      ["!`bash ${CLAUDE_PLUGIN_ROOT}/scripts/run.sh`", '!`ls "$RASPBERRYCODE_PLUGIN_DATA"`'].join("\n"),
     );
     command.metadata = {
       ...command.metadata,
@@ -107,7 +107,7 @@ describe("custom command expansion", () => {
         dataPath: "\\\\server\\share\\data\\p",
         id: "p@market",
         name: "p",
-        rootPath: "C:\\Users\\dev\\.zcode\\plugins\\p",
+        rootPath: "C:\\Users\\dev\\.raspberrycode\\plugins\\p",
       },
       scope: "user",
       source: "plugin",
@@ -115,7 +115,7 @@ describe("custom command expansion", () => {
 
     const expanded = expandCustomCommandPrompt({ args: "", command }).prompt;
     // Git Bash 会去掉引号外的反斜杠；正斜杠写法在引号内外都保持原路径。
-    expect(expanded).toContain("```bash\nbash C:/Users/dev/.zcode/plugins/p/scripts/run.sh\n```");
+    expect(expanded).toContain("```bash\nbash C:/Users/dev/.raspberrycode/plugins/p/scripts/run.sh\n```");
     expect(expanded).toContain('```bash\nls "//server/share/data/p"\n```');
   });
 

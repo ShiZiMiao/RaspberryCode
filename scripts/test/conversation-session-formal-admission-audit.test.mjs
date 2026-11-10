@@ -154,7 +154,7 @@ test("ordinary audit CLI rejects the formal root override as test-only", async (
 
 test("current coverage audit stays consistent after App unit evidence retirement", async () => {
   const env = { ...process.env };
-  delete env.ZCODE_CONVERSATION_SESSION_FORMAL_ADMISSION_ROOT;
+  delete env.RASPBERRYCODE_CONVERSATION_SESSION_FORMAL_ADMISSION_ROOT;
   const run = await runAudit(["--check", "--json"], env);
   assert.equal(run.exitCode, 0, run.stderr);
   const report = JSON.parse(run.stdout);
@@ -173,7 +173,7 @@ test("current coverage audit stays consistent after App unit evidence retirement
   assert.ok(indexedSpecs.length > 0);
   for (const spec of indexedSpecs) {
     assert.ok(
-      spec.startsWith("packages/desktop/test/e2e/") || spec.startsWith("apps/zcode-cli/"),
+      spec.startsWith("packages/desktop/test/e2e/") || spec.startsWith("apps/raspberrycode-cli/"),
       `retired App unit evidence remains in the automation index: ${spec}`,
     );
     await readFile(join(REPO_ROOT, spec));
@@ -189,8 +189,8 @@ test("VI03 keeps its retained CLI unit evidence with unambiguous full paths", as
   assert.ok(row, "VI03 is missing from the coverage matrix");
   assert.equal(row.split("|")[2].trim(), "covered-unit");
   for (const spec of [
-    "apps/zcode-cli/packages/core/tests/read-tool-contract.test.ts",
-    "apps/zcode-cli/packages/adapters/tests/fs-context.test.ts",
+    "apps/raspberrycode-cli/packages/core/tests/read-tool-contract.test.ts",
+    "apps/raspberrycode-cli/packages/adapters/tests/fs-context.test.ts",
   ]) {
     assert.ok(row.includes(`\`${spec}\``), `VI03 must identify its CLI evidence: ${spec}`);
     await readFile(join(REPO_ROOT, spec));

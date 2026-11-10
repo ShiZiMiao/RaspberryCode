@@ -2,7 +2,7 @@ import {
   PlatformChannels,
   type FileApplicationInfo,
   type FileApplicationTarget,
-} from "@zcode/shared";
+} from "@raspberrycode/shared";
 
 type Handler = (...args: unknown[]) => unknown;
 declare global {

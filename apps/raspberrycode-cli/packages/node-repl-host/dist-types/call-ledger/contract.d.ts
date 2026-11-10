@@ -1,5 +1,5 @@
 /**
- * node_repl 调用账本的公开入口（apps/zcode-cli/docs/design/v2/tool/20-node-repl-call-ledger.md）。
+ * node_repl 调用账本的公开入口（apps/raspberrycode-cli/docs/design/v2/tool/20-node-repl-call-ledger.md）。
  * 主线程开账本条目、两个 broker 按 token 写入可信事实、结果组装只读 facts。
  */
 export { createNodeReplCallLedger } from "./ledger.js";

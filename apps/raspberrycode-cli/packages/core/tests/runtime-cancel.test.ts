@@ -11,7 +11,7 @@ import { createTestAgentRuntime } from "./test-agent-runtime.js";
 import { createTestSessionEventStore } from "./test-event-store.js";
 import { createTestModelFactory } from "./test-runtime-model.js";
 import { createRecordingMessageStore } from "./runtime-output-token-continuation-test-helpers.js";
-import { modelMessageContentToText, type ModelInputMessage } from "@zcode/contracts";
+import { modelMessageContentToText, type ModelInputMessage } from "@raspberrycode/contracts";
 import type { ToolExecutionResult } from "../src/runtime/deps.js";
 import {
   USER_STOPPED_TOOL_RESULT_CONTENT,

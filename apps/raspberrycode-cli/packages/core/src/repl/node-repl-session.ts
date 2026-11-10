@@ -85,7 +85,7 @@ function browserScreenshotIndexResult(
 /**
  * images 中哪些下标是真实浏览器截图：按 mimeType + 字节逐个匹配，同一张截图只能认领一次。
  * node-repl-host 主线程用它把账本里记下的截图对应到 cell 输出的图片上
- * （apps/zcode-cli/docs/design/v2/tool/20-node-repl-call-ledger.md「结果组装」）。
+ * （apps/raspberrycode-cli/docs/design/v2/tool/20-node-repl-call-ledger.md「结果组装」）。
  */
 export function matchBrowserScreenshotImageIndices(
   images: readonly NodeReplImage[],

@@ -2718,7 +2718,7 @@ describe("AgentRuntime session persistence", () => {
   it.each([true, false])(
     "sends the Read partial-view banner after the tool result, not inside it (MCS=%s)",
     async (mcs) => {
-      const workingDirectory = resolve("/tmp/zcode-read-partial-banner");
+      const workingDirectory = resolve("/tmp/raspberrycode-read-partial-banner");
       const filePath = resolve(workingDirectory, "big.md");
       const content = Array.from(
         { length: 1800 },

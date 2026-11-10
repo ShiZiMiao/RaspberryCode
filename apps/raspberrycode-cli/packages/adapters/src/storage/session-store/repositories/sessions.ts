@@ -190,11 +190,11 @@ export function listOwnedSessionTrees(
   return trees;
 }
 
-const ARTIFACT_URI_SCHEME = "zcode-artifact://";
-const ARTIFACT_URI_SESSION = /zcode-artifact:\/\/([^/"\\\s]+)\//g;
+const ARTIFACT_URI_SCHEME = "raspberrycode-artifact://";
+const ARTIFACT_URI_SESSION = /raspberrycode-artifact:\/\/([^/"\\\s]+)\//g;
 
 /**
- * 每个目标会话 → 仍引用其附件（`zcode-artifact://<目标>/…`）的其他未删除会话。
+ * 每个目标会话 → 仍引用其附件（`raspberrycode-artifact://<目标>/…`）的其他未删除会话。
  * fork、回退与工作流转录按值复制 part，URI 仍指向源会话的附件目录；按 part 内容判定，
  * 不依赖 fork 谱系，任何复制路径都能覆盖。只在彻底删除时调用，一次全表扫描可接受。
  */

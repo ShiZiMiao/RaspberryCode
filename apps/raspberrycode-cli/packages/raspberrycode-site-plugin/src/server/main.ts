@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { resolveRuntimeZCodeEndpointOrigin } from "@raspberrycode/shared/raspberrycodeEndpoint";
+import { resolveRuntimeRaspberryCodeEndpointOrigin } from "@raspberrycode/shared/raspberrycodeEndpoint";
 import { createSitesApi } from "./api.ts";
 import { createSitesServer } from "./server.ts";
 
@@ -24,7 +24,7 @@ export async function main(): Promise<void> {
     version: manifest.version,
     // 和宿主校验官方 MCP 目标时同一口径；目标不一致时宿主不会给身份头。
     api: createSitesApi({
-      origin: resolveRuntimeZCodeEndpointOrigin(process.env),
+      origin: resolveRuntimeRaspberryCodeEndpointOrigin(process.env),
       // 面板只在桌面端可用，桌面端总会设置它；插件自己的版本号不是 RaspberryCode 版本，不拿来顶替。
       appVersion: process.env.RASPBERRYCODE_APP_VERSION?.trim() ?? "",
       fetch: globalThis.fetch,

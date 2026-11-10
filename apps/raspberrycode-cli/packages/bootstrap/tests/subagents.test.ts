@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { discoverNodePluginsSync } from "@zcode/adapters";
+import { discoverNodePluginsSync } from "@raspberrycode/adapters";
 import {
   loadPluginAgentTemplates,
   resolvePluginAgentProfiles,
@@ -328,11 +328,11 @@ describe("loadPluginAgentProfiles", () => {
     ["custom-agents", "profile.md"],
     ["agents", "code-architect.md"],
   ])("loads the discovered source from %s/%s by frontmatter name", async (directory, fileName) => {
-    const root = await mkdtemp(join(tmpdir(), "zcode-plugin-agent-source-"));
+    const root = await mkdtemp(join(tmpdir(), "raspberrycode-plugin-agent-source-"));
     try {
-      await mkdir(join(root, ".zcode-plugin"));
+      await mkdir(join(root, ".raspberrycode-plugin"));
       await writeFile(
-        join(root, ".zcode-plugin", "plugin.json"),
+        join(root, ".raspberrycode-plugin", "plugin.json"),
         JSON.stringify({ name: "fixture", agents: directory }),
       );
       await mkdir(join(root, directory));
@@ -366,7 +366,7 @@ describe("loadPluginAgentProfiles", () => {
   });
 
   it("does not guess a source path for description-only components", async () => {
-    const root = await mkdtemp(join(tmpdir(), "zcode-plugin-agent-no-source-"));
+    const root = await mkdtemp(join(tmpdir(), "raspberrycode-plugin-agent-no-source-"));
     try {
       await mkdir(join(root, "agents"));
       await writeFile(
@@ -487,11 +487,11 @@ tools:
   // bypassPermissions 会让子会话以 yolo 运行、全工具免审批。现在保留声明值并打标记，
   // 由 core 只取比父会话更严格的模式；官方与第三方市场同一规则。
   it.each([
-    ["zcode-plugins-official", "acceptEdits"],
-    ["zcode-plugins-official", "auto"],
-    ["zcode-plugins-official", "bypassPermissions"],
-    ["zcode-plugins-official", "dontAsk"],
-    ["zcode-plugins-official", "plan"],
+    ["raspberrycode-plugins-official", "acceptEdits"],
+    ["raspberrycode-plugins-official", "auto"],
+    ["raspberrycode-plugins-official", "bypassPermissions"],
+    ["raspberrycode-plugins-official", "dontAsk"],
+    ["raspberrycode-plugins-official", "plan"],
     ["third-party", "acceptEdits"],
     ["third-party", "auto"],
     ["third-party", "bypassPermissions"],
@@ -500,7 +500,7 @@ tools:
   ] as const)(
     "marks %s plugin permissionMode %s as restrict-only on canonical and alias profiles",
     async (marketplace, permissionMode) => {
-      const root = await mkdtemp(join(tmpdir(), "zcode-plugin-subagents-permission-"));
+      const root = await mkdtemp(join(tmpdir(), "raspberrycode-plugin-subagents-permission-"));
       const pluginRoot = join(root, "fixture");
       try {
         await mkdir(join(pluginRoot, "agents"), { recursive: true });

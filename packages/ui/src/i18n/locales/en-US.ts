@@ -1282,8 +1282,8 @@ const enUS: Record<string, string> = {
     "Projects on this computer can be restored later from Removed projects on this page.",
   "projectManagement.confirm.restoreRemote":
     "To bring back a remote project later, add it again from its device.",
-  "projectManagement.confirm.data.option": "Also delete their ZCode data",
-  "projectManagement.confirm.data.optionOne": "Also delete its ZCode data",
+  "projectManagement.confirm.data.option": "Also delete their RaspberryCode data",
+  "projectManagement.confirm.data.optionOne": "Also delete its RaspberryCode data",
   "projectManagement.confirm.data.note":
     "Sessions, session files, checkpoints and memory of the {count} projects on this computer.",
   "projectManagement.confirm.data.noteOne":
@@ -1509,12 +1509,10 @@ const enUS: Record<string, string> = {
   "remote.action.downgrade-server": "Switch remote to {version}",
   "remote.downgradeConfirmTitle": "Switch the remote to {version}?",
   "remote.downgradeConfirmDescription":
-    "The remote ZCode service will switch from {current} to {version}, the same version as this desktop app. Devices that still use the newer desktop app must update the remote again when they connect. The older version may not fully show content that the newer version wrote.",
+    "The remote RaspberryCode service will switch from {current} to {version}, the same version as this desktop app. Devices that still use the newer desktop app must update the remote again when they connect. The older version may not fully show content that the newer version wrote.",
   "remote.downgradeConfirm": "Switch",
   "remote.downgradedHint":
     "An older desktop app switched this remote from {from} to the current version. The remote updates only after you confirm.",
-  "remote.action.install": "Install and connect",
-  "remote.action.confirm-identity": "Use as a new device",
   "remote.reusedConnection":
     "This device is already connected through {connection}. The existing connection is now in use.",
   "remote.connectionCancelled": "Cancelled",
@@ -1529,86 +1527,16 @@ const enUS: Record<string, string> = {
     "The current user cannot write to the installation directory. Check its permissions.",
   "remote.error.platformUnsupported.reason":
     "Remote connections support Linux and macOS on x64 and arm64. On Windows, connect through WSL or use a Linux device.",
-  "remote.error.connectionCanceled.reason":
-    "The connection was canceled. You can reconnect at any time.",
-  "remote.error.credentialsRequired.reason":
-    "Enter the password or key passphrase for this connection.",
-  "remote.error.authentication.reason":
-    "Check your SSH username, password or private key and retry.",
   "remote.error.authenticationUnsupported.reason":
     "After the password, this server asks for more verification (for example a one-time code). Only password, private key, and SSH agent sign-in are supported. Use a private key instead.",
-  "remote.error.unknown.reason": "Unable to connect. Retry or view details.",
-  "remote.error.hostUnreachable.wsl": "Cannot access WSL distribution",
-  "remote.error.hostUnreachable.wsl.reason":
-    "Make sure the distribution is installed and can start.",
-  "remote.error.hostUnreachable.docker": "Cannot access container",
-  "remote.error.hostUnreachable.docker.reason": "Make sure the container exists and is running.",
-  "remote.error.connectionTimeout.wsl": "WSL connection timed out",
-  "remote.error.connectionTimeout.wsl.reason":
-    "Make sure the distribution is installed and can start.",
-  "remote.error.connectionTimeout.docker": "Container connection timed out",
-  "remote.error.connectionTimeout.docker.reason": "Make sure the container exists and is running.",
-  "remote.error.hostNotFound.wsl": "Distribution not found",
-  "remote.error.hostNotFound.wsl.reason": "Make sure the distribution is installed and can start.",
-  "remote.error.hostNotFound.docker": "Container not found",
-  "remote.error.hostNotFound.docker.reason": "Make sure the container exists and is running.",
-  "remote.error.preflightFailed.wsl": "Distribution environment check failed",
-  "remote.error.preflightFailed.wsl.reason":
-    "Make sure the distribution is installed and can start.",
-  "remote.error.preflightFailed.docker": "Container environment check failed",
-  "remote.error.preflightFailed.docker.reason": "Make sure the container exists and is running.",
-  "remote.error.installFailed.wsl": "Distribution installation failed",
-  "remote.error.installFailed.wsl.reason": "Make sure the distribution is installed and can start.",
-  "remote.error.installFailed.docker": "Container installation failed",
-  "remote.error.installFailed.docker.reason": "Make sure the container exists and is running.",
-  "remote.error.spaceInsufficient.wsl": "Distribution is out of space",
-  "remote.error.spaceInsufficient.wsl.reason":
-    "Make sure the distribution is installed and can start.",
-  "remote.error.spaceInsufficient.docker": "Container is out of space",
-  "remote.error.spaceInsufficient.docker.reason": "Make sure the container exists and is running.",
-  "remote.error.permissionDenied.wsl": "No write permission in distribution",
-  "remote.error.permissionDenied.wsl.reason":
-    "Make sure the distribution is installed and can start.",
-  "remote.error.permissionDenied.docker": "No write permission in container",
-  "remote.error.permissionDenied.docker.reason": "Make sure the container exists and is running.",
-  "remote.error.sourceServerInstallRequired.reason":
-    "View details, follow the instructions, and retry.",
-  "remote.error.sourceServerIdentityChangePending.reason":
-    "View details, follow the instructions, and retry.",
-  "remote.error.sourceServerUpgradeRequired.reason":
-    "View details, follow the instructions, and retry.",
-  "remote.error.sourceServerRunningTasks.reason":
-    "View details, follow the instructions, and retry.",
   "remote.error.sourceServerDowngradeUnconfirmed.reason":
     "Reconnect to read the latest version of the remote device.",
-  "remote.error.workspaceTaskIdentityConflict.reason":
-    "View details, follow the instructions, and retry.",
-  "remote.error.workspaceConfigConflict.reason":
-    "View details, follow the instructions, and retry.",
-  "remote.error.bindCanceled.reason": "View details, follow the instructions, and retry.",
-  "remote.error.bindSessionMissing.reason": "View details, follow the instructions, and retry.",
-  "remote.error.workspaceDirectoryUnavailable.reason":
-    "View details, follow the instructions, and retry.",
   "remote.error.workspaceDirectoryUnresponsive.reason":
     "If the remote device is a Mac, check the Mac for a folder access prompt. If the folder is on a network or external drive, make sure the drive is available. Then retry.",
-  "remote.error.recoveryBudgetExhausted.reason":
-    "View details, follow the instructions, and retry.",
   "remote.error.sourceServerStopFailed.reason":
     "The remote service didn't exit cleanly. Try again later, or sign in to the device to check it.",
   "remote.error.sourceServerControlUnresponsive.reason":
     "The remote service didn't answer the request. Sign in to the device to check it, then try again.",
-  "remote.error.workspaceMigrationPlanDiverged.reason":
-    "View details, follow the instructions, and retry.",
-  "remote.error.workspaceSessionGenerationChanged.reason":
-    "View details, follow the instructions, and retry.",
-  "remote.error.retryableHint.reason": "View details, follow the instructions, and retry.",
-  "remote.error.connectionClosed.reason": "View details, follow the instructions, and retry.",
-  "settings.source.error.source-server-remove-callback-missing.reason":
-    "View details, follow the instructions, and retry.",
-  "settings.source.error.source-server-remove-callback-failed.reason":
-    "View details, follow the instructions, and retry.",
-  "settings.source.error.source-server-remove-persist-failed.reason":
-    "View details, follow the instructions, and retry.",
   "remote.continueInBackground": "Continue in background",
   "remote.copyLog": "Copy logs",
   "remote.phaseSub.downloading": "Downloading installation package",
@@ -2023,51 +1951,8 @@ const enUS: Record<string, string> = {
   "bots.deleteFailed": "Failed to delete bot: {error}",
 
   // Welcome / Login
-  "welcome.title": "Welcome to ZCode",
-  "welcome.username": "Username",
-  "welcome.password": "Password",
-  "welcome.login": "Login",
-  "welcome.loggingIn": "Logging in...",
-  "welcome.loginFailed": "Login failed",
-  "login.title": "Welcome to ZCode",
-  "login.description": "Connect your account to start using ZCode",
-  "login.oauth.activeProviderHint":
-    "Current active provider: {provider}. Signing in again replaces the current identity.",
-  "login.oauth.loadingProviders": "Loading account providers...",
-  "login.oauth.noProviders":
-    "No account providers are available right now. Please try again later.",
-  "login.oauth.button": "Continue with {provider}",
-  "login.oauth.button.zai": "Connect to Z.ai",
-  "login.oauth.button.bigmodel": "Connect to BigModel",
-  "login.oauth.regionTag.zai": "Global",
-  "login.oauth.regionTag.bigmodel": "CN",
-  "login.oauth.waiting": "Waiting for {provider} authentication...",
-  "login.oauth.browserNotOpened": "Browser didn't open?",
-  "login.oauth.copyLoginLink": "Copy login link",
-  "login.oauth.copyLinkSuccess": "Copied. Paste and open it in your browser.",
-  "login.oauth.copyLinkFailed": "Could not copy the login link. Please try again.",
-  "login.oauth.loginFailure": "Login failed, please try again",
-  "login.oauth.cancel": "Cancel",
-  "login.oauth.retry": "Retry login",
-  "login.expired.title": "Your session has expired",
-  "login.expired.description": "To keep your account secure, please sign in again.",
-  "login.expired.action": "Sign in again",
-  "login.expired.restart": "Confirm and restart",
-  "login.useApiKey": "Use API key",
-  "login.apiKey.title": "API Key",
-  "login.apiKey.placeholder": "Enter API key",
-  "login.apiKey.providerLabel": "API key provider",
-  "login.apiKey.provider.zai": "Z.ai",
-  "login.apiKey.provider.bigmodel": "BigModel",
-  "login.apiKey.getApiKey": "Get API Key",
-  "login.apiKey.cancel": "Cancel",
-  "login.apiKey.continue": "Continue",
-  "login.apiKey.emptyError": "Enter an API key.",
-  "login.apiKey.providerMissingError":
-    "Built-in provider configuration for {provider} was not found. Please try again later.",
-  "login.apiKey.saveError": "Failed to save API key: {error}",
-  "login.apiKey.skipError": "Failed to skip API key setup: {error}",
-  "login.skip": "Skip for now",
+  "login.title": "Welcome to RaspberryCode",
+  "login.description": "Connect your account to start using RaspberryCode",
   "settings.onboarding": "Onboard",
   "settings.onboardingDescription":
     "Choose your role, interface mode, and preferences again. Use Migration settings to import data.",
@@ -2969,7 +2854,6 @@ const enUS: Record<string, string> = {
   "remote.phaseSub.installed": "Installed; starting the connection",
   "remote.phaseSub.uploadFailed": "Installation failed: {reason}",
   "remote.phaseSub.readyOnline": "Device online; workspace history ready",
-  "remote.sourceServerInstallCancelled": "Installation cancelled. You can retry when ready.",
   "webRemoteControl.trigger": "Mobile remote control",
   "webRemoteControl.triggerStatus.idle": "Remote control is off",
   "webRemoteControl.triggerStatus.starting": "Remote control is starting",
@@ -3093,8 +2977,6 @@ const enUS: Record<string, string> = {
   "remote.connectionLogEmpty": "waiting for connection output...",
   "remote.connectingConfirmTitle": "Stop the current connection?",
   "remote.sourceServerInstallTitle": "RaspberryCode Server installation required",
-  "remote.sourceServerInstallDescription":
-    "ZCode will upload the matching release, install it under ~/.zcode/server, and start the remote service. Existing legacy remote files will be preserved.",
   "remote.sourceServerInstallConfirm": "Install and continue",
   "remote.installTarget": "Target account",
   "remote.installVersion": "Install version",
@@ -3136,7 +3018,7 @@ const enUS: Record<string, string> = {
     "Uses this computer's version. Projects and tasks are kept.",
   "settings.source.reinstallRemoteServiceTitle": "Reinstall the remote service?",
   "settings.source.reinstallRemoteServiceDescription":
-    "ZCode Server {version} will be reinstalled on {source}. Damaged program files are replaced. Projects, tasks, settings, and sign-in information are kept.",
+    "RaspberryCode Server {version} will be reinstalled on {source}. Damaged program files are replaced. Projects, tasks, settings, and sign-in information are kept.",
   "settings.source.reinstallRemoteServiceConfirm": "Reinstall",
   "settings.source.stopRemoteService": "Stop remote service",
   "settings.source.stopRemoteServiceTitle": "Stop the remote service?",
@@ -3145,9 +3027,9 @@ const enUS: Record<string, string> = {
   "settings.source.remoteServiceRunningTasksUnavailable": "The device didn't provide a task list.",
   "settings.source.remoteServiceNoRunningTasks": "No tasks are running on this device right now.",
   "settings.source.remoteServiceOtherClientsNotice":
-    "If ZCode on another computer is connected to this device, it may start the remote service again.",
+    "If RaspberryCode on another computer is connected to this device, it may start the remote service again.",
   "settings.source.stopRemoteServiceStartupReconnectNotice":
-    "“Reconnect automatically at startup” is on, so the remote service will start again the next time you open ZCode.",
+    "“Reconnect automatically at startup” is on, so the remote service will start again the next time you open RaspberryCode.",
   "settings.source.remoteServiceUpdateRequired": "Available after updating the remote service",
   "settings.source.removeOpenProjects": "These open projects will be disconnected:\n{projects}",
   "settings.source.noOpenProjects": "This device has no open projects.",
@@ -3158,8 +3040,6 @@ const enUS: Record<string, string> = {
   "settings.source.deviceNameRequired": "Device name is required.",
   "settings.source.error.connection-profile-unavailable":
     "This connection is no longer available. Refresh and try again.",
-  "settings.source.error.recent-project-unresolved":
-    "The original project cannot be identified. Select a project from the sidebar.",
   "settings.source.error.credentials-required":
     "Couldn't get the SSH credentials automatically. Connect to this device once first.",
   "settings.source.error.source-server-stop-failed":
@@ -3457,7 +3337,7 @@ const enUS: Record<string, string> = {
   "chat.previewCards.video": "Video",
   "chat.previewCards.audio": "Audio",
   "chat.previewCards.openExternal": "Open in browser",
-  "chat.message.link.openInZCode": "Open in ZCode",
+  "chat.message.link.openInRaspberryCode": "Open in RaspberryCode",
   "chat.previewCards.previewInSidePane": "Preview",
   "chat.previewCards.openDefaultApp": "Open with default app",
   "chat.previewCards.openWith": "Open with",
@@ -3962,15 +3842,12 @@ const enUS: Record<string, string> = {
   "settings.mcp.trust.trusted": "Current declaration trusted",
   "settings.mcp.trust.failed":
     "The declaration changed or trust is unavailable. Refresh and try again.",
-  "settings.mcp.description": "Manage MCP server configurations used by ZCode Agent.",
   "settings.mcp.create.open": "Add MCP server",
   "settings.mcp.import.open": "Import MCP servers from external agents",
   "settings.mcp.import.action": "Import",
   "settings.mcp.emptyTitle": "No MCP servers yet",
   "settings.mcp.emptyDescription": "Add an MCP server to give the agent extra capabilities.",
   "settings.mcp.searchPlaceholder": "Search MCP servers…",
-  "settings.mcp.group.local": "Configured MCP servers",
-  "settings.mcp.group.plugin": "Plugin MCP servers",
   "settings.remoteSync.open": "Sync",
   "settings.remoteSync.preflighting": "Checking remote write access...",
   "settings.remoteSync.preflightTimeout":
@@ -4008,7 +3885,7 @@ const enUS: Record<string, string> = {
   "settings.mcp.failureAdvice.config_invalid":
     "Check the MCP command, arguments, server address, and environment variables. Correct the configuration, then refresh the status.",
   "settings.mcp.failureAdvice.runtime_unavailable":
-    "On the device running this MCP, install or configure its required runtime and make sure ZCode can find the startup command.",
+    "On the device running this MCP, install or configure its required runtime and make sure RaspberryCode can find the startup command.",
   "settings.mcp.failureAdvice.process_start_failed":
     "On the device running this MCP, check the startup command, working directory, script paths, and execute permissions. Install Python dependencies from the plugin’s requirements file (such as requirements.txt), using the interpreter or virtual environment of that command. For Node MCPs, check Node.js and package dependencies. Refresh after fixing the environment.",
   "settings.mcp.failureAdvice.network_unreachable":
@@ -4022,11 +3899,11 @@ const enUS: Record<string, string> = {
   "settings.mcp.failureAdvice.unexpected_disconnect":
     "Review the error below and server logs. Check whether the process exited, a dependency is missing, or the connection was interrupted, then refresh the status.",
   "settings.mcp.failureAdvice.oauth_authorization_failed":
-    "Open this MCP server’s authorization link again. Complete browser authorization, then return to ZCode and refresh the status.",
+    "Open this MCP server’s authorization link again. Complete browser authorization, then return to RaspberryCode and refresh the status.",
   "settings.mcp.failureAdvice.official_origin_untrusted":
     "Check that the plugin and server address come from trusted configuration. Do not disable security checks or enter login credentials for an unknown address.",
   "settings.mcp.failureAdvice.not_authenticated":
-    "Sign in to ZCode, then refresh the MCP status. If the account still appears signed in, sign in again and retry.",
+    "Sign in to RaspberryCode, then refresh the MCP status. If the account still appears signed in, sign in again and retry.",
   "settings.mcp.failureAdvice.coding_plan_required":
     "In model settings, check the account’s Coding Plan and selected team or project. Refresh after confirming access is active.",
   "settings.mcp.failureAdvice.server_not_found":
@@ -4667,13 +4544,6 @@ const enUS: Record<string, string> = {
     "Unofficial plugin marketplaces may contain malicious plugins that can harm your device. Verify the source and take precautions before adding.",
   "settings.plugins.marketplaces.riskAcknowledgement":
     "I understand the risks, have verified the source, and have taken precautions.",
-  "settings.plugins.marketplaces.update": "Update marketplace",
-  "settings.plugins.marketplaces.remove": "Remove marketplace",
-  "settings.plugins.marketplaces.empty": "No marketplaces added",
-  "settings.plugins.marketplaces.official": "Official",
-  "settings.plugins.marketplaces.plugins": "{count} plugins",
-  "settings.plugins.marketplaces.refreshCatalogHint": "Refresh to load the official catalog.",
-  "settings.plugins.marketplacePlugins.title": "Marketplace plugins",
   "settings.plugins.marketplacePlugins.empty": "No marketplace plugins found",
   "settings.plugins.marketplace.claudeCodePlugins": "Claude Code Plugins",
   "settings.plugins.marketplace.catalogLoading": "Loading plugins…",
@@ -4952,7 +4822,7 @@ const enUS: Record<string, string> = {
   "settingsSync.discovery.description":
     "Importable agent settings are no longer scanned automatically.",
   "settingsSync.discovery.helper":
-    "Only missing items will be imported and your current ZCode settings will not be overwritten.",
+    "Only missing items will be imported and your current RaspberryCode settings will not be overwritten.",
   "settingsSync.discovery.agentCount": "Agents found: {count}",
   "settingsSync.discovery.categoryCount": "Categories found: {count}",
   "settingsSync.discovery.error": "Scan failed: {error}",
@@ -5096,7 +4966,6 @@ const enUS: Record<string, string> = {
   "chat.message.collapse": "Collapse",
   "chat.userInput.epilogue.label": "Workflow engine instructions",
   "chat.message.time.yesterday": "Yesterday {time}",
-  "chat.message.retry": "Retry",
   "chat.loading.working": "Working",
   "chat.history.workingFor": "Working for {duration}",
   "chat.history.workedFor": "Worked for {duration}",
@@ -6244,9 +6113,6 @@ const enUS: Record<string, string> = {
   "chat.quota.startPlan.concurrentLimit":
     "The system is busy. Please switch models, switch to a Coding Plan subscription, or try again later.",
   "chat.quota.startPlan.concurrentLimit.retryExhausted":
-  "chat.quota.startPlan.concurrentLimit.switchModel":
-    "The current model request concurrency limit has been reached. Switch models to continue your current task.",
-    "The system is busy, and automatic retries have reached the maximum count. Please try again later or switch to a Coding Plan subscription.",
     "The system is busy, and automatic retries have reached the maximum count. Please try again later or upgrade your account.",
   "chat.quota.mcp.quotaExhausted":
     'RaspberryCode MCP "{server}" has used up today\'s quota. It resets tomorrow.',
@@ -6427,39 +6293,27 @@ const enUS: Record<string, string> = {
     "Claude Code does not recognize {command}. Check the command name, or switch to an Agent/skill that supports it and try again.",
   "raspberrycode.error.CLAUDE_UNKNOWN_COMMAND_WITH_ARGS":
     "Claude Code does not recognize {command} (args: {args}). Check the command name, or switch to an Agent/skill that supports it and try again.",
-  "zcode.error.providerBusiness.1006": "Your login session has expired. Please sign in again.",
-  "zcode.error.providerBusiness.1005":
-    "Today's free plan quota has been used up. Switch to a Coding Plan subscription or another model, or wait for the quota to reset.",
-  "zcode.error.providerBusiness.3006":
-  "raspberrycode.error.providerBusiness.1006":
-    "Your login session has expired. Please sign in again.",
+  "raspberrycode.error.providerBusiness.1006": "Your login session has expired. Please sign in again.",
   "raspberrycode.error.providerBusiness.1005":
-    "Today's free plan quota has been used up. Upgrade to continue now, or wait for the quota to reset.",
+    "Today's free plan quota has been used up. Switch to a Coding Plan subscription or another model, or wait for the quota to reset.",
   "raspberrycode.error.providerBusiness.3006":
     "The current model is not included in this plan. Switch to an allowed model and try again.",
   "raspberrycode.error.providerBusiness.3002":
     "You're sending requests too quickly. Please try again later.",
   "raspberrycode.error.providerBusiness.3001":
     "The request parameters are invalid. Check the input and try again.",
-  "zcode.error.providerBusiness.3008":
-    "The system is busy. Please switch models, switch to a Coding Plan subscription, or try again later.",
-  "zcode.error.providerBusiness.3009":
-    "The system is busy. Please switch models, switch to a Coding Plan subscription, or try again later.",
-  "zcode.error.providerBusiness.3010":
-    "The system is busy. Please switch models, switch to a Coding Plan subscription, or try again later.",
-  "zcode.error.providerBusiness.3102":
-    "Your device was offline when this task reached the front of the queue. The quota has been returned. Keep your device online and create a new idle-time task.",
-  "zcode.error.providerBusiness.3106":
-    "This run exceeded the maximum single-run time. Create a new idle-time task to continue.",
-  "zcode.error.offPeakTicketExpired":
-    "This idle-time task can no longer continue. Create a new idle-time task.",
-  "zcode.error.providerBusiness.2007":
   "raspberrycode.error.providerBusiness.3008":
-    "The system is busy. Please switch models, upgrade your account, or try again later.",
+    "The system is busy. Please switch models, switch to a Coding Plan subscription, or try again later.",
   "raspberrycode.error.providerBusiness.3009":
-    "The system is busy. Please switch models, upgrade your account, or try again later.",
+    "The system is busy. Please switch models, switch to a Coding Plan subscription, or try again later.",
   "raspberrycode.error.providerBusiness.3010":
-    "The system is busy. Please switch models, upgrade your account, or try again later.",
+    "The system is busy. Please switch models, switch to a Coding Plan subscription, or try again later.",
+  "raspberrycode.error.providerBusiness.3102":
+    "Your device was offline when this task reached the front of the queue. The quota has been returned. Keep your device online and create a new idle-time task.",
+  "raspberrycode.error.providerBusiness.3106":
+    "This run exceeded the maximum single-run time. Create a new idle-time task to continue.",
+  "raspberrycode.error.offPeakTicketExpired":
+    "This idle-time task can no longer continue. Create a new idle-time task.",
   "raspberrycode.error.providerBusiness.2007":
     "The upstream service is temporarily unavailable. Please try again later.",
   "raspberrycode.error.providerBusiness.429":
@@ -7006,42 +6860,6 @@ const enUS: Record<string, string> = {
   "scheduledPreview.toast.running": "Running “{title}”…",
   "scheduledPreview.toast.view": "View",
   "scheduledPreview.addSchedule": "Add schedule",
-  "chat.highspeed.label": "Highspeed",
-  "chat.highspeed.expiresAt": "Highspeed card expires at {time}",
-  "chat.highspeed.modelLocked": "Model is locked while Highspeed is active",
-  "chat.highspeed.originalModel": "Original model: {model}",
-  "chat.highspeed.remainingTime": "Time remaining: {time}",
-  "chat.highspeed.generatedBy": "Generated by Highspeed",
-  "chat.highspeed.shareAction": "Share",
-  "chat.highspeed.viewAction": "View",
-  "chat.highspeed.share": "Share this accelerated run",
-  "chat.highspeed.shareFailed": "Could not share. Try again later.",
-  "chat.highspeed.savedDuration": "About {duration} saved",
-  "chat.highspeed.statusTag": "HighSpeed",
-  "chat.highspeed.cardExpiredFallback":
-    "The Highspeed card has expired. The rest of this turn will continue with the original model.",
-  "chat.highspeed.requestFailedFallback":
-    "Highspeed is temporarily unavailable. The rest of this turn will continue with the original model.",
-  "globalNotice.highspeed.title": "Highspeed run completed",
-  "globalNotice.highspeed.summary": "{tokens} output tokens · {duration}s",
-  "globalNotice.highspeed.tagline": "Share a Highspeed moment",
-  "globalNotice.highspeed.sidebarTagline": "Share your speedup",
-  "globalNotice.highspeed.share": "Share",
-  "globalNotice.highspeed.view": "View",
-  "globalNotice.highspeed.imageCopied": "Acceleration stats copied",
-  "globalNotice.highspeed.imageCopyFailed": "Could not copy image. Try again.",
-  "globalNotice.highspeed.textCopied": "Share text copied",
-  "globalNotice.highspeed.textCopyFailed": "Could not copy share text. Try again.",
-  "globalNotice.highspeed.copyImage": "Copy image",
-  "globalNotice.highspeed.badge": "ZCode & Coding Plan Exclusive Benefits",
-  "globalNotice.highspeed.standardTaskSpeed": "Standard generation speed",
-  "globalNotice.highspeed.relativeTaskDuration": "Relative generation time",
-  "globalNotice.highspeed.speedSummary": "HighSpeed · {duration}",
-  "globalNotice.highspeed.lessWaiting": "{percent}% less waiting",
-  "globalNotice.highspeed.copySummary":
-    "I used the ZCode Highspeed card and saved {duration}s. Give it a try. Download ZCode https://zcode.z.ai",
-  "globalNotice.highspeed.imageSummary": "{tokens} tokens · {duration}s saved",
-  "globalNotice.highspeed.close": "Close Highspeed share card",
   "remoteSync.title": "Data sync",
   "remoteSync.description": "Sync local configuration to remote devices.",
   "remoteSync.rules.title": "Sync rules",
@@ -7049,7 +6867,7 @@ const enUS: Record<string, string> = {
   "remoteSync.device.status.online": "Connected",
   "remoteSync.empty.title": "No connected devices",
   "remoteSync.empty.description":
-    "Connect an SSH, WSL, or Docker device to push this device's configuration to its ~/.zcode directory.",
+    "Connect an SSH, WSL, or Docker device to push this device's configuration to its ~/.raspberrycode directory.",
   "remoteSync.empty.connect": "Connect remote device",
   "remoteSync.device.neverSynced": "Not synced yet",
   "remoteSync.device.lastSynced.today": "Synced today at {time}",
@@ -7110,7 +6928,7 @@ const enUS: Record<string, string> = {
   "remoteSync.blocked.compatDirectory":
     "The remote item is in the ~/.agents compatibility directory and cannot be overwritten",
   "remoteSync.blocked.externalDirectory":
-    "The remote plugin with the same name is outside ~/.zcode/plugins (for example a development checkout) and cannot be updated",
+    "The remote plugin with the same name is outside ~/.raspberrycode/plugins (for example a development checkout) and cannot be updated",
   "remoteSync.blocked.targetCompatConfig":
     "The remote device uses the ~/.agents compatibility config; pushing would disable it",
   "remoteSync.blocked.sourceRemoved": "The source was removed and cannot be synced",

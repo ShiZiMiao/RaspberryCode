@@ -2,7 +2,7 @@
 
 服务端执行的内置工具（GLM 的 `analyze_image`、`webReader` 等）会让一次模型响应包含多轮。
 本模块负责按服务端工具把响应切成轮次、给界面发工具卡片、按流顺序落盘，并生成回放 entries。
-规格见 `apps/zcode-cli/docs/design/v2/model/anthropic-stream-compat.md`「Provider 内置工具多轮回放」。
+规格见 `apps/raspberrycode-cli/docs/design/v2/model/anthropic-stream-compat.md`「Provider 内置工具多轮回放」。
 
 ```text
 runModelTextRequest：tool_call(providerExecuted) → 收起当前 reasoning/text 为一轮
@@ -33,5 +33,5 @@ runModelTextRequest：tool_call(providerExecuted) → 收起当前 reasoning/tex
   估算回落到上一个真实锚点加本地增量。
 - 卡片走 `mcp_tool` 展示，不设置 `display.unavailable`。
 
-行为回归：`apps/zcode-cli/packages/core/tests/provider-tool-rounds/`（契约），
-`apps/zcode-cli/packages/adapters/tests/provider-builtin-tool-rounds.test.ts`（真实流 fixture 端到端）。
+行为回归：`apps/raspberrycode-cli/packages/core/tests/provider-tool-rounds/`（契约），
+`apps/raspberrycode-cli/packages/adapters/tests/provider-builtin-tool-rounds.test.ts`（真实流 fixture 端到端）。

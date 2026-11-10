@@ -180,7 +180,7 @@ describe("subagent background notifications", () => {
       [
         ...header,
         "<status>killed</status>",
-        '<summary>Agent "Review "auth" changes" was stopped by ZCode</summary>',
+        '<summary>Agent "Review "auth" changes" was stopped by RaspberryCode</summary>',
         note,
         "</task-notification>",
       ].join("\n"),

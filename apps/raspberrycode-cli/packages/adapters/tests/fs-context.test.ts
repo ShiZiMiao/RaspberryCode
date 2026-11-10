@@ -1123,7 +1123,7 @@ describe("Node file and context adapters", () => {
   });
 
   it("reads the unborn branch from a nested working directory", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "zcode-context-git-unborn-"));
+    const dir = await mkdtemp(join(tmpdir(), "raspberrycode-context-git-unborn-"));
     const adapter = createNodeContextSourceAdapter();
     try {
       await runGit(dir, ["init"]);
@@ -1139,7 +1139,7 @@ describe("Node file and context adapters", () => {
   });
 
   it("reads an unborn branch in a linked worktree instead of the parent repository HEAD", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "zcode-context-git-worktree-"));
+    const dir = await mkdtemp(join(tmpdir(), "raspberrycode-context-git-worktree-"));
     const adapter = createNodeContextSourceAdapter();
     try {
       await runGit(dir, ["init"]);

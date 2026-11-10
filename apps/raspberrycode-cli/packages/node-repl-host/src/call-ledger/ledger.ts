@@ -1,12 +1,12 @@
 // ============================================================
-// node_repl 调用账本（apps/zcode-cli/docs/design/v2/tool/20-node-repl-call-ledger.md）
+// node_repl 调用账本（apps/raspberrycode-cli/docs/design/v2/tool/20-node-repl-call-ledger.md）
 // ============================================================
 // 修复原因（MR !3207 评审 CR-01）：可信事实原来由 Worker 里的 bridge 记进运行状态，再随 Worker 的
 // 结果消息发给主线程；cell 能经 worker_threads.parentPort 冒充这条消息，事实因此可以伪造。账本放在
 // 主线程，只由真正收到调用请求的 broker 写入，Worker 发来的任何消息都改不了它。
 
 import { randomBytes } from "node:crypto";
-import type { NodeReplCuaAppIdentity, NodeReplImage, NodeReplRequestMeta } from "@zcode/core/repl";
+import type { NodeReplCuaAppIdentity, NodeReplImage, NodeReplRequestMeta } from "@raspberrycode/core/repl";
 
 /** 一次 js 调用里由 broker 记下的可信事实。 */
 export interface NodeReplCallFacts {

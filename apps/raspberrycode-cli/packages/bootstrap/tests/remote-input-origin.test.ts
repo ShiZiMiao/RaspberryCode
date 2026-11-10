@@ -3,8 +3,8 @@ import {
   inputIntentMetadata,
   inputIntentMetadataFromCanonical,
   inputIntentMetadataFromQueueItem,
-} from "../src/zcode-protocol-v4/commands/input-intent.js";
-import type { CommandEnvelope, QueueItem } from "@zcode/shared/zcode-protocol-v4";
+} from "../src/raspberrycode-protocol-v4/commands/input-intent.js";
+import type { CommandEnvelope, QueueItem } from "@raspberrycode/shared/raspberrycode-protocol-v4";
 describe("扫码输入来源贯穿 admission", () => {
   it.each(["createSession", "sendText", "sendGoalCommand", "editUserQuery", "retryTurn"] as const)(
     "%s uses trusted envelope origin",

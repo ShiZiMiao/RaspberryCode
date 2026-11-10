@@ -265,7 +265,7 @@ describe("dev Electron app bundle", () => {
 });
 
 async function signingFixture() {
-  const root = await mkdtemp(join(tmpdir(), "zcode-dev-signing-"));
+  const root = await mkdtemp(join(tmpdir(), "raspberrycode-dev-signing-"));
   tempRoots.push(root);
   const electronAppPath = join(root, "Electron.app");
   await mkdir(join(electronAppPath, "Contents", "MacOS"), { recursive: true });
@@ -308,7 +308,7 @@ it("签名失败不发布缓存指纹；下次重新准备可恢复", async () =
       },
     }),
   ).rejects.toThrow("signer failed");
-  const stamp = join(input.runtimeRoot, "44.7.0-arm64", ".zcode-dev-electron-source.json");
+  const stamp = join(input.runtimeRoot, "44.7.0-arm64", ".raspberrycode-dev-electron-source.json");
   await expect(readFile(stamp, "utf8")).rejects.toMatchObject({ code: "ENOENT" });
   const recovered = vi.fn(async () => {});
   await prepareDevElectronAppBundle({ ...input, signApp: recovered });

@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ZCODE_OFFICIAL_PLUGIN_MARKETPLACE } from "@zcode/contracts";
+import { RASPBERRYCODE_OFFICIAL_PLUGIN_MARKETPLACE } from "@raspberrycode/contracts";
 import { describe, expect, it } from "vitest";
 import { createNodePluginAdapter } from "../src/plugins/index.js";
 
@@ -31,12 +31,12 @@ describe.each([
   },
 ] as const)("plugin MCP isolation from an $source plugin", ({ source, expected }) => {
   it("passes isolation through only for official plugins", async () => {
-    const root = await mkdtemp(join(tmpdir(), "zcode-plugin-isolation-"));
+    const root = await mkdtemp(join(tmpdir(), "raspberrycode-plugin-isolation-"));
     const pluginRoot = join(root, PLUGIN_NAME);
     try {
-      await mkdir(join(pluginRoot, ".zcode-plugin"), { recursive: true });
+      await mkdir(join(pluginRoot, ".raspberrycode-plugin"), { recursive: true });
       await writeFile(
-        join(pluginRoot, ".zcode-plugin", "plugin.json"),
+        join(pluginRoot, ".raspberrycode-plugin", "plugin.json"),
         JSON.stringify({ name: PLUGIN_NAME, mcpServers: SERVERS }),
       );
       const storageRoot = join(root, "storage");
@@ -46,7 +46,7 @@ describe.each([
           dirs: official ? [] : [pluginRoot],
           enabled: true,
           enabledPlugins: official
-            ? { [`${PLUGIN_NAME}@${ZCODE_OFFICIAL_PLUGIN_MARKETPLACE}`]: true }
+            ? { [`${PLUGIN_NAME}@${RASPBERRYCODE_OFFICIAL_PLUGIN_MARKETPLACE}`]: true }
             : {},
           options: {},
           suppressedBuiltins: [],

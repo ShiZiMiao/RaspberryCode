@@ -7,7 +7,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { InMemoryJournalStore } from "@zcode/dynamic-workflow";
+import { InMemoryJournalStore } from "@raspberrycode/dynamic-workflow";
 import { runWorkflowScript } from "../src/index.js";
 import { AutoDriver } from "./auto-driver.js";
 import { askSpecsFor, TEST_CWD } from "./helpers.js";

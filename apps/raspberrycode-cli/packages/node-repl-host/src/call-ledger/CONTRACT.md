@@ -1,6 +1,6 @@
 # node_repl 调用账本
 
-规格：`apps/zcode-cli/docs/design/v2/tool/20-node-repl-call-ledger.md`。
+规格：`apps/raspberrycode-cli/docs/design/v2/tool/20-node-repl-call-ledger.md`。
 
 ```text
 tools/call → ledger.open(requestMeta) → token（经 workerData 交给 Worker）

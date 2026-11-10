@@ -1,7 +1,7 @@
 /**
  * cli-official-command-endpoint 标准调用：agent 入口创建一个端点，每个 session 的执行端口用它包一层。
  */
-import type { ExecutionPort } from "@zcode/contracts";
+import type { ExecutionPort } from "@raspberrycode/contracts";
 import type {
   CliOfficialCommandEndpointContract,
   OfficialCommandEndpointOptions,

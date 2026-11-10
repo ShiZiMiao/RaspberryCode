@@ -19,13 +19,13 @@ import {
   collectRaspberryCodeBackgroundTaskNotificationsByToolUseId,
   mergeRaspberryCodeBackgroundTaskControlItems,
   parseRaspberryCodeBackgroundTaskControlItems,
-  parseZCodeBackgroundTaskNotifications,
+  parseRaspberryCodeBackgroundTaskNotifications,
   parseModelPickerValue as parseSharedModelSelection,
   formatModelPickerValue as formatSharedModelSelection,
   resolveRaspberryCodeVisibleSessionTitle,
   textFromRaspberryCodeMessageParts,
   RASPBERRYCODE_AGENT_PROVIDER,
-  zcodeBackgroundTaskNotificationFailureText,
+  raspberrycodeBackgroundTaskNotificationFailureText,
   raspberrycodeBackgroundTaskNotificationToolUpdateStatus,
   appendRaspberryCodeStreamingToolInputDelta,
   buildRaspberryCodeStreamingToolInputPreview,
@@ -1770,7 +1770,7 @@ function mapToolPart(
       input: state.input,
       output: state.output,
       ...(notificationFailed && taskNotification
-        ? { error: zcodeBackgroundTaskNotificationFailureText(taskNotification) }
+        ? { error: raspberrycodeBackgroundTaskNotificationFailureText(taskNotification) }
         : {}),
       raw,
     };

@@ -4,7 +4,7 @@
 // 每轮是该工具之前的 reasoning/text 加这次调用与结果；最后一轮（客户端工具或最终回答）照旧。
 // 回放时每轮写成 assistant(text, toolCalls=[服务端工具]) + tool(结果)，与服务端内部拼接的多轮一致，
 // 不能再把多轮正文拼进一条 assistant（模型会照着服务端渲染的文字假装调用工具）。
-import type { Model, ModelReasoningContentBlock, ModelToolCall } from "@zcode/contracts";
+import type { Model, ModelReasoningContentBlock, ModelToolCall } from "@raspberrycode/contracts";
 import {
   createRuntimeAssistantEntry,
   createRuntimeToolResultEntry,

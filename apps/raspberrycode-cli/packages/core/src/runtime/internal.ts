@@ -1,5 +1,5 @@
 import { PermissionService, ToolScheduler } from "./deps.js";
-import type { ModelRequestSessionFeature } from "@zcode/contracts";
+import type { ModelRequestSessionFeature } from "@raspberrycode/contracts";
 import type {
   Logger,
   ModelSelection,

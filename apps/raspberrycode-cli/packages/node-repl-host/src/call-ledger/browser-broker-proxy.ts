@@ -1,7 +1,7 @@
 // ============================================================
-// 浏览器代理 broker（apps/zcode-cli/docs/design/v2/tool/20-node-repl-call-ledger.md「浏览器代理 broker」）
+// 浏览器代理 broker（apps/raspberrycode-cli/docs/design/v2/tool/20-node-repl-call-ledger.md「浏览器代理 broker」）
 // ============================================================
-// Worker 里的浏览器 bridge 原来直接连 ZCode 主进程的浏览器 broker，主线程看不到这些请求，截图下标
+// Worker 里的浏览器 bridge 原来直接连 RaspberryCode 主进程的浏览器 broker，主线程看不到这些请求，截图下标
 // 只能由 Worker 自报。这里在主线程转发一跳：按本次调用的 token 找到账本条目，用条目里来自 core 的
 // 会话信息改写请求、换成上游 token，并把成功的截图记进账本。
 
@@ -10,8 +10,8 @@ import { rm } from "node:fs/promises";
 import { createConnection, createServer, type Socket } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Logger } from "@zcode/contracts";
-import type { NodeReplRequestMeta } from "@zcode/core/repl";
+import type { Logger } from "@raspberrycode/contracts";
+import type { NodeReplRequestMeta } from "@raspberrycode/core/repl";
 import type { NodeReplCallLedger, NodeReplCallLedgerEntry } from "./ledger.js";
 
 const MAX_REQUEST_BYTES = 1024 * 1024;
@@ -45,7 +45,7 @@ export function createNodeReplBrowserBrokerProxy(input: {
 }): NodeReplBrowserBrokerProxy {
   const socketPath =
     input.platform === "win32"
-      ? `\\\\.\\pipe\\zcode-node-repl-browser-${randomUUID()}`
+      ? `\\\\.\\pipe\\raspberrycode-node-repl-browser-${randomUUID()}`
       : join(tmpdir(), `znrb-${randomUUID()}.sock`);
   const server = createServer((socket) => {
     void handleSocket(socket, input).catch((error) => {

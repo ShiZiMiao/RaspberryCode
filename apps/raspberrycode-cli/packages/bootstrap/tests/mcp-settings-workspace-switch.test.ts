@@ -2,13 +2,13 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
-import { createMcpConnectionPool } from "@zcode/adapters/mcp";
-import type { McpPort, McpServerStatus } from "@zcode/contracts";
-import { convertToZCodeAgentMcpServer, type ZCodeProtocolMcpServer } from "@zcode/shared";
+import { createMcpConnectionPool } from "@raspberrycode/adapters/mcp";
+import type { McpPort, McpServerStatus } from "@raspberrycode/contracts";
+import { convertToRaspberryCodeAgentMcpServer, type RaspberryCodeProtocolMcpServer } from "@raspberrycode/shared";
 import * as trustModule from "../src/workspace-mcp-trust/index.js";
 const { createWorkspaceMcpTrust } = trustModule;
-import { listMcpServers, setWorkspaceMcpTrust } from "../src/zcode-protocol/mcp.js";
-import type { ZCodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
+import { listMcpServers, setWorkspaceMcpTrust } from "../src/raspberrycode-protocol/mcp.js";
+import type { RaspberryCodeProtocolAgentServerContext } from "../src/raspberrycode-protocol/server-types.js";
 
 const isolated = vi.hoisted(() => ({ home: undefined as string | undefined }));
 vi.mock("node:os", async (original) => {
@@ -23,9 +23,9 @@ afterEach(async () => {
 async function setup() {
   const root = await mkdtemp(join(tmpdir(), "mcp-settings-switch-"));
   isolated.home = root;
-  await mkdir(join(root, ".zcode/cli"), { recursive: true });
+  await mkdir(join(root, ".raspberrycode/cli"), { recursive: true });
   await writeFile(
-    join(root, ".zcode/cli/config.json"),
+    join(root, ".raspberrycode/cli/config.json"),
     JSON.stringify({ storage: { dir: join(root, "storage") }, plugins: { enabled: false } }),
   );
   return root;
@@ -106,10 +106,10 @@ it("跨 workspace 状态查询保持现有连接，显式切换后迟到 OAuth �
   });
   async function params(label: string) {
     const workspace = join(root, label);
-    await mkdir(join(workspace, ".zcode"), { recursive: true });
+    await mkdir(join(workspace, ".raspberrycode"), { recursive: true });
     const config = { type: "stdio" as const, command: label, args: [] };
     await writeFile(
-      join(workspace, ".zcode/config.json"),
+      join(workspace, ".raspberrycode/config.json"),
       JSON.stringify({ mcp: { servers: { probe: config } } }),
     );
     const authority = createWorkspaceMcpTrust({ workingDirectory: workspace, env: {} });
@@ -117,12 +117,12 @@ it("跨 workspace 状态查询保持现有连接，显式切换后迟到 OAuth �
     return {
       workspace: { workspacePath: workspace, workspaceKey: workspace },
       mcpServers: [
-        convertToZCodeAgentMcpServer("probe", config, "workspace")!,
-      ] as ZCodeProtocolMcpServer[],
+        convertToRaspberryCodeAgentMcpServer("probe", config, "workspace")!,
+      ] as RaspberryCodeProtocolMcpServer[],
     };
   }
   try {
-    const context = { deps: { env: {}, mcpPort: raw } } as ZCodeProtocolAgentServerContext;
+    const context = { deps: { env: {}, mcpPort: raw } } as RaspberryCodeProtocolAgentServerContext;
     const a = await params("A"),
       b = await params("B"),
       c = await params("C");
@@ -187,7 +187,7 @@ it("状态读取期间显式切换 workspace 时丢弃旧请求的共享连接�
     connectConfiguredServers: vi.fn(async () => ({ statuses: { probe: connected }, tools: [] })),
     listTools: vi.fn(async () => []),
   } as unknown as McpPort;
-  const context = { deps: { env: {}, mcpPort: raw } } as ZCodeProtocolAgentServerContext;
+  const context = { deps: { env: {}, mcpPort: raw } } as RaspberryCodeProtocolAgentServerContext;
   const params = (name: string) => ({
     workspace: { workspaceKey: name, workspacePath: root },
     mcpServers: [{ name: "probe", command: name, scope: "user", args: [], env: [] }],
@@ -219,7 +219,7 @@ it("mcp/list 的坏 fallback 邻项不拖垮用户 MCP 列表", async () => {
     join(workspace, ".agents/mcp.json"),
     JSON.stringify({ mcpServers: { bad: { command: "fake", description: "extra" } } }),
   );
-  const context = { deps: { env: {} } } as ZCodeProtocolAgentServerContext;
+  const context = { deps: { env: {} } } as RaspberryCodeProtocolAgentServerContext;
   const result = await listMcpServers(context, {
     workspace: { workspacePath: workspace, workspaceKey: workspace },
     mcpServers: [{ name: "good", scope: "user", command: "fake", args: [], env: [] }],
@@ -238,7 +238,7 @@ it("设置连接清理失败后，同一 workspace 可以重试", async () => {
     connectConfiguredServers: vi.fn(async () => ({ statuses: {}, tools: [] })),
     listTools: vi.fn(async () => []),
   } as unknown as McpPort;
-  const context = { deps: { env: {}, mcpPort: raw } } as ZCodeProtocolAgentServerContext;
+  const context = { deps: { env: {}, mcpPort: raw } } as RaspberryCodeProtocolAgentServerContext;
   const params = { workspace: { workspaceKey: root, workspacePath: root }, mcpServers: [] };
   await expect(listMcpServers(context, params)).rejects.toThrow("transient status failure");
   await expect(listMcpServers(context, params)).resolves.toEqual({ statuses: {} });
@@ -247,9 +247,9 @@ it("设置连接清理失败后，同一 workspace 可以重试", async () => {
 it("设置授权只通知相同 workspace 的活跃会话，刷新失败不改写已落盘的授权结果", async () => {
   const root = await setup(),
     workspace = join(root, "workspace");
-  await mkdir(join(workspace, ".zcode"), { recursive: true });
+  await mkdir(join(workspace, ".raspberrycode"), { recursive: true });
   await writeFile(
-    join(workspace, ".zcode/config.json"),
+    join(workspace, ".raspberrycode/config.json"),
     JSON.stringify({ mcp: { servers: { probe: { type: "stdio", command: "fake" } } } }),
   );
   const authority = createWorkspaceMcpTrust({
@@ -279,7 +279,7 @@ it("设置授权只通知相同 workspace 的活跃会话，刷新失败不改�
         },
       ],
     ]),
-  } as unknown as ZCodeProtocolAgentServerContext;
+  } as unknown as RaspberryCodeProtocolAgentServerContext;
   const params = {
     workspace: {
       workspaceKey: "identity-A",

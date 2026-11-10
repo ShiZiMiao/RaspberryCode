@@ -820,11 +820,11 @@ describe("createProtocolAutomationPort", () => {
     const port = createProtocolAutomationPort({
       requestClient,
       sessions: new Map(),
-    } as unknown as ZCodeProtocolAgentServerContext);
+    } as unknown as RaspberryCodeProtocolAgentServerContext);
 
     await expect(port.pause({ id: "automation-1" })).resolves.toBe(true);
     expect(requestClient).toHaveBeenCalledWith(
-      zcodeProtocolMethods.automationPause,
+      raspberrycodeProtocolMethods.automationPause,
       { automationId: "automation-1" },
       expect.anything(),
     );
@@ -912,13 +912,13 @@ it.each([false, true])("定时任务列表按协商能力携带自身工作区�
     {
       requestClient,
       sessionWorkspaceRoutingEnabled: enabled,
-    } as unknown as ZCodeProtocolAgentServerContext,
+    } as unknown as RaspberryCodeProtocolAgentServerContext,
     () =>
-      ({ workspace }) as import("../src/zcode-protocol/server-types.js").ZCodeProtocolSessionRecord,
+      ({ workspace }) as import("../src/raspberrycode-protocol/server-types.js").RaspberryCodeProtocolSessionRecord,
   );
   await port.list({ sessionId: "session-b" });
   expect(requestClient).toHaveBeenCalledWith(
-    zcodeProtocolMethods.automationList,
+    raspberrycodeProtocolMethods.automationList,
     enabled ? { workspace } : {},
     expect.anything(),
   );

@@ -1,7 +1,7 @@
 /**
  * cli-session-data 标准调用示例：一个不加载任何会话的最小宿主（管理面进程的情形）。
  */
-import type { SessionDataFilesPort } from "@zcode/adapters/storage";
+import type { SessionDataFilesPort } from "@raspberrycode/adapters/storage";
 import type { SessionDataHost } from "./contract.js";
 
 export function createExampleSessionDataHost(files: SessionDataFilesPort): SessionDataHost {

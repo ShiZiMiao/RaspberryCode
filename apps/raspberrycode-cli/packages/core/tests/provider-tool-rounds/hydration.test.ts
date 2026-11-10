@@ -8,7 +8,7 @@ import {
   createSessionId,
   type MessagePart,
   type MessageWithParts,
-} from "@zcode/contracts";
+} from "@raspberrycode/contracts";
 import { MessageHistoryImpl } from "../../src/agent/message-history.js";
 import { hydrateMessageHistoryFromSession } from "../../src/agent/session-history-hydrator.js";
 
@@ -34,7 +34,7 @@ function user(): MessageWithParts {
       sessionID,
       role: "user",
       time: { created: 1 },
-      agent: "zcode-agent",
+      agent: "raspberrycode-agent",
       model: { providerID, modelID },
     },
     parts: [{ id: createPartId("u"), messageID: userID, sessionID, type: "text", text: "看图" }],
@@ -52,7 +52,7 @@ function assistant(parts: MessagePart[], extra: Record<string, unknown> = {}): M
       modelID,
       providerID,
       mode: "build",
-      agent: "zcode-agent",
+      agent: "raspberrycode-agent",
       path: { cwd: "/tmp/project", root: "/tmp/project" },
       cost: 0,
       tokens,

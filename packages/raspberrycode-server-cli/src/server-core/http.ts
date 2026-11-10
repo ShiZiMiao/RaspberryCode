@@ -1,6 +1,6 @@
 import { randomUUID, timingSafeEqual } from "node:crypto";
 import { hostname } from "node:os";
-import { resolveServerOsUser } from "@zcode/shared/node";
+import { resolveServerOsUser } from "@raspberrycode/shared/node";
 import { serve } from "@hono/node-server";
 import { createNodeWebSocket } from "@hono/node-ws";
 import { Hono } from "hono";

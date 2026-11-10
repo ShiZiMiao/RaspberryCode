@@ -188,7 +188,7 @@ function Controls() {
           <button
             data-testid="activate-task"
             onClick={() =>
-              useZCodeSessionStore.getState().setActiveTaskId("/example", "running-task")
+              useRaspberryCodeSessionStore.getState().setActiveTaskId("/example", "running-task")
             }
           >
             Activate task

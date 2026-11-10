@@ -4,7 +4,7 @@ import {
   createSessionId,
   createToolCallId,
   createTurnId,
-} from "@zcode/contracts";
+} from "@raspberrycode/contracts";
 import { PermissionService, defaultPermissionConfig } from "../src/permission/service.js";
 import { createToolExecutor } from "../src/tool/executor.js";
 import type { PersistedReadFileStateMetadata } from "../src/tool/read-file-state-metadata.js";

@@ -159,7 +159,7 @@ compaction 结果的顺序（boundary → 请求前公告 → summary → 保留
 - fork：重映射 `compactLeadingMessageIds`；映射不到的 ID 丢弃，不阻断 fork（旧版本 fork 会原样复制该字段）。
 - 旧版本兼容：不改 strict 的 `compactBoundary` schema。`CompactionPart.metadata` 不进入 App 协议，旧版本按 JSON 读取 part 时忽略它。旧版本冷恢复时，summary 之前的公告不在 `slice(boundaryIndex)` 范围内，会被漏掉；跨过的保留段可能带回上一次的公告。这两种情况只影响上下文内容，不会导致读取失败。
 - git status 与分支：规则只看历史（见 `loop/meta-user-context.md`）。保留段非空且其中没有 `session_context` 时，compaction 通过 `ContextSourcePort.resolveGitContext` 按当前目录重新读取（分支直接读取，不使用轮询缓存），是仓库才在 summary 之前宣告；保留段为空时由下一次请求读取。读到的 Git 只进入公告，不改 runtime 的 context 快照，compact 写库失败时不留任何 Git 事实。没有 context port 的运行时沿用会话起始快照。
-- skills_listing：在 compaction 附件中紧跟 agent_listing_delta。保留段里没有 skills_listing 且当前 skill 目录不为空时重述完整列表，判定与输入附件收集相同；compact 后的第一次请求就带 skill 名单。ZCode 不找回已调用的 skill。已恢复列表的原位更新见 `loop/meta-user-context.md`。
+- skills_listing：在 compaction 附件中紧跟 agent_listing_delta。保留段里没有 skills_listing 且当前 skill 目录不为空时重述完整列表，判定与输入附件收集相同；compact 后的第一次请求就带 skill 名单。RaspberryCode 不找回已调用的 skill。已恢复列表的原位更新见 `loop/meta-user-context.md`。
 
 ### File rewind after compact
 

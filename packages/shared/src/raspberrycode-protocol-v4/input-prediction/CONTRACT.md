@@ -2,7 +2,7 @@
 
 手机远控输入预测（ghost hint）：手机按草稿向桌面发起 `v4/conversation/inputPrediction` 只读查询，桌面 Host 转发给 CLI 旁路调用模型，返回最多 3 个续写候选。完整规格见 `docs/web-remote-control/mobile-input-prediction.md`。
 
-本模块由四处组成：本目录 `contract.ts`（线格式 schema 与纯函数）、`packages/services/src/zcode-agent/inputPredictionSwitch.ts`（Host 侧开关）、CLI 的 `input-prediction-handler.ts`（协议处理）与 `input-prediction-sidecar.ts`（模型调用）。
+本模块由四处组成：本目录 `contract.ts`（线格式 schema 与纯函数）、`packages/services/src/raspberrycode-agent/inputPredictionSwitch.ts`（Host 侧开关）、CLI 的 `input-prediction-handler.ts`（协议处理）与 `input-prediction-sidecar.ts`（模型调用）。
 
 不变量：
 

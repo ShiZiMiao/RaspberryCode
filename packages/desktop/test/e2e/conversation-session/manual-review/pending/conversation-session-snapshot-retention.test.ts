@@ -113,7 +113,7 @@ test(
       // 测试 bridge 会额外持有 store；误连普通 E2E 构建会污染生产回收证据，必须先拒绝。
       assert.deepEqual(
         await page.evaluate(() =>
-          Object.keys(window).filter((key) => /^__zcode.*StoreE2E$/u.test(key)),
+          Object.keys(window).filter((key) => /^__raspberrycode.*StoreE2E$/u.test(key)),
         ),
         [],
         "SPR01 必须使用未暴露 E2E store bridge 的生产 renderer",

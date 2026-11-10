@@ -1,4 +1,4 @@
-import { ModelRequestSessionFeature } from "@zcode/contracts";
+import { ModelRequestSessionFeature } from "@raspberrycode/contracts";
 import type { AgentRuntimeInternal } from "../internal.js";
 import { readSessionFeatures, recordSessionFeature } from "./contract.js";
 

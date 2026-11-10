@@ -1780,7 +1780,7 @@ describe("v4 冷恢复（集成：真 sqlite + server + binder）", () => {
       const server = new RaspberryCodeProtocolAgentServer({
         cwd: path,
         sessionStore: store,
-        createZCodeApp: (options) => {
+        createRaspberryCodeApp: (options) => {
           apps.push(options?.runtimeConfig?.workingDirectory ?? "");
           return createColdFakeApp(options, []);
         },
@@ -1856,7 +1856,7 @@ describe("v4 冷恢复（集成：真 sqlite + server + binder）", () => {
       const server = new RaspberryCodeProtocolAgentServer({
         cwd: WORKSPACE_PATH,
         sessionStore: store,
-        createZCodeApp: async (options) => {
+        createRaspberryCodeApp: async (options) => {
           activated++;
           entered.resolve();
           await gate.promise;

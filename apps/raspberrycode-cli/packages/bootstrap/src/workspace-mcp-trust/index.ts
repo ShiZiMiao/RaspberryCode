@@ -4,19 +4,19 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 import { z } from "zod";
 import {
   createConfig,
-  ZCodeConfigFileSchema,
+  RaspberryCodeConfigFileSchema,
   type ConfigFactoryOptions,
-} from "@zcode/adapters/config";
-import { resolveWorkspaceHookTrustStorePath } from "@zcode/adapters/storage";
+} from "@raspberrycode/adapters/config";
+import { resolveWorkspaceHookTrustStorePath } from "@raspberrycode/adapters/storage";
 import type {
   McpPort,
   McpServerConfig,
   McpServerStatus,
   WorkspaceMcpAdmissionUpdatedPayload,
-} from "@zcode/contracts";
-import { sanitizeHookDisplayText } from "@zcode/core";
-import { normalizeMcpStdioCommand } from "@zcode/shared";
-import { atomicWritePrivateTextFile, withFileLock } from "@zcode/shared/node";
+} from "@raspberrycode/contracts";
+import { sanitizeHookDisplayText } from "@raspberrycode/core";
+import { normalizeMcpStdioCommand } from "@raspberrycode/shared";
+import { atomicWritePrivateTextFile, withFileLock } from "@raspberrycode/shared/node";
 import type { WorkspaceMcpTrustContract, WorkspaceMcpTrustReview } from "./contract.js";
 
 export type { WorkspaceMcpTrustContract, WorkspaceMcpTrustReview } from "./contract.js";
@@ -95,7 +95,7 @@ export function createWorkspaceMcpTrust(
           if (source && source !== "project") continue;
           // 坏邻项不得拖垮列表；仍记住工作区来源，不能把校验失败误当成用户可信配置。
           requiredNames.add(name);
-          const parsed = ZCodeConfigFileSchema.safeParse({ mcp: { servers: { [name]: value } } });
+          const parsed = RaspberryCodeConfigFileSchema.safeParse({ mcp: { servers: { [name]: value } } });
           if (!parsed.success) continue;
           const config = parsed.data.mcp!.servers![name]!;
           const sourcePaths = [path];

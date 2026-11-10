@@ -1042,7 +1042,7 @@ test("TUI custom command expansion hands shell blocks to the model like the app 
     },
   });
 
-  assert.match(prompt, /the \/probe command file \(user\/plugin\), not from ZCode\./);
+  assert.match(prompt, /the \/probe command file \(user\/plugin\), not from RaspberryCode\./);
   // 代码块结束后原文另起一行；插件变量换成真实路径，工作区变量留给 Bash 环境；参数原样进入。
   assert.ok(prompt.includes("```bash\ngit status\n```\n, then report."));
   assert.ok(

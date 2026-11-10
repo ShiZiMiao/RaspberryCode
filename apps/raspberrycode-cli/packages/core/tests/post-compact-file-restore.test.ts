@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ReadTextOutput } from "@zcode/contracts";
+import type { ReadTextOutput } from "@raspberrycode/contracts";
 import type { RuntimeMessageEntry } from "../src/agent/message-history.js";
 import {
   buildPostCompactFileRestore,
@@ -10,7 +10,7 @@ import { READ_FILE_UNCHANGED_STUB } from "../src/tool/handlers/read-text.js";
 import { createReadFileStatePathKey } from "../src/tool/read-file-state.js";
 import type { ReadFileStateEntry, ReadFileStateMap } from "../src/tool/types.js";
 
-const root = "/tmp/zcode-post-compact-file-restore";
+const root = "/tmp/raspberrycode-post-compact-file-restore";
 
 describe("post-compact file restore", () => {
   it("re-reads Read, Write and Edit records and skips other writers and excluded paths", async () => {
@@ -20,8 +20,8 @@ describe("post-compact file restore", () => {
       edited: `${root}/src/edited.ts`,
       bashBackfill: `${root}/src/bash.ts`,
       seeded: `${root}/memory/MEMORY.md`,
-      draft: `${root}/.zcode/workflows/draft.js`,
-      plan: `${root}/.zcode/plans/plan-session.md`,
+      draft: `${root}/.raspberrycode/workflows/draft.js`,
+      plan: `${root}/.raspberrycode/plans/plan-session.md`,
       instructions: `${root}/AGENTS.md`,
       codexMemory: "/Users/dev/.codex/memories/note.md",
       superpowersPlan: `${root}/docs/superpowers/plans/plan.md`,

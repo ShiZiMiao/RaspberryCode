@@ -1,14 +1,14 @@
 import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
-import { runWithModelInvocationContext } from "@zcode/contracts";
-import { createConfig } from "@zcode/adapters/config";
+import { runWithModelInvocationContext } from "@raspberrycode/contracts";
+import { createConfig } from "@raspberrycode/adapters/config";
 import {
   createRuntimeAiSdkModelExecutionConfig,
   createDefaultProviderEndpointRoutingPort,
-} from "@zcode/bootstrap";
-import { AiSdkModelAdapter } from "@zcode/adapters/model";
-import { compileModelOptionMaps } from "@zcode/model-option-map";
+} from "@raspberrycode/bootstrap";
+import { AiSdkModelAdapter } from "@raspberrycode/adapters/model";
+import { compileModelOptionMaps } from "@raspberrycode/model-option-map";
 import type { RegressionOptions, RegressionReport, RegressionRow } from "#contract";
 import { loadConfiguration } from "#regression/config";
 import { selectCases, REASONING_TASK_ID, REASONING_PROMPT } from "#regression/cases";

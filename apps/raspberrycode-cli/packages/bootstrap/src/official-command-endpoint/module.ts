@@ -4,7 +4,7 @@
  */
 export const cliOfficialCommandEndpointModule = {
   id: "cli-official-command-endpoint",
-  requires: ["shared", "zcode-cli"],
+  requires: ["shared", "raspberrycode-cli"],
   provides: ["cli-official-command-endpoint"],
   publicEntrypoints: ["index.ts", "contract.ts"],
 } as const;

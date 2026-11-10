@@ -4,7 +4,7 @@
  */
 export const workspaceMcpTrustModule = {
   id: "workspace-mcp-trust",
-  requires: ["zcode-cli", "shared"],
+  requires: ["raspberrycode-cli", "shared"],
   provides: ["workspace-mcp-trust"],
   publicEntrypoints: ["index.ts", "contract.ts"],
 } as const;

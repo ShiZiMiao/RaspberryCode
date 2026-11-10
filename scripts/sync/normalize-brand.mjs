@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-// 品牌规范化批处理器：把上游带来的 zcode 品牌残留统一改为 raspberrycode。
+// 品牌规范化批处理器：把上游带来的 raspberrycode 品牌残留统一改为 raspberrycode。
 //
 // 用途：合并在旧路径下新增的上游文件时，文件名已随目录迁移，但文件内容
-// 仍带 zcode 标识。本脚本按审计口径（scripts/audit-neutrality.mjs）做保守替换。
+// 仍带 raspberrycode 标识。本脚本按审计口径（scripts/audit-neutrality.mjs）做保守替换。
 //
 // 保守原则——以下形态**不改**（属 wire 协议事实或兼容读值）：
 //   - raspberrycode.error.* 错误码 key
@@ -30,26 +30,31 @@ const TEXT_EXT = new Set([
 const PROTECTED_LINE = /raspberrycode\.error\.|X-Bigmodel|Bigmodel-Organization|OFF_PEAK_SCHEMA|offPeakTaskId|provisioning-v1/iu;
 
 const RULES = [
+  // npm 包作用域（@raspberrycode/x -> @raspberrycode/x）
+  [/@raspberrycode\//gu, "@raspberrycode/"],
   [/\bzcode-cli\b/gu, "raspberrycode-cli"],
   [/\bzcode-server-cli\b/gu, "raspberrycode-server-cli"],
   [/\bzcode-cua\b/gu, "raspberrycode-cua"],
   [/\bzcode-protocol\b/gu, "raspberrycode-protocol"],
   [/\bzcode-protocol-v4\b/gu, "raspberrycode-protocol-v4"],
   [/\bzcode_([a-z0-9_]+)\b/gu, "raspberrycode_$1"],
-  [/\.zcode\b/gu, ".raspberrycode"],
+  [/\.raspberrycode\b/gu, ".raspberrycode"],
   [/\bZCODE_([A-Z0-9_]+)\b/gu, "RASPBERRYCODE_$1"],
   [/\bzcode([A-Z][A-Za-z0-9]*)/gu, "raspberrycode$1"],
   [/\bZcode([A-Z][A-Za-z0-9]*)/gu, "Raspberrycode$1"],
-  // ZCode 后接大写驼峰时同样是产品名（useZCodeSessionStore -> useRaspberryCodeSessionStore）
+  // RaspberryCode 后接大写驼峰时同样是产品名（useRaspberryCodeSessionStore -> useRaspberryCodeSessionStore）
   [/\buseZCode([A-Z][A-Za-z0-9]*)/gu, "useRaspberryCode$1"],
   [/\bZCode([A-Z][A-Za-z0-9]*)/gu, "RaspberryCode$1"],
-  // 标识符中段（workspaceShellZCodeState -> workspaceShellRaspberryCodeState）
-  [/([a-z0-9])ZCode([A-Z][A-Za-z0-9]*)/gu, "$1RaspberryCode$2"],
+  // 标识符中段（workspaceShellRaspberryCodeState -> workspaceShellRaspberryCodeState）
+  [/([a-z0-9])RaspberryCode([A-Z][A-Za-z0-9]*)/gu, "$1RaspberryCode$2"],
   [/\bZCode\b/gu, "RaspberryCode"],
   [/\bZ Code\b/gu, "RaspberryCode"],
   [/\bzcode(?![A-Za-z0-9])/gu, "raspberrycode"],
-  // window 全局桥（__zcodeTabStoreE2E -> __raspberrycodeTabStoreE2E）
-  [/(__)zcode([A-Z][A-Za-z0-9]*)/gu, "$1raspberrycode$2"],
+  // window 全局桥（__raspberrycodeTabStoreE2E -> __raspberrycodeTabStoreE2E）
+  [/(__)raspberrycode([A-Z][A-Za-z0-9]*)/gu, "$1raspberrycode$2"],
+  // 无分隔符的驼峰中段/后缀（raspberrycodeEnv -> raspberrycodeEnv）
+  [/([a-z0-9])raspberrycode([A-Z][A-Za-z0-9]*)/gu, "$1raspberrycode$2"],
+  [/\bzcode([a-z][A-Za-z0-9]*)/gu, "raspberrycode$1"],
 ];
 
 function* walk(p) {

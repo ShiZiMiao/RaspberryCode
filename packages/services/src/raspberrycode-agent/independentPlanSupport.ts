@@ -43,12 +43,12 @@ export function supportsHistoryFirst(
 const genUiChecks = new WeakMap<object, Promise<void>>();
 /** 状态不能回退到拼接用户正文；不支持时保留草稿并拒绝发送。 */
 export function ensureGenUiContextSupport(
-  client: Pick<ZCodeProtocolClient, "request">,
+  client: Pick<RaspberryCodeProtocolClient, "request">,
 ): Promise<void> {
   const cached = genUiChecks.get(client);
   if (cached) return cached;
   const check = client
-    .request(zcodeProtocolMethods.runtimeCapabilities, {}, zcodeRuntimeCapabilitiesSchema)
+    .request(raspberrycodeProtocolMethods.runtimeCapabilities, {}, raspberrycodeRuntimeCapabilitiesSchema)
     .then((result) => {
       if (result.genUiContext !== true) throw new Error("proto.genUiContextUnsupported");
     })

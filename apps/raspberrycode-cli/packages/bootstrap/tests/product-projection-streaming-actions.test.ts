@@ -16,9 +16,9 @@ import {
   type SessionId,
   type TraceId,
   type TurnId,
-} from "@zcode/contracts";
-import type { ConversationDelta, ConversationSnapshot } from "@zcode/shared/zcode-protocol-v4";
-import { ProductProjection } from "../src/zcode-protocol-v4/index.js";
+} from "@raspberrycode/contracts";
+import type { ConversationDelta, ConversationSnapshot } from "@raspberrycode/shared/raspberrycode-protocol-v4";
+import { ProductProjection } from "../src/raspberrycode-protocol-v4/index.js";
 
 const BASE_TIMESTAMP_MS = 1_700_000_000_000;
 const USAGE = { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheWriteTokens: 0 };

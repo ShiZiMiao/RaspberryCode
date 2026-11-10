@@ -21,7 +21,7 @@ Timeline 的展示 label 单独保留，不混入严格的 Selection 契约。
 
 ## 旧版本读取新数据（降级规则）
 
-用户可能回退版本，或在同一个 `~/.zcode` 上运行旧版 App。旧版本读新版本写的会话时，不能打不开会话、
+用户可能回退版本，或在同一个 `~/.raspberrycode` 上运行旧版 App。旧版本读新版本写的会话时，不能打不开会话、
 丢失正文或报错；显示内容、上下文顺序可以退化，退化要写进对应 spec。按旧版本怎样解析来分三类：
 
 | 旧版本的解析方式                     | 规则                                   | 例子                                                                                                                   |
@@ -565,11 +565,11 @@ fork 不需要复制复杂状态。
 
 ### 彻底删除（项目数据删除）
 
-普通删除只写 `time_deleted`。用户在设置 → 项目里勾选「同时删除 ZCode 数据」时，Host 经 `v4/storage/sessionData/purge` 交来会话 ID 与目录（产品规格：`docs/superpowers/specs/2026-10-24-project-management.md`「彻底删除数据」）：
+普通删除只写 `time_deleted`。用户在设置 → 项目里勾选「同时删除 RaspberryCode 数据」时，Host 经 `v4/storage/sessionData/purge` 交来会话 ID 与目录（产品规格：`docs/superpowers/specs/2026-10-24-project-management.md`「彻底删除数据」）：
 
 - 后代只沿附属会话展开：`parent_id` 且 `task_type ∈ {selection_side_chat, workflow_child, subagent_child, nested_workflow_child}`，加 `session_task_link` 子会话。fork 的 `parent_id` 也指向源会话，但它是独立任务，不展开。
 - 本进程已加载且忙（在途 turn、待交互、排队命令、residency blocking work）的会话整棵保留；空闲的按 `deleteSession` 执行面同序释放，但只释放运行态、不发布 `session.removed`：文件或行删除失败时会话仍是存活事实，Host 不能先把它当作已删除。
-- 附件仍被本次不删除的未删除会话引用时整棵保留（`kept.reason = "referenced"`）。fork、回退、工作流转录按值复制 part，`zcode-artifact://<源会话>/<id>` 仍指向源会话的 `artifacts/<sid>`；引用按 part 内容中的 URI 判定（不依赖 fork 谱系，任何复制路径都覆盖），已软删除会话的引用不计。保留一棵后，被它引用的树也变成「本次不删除」的引用方，迭代到不动点。
+- 附件仍被本次不删除的未删除会话引用时整棵保留（`kept.reason = "referenced"`）。fork、回退、工作流转录按值复制 part，`raspberrycode-artifact://<源会话>/<id>` 仍指向源会话的 `artifacts/<sid>`；引用按 part 内容中的 URI 判定（不依赖 fork 谱系，任何复制路径都覆盖），已软删除会话的引用不计。保留一棵后，被它引用的树也变成「本次不删除」的引用方，迭代到不动点。
 - 先删 `cli/{artifacts,exec,agents,sessions}/<sid>` 与 `cli/{debug,rollout}/model-io-<sid>.jsonl`，成功后一个事务删行：`input_history`、`dwf_run`、`workflow_run` 没有级联外键，显式删除；其余经外键级联。文件失败则不删行。
 - 目录的记忆整个删除 `memories/projects/<slug>-<hash>`（与运行时同一解析函数）。
 - 文件与行都删除成功后，才从所有 sessions-index 投影移除，防止下次快照把会话带回。

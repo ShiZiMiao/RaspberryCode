@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createRootTraceContext, createSessionId, type ModelRequest } from "@zcode/contracts";
+import { createRootTraceContext, createSessionId, type ModelRequest } from "@raspberrycode/contracts";
 import { createTestAgentRuntime } from "./test-agent-runtime.js";
 import { createTestSessionEventStore } from "./test-event-store.js";
 import { createTestModelFactory } from "./test-runtime-model.js";

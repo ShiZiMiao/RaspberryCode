@@ -5,12 +5,12 @@
  */
 export const remoteInputPredictionModule = {
   id: "remote-input-prediction",
-  requires: ["shared", "zcode-cli"],
+  requires: ["shared", "raspberrycode-cli"],
   provides: ["remote-input-prediction"],
   publicEntrypoints: [
     "contract.ts",
-    "../../../../services/src/zcode-agent/inputPredictionSwitch.ts",
-    "../../../../../apps/zcode-cli/packages/bootstrap/src/zcode-protocol/input-prediction-handler.ts",
-    "../../../../../apps/zcode-cli/packages/core/src/runtime/methods/input-prediction-sidecar.ts",
+    "../../../../services/src/raspberrycode-agent/inputPredictionSwitch.ts",
+    "../../../../../apps/raspberrycode-cli/packages/bootstrap/src/raspberrycode-protocol/input-prediction-handler.ts",
+    "../../../../../apps/raspberrycode-cli/packages/core/src/runtime/methods/input-prediction-sidecar.ts",
   ],
 } as const;

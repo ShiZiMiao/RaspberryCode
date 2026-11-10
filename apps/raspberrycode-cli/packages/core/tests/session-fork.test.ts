@@ -633,7 +633,7 @@ describe("session fork history", () => {
     // 停止后写的中断标记：只记 provider/model，不带 options。
     const marker = buildRuntimeReminderMessage(
       {
-        config: { agentName: "zcode-agent" },
+        config: { agentName: "raspberrycode-agent" },
         getSessionModelSelection: () => runtimeSelection,
         sessionId: SESSION_ID,
       } as never,
@@ -658,7 +658,7 @@ describe("session fork history", () => {
     } as SessionInfo;
     const runtime = {
       appendEvent: async () => undefined,
-      config: { agentName: "zcode-agent", mode: "build" },
+      config: { agentName: "raspberrycode-agent", mode: "build" },
       createEvent: (_type: unknown, payload: Record<string, unknown>) => ({ payload }),
       getSessionModelSelection: () => runtimeSelection,
       rootTraceContext: { traceId: "trace_marker_fork" },

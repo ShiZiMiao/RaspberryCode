@@ -4,7 +4,7 @@ import { exampleRemoteInputPrediction } from "./contract.example.js";
 import { INPUT_PREDICTION_DECISIONS, emptyInputPredictionResult } from "./contract.js";
 import { remoteInputPredictionModule } from "./module.js";
 
-// 线格式细节由 packages/shared/test/zcodeProtocolV4InputPrediction.test.ts 覆盖；这里只守契约边界。
+// 线格式细节由 packages/shared/test/raspberrycodeProtocolV4InputPrediction.test.ts 覆盖；这里只守契约边界。
 describe("remote-input-prediction contract", () => {
   it("declares its module manifest", () => {
     expect(remoteInputPredictionModule.id).toBe("remote-input-prediction");

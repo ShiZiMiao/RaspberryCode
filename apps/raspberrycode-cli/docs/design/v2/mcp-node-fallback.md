@@ -30,11 +30,11 @@ Out of scope:
 
 ```text
 Desktop host (Electron utilityProcess)
- └─ agent: <Electron> zcode.cjs app-server        (ELECTRON_RUN_AS_NODE=1)
+ └─ agent: <Electron> raspberrycode.cjs app-server        (ELECTRON_RUN_AS_NODE=1)
      └─ MCP stdio spawn (MCP SDK → cross-spawn; resolves PATH + PATHEXT from the child env)
          env.PATH = <user PATH> <delimiter> <cliStorageRoot>/node-fallback/v1
-         env.ZCODE_NODE_FALLBACK_EXEC_PATH = <Electron executable>
-         env.ZCODE_NODE_FALLBACK_NPM_ROOT  = <bundled npm package root>
+         env.RASPBERRYCODE_NODE_FALLBACK_EXEC_PATH = <Electron executable>
+         env.RASPBERRYCODE_NODE_FALLBACK_NPM_ROOT  = <bundled npm package root>
 
          "node server.js" ─ user node on PATH? ── yes → user node
                                                └─ no  → shim node → <Electron> server.js
@@ -99,10 +99,10 @@ users do not configure them.
 
 | Variable                        | Value                                                      | Used by            | Missing        |
 | ------------------------------- | ---------------------------------------------------------- | ------------------ | -------------- |
-| `ZCODE_NODE_FALLBACK_EXEC_PATH` | Absolute path of the agent's `process.execPath` (Electron) | all shims          | shim exits 127 |
-| `ZCODE_NODE_FALLBACK_NPM_ROOT`  | Absolute path of the bundled npm package root              | `npm`, `npx` shims | shim exits 127 |
+| `RASPBERRYCODE_NODE_FALLBACK_EXEC_PATH` | Absolute path of the agent's `process.execPath` (Electron) | all shims          | shim exits 127 |
+| `RASPBERRYCODE_NODE_FALLBACK_NPM_ROOT`  | Absolute path of the bundled npm package root              | `npm`, `npx` shims | shim exits 127 |
 
-`ZCODE_NODE_FALLBACK_NPM_ROOT` is omitted when no bundled npm is found.
+`RASPBERRYCODE_NODE_FALLBACK_NPM_ROOT` is omitted when no bundled npm is found.
 
 Merge order for the stdio child env:
 
@@ -132,14 +132,14 @@ On POSIX only the exact key `PATH` is used.
 - npm is **not** a pnpm dependency. The repo uses `node-linker=hoisted`, so an `npm` package would
   link `npm`/`npx` into the root `node_modules/.bin` and shadow every developer's own npm.
 - Packaging: `prepare:agent-bundle` downloads the registry tarball, checks its sha512, caches it in
-  `node_modules/.cache/zcode-bundled-npm/`, and copies the package into
+  `node_modules/.cache/raspberrycode-bundled-npm/`, and copies the package into
   `bundled-agents/<platform>/glm/node-runtime/npm` (resources `glm/node-runtime/npm` in the app).
   The top-level `docs/` and `man/` directories are left out (`npm help` is not supported). License
   files of npm and of its bundled dependencies stay in the copied tree.
 - Runtime lookup: `<dir>/node-runtime/npm` for the entry file directory, then for the bundle
   directory. There is no cwd candidate, so a workspace cannot inject its own npm.
 - A candidate is valid only when `bin/npm-cli.js` and `bin/npx-cli.js` exist.
-- The desktop dev chain runs `apps/zcode-cli/packages/cli/dist/zcode.cjs`, which has no staged npm.
+- The desktop dev chain runs `apps/raspberrycode-cli/packages/cli/dist/raspberrycode.cjs`, which has no staged npm.
   There the `node` shim works and the `npm`/`npx` shims exit 127 with the missing-variable message.
 
 ## Observability

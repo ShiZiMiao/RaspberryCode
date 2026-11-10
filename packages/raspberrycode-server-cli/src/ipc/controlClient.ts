@@ -1,6 +1,6 @@
 import { connect } from "node:net";
 import { randomUUID } from "node:crypto";
-import { SOURCE_SERVER_CONTROL_UNRESPONSIVE_ERROR_CODE } from "@zcode/shared";
+import { SOURCE_SERVER_CONTROL_UNRESPONSIVE_ERROR_CODE } from "@raspberrycode/shared";
 import { controlResponseSchema, type ControlRequest } from "../contracts.js";
 import { encodeJsonLine, JsonLineDecoder } from "./framing.js";
 import { ControlRequestError } from "./controlError.js";

@@ -179,7 +179,7 @@ ProviderEndpointRoutingPort.resolve
 - `HTTP-Referer`，跟随当前 runtime RaspberryCode endpoint origin
 - `User-Agent: RaspberryCode/<version>`
 - 有有效版本时发送 `X-RaspberryCode-App-Version`
-- `X-Title`，独立 CLI/TUI 为 `Z Code@cli`，桌面 stdio Agent 为 `Z Code@electron`
+- `X-Title`，独立 CLI/TUI 为 `RaspberryCode@cli`，桌面 stdio Agent 为 `RaspberryCode@electron`
 - `X-Platform`、`X-Release-Channel`、`X-Client-Language`、`X-Client-Timezone`、
   `X-Os-Category` 与有效的 `X-Os-Version`
 - 已有 `~/.raspberrycode/v2/telemetry-state.json`（或 `RASPBERRYCODE_DATA_BASE_DIR` 对应目录）中存在

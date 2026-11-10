@@ -1,6 +1,6 @@
 // 输入预测 sidecar 纯函数与编排壳（docs/web-remote-control/mobile-input-prediction.md）。
 import { describe, expect, it, vi } from "vitest";
-import { v4ConversationInputPredictionResultSchema } from "@zcode/shared/zcode-protocol-v4";
+import { v4ConversationInputPredictionResultSchema } from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import {
   INPUT_PREDICTION_QUERY_SOURCE,
   buildInputPredictionContext,

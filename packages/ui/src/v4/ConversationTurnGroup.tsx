@@ -6,7 +6,7 @@ import { useIsOfficeMode } from "@/hooks/useInterfaceMode.js";
 import { Fragment, memo, useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronRightIcon } from "lucide-react";
 import {
-  zcodeProviderRuntimeHeadersErrorCode,
+  raspberrycodeProviderRuntimeHeadersErrorCode,
   type RaspberryCodeApiRetryStatus,
 } from "@raspberrycode/shared";
 import {
@@ -148,7 +148,7 @@ function TurnChatLoadingSlot({
   // 而不是回退到 ChatLoading。
   const visibleRetryStatus =
     retryStatus &&
-    (apiRetry?.reasonCode === zcodeProviderRuntimeHeadersErrorCode.configNetwork ||
+    (apiRetry?.reasonCode === raspberrycodeProviderRuntimeHeadersErrorCode.configNetwork ||
       retryStatus.attempt >= MIN_VISIBLE_API_RETRY_ATTEMPT)
       ? retryStatus
       : null;

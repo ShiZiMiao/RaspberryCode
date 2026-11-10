@@ -2,7 +2,7 @@ import {
   BROWSER_LOCAL_PREVIEW_PRIVILEGES,
   installBrowserLocalPreview,
 } from "@desktop/main/browser-local-preview/index.js";
-import { createRemoteConversationTelemetryDispatcher } from "@zcode/shared/conversation-telemetry";
+import { createRemoteConversationTelemetryDispatcher } from "@raspberrycode/shared/conversation-telemetry";
 import { installRequestSecurityDiagnostics } from "./request-security-edition/index.js";
 import { createLocalTtftExporter } from "./localTtftExporter.js";
 /* eslint-disable max-lines */

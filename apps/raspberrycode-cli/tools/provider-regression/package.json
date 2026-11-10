@@ -1,5 +1,5 @@
 {
-  "name": "@zcode/provider-regression",
+  "name": "@raspberrycode/provider-regression",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -17,13 +17,13 @@
     "lint": "oxlint --no-ignore src tests *.ts"
   },
   "dependencies": {
-    "@zcode/adapters": "workspace:*",
-    "@zcode/bootstrap": "workspace:*",
-    "@zcode/contracts": "workspace:*",
-    "@zcode/core": "workspace:*",
-    "@zcode/model-option-map": "workspace:*",
-    "@zcode/provider": "workspace:*",
-    "@zcode/provider-node": "workspace:*",
+    "@raspberrycode/adapters": "workspace:*",
+    "@raspberrycode/bootstrap": "workspace:*",
+    "@raspberrycode/contracts": "workspace:*",
+    "@raspberrycode/core": "workspace:*",
+    "@raspberrycode/model-option-map": "workspace:*",
+    "@raspberrycode/provider": "workspace:*",
+    "@raspberrycode/provider-node": "workspace:*",
     "zod": "4.6.5"
   },
   "devDependencies": {

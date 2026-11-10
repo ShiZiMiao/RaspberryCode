@@ -1,5 +1,5 @@
 /**
- * 额度停止的 run 到点自动续跑（apps/zcode-cli/packages/dynamic-workflow/docs/execution-engine.md
+ * 额度停止的 run 到点自动续跑（apps/raspberrycode-cli/packages/dynamic-workflow/docs/execution-engine.md
  * 「Resuming after a quota reset」）。
  *
  * 唯一数据源是 journal 的 run 行；定时器只是唤醒，到点重新读行再决定。这里用假时钟与假 journal
@@ -8,8 +8,8 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import type { DynamicWorkflowRunResumeResult } from "@zcode/contracts";
-import type { RunRecord } from "@zcode/dynamic-workflow";
+import type { DynamicWorkflowRunResumeResult } from "@raspberrycode/contracts";
+import type { RunRecord } from "@raspberrycode/dynamic-workflow";
 import {
   WORKFLOW_QUOTA_RESUME_MARGIN_MS,
   WORKFLOW_QUOTA_RESUME_MAX_SPACING_MS,

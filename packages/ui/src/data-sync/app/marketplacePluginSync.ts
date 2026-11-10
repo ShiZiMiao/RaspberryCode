@@ -8,14 +8,14 @@ import {
   type PluginOptionSyncValue,
   type IPlatformService,
   type RemoteTarget,
-  type ZCodePluginsInstallResult,
-} from "@zcode/shared";
+  type RaspberryCodePluginsInstallResult,
+} from "@raspberrycode/shared";
 import {
   withPluginTelemetry,
   type IDataSyncCategoryService,
   type IPluginManagementService,
   type IServiceAccessor,
-} from "@zcode/services";
+} from "@raspberrycode/services";
 import { reportAppTelemetryEvent } from "@/lib/appTelemetry.js";
 import { logger } from "@/logger.js";
 import {
@@ -137,7 +137,7 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function formatInstallError(result: ZCodePluginsInstallResult, pluginId: string): string | null {
+function formatInstallError(result: RaspberryCodePluginsInstallResult, pluginId: string): string | null {
   const errors = result.diagnostics.filter((diagnostic) => diagnostic.severity !== "warning");
   if (errors.length === 0) return null;
   return errors
@@ -261,7 +261,7 @@ export function createMarketplacePluginDataSyncService(
       return { hashes: {} };
     },
 
-    // marketplace 镜像写入 ~/.zcode/plugins，安装与配置写入 ~/.zcode/cli，与 inline 插件的预检目录相同。
+    // marketplace 镜像写入 ~/.raspberrycode/plugins，安装与配置写入 ~/.raspberrycode/cli，与 inline 插件的预检目录相同。
     checkSyncWriteAccess: () => services.pluginSyncService.checkSyncWriteAccess(),
 
     async exportSyncItems({ keys }) {

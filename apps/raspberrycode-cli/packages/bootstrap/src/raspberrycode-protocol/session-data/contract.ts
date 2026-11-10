@@ -1,7 +1,7 @@
 // cli-session-data 对外契约：v4/storage/sessionData/* 执行面依赖的窄宿主接口。
 // 规格：docs/superpowers/specs/2026-10-24-project-management.md「彻底删除数据」。
-import type { SessionStorePort } from "@zcode/contracts";
-import type { SessionDataFilesPort } from "@zcode/adapters/storage";
+import type { SessionStorePort } from "@raspberrycode/contracts";
+import type { SessionDataFilesPort } from "@raspberrycode/adapters/storage";
 
 export interface SessionDataHost {
   store: Required<

@@ -8,7 +8,7 @@ import type { SandboxPagePlacement } from "../contract.js";
  * 缺少 URL 时按重载处理。
  */
 export function isSandboxDocumentNavigation(url: string | undefined): boolean {
-  return !url || url.startsWith("zcode-sandbox:");
+  return !url || url.startsWith("raspberrycode-sandbox:");
 }
 
 function parkingRoot(): HTMLElement {

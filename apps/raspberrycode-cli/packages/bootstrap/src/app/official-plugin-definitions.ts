@@ -391,34 +391,34 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
     version: "0.6.5",
   },
   {
-    // ZCode Sites（技术方案 4）：Skill 指导 Agent 把项目改造并打包成 runner 可直接运行的产物包，
-    // 再用 scripts/zcode-site.mjs（CLI）上传发布；commands/ 是 /site-* 斜杠命令。
+    // RaspberryCode Sites（技术方案 4）：Skill 指导 Agent 把项目改造并打包成 runner 可直接运行的产物包，
+    // 再用 scripts/raspberrycode-site.mjs（CLI）上传发布；commands/ 是 /site-* 斜杠命令。
     // 0.4.0 起自带 Sites 面板（UI plugin）：MCP server 与面板页面构建进 dist/，只给面板用，模型看不到
     // （docs/site/sites-panel.md）。默认开启，用户不必先去设置里打开就能让 Agent 部署站点。
     componentTypes: ["ui"],
-    name: "zcode-site",
+    name: "raspberrycode-site",
     defaultEnabled: true,
     listing: {
       author: ZAI_AUTHOR,
       category: "productivity",
-      displayName: "ZCode Sites",
-      displayName_i18n: { "zh-CN": "ZCode Sites" },
+      displayName: "RaspberryCode Sites",
+      displayName_i18n: { "zh-CN": "RaspberryCode Sites" },
       description_i18n: {
         "zh-CN": "把 Web 项目改造为可在云端 Linux 运行的部署包，一个 start.sh 即可启动。",
       },
       examplePrompts: ["Deploy this project as a website"],
       examplePrompts_i18n: { "zh-CN": ["把这个项目部署成网站"] },
-      icon: `${OFFICIAL_PLUGIN_ASSETS_BASE_URL}/zcode-site/icon.png`,
+      icon: `${OFFICIAL_PLUGIN_ASSETS_BASE_URL}/raspberrycode-site/icon.png`,
     },
     rootCandidates: [
-      "packages/zcode-site-plugin",
-      "../zcode-site-plugin",
-      "../../zcode-site-plugin",
-      "../../../zcode-site-plugin",
+      "packages/raspberrycode-site-plugin",
+      "../raspberrycode-site-plugin",
+      "../../raspberrycode-site-plugin",
+      "../../../raspberrycode-site-plugin",
     ],
     requiredSeedPaths: [
       "commands/site-deploy.md",
-      "scripts/zcode-site.mjs",
+      "scripts/raspberrycode-site.mjs",
       "scripts/stage.mjs",
       "skills/site-deploy/SKILL.md",
       "skills/site-deploy/templates/static.sh",

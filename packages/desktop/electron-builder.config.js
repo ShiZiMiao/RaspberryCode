@@ -333,7 +333,7 @@ const PACKAGING_PRUNE_PATTERNS = [
   "!**/SECURITY*",
   // 26.17 的 pnpm 收集器按 lockfile 全平台图收包，会把纯构建期依赖带进 app.asar
   // （2026-10-26 与 26.8.1 产物 asar 逐包对账 +24MB 未压缩）。以下均已核实零运行时引用：
-  // - shadcn 是 @zcode/ui 误声明在生产位的组件脚手架 CLI，连带 @ts-morph/ts-morph、
+  // - shadcn 是 @raspberrycode/ui 误声明在生产位的组件脚手架 CLI，连带 @ts-morph/ts-morph、
   //   @babel 生态与 caniuse-lite/browserslist/baseline-browser-mapping 数据包；
   // - node-gyp/node-addon-api 是 CUA 原生模块构建工具链；
   // - cpu-features/nan 是 ssh2 的可选原生加速，缺失时 ssh2 自动降级。
@@ -562,7 +562,7 @@ async function stripPackagedSourcemapReferences(context) {
       }),
     pruneStagingDirectory:
       targetPlatform.key === "win32-x64" &&
-      process.env.ZCODE_PRUNE_PACKAGED_PLATFORM_DEPENDENCIES === "1"
+      process.env.RASPBERRYCODE_PRUNE_PACKAGED_PLATFORM_DEPENDENCIES === "1"
         ? (stagingDir) => pruneIncompatiblePlatformPackages(stagingDir, targetPlatform)
         : null,
   });

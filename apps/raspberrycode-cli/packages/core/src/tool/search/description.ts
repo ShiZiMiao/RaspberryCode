@@ -4,7 +4,7 @@ import {
   DEFERRED_TOOL_CALL_NAME,
   toolSearchNameForMode,
   type ResolvedToolSearchMode,
-} from "@zcode/contracts";
+} from "@raspberrycode/contracts";
 import { isMcpToolName } from "../../mcp/name.js";
 
 function description(opening: string, callingConvention: string, resultNote: string): string {

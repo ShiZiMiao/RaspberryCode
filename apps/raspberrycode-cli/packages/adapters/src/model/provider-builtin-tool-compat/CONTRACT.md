@@ -3,7 +3,7 @@
 服务端执行内置工具后，会在一条 assistant 流里依次下发：调用头 markdown → `server_tool_use`（SDK 不认识的名字）
 → 结果 markdown → 裸 `tool_result` → 下一轮。本模块把结构化块改写成 AI SDK 原生支持的
 `mcp_tool_use` / `mcp_tool_result`（provider 执行），并去掉与之重复的 markdown 渲染。
-规格见 `apps/zcode-cli/docs/design/v2/model/anthropic-stream-compat.md`「Provider 内置工具多轮回放」。
+规格见 `apps/raspberrycode-cli/docs/design/v2/model/anthropic-stream-compat.md`「Provider 内置工具多轮回放」。
 
 不变量：
 
@@ -15,5 +15,5 @@
 - 状态按 message 维护，`message_start` 时清空；流结束时补发仍在缓冲的帧，不吞内容。
 - 纯协议变换，不做 IO；只由 anthropic-stream-compat 在 Anthropic fetch 边界调用。
 
-行为回归：`apps/zcode-cli/packages/adapters/tests/provider-builtin-tool-compat/`（契约），
+行为回归：`apps/raspberrycode-cli/packages/adapters/tests/provider-builtin-tool-compat/`（契约），
 `model-execution.test.ts` 与 `provider-builtin-tool-rounds.test.ts`（经 AI SDK 的端到端）。

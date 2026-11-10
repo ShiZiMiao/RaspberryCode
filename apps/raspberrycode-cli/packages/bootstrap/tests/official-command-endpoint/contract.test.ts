@@ -21,6 +21,6 @@ describe("cli-official-command-endpoint contract", () => {
   });
 
   it("only lends identity to the Sites API", () => {
-    expect(OFFICIAL_COMMAND_ROUTES).toEqual([{ prefix: "/api/v1/sites", pluginId: "zcode-site" }]);
+    expect(OFFICIAL_COMMAND_ROUTES).toEqual([{ prefix: "/api/v1/sites", pluginId: "raspberrycode-site" }]);
   });
 });

@@ -48,7 +48,7 @@ TUI 的 slash command 候选列表见 [`tui-slash-command-suggestions.md`](./tui
 - 全局 `--target-replace`: `--target` 的显式覆盖确认开关。若当前 session 已有 goal，而未显式提供 `--target-replace`，CLI 必须在本地返回明确错误，不得静默覆盖 goal，也不得发送模型请求。`--target-replace` 单独出现时必须报错。
 - `raspberrycode skills list`: 只读列举当前工作目录可发现的 skills。它复用 bootstrap 的 skill discovery 接口，不启动 TUI、不创建 session、不发模型请求；`raspberrycode skills` 等价于 `raspberrycode skills list`。普通输出展示 name、scope/source、description 和 path；`--json` 输出结构化 skills 与 diagnostics；`--verbose` 在普通输出后追加 diagnostics。
 - `raspberrycode commands list`: 只读列举当前工作目录可发现的自定义 prompt commands。它复用 bootstrap 的 custom command discovery 接口，不启动 TUI、不创建 session、不发模型请求；`raspberrycode commands` 等价于 `raspberrycode commands list`。普通输出展示 `/name`、argument hint、scope/source、description 和 path；`--json` 输出结构化 commands 与 diagnostics；`--verbose` 追加 diagnostics。
-- `raspberrycode login`: 使用 RaspberryCode/Z.AI CLI OAuth device flow 登录，浏览器授权后把敏感 token 写入与桌面 Z Code 共享的 `~/.raspberrycode/v2/credentials.json`，并只在 `~/.raspberrycode/cli/config.json` patch 非敏感 provider/model 默认配置。`--no-browser` 只打印授权 URL，不自动打开浏览器，仍继续轮询。
+- `raspberrycode login`: 使用 RaspberryCode/Z.AI CLI OAuth device flow 登录，浏览器授权后把敏感 token 写入与桌面 RaspberryCode 共享的 `~/.raspberrycode/v2/credentials.json`，并只在 `~/.raspberrycode/cli/config.json` patch 非敏感 provider/model 默认配置。`--no-browser` 只打印授权 URL，不自动打开浏览器，仍继续轮询。
 - `raspberrycode logout`: 清理共享 credential store 中的 ZAI 登录态；如果 `oauth:active_provider` 当前是 `zai`，同步清空 active provider。
 - `raspberrycode doctor`: 输出运行时和打包假设检查，是 CLI 健康检查和 smoke-test 的唯一进程级入口。
 
@@ -188,7 +188,7 @@ Headless `--target` 测试覆盖：
 
 `/login`、`/logout` 与进程级 `raspberrycode login` / `raspberrycode logout` 共用 [`auth-login.md`](./auth-login.md) 的 bootstrap service。OAuth、打开浏览器、credential 读写、配置 patch 都放在 adapter/bootstrap 层；core 不读取环境变量、不直接网络请求、不直接写配置文件。
 
-保存 token 时复用桌面 Z Code 的 `~/.raspberrycode/v2/credentials.json` 加密 key-value store。`~/.raspberrycode/cli/config.json` 只 patch provider/model 相关非敏感字段，保留已有 `mcp`、`skills`、`permission` 等配置；新配置使用 provider-first shape，不恢复 bak 的 flat `provider/model/baseURL/apiKey` 配置。
+保存 token 时复用桌面 RaspberryCode 的 `~/.raspberrycode/v2/credentials.json` 加密 key-value store。`~/.raspberrycode/cli/config.json` 只 patch provider/model 相关非敏感字段，保留已有 `mcp`、`skills`、`permission` 等配置；新配置使用 provider-first shape，不恢复 bak 的 flat `provider/model/baseURL/apiKey` 配置。
 
 测试覆盖：
 

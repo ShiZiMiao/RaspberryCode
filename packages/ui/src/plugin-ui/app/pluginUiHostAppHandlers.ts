@@ -62,7 +62,7 @@ export function installPluginUiHostAppHandlers(
         callId,
       });
       // 长轮询只有交付实际工作才续期；必须先标记活动再解除 busy，避免回收撞上任务交付。
-      if (result._meta?.["zcode/activity"] === true) deps.onActivity?.();
+      if (result._meta?.["raspberrycode/activity"] === true) deps.onActivity?.();
       return result as CallToolResult;
     } finally {
       signal?.removeEventListener("abort", onAbort);

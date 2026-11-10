@@ -86,7 +86,7 @@ function setup(
 function setupOwned() {
   const fixture = setup();
   const activate = vi.fn(
-    async (_messages: import("@zcode/contracts").MessageWithParts[]) => undefined,
+    async (_messages: import("@raspberrycode/contracts").MessageWithParts[]) => undefined,
   );
   let active = false;
   const lifecycle = new SessionLifecycleController({

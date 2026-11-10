@@ -1,13 +1,13 @@
-import { builtInTools } from "@zcode/core";
+import { builtInTools } from "@raspberrycode/core";
 import {
   createSessionId,
   createTraceId,
   type Model,
   type ModelInputMessage,
   type ModelRequest,
-} from "@zcode/contracts";
-import type { AiSdkModelAdapter } from "@zcode/adapters/model";
-import type { ProviderRegistry } from "@zcode/provider";
+} from "@raspberrycode/contracts";
+import type { AiSdkModelAdapter } from "@raspberrycode/adapters/model";
+import type { ProviderRegistry } from "@raspberrycode/provider";
 import { executeSessionCase } from "#regression/session";
 import type { RegressionRow } from "#contract";
 import type { TestList } from "#regression/config";

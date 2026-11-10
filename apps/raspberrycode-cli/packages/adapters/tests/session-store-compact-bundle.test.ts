@@ -11,7 +11,7 @@ import {
   createTraceId,
   type MessageWithParts,
   type SessionId,
-} from "@zcode/contracts";
+} from "@raspberrycode/contracts";
 import { createSqliteSessionStore } from "../src/storage/index.js";
 
 const cleanups: (() => Promise<void>)[] = [];
@@ -21,7 +21,7 @@ afterEach(async () => {
 });
 
 async function openStore(name: string) {
-  const tempRoot = await mkdtemp(join(tmpdir(), `zcode-${name}-`));
+  const tempRoot = await mkdtemp(join(tmpdir(), `raspberrycode-${name}-`));
   const store = await createSqliteSessionStore({ dbPath: join(tempRoot, "session.sqlite") });
   cleanups.push(async () => {
     store.close();

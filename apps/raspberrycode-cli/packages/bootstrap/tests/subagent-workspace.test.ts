@@ -2,14 +2,14 @@ import { mkdtemp, mkdir, rm, realpath } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, it, vi } from "vitest";
-import type { SessionId, WorkspaceId } from "@zcode/contracts";
-import { createSqliteSessionStore } from "@zcode/adapters/storage";
+import type { SessionId, WorkspaceId } from "@raspberrycode/contracts";
+import { createSqliteSessionStore } from "@raspberrycode/adapters/storage";
 import { createNodeExecutionAdapter } from "../../adapters/src/exec/node-execution-adapter.js";
 import { createTestAgentRuntime } from "../../core/tests/test-agent-runtime.js";
 import { createTestModelFactory } from "../../core/tests/test-runtime-model.js";
 import { createTestSessionEventStore } from "../../core/tests/test-event-store.js";
-import { listSessions } from "../src/zcode-protocol/server-operations.js";
-import type { ZCodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
+import { listSessions } from "../src/raspberrycode-protocol/server-operations.js";
+import type { RaspberryCodeProtocolAgentServerContext } from "../src/raspberrycode-protocol/server-types.js";
 
 it.each([false, true])(
   "Bash cd before Agent preserves durable workspace (remote=%s)",
@@ -113,7 +113,7 @@ it.each([false, true])(
           deps: { sessionStore: store },
           sessionDirectorySourceEnabled: true,
           sessions: new Map(),
-        } as ZCodeProtocolAgentServerContext,
+        } as RaspberryCodeProtocolAgentServerContext,
         { workspace, sessionIds: [child!.id] },
       );
       expect(result.sessions).toEqual([
@@ -143,7 +143,7 @@ it("keeps legacy paths readable and unchanged across resume, old-writer updates 
         deps: { sessionStore: store },
         sessionDirectorySourceEnabled: true,
         sessions: new Map(),
-      } as ZCodeProtocolAgentServerContext,
+      } as RaspberryCodeProtocolAgentServerContext,
       { sessionIds: [sessionId], workspace },
     );
   try {

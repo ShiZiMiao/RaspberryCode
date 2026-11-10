@@ -10,7 +10,7 @@ import type {
 } from "./index.js";
 
 /**
- * 会话用过的能力标签，adapter 写入归因 header `x-zcode-session-features`
+ * 会话用过的能力标签，adapter 写入归因 header `x-raspberrycode-session-features`
  * （docs/design/v2/model/session-features-header.md）。
  * 词表只追加、不改名；废弃的标签保留常量，不复用名字。值必须是小写 snake_case。
  */

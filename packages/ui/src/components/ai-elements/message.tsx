@@ -1095,7 +1095,7 @@ function MessageExternalLink({
         {/* 通用“打开”无法说明目标；两个打开动作同组，用文案和图标区分内置与外部浏览器。 */}
         <ContextMenuItem onSelect={() => handleOpen({ forceInApp: true })}>
           <PanelRightIcon className="size-4" />
-          <span>{intl.formatMessage({ id: "chat.message.link.openInZCode" })}</span>
+          <span>{intl.formatMessage({ id: "chat.message.link.openInRaspberryCode" })}</span>
         </ContextMenuItem>
         <ContextMenuItem onSelect={() => handleOpen({ forceExternal: true })}>
           <ExternalLinkIcon className="size-4" />

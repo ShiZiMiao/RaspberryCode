@@ -1,17 +1,17 @@
 /**
- * cli-official-command-endpoint 对外契约（ZCode Sites 技术方案 5.8）。
- * 官方插件命令（如 zcode-site）不持有凭证，经 agent 的本地端点调用 zcode-server；
+ * cli-official-command-endpoint 对外契约（RaspberryCode Sites 技术方案 5.8）。
+ * 官方插件命令（如 raspberrycode-site）不持有凭证，经 agent 的本地端点调用 raspberrycode-server；
  * 端点按 session token 认出会话，只放行 OFFICIAL_COMMAND_ROUTES，每个请求向 host 现取身份头。
  */
-import type { ExecutionPort, Logger, OfficialMcpAuthHeadersResult } from "@zcode/contracts";
+import type { ExecutionPort, Logger, OfficialMcpAuthHeadersResult } from "@raspberrycode/contracts";
 
 /** 放行的路径前缀与它所属的官方插件。只有这里列出的接口能借到用户身份。 */
 export const OFFICIAL_COMMAND_ROUTES: readonly { prefix: string; pluginId: string }[] = [
-  { prefix: "/api/v1/sites", pluginId: "zcode-site" },
+  { prefix: "/api/v1/sites", pluginId: "raspberrycode-site" },
 ];
 
 /** 端点自己产生的错误类型（invalid / auth / network），经响应头告诉 CLI，CLI 据此区分网络错误和服务端错误。 */
-export const OFFICIAL_ENDPOINT_ERROR_HEADER = "X-ZCode-Official-Endpoint-Error";
+export const OFFICIAL_ENDPOINT_ERROR_HEADER = "X-RaspberryCode-Official-Endpoint-Error";
 
 /** 发起命令的会话所在的 workspace；与该会话的 MCP 连接用同一对值。 */
 export interface OfficialCommandWorkspace {
@@ -28,7 +28,7 @@ export interface OfficialCommandEndpointOptions {
     signal: AbortSignal;
   }): Promise<OfficialMcpAuthHeadersResult>;
   /** 与官方 MCP 的可信 origin 同一个表达式，跟随 production / test 与自建环境。 */
-  resolveZCodeApiOrigin(): string;
+  resolveRaspberryCodeApiOrigin(): string;
   appVersion?: string;
   /** 走 agent 的网络配置（代理、CA）；直连时请求体按流转发。 */
   fetch: typeof globalThis.fetch;

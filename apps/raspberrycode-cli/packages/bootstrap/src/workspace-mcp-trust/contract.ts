@@ -1,7 +1,7 @@
-import type { McpPort, McpServerConfig } from "@zcode/contracts";
+import type { McpPort, McpServerConfig } from "@raspberrycode/contracts";
 
-import type { WorkspaceMcpTrustReview } from "@zcode/shared";
-export type { WorkspaceMcpTrustReview } from "@zcode/shared";
+import type { WorkspaceMcpTrustReview } from "@raspberrycode/shared";
+export type { WorkspaceMcpTrustReview } from "@raspberrycode/shared";
 
 export interface WorkspaceMcpTrustContract {
   /** 只读当前声明及持久授权；不连接 MCP。 */

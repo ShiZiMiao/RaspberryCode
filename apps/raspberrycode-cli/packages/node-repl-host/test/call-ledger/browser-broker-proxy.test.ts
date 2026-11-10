@@ -10,12 +10,12 @@ import {
   type NodeReplBrowserBrokerProxy,
 } from "../../src/call-ledger/contract.js";
 
-// 规格：apps/zcode-cli/docs/design/v2/tool/20-node-repl-call-ledger.md「浏览器代理 broker」。
+// 规格：apps/raspberrycode-cli/docs/design/v2/tool/20-node-repl-call-ledger.md「浏览器代理 broker」。
 const UPSTREAM_TOKEN = "u".repeat(64);
 
 function socketPath(name: string): string {
   return process.platform === "win32"
-    ? `\\\\.\\pipe\\zcode-ledger-test-${name}-${randomUUID()}`
+    ? `\\\\.\\pipe\\raspberrycode-ledger-test-${name}-${randomUUID()}`
     : join(tmpdir(), `zlt-${name}-${randomUUID()}.sock`);
 }
 

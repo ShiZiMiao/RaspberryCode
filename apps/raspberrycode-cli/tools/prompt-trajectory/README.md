@@ -18,8 +18,8 @@ message representation merely to make conversion succeed.
 
 Recording rules:
 
-- Each case runs with a temporary home and `ZCODE_STORAGE_DIR`. User skills,
-  plugins, `~/.zcode/AGENTS.md` and the user's session database never enter a
+- Each case runs with a temporary home and `RASPBERRYCODE_STORAGE_DIR`. User skills,
+  plugins, `~/.raspberrycode/AGENTS.md` and the user's session database never enter a
   recording, and the recording leaves no session in the user's database.
 - The recorder registers one Registry provider for the fixture model. Its
   capabilities come only from the Registry model declaration; use the fixture

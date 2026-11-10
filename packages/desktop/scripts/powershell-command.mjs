@@ -50,7 +50,7 @@ export function createWindowsPowerShellSecurityArgs(script, values = []) {
 export async function readWindowsAuthenticodeSignature(filePath) {
   const script = [
     "[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false);",
-    "$signature=Get-AuthenticodeSignature -LiteralPath $zcodeArg0;",
+    "$signature=Get-AuthenticodeSignature -LiteralPath $raspberrycodeArg0;",
     "@{status=[int]$signature.Status;subject=$signature.SignerCertificate.Subject}|ConvertTo-Json -Compress;",
   ].join("");
   const stdout = await new Promise((resolve, reject) => {

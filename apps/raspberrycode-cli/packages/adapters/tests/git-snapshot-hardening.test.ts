@@ -9,7 +9,7 @@ import { resolveGitSnapshot } from "../src/context/git-snapshot.js";
 
 const execFile = promisify(execFileCallback);
 
-// 用真实 git 验证加固确实生效：仓库配置里的 fsmonitor 不再被 ZCode 自己执行，
+// 用真实 git 验证加固确实生效：仓库配置里的 fsmonitor 不再被 RaspberryCode 自己执行，
 // 继承来的 GIT_DIR 不再把快照指向另一个仓库。
 async function gitAvailable(): Promise<boolean> {
   try {
@@ -34,7 +34,7 @@ describe.skipIf(!runnable)("automatic git hardening with a real git", () => {
   let marker: string;
 
   beforeAll(async () => {
-    root = await realpath(await mkdtemp(join(tmpdir(), "zcode-git-hardening-")));
+    root = await realpath(await mkdtemp(join(tmpdir(), "raspberrycode-git-hardening-")));
     repo = join(root, "repo");
     otherRepo = join(root, "other");
     marker = join(root, "fsmonitor-ran");

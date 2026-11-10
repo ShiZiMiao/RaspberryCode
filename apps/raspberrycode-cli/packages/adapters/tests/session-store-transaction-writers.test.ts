@@ -6,7 +6,7 @@ import {
   createSessionId,
   type MessageWithParts,
   type SessionId,
-} from "@zcode/contracts";
+} from "@raspberrycode/contracts";
 import { createSqliteSessionStore } from "../src/storage/index.js";
 
 type Store = Awaited<ReturnType<typeof createSqliteSessionStore>>;

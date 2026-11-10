@@ -1,27 +1,27 @@
 /* 官方插件命令进程的代理端点（技术方案 5.8）：CLI 不持有凭证，端点按 session token 认出会话、
- * 只放行 Sites 接口、向 host 现取身份头后转发给 zcode-server。这里用真实的 UDS 和一个本地
- * 假 zcode-server 验证转发细节，凭证解析由 host 侧测试覆盖。 */
+ * 只放行 Sites 接口、向 host 现取身份头后转发给 raspberrycode-server。这里用真实的 UDS 和一个本地
+ * 假 raspberrycode-server 验证转发细节，凭证解析由 host 侧测试覆盖。 */
 import { stat } from "node:fs/promises";
 import { createServer, request, type IncomingHttpHeaders, type Server } from "node:http";
 import { dirname } from "node:path";
 import { afterEach, assert, describe, expect, it, vi } from "vitest";
 import {
-  ZCODE_OFFICIAL_ENDPOINT_ENV_KEY,
-  ZCODE_OFFICIAL_ENDPOINT_TOKEN_ENV_KEY,
-} from "@zcode/shared";
-import type { ExecutionPort, ExecutionRequest } from "@zcode/contracts";
+  RASPBERRYCODE_OFFICIAL_ENDPOINT_ENV_KEY,
+  RASPBERRYCODE_OFFICIAL_ENDPOINT_TOKEN_ENV_KEY,
+} from "@raspberrycode/shared";
+import type { ExecutionPort, ExecutionRequest } from "@raspberrycode/contracts";
 import {
   supportsBackgroundTaskWaiter,
   supportsBashBackgroundLifecycle,
   type BackgroundTaskWaiterExecutionPort,
   type BashBackgroundLifecycleExecutionPort,
-} from "@zcode/core";
+} from "@raspberrycode/core";
 import {
   createOfficialCommandEndpoint,
   withOfficialCommandEnv,
   type OfficialCommandEndpoint,
 } from "../../src/official-command-endpoint/index.js";
-import { createOfficialCommandAuthHeadersPort } from "../../src/zcode-protocol/official-mcp-auth-port.js";
+import { createOfficialCommandAuthHeadersPort } from "../../src/raspberrycode-protocol/official-mcp-auth-port.js";
 
 const IDENTITY = { Authorization: "Bearer zcode-jwt", "X-Bigmodel-Authorization": "Bearer maas" };
 const WORKSPACE_A = { workspacePath: "/w/a" };
@@ -70,11 +70,11 @@ function call(
     const body = init.body;
     const req = request(
       {
-        socketPath: env[ZCODE_OFFICIAL_ENDPOINT_ENV_KEY],
+        socketPath: env[RASPBERRYCODE_OFFICIAL_ENDPOINT_ENV_KEY],
         path,
         method: init.method ?? "GET",
         headers: {
-          Authorization: `Bearer ${init.token ?? env[ZCODE_OFFICIAL_ENDPOINT_TOKEN_ENV_KEY]}`,
+          Authorization: `Bearer ${init.token ?? env[RASPBERRYCODE_OFFICIAL_ENDPOINT_TOKEN_ENV_KEY]}`,
           ...(body !== undefined ? { "Content-Length": String(Buffer.byteLength(body)) } : {}),
           ...init.headers,
         },
@@ -117,7 +117,7 @@ describe("official command endpoint", () => {
       appVersion: "3.16.0",
       fetch: globalThis.fetch,
       resolveHeaders,
-      resolveZCodeApiOrigin: () => options.origin ?? upstream.origin,
+      resolveRaspberryCodeApiOrigin: () => options.origin ?? upstream.origin,
     });
     cleanups.push(() => endpoint.close());
     return { endpoint, resolveHeaders, upstream };
@@ -130,12 +130,12 @@ describe("official command endpoint", () => {
     const b = await endpoint.envForSession("session-b", WORKSPACE_B);
 
     expect(again).toEqual(a);
-    expect(b[ZCODE_OFFICIAL_ENDPOINT_ENV_KEY]).toBe(a[ZCODE_OFFICIAL_ENDPOINT_ENV_KEY]);
-    expect(b[ZCODE_OFFICIAL_ENDPOINT_TOKEN_ENV_KEY]).not.toBe(
-      a[ZCODE_OFFICIAL_ENDPOINT_TOKEN_ENV_KEY],
+    expect(b[RASPBERRYCODE_OFFICIAL_ENDPOINT_ENV_KEY]).toBe(a[RASPBERRYCODE_OFFICIAL_ENDPOINT_ENV_KEY]);
+    expect(b[RASPBERRYCODE_OFFICIAL_ENDPOINT_TOKEN_ENV_KEY]).not.toBe(
+      a[RASPBERRYCODE_OFFICIAL_ENDPOINT_TOKEN_ENV_KEY],
     );
     if (process.platform !== "win32") {
-      const dir = await stat(dirname(a[ZCODE_OFFICIAL_ENDPOINT_ENV_KEY]!));
+      const dir = await stat(dirname(a[RASPBERRYCODE_OFFICIAL_ENDPOINT_ENV_KEY]!));
       expect(dir.mode & 0o077).toBe(0);
     }
   });
@@ -160,7 +160,7 @@ describe("official command endpoint", () => {
 
     const badToken = await call(env, "/api/v1/sites", { token: "forged" });
     expect(badToken.status).toBe(403);
-    expect(badToken.headers["x-zcode-official-endpoint-error"]).toBe("invalid");
+    expect(badToken.headers["x-raspberrycode-official-endpoint-error"]).toBe("invalid");
 
     for (const path of ["/api/v1/users/me", "/api/v1/sitesx", "/api/v1/sites/../mcp/usage", "/"]) {
       const res = await call(env, path);
@@ -182,7 +182,7 @@ describe("official command endpoint", () => {
         "Content-Type": "application/gzip",
         Cookie: "c=d",
         "X-Bigmodel-Authorization": "Bearer forged",
-        "X-ZCode-App-Version": "0.0.1",
+        "X-RaspberryCode-App-Version": "0.0.1",
         "X-Zcode-Plan": "max",
       },
       method: "PUT",
@@ -192,19 +192,19 @@ describe("official command endpoint", () => {
     expect(JSON.parse(res.body)).toMatchObject({ code: 0, data: { ok: true } });
     expect(res.headers["set-cookie"]).toBeUndefined();
     expect(resolveHeaders).toHaveBeenCalledWith(
-      expect.objectContaining({ pluginId: "zcode-site", targetOrigin: upstream.origin }),
+      expect.objectContaining({ pluginId: "raspberrycode-site", targetOrigin: upstream.origin }),
     );
     const [seen] = upstream.seen;
     expect(seen!.method).toBe("PUT");
     expect(seen!.url).toBe("/api/v1/sites/1/deployments/2/package?x=1");
-    expect(seen!.headers.authorization).toBe("Bearer zcode-jwt");
+    expect(seen!.headers.authorization).toBe("Bearer raspberrycode-jwt");
     expect(seen!.headers["x-bigmodel-authorization"]).toBe("Bearer maas");
-    expect(seen!.headers["x-zcode-app-version"]).toBe("3.16.0");
+    expect(seen!.headers["x-raspberrycode-app-version"]).toBe("3.16.0");
     expect(seen!.headers["content-type"]).toBe("application/gzip");
     expect(seen!.headers["content-length"]).toBe(String(pkg.length));
     expect(seen!.headers["transfer-encoding"]).toBeUndefined();
     expect(seen!.headers.cookie).toBeUndefined();
-    expect(seen!.headers["x-zcode-plan"]).toBeUndefined();
+    expect(seen!.headers["x-raspberrycode-plan"]).toBeUndefined();
     expect(seen!.body.equals(pkg)).toBe(true);
   });
 
@@ -227,13 +227,13 @@ describe("official command endpoint", () => {
     expect(upstream.seen).toHaveLength(0);
   });
 
-  it("marks an unreachable zcode-server as a network error", async () => {
+  it("marks an unreachable raspberrycode-server as a network error", async () => {
     const { endpoint } = await setup({ origin: "http://127.0.0.1:1" });
     const env = await endpoint.envForSession("session-a", WORKSPACE_A);
 
     const res = await call(env, "/api/v1/sites/usage");
     expect(res.status).toBe(502);
-    expect(res.headers["x-zcode-official-endpoint-error"]).toBe("network");
+    expect(res.headers["x-raspberrycode-official-endpoint-error"]).toBe("network");
   });
 
   it("stops serving and removes the socket on close", async () => {
@@ -244,7 +244,7 @@ describe("official command endpoint", () => {
     await expect(call(env, "/api/v1/sites/usage")).rejects.toThrow();
     expect(await endpoint.envForSession("session-a", WORKSPACE_A)).toEqual({});
     if (process.platform !== "win32") {
-      await expect(stat(dirname(env[ZCODE_OFFICIAL_ENDPOINT_ENV_KEY]!))).rejects.toThrow();
+      await expect(stat(dirname(env[RASPBERRYCODE_OFFICIAL_ENDPOINT_ENV_KEY]!))).rejects.toThrow();
     }
   });
 });
@@ -261,16 +261,16 @@ describe("withOfficialCommandEnv", () => {
 
   it("adds the session endpoint env to foreground and background runs", async () => {
     const port = fakePort();
-    const wrapped = withOfficialCommandEnv(port, async () => ({ ZCODE_OFFICIAL_ENDPOINT: "/s" }));
+    const wrapped = withOfficialCommandEnv(port, async () => ({ RASPBERRYCODE_OFFICIAL_ENDPOINT: "/s" }));
 
-    await wrapped.run(request({ set: { A: "1", ZCODE_OFFICIAL_ENDPOINT: "/forged" } }));
+    await wrapped.run(request({ set: { A: "1", RASPBERRYCODE_OFFICIAL_ENDPOINT: "/forged" } }));
     await wrapped.start!(request());
     await wrapped.run(request({ base: "empty" }));
 
     expect(port.run.mock.calls[0]![0].env).toEqual({
-      set: { A: "1", ZCODE_OFFICIAL_ENDPOINT: "/s" },
+      set: { A: "1", RASPBERRYCODE_OFFICIAL_ENDPOINT: "/s" },
     });
-    expect(port.start.mock.calls[0]![0].env).toEqual({ set: { ZCODE_OFFICIAL_ENDPOINT: "/s" } });
+    expect(port.start.mock.calls[0]![0].env).toEqual({ set: { RASPBERRYCODE_OFFICIAL_ENDPOINT: "/s" } });
     expect(port.run.mock.calls[1]![0].env).toEqual({ base: "empty" });
     expect(wrapped.getBackgroundTask).toBeDefined();
     expect(wrapped.cancelBackgroundTask).toBeUndefined();
@@ -292,12 +292,12 @@ describe("withOfficialCommandEnv", () => {
         .mockResolvedValue(backgroundOutcome);
       const port = Object.freeze({ ...fakePort(), runBashWithBackgroundLifecycle: runBash });
       const endpointEnv = {
-        ZCODE_OFFICIAL_ENDPOINT: "/session",
-        ZCODE_OFFICIAL_ENDPOINT_TOKEN: "token",
+        RASPBERRYCODE_OFFICIAL_ENDPOINT: "/session",
+        RASPBERRYCODE_OFFICIAL_ENDPOINT_TOKEN: "token",
       };
       const resolveEnv = vi.fn(async () => endpointEnv);
       const wrapped = withOfficialCommandEnv(port, resolveEnv);
-      const originalRequest = request({ set: { A: "1", ZCODE_OFFICIAL_ENDPOINT: "/forged" } });
+      const originalRequest = request({ set: { A: "1", RASPBERRYCODE_OFFICIAL_ENDPOINT: "/forged" } });
       const lifecycle = { mode };
       const options = { signal: new AbortController().signal, onEvent: vi.fn() };
 
@@ -321,7 +321,7 @@ describe("withOfficialCommandEnv", () => {
       });
       expect(forwardedLifecycle).toBe(lifecycle);
       expect(forwardedOptions).toBe(options);
-      expect(originalRequest.env?.set?.ZCODE_OFFICIAL_ENDPOINT).toBe("/forged");
+      expect(originalRequest.env?.set?.RASPBERRYCODE_OFFICIAL_ENDPOINT).toBe("/forged");
       expect(resolveEnv).toHaveBeenCalledTimes(1);
       expect(port.run).not.toHaveBeenCalled();
       expect(port.start).not.toHaveBeenCalled();
@@ -334,7 +334,7 @@ describe("withOfficialCommandEnv", () => {
       const runBash = vi
         .fn<BashBackgroundLifecycleExecutionPort["runBashWithBackgroundLifecycle"]>()
         .mockResolvedValue(backgroundOutcome);
-      const resolveEnv = vi.fn(async () => ({ ZCODE_OFFICIAL_ENDPOINT: "/session" }));
+      const resolveEnv = vi.fn(async () => ({ RASPBERRYCODE_OFFICIAL_ENDPOINT: "/session" }));
       const port = { ...fakePort(), runBashWithBackgroundLifecycle: runBash };
       const wrapped = withOfficialCommandEnv(port, resolveEnv);
       const originalRequest = request({ base: "empty" });
@@ -378,7 +378,7 @@ describe("withOfficialCommandEnv", () => {
       .mockResolvedValue(snapshot);
     const port = Object.freeze({ ...fakePort(), waitForBackgroundTask });
     const wrapped = withOfficialCommandEnv(port, async () => ({
-      ZCODE_OFFICIAL_ENDPOINT: "/session",
+      RASPBERRYCODE_OFFICIAL_ENDPOINT: "/session",
     }));
     const options = { signal: new AbortController().signal };
 
@@ -410,8 +410,8 @@ describe("withOfficialCommandEnv", () => {
 
 describe("createOfficialCommandAuthHeadersPort", () => {
   const ask = (workspace: { workspacePath: string; workspaceIdentity?: string } = WORKSPACE_A) => ({
-    pluginId: "zcode-site",
-    targetOrigin: "https://zcode.test",
+    pluginId: "raspberrycode-site",
+    targetOrigin: "https://raspberrycode.test",
     workspace,
   });
 
@@ -428,8 +428,8 @@ describe("createOfficialCommandAuthHeadersPort", () => {
     );
     expect(params[0]).toMatchObject({
       consumer: "plugin-command",
-      pluginId: "zcode-site",
-      targetOrigin: "https://zcode.test",
+      pluginId: "raspberrycode-site",
+      targetOrigin: "https://raspberrycode.test",
       workspace: { workspaceKey: "/w/a", workspacePath: "/w/a" },
     });
     expect(params[0]).not.toHaveProperty("mcpKey");
@@ -463,7 +463,7 @@ describe("createOfficialCommandAuthHeadersPort", () => {
       expect.any(String),
       expect.objectContaining({
         error: "Request workspace is not owned by this CLI",
-        event: "zcode_protocol.official_command_endpoint.auth_request_failed",
+        event: "raspberrycode_protocol.official_command_endpoint.auth_request_failed",
         workspaceKey: "/w/a",
       }),
     );

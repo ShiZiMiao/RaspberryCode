@@ -15,7 +15,7 @@ import {
   type SessionEntryInfo,
   type SessionId,
   type SessionStorePort,
-} from "@zcode/contracts";
+} from "@raspberrycode/contracts";
 import type { AgentRuntime } from "../../src/runtime.js";
 import type { AgentRuntimeInternal } from "../../src/runtime/internal.js";
 import { createRuntimeModel } from "../../src/runtime/methods/runtime-model.js";
@@ -582,7 +582,7 @@ function textMessage(
 ): MessageWithParts {
   const messageId = createMessageId();
   return {
-    info: { id: messageId, sessionID: sessionId, role, agent: "zcode-agent", time: { created: 1 } },
+    info: { id: messageId, sessionID: sessionId, role, agent: "raspberrycode-agent", time: { created: 1 } },
     parts: [
       { id: createPartId("u"), messageID: messageId, sessionID: sessionId, type: "text", text },
     ],
@@ -611,7 +611,7 @@ function createWorkflowMessage(
       id: messageId,
       sessionID: sessionId,
       role: "assistant",
-      agent: "zcode-agent",
+      agent: "raspberrycode-agent",
       time: { created: 2, completed: 3 },
       tokens: { input: 1, output: 1, reasoning: 0, cache: { read: 0, write: 0 } },
     },

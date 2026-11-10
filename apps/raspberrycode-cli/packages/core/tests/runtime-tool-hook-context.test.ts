@@ -8,7 +8,7 @@ import {
   type Model,
   type ModelRequest,
   type ModelResult,
-} from "@zcode/contracts";
+} from "@raspberrycode/contracts";
 import { createSqliteSessionStore } from "../../adapters/src/storage/session-store/sqlite-session-store.js";
 import { createInMemoryHookRunner } from "../src/hooks/index.js";
 import type { HookCallback } from "../src/hooks/types.js";
@@ -42,7 +42,7 @@ function batchTails(request: ModelRequest): Array<Array<Pick<Message, "role" | "
 
 describe.each([true, false])("tool hook context after the tool batch (MCS=%s)", (mcs) => {
   it("keeps raw tool results and sends one context per hook after the batch, live and after resume", async () => {
-    const root = await mkdtemp(join(tmpdir(), "zcode-tool-hook-context-"));
+    const root = await mkdtemp(join(tmpdir(), "raspberrycode-tool-hook-context-"));
     const dbPath = join(root, "session.sqlite");
     const sessionId = createSessionId(`tool-hook-context-${mcs}`);
     let store = await createSqliteSessionStore({ dbPath });

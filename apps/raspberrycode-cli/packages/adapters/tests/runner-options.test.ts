@@ -523,8 +523,8 @@ describe("createStreamTextOptions", () => {
   );
 });
 
-describe("x-zcode-session-features attribution header", () => {
-  const SESSION_FEATURES_HEADER = "x-zcode-session-features";
+describe("x-raspberrycode-session-features attribution header", () => {
+  const SESSION_FEATURES_HEADER = "x-raspberrycode-session-features";
 
   function optionsWith(
     createOptions: typeof createGenerateTextOptions | typeof createStreamTextOptions,
@@ -585,16 +585,16 @@ describe("x-zcode-session-features attribution header", () => {
   it.each([createGenerateTextOptions, createStreamTextOptions])(
     "%s 剔除 provider 静态同名 header（不区分大小写）",
     (createOptions) => {
-      const headers = { "X-ZCode-Session-Features": "spoofed", "x-static-marker": "kept" };
+      const headers = { "X-RaspberryCode-Session-Features": "spoofed", "x-static-marker": "kept" };
       const withFeatures = optionsWith(createOptions, { features: ["workflow_cmd"], headers });
       expect(withFeatures.headers).toMatchObject({
         [SESSION_FEATURES_HEADER]: "workflow_cmd",
         "x-static-marker": "kept",
       });
-      expect(withFeatures.headers).not.toHaveProperty("X-ZCode-Session-Features");
+      expect(withFeatures.headers).not.toHaveProperty("X-RaspberryCode-Session-Features");
 
       const withoutFeatures = optionsWith(createOptions, { headers });
-      expect(withoutFeatures.headers).not.toHaveProperty("X-ZCode-Session-Features");
+      expect(withoutFeatures.headers).not.toHaveProperty("X-RaspberryCode-Session-Features");
       expect(withoutFeatures.headers).not.toHaveProperty(SESSION_FEATURES_HEADER);
     },
   );

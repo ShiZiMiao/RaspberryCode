@@ -6,7 +6,7 @@ import type {
   V4SessionDataMeasureResult,
   V4SessionDataParams,
   V4SessionDataPurgeResult,
-} from "@zcode/shared/zcode-protocol-v4";
+} from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import { createServiceLogger } from "#src/logger/serviceLogger.js";
 import type { ProjectDataPort, ProjectDataSession } from "#src/project/data/contract.js";
 

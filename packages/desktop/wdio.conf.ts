@@ -958,7 +958,7 @@ async function stageDesktopE2EAppOutput() {
     // prepare:remote-assets（→ @raspberrycode/server-cli stage:remote-assets）。runPnpmWorkspaceCommand
     // 的 cwd 固定为 REPO_ROOT，直接传脚本名即可命中根脚本。
     // 本机 Docker runner 声明「只需 Linux」时，helper 改读 descriptor 判断两个 Linux 目标，
-    // 并只调用 `ZCODE_ENV=test pnpm prepare:remote-assets:linux`；未声明时行为不变。
+    // 并只调用 `RASPBERRYCODE_ENV=test pnpm prepare:remote-assets:linux`；未声明时行为不变。
     await ensureSshRemoteReleaseAssets({
       releaseDir: E2E_REMOTE_RELEASE_SOURCE_DIR,
       scope: resolveSshRemoteReleaseScope(process.env),
