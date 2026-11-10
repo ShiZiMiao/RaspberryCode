@@ -1,12 +1,9 @@
+import { startDraftFromProject } from "#e2e/helpers/project-sidebar";
 import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { DEFAULT_WORKSPACE } from "../../../helpers/desktop-app.js";
-import { skipOccupationOnboardingIfPresent } from "../../../helpers/occupation-onboarding.js";
-import {
-  prepareConversationE2E,
-  startNewTask,
-  typeChatPrompt,
-} from "../../../helpers/conversation-session.js";
+import { DEFAULT_WORKSPACE } from "../helpers/desktop-app.js";
+import { skipOccupationOnboardingIfPresent } from "../helpers/occupation-onboarding.js";
+import { prepareV4ConversationE2E, setV4ComposerText } from "#e2e/helpers/v4-conversation";
 
 // gitignore 解析按行识别，行尾风格不影响规则；统一写 \n 避免 e2e 源码里出现跨行字面量。
 const LINE_SEP = "\n";
@@ -47,12 +44,13 @@ describe("会话区 .raspberrycodeignore 工作区搜索忽略规则 E2E", () =>
     this.timeout(TEST_TIMEOUT_MS);
     // 新隔离 profile 会先显示职业引导，完成后才能进入文件搜索场景。
     await skipOccupationOnboardingIfPresent();
-    await prepareConversationE2E();
+    await prepareV4ConversationE2E();
   });
 
   beforeEach(async function () {
     this.timeout(TEST_TIMEOUT_MS);
-    await startNewTask();
+    // 原因：全局新草稿可继承其它项目；搜索 fixture 必须绑定其实际项目。
+    await startDraftFromProject(DEFAULT_WORKSPACE);
   });
 
   after(async () => {
@@ -85,7 +83,11 @@ describe("会话区 .raspberrycodeignore 工作区搜索忽略规则 E2E", () =>
     originalGitignore = await readFile(gitignorePath, "utf-8").catch(() => null);
     const baseGitignore = originalGitignore ?? "";
     if (!/^obj\/$/m.test(baseGitignore)) {
-      await writeFile(gitignorePath, `${baseGitignore}${baseGitignore.endsWith("\n") || !baseGitignore ? "" : "\n"}obj/\n`, "utf-8");
+      await writeFile(
+        gitignorePath,
+        `${baseGitignore}${baseGitignore.endsWith("\n") || !baseGitignore ? "" : "\n"}obj/\n`,
+        "utf-8",
+      );
     }
     const objDir = join(DEFAULT_WORKSPACE, "obj");
     const srcDir = join(DEFAULT_WORKSPACE, "src");
@@ -96,10 +98,10 @@ describe("会话区 .raspberrycodeignore 工作区搜索忽略规则 E2E", () =>
     seededDirs.push(objDir, srcDir);
 
     // 1) 默认剪枝：src marker 可搜（证明面板与索引正常），obj/Debug 不可搜（内存规则生效）。
-    await typeChatPrompt(`@${marker}`);
+    await setV4ComposerText(`@${marker}`);
     const visiblePanel = await waitForPanelSections("@", ["files"], "@ 文件候选面板没有打开");
     expect(visiblePanel.options.map((o) => o.text).join("\n")).toContain(`${marker}.ts`);
-    await typeChatPrompt(`@${marker}.cs`);
+    await setV4ComposerText(`@${marker}.cs`);
     await waitForPanelNoOptionContaining("obj/Debug", "obj/ 下被忽略文件不应进入候选");
 
     // 管理入口隐藏期间，搜索不应自动在工作区创建配置文件。
@@ -119,8 +121,8 @@ describe("会话区 .raspberrycodeignore 工作区搜索忽略规则 E2E", () =>
     // 注意不能省略关闭步骤：第二步的 @ query 文本仍在输入框里，面板
     // enabled 从未变 false，不经历"关闭→重开"周期就不会重新读取索引。
     // 同会话第二次打开面板时 plugins/skills 分区已缓存就绪，故只断言 files 分区包含目标。
-    await typeChatPrompt("refresh-panel");
-    await typeChatPrompt(`@${marker}.cs`);
+    await setV4ComposerText("refresh-panel");
+    await setV4ComposerText(`@${marker}.cs`);
     await waitForPanelFilesOptionContaining(
       `${marker}.cs`,
       "删除规则后 obj/Debug 下文件未恢复可搜",

@@ -1,5 +1,9 @@
 import { recordArmsCustomEventForE2E } from "@raspberrycode/ui";
-import { DesktopCommandIds, buildLocalMediaPreviewUrl, type IPlatformService } from "@raspberrycode/shared";
+import {
+  DesktopCommandIds,
+  buildLocalMediaPreviewUrl,
+  type IPlatformService,
+} from "@raspberrycode/shared";
 
 import { desktopBrowserPlatformBridge } from "./desktopBrowserPlatformBridge.js";
 import { createDesktopPluginSandboxPlatform } from "./plugin-sandbox/desktopPluginSandboxPlatform.js";
@@ -66,6 +70,7 @@ export function createDesktopPlatform(options: {
     registerOAuthState: (payload) => window.raspberrycode.registerOAuthState(payload),
     onOAuthCallback: (callback) => window.raspberrycode.onOAuthCallback(callback),
     notifyRendererReady: () => window.raspberrycode.notifyRendererReady(),
+    syncTelemetryContext: (context) => window.raspberrycode.syncTelemetryContext(context),
     reportTelemetryEvent: (payload) => window.raspberrycode.reportTelemetryEvent(payload),
     reportArmsCustomEvent: (payload) => {
       recordArmsCustomEventForE2E(payload);
@@ -180,6 +185,9 @@ export function createDesktopPlatform(options: {
     onApplicationLocaleChanged: (callback) =>
       window.raspberrycode.onApplicationLocaleChanged?.(callback) ?? (() => {}),
     getInstalledEditors: (filePath) => window.raspberrycode.getInstalledEditors(filePath),
+    getFileApplications: (target) => window.raspberrycode.getFileApplications(target),
+    openFileWithApplication: (applicationId, target) =>
+      window.raspberrycode.openFileWithApplication(applicationId, target),
     getApplicationIcon: (bundleId) =>
       window.raspberrycode.getApplicationIcon?.(bundleId) ?? Promise.resolve(null),
     openInEditor: (editorId, path, editorOptions) =>

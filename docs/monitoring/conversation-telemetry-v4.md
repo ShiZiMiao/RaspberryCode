@@ -1,7 +1,7 @@
 # V4 对话埋点兼容规范
 
-本文冻结 V4 conversation 主链路的对话埋点口径。实现以 `旧版` 的生产行为为兼容基准，
-只恢复旧版已经存在的数据，不借迁移修改字段类型、指标公式或采集范围。
+本文冻结 V4 conversation 主链路的对话埋点口径。实现以旧版的生产行为为兼容基准，
+基础迁移保持旧字段类型与指标公式。
 
 ## 目标与非目标
 
@@ -22,6 +22,8 @@
 - 把 telemetry 状态写入 conversation rows、snapshot、relay 或 main 进程。
 
 ## 架构与状态边界
+
+以下为桌面 continuous 链路，按 command 来源归因，不依赖当前页面是否可见。
 
 ```text
 CLI V4 live SessionEvent
@@ -102,7 +104,7 @@ header、header count、token、prompt、上游原始 message 或 finish reason�
 - `workspace_kind`：`local` / `remote`，表示本轮实际运行的 workspace 类型；
 - `remote_kind`：`ssh` / `wsl` / `docker` / `server`，本地或无法解析远端类型时为空字符串。
 
-这两个字段是低基数维度，值由 renderer workspace attachment 在 supervisor 创建时冻结，并同时写入同一
+这两个字段是低基数维度，桌面由 renderer workspace attachment 在归集器创建时冻结，并同时写入同一
 message 的 completion 与 step。远端类型只能通过统一的 `parseRemoteWorkspaceIdentity` 解析；不得把
 `remoteSessionId`、`workspaceIdentity`、`workspacePath`、主机地址或其它高基数身份直接写入埋点。
 
@@ -122,6 +124,11 @@ fact 只从当前进程的 live ingest 产生：
 - hydration 期间新到达并暂存在 live buffer 的事件：产生一次。
 - CLI/runtime 重启后不根据 orphan 或历史终态补造 completion。
 
+## 界面模式归属
+
+`send_btn`、`message_completion`、`agent_step` 增加 `ui_mode`，发送时冻结并沿既有 seed/父子
+归因链传递，无来源时为 `unknown`。详见[业务埋点界面模式契约](./business-monitoring.md)。
+
 ## ID、时钟和去重
 
 - `talk_id = sessionId`。
@@ -136,6 +143,8 @@ fact 只从当前进程的 live ingest 产生：
 - 本地 prompt seed 只在内存中保留；renderer reload 后不补报。
 
 ## 事件触发矩阵
+
+下表描述桌面 UI reporter。
 
 | 事件 | foreground | 切走后的 background | initial/recovery |
 | --- | --- | --- | --- |
@@ -222,7 +231,7 @@ detail、requestId。RaspberryCode 只上报事实归因，不上报 `owner` 或
 
 attribution 随权威 conversation error 状态进入 snapshot，因此 live continuous 与 persisted cold
 hydration 对同一错误应得到相同归因；它不触发 telemetry 补报。桌面仍仅在 banner 实际可见时通过
-`desktop-continuous` reporter 上报，手机 `web-remote-replayable` 不新增网络上报能力。
+`desktop-continuous` reporter 上报。
 
 `source` 必须依据错误发生边界判定，不能只按 failure reason 猜测。判定优先级为：用户取消和
 请求发出前的本地 provider 配置、请求选项校验、未知 adapter 异常归为 `runtime`；TLS、代理、
@@ -310,8 +319,7 @@ ACK 与 live telemetry fact 增加可选 boolean `memoryEnabled`；缺失保持 
 先于 ACK 的普通事实继续使用现有 pending fact 缓冲；child 启动事实直接沿用父会话字段，不等待 ACK；去重、FIFO、workspace identity 不变。
 后台任务不伪造 send_btn；子 Agent 继承来源 prompt 的开关，不把其自身记忆工具使用当开关。
 传输只增加无正文元数据，CLI snapshot/历史恢复不补造 telemetry fact。桌面保持
-`desktop-continuous` live reporter，手机 `web-remote-replayable` 不安装 reporter、
-不扩大 telemetry 采集范围；命令 ACK 在两端均兼容新字段。
+`desktop-continuous` live reporter。
 
 验收：开/关各验证三个事件同值；设置变更后存量实例不漂移；后台轮和 detached child
 继承；事实早于 ACK、重复 ACK 保持原有去重；旧 CLI 缺字段留空；非 boolean 协议值被拒绝。
@@ -325,5 +333,4 @@ ACK 与 live telemetry fact 增加可选 boolean `memoryEnabled`；缺失保持 
   使用未修改的 staging gateway 复跑仍得到相同失败。
 - CLI lint 被未修改文件的既有 `max-lines` 错误阻塞。
 - Memory WDIO 的 `before all` 未能选择 Full access/yolo 模式，未到新增埋点断言；
-  不能把本次运行作为桌面开/关埋点的端到端通过证据。手机远控未进行新增实机验证，
-  原有 reporter 的 desktop-continuous 边界保持不变。
+  不能把本次运行作为桌面开/关埋点的端到端通过证据。原有 reporter 的 desktop-continuous 边界保持不变。

@@ -142,17 +142,53 @@ export function productionPackages(projects, isInstallable = () => true) {
   return required;
 }
 
-export function assertProductionGraphs(lockedProjects, installedProjects, isInstallable) {
-  const locked = productionPackages(lockedProjects, isInstallable);
-  const installed = productionPackages(installedProjects, isInstallable);
-  const missing = [...locked].filter(([key]) => !installed.has(key));
-  const stale = [...installed.keys()].filter((key) => !locked.has(key));
-  if (missing.length || stale.length) {
+export function assertInstalledLockfileSnapshot(rootLockfile, installedLockfile) {
+  // Windows autocrlf 工作区的根 lockfile 可能是 CRLF，而 pnpm 安装快照始终写 LF；
+  // 换行风格不改变依赖图，归一化后比较（评审 CR-03：原始字符串比较会把
+  // 依赖图一致的 CRLF 工作区误判为安装快照过期，且重装无法消除差异）。
+  const normalize = (value) => value.replaceAll("\r\n", "\n");
+  if (normalize(rootLockfile) !== normalize(installedLockfile)) {
     throw new Error(
-      `Installed production graph differs from pnpm-lock.yaml. Run pnpm install --frozen-lockfile.\nMissing: ${missing.map(([key]) => key).join(", ")}\nStale: ${stale.join(", ")}`,
+      "Installed dependency snapshot differs from pnpm-lock.yaml. Run pnpm install --frozen-lockfile.",
     );
   }
-  return locked;
+}
+
+async function readWorkspaceProjects(root) {
+  const { stdout } = await exec("pnpm", ["-r", "list", "--depth", "-1", "--json"], {
+    cwd: root,
+    maxBuffer: 64 * 1024 * 1024,
+    ...resolveSpawnRuntimeOptions("pnpm"),
+  });
+  return JSON.parse(stdout);
+}
+
+export function createPnpmLockfileOnlyEnv(env = process.env) {
+  return { ...env, NPM_CONFIG_LOCKFILE_ONLY: "true" };
+}
+
+async function readLockedWorkspaceProductionGraph(root, workspaceProjects) {
+  const projects = [];
+  // pnpm 10.33.2 的递归 list 在 Windows 会一次打开整个 workspace，超过句柄上限。
+  // 固定根 lockfile 后按唯一 workspace 名称逐项过滤，保留完整 deduped 子树并限制峰值句柄数。
+  for (const project of workspaceProjects) {
+    const { stdout } = await exec(
+      "pnpm",
+      ["--filter", project.name, "list", "--prod", "--json", "--depth", "Infinity"],
+      {
+        cwd: root,
+        env: createPnpmLockfileOnlyEnv(),
+        maxBuffer: 64 * 1024 * 1024,
+        ...resolveSpawnRuntimeOptions("pnpm"),
+      },
+    );
+    const rows = JSON.parse(stdout);
+    if (rows.length !== 1) {
+      throw new Error(`Unexpected pnpm production graph rows for ${project.name}: ${rows.length}`);
+    }
+    projects.push(rows[0]);
+  }
+  return projects;
 }
 
 // 修复原因：Windows 上 `pnpm -r ls --depth Infinity` 全仓并发解析依赖树时，并发打开
@@ -161,43 +197,26 @@ export function assertProductionGraphs(lockedProjects, installedProjects, isInst
 // 本身就是逐项目结果的数组，形状与语义完全一致，仅把并发摊平为串行以避开句柄峰值。
 export async function readWorkspaceProductionGraph(root) {
   root = await realpath(root);
-  const runOptions = { cwd: root, ...resolveSpawnRuntimeOptions("pnpm") };
-  const { stdout: projectsJson } = await exec("pnpm", ["-r", "ls", "--depth", "-1", "--json"], {
-    ...runOptions,
-    maxBuffer: 64 * 1024 * 1024,
-  });
-  const workspaceProjects = JSON.parse(projectsJson);
-  // 修复：pnpm ls 默认读取安装快照，不能把旧图与当前锁文件哈希拼成有效声明。
-  const results = { locked: [], actual: [] };
-  for (const project of workspaceProjects) {
-    const filter = `./${relative(root, project.path).replaceAll("\\", "/")}`;
-    for (const [key, lockfileOnly] of [
-      ["locked", true],
-      ["actual", false],
-    ]) {
-      const { stdout } = await exec(
-        "pnpm",
-        [
-          "--filter",
-          filter,
-          "ls",
-          "--prod",
-          "--json",
-          "--depth",
-          "Infinity",
-          ...(lockfileOnly ? ["--lockfile-only"] : []),
-        ],
-        { ...runOptions, maxBuffer: 256 * 1024 * 1024 },
-      );
-      results[key].push(...JSON.parse(stdout));
-    }
+  const rootLockfile = await readFile(join(root, "pnpm-lock.yaml"), "utf8");
+  let installedLockfile;
+  try {
+    installedLockfile = await readFile(join(root, "node_modules/.pnpm/lock.yaml"), "utf8");
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+    throw new Error(
+      "Installed dependency snapshot is missing. Run pnpm install --frozen-lockfile.",
+      { cause: error },
+    );
   }
+  assertInstalledLockfileSnapshot(rootLockfile, installedLockfile);
+  const workspaceProjects = await readWorkspaceProjects(root);
+  const lockedProjects = await readLockedWorkspaceProductionGraph(root, workspaceProjects);
   const isInstallable = createInstallablePackageFilter(
-    readLockfilePlatformConstraints(await readFile(join(root, "pnpm-lock.yaml"), "utf8")),
+    readLockfilePlatformConstraints(rootLockfile),
     await readInstallTargets(root),
   );
-  const required = assertProductionGraphs(results.locked, results.actual, isInstallable);
-  return { required, projects: results.actual };
+  const required = productionPackages(lockedProjects, isInstallable);
+  return { required, projects: workspaceProjects };
 }
 
 export async function scanInstalledPackages(root, projects) {

@@ -49,6 +49,8 @@ import type {
   EmbeddedBrowserSitePermissionResetRequest,
   EmbeddedBrowserSitePermissionsSnapshot,
   EditorInfo,
+  FileApplicationInfo,
+  FileApplicationTarget,
   CreateTempTextAttachmentRequest,
   CreateTempTextAttachmentResult,
   MaterializeWorkflowArtifactFileRequest,
@@ -126,6 +128,10 @@ export const ServiceChannels = {
   SourceServerWorkspace: "source-server-workspace",
   /** 桌面 Host 的 Source Server 目录与连接管理服务 */
   SourceServerManagement: "source-server-management",
+  /** 桌面 Host 的数据同步设备状态（按 sourceServerId 记录上次同步结果，仅本机注册） */
+  DeviceSyncState: "device-sync-state",
+  /** 桌面 Host 的数据同步页模型提供商：读取 / 重试 Main 协调器的 Provisioning lane（仅本机注册） */
+  ProviderProvisioningStatus: "provider-provisioning-status",
   /** 本地 usage 统计服务 */
   UsageStats: "usage-stats",
   /** Coding Plan 订阅购买服务 */
@@ -141,6 +147,8 @@ export const ServiceChannels = {
   McpSync: "mcp-sync",
   /** SSH 远程 plugin 同步服务 */
   PluginSync: "plugin-sync",
+  /** 数据同步：子智能体、命令、钩子共用的用户配置同步通道（按 category 区分，不进手机白名单） */
+  UserConfigSync: "user-config-sync",
   /** 插件管理服务 */
   Plugins: "plugins",
   /** 设置页插件管理服务（UI 平台能力面收敛，不再直触 raspberrycodeAgentService） */
@@ -388,6 +396,10 @@ export const PlatformChannels = {
    * main 用 BrowserGuestManager attach 该 guest（fire-and-forget）。CDP-on-guest pivot。
    */
   BrowserViewAttachGuest: "raspberrycode:browser-view-attach-guest",
+  /** 可信宿主发起导航；main 将本地 HTML 转成有目录边界的预览地址。 */
+  BrowserViewLoadUrl: "raspberrycode:browser-view-load-url",
+  /** Main → Renderer：guest 开始下载。 */
+  BrowserViewDownloadStarted: "raspberrycode:browser-view-download-started",
   /** Renderer → Main：重建 `<webview>` 前主动断开旧 guest 的 CDP。 */
   BrowserViewDetachGuest: "raspberrycode:browser-view-detach-guest",
   /** Renderer → Main：用户显式关闭 Browser tab。 */
@@ -432,6 +444,10 @@ export const PlatformChannels = {
   GetSystemLocale: "raspberrycode:get-system-locale",
   /** Renderer → Main：获取系统中已安装的编辑器/终端列表（含图标） */
   GetInstalledEditors: "raspberrycode:get-installed-editors",
+  /** Renderer → Main：查询可用于打开指定文件的应用列表 */
+  GetFileApplications: "raspberrycode:get-file-applications",
+  /** Renderer → Main：用指定应用打开文件 */
+  OpenFileWithApplication: "raspberrycode:open-file-with-application",
   /** Renderer → Main：按 bundle id 获取系统应用图标 */
   GetApplicationIcon: "raspberrycode:get-application-icon",
   /** Renderer → Main：用指定编辑器打开路径 */
@@ -576,6 +592,7 @@ export const HostMessageTypes = {
   /** main → window Host：释放一个远程 logical session */
   DisposeRemoteWorkspaceSession: "dispose-remote-workspace-session",
   /** main → host：复用现有服务，对新的 RPC MessagePort 暴露服务 */
+  SetTerminalOwner: "set-terminal-owner",
   AttachServicePort: "attach-service-port",
   /** main → host：精确释放一个 RPC MessagePort attachment */
   DetachServicePort: "detach-service-port",
@@ -611,6 +628,8 @@ export const HostMessageTypes = {
   CuaPipFocusChanged: "cua-pip-focus-changed",
   /** main → host：要求 Host 现读本地 Source，并同步指定 Remote Environment。 */
   ProviderProvisioningExecute: "provider-provisioning-execute",
+  /** main → host：数据同步页读取 / 重试 Provisioning lane 的结果。 */
+  ProviderProvisioningLaneResult: "provider-provisioning-lane-result",
   /** main → host：资源管理器请求 Host 采样其后代进程（Agent / MCP / 终端）的 CPU 与内存 */
   ResourceUsageSnapshotRequest: "resource-usage-snapshot-request",
   ResourceUsageSnapshotCancel: "resource-usage-snapshot-cancel",
@@ -659,6 +678,7 @@ export const HostResponseTypes = {
   ToolExecResource: "tool-exec-resource",
   /** 自动化 Host 首次输入 accepted 后报告新建 Session。 */
   SessionCreateTelemetry: "session-create-telemetry",
+  RemoteConversationTelemetry: "remote-conversation-telemetry",
   PluginTelemetry: "plugin-telemetry",
   /** host → main：资源管理器采样结果（按 requestId 关联） */
   ResourceUsageSnapshotResult: "resource-usage-snapshot-result",
@@ -715,6 +735,8 @@ export const HostResponseTypes = {
   ProviderProvisioningSourceChanged: "provider-provisioning-source-changed",
   /** host → main：一次 Remote Environment 同步执行完毕。 */
   ProviderProvisioningExecutionResult: "provider-provisioning-execution-result",
+  /** host → main：数据同步页按设备读取或重试 Provisioning lane。 */
+  ProviderProvisioningLaneRequest: "provider-provisioning-lane-request",
 } as const;
 
 // ============================================================================
@@ -904,6 +926,10 @@ export interface PlatformChannelMap {
   [PlatformChannels.ResetEmbeddedBrowserSitePermission]: {
     request: EmbeddedBrowserSitePermissionResetRequest;
     response: EmbeddedBrowserSitePermissionsSnapshot;
+  };
+  [PlatformChannels.BrowserViewDownloadStarted]: {
+    request: { webContentsId: number; urls: string[] };
+    response: void;
   };
   [PlatformChannels.BrowserViewReady]: {
     request: {
@@ -1171,6 +1197,14 @@ export interface PlatformChannelMap {
   [PlatformChannels.GetInstalledEditors]: {
     request: string | undefined;
     response: EditorInfo[];
+  };
+  [PlatformChannels.GetFileApplications]: {
+    request: FileApplicationTarget;
+    response: FileApplicationInfo[];
+  };
+  [PlatformChannels.OpenFileWithApplication]: {
+    request: { applicationId: string; target: FileApplicationTarget };
+    response: { success: boolean; error?: string };
   };
   [PlatformChannels.GetApplicationIcon]: {
     request: string | import("./platform.js").ApplicationIconRequest;

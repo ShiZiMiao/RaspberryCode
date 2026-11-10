@@ -39,7 +39,7 @@ import {
   type AiSdkModelTextRequest,
   type ResolvedAiSdkModel,
 } from "./runner-runtime.js";
-import { resolveToolSearchCapability } from "./tool-search.js";
+import { resolveModelRequestCapabilities } from "./tool-search.js";
 import { createModel, type ModelExecutionRequest } from "./model.js";
 
 export type { AiSdkModelRetryOptions } from "./retry-policy.js";
@@ -54,6 +54,9 @@ export type {
 export { normalizeUsage, toModelStreamEvent } from "./runner-normalization.js";
 
 export interface AiSdkModelAdapterOptions {
+  /** 注入请求观测或测试传输，仍经过现有代理、协议及参数映射链。 */
+  transport?: typeof globalThis.fetch;
+  observeTransport?: (transport: typeof globalThis.fetch) => typeof globalThis.fetch;
   defaultHeaders?: AiSdkModelExecutionConfig["defaultHeaders"];
   requestSecurityState?: ModelRequestSecurityState;
   endpointRoutingPort?: import("@raspberrycode/contracts").ProviderEndpointRoutingPort;
@@ -99,6 +102,8 @@ export class AiSdkModelAdapter {
         ...(options.env ? { env: options.env } : {}),
       },
       {
+        ...(options.transport ? { transport: options.transport } : {}),
+        ...(options.observeTransport ? { observeTransport: options.observeTransport } : {}),
         ...(options.requestSecurityState
           ? { requestSecurityState: options.requestSecurityState }
           : {}),
@@ -199,12 +204,10 @@ export class AiSdkModelAdapter {
       });
     };
     return createModel({
-      requestCapabilities: {
-        toolSearch: resolveToolSearchCapability(
-          options.providerConfig.api.type,
-          options.providerConfig.access,
-        ),
-      },
+      requestCapabilities: resolveModelRequestCapabilities(
+        options.providerConfig.api.type,
+        options.providerConfig.access,
+      ),
       providerId: resolved.providerId,
       modelId: resolved.modelId,
       displayName: options.displayName,

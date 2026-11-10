@@ -175,6 +175,7 @@ describe(`问号菜单应用入口（${expectedFlavor}）`, () => {
       "Report an issue",
       "Request a feature",
       "Export logs",
+      "Copy device MID",
       "Resource manager",
       "About RaspberryCode",
     ]);
@@ -204,6 +205,7 @@ describe(`问号菜单应用入口（${expectedFlavor}）`, () => {
       "问题上报",
       "给产品提需求",
       "导出日志",
+      "复制设备 MID",
       "资源管理器",
       "关于 RaspberryCode",
     ]);

@@ -2,6 +2,7 @@ import type { IPlatformService } from "@raspberrycode/shared";
 
 type DesktopBrowserPlatformBridge = Pick<
   IPlatformService,
+  | "onBrowserViewDownloadStarted"
   | "onBrowserViewReady"
   | "onBrowserViewOperation"
   | "onBrowserViewViewportChanged"
@@ -9,6 +10,7 @@ type DesktopBrowserPlatformBridge = Pick<
   | "onBrowserViewCloseTab"
   | "onBrowserViewSuspend"
   | "onBrowserViewRestore"
+  | "browserViewLoadUrl"
   | "browserViewAttachGuest"
   | "browserViewDetachGuest"
   | "browserViewCloseTab"
@@ -32,6 +34,8 @@ export const desktopBrowserPlatformBridge = {
     window.raspberrycode.saveFile?.(payload) ?? Promise.resolve({ success: false, error: "not_supported" }),
   // 条件定义而非兜底返回失败：UI 靠方法是否存在做能力检测，旧 preload 下必须保持 undefined
   printPageToPdf: window.raspberrycode.printPageToPdf ? () => window.raspberrycode.printPageToPdf!() : undefined,
+  onBrowserViewDownloadStarted: (handler) =>
+    window.raspberrycode.onBrowserViewDownloadStarted?.(handler) ?? (() => {}),
   onBrowserViewReady: (handler) => window.raspberrycode.onBrowserViewReady?.(handler) ?? (() => {}),
   onBrowserViewOperation: (handler) => window.raspberrycode.onBrowserViewOperation?.(handler) ?? (() => {}),
   onBrowserViewViewportChanged: (handler) =>
@@ -41,6 +45,7 @@ export const desktopBrowserPlatformBridge = {
   onBrowserViewCloseTab: (handler) => window.raspberrycode.onBrowserViewCloseTab?.(handler) ?? (() => {}),
   onBrowserViewSuspend: (handler) => window.raspberrycode.onBrowserViewSuspend?.(handler) ?? (() => {}),
   onBrowserViewRestore: (handler) => window.raspberrycode.onBrowserViewRestore?.(handler) ?? (() => {}),
+  browserViewLoadUrl: (payload) => window.raspberrycode.browserViewLoadUrl!(payload),
   browserViewAttachGuest: (payload) =>
     window.raspberrycode.browserViewAttachGuest?.(payload) ??
     // 兜底字面量经显式泛型收窄（"not-found" 是合法拒绝原因）；裸 Promise.resolve 会把

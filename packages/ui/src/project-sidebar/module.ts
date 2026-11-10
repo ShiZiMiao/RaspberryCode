@@ -10,6 +10,7 @@ export const projectSidebarModule = {
     "ui",
     "conversation-workspace-target",
     "remote-connection-flow",
+    "data-sync",
   ],
   provides: ["project-sidebar"],
   publicEntrypoints: [

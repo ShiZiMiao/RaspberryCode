@@ -40,6 +40,7 @@ export { DEFAULT_CODE_PREVIEW_SETTINGS } from "@/lib/codePreviewSettings.js";
 
 const CODE_PREVIEW_SETTINGS_KEY = "raspberrycode-code-preview-settings";
 const PERFORMANCE_MODE_STORAGE_KEY = "raspberrycode-performance-mode";
+const HIDE_PROJECT_DEVICE_NAMES_STORAGE_KEY = "raspberrycode-hide-project-device-names";
 export const FILE_MANAGER_NAVIGATION_PREFERENCES_STORAGE_KEY =
   "raspberrycode-file-manager-navigation-preferences";
 
@@ -119,6 +120,10 @@ export interface RaspberryCodeState {
   performanceMode: boolean;
   setPerformanceMode: (enabled: boolean) => void;
 
+  /** 仅桌面项目行消费；设备身份和其他入口的显示不受影响。 */
+  hideProjectDeviceNames: boolean;
+  setHideProjectDeviceNames: (hidden: boolean) => void;
+
   /** 是否启用任务通知（桌面通知；提示音由子开关控制） */
   notificationEnabled: boolean;
   setNotificationEnabled: (enabled: boolean) => void;
@@ -164,6 +169,7 @@ const BROADCAST_FIELDS = new Set([
   "uiFontSizePx",
   "interfaceMode",
   "notificationEnabled",
+  "hideProjectDeviceNames",
 ]);
 
 type BroadcastField =
@@ -171,6 +177,7 @@ type BroadcastField =
   | "locale"
   | "uiFontSizePx"
   | "interfaceMode"
+  | "hideProjectDeviceNames"
   // 任务通知开关跨窗口同步：角标是应用级表面，A 窗口关通知而 B 窗口仍上报未读时，
   // 主进程 max 聚合会让任务栏/托盘继续亮，设置与提醒状态错位。
   | "notificationEnabled";
@@ -273,6 +280,12 @@ export function createRaspberryCodeStore(
     setPerformanceMode: (enabled: boolean) => {
       writeSafeLocalStorage(PERFORMANCE_MODE_STORAGE_KEY, enabled ? "true" : "false");
       set({ performanceMode: enabled });
+    },
+
+    hideProjectDeviceNames: readSafeLocalStorage(HIDE_PROJECT_DEVICE_NAMES_STORAGE_KEY) === "true",
+    setHideProjectDeviceNames: (hidden) => {
+      writeSafeLocalStorage(HIDE_PROJECT_DEVICE_NAMES_STORAGE_KEY, String(hidden));
+      set({ hideProjectDeviceNames: hidden });
     },
 
     notificationEnabled: isTaskNotificationEnabled(),
@@ -394,6 +407,8 @@ export function createRaspberryCodeStore(
         state.setUiFontSizePx(msg.payload);
       } else if (field === "notificationEnabled" && typeof msg.payload === "boolean") {
         state.setNotificationEnabled(msg.payload);
+      } else if (field === "hideProjectDeviceNames" && typeof msg.payload === "boolean") {
+        state.setHideProjectDeviceNames(msg.payload);
       }
     } finally {
       applyingBroadcast = false;

@@ -1,3 +1,8 @@
+import {
+  BROWSER_LOCAL_PREVIEW_PRIVILEGES,
+  installBrowserLocalPreview,
+} from "@desktop/main/browser-local-preview/index.js";
+import { createRemoteConversationTelemetryDispatcher } from "@zcode/shared/conversation-telemetry";
 import { installRequestSecurityDiagnostics } from "./request-security-edition/index.js";
 import { createLocalTtftExporter } from "./localTtftExporter.js";
 /* eslint-disable max-lines */
@@ -59,8 +64,10 @@ import {
   createTelemetryAuthorizationLoader,
   buildRuntimeProcessEnvPatch,
   captureLoginShellEnvSnapshot,
+  getAppConfigDir,
   getConversationWorkspaceDir,
   getDataBaseDir,
+  getExportLogDir,
   getRaspberryCodeDataRootDir,
   normalizeRuntimeProcessEnv,
   setDataBaseDir,
@@ -86,7 +93,7 @@ import {
   HostMessageTypes,
   InternalChannels,
 } from "@raspberrycode/shared";
-import { logger } from "./logger.js";
+import { logger, flushLocalTtftLogs } from "./logger.js";
 import { markMainLaunchAppReady } from "./desktopLaunchMarks.js";
 import { createCuaPipFocusRouter, resolveCuaPipWindowKey } from "./cuaPipFocusRouter.js";
 import { createDesktopTelemetryFetch } from "./desktopTelemetryFetch.js";
@@ -253,7 +260,10 @@ import {
   installPluginSandboxHost,
 } from "./pluginSandbox/index.js";
 
-registerLocalMediaPreviewScheme(protocol, [PLUGIN_SANDBOX_PRIVILEGED_SCHEME]);
+registerLocalMediaPreviewScheme(protocol, [
+  PLUGIN_SANDBOX_PRIVILEGED_SCHEME,
+  BROWSER_LOCAL_PREVIEW_PRIVILEGES,
+]);
 const localMediaPreviewPathRegistry = createLocalMediaPreviewPathRegistry();
 
 // e2e 由 Chromedriver 管理远程调试端口；如果这里继续固定到 9229，
@@ -469,6 +479,7 @@ async function runBrowserCommandOnView(params: {
   requestId: string;
   browserId?: string;
   browserGeneration?: number;
+  controlScopeId?: string;
   sessionId: string;
   turnId?: string;
   workspaceKey?: string;
@@ -511,6 +522,7 @@ async function runBrowserCommandOnView(params: {
     const result = await browserGuestManager.execute(
       {
         requestId: params.requestId,
+        controlScopeId: params.controlScopeId,
         browserId: params.browserId ?? "legacy-iab",
         browserGeneration: params.browserGeneration ?? 0,
         windowId: params.win.id,
@@ -737,6 +749,19 @@ const appTelemetryRuntime = createAppTelemetryRuntime({
   appLaunchCoordinator,
 });
 
+const reportRemoteConversationTelemetry = createRemoteConversationTelemetryDispatcher(
+  async (event) => {
+    const locale = Intl.DateTimeFormat().resolvedOptions();
+    const context = appTelemetryRuntime.getLatestRendererContext() ?? {
+      clientTimezone: locale.timeZone,
+      clientLanguage: locale.locale,
+      screenResolution: "",
+    };
+    await appTelemetryCore.reportEvent({ ...event, context });
+  },
+  appTelemetryCore.trackPendingReport,
+);
+
 function reportRemoteUsageEventForRenderer(rendererId: number, event: TelemetryEventPayload): void {
   const context =
     appTelemetryRuntime.getRendererContext(rendererId) ??
@@ -853,6 +878,8 @@ let startupOpenWorkspaceRequest: ExplicitStartupWorkspaceRequest | null =
     : startupDeepLinkWorkspacePath
       ? { path: startupDeepLinkWorkspacePath, source: "deep-link" }
       : null;
+
+let forceUpdateMainWindowCreationBlocked = false;
 
 function resolveExternalWorkspaceConfirmationCopy() {
   const effectiveLocale =
@@ -990,6 +1017,7 @@ async function prepareAppQuit(reason: string, kind: AppShutdownKind = "normal"):
     // 与其它 owner 并行进入既有屏障，最多等待 2 秒，避免 telemetry 串行放大退出预算。
     appTelemetryCore.flushPendingReports({ timeoutMs: 2_000 }),
     localTtftExporter.shutdown(),
+    flushLocalTtftLogs(),
     rendererActionTraceBroker.shutdown().catch((error) => {
       logger.warn(`[app-quit] renderer action trace shutdown failed (${reason}):`, error);
     }),
@@ -1414,6 +1442,7 @@ function createWindowInstance(startupBootstrap: StartupWindowBootstrap = {}) {
         label,
         {
           ...initMessage,
+          browserBackendIdentity: browserGuestManager.getBackendIdentity(win.id),
           raspberrycodeBuiltinProviderConfigFilePath: resolveRaspberryCodeBuiltinProviderConfigFilePath(),
         },
         {
@@ -1438,6 +1467,9 @@ function createWindowInstance(startupBootstrap: StartupWindowBootstrap = {}) {
           onPluginTelemetry: (message) => {
             void appTelemetryCore.reportEvent(message.event).catch(() => {});
           },
+          onRemoteConversationTelemetry: (message) => {
+            void reportRemoteConversationTelemetry(message.event);
+          },
           onSessionCreateTelemetry: (message) => {
             void appTelemetryCore.reportEvent(message.event).catch(() => {});
           },
@@ -1453,6 +1485,13 @@ function createWindowInstance(startupBootstrap: StartupWindowBootstrap = {}) {
           // browser-use：main 用 WebContentsView+CDP 执行命令（替换 T4 占位）。
           handleBrowserExecuteRequest: ({ win: browserWin, ...request }) =>
             runBrowserCommandOnView({ win: browserWin, ...request }),
+          // 数据同步页「模型提供商」分类：最近结果与重试都以 Main 协调器的 lane 为唯一数据源。
+          providerProvisioningLanes: {
+            getStatus: (sourceServerId, laneOptions) =>
+              remoteSessionManager.getProviderProvisioningLaneStatus(sourceServerId, laneOptions),
+            retry: (sourceServerId) =>
+              remoteSessionManager.retryProviderProvisioning(sourceServerId),
+          },
         },
         {
           taskRealtime: {
@@ -1584,6 +1623,7 @@ app.whenReady().then(async () => {
       ? { registryMaxEntries: Number(process.env.RASPBERRYCODE_E2E_PLUGIN_SANDBOX_MAX_ENTRIES) }
       : {}),
   });
+  installBrowserLocalPreview(session.fromPartition(EMBEDDED_BROWSER_PARTITION));
   installBrowserRestoreBootstrapProtocol(
     session.fromPartition(EMBEDDED_BROWSER_PARTITION).protocol,
   );

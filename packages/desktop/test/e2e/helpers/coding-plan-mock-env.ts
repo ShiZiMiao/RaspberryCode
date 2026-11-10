@@ -27,6 +27,7 @@ const CODING_PLAN_TEAM_SPEC_MARKERS = [
   // 模拟登录态访问线上账号接口会触发 401 弹窗，遮挡 Logo 的真实 hover 和截图。
   "settings-ui-polish.test.ts",
   "side-pane-tabs-responsive-interactions.test.ts",
+  "conversation-session-share-tool-presentation.test.ts",
   "conversation-session-start-plan-independent.test.ts",
   // 创建埋点回归复用本地账号控制面，避免初始化/发送访问真实套餐与登录服务。
   "conversation-session-create-telemetry.test.ts",

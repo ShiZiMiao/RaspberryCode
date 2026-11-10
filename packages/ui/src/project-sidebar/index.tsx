@@ -2,6 +2,8 @@ import { SidebarTooltipProvider } from "@/ControlHintTooltip.js";
 export { readProjectSidebarView } from "@/project-sidebar/view-preference.js";
 import { SortableProjects } from "@/project-sidebar/SortableProjects.js";
 export { ArchiveManagement } from "@/project-sidebar/ArchiveManagement.js";
+export { useWebRemoteControlRendererActions } from "@/project-sidebar/useWebRemoteControlRendererActions.js";
+export { ProjectManagement } from "@/project-sidebar/ProjectManagement.js";
 import { memo, useCallback, useMemo, useRef, useState } from "react";
 import { ScrollFadeViewport } from "@/components/ui/scroll-fade-viewport.js";
 import { TID_SIDEBAR } from "@raspberrycode/shared/test-ids";
@@ -21,6 +23,7 @@ import { useProjectDirectory } from "@/project-sidebar/ProjectDirectoryProvider.
 export {
   ProjectDirectoryProvider,
   useOptionalProjectDirectory,
+  useOptionalProjectDirectoryActions,
 } from "@/project-sidebar/ProjectDirectoryProvider.js";
 export { ProjectComposerMenu } from "@/project-sidebar/ProjectComposerMenu.js";
 import { useProjectTaskNavigation } from "@/project-sidebar/useProjectTaskNavigation.js";
@@ -66,6 +69,7 @@ export const ProjectSidebar = memo(function ProjectSidebar(props: ProjectSidebar
     service,
     remoteService,
     availability,
+    hostReadErrors,
     refresh,
     error,
     loading,
@@ -75,7 +79,7 @@ export const ProjectSidebar = memo(function ProjectSidebar(props: ProjectSidebar
   } = useProjectDirectory();
   const { tree, pin } = useProjectPinIntent(authoritativeTree);
   const remoteSync = useProjectRemoteSync(directory);
-  const diagnostics = useProjectConnectionDiagnostics(directory, props);
+  const diagnostics = useProjectConnectionDiagnostics(directory, props, hostReadErrors);
   const onSelectTask = useProjectTaskNavigation(props, tree, remoteService);
   const { intl, localePreference, setLocalePreference } = useRaspberryCodeIntl();
   const tabStore = useTabStoreApi();
@@ -268,9 +272,11 @@ export const ProjectSidebar = memo(function ProjectSidebar(props: ProjectSidebar
                         </>
                       ) : (
                         <ProjectTaskRows
-                          key="timeline"
-                          kind="timeline"
-                          tasks={selectProjectRows(tree, { kind: view })}
+                          key={view}
+                          kind={view}
+                          tasks={selectProjectRows(view === "unread" ? authoritativeTree : tree, {
+                            kind: view,
+                          })}
                           onSelect={onSelectTask}
                           refresh={refresh}
                         />

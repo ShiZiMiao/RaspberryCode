@@ -224,6 +224,7 @@ function findAgentDevEntry(): GlmDevEntry | null {
   const anchorDirs = [repoRoot, process.cwd()].filter((anchor): anchor is string =>
     Boolean(anchor),
   );
+  // 历史研发目录会意外抢占发行入口；自定义目录统一由 RASPBERRYCODE_AGENT_WORKDIR 显式指定。
   // "agent" 是历史源码目录名，保留作开发态目录发现的读兼容候选。
   const candidates = ["raspberrycode-cli", "agent", "cc-refactor"];
   const seen = new Set<string>();

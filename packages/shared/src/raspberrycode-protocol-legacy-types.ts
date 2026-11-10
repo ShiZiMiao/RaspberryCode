@@ -148,6 +148,7 @@ export const raspberrycodeSessionGoalVerificationTimelineSchema = z
 export const raspberrycodeSessionInfoSchema = z
   .object({
     sessionId: nonEmptyString,
+    directorySessionId: nonEmptyString.optional(),
     workspace: raspberrycodeWorkspaceRefSchema,
     parentSessionId: nonEmptyString.optional(),
     traceId: nonEmptyString.optional(),

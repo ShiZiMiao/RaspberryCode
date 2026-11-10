@@ -108,6 +108,9 @@ export const ModelErrorCode = {
   InvalidModelRequest: "invalid_model_request",
   InvalidModelResponse: "invalid_model_response",
   ModelRequestFailed: "model_request_failed",
+  ModelRequestAuthMissing: "model_request_auth_missing",
+  /** wire 诊断字面量（冻结兼容面）：上游 verification 失败码，保留枚举值不改名。 */
+  ModelRequestVerificationConfigNetwork: "request_verification_config_network",
   ModelRequestCancelled: "model_request_cancelled",
   ModelRequestTimeout: "model_request_timeout",
   ModelRateLimited: "model_rate_limited",
@@ -818,6 +821,17 @@ export type ModelStreamEvent =
   | {
       type: "tool_call";
       toolCall: ModelToolCall;
+    }
+  | {
+      /**
+       * Provider 在服务端执行完内置工具（toolCall.providerExecuted）后随流下发的结果。
+       * 客户端不执行这类工具，只用于展示、持久化和下一次请求回放。
+       */
+      type: "provider_tool_result";
+      toolCallId: string;
+      toolName: string;
+      output: unknown;
+      isError: boolean;
     }
   | {
       type: "finish";

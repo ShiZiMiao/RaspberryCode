@@ -42,9 +42,7 @@ function GroupedTaskRowComponent({
   currentGroupId,
   groups,
   remoteSessionId,
-  activeWorkspacePath,
-  activeWorkspaceIdentity,
-  activeTaskId,
+  isActive,
   workspaceLabel,
   onSelectTask,
   onCloseTask,
@@ -63,9 +61,7 @@ function GroupedTaskRowComponent({
   currentGroupId?: string;
   groups: TaskGroupMenuItem[];
   remoteSessionId?: string;
-  activeWorkspacePath: string;
-  activeWorkspaceIdentity?: string;
-  activeTaskId: string | null;
+  isActive: boolean;
   workspaceLabel: string;
   onSelectTask: (workspacePath: string, taskId: string, workspaceIdentity?: string) => void;
   onCloseTask: (task: RaspberryCodeTaskMeta) => void;
@@ -124,9 +120,7 @@ function GroupedTaskRowComponent({
   const taskChangeParts = formatGroupedTaskHoverChangeParts(getTaskChangeSummary(task));
   const taskTimeLabel = formatTaskRelativeTime(task.updatedAt, intl);
   const isTaskCron = isCronTask(task);
-  const isActive =
-    buildTaskWorkspaceKey(activeWorkspacePath, activeWorkspaceIdentity) === workspaceKey &&
-    activeTaskId === task.taskId;
+
   const statusDotClassName =
     leadingIndicator === "error"
       ? "bg-destructive"

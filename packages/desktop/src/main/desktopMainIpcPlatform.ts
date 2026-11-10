@@ -21,7 +21,9 @@ import {
   type MaterializeWorkflowArtifactFileRequest,
   type WindowControlsOverlayReadyPayload,
 } from "@raspberrycode/shared";
-import { getInstalledEditors } from "./editors.js";
+import { getAppIconDataUrl, getInstalledEditors } from "./editors.js";
+import { createFileApplicationService } from "@desktop/main/file-open-apps/index.js";
+import type { FileApplicationTarget } from "@raspberrycode/shared";
 import { getApplicationIcon } from "./applicationIcons.js";
 import {
   cancelUpdateDownload,
@@ -414,6 +416,18 @@ export function registerPlatformIpcHandlers(options: {
   });
   ipcMain.handle(PlatformChannels.GetInstalledEditors, (_event, filePath?: string) =>
     getInstalledEditors(typeof filePath === "string" ? filePath : undefined),
+  );
+  const fileApplications = createFileApplicationService({
+    getIcon: (id, path) => getAppIconDataUrl(id, path),
+    logger: options.logger,
+  });
+  ipcMain.handle(PlatformChannels.GetFileApplications, (_event, target: FileApplicationTarget) =>
+    fileApplications.getFileApplications(target),
+  );
+  ipcMain.handle(
+    PlatformChannels.OpenFileWithApplication,
+    (_event, payload: { applicationId: string; target: FileApplicationTarget }) =>
+      fileApplications.openFileWithApplication(payload?.applicationId, payload?.target),
   );
   ipcMain.handle(
     PlatformChannels.GetApplicationIcon,

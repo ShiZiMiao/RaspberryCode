@@ -55,6 +55,148 @@ import {
 } from "./helpers/registry-backed-test-app.js";
 
 describe("session persistence", () => {
+  // ZCT-2109847556412547072：deferred 会话首条消息前切模，真实 SQLite 外键拒绝 entry 写入；
+  // 首次持久化必须以最新选择补写，且该已知时序不能以 warn 进入生产日志。
+  it.each([undefined, "cli-default"] as const)(
+    "defers a pre-first-prompt model switch to the first persistence (modelSelectionMode=%s)",
+    async (modelSelectionMode) => {
+      const tempRoot = await mkdtemp(join(tmpdir(), "raspberrycode-bootstrap-deferred-selection-"));
+      const store = await createSqliteSessionStore({ dbPath: join(tempRoot, "session.sqlite") });
+      const sessionId = createSessionId("bootstrap-deferred-selection");
+      const selectionLogs: Array<[string, unknown]> = [];
+      const loggerFor = (context: LogContext = {}): Logger => {
+        const record = (level: string) => (_message: string, logContext?: LogContext) => {
+          const event = logContext?.event ?? context.event;
+          if (typeof event === "string" && event.startsWith("session.model_selection."))
+            selectionLogs.push([level, event]);
+        };
+        return {
+          child: (childContext) => loggerFor({ ...context, ...childContext }),
+          debug: record("debug"),
+          error: (message, _error, logContext) => record("error")(message, logContext),
+          info: record("info"),
+          warn: record("warn"),
+        };
+      };
+      const loggerFactory: LoggerFactory = {
+        createLogger: () => loggerFor(),
+        setLevel: () => {},
+        withContext: (context) => loggerFor(context),
+      };
+      try {
+        const app = await createRaspberryCodeApp({
+          env: { ZCODE_STORAGE_DIR: tempRoot },
+          loggerFactory,
+          ...(modelSelectionMode ? { modelSelectionMode } : {}),
+          modelExecutor: {
+            async generateText() {
+              return {
+                finishReason: "stop",
+                text: "done",
+                usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 },
+              };
+            },
+          } as never,
+          providerRegistry: createTestProviderRegistry([{ providerId: "zai", modelId: "glm-4.7" }]),
+          runtimeConfig: { workingDirectory: tempRoot },
+          sessionId,
+          sessionStore: store,
+          skipUserConfig: true,
+        });
+        const readSelections = async () =>
+          (
+            (await store.sessionEntries?.({
+              sessionID: sessionId,
+              type: SESSION_ENTRY_MODEL_SELECTION,
+            })) ?? []
+          ).map((entry) => entry.data);
+
+        // 与工单时序一致：会话刚创建、首条消息前 App 依次下发选型与思考档位。
+        await app.setModel({
+          providerId: "zai",
+          modelId: "glm-4.7",
+          options: { reasoningLevel: "high" },
+        });
+        await app.setThoughtLevel("low");
+        expect(selectionLogs).toEqual([
+          ["debug", "session.model_selection.persist_deferred"],
+          ["debug", "session.model_selection.persist_deferred"],
+        ]);
+        expect(await store.getSession(sessionId)).toBeFalsy();
+
+        await app.submitPrompt("hello");
+        expect(await readSelections()).toEqual([
+          { providerId: "zai", modelId: "glm-4.7", options: { reasoningLevel: "low" } },
+        ]);
+
+        // 会话持久化后改档位直接覆盖同一 entry，不再出现 deferred/failed 日志。
+        selectionLogs.length = 0;
+        await app.setThoughtLevel("deep");
+        expect(selectionLogs).toEqual([]);
+        expect(await readSelections()).toEqual([
+          { providerId: "zai", modelId: "glm-4.7", options: { reasoningLevel: "deep" } },
+        ]);
+      } finally {
+        store.close();
+        await rm(tempRoot, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it("persists Highspeed metadata in the user message data", async () => {
+    const store = await createSqliteSessionStore({ dbPath: ":memory:" });
+    const sessionId = createSessionId("highspeed-message-metadata");
+
+    try {
+      const app = await createRaspberryCodeApp({
+        env: {},
+        modelExecutor: {
+          async generateText() {
+            return {
+              finishReason: "stop",
+              text: "accelerated answer",
+              usage: { inputTokens: 1, outputTokens: 2, totalTokens: 3 },
+            };
+          },
+        } as never,
+        runtimeConfig: { workingDirectory: process.cwd() },
+        sessionId,
+        sessionStore: store,
+        skipUserConfig: true,
+      });
+      const highspeed = {
+        schemaVersion: 1 as const,
+        cardId: "hsc-1",
+        taskId: sessionId,
+        provider: "zai",
+        model: "glm-5",
+        issuedAt: 1_000,
+        expiresAt: 10_000,
+      };
+
+      await app.submitPrompt("hello", {
+        intent: {
+          sourceCommandId: "command-highspeed-1",
+          queueItemId: "queue-highspeed-1",
+          clientId: "desktop-test",
+          kind: "sendText",
+          text: "hello",
+          admissionSeq: 1,
+          admittedAt: 1,
+          requestedDelivery: "startNow",
+          admittedDelivery: "startNow",
+          highspeed,
+        } as never,
+      });
+
+      const messages = await store.messages({ sessionID: sessionId });
+      const userMessage = messages.find((message) => message.info.role === "user");
+      expect(userMessage?.info.metadata?.highspeed).toEqual(highspeed);
+    } finally {
+      store.close();
+    }
+  });
+
   it("primes image and cold-rebuilds image and video paths from durable artifacts", async () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "raspberrycode-prompt-image-cache-"));
     const artifactRootDir = join(tempRoot, "artifacts");
@@ -1505,7 +1647,7 @@ describe("session persistence", () => {
                 (message) =>
                   message.role === "user" &&
                   message.content.includes(
-                    `Contents of ${join(workspace, "AGENTS.md")} (workspace instructions):`,
+                    `Contents of ${join(workspace, "AGENTS.md")} (project instructions, checked into the codebase):`,
                   ),
               )?.content ?? "";
             return {
@@ -1530,14 +1672,13 @@ describe("session persistence", () => {
 
       expect(result.response).toBe("done");
       expect(capturedSystem).not.toContain("project-rule-314");
-      // 修复原因：workspace instructions 直接作为 meta user context 注入，标题只标识 AGENTS.md。
-      expect(capturedMetaUser).toContain("# agentsMd");
+      // 指令作为 context_prefix 公告注入 user 侧，直接以指令前言开头，不带聚合标题，带来源标签。
+      expect(capturedMetaUser).toMatch(
+        /^<system-reminder>\nCodebase and user instructions are shown below\./,
+      );
+      expect(capturedMetaUser).not.toContain("# agentsMd");
       expect(capturedMetaUser).not.toContain("# claudeMd");
       expect(capturedMetaUser).not.toContain("# user_instructions");
-      expect(capturedMetaUser).toContain("Codebase and user instructions are shown below.");
-      expect(capturedMetaUser).toContain(
-        `Contents of ${join(workspace, "AGENTS.md")} (workspace instructions):`,
-      );
       expect(capturedMetaUser).toContain("project-rule-314");
     } finally {
       store.close();
@@ -2780,17 +2921,21 @@ describe("session persistence", () => {
 
       await secondApp.submitPrompt("second prompt");
 
-      const dynamicSystem = capturedMessages[2]?.content ?? "";
-      // 冷恢复保留首次会话保存的模型，不用启动参数覆盖；模型说明随实际恢复的 Model 渲染。
-      expect(dynamicSystem).toContain("- You are powered by the model named zai/glm-4.6.");
-      expect(dynamicSystem).not.toContain("legacy/persisted-model");
-      // 修复原因：原始 git snapshot 现在与环境信息一起保存在 dynamic system[2]。
-      expect(dynamicSystem).toContain("gitStatus:");
-      expect(dynamicSystem).toContain("feature/original");
-      expect(dynamicSystem).toContain(" M first.ts");
-      expect(dynamicSystem).toContain("abc123 first commit");
-      expect(dynamicSystem).not.toContain(" M second.ts");
-      expect(dynamicSystem).not.toContain("def456 second commit");
+      const providerText = capturedMessages.map((message) => message.content).join("\n");
+      const messageWith = (marker: string) =>
+        capturedMessages.find((message) => message.content.includes(marker))?.content ?? "";
+      // 冷恢复保留首次会话保存的模型，不用启动参数覆盖；模型公告随实际恢复的 Model 渲染。
+      expect(messageWith("You are powered by the model named")).toContain(
+        "You are powered by the model named zai/glm-4.6.",
+      );
+      expect(providerText).not.toContain("legacy/persisted-model");
+      // 原始 git snapshot 是首轮持久化的 session_context 公告；恢复后沿用，不被新快照覆盖。
+      const gitContext = messageWith("# gitStatus");
+      expect(gitContext).toContain("Current branch: feature/original");
+      expect(gitContext).toContain(" M first.ts");
+      expect(gitContext).toContain("abc123 first commit");
+      expect(providerText).not.toContain(" M second.ts");
+      expect(providerText).not.toContain("def456 second commit");
     } finally {
       store.close();
       await rm(tempRoot, { recursive: true, force: true });
@@ -2856,12 +3001,6 @@ async function readLogEntries(logDir: string): Promise<LogEntry[]> {
   }
 
   return entries;
-}
-
-function uniqueContextValues(entries: LogEntry[], key: string): Set<unknown> {
-  return new Set(
-    entries.map((entry) => entry.context?.[key]).filter((value) => value !== undefined),
-  );
 }
 
 function deferred(): { promise: Promise<void>; resolve(): void } {

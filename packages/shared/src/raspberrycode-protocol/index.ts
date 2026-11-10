@@ -84,7 +84,10 @@ import { browserCommandResultSchema } from "../browser-use/result.js";
 import { appToolSearchModeSchema } from "../app-runtime-preferences.js";
 import { integratedTerminalShellSelectionSchema } from "../validationAppSettings.js";
 import { raspberrycodeTaskModeSchema } from "../raspberrycode-task-mode-schema.js";
-import { OFFICIAL_MCP_AUTH_PORT_FAILURE_REASONS } from "../official-mcp-auth.js";
+import {
+  OFFICIAL_AUTH_CONSUMER_KINDS,
+  OFFICIAL_MCP_AUTH_PORT_FAILURE_REASONS,
+} from "../official-mcp-auth.js";
 import {
   raspberrycodeSyntheticUserMessageSourceSchema as legacyRaspberrycodeSyntheticUserMessageSourceSchema,
   raspberrycodeDeliveryKindSchema,
@@ -109,7 +112,7 @@ import {
   raspberrycodeWorkspaceRefSchema,
 } from "../raspberrycode-protocol-legacy-types.js";
 
-export * from "../localTtft.js";
+export * from "../local-ttft/contract.js";
 export {
   hookExecutionProjectionSchema,
   hookInvocationRowSchema,
@@ -129,9 +132,26 @@ export const RASPBERRYCODE_PROTOCOL_VERSION = 1 as const;
 // V4 wire 与 legacy 主协议并存；禁止为了 V4 physical framing 改写 legacy 版本。
 export const RASPBERRYCODE_PROTOCOL_V4_WIRE_VERSION = 3 as const;
 export const raspberrycodeRuntimeCapabilitiesSchema = z.object({
+  sessionLifecycleWorkspace: z.boolean().optional(),
+  sessionDirectorySource: z.boolean().optional(),
+  sessionWorkspaceRouting: z.boolean().optional(),
+  genUiContext: z.boolean().optional(),
   historyFirst: z.boolean().optional(),
   independentPlanState: z.boolean().optional(),
+  /** CLI 认识 rowsRange 的 residency 参数；旧 CLI 会剥掉它并冷恢复，Host 据此拒绝转发。 */
+  residentRowsRange: z.boolean().optional(),
 });
+export const raspberrycodeRuntimeCapabilitiesParamsSchema = z
+  .object({
+    hostCapabilities: z
+      .object({
+        sessionDirectorySource: z.boolean().optional(),
+        sessionWorkspaceRouting: z.boolean().optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict();
 export const raspberrycodeProtocolErrorCodes = {
   sessionUnavailable: -32004,
 } as const;
@@ -752,7 +772,9 @@ export const raspberrycodeProtocolMcpServerSchema = z.union([
   z
     .object({
       name: nonEmptyString,
+      scope: z.enum(["user", "workspace"]).optional(),
       command: nonEmptyString,
+      cwd: nonEmptyString.optional(),
       args: z.array(z.string()),
       env: z.array(raspberrycodeProtocolMcpEntrySchema),
       isolation: z.enum(["session", "workspace"]).optional(),
@@ -764,6 +786,7 @@ export const raspberrycodeProtocolMcpServerSchema = z.union([
   z
     .object({
       name: nonEmptyString,
+      scope: z.enum(["user", "workspace"]).optional(),
       type: z.enum(["http", "sse"]),
       url: nonEmptyString,
       headers: z.array(raspberrycodeProtocolMcpEntrySchema),
@@ -808,9 +831,40 @@ export const MCP_SERVER_FAILURE_KINDS = [
 ] as const;
 export const mcpServerFailureKindSchema = z.enum(MCP_SERVER_FAILURE_KINDS);
 export type McpServerFailureKind = z.infer<typeof mcpServerFailureKindSchema>;
+export const workspaceMcpTrustReviewSchema = z
+  .object({
+    declarationDigest: z.string().regex(/^[a-f0-9]{64}$/u),
+    sourcePaths: z.array(nonEmptyString),
+    display: z.string(),
+    trusted: z.boolean(),
+    configuredEnabled: z.boolean(),
+    transport: z.enum(["stdio", "http", "sse"]),
+  })
+  .strict();
+export type WorkspaceMcpTrustReview = z.infer<typeof workspaceMcpTrustReviewSchema>;
+export const raspberrycodeWorkspaceMcpTrustParamsSchema = z
+  .object({
+    workspace: raspberrycodeWorkspaceRefSchema,
+    serverName: nonEmptyString,
+    declarationDigest: z.string().regex(/^[a-f0-9]{64}$/u),
+    trusted: z.boolean(),
+  })
+  .strict();
+export const raspberrycodeWorkspaceMcpTrustResultSchema = z
+  .object({
+    accepted: z.boolean(),
+    reasonCode: z
+      .enum(["workspace_mcp_declaration_changed", "workspace_mcp_trust_unavailable"])
+      .optional(),
+  })
+  .strict();
+export type RaspberryCodeWorkspaceMcpTrustResult = z.infer<
+  typeof raspberrycodeWorkspaceMcpTrustResultSchema
+>;
 export const raspberrycodeMcpServerStatusSnapshotSchema = z
   .object({
     status: raspberrycodeMcpServerStatusKindSchema,
+    workspaceTrust: workspaceMcpTrustReviewSchema.optional(),
     transport: z.enum(["stdio", "http", "sse"]),
     toolCount: z.number().int().nonnegative(),
     updatedAt: nonEmptyString,
@@ -1551,6 +1605,12 @@ export const raspberrycodeTurnStartedEventPayloadSchema = z
     input: z.string(),
     inputId: nonEmptyString.optional(),
     queryId: nonEmptyString.optional(),
+    // Bugfix：CLI 会把 Host 准入的后台执行归因写入 turn.started。这里漏声明时，
+    // strict 校验会丢弃整条开始事件，复用中的 Bot 私聊订阅就无法切换到新轮次。
+    automationId: nonEmptyString.optional(),
+    // 冻结兼容：旧版闲时任务会话仍可能在 turn.started 上带这两个字段。
+    offPeakTaskId: nonEmptyString.optional(),
+    offPeakRunType: z.enum(["init", "resume"]).optional(),
     inputSource: raspberrycodeTurnInputSourceSchema.optional(),
     inputVisibility: raspberrycodeMessageVisibilitySchema.optional(),
     executionKind: z.enum(["agent", "controlOnly"]).optional(),
@@ -2075,7 +2135,7 @@ export {
   type SubagentRuntimeConfig,
 } from "../subagent-runtime-config.js";
 export const raspberrycodeSubagentsReadRuntimeConfigParamsSchema = z
-  .object({ sessionId: nonEmptyString })
+  .object({ sessionId: nonEmptyString, workspace: raspberrycodeWorkspaceRefSchema.optional() })
   .strict();
 
 export const RASPBERRYCODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS = 15_000;
@@ -2084,6 +2144,9 @@ export const raspberrycodeSessionRequestRuntimePreferencesParamsSchema = z
   .object({
     sessionId: nonEmptyString,
     scope: raspberrycodeSessionRuntimePreferencesScopeSchema,
+    workspace: raspberrycodeWorkspaceRefSchema.optional(),
+    // CLI 依据持久化父链给出目录来源；目标 sessionId 仍保留 child 身份。
+    directorySessionId: nonEmptyString.optional(),
   })
   .strict();
 export type RaspberryCodeSessionRequestRuntimePreferencesParams = z.infer<
@@ -2697,6 +2760,7 @@ export type RaspberryCodeBrowserListResult = z.infer<typeof raspberrycodeBrowser
 /** Agent 把一条 browser-use 命令发送给 app 执行。 */
 export const raspberrycodeBrowserExecuteParamsSchema = z
   .object({
+    controlScopeId: nonEmptyString.optional(),
     requestId: nonEmptyString,
     sessionId: nonEmptyString,
     turnId: nonEmptyString.optional(),
@@ -2798,6 +2862,14 @@ export type RaspberryCodeProviderRuntimeHeadersCancelled = z.infer<
   typeof raspberrycodeProviderRuntimeHeadersCancelledSchema
 >;
 
+// 标准 JSON-RPC error 保留旧版 schema 兼容，不向严格校验的 response 增加字段。
+export const RASPBERRYCODE_PROVIDER_CONFIG_NETWORK_ERROR = -32032;
+
+export const raspberrycodeProviderRuntimeHeadersErrorCode = {
+  configNetwork: "request_verification_config_network",
+  configInvalid: "request_verification_config_invalid",
+} as const;
+
 export const raspberrycodeProviderRuntimeHeadersResponseSchema = z.discriminatedUnion("headersApplied", [
   z
     .object({
@@ -2832,15 +2904,37 @@ export type RaspberryCodeProviderRuntimeHeadersResponse = z.infer<
 // Agent 进程不是用户身份权威：它把 (pluginId, mcpKey, targetOrigin) 报给 host，由 host
 // 解析当前 Coding Plan 凭证并回传本次请求的身份头。请求侧不含任何秘密。
 // 与 interaction/requestProviderRuntimeHeaders 同类：Agent 发起、host 自动响应、零 UI。
+//
+// `consumer` 缺省为 `mcp-server`（旧版 agent 不带该字段），此时必须带 `mcpKey`；
+// `plugin-command` 是官方插件命令进程经 agent 代理端点发起的请求，没有 MCP，不带 `mcpKey`，
+// host 按「套餐可选」解析：没有套餐时只给 RaspberryCode 登录身份（技术方案 5.8）。
 export const raspberrycodeOfficialMcpAuthHeadersRequestParamsSchema = z
   .object({
     requestId: nonEmptyString,
     workspace: raspberrycodeWorkspaceRefSchema,
     pluginId: nonEmptyString,
-    mcpKey: nonEmptyString,
+    consumer: z.enum(OFFICIAL_AUTH_CONSUMER_KINDS).optional(),
+    mcpKey: nonEmptyString.optional(),
     targetOrigin: nonEmptyString,
   })
-  .strict();
+  .strict()
+  .superRefine((params, ctx) => {
+    const isCommand = params.consumer === "plugin-command";
+    if (isCommand && params.mcpKey !== undefined) {
+      ctx.addIssue({
+        code: "custom",
+        message: "plugin-command must not carry mcpKey",
+        path: ["mcpKey"],
+      });
+    }
+    if (!isCommand && params.mcpKey === undefined) {
+      ctx.addIssue({
+        code: "custom",
+        message: "mcpKey is required for mcp-server",
+        path: ["mcpKey"],
+      });
+    }
+  });
 export type RaspberryCodeOfficialMcpAuthHeadersRequestParams = z.infer<
   typeof raspberrycodeOfficialMcpAuthHeadersRequestParamsSchema
 >;
@@ -3892,6 +3986,7 @@ export type RaspberryCodeAutomationProtocol = z.infer<typeof raspberrycodeAutoma
 
 export const raspberrycodeAutomationCreateParamsSchema = z
   .object({
+    workspace: raspberrycodeWorkspaceRefSchema.optional(),
     title: z.string().optional(),
     cronExpr: nonEmptyString,
     relativeDelayMinutes: z.number().int().positive().max(525_600).optional(),
@@ -3935,6 +4030,7 @@ export type RaspberryCodeAutomationCreateProtocolResult = z.infer<typeof raspber
 
 export const raspberrycodeAutomationUpdateParamsSchema = z
   .object({
+    workspace: raspberrycodeWorkspaceRefSchema.optional(),
     automationId: nonEmptyString,
     title: nonEmptyString.optional(),
     cronExpr: nonEmptyString.optional(),
@@ -3990,7 +4086,9 @@ export const raspberrycodeAutomationUpdateResultSchema = z
   .strict();
 export type RaspberryCodeAutomationUpdateProtocolResult = z.infer<typeof raspberrycodeAutomationUpdateResultSchema>;
 
-export const raspberrycodeAutomationListParamsSchema = z.object({}).strict();
+export const raspberrycodeAutomationListParamsSchema = z
+  .object({ workspace: raspberrycodeWorkspaceRefSchema.optional() })
+  .strict();
 export type RaspberryCodeAutomationListProtocolParams = z.infer<typeof raspberrycodeAutomationListParamsSchema>;
 export const raspberrycodeAutomationListResultSchema = z
   .object({ automations: z.array(raspberrycodeAutomationProtocolSchema) })
@@ -3998,7 +4096,7 @@ export const raspberrycodeAutomationListResultSchema = z
 export type RaspberryCodeAutomationListProtocolResult = z.infer<typeof raspberrycodeAutomationListResultSchema>;
 
 export const raspberrycodeAutomationCheckTaskBindingParamsSchema = z
-  .object({ targetTaskId: nonEmptyString })
+  .object({ workspace: raspberrycodeWorkspaceRefSchema.optional(), targetTaskId: nonEmptyString })
   .strict();
 export type RaspberryCodeAutomationCheckTaskBindingProtocolParams = z.infer<
   typeof raspberrycodeAutomationCheckTaskBindingParamsSchema
@@ -4011,14 +4109,62 @@ export type RaspberryCodeAutomationCheckTaskBindingProtocolResult = z.infer<
 >;
 
 export const raspberrycodeAutomationDeleteParamsSchema = z
-  .object({ automationId: nonEmptyString })
+  .object({ workspace: raspberrycodeWorkspaceRefSchema.optional(), automationId: nonEmptyString })
   .strict();
 export type RaspberryCodeAutomationDeleteProtocolParams = z.infer<typeof raspberrycodeAutomationDeleteParamsSchema>;
 export const raspberrycodeAutomationDeleteResultSchema = z.object({ deleted: z.boolean() }).strict();
 export type RaspberryCodeAutomationDeleteProtocolResult = z.infer<typeof raspberrycodeAutomationDeleteResultSchema>;
 
-// ---- Off-Peak（闲时任务）会话内创建协议----
+// 执行轮自暂停（CronPauseSelf）：automationId 来自 CLI loop state，Host 只在当前 workspace
+// 内做条件暂停（active 且 enabled 才转 paused）并回报是否生效。
+export const raspberrycodeAutomationPauseParamsSchema = z
+  .object({ workspace: raspberrycodeWorkspaceRefSchema.optional(), automationId: nonEmptyString })
+  .strict();
+export type RaspberryCodeAutomationPauseProtocolParams = z.infer<typeof raspberrycodeAutomationPauseParamsSchema>;
+export const raspberrycodeAutomationPauseResultSchema = z.object({ paused: z.boolean() }).strict();
+export type RaspberryCodeAutomationPauseProtocolResult = z.infer<typeof raspberrycodeAutomationPauseResultSchema>;
+
+// Session 运行实例生命周期；不同于 session/stop（停止生成）。
+export const sessionLifecycleParamsSchema = z.object({ sessionId: z.string().min(1) }).strict();
+export const sessionLifecycleActivationParamsSchema = sessionLifecycleParamsSchema.extend({
+  workspace: raspberrycodeWorkspaceRefSchema.optional(),
+});
+export const sessionLifecycleStateSchema = z.enum([
+  "unloaded",
+  "starting",
+  "ready",
+  "stopping",
+  "faulted",
+]);
+export const sessionLifecycleOperationSchema = z.enum(["ensureReady", "stop", "restart"]);
+export const sessionLifecycleFailureSchema = z
+  .object({
+    operation: sessionLifecycleOperationSchema,
+    code: z.string(),
+    message: z.string(),
+  })
+  .strict();
+export const sessionLifecycleSnapshotSchema = z
+  .object({
+    sessionId: z.string().min(1),
+    state: sessionLifecycleStateSchema,
+    generation: z.number().int().nonnegative().default(0),
+    revision: z.number().int().nonnegative().default(0),
+    lastError: sessionLifecycleFailureSchema.nullable(),
+  })
+  .strict();
+export const sessionLifecycleResultSchema = z.object({ completed: z.literal(true) }).strict();
+export type SessionLifecycleState = z.infer<typeof sessionLifecycleStateSchema>;
+export type SessionLifecycleOperation = z.infer<typeof sessionLifecycleOperationSchema>;
+export type SessionLifecycleFailure = z.infer<typeof sessionLifecycleFailureSchema>;
+export type SessionLifecycleSnapshot = z.infer<typeof sessionLifecycleSnapshotSchema>;
+
 export const raspberrycodeProtocolMethods = {
+  sessionLifecycleChanged: "session/lifecycle/changed",
+  sessionLifecycleGetState: "session/lifecycle/getState",
+  sessionLifecycleEnsureReady: "session/lifecycle/ensureReady",
+  sessionLifecycleStop: "session/lifecycle/stop",
+  sessionLifecycleRestart: "session/lifecycle/restart",
   runtimeCapabilities: "runtime/capabilities",
   computerUseOperationEvent: "computer-use/operation-event",
   sessionCreate: "session/create",
@@ -4073,6 +4219,7 @@ export const raspberrycodeProtocolMethods = {
   workspaceCancelGenerateText: "workspace/cancelGenerateText",
   providerTestModelConnectivity: "provider/testModelConnectivity",
   mcpList: "mcp/list",
+  workspaceMcpTrust: "workspace/mcp/trust",
   mcpReadResource: "mcp/readResource",
   mcpUiOpenInstance: "mcp/uiOpenInstance",
   mcpUiCloseInstance: "mcp/uiCloseInstance",
@@ -4131,6 +4278,7 @@ export const raspberrycodeProtocolMethods = {
   automationCheckTaskBinding: "automation/checkTaskBinding",
   automationList: "automation/list",
   automationDelete: "automation/delete",
+  automationPause: "automation/pause",
   // Off-Peak 会话内创建：与 automation 兄弟并列的独立方法族。
   // @deprecated：host 消费已清零（raspberrycodeAgentService 改走 v4/usage/stats）。
   // 仅剩 CLI server 的 wire 兼容 case；随旧词整体删除时一并移除。
@@ -4172,6 +4320,10 @@ export const raspberrycodeProtocolSessionMethodContracts = {
   [raspberrycodeProtocolMethods.workspaceHookTrustGrant]: {
     params: raspberrycodeWorkspaceHookTrustGrantParamsSchema,
     result: raspberrycodeWorkspaceHookTrustGrantResultSchema,
+  },
+  [raspberrycodeProtocolMethods.workspaceMcpTrust]: {
+    params: raspberrycodeWorkspaceMcpTrustParamsSchema,
+    result: raspberrycodeWorkspaceMcpTrustResultSchema,
   },
   [raspberrycodeProtocolMethods.mcpList]: {
     params: raspberrycodeMcpListParamsSchema,
@@ -4274,7 +4426,7 @@ export const raspberrycodeStoragePathReadySchema = z
   .strict();
 
 // 桌面本地 TTFT 的严格事实合同；检查点不能替代实际内容帧。
-export { localTtftFactsSchema } from "../localTtft.js";
+export { localTtftFactsSchema } from "../local-ttft/contract.js";
 // 群来源由可信 Host 注入，V4 命令与持久化输入使用相同运行时校验。
 export {
   botIdentitySchema,

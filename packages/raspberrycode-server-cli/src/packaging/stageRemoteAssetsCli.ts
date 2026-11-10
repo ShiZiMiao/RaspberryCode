@@ -15,15 +15,15 @@ async function run(
   env: NodeJS.ProcessEnv,
 ): Promise<void> {
   await new Promise<void>((resolvePromise, rejectPromise) => {
-    // Bugfix: Windows 只有 pnpm.cmd 而无裸 pnpm 可执行，spawn("pnpm") 直接 ENOENT；
-    // 按仓库惯例（bootstrap.mjs/dev-desktop-env.mjs）平台化命令名并用 shell 拉起 .cmd。
-    const isWindows = process.platform === "win32";
-    const resolvedCommand = isWindows && command === "pnpm" ? "pnpm.cmd" : command;
-    const child = spawn(resolvedCommand, [...args], {
+    // Bug 原因：Windows 上 pnpm 只以 .cmd/.ps1 shim 存在，Node 不经 shell 无法解析，
+    // spawn("pnpm") 直接 ENOENT；e2e onPrepare 自动 prepare:remote-assets 时因此 fatal。
+    // 与 wdio.conf.ts runPnpmWorkspaceCommand 一致，仅 Windows 交给 shell 解析 shim；
+    // 当前参数均无空格，无需额外转义。
+    const child = spawn(command, [...args], {
       cwd,
       env,
       stdio: "inherit",
-      ...(isWindows ? { shell: true } : {}),
+      shell: process.platform === "win32",
     });
     child.once("error", rejectPromise);
     child.once("exit", (code) => {

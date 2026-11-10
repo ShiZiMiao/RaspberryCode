@@ -53,9 +53,7 @@ function GroupedTaskItemComponent({
   groupId,
   groups,
   remoteSessionId,
-  activeWorkspacePath,
-  activeWorkspaceIdentity,
-  activeTaskId,
+  isActive,
   workspaceLabel,
   onSelectTask,
   onCloseTask,
@@ -74,9 +72,7 @@ function GroupedTaskItemComponent({
   groupId?: string;
   groups: TaskGroupMenuItem[];
   remoteSessionId?: string;
-  activeWorkspacePath: string;
-  activeWorkspaceIdentity?: string;
-  activeTaskId: string | null;
+  isActive: boolean;
   workspaceLabel: string;
   onSelectTask: (workspacePath: string, taskId: string, workspaceIdentity?: string) => void;
   onCloseTask: (task: RaspberryCodeTaskMeta) => void;
@@ -98,9 +94,7 @@ function GroupedTaskItemComponent({
         currentGroupId={groupId}
         groups={groups}
         remoteSessionId={remoteSessionId}
-        activeWorkspacePath={activeWorkspacePath}
-        activeWorkspaceIdentity={activeWorkspaceIdentity}
-        activeTaskId={activeTaskId}
+        isActive={isActive}
         workspaceLabel={workspaceLabel}
         onSelectTask={onSelectTask}
         onCloseTask={onCloseTask}

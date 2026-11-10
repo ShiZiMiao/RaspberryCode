@@ -73,7 +73,7 @@ describe("desktop e2e startup credentials", () => {
   it("侧栏关闭与恢复不播种会遮挡交互的假账号身份", () => {
     expect(
       createE2EStartupCredentialSeed({
-        specs: ["/repo/packages/desktop/test/e2e/manual-review/pending/side-pane-scope.test.ts"],
+        specs: ["/repo/packages/desktop/test/e2e/side-pane-scope.test.ts"],
         legacyAuthToken: "fake-auth-token",
         restoredOAuthCredentials,
       }),
@@ -115,7 +115,7 @@ describe("desktop e2e startup credentials", () => {
     expect(
       createE2EStartupCredentialSeed({
         specs: [
-          "/repo/packages/desktop/test/e2e/conversation-session/manual-review/pending/conversation-session-unbound-resume.test.ts",
+          "/repo/packages/desktop/test/e2e/conversation-session/conversation-session-unbound-resume.test.ts",
         ],
         legacyAuthToken: "fake-auth-token",
         restoredOAuthCredentials,

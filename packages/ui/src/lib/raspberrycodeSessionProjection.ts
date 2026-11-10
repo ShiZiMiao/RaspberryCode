@@ -19,12 +19,13 @@ import {
   collectRaspberryCodeBackgroundTaskNotificationsByToolUseId,
   mergeRaspberryCodeBackgroundTaskControlItems,
   parseRaspberryCodeBackgroundTaskControlItems,
-  parseRaspberryCodeBackgroundTaskNotificationText,
+  parseZCodeBackgroundTaskNotifications,
   parseModelPickerValue as parseSharedModelSelection,
   formatModelPickerValue as formatSharedModelSelection,
   resolveRaspberryCodeVisibleSessionTitle,
   textFromRaspberryCodeMessageParts,
   RASPBERRYCODE_AGENT_PROVIDER,
+  zcodeBackgroundTaskNotificationFailureText,
   raspberrycodeBackgroundTaskNotificationToolUpdateStatus,
   appendRaspberryCodeStreamingToolInputDelta,
   buildRaspberryCodeStreamingToolInputPreview,
@@ -850,14 +851,15 @@ export function raspberrycodeSessionEventToRaspberryCodeStreamEvents(params: {
       ...(event.turnId ? { turnId: event.turnId } : {}),
       startedAt: event.timestamp,
     };
-    const taskNotificationToolUpdate = backgroundTaskNotificationToolUpdateFromInput({
+    const taskNotificationToolUpdates = backgroundTaskNotificationToolUpdatesFromInput({
       input: stringValue(payload.input),
+      originMeta: payload.originMeta,
       taskId,
       traceId,
       inputId: eventInputId,
     });
-    if (taskNotificationToolUpdate) {
-      return [runStartedEvent, taskNotificationToolUpdate];
+    if (taskNotificationToolUpdates.length > 0) {
+      return [runStartedEvent, ...taskNotificationToolUpdates];
     }
     if (
       stringValue(payload.inputSource) === "goal-continuation" &&
@@ -1283,35 +1285,12 @@ export function raspberrycodeUserInputResponseToRaspberryCodeStreamEvent(
   };
 }
 
-function backgroundTaskNotificationToolUpdateFromInput(params: {
+function backgroundTaskNotificationToolUpdatesFromInput(params: {
   input: string | undefined;
   inputId: InputId | undefined;
+  originMeta: unknown;
   taskId: string;
   traceId: TraceId;
-}): Extract<RaspberryCodeStreamEvent, { type: "tool_call_update" }> | null {
-  const parsed = parseRaspberryCodeBackgroundTaskNotificationText(params.input);
-  if (!parsed) {
-    return null;
-  }
-  const status = raspberrycodeBackgroundTaskNotificationToolUpdateStatus(parsed.notification.status);
-  return {
-    type: "tool_call_update",
-    taskId: params.taskId,
-    traceId: params.traceId,
-    ...(params.inputId ? { inputId: params.inputId } : {}),
-    toolId: parsed.toolUseId,
-    status,
-    content: parsed.notification.result ?? parsed.notification.summary,
-    // 修复原因：ToolLayout 的既有失败 hover 只读取 toolCall.error；notification
-    // 原先只更新 status/raw，导致“执行失败”没有可展示的详情。
-    ...(status === "failed" && parsed.notification.error
-      ? { error: parsed.notification.error }
-      : {}),
-    raw: attachRaspberryCodeBackgroundTaskNotificationToRaw(
-      { toolCallId: parsed.toolUseId },
-      parsed.notification,
-    ),
-  };
 }
 
 function raspberrycodeMessageToRaspberryCodePersistedMessage(
@@ -1790,7 +1769,9 @@ function mapToolPart(
       status: notificationFailed ? "failed" : "completed",
       input: state.input,
       output: state.output,
-      ...(notificationFailed && taskNotification?.error ? { error: taskNotification.error } : {}),
+      ...(notificationFailed && taskNotification
+        ? { error: zcodeBackgroundTaskNotificationFailureText(taskNotification) }
+        : {}),
       raw,
     };
   }

@@ -1,3 +1,6 @@
+import type { DraftPluginUiOpenRequest } from "@/plugin-ui/contract.js";
+import { usePaneLayoutStore } from "@/v4/paneLayoutStore.js";
+import { useWorkbenchGroupStore } from "@/v4/workbenchGroupStore.js";
 /* eslint-disable max-lines -- workspace shell 当前集中编排 sidebar、chat、terminal 和 browser pane 的布局联动，先保持单文件收口，避免为满足行数限制打散关键布局状态。*/
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type {
@@ -365,6 +368,28 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
   const isOfficeMode = useIsOfficeMode();
   const baseServices = useBaseWorkspaceServices();
   const tabStoreApi = useTabStoreApi();
+  useLayoutEffect(
+    () =>
+      tabStoreApi.subscribe((next, previous) => {
+        if (
+          next.activeTabId === previous.activeTabId &&
+          next.activeWorkspacePath === previous.activeWorkspacePath &&
+          next.activeWorkspaceIdentity === previous.activeWorkspaceIdentity
+        )
+          return;
+        // 切工作区不会触发原工作区的 startDraft；在导航提交时取消请求，避免返回后误开新草稿。
+        if (!previous.activeWorkspacePath) return;
+        const store = useRaspberryCodeSessionStore.getState();
+        const identity = previous.activeWorkspaceIdentity ?? undefined;
+        const request = store.getWorkspaceState(
+          previous.activeWorkspacePath,
+          identity,
+        ).pluginUiOpenRequest;
+        if (request)
+          store.clearPluginUiOpenRequest(previous.activeWorkspacePath, request.requestId, identity);
+      }),
+    [tabStoreApi],
+  );
   const isLinuxDesktop = Boolean(isDesktop && !isMacDesktop && !isWindowsDesktop);
   // Windows/Linux 原先遗漏外层留白，导致独立面板贴住窗口边缘；桌面统一使用 4px 间距。
   const hasDesktopPanelInset = isMacDesktop || isWindowsDesktop || isLinuxDesktop;
@@ -435,6 +460,203 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
     onSessionMissing: () => handleStartDraftInWorkspace(workspaceAbsPath, workspaceIdentity),
   });
   const workspaceShellRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const shell = workspaceShellRef.current;
+    if (!shell) return;
+    const scope =
+      "[data-project-sidebar-panel], [data-workspace-conversation-frame], [data-workspace-side-frame]";
+    const timers = new Map<HTMLElement, number>();
+    let hovered: HTMLElement | null = null;
+    let dragging = false;
+    const animations = new Map<HTMLElement, Animation>();
+    const setVisible = (element: HTMLElement, visible: boolean) => {
+      if (element.hasAttribute("data-scrollbar-active") === visible) return;
+      const current = getComputedStyle(element).getPropertyValue("--raspberrycode-scrollbar-thumb");
+      animations.get(element)?.cancel();
+      element.toggleAttribute("data-scrollbar-active", visible);
+      const target = visible
+        ? getComputedStyle(element).getPropertyValue("--color-border")
+        : "transparent";
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        const animation = element.animate(
+          [{ "--raspberrycode-scrollbar-thumb": current }, { "--raspberrycode-scrollbar-thumb": target }],
+          { duration: 200, easing: "ease" },
+        );
+        animations.set(element, animation);
+        animation.onfinish = () => {
+          animations.delete(element);
+        };
+      }
+    };
+    const hideLater = (element: HTMLElement) => {
+      window.clearTimeout(timers.get(element));
+      timers.set(
+        element,
+        window.setTimeout(() => {
+          timers.delete(element);
+          if (element === hovered || dragging) return;
+          setVisible(element, false);
+        }, 1000),
+      );
+    };
+    const reveal = (element: HTMLElement) => {
+      setVisible(element, true);
+      hideLater(element);
+    };
+    const onScroll = (event: Event) => {
+      const element = event.target;
+      if (element instanceof HTMLElement && element.closest(scope)) {
+        element.setAttribute("data-scrollbar-container", "");
+        reveal(element);
+      }
+    };
+    let thumbHovered: HTMLElement | null = null;
+    const setThumbHovered = (element: HTMLElement | null) => {
+      if (thumbHovered === element) return;
+      thumbHovered?.removeAttribute("data-scrollbar-hover");
+      thumbHovered = element;
+      element?.setAttribute("data-scrollbar-hover", "");
+    };
+    let pointerFrame = 0;
+    let pendingPointer: MouseEvent | null = null;
+    const updatePointer = (event: MouseEvent) => {
+      let element = event.target instanceof HTMLElement ? event.target : null;
+      let next: HTMLElement | null = null;
+      if (!element || !element.closest(scope)) {
+        setThumbHovered(null);
+        if (hovered) hideLater(hovered);
+        hovered = null;
+        return;
+      }
+      while (element && shell.contains(element)) {
+        if (
+          element.scrollHeight <= element.clientHeight &&
+          element.scrollWidth <= element.clientWidth
+        ) {
+          element = element.parentElement;
+          continue;
+        }
+        const rect = element.getBoundingClientRect();
+        const vertical =
+          element.scrollHeight > element.clientHeight &&
+          element.offsetWidth > element.clientWidth &&
+          event.clientX >= rect.right - 10 &&
+          event.clientX <= rect.right;
+        const horizontal =
+          element.scrollWidth > element.clientWidth &&
+          element.offsetHeight > element.clientHeight &&
+          event.clientY >= rect.bottom - 10 &&
+          event.clientY <= rect.bottom;
+        if (vertical || horizontal) {
+          next = element;
+          break;
+        }
+        element = element.parentElement;
+      }
+      if (!next) {
+        // Query mounted nodes instead of retaining removed session/panel DOM in a Set.
+        for (const candidate of shell.querySelectorAll<HTMLElement>("[data-scrollbar-container]")) {
+          const rect = candidate.getBoundingClientRect();
+          if (
+            event.clientX >= rect.right - 14 &&
+            event.clientX <= rect.right &&
+            event.clientY >= rect.top &&
+            event.clientY <= rect.bottom &&
+            candidate.scrollHeight > candidate.clientHeight
+          ) {
+            next = candidate;
+            break;
+          }
+        }
+      }
+      const previous = hovered;
+      hovered = next;
+      if (previous && previous !== next) hideLater(previous);
+      let hitThumb = false;
+      if (next) {
+        reveal(next);
+        const rect = next.getBoundingClientRect();
+        const vertical = event.clientX >= rect.right - 14 && next.scrollHeight > next.clientHeight;
+        const track = vertical ? next.clientHeight : next.clientWidth;
+        const extent = vertical ? next.scrollHeight : next.scrollWidth;
+        const offset = vertical ? next.scrollTop : next.scrollLeft;
+        const length = Math.min(track, Math.max(32, (track * track) / extent));
+        const start = extent > track ? (offset / (extent - track)) * (track - length) : 0;
+        const position = vertical
+          ? event.clientY - rect.top - next.clientTop
+          : event.clientX - rect.left - next.clientLeft;
+        hitThumb = position >= start && position <= start + length;
+      }
+      setThumbHovered(hitThumb ? next : null);
+    };
+    const onPointerMove = (event: MouseEvent) => {
+      pendingPointer = event;
+      if (pointerFrame) return;
+      pointerFrame = requestAnimationFrame(() => {
+        pointerFrame = 0;
+        if (pendingPointer) updatePointer(pendingPointer);
+        pendingPointer = null;
+      });
+    };
+    const onPointerDown = () => {
+      dragging = thumbHovered !== null;
+      if (dragging) thumbHovered?.setAttribute("data-scrollbar-dragging", "");
+    };
+    const onPointerUp = () => {
+      dragging = false;
+      shell
+        .querySelectorAll("[data-scrollbar-dragging]")
+        .forEach((element) => element.removeAttribute("data-scrollbar-dragging"));
+      shell.querySelectorAll<HTMLElement>("[data-scrollbar-active]").forEach(hideLater);
+    };
+    const onPointerLeave = () => {
+      cancelAnimationFrame(pointerFrame);
+      pointerFrame = 0;
+      pendingPointer = null;
+      setThumbHovered(null);
+      const previous = hovered;
+      hovered = null;
+      if (previous) hideLater(previous);
+    };
+    const onBlur = () => {
+      setThumbHovered(null);
+      hovered = null;
+      onPointerUp();
+    };
+    // 捕获真实滚动，不切换 overflow/宽度；每个滚动容器独立计时，避免内容抖动。
+    shell.addEventListener("scroll", onScroll, true);
+    shell.addEventListener("mousemove", onPointerMove, true);
+    shell.addEventListener("mousedown", onPointerDown, true);
+    shell.addEventListener("pointerleave", onPointerLeave);
+    window.addEventListener("mouseup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
+    window.addEventListener("blur", onBlur);
+    return () => {
+      shell.removeEventListener("scroll", onScroll, true);
+      shell.removeEventListener("mousemove", onPointerMove, true);
+      shell.removeEventListener("mousedown", onPointerDown, true);
+      shell.removeEventListener("pointerleave", onPointerLeave);
+      window.removeEventListener("mouseup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
+      window.removeEventListener("blur", onBlur);
+      setThumbHovered(null);
+      shell
+        .querySelectorAll("[data-scrollbar-dragging]")
+        .forEach((element) => element.removeAttribute("data-scrollbar-dragging"));
+      cancelAnimationFrame(pointerFrame);
+      timers.forEach(window.clearTimeout);
+      timers.clear();
+      shell
+        .querySelectorAll("[data-scrollbar-container]")
+        .forEach((element) => element.removeAttribute("data-scrollbar-container"));
+      animations.forEach((animation) => animation.cancel());
+      animations.clear();
+      shell
+        .querySelectorAll("[data-scrollbar-active]")
+        .forEach((element) => element.removeAttribute("data-scrollbar-active"));
+    };
+  }, []);
+
   const workspaceSidebarPanelElementRef = useRef<HTMLDivElement | null>(null);
   const conversationPanelElementRef = useRef<HTMLDivElement | null>(null);
   const conversationAutoCollapseStateRef = useRef({
@@ -911,6 +1133,31 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
   const showChatMainView = useCallback(() => {
     onWorkspaceMainViewChange("chat");
   }, [onWorkspaceMainViewChange]);
+  const handleOpenDraftPluginUi = useCallback(
+    (request: DraftPluginUiOpenRequest) => {
+      if (!isDesktop || workspaceReadOnlyReason || workspaceRemoteSessionId) return;
+      const store = useRaspberryCodeSessionStore.getState();
+      const draft = store.getWorkspaceState(workspaceAbsPath, workspaceIdentity);
+      useWorkbenchGroupStore.getState().deactivateActiveGroup();
+      usePaneLayoutStore.getState().resetToPrimaryPane();
+      // 返回已有根草稿，保留项目和输入；不能将当前正式会话当作插件目标。
+      if (draft.activeTaskId !== null)
+        store.startDraft(workspaceAbsPath, undefined, workspaceIdentity, {
+          projectId: draft.draftProjectId,
+          taskGroupId: draft.draftTaskGroupId,
+        });
+      store.requestPluginUiOpen(request);
+      showChatMainView();
+    },
+    [
+      isDesktop,
+      workspaceReadOnlyReason,
+      workspaceRemoteSessionId,
+      workspaceAbsPath,
+      workspaceIdentity,
+      showChatMainView,
+    ],
+  );
   const primaryNavigationBack =
     workspaceMainView === "plugin-store" ? showChatMainView : handleTaskNavBack;
   const canPrimaryNavigationBack = workspaceMainView === "plugin-store" || canTaskNavBack;
@@ -1665,6 +1912,244 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
     />
   );
 
+  // 断点切换曾卸载查看 Reporter，伪造离开后返回并清掉手动未读。
+  // 同一 Shell 持有查看与手机导航，只替换布局内容；真实 Home/后台仍立即撤销查看。
+  const renderRemoteShell = (wideContent: ReactNode) =>
+    webRemoteControlWorkspaceSwitcher ? (
+      <WebRemoteControlMobileShell
+        isMobileViewport={isWebRemoteControlMobileViewport}
+        taskViewEnabled={
+          isWorkspaceVisible && workspaceMainView === "chat" && !isWebRemoteControlTaskSwitching
+        }
+        activeTaskId={activeTaskId}
+        activeWorkspaceIdentity={workspaceIdentity}
+        activeWorkspacePath={workspaceAbsPath}
+        initialNavigationIntent={initialWebRemoteControlMobileNavigationIntent}
+        webRemoteControlTerminalTransportState={webRemoteControlTerminalTransportState}
+        isSidePaneOpen={isSidePaneOpen}
+        onCloseSidePane={isSidePaneOpen ? handleToggleSidePane : undefined}
+        renderTaskHome={renderWorkspaceSidebar}
+        switcher={webRemoteControlWorkspaceSwitcher}
+        renderChatHeader={() =>
+          shouldRenderWorkspaceHeader ? (
+            <ScopedErrorBoundary
+              scope="workspace-header"
+              resetKeys={workspaceOnlyResetKeys}
+              variant="compact"
+              className="border-b"
+            >
+              <WorkspaceHeader
+                variant={activeTaskId === null ? "draft" : "task"}
+                draftDropTargetController={
+                  activeTaskId === null ? draftHeaderDropTargetController : undefined
+                }
+                readOnlyReason={workspaceReadOnlyReason}
+                workspaceAbsPath={workspaceAbsPath}
+                remoteSessionId={workspaceRemoteSessionId}
+                workspaceIdentity={workspaceIdentity}
+                remoteTarget={workspaceRemoteTarget}
+                localWorkspacePath={workspaceLocalPathForRemoteMcpSync}
+                projectName={projectName}
+                activeTaskTitle={activeTaskTitle}
+                activeTaskChangeSummary={activeTaskChangeSummary}
+                hasUpdateReady={hasUpdateStatusButton}
+                activeTaskId={activeTaskId}
+                user={user}
+                activeTraceId={activeTraceId}
+                activeSessionId={activeSessionId}
+                activeTaskProvider={activeTaskProvider}
+                resolvedActiveTaskMeta={resolvedActiveTaskMeta}
+                sessionLogPath={taskSessionFile.path}
+                nativeSessionLogProvider={taskNativeSessionLogFile.provider}
+                nativeSessionLogPath={taskNativeSessionLogFile.path}
+                nativeSessionLogExists={taskNativeSessionLogFile.exists}
+                nativeSessionLogLoading={taskNativeSessionLogFile.loading}
+                providerWorkspaceConfigPath={providerConfigFile.path}
+                providerWorkspaceConfigExists={providerConfigFile.exists}
+                providerWorkspaceConfigLoading={providerConfigFile.loading}
+                workspaceHeaderState={workspaceShellRaspberryCodeState}
+                gitSummary={gitState.summary}
+                gitDirtyFileCount={gitDirtyFileCount}
+                isMacDesktop={isMacDesktop}
+                isMacFullscreen={isMacFullscreen}
+                isWindowsDesktop={isWindowsDesktop}
+                isWebRemoteControl={isWebRemoteControlShell}
+                windowsWindowControlsRightPaddingPx={windowsWindowControlsRightPaddingPx}
+                isDesktop={isDesktop}
+                simplifyForNarrowRemote
+                isSidebarVisible={isSidebarVisible}
+                isTerminalOpen={isTerminalOpen}
+                isSidePaneOpen={isSidePaneOpen}
+                onRefreshGit={handleRefreshGit}
+                onToggleTerminal={handleToggleTerminal}
+                onToggleBrowser={handleToggleBrowser}
+                onToggleSidePane={handleToggleSidePane}
+                toggleSidePaneShortcutLabel={toggleSidePaneShortcutLabel}
+                onReloadSession={handleReloadSession}
+                reloadSessionDisabled={workspaceSessionActionDisabled}
+                reloadSessionPending={reloadSessionPending}
+                onCreateTask={handleCreateTaskInChat}
+                onOpenWorkspace={onOpenWorkspace}
+                allowOpenWorkspace={allowOpenWorkspace}
+              />
+            </ScopedErrorBoundary>
+          ) : null
+        }
+        chatOverlay={workspaceMainView === "chat" ? renderChatFindDialog() : undefined}
+        chatContent={
+          workspaceMainView === "automations" && !isWebRemoteControlShell ? (
+            <main
+              id={AUTOMATIONS_TOAST_ANCHOR_ID}
+              className="flex h-full min-h-0 flex-1 flex-col bg-background"
+            >
+              <AutomationsMainBreadcrumbFrame
+                isDesktop={Boolean(isDesktop)}
+                sectionLabel={intl.formatMessage({
+                  id: "settings.automations.title",
+                })}
+                ariaLabel={intl.formatMessage({
+                  id: "automations.breadcrumbLabel",
+                })}
+              >
+                <div
+                  // 修复原因：不同 Automations tab 的内容高度不同，滚动条出现/消失会改变
+                  // mx-auto 内容列的可用宽度，造成整页左右弹动；预留稳定槽位保持居中基准不变。
+                  className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]"
+                >
+                  <ScopedErrorBoundary
+                    scope="automations-main"
+                    resetKeys={workspaceOnlyResetKeys}
+                    variant="panel"
+                    className="min-h-full"
+                  >
+                    <div className="mx-auto flex w-full max-w-5xl flex-col px-4 py-4 md:px-6 md:py-6">
+                      <AutomationsSection
+                        workspacePath={workspaceAbsPath}
+                        workspaceIdentity={workspaceIdentity}
+                        onCreateViaChat={handleCreateAutomationInChat}
+                        onNavigateToLaunchedRun={handleNavigateToLaunchedRun}
+                        onOpenWorkflowRun={handleOpenSavedWorkflowRun}
+                        onOpenWorkflowArtifact={handleOpenSavedWorkflowArtifact}
+                        openAutomationId={openAutomationId}
+                        openAutomationTab={openAutomationTab}
+                        onOpenAutomationConsumed={onOpenAutomationConsumed}
+                        openWorkflow={openWorkflow}
+                        onOpenWorkflowConsumed={onOpenWorkflowConsumed}
+                        onOpenSession={({ sessionId, workspacePath, workspaceIdentity }) =>
+                          handleSelectTaskInChat(workspacePath, sessionId, workspaceIdentity)
+                        }
+                      />
+                    </div>
+                  </ScopedErrorBoundary>
+                </div>
+              </AutomationsMainBreadcrumbFrame>
+            </main>
+          ) : workspaceMainView === "plugin-store" && !isWebRemoteControlShell ? (
+            <main className="flex h-full min-h-0 flex-1 flex-col bg-background">
+              <AutomationsMainBreadcrumbFrame
+                isDesktop={Boolean(isDesktop)}
+                sectionLabel={intl.formatMessage({
+                  id: "workspace.openPluginsSettings",
+                })}
+                ariaLabel={intl.formatMessage({
+                  id: "settings.breadcrumbLabel",
+                })}
+              >
+                <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]">
+                  <div className="mx-auto flex w-full max-w-4xl flex-col px-4 py-4 md:px-6 md:py-6">
+                    <PluginStorePage
+                      isDesktop={isDesktop}
+                      isMacDesktop={isMacDesktop}
+                      isWindowsDesktop={isWindowsDesktop}
+                      isWebRemoteControl={isWebRemoteControlShell}
+                      key={`plugin-store:${pluginStoreOpenVersion}`}
+                      workspacePath={workspaceAbsPath}
+                      workspaceIdentity={workspaceIdentity}
+                      // Bug 根因：独立插件页曾绕过切回聊天页的包装回调，任务虽被创建，
+                      // 视图仍停在插件详情，用户看到“立即试用”与示例 Prompt 点击无反应。
+                      onCreateTask={handleCreateTaskInChat}
+                      onOpenDraftUi={handleOpenDraftPluginUi}
+                      sessionId={activeTaskId}
+                      remoteSessionId={workspaceRemoteSessionId}
+                    />
+                  </div>
+                </div>
+              </AutomationsMainBreadcrumbFrame>
+            </main>
+          ) : (
+            <div className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col">
+              {/* Bugfix: 手机远控聊天页中间层必须继续提供 flex 高度链。
+                只有 h-full 的普通 block 会让 ChatView 的 flex-1 失效，草稿空态贴顶且内部滚动被外层裁掉。 */}
+              <ScopedErrorBoundary
+                scope="workspace-chat"
+                resetKeys={workspaceDraftResetKeys}
+                variant="panel"
+                className="h-full"
+              >
+                {/* Bugfix(2026-07-05, M3 验收)：同桌面布局——绑定 activeTaskId 而非 meta 派生的
+                  activeSessionId，避免新建 v4 session 因 meta 缓存未刷新而停在 draft。 */}
+                {/* Bug 根因：计划详情功能只给桌面 V4WorkspaceChatArea 接了回调，手机卡片因此
+                  显示按钮却无法打开抽屉；两端必须复用同一个 renderer Side Pane 入口。 */}
+                <V4ChatPane
+                  allowEscapeStopOutsidePane={
+                    isWorkspaceVisible && !isSidePaneOpen && !isSidePaneVisible
+                  }
+                  readOnly={Boolean(workspaceReadOnlyReason)}
+                  readOnlyReason={workspaceReadOnlyReason}
+                  workspacePath={workspaceAbsPath}
+                  workspaceIdentity={workspaceIdentity}
+                  isDesktop={isDesktop === true}
+                  compactForRemoteControl={isWebRemoteControlShell}
+                  sessionId={activeTaskId}
+                  provider={activeTaskProvider ?? undefined}
+                  onSessionCreated={handleV4SessionCreated}
+                  onSessionDeleted={handleV4SessionDeleted}
+                  draftComposerHeader={draftComposerHeader}
+                  gitSummary={gitState.summary}
+                  gitDirtyFileCount={gitDirtyFileCount}
+                  gitWorktreeReviewSourceId={gitWorktreeReviewSourceId}
+                  gitWorktreeChangeSummary={gitWorktreeChangeSummary}
+                  activeTaskChangeSummary={activeTaskChangeSummary}
+                  summaryPanelVariantOverride={summaryPanelVariantOverride}
+                  onSummaryPanelVariantOverrideChange={onSummaryPanelVariantOverrideChange}
+                  onRefreshGit={handleRefreshGit}
+                  onOpenGitReview={handleOpenGitReview}
+                  onOpenBrowserUrl={handleOpenBrowserUrl}
+                  onOpenAutomationsMain={handleOpenAutomations}
+                  onOpenCodeViewer={handleOpenCodeViewer}
+                  onAutoOpenAssistantPptx={
+                    isDesktop && !isWebRemoteControlShell ? handleAutoOpenAssistantPptx : undefined
+                  }
+                  onOpenFileLink={handleOpenMarkdownFileLink}
+                  onOpenBackgroundBash={handleOpenBackgroundBash}
+                  onOpenSubagentSession={handleOpenSubagentSession}
+                  onOpenSubagentDirectory={handleOpenSubagentDirectory}
+                  onSyncSubagentSessionTabs={handleSyncSubagentSessionTabs}
+                  onOpenPlanDetail={handleOpenPlanDetail}
+                  onOpenWorkflowRun={handleOpenWorkflowRun}
+                  onOpenWorkflowArtifact={handleOpenWorkflowArtifact}
+                  onOpenWorkflowRunDirectory={handleOpenWorkflowRunDirectory}
+                  onOpenWorkflowActorSession={handleOpenWorkflowActorSession}
+                  onOpenWorkflowWorkspace={handleOpenWorkflowWorkspace}
+                  conversationFindQuery={conversationFindQuery}
+                  conversationFindActiveIndex={conversationFindActiveIndex}
+                  conversationFindNavigationRequestId={conversationFindNavigationRequestId}
+                  onConversationFindMatchStateChange={onConversationFindMatchStateChange}
+                  searchResultHighlightRequest={activeSearchResultHighlightRequest}
+                  onSearchResultHighlightDone={onSearchResultHighlightDone}
+                />
+              </ScopedErrorBoundary>
+            </div>
+          )
+        }
+        sidePaneContent={renderSidePanePanel({ mobileOverlay: true })}
+      >
+        {wideContent}
+      </WebRemoteControlMobileShell>
+    ) : (
+      wideContent
+    );
+
   const wideContent = (
     // 完成卡上那两个壳级落点（docs/dynamic-workflow/transcript-and-notifications.md「Saving the
     // run, and running it again」）：芯片开到中枢那一页、「再次运行」启动后切到新会话。只包桌面
@@ -1820,6 +2305,10 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
                                 desktopWindowChromeState?.supportsNativeRoundedCorners ?? null,
                             }),
                         isTerminalVisible && "rounded-b-[var(--workspace-panel-radius)] border-b",
+                        "border-[0.5px]",
+                        !isFullView && "shadow-xs",
+                        isWebRemoteControlShell &&
+                          "max-md:rounded-none max-md:border-x-0 max-md:border-b-0",
                         // 完整视图由面板外框或浮窗外框承担边框与圆角，对话 frame 不再叠一层。
                         isFullView && "rounded-none border-0",
                       )}
@@ -1965,6 +2454,7 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
                                     workspacePath={workspaceAbsPath}
                                     workspaceIdentity={workspaceIdentity}
                                     onCreateTask={handleCreateTaskInChat}
+                                    onOpenDraftUi={handleOpenDraftPluginUi}
                                     sessionId={activeTaskId}
                                     remoteSessionId={workspaceRemoteSessionId}
                                   />
@@ -1992,6 +2482,7 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
                                   isWorkspaceVisible && !isSidePaneOpen && !isSidePaneVisible
                                 }
                                 readOnly={Boolean(workspaceReadOnlyReason)}
+                                readOnlyReason={workspaceReadOnlyReason}
                                 foregroundEnabled={isWorkspaceVisible}
                                 workspacePath={workspaceAbsPath}
                                 workspaceIdentity={workspaceIdentity}
