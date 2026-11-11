@@ -121,6 +121,8 @@ const binaryArtifactP1 = /Z\.ai|codegeex/iu;
 const artifactLegalFiles = /(?:^|\/)(?:LICENSE|LICENSE\.txt|LICENSES\.[^/]*\.html|NOTICE[^/]*)$/iu;
 // 模型 ID 目录数据（编译产物中的平铺第三方标识，如 GLM 系模型 ID）。
 const modelIdData = /charglm|codegeex-4|emohaa/iu;
+// 厂商 logo 资产清单（平铺随包，与源码层 provider-icons 白名单同口径）。
+const providerAssetData = /model-provider-logo-sources\.json$/iu;
 
 // ---------- 遍历 ----------
 function* walk(dir, relBase = "") {
@@ -227,6 +229,7 @@ for (const root of artifactRoots) {
       } else if (p1) {
         if (legal) artifactExempt.push({ rel, note: "法务声明" });
         else if (modelIdData.test(asText)) artifactExempt.push({ rel, note: "模型 ID 数据" });
+        else if (providerAssetData.test(rel)) artifactExempt.push({ rel, note: "厂商 logo 资产" });
         else {
           const idx = asText.indexOf(p1[0]);
           artifactP1Notes.push({ hits: [{ line: 0, text: p1[0] + " @ " + asText.slice(Math.max(0, idx - 30), idx + 50).replace(/[^\x20-\x7e]/g, ".") }], rel });

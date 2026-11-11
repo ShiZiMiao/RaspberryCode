@@ -19,6 +19,18 @@ import {
   PLUGIN_SYNC_METADATA_ARCHIVE_PATH,
 } from "./pluginSyncArchive.js";
 import { checkRemoteSyncDirectoryWriteAccess } from "../remote-sync/remoteSyncWriteAccess.js";
+import {
+  collectConfiguredInlinePluginPathById,
+  collectLocalUserPluginCandidates,
+  importPluginsArchive,
+} from "./pluginSyncUserPlugins.js";
+import {
+  CrossMarketplaceDependencyError,
+  exportMarketplaceSourceArchiveInternal,
+  importMarketplaceSourceArchiveInternal,
+  loadMarketplaceSource,
+  resolveMarketplacePluginClosure,
+} from "./pluginSyncMarketplace.js";
 import { normalizePluginSyncRelativePath, resolvePluginSyncPathWithin } from "./pluginSyncPath.js";
 import { createInlinePluginDataSyncMethods } from "../data-sync/node.js";
 
@@ -39,38 +51,11 @@ interface UserPluginConfigState {
   /** plugins.options，按 pluginId 原样保留大小写。 */
   options: Record<string, unknown>;
 }
-
-interface MarketplaceManifestInfo {
-  name: string;
-  description?: string;
-  pluginRoot?: string;
-  plugins: MarketplacePluginEntryInfo[];
-  raw: Record<string, unknown>;
-}
-
-interface MarketplacePluginEntryInfo {
-  name: string;
-  dependencies: string[];
-  raw: Record<string, unknown>;
-  source?: unknown;
-}
-
-interface MarketplaceSourceLoadResult {
-  manifest: MarketplaceManifestInfo;
-  sourceRoot?: string;
-}
-
-interface MarketplaceSourceMirrorEntry {
-  entry: MarketplacePluginEntryInfo;
-  mirroredSourcePath?: string;
-  mirroredSourceRelativePath?: string;
-}
-
-const INLINE_PLUGIN_MARKETPLACE = "inline";
+export const INLINE_PLUGIN_MARKETPLACE = "inline";
 const DEFAULT_MAX_ARCHIVE_BYTES = PLUGIN_DATA_SYNC_MAX_ITEM_BYTES;
-const MARKETPLACE_SOURCE_ROOT_DIRECTORY = "marketplace-sources";
-const MIRRORED_MARKETPLACE_PLUGIN_ROOT = "plugins";
-const PLUGIN_MANIFEST_RELATIVE_PATHS = [
+export const MARKETPLACE_SOURCE_ROOT_DIRECTORY = "marketplace-sources";
+export const MIRRORED_MARKETPLACE_PLUGIN_ROOT = "plugins";
+export const PLUGIN_MANIFEST_RELATIVE_PATHS = [
   [".raspberrycode-plugin", "plugin.json"],
   [".claude-plugin", "plugin.json"],
   [".codex-plugin", "plugin.json"],
@@ -242,503 +227,6 @@ export function getUserRaspberrycodePluginRoot(): string {
   return join(resolveUserHomeDir(), ".raspberrycode", "plugins");
 }
 
-async function exportMarketplaceSourceArchiveInternal(
-  params: {
-    marketplaceId: string;
-    pluginNames: string[];
-    source: Record<string, unknown>;
-  },
-  maxArchiveBytes: number,
-) {
-  const marketplaceId = normalizeMarketplaceId(params.marketplaceId);
-  const pluginNames = Array.from(
-    new Set(params.pluginNames.map((name) => readRequiredString(name, "plugin name"))),
-  );
-  if (pluginNames.length === 0) {
-    throw new Error("missing marketplace plugin names");
-  }
-  const loaded = await loadMarketplaceSource(params.source);
-  if (loaded.manifest.name !== marketplaceId) {
-    throw new Error(`marketplace id mismatch: ${loaded.manifest.name} !== ${marketplaceId}`);
-  }
-  const closure = resolveMarketplacePluginClosure(loaded.manifest, marketplaceId, pluginNames);
-  const mirrorEntries = await Promise.all(
-    closure.map((entry) => buildMarketplaceSourceMirrorEntry(loaded, entry)),
-  );
-  const manifest = buildMirroredMarketplaceManifest(loaded.manifest, mirrorEntries);
-  const manifestContent = `${JSON.stringify(manifest, null, 2)}\n`;
-  const selectedBytes =
-    Buffer.byteLength(manifestContent, "utf-8") +
-    (
-      await Promise.all(
-        mirrorEntries.map((entry) =>
-          entry.mirroredSourcePath ? computeRecursiveSize(entry.mirroredSourcePath) : 0,
-        ),
-      )
-    ).reduce((total, bytes) => total + bytes, 0);
-  if (selectedBytes > maxArchiveBytes) {
-    throw new Error(
-      `plugin marketplace source archive exceeds limit: ${selectedBytes}/${maxArchiveBytes}`,
-    );
-  }
-  const sourceFingerprints = await Promise.all(
-    mirrorEntries.map((entry) =>
-      entry.mirroredSourcePath
-        ? computeRecursiveContentFingerprint(entry.mirroredSourcePath)
-        : null,
-    ),
-  );
-  const directoryName = createMarketplaceSourceDirectoryName(
-    marketplaceId,
-    manifestContent,
-    sourceFingerprints,
-  );
-  const entries = [
-    {
-      archivePath: `${directoryName}/marketplace.json`,
-      content: manifestContent,
-    },
-    ...mirrorEntries
-      .filter(
-        (
-          entry,
-        ): entry is MarketplaceSourceMirrorEntry & {
-          mirroredSourcePath: string;
-          mirroredSourceRelativePath: string;
-        } => Boolean(entry.mirroredSourcePath && entry.mirroredSourceRelativePath),
-      )
-      .map((entry) => ({
-        archivePath: `${directoryName}/${entry.mirroredSourceRelativePath}`,
-        sourcePath: entry.mirroredSourcePath,
-      })),
-  ];
-  const archive = await createPluginSyncArchive({
-    entries,
-    metadata: {
-      plugins: [],
-      marketplaceSources: [
-        {
-          marketplaceId,
-          directoryName,
-        },
-      ],
-    },
-  });
-  return {
-    archive,
-    archiveBytes: archive.byteLength,
-    marketplaceId,
-    pluginNames: closure.map((entry) => entry.name),
-  };
-}
-
-async function importMarketplaceSourceArchiveInternal(
-  archive: Uint8Array,
-  maxArchiveBytes: number,
-) {
-  const tempRoot = join(tmpdir(), `raspberrycode-plugin-marketplace-source-${randomUUID()}`);
-  try {
-    await extractPluginSyncArchive(archive, tempRoot, {
-      maxExtractedBytes: maxArchiveBytes,
-    });
-    const metadata = await readMarketplaceSourceArchiveMetadata(tempRoot);
-    const directoryName = normalizePluginSyncRelativePath(metadata.directoryName);
-    const extractedPath = resolvePluginSyncPathWithin(tempRoot, directoryName);
-    const manifest = await readMarketplaceManifest(join(extractedPath, "marketplace.json"));
-    if (manifest.name !== metadata.marketplaceId) {
-      throw new Error(
-        `marketplace source archive id mismatch: ${manifest.name} !== ${metadata.marketplaceId}`,
-      );
-    }
-    const targetRoot = join(getUserRaspberrycodePluginRoot(), MARKETPLACE_SOURCE_ROOT_DIRECTORY);
-    const targetPath = resolvePluginSyncPathWithin(targetRoot, directoryName);
-    if (existsSync(targetPath)) {
-      return {
-        marketplaceId: metadata.marketplaceId,
-        path: targetPath,
-        status: "skipped" as const,
-      };
-    }
-    await mkdir(dirname(targetPath), { recursive: true });
-    await cp(extractedPath, targetPath, {
-      recursive: true,
-      errorOnExist: true,
-      force: false,
-    });
-    return {
-      marketplaceId: metadata.marketplaceId,
-      path: targetPath,
-      status: "synced" as const,
-    };
-  } finally {
-    await rm(tempRoot, { recursive: true, force: true });
-  }
-}
-
-export async function readUserPluginConfigState(): Promise<UserPluginConfigState> {
-  const parsed = await readJsonFileOrEmpty(getUserRaspberrycodeConfigPath());
-  const plugins = isRecord(parsed.plugins) ? parsed.plugins : {};
-  const enabledPlugins = isRecord(plugins.enabledPlugins) ? plugins.enabledPlugins : {};
-  const enabledOverrides = new Map<string, boolean>();
-  for (const [pluginId, enabled] of Object.entries(enabledPlugins)) {
-    if (typeof enabled === "boolean") {
-      enabledOverrides.set(normalizePluginIdKey(pluginId), enabled);
-    }
-  }
-  return {
-    dirs: readStringArray(plugins.dirs),
-    enabledOverrides,
-    options: isRecord(plugins.options) ? plugins.options : {},
-  };
-}
-
-async function readMarketplaceSourceArchiveMetadata(tempRoot: string): Promise<{
-  directoryName: string;
-  marketplaceId: string;
-}> {
-  const raw = await readFile(join(tempRoot, PLUGIN_SYNC_METADATA_ARCHIVE_PATH), "utf-8");
-  const parsed = JSON.parse(raw) as unknown;
-  if (!isRecord(parsed) || !Array.isArray(parsed.marketplaceSources)) {
-    throw new Error("invalid plugin marketplace source archive metadata");
-  }
-  if (parsed.marketplaceSources.length !== 1) {
-    throw new Error("plugin marketplace source archive must contain one marketplace");
-  }
-  const item = parsed.marketplaceSources[0];
-  if (!isRecord(item)) {
-    throw new Error("invalid plugin marketplace source metadata");
-  }
-  return {
-    marketplaceId: normalizeMarketplaceId(
-      readRequiredString(item.marketplaceId, "marketplace source id"),
-    ),
-    directoryName: normalizePluginSyncRelativePath(
-      readRequiredString(item.directoryName, "marketplace source directory"),
-    ),
-  };
-}
-
-async function loadMarketplaceSource(
-  source: Record<string, unknown>,
-): Promise<MarketplaceSourceLoadResult> {
-  const sourceKind = typeof source.source === "string" ? source.source : "";
-  if (sourceKind === "file") {
-    const filePath = readRequiredString(source.path, "marketplace source file path");
-    return {
-      manifest: await readMarketplaceManifest(filePath),
-      sourceRoot: dirname(filePath),
-    };
-  }
-  if (sourceKind === "directory") {
-    const sourceRoot = readRequiredString(source.path, "marketplace source directory path");
-    const manifestPath = findMarketplaceManifestPath(sourceRoot);
-    if (!manifestPath) {
-      throw new Error(`marketplace manifest not found in directory: ${sourceRoot}`);
-    }
-    return {
-      manifest: await readMarketplaceManifest(manifestPath),
-      sourceRoot,
-    };
-  }
-  if (sourceKind === "settings") {
-    if (!isRecord(source.marketplace)) {
-      throw new Error("settings marketplace source is missing marketplace manifest");
-    }
-    return {
-      manifest: parseMarketplaceManifest(source.marketplace),
-    };
-  }
-  throw new Error(`unsupported marketplace source for SSH sync: ${sourceKind || "unknown"}`);
-}
-
-async function readMarketplaceManifest(filePath: string): Promise<MarketplaceManifestInfo> {
-  const parsed = JSON.parse(await readFile(filePath, "utf-8")) as unknown;
-  return parseMarketplaceManifest(parsed);
-}
-
-function parseMarketplaceManifest(value: unknown): MarketplaceManifestInfo {
-  if (!isRecord(value)) {
-    throw new Error("marketplace manifest is invalid");
-  }
-  const name = readRequiredString(value.name, "marketplace name");
-  const rawPlugins = value.plugins;
-  const pluginValues = Array.isArray(rawPlugins)
-    ? rawPlugins
-    : isRecord(rawPlugins)
-      ? Object.entries(rawPlugins).map(([pluginName, plugin]) =>
-          isRecord(plugin) ? { name: pluginName, ...plugin } : { name: pluginName },
-        )
-      : [];
-  const plugins = pluginValues.filter(isRecord).map((plugin): MarketplacePluginEntryInfo => {
-    const pluginName = readRequiredString(plugin.name, "marketplace plugin name");
-    const dependencies = Array.isArray(plugin.dependencies)
-      ? plugin.dependencies.filter(
-          (dependency): dependency is string =>
-            typeof dependency === "string" && dependency.trim().length > 0,
-        )
-      : [];
-    return {
-      name: pluginName,
-      dependencies,
-      raw: plugin,
-      ...(plugin.source !== undefined ? { source: plugin.source } : {}),
-    };
-  });
-  return {
-    name,
-    ...(typeof value.description === "string" ? { description: value.description } : {}),
-    ...readMarketplacePluginRoot(value),
-    plugins,
-    raw: value,
-  };
-}
-
-function readMarketplacePluginRoot(value: Record<string, unknown>): { pluginRoot?: string } {
-  if (typeof value.pluginRoot === "string" && value.pluginRoot.trim()) {
-    return { pluginRoot: value.pluginRoot.trim() };
-  }
-  const metadata = isRecord(value.metadata) ? value.metadata : {};
-  if (typeof metadata.pluginRoot === "string" && metadata.pluginRoot.trim()) {
-    return { pluginRoot: metadata.pluginRoot.trim() };
-  }
-  return {};
-}
-
-function findMarketplaceManifestPath(sourceRoot: string): string | null {
-  const candidates = [
-    join(sourceRoot, "marketplace.json"),
-    join(sourceRoot, ".claude-plugin", "marketplace.json"),
-  ];
-  return candidates.find((candidate) => existsSync(candidate)) ?? null;
-}
-
-function resolveMarketplacePluginClosure(
-  manifest: MarketplaceManifestInfo,
-  marketplaceId: string,
-  pluginNames: readonly string[],
-): MarketplacePluginEntryInfo[] {
-  const byName = new Map(manifest.plugins.map((entry) => [entry.name, entry]));
-  const visited = new Set<string>();
-  const result: MarketplacePluginEntryInfo[] = [];
-  const visit = (pluginName: string, requiredBy: string) => {
-    const normalizedName = readRequiredString(pluginName, "marketplace plugin name");
-    if (visited.has(normalizedName)) {
-      return;
-    }
-    const entry = byName.get(normalizedName);
-    if (!entry) {
-      throw new Error(`marketplace plugin not found: ${normalizedName}`);
-    }
-    visited.add(normalizedName);
-    result.push(entry);
-    for (const dependency of entry.dependencies) {
-      visit(normalizeMarketplaceDependency(dependency, marketplaceId, requiredBy), entry.name);
-    }
-  };
-  for (const pluginName of pluginNames) {
-    visit(pluginName, pluginName);
-  }
-  return result;
-}
-
-function normalizeMarketplaceDependency(
-  dependency: string,
-  marketplaceId: string,
-  requiredBy: string,
-): string {
-  const trimmed = dependency.trim();
-  const separatorIndex = trimmed.lastIndexOf("@");
-  if (separatorIndex < 0) {
-    return trimmed;
-  }
-  const name = trimmed.slice(0, separatorIndex);
-  const marketplace = trimmed.slice(separatorIndex + 1);
-  if (marketplace === marketplaceId) {
-    return name;
-  }
-  throw new CrossMarketplaceDependencyError(dependency, requiredBy);
-}
-
-class CrossMarketplaceDependencyError extends Error {
-  constructor(dependency: string, requiredBy: string) {
-    super(
-      `cross-marketplace dependency is not supported for SSH source mirror: ${dependency} required by ${requiredBy}`,
-    );
-    this.name = "CrossMarketplaceDependencyError";
-  }
-}
-
-async function buildMarketplaceSourceMirrorEntry(
-  loaded: MarketplaceSourceLoadResult,
-  entry: MarketplacePluginEntryInfo,
-): Promise<MarketplaceSourceMirrorEntry> {
-  if (isRemoteMarketplacePluginSource(entry.source)) {
-    return { entry };
-  }
-  const sourcePath = await resolveLocalMarketplacePluginSource(loaded, entry);
-  const sourceDirectoryName = toSafeDirectoryName(entry.name);
-  return {
-    entry,
-    mirroredSourcePath: sourcePath,
-    mirroredSourceRelativePath: `${MIRRORED_MARKETPLACE_PLUGIN_ROOT}/${sourceDirectoryName}`,
-  };
-}
-
-function isRemoteMarketplacePluginSource(source: unknown): boolean {
-  if (!isRecord(source)) {
-    return false;
-  }
-  const sourceKind = typeof source.source === "string" ? source.source : "";
-  return ["github", "git", "url", "git-subdir", "npm", "pip"].includes(sourceKind);
-}
-
-async function resolveLocalMarketplacePluginSource(
-  loaded: MarketplaceSourceLoadResult,
-  entry: MarketplacePluginEntryInfo,
-): Promise<string> {
-  if (typeof entry.source === "string") {
-    return await resolveLocalMarketplacePluginSourcePath(
-      loaded,
-      entry.source,
-      `${entry.name} source`,
-    );
-  }
-  if (isRecord(entry.source)) {
-    const sourceKind = typeof entry.source.source === "string" ? entry.source.source : "";
-    if (sourceKind === "directory" && typeof entry.source.path === "string") {
-      return await resolveLocalMarketplacePluginSourcePath(
-        loaded,
-        entry.source.path,
-        `${entry.name} directory source`,
-        { allowSettingsAbsoluteDirectorySource: !loaded.sourceRoot },
-      );
-    }
-    return await resolveLocalMarketplacePluginFallback(loaded, entry);
-  }
-  return await resolveLocalMarketplacePluginFallback(loaded, entry);
-}
-
-async function resolveLocalMarketplacePluginFallback(
-  loaded: MarketplaceSourceLoadResult,
-  entry: MarketplacePluginEntryInfo,
-): Promise<string> {
-  if (!loaded.sourceRoot) {
-    throw new Error(
-      `cannot mirror local marketplace plugin source without source root: ${entry.name}`,
-    );
-  }
-  const pluginBaseDir = resolveMarketplacePluginBaseDir(loaded);
-  const fallbackPath = resolvePluginSyncPathWithin(pluginBaseDir, entry.name, {
-    unsafePathLabel: "unsafe marketplace plugin source path",
-  });
-  if (await directoryExists(fallbackPath)) {
-    return await assertLocalMarketplacePluginSourceRoot(fallbackPath);
-  }
-  throw new Error(`local marketplace plugin source does not exist: ${fallbackPath}`);
-}
-
-async function resolveLocalMarketplacePluginSourcePath(
-  loaded: MarketplaceSourceLoadResult,
-  sourcePath: string,
-  label: string,
-  options: { allowSettingsAbsoluteDirectorySource?: boolean } = {},
-): Promise<string> {
-  const requestedPath = readRequiredString(sourcePath, label);
-  const relativeSourcePath = requestedPath.replace(/^\.\//u, "");
-  if (!loaded.sourceRoot && options.allowSettingsAbsoluteDirectorySource) {
-    if (!isAbsolute(requestedPath)) {
-      throw new Error(
-        `cannot mirror local marketplace plugin source without source root: ${sourcePath}`,
-      );
-    }
-    const absolutePath = resolve(requestedPath);
-    if (await directoryExists(absolutePath)) {
-      return await assertLocalMarketplacePluginSourceRoot(absolutePath);
-    }
-    throw new Error(`local marketplace plugin source does not exist: ${sourcePath}`);
-  }
-  if (!loaded.sourceRoot) {
-    throw new Error(
-      `cannot mirror local marketplace plugin source without source root: ${sourcePath}`,
-    );
-  }
-  const pluginBaseDir = resolveMarketplacePluginBaseDir(loaded);
-  const relativePath = resolvePluginSyncPathWithin(pluginBaseDir, relativeSourcePath, {
-    unsafePathLabel: "unsafe marketplace plugin source path",
-  });
-  if (await directoryExists(relativePath)) {
-    return await assertLocalMarketplacePluginSourceRoot(relativePath);
-  }
-  throw new Error(`local marketplace plugin source does not exist: ${sourcePath}`);
-}
-
-async function assertLocalMarketplacePluginSourceRoot(pluginRoot: string): Promise<string> {
-  const manifest = await readPluginManifestInfo(pluginRoot);
-  if (!manifest) {
-    // marketplace source mirror 只能复制选中插件目录。先验证 plugin manifest，避免被篡改的 marketplace entry
-    // 指向普通目录后，把本机敏感文件作为“插件源码”打包发送到 SSH 远端。
-    throw new Error(`local marketplace plugin source is missing plugin manifest: ${pluginRoot}`);
-  }
-  return pluginRoot;
-}
-
-function resolveMarketplacePluginBaseDir(loaded: MarketplaceSourceLoadResult): string {
-  const sourceRoot = loaded.sourceRoot;
-  if (!sourceRoot) {
-    throw new Error("cannot resolve marketplace plugin source root");
-  }
-  if (!loaded.manifest.pluginRoot) {
-    return sourceRoot;
-  }
-  const pluginRoot = resolvePluginSyncPathWithin(sourceRoot, loaded.manifest.pluginRoot, {
-    unsafePathLabel: "unsafe marketplace pluginRoot",
-  });
-  return existsSync(pluginRoot) ? pluginRoot : sourceRoot;
-}
-
-function buildMirroredMarketplaceManifest(
-  manifest: MarketplaceManifestInfo,
-  entries: readonly MarketplaceSourceMirrorEntry[],
-): Record<string, unknown> {
-  const hasMirroredLocalSource = entries.some((entry) => entry.mirroredSourceRelativePath);
-  const rawMetadata = isRecord(manifest.raw.metadata) ? manifest.raw.metadata : {};
-  const rawManifest = { ...manifest.raw };
-  delete rawManifest.pluginRoot;
-  return {
-    ...rawManifest,
-    name: manifest.name,
-    ...(manifest.description ? { description: manifest.description } : {}),
-    ...(hasMirroredLocalSource
-      ? {
-          // agent marketplace 解析只读取 metadata.pluginRoot。
-          // 远端镜像 manifest 如果写顶层 pluginRoot，会把 ./hello-world 误解析到市场根目录。
-          metadata: {
-            ...rawMetadata,
-            pluginRoot: MIRRORED_MARKETPLACE_PLUGIN_ROOT,
-          },
-        }
-      : {}),
-    plugins: entries.map((entry) => {
-      const raw: Record<string, unknown> = { ...entry.entry.raw, name: entry.entry.name };
-      if (entry.mirroredSourceRelativePath) {
-        raw.source = `./${entry.mirroredSourceRelativePath.split("/").slice(1).join("/")}`;
-      }
-      return raw;
-    }),
-  };
-}
-
-function createMarketplaceSourceDirectoryName(
-  marketplaceId: string,
-  manifestContent: string,
-  sourceFingerprints: readonly (string | null)[],
-): string {
-  const hashInput = JSON.stringify({
-    manifestContent,
-    sourceFingerprints,
-  });
-  return `${toSafeDirectoryName(marketplaceId)}-${createShortHash(hashInput).slice(0, 12)}`;
-}
 
 export async function readPluginManifestInfo(
   pluginRoot: string,
@@ -810,7 +298,7 @@ async function pathExists(path: string): Promise<boolean> {
   }
 }
 
-async function computeRecursiveSize(path: string): Promise<number> {
+export async function computeRecursiveSize(path: string): Promise<number> {
   const pathStat = await lstat(path);
   if (pathStat.isFile()) {
     return pathStat.size;
@@ -825,7 +313,7 @@ async function computeRecursiveSize(path: string): Promise<number> {
   return total;
 }
 
-async function computeRecursiveContentFingerprint(path: string): Promise<string> {
+export async function computeRecursiveContentFingerprint(path: string): Promise<string> {
   const pathStat = await lstat(path);
   const hash = createHash("sha256");
   if (pathStat.isFile()) {
@@ -862,7 +350,7 @@ export function createShortHash(value: string): string {
   return createHash("sha256").update(value).digest("hex");
 }
 
-function normalizePluginId(pluginId: string): string {
+export function normalizePluginId(pluginId: string): string {
   const normalized = pluginId.trim();
   if (!normalized || normalized.includes("/") || normalized.includes("\\")) {
     throw new Error(`invalid plugin id: ${pluginId}`);
@@ -870,7 +358,7 @@ function normalizePluginId(pluginId: string): string {
   return normalized;
 }
 
-function normalizeMarketplaceId(marketplaceId: string): string {
+export function normalizeMarketplaceId(marketplaceId: string): string {
   return normalizePluginId(marketplaceId);
 }
 
@@ -878,238 +366,14 @@ export function normalizePluginIdKey(pluginId: string): string {
   return normalizePluginId(pluginId).toLowerCase();
 }
 
-function readRequiredString(value: unknown, label: string): string {
+export function readRequiredString(value: unknown, label: string): string {
   if (typeof value !== "string" || !value.trim()) {
     throw new Error(`missing ${label}`);
   }
   return value.trim();
 }
 
-/** 目录名去重：同名插件目录按路径哈希后缀区分，保证同步目标端不互相覆盖。 */
-function createUniqueDirectoryName(
-  directoryBasename: string,
-  pluginName: string,
-  pluginRoot: string,
-  usedDirectoryNames: Set<string>,
-): string {
-  const baseName = toSafeDirectoryName(directoryBasename || pluginName);
-  if (!usedDirectoryNames.has(baseName)) {
-    usedDirectoryNames.add(baseName);
-    return baseName;
-  }
-  const dedupedName = toSafeDirectoryName(`${baseName}-${createShortHash(pluginRoot).slice(0, 8)}`);
-  usedDirectoryNames.add(dedupedName);
-  return dedupedName;
-}
-
-function createCandidateId(pluginId: string, pluginRoot: string): string {
-  return createShortHash(`${pluginId}:${pluginRoot}`);
-}
-
-/**
- * 本端用户插件候选：遍历已配置插件目录，读 manifest 并测量体积。
- * 同一真实路径只计一次（符号链接/重复配置不重复同步）。
- */
-async function collectLocalUserPluginCandidates(): Promise<PluginSyncCandidate[]> {
-  const config = await readUserPluginConfigState();
-  const candidates: PluginSyncCandidate[] = [];
-  const seenRealpaths = new Set<string>();
-  const usedDirectoryNames = new Set<string>();
-
-  for (const rawDir of config.dirs) {
-    const pluginRoot = resolve(rawDir);
-    const canonicalRoot = await realpath(pluginRoot).catch(() => pluginRoot);
-    if (seenRealpaths.has(canonicalRoot)) {
-      continue;
-    }
-    seenRealpaths.add(canonicalRoot);
-    const manifest = await readPluginManifestInfo(canonicalRoot);
-    if (!manifest) {
-      continue;
-    }
-    const enabledOverride = config.enabledOverrides.get(normalizePluginIdKey(manifest.pluginId));
-    const directoryName = createUniqueDirectoryName(
-      basename(canonicalRoot),
-      manifest.name,
-      canonicalRoot,
-      usedDirectoryNames,
-    );
-    candidates.push({
-      id: createCandidateId(manifest.pluginId, canonicalRoot),
-      name: manifest.name,
-      pluginId: manifest.pluginId,
-      directoryName,
-      ...(manifest.description ? { description: manifest.description } : {}),
-      ...(manifest.version ? { version: manifest.version } : {}),
-      path: canonicalRoot,
-      sizeBytes: await computeRecursiveSize(canonicalRoot),
-      enabled: enabledOverride ?? true,
-      ...(enabledOverride !== undefined ? { enabledOverride } : {}),
-      componentTypes: manifest.componentTypes,
-    });
-  }
-
-  return candidates.sort((left, right) => left.name.localeCompare(right.name));
-}
-
-/** pluginId（小写）→ 已配置内联插件目录，用于判定目标端是否已有同一插件的其他目录。 */
-async function collectConfiguredInlinePluginPathById(): Promise<Map<string, string>> {
-  const config = await readUserPluginConfigState();
-  const byId = new Map<string, string>();
-  for (const rawDir of config.dirs) {
-    const pluginRoot = resolve(rawDir);
-    const manifest = await readPluginManifestInfo(pluginRoot);
-    if (!manifest) continue;
-    byId.set(normalizePluginIdKey(manifest.pluginId), manifestPathOrRoot(pluginRoot));
-  }
-  return byId;
-}
-
-function manifestPathOrRoot(pluginRoot: string): string {
-  return pluginRoot;
-}
-
-/** 读取归档内的插件元数据清单（同步时用于对照目标端已有配置）。 */
-async function readArchiveMetadata(tempRoot: string): Promise<PluginSyncArchiveMetadata> {
-  const raw = await readFile(join(tempRoot, PLUGIN_SYNC_METADATA_ARCHIVE_PATH), "utf-8");
-  const parsed = JSON.parse(raw) as unknown;
-  if (!isRecord(parsed) || !Array.isArray(parsed.plugins)) {
-    throw new Error("invalid plugin sync archive metadata");
-  }
-  const plugins: PluginSyncArchiveMetadata["plugins"] = [];
-  for (const item of parsed.plugins) {
-    if (!isRecord(item)) {
-      throw new Error("invalid plugin sync archive plugin metadata");
-    }
-    const name = readRequiredString(item.name, "plugin metadata name");
-    const pluginId = normalizePluginId(readRequiredString(item.pluginId, "plugin metadata id"));
-    const directoryName = normalizePluginSyncRelativePath(
-      readRequiredString(item.directoryName, "plugin metadata directory"),
-    );
-    plugins.push({
-      name,
-      pluginId,
-      directoryName,
-      ...(typeof item.enabled === "boolean" ? { enabled: item.enabled } : {}),
-    });
-  }
-  return { plugins };
-}
-
-/**
- * 解包插件归档到本端插件根：同名目录已存在则跳过（不覆盖），
- * 解包成功后把新目录登记进 config.json 的 plugins.dirs，保留来源端的启用态。
- */
-async function importPluginsArchive(
-  archive: Uint8Array,
-  maxArchiveBytes: number,
-): Promise<PluginSyncImportResult> {
-  const tempRoot = join(tmpdir(), `raspberrycode-plugin-sync-${randomUUID()}`);
-  try {
-    await extractPluginSyncArchive(archive, tempRoot, {
-      maxExtractedBytes: maxArchiveBytes,
-    });
-    const metadata = await readArchiveMetadata(tempRoot);
-    const targetRoot = getUserRaspberrycodePluginRoot();
-    await mkdir(targetRoot, { recursive: true });
-    const results: PluginSyncImportResult["results"] = [];
-    for (const plugin of metadata.plugins) {
-      const targetPath = resolvePluginSyncPathWithin(targetRoot, plugin.directoryName);
-      if (existsSync(targetPath)) {
-        results.push({
-          name: plugin.name,
-          pluginId: plugin.pluginId,
-          directoryName: plugin.directoryName,
-          status: "skipped",
-          path: targetPath,
-        });
-        continue;
-      }
-      const sourcePath = join(tempRoot, plugin.directoryName);
-      if (!existsSync(sourcePath)) {
-        results.push({
-          name: plugin.name,
-          pluginId: plugin.pluginId,
-          directoryName: plugin.directoryName,
-          status: "failed",
-          error: "plugin directory missing in archive",
-        });
-        continue;
-      }
-      try {
-        await cp(sourcePath, targetPath, { recursive: true });
-        await addPluginDirToUserConfig(targetPath, plugin.pluginId, plugin.enabled);
-        results.push({
-          name: plugin.name,
-          pluginId: plugin.pluginId,
-          directoryName: plugin.directoryName,
-          status: "synced",
-          path: targetPath,
-        });
-      } catch (error) {
-        results.push({
-          name: plugin.name,
-          pluginId: plugin.pluginId,
-          directoryName: plugin.directoryName,
-          status: "failed",
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
-    }
-    return { results };
-  } finally {
-    await rm(tempRoot, { recursive: true, force: true }).catch(() => undefined);
-  }
-}
-
-/** 把插件目录写回 config.json 的 plugins.dirs，并按需写入启用态覆盖。 */
-async function addPluginDirToUserConfig(
-  pluginPath: string,
-  pluginId: string,
-  enabledOverride: boolean | undefined,
-): Promise<void> {
-  const filePath = getUserRaspberrycodeConfigPath();
-  const parsed = await readJsonFileOrEmpty(filePath);
-  const plugins = isRecord(parsed.plugins) ? parsed.plugins : {};
-  const resolvedPluginPath = resolve(pluginPath);
-  const dirs = readStringArray(plugins.dirs);
-  const nextDirs = dirs.map((item) => resolve(item)).includes(resolvedPluginPath)
-    ? dirs
-    : [...dirs, resolvedPluginPath];
-  const enabledPlugins = isRecord(plugins.enabledPlugins) ? plugins.enabledPlugins : {};
-  await writeJsonFileAtomic(filePath, {
-    ...parsed,
-    plugins: {
-      ...plugins,
-      dirs: nextDirs,
-      ...(enabledOverride !== undefined
-        ? {
-            enabledPlugins: {
-              ...enabledPlugins,
-              [pluginId]: enabledOverride,
-            },
-          }
-        : Object.keys(enabledPlugins).length > 0
-          ? { enabledPlugins }
-          : {}),
-    },
-  });
-}
-
-async function writeJsonFileAtomic(
-  filePath: string,
-  value: Record<string, unknown>,
-): Promise<void> {
-  await mkdir(dirname(filePath), { recursive: true });
-  const tempPath = join(dirname(filePath), `.tmp-${basename(filePath)}-${randomUUID()}`);
-  await writeFile(tempPath, `${JSON.stringify(value, null, 2)}\n`, {
-    encoding: "utf-8",
-    mode: 0o600,
-  });
-  await rename(tempPath, filePath);
-}
-
-async function readJsonFileOrEmpty(filePath: string): Promise<Record<string, unknown>> {
+export async function readJsonFileOrEmpty(filePath: string): Promise<Record<string, unknown>> {
   let raw: string;
   try {
     raw = await readFile(filePath, "utf-8");
@@ -1126,13 +390,13 @@ async function readJsonFileOrEmpty(filePath: string): Promise<Record<string, unk
   return parsed;
 }
 
-function readStringArray(value: unknown): string[] {
+export function readStringArray(value: unknown): string[] {
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
     : [];
 }
 
-async function directoryExists(path: string): Promise<boolean> {
+export async function directoryExists(path: string): Promise<boolean> {
   try {
     return (await lstat(path)).isDirectory();
   } catch {
@@ -1140,6 +404,23 @@ async function directoryExists(path: string): Promise<boolean> {
   }
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+export async function readUserPluginConfigState(): Promise<UserPluginConfigState> {
+  const parsed = await readJsonFileOrEmpty(getUserRaspberrycodeConfigPath());
+  const plugins = isRecord(parsed.plugins) ? parsed.plugins : {};
+  const enabledPlugins = isRecord(plugins.enabledPlugins) ? plugins.enabledPlugins : {};
+  const enabledOverrides = new Map<string, boolean>();
+  for (const [pluginId, enabled] of Object.entries(enabledPlugins)) {
+    if (typeof enabled === "boolean") {
+      enabledOverrides.set(normalizePluginIdKey(pluginId), enabled);
+    }
+  }
+  return {
+    dirs: readStringArray(plugins.dirs),
+    enabledOverrides,
+    options: isRecord(plugins.options) ? plugins.options : {},
+  };
+}
+
+export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
