@@ -4,20 +4,20 @@ import {
   parseRemoteWorkspaceIdentity,
   type RemoteTarget,
 } from "@raspberrycode/shared";
-import type { BotRemoteWorkspaceResolver } from "@raspberrycode/services";
+import type { BotRemoteWorkspaceResolution, BotRemoteWorkspaceResolver } from "@raspberrycode/services";
 import type { SourceServerDirectory } from "./sourceServerDirectory.js";
 import type { WindowRemoteLogicalSessionSnapshot } from "./windowRemoteConnectionRegistry.js";
 
 /** Bot 与 Renderer 共用 Directory/Registry 的事实，旧回退快照不再决定 R3 路由。 */
 export async function resolveBotRemoteWorkspace(
-  workspace: Parameters<BotRemoteWorkspaceResolver>[0],
-  purpose: Parameters<BotRemoteWorkspaceResolver>[1],
+  workspace: { workspacePath: string; workspaceIdentity: string },
+  purpose: "lookup" | "reconnect",
   deps: {
     directory: Pick<SourceServerDirectory, "snapshot" | "resolveProfileTarget">;
     listSessions(): WindowRemoteLogicalSessionSnapshot[];
     getLegacyServerTarget?(identity: string): Promise<RemoteTarget | null>;
   },
-): ReturnType<BotRemoteWorkspaceResolver> {
+): Promise<BotRemoteWorkspaceResolution | null> {
   const identity = workspace.workspaceIdentity.trim();
   const parsed = parseRemoteWorkspaceIdentity(identity);
   if (!parsed) return null;

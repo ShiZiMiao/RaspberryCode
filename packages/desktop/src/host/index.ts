@@ -802,7 +802,9 @@ const hostSelfResourceTelemetry = startHostSelfResourceTelemetry({
   postMessage: parentPort ? (message) => parentPort.postMessage(message) : undefined,
 });
 
-const runtimeProcessLifecycleReporter = {
+const runtimeProcessLifecycleReporter: NonNullable<
+  Parameters<typeof createLocalServices>[0]["processLifecycleReporter"]
+> = {
   onSpawn(event) {
     if (!parentPort) {
       return;
@@ -847,9 +849,11 @@ const runtimeProcessLifecycleReporter = {
   onException(event) {
     parentPort?.postMessage({ type: HostResponseTypes.AgentProcessException, ...event });
   },
-} satisfies NonNullable<Parameters<typeof createLocalServices>[0]>["processLifecycleReporter"];
+};
 
-const runtimeTaskReporter = {
+const runtimeTaskReporter: NonNullable<
+  Parameters<typeof createLocalServices>[0]["taskRuntimeReporter"]
+> = {
   onRunningTaskCountChanged(event) {
     if (!parentPort) {
       return;
@@ -860,9 +864,11 @@ const runtimeTaskReporter = {
       runningTaskCount: event.runningTaskCount,
     });
   },
-} satisfies NonNullable<Parameters<typeof createLocalServices>[0]>["taskRuntimeReporter"];
+};
 
-const cuaOperationStateReporter = {
+const cuaOperationStateReporter: NonNullable<
+  Parameters<typeof createLocalServices>[0]["cuaOperationStateReporter"]
+> = {
   onStateChanged(event) {
     if (!parentPort) {
       return;
@@ -872,7 +878,7 @@ const cuaOperationStateReporter = {
       ...event,
     });
   },
-} satisfies NonNullable<Parameters<typeof createLocalServices>[0]>["cuaOperationStateReporter"];
+};
 
 let untrackedPromptRpcCount = 0;
 function reportHostRunningTaskCount(): void {
@@ -1954,7 +1960,7 @@ const windowRemoteConnectionRegistry = createWindowRemoteConnectionRegistry<
 
 const windowHostControllerRuntime = createWindowHostControllerRuntime({
   createId: randomUUID,
-  readHostTaskList: (query) => {
+  readHostTaskList: (query: Parameters<IRaspberryCodeTaskService["listTaskList"]>[0]) => {
     if (!activeServices) throw new Error("Window Host services unavailable");
     return activeServices.get(IRaspberryCodeTaskService).listTaskList(query);
   },

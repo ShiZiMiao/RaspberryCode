@@ -494,10 +494,6 @@ function buildRenderUnits(
   return normalizedUnits;
 }
 
-function hasHighspeedCard(unit: ConversationTurnRenderUnit): boolean {
-  return unit.visibleUserInputs.some((row) => row.highspeed !== undefined);
-}
-
 /** 与 rows 分区对应的 render unit（spec：docs/ui/chat-virtual-scroll.md「每帧派生成本」）。 */
 export interface ConversationTurnRenderUnitsPartition {
   /** 历史段的 unit；只在历史派生结果变化时更换引用。 */
@@ -514,8 +510,6 @@ export interface ConversationTurnRenderUnitsPartition {
  * 现在历史段结果按 history 数组引用缓存。只有历史中存在无 header 的轮次（读 phase）、
  * 仍在运行的轮次（读时钟）或可固定的插件卡片（读固定裁决）时，缓存键才额外带上对应输入。
  * 跨轮规则在合并时处理：尾轮 unit 被过滤掉时，历史末项按最后一轮重新归一化；
- * highspeed footer 只在含卡片的 unit 上收口，不含卡片的 unit 既不影响也不会得到 footer，
- * 所以在“含卡片历史 unit + 尾轮 unit”子序列上收口，结果与全量收口相同。
  */
 export function createConversationTurnRenderUnitsSelector() {
   type Entry = {
@@ -538,7 +532,6 @@ export function createConversationTurnRenderUnitsSelector() {
     resolver: BuildConversationTurnRenderUnitsOptions["pluginUiPinResolver"];
     // 已过滤并按“后面还有尾轮”归一化，尚未收口 footer。
     units: ConversationTurnRenderUnit[];
-    cardIndexes: number[];
     /**
      * 尾轮 unit 全部被过滤时，历史末项按最后一轮重新归一化后的历史数组。
      * Bug 根因：原先每次调用都新建这个数组，history 引用每次都变，下游按 history 缓存的派生全部失效。
@@ -601,13 +594,7 @@ export function createConversationTurnRenderUnitsSelector() {
   ): ConversationTurnRenderUnit => {
     const old = lookup(unit.key);
     if (!old || old === unit) return unit;
-    const target = unit.highspeedOutputFooterTarget;
-    const oldTarget = old.highspeedOutputFooterTarget;
-    return sameFields(unit, old, "highspeedOutputFooterTarget") &&
-      target?.cardId === oldTarget?.cardId &&
-      sameFields(target?.metrics, oldTarget?.metrics)
-      ? old
-      : unit;
+    return sameFields(unit, old) ? old : unit;
   };
 
   const isHistoryReusable = (
@@ -669,7 +656,6 @@ export function createConversationTurnRenderUnitsSelector() {
         ),
         resolver: currentOptions.pluginUiPinResolver,
         units,
-        cardIndexes: units.flatMap((unit, index) => (hasHighspeedCard(unit) ? [index] : [])),
       };
     }
 
@@ -721,34 +707,20 @@ export function createConversationTurnRenderUnitsSelector() {
       historyUnits = history.tailDropped.units;
     }
 
-    const cardIndexes = history.cardIndexes;
-    const marked = markHighspeedOutputFooterUnits(
-      [...cardIndexes.map((index) => historyUnits[index]!), ...tailUnits],
-      currentOptions.nowMs,
-    );
     const historyLookup = (key: string) =>
       previousHistoryFinalByKey.get(key) ?? previousTailFinalByKey.get(key);
-    const markedCards = cardIndexes.map((_, index) => reuseFinal(marked[index]!, historyLookup));
     const previousFinal = historyFinal;
-    if (
-      previousFinal?.base !== historyUnits ||
-      cardIndexes.some((unitIndex, index) => previousFinal.units[unitIndex] !== markedCards[index])
-    ) {
+    if (previousFinal?.base !== historyUnits) {
       const units = historyUnits.map((unit) => reuseFinal(unit, historyLookup));
-      cardIndexes.forEach((unitIndex, index) => {
-        units[unitIndex] = markedCards[index]!;
-      });
       historyFinal = { base: historyUnits, units };
       historyFinalByKey = new Map(units.map((unit) => [unit.key, unit]));
     }
-    const tailFinal = marked
-      .slice(cardIndexes.length)
-      .map((unit) =>
-        reuseFinal(
-          unit,
-          (key) => previousTailFinalByKey.get(key) ?? previousHistoryFinalByKey.get(key),
-        ),
-      );
+    const tailFinal = tailUnits.map((unit) =>
+      reuseFinal(
+        unit,
+        (key) => previousTailFinalByKey.get(key) ?? previousHistoryFinalByKey.get(key),
+      ),
+    );
     tailFinalByKey = new Map(tailFinal.map((unit) => [unit.key, unit]));
     return { history: historyFinal!.units, tail: tailFinal };
   };

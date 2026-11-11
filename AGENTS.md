@@ -22,7 +22,6 @@
 | 模块阅读包       | `pnpm architecture:context <module-id>`              |
 | 未使用依赖与导出 | `pnpm knip`                                          |
 | 导出引用查询     | `pnpm dep:refs --list-exports <file>`                |
->>>>>>> upstream/main
 
 App 业务单测已退役，不新增或恢复 App 业务单测 test/spec 或 `contract.test.ts`；保留 CLI、CUA、E2E、浏览器验收和工程门禁测试。工程 Vitest 使用 `pnpm test:engineering <文件>`，push 自动运行 `pnpm test:engineering:affected --scope push`，CLI/CUA 使用各包独立入口，不默认全量。范围见 [测试规格](docs/testing/unit-test-quality.md)，推送合同见 [pre-push 说明](docs/testing/pre-push-hook.md)。
 

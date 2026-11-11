@@ -10,8 +10,10 @@ export interface RaspberryCodeTaskListWorkspaceScope {
 }
 
 export interface RaspberryCodeTaskListQuery {
-  kind: RaspberryCodeTaskListKind;
-  workspaceScopes: RaspberryCodeTaskListWorkspaceScope[];
+  /** "all" 表示不按 membership 过滤（全局搜索结果用）。 */
+  kind: RaspberryCodeTaskListKind | "all";
+  /** "host" 由存储 owner 确定全部范围，不接受 UI 已打开工作区作为历史目录。 */
+  workspaceScopes: RaspberryCodeTaskListWorkspaceScope[] | "host";
   sortBy: RaspberryCodeTaskListSortBy;
   search?: string;
   limit?: number;

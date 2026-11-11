@@ -4,8 +4,18 @@ import {
   type PluginUiToolResultNotification,
 } from "@raspberrycode/shared/mcp-apps";
 import { supportsHistoryFirst } from "./independentPlanSupport.js";
+import { supportsResidentRowsRange } from "./resident-rows-range/contract.js";
 import {
+  sessionLifecycleSnapshotSchema,
+  type SessionLifecycleSnapshot,
+  type OfficialAuthConsumerKind,
+  resolveWorkspaceTelemetryDetail,
 } from "@raspberrycode/shared";
+import {
+  remoteConversationTelemetryEventSchema,
+  type RemoteConversationTelemetryEvent,
+} from "@raspberrycode/shared/conversation-telemetry";
+import { RemoteConversationTelemetry } from "#src/conversation-telemetry/remoteConversationTelemetry.js";
 import {
   requiresRequestVerification,
   type RequestVerificationConfig,
@@ -115,6 +125,9 @@ import {
   raspberrycodeProtocolEmptyResultSchema,
   raspberrycodeProtocolMethods,
   raspberrycodeProtocolNotifications,
+  raspberrycodeProviderRuntimeHeadersErrorCode,
+  raspberrycodeAutomationPauseParamsSchema,
+  raspberrycodeRuntimeCapabilitiesSchema,
   raspberrycodeMcpTelemetryEventSchema,
   raspberrycodeMcpResourceSamplesSchema,
   raspberrycodeToolExecResourceSchema,
@@ -138,6 +151,7 @@ import {
   raspberrycodeWorkspaceCancelGenerateTextResultSchema,
   raspberrycodeWorkspaceGenerateTextResultSchema,
   raspberrycodeWorkspaceHookTrustGrantResultSchema,
+  raspberrycodeWorkspaceMcpTrustResultSchema,
   raspberrycodeWorkspaceUpdateInteractionPreferencesResultSchema,
   raspberrycodeWorkspaceUpdateModelIoPreferencesResultSchema,
   raspberrycodeProviderUpdateAccountConfigResultSchema,
@@ -247,6 +261,10 @@ import type {
   RaspberryCodeAgentValidatePluginParams,
   RaspberryCodeAgentDescribePluginParams,
   RaspberryCodeAgentListMcpServerStatusesParams,
+  RaspberryCodeAgentConversationInputPredictionParams,
+  RaspberryCodeAgentMeasureSessionDataParams,
+  RaspberryCodeAgentPurgeSessionDataParams,
+  RaspberryCodeAgentSetWorkspaceMcpTrustParams,
   RaspberryCodeAgentWorkspaceTarget,
   RaspberryCodeAgentCuaPermissionObservation,
   RaspberryCodeAgentCreateAutomationParams,
@@ -405,6 +423,8 @@ interface PendingPermissionRequest {
 interface PendingProviderRuntimeHeadersRequest extends PendingPermissionRequest {
   request: RaspberryCodeProviderRuntimeHeadersRequestParams;
   responding?: boolean;
+  /** 已向 session/workspace 投递交互请求；晚订阅只能补投，不能抢先应答。 */
+  interactionRequired?: boolean;
 }
 
 interface PendingSessionRuntimePreferencesRequest extends PendingPermissionRequest {
@@ -993,6 +1013,9 @@ interface CreateRaspberryCodeAgentServiceOptions extends Omit<
   prepareProjectExecution?: (
     projectId: string,
   ) => Promise<import("@raspberrycode/shared").ProjectExecutionSnapshot>;
+  prepareForkCreation?: (
+    target: RaspberryCodeAgentSessionTarget & { parentSessionId: string },
+  ) => Promise<void>;
   prepareSessionCreation?: (
     target: RaspberryCodeAgentSessionTarget & {
       projectId: string | null;
@@ -1224,7 +1247,6 @@ export function createRaspberryCodeAgentService(
     return collector.acceptFact(fact);
   }
 
-  const offPeakLifecycleEmitters = new Map<string, Emitter<OffPeakLifecycleNotification>>();
   const pluginUiToolResultEmitter = new Emitter<
     PluginUiToolResultNotification & RaspberryCodeAgentWorkspaceTarget
   >();
@@ -1253,6 +1275,108 @@ export function createRaspberryCodeAgentService(
   });
   const sessionEventSequenceStates = new Map<string, SessionEventSequenceState>();
   const wiredClients = new WeakSet<RaspberryCodeProtocolClient>();
+  /**
+   * 命令链路分段耗时诊断：只在 debug 级别落一条带阶段名和毫秒数的日志，
+   * 不改变被包裹调用的返回值与异常语义（异常直接透传，不计时）。
+   */
+  async function measure<T>(label: string, run: () => T | Promise<T>): Promise<T> {
+    const startedAt = Date.now();
+    try {
+      return await run();
+    } finally {
+      logger.debug(undefined, "RaspberryCode host 命令分段耗时", {
+        stage: label,
+        durationMs: Date.now() - startedAt,
+      });
+    }
+  }
+  // 共享物理连接可服务多个工作区：按 client 记住已声明的工作区地址与 session 归属，
+  // 供无 workspace 字段的通知回填来源（旧 CLI 单工作区场景由 workspaces.size===1 兜底）。
+  const clientWorkspaces = new WeakMap<
+    RaspberryCodeProtocolClient,
+    Map<string, RaspberryCodeAgentWorkspaceTarget>
+  >();
+  const clientSessions = new WeakMap<RaspberryCodeProtocolClient, Map<string, string>>();
+
+  function rememberClientTarget(
+    client: RaspberryCodeProtocolClient,
+    target: RaspberryCodeAgentWorkspaceTarget,
+    sessionId?: string,
+  ): void {
+    let workspaces = clientWorkspaces.get(client);
+    if (!workspaces) clientWorkspaces.set(client, (workspaces = new Map()));
+    const key = resolveWorkspaceKey(target);
+    // 运行归属只保存地址，避免长寿命共享连接保留首发 envelope 与完整消息内容。
+    workspaces.set(key, {
+      workspacePath: target.workspacePath,
+      ...(target.workspaceIdentity ? { workspaceIdentity: target.workspaceIdentity } : {}),
+      ...(target.remoteSessionId ? { remoteSessionId: target.remoteSessionId } : {}),
+    });
+    const request = target as RaspberryCodeAgentWorkspaceTarget & {
+      sessionId?: string;
+      envelope?: { sessionId?: string | null };
+    };
+    const id = sessionId ?? request.sessionId ?? request.envelope?.sessionId;
+    if (!id) return;
+    let sessions = clientSessions.get(client);
+    if (!sessions) clientSessions.set(client, (sessions = new Map()));
+    const previous = sessions.get(id);
+    if (previous && previous !== key)
+      throw new Error("Session workspace does not match its runtime owner");
+    sessions.set(id, key);
+  }
+
+  function routeClientMessage(
+    client: RaspberryCodeProtocolClient,
+    value: unknown,
+  ): RaspberryCodeAgentWorkspaceTarget | undefined {
+    const workspaces = clientWorkspaces.get(client);
+    if (!workspaces) return undefined;
+    const data = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+    let key: string | undefined;
+    if (data.workspace && typeof data.workspace === "object") {
+      const ref = data.workspace as { workspacePath?: unknown; workspaceIdentity?: unknown };
+      if (typeof ref.workspacePath === "string")
+        key =
+          (typeof ref.workspaceIdentity === "string" && ref.workspaceIdentity.trim()) ||
+          ref.workspacePath;
+    }
+    if (!key && typeof data.workspacePath === "string") {
+      key =
+        (typeof data.workspaceIdentity === "string" && data.workspaceIdentity.trim()) ||
+        data.workspacePath;
+    }
+    if (typeof data.topic === "string")
+      key ??=
+        parseSessionsIndexTopic(data.topic) ?? parseWorkspaceConfigTopic(data.topic) ?? undefined;
+    const sessionId =
+      typeof data.sessionId === "string"
+        ? data.sessionId
+        : typeof data.taskId === "string"
+          ? data.taskId
+          : typeof data.targetTaskId === "string"
+            ? data.targetTaskId
+            : typeof data.boundSessionId === "string"
+              ? data.boundSessionId
+              : typeof data.topic === "string"
+                ? (parseConversationTopic(data.topic) ?? undefined)
+                : undefined;
+    const sessionWorkspaceKey = sessionId ? clientSessions.get(client)?.get(sessionId) : undefined;
+    if (key && sessionWorkspaceKey && key !== sessionWorkspaceKey) return undefined;
+    key ??= sessionWorkspaceKey;
+    if (!key && typeof data.directorySessionId === "string")
+      key = clientSessions.get(client)?.get(data.directorySessionId);
+    // 单工作区兼容旧 CLI；共享连接有明确归属却无法解析时，禁止借用首次连接目录。
+    if (!key && workspaces.size === 1) key = workspaces.keys().next().value;
+    if (!key) return undefined;
+    const target = workspaces.get(key);
+    if (!target) return undefined;
+    const current = activeClientsByWorkspaceKey.get(key);
+    if (current && current.client !== client) return undefined;
+    const workspace = current?.workspace ?? target;
+    if (sessionId) rememberClientTarget(client, workspace, sessionId);
+    return workspace;
+  }
   const clientDisposables = new WeakMap<RaspberryCodeProtocolClient, IDisposable[]>();
   const pendingPermissions = new Map<string, PendingPermissionRequest>();
   const pendingUserInputs = new Map<string, PendingPermissionRequest>();
@@ -1350,154 +1474,6 @@ export function createRaspberryCodeAgentService(
     // active client 做第二层 identity guard，避免旧 runtime 的迟到回收误伤换代结果。
     invalidateWorkspaceClient(event.workspaceKey, active.client);
   });
-
-  async function resolveAccountRequestAuth(
-    request: RaspberryCodeProviderRuntimeHeadersRequestParams,
-  ): Promise<AccountRequestAuthMaterial | undefined> {
-    if (!request.accountAccess || !accountRequestAuthService) {
-      return undefined;
-    }
-    return accountRequestAuthService.resolveCurrent({
-      providerId: request.providerId,
-      modelId: request.modelSelection.modelId,
-      accountAccess: request.accountAccess,
-      expectedAccountScope: request.expectedAccountScope,
-      rejectedProjectTokenFingerprint: request.rejectedProjectTokenFingerprint,
-      reason: request.reason,
-    });
-  }
-
-  async function respondAccountRequestAuthWithoutInteraction(params: {
-    key: string;
-    pending: PendingProviderRuntimeHeadersRequest;
-  }): Promise<void> {
-    params.pending.responding = true;
-    try {
-      const requestAuth = await resolveAccountRequestAuth(params.pending.request);
-      // 账号解析是异步 IO；取消/进程退出后不能把迟到材料发给已撤销的请求。
-      if (pendingProviderRuntimeHeaders.get(params.key) !== params.pending) return;
-      if (!requestAuth) {
-        throw new Error("Account request auth resolver returned no material");
-      }
-      await params.pending.client.respond(params.pending.protocolRequestId, {
-        headersApplied: true,
-        requestAuth,
-      });
-      logger.info(undefined, "RaspberryCode provider runtime headers 已应用", {
-        modelId: params.pending.request.modelSelection.modelId,
-        providerId: params.pending.request.providerId,
-        requestId: params.pending.request.requestId,
-        sessionId: params.pending.request.sessionId,
-        workspaceKey: resolveWorkspaceKey(params.pending.request.workspace),
-      });
-    } catch (error) {
-      if (pendingProviderRuntimeHeaders.get(params.key) !== params.pending) return;
-      logger.warn(undefined, "RaspberryCode provider runtime headers 应用失败", {
-        modelId: params.pending.request.modelSelection.modelId,
-        providerId: params.pending.request.providerId,
-        requestId: params.pending.request.requestId,
-        sessionId: params.pending.request.sessionId,
-        error: error instanceof Error ? error.message : String(error),
-        workspaceKey: resolveWorkspaceKey(params.pending.request.workspace),
-      });
-      await params.pending.client.respond(params.pending.protocolRequestId, {
-        headersApplied: false,
-        errorMessage: error instanceof Error ? error.message : String(error),
-      });
-    } finally {
-      if (pendingProviderRuntimeHeaders.get(params.key) === params.pending) {
-        pendingProviderRuntimeHeaders.delete(params.key);
-      }
-    }
-  }
-
-  async function routeProviderRuntimeHeadersRequest(
-    key: string,
-    pending: PendingProviderRuntimeHeadersRequest,
-    workspace: RaspberryCodeAgentWorkspaceTarget,
-  ): Promise<void> {
-    let configFailureCode:
-      | (typeof raspberrycodeProviderRuntimeHeadersErrorCode)[keyof typeof raspberrycodeProviderRuntimeHeadersErrorCode]
-      | undefined;
-    try {
-      const access = pending.request.accountAccess;
-      if (requiresRequestVerification(access)) {
-        let config: RequestVerificationConfig | null;
-        try {
-          config = (await options?.readRequestVerificationConfig?.()) ?? null;
-        } catch (error) {
-          // 根因：底层 fetch/远端错误正文不能进入 Agent 与界面可见的 errorMessage。
-          // 稳定文案让 Agent 仍能区分“读取失败”和“凭据缺失”，原始异常只随 cause 进 Host 日志。
-          configFailureCode = isTemporaryVerificationConfigFailure(error)
-            ? raspberrycodeProviderRuntimeHeadersErrorCode.configNetwork
-            : raspberrycodeProviderRuntimeHeadersErrorCode.configInvalid;
-          throw new Error(
-            configFailureCode === raspberrycodeProviderRuntimeHeadersErrorCode.configNetwork
-              ? "Request verification configuration read failed"
-              : "Request verification configuration is invalid",
-            { cause: error },
-          );
-        }
-        if (pendingProviderRuntimeHeaders.get(key) !== pending) return;
-        if (!config) {
-          configFailureCode = raspberrycodeProviderRuntimeHeadersErrorCode.configInvalid;
-          throw new Error("Request verification configuration is invalid");
-        }
-        // 根因：关闭开关原来由 Renderer 判定，后台界面延迟也会耗尽鉴权 RPC 时限。
-        // Host 绑定同一快照后再决定是否投递；跳过时直接复用账号鉴权，不等待界面。
-        pending.request = { ...pending.request, requestVerificationConfig: config };
-      }
-      if (
-        accountRequestAuthService &&
-        access &&
-        !requiresRequestVerification(access, pending.request.requestVerificationConfig)
-      ) {
-        await respondAccountRequestAuthWithoutInteraction({ key, pending });
-        return;
-      }
-      if (!requestVerificationInteractionAvailable)
-        throw new Error("Provider request auth is unavailable");
-      // 只在决策完成后开放补投；配置 IO 期间的晚订阅不能抢先启动界面验证。
-      pending.interactionRequired = true;
-      emitSessionEvent(workspace, pending.request.sessionId, {
-        type: "providerRuntimeHeaders.request",
-        request: pending.request,
-      });
-      // session listener 可能同步应答或取消，不能再向 workspace 投递已撤销的请求。
-      if (pendingProviderRuntimeHeaders.get(key) !== pending || pending.responding) return;
-      providerRuntimeHeadersWorkspaceEmitters
-        .get(resolveWorkspaceKey(workspace))
-        ?.fire(pending.request);
-    } catch (error) {
-      if (pendingProviderRuntimeHeaders.get(key) !== pending) return;
-      pendingProviderRuntimeHeaders.delete(key);
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      // 配置读取异常的原文来自底层 HTTP 层，可能带 URL、query、token 或响应正文；
-      // 日志落盘且会被采集，只保留可安全归类的字段，用户可见 errorMessage 用稳定文案。
-      const cause = error instanceof Error ? error.cause : undefined;
-      const loggedError =
-        cause === undefined ? errorMessage : describeVerificationConfigError(cause);
-      logger.warn(undefined, "RaspberryCode provider runtime headers 应用失败", {
-        modelId: pending.request.modelSelection.modelId,
-        providerId: pending.request.providerId,
-        requestId: pending.request.requestId,
-        sessionId: pending.request.sessionId,
-        error: loggedError,
-        workspaceKey: resolveWorkspaceKey(pending.request.workspace),
-      });
-      if (configFailureCode === raspberrycodeProviderRuntimeHeadersErrorCode.configNetwork) {
-        await pending.client.respondError(pending.protocolRequestId, {
-          code: RASPBERRYCODE_PROVIDER_CONFIG_NETWORK_ERROR,
-          message: errorMessage,
-        });
-        return;
-      }
-      await pending.client.respond(pending.protocolRequestId, {
-        headersApplied: false,
-        errorMessage,
-      });
-    }
-  }
 
   function takePendingSessionRuntimePreferences(
     requestId: string,
@@ -1648,6 +1624,13 @@ export function createRaspberryCodeAgentService(
       }),
     );
   }
+
+  // 同一物理连接上的交互偏好同步串行化：按 client 记录在途 Promise，
+  // 避免旧工作区快照覆盖新设置（见 enqueueInteractionPreferenceSync）。
+  const interactionPreferenceSyncByClient = new WeakMap<
+    RaspberryCodeProtocolClient,
+    Promise<void>
+  >();
 
   function enqueueInteractionPreferenceSync(params: {
     client: RaspberryCodeProtocolClient;
@@ -2077,14 +2060,16 @@ export function createRaspberryCodeAgentService(
 
   function wireClient(
     client: RaspberryCodeProtocolClient,
-    workspace: RaspberryCodeAgentWorkspaceTarget,
+    connectionWorkspace: RaspberryCodeAgentWorkspaceTarget,
     /**
      * 该 client 所属的进程泳道。CLI 进程不知道自己被哪个进程管理器拉起，
      * 因此资源样本的 lane 只能在这里按调用方补齐。
      */
     lane: ProcessResourceCliLane,
   ): void {
-    rememberClientTarget(client, initialWorkspace);
+    // 通知回填的兜底目标：共享连接上无 workspace 字段的消息回落到本次连接声明的工作区。
+    const initialWorkspaceFallback = connectionWorkspace;
+    rememberClientTarget(client, connectionWorkspace);
     if (wiredClients.has(client)) {
       return;
     }
@@ -2145,7 +2130,7 @@ export function createRaspberryCodeAgentService(
           workspace?: unknown;
         } | null;
         if (!routed && (data?.sessionId || data?.taskId || data?.topic || data?.workspace)) return;
-        const workspace = routed ?? initialWorkspace;
+        const workspace = routed ?? initialWorkspaceFallback;
         if (message.method === raspberrycodeProtocolMethods.sessionLifecycleChanged) {
           if (activeClientsByWorkspaceKey.get(resolveWorkspaceKey(workspace))?.client !== client)
             return;
@@ -2455,7 +2440,7 @@ export function createRaspberryCodeAgentService(
           });
           return;
         }
-        const workspace = routed ?? initialWorkspace;
+        const workspace = routed ?? initialWorkspaceFallback;
         if (request.method === raspberrycodeProtocolMethods.subagentsReadRuntimeConfig) {
           void (async () => {
             const parsed = raspberrycodeSubagentsReadRuntimeConfigParamsSchema.safeParse(request.params);
@@ -2512,7 +2497,7 @@ export function createRaspberryCodeAgentService(
           return;
         }
         if (request.method === raspberrycodeProtocolMethods.topicResourceRead) {
-          void topicResources
+          void getTopicResources(workspace)
             .read(request.params, request.trace)
             .then((result) => client.respond(request.id, result))
             .catch((error: unknown) =>
@@ -3643,8 +3628,6 @@ export function createRaspberryCodeAgentService(
     for (const collector of remoteConversationTelemetry.values()) collector.dispose();
     remoteConversationTelemetry.clear();
     remoteConversationTelemetryEmitter.dispose();
-    for (const emitter of offPeakLifecycleEmitters.values()) emitter.dispose();
-    offPeakLifecycleEmitters.clear();
     localTtftFactsEmitter.dispose();
     cuaPermissionObservationEmitter.dispose();
     pluginUiToolResultEmitter.dispose();
@@ -3786,17 +3769,19 @@ export function createRaspberryCodeAgentService(
       if (params.projectId !== undefined && !options?.prepareSessionCreation)
         throw new Error("project.creation-unavailable");
       // 旧请求缺少 ID，必须由持库 Host 原子分配并记住；CLI 去重发生在预留之后。
-      const prepared = await options?.prepareSessionCreation?.({
-        ...params,
-        sessionId: payload.sessionId,
-        projectId: params.projectId ?? null,
-        creationCommand: { clientId: envelope.clientId, commandId: envelope.commandId },
-        additionalDirectories: payload.additionalDirectories,
-      });
-      const sessionId = prepared?.sessionId ?? payload.sessionId;
+      // prepareSessionCreation 返回的是会话目录列表（而非会话对象），sessionId 由 payload 决定；
+      // 旧客户端可能不带 sessionId，此时由 Host 生成，保证后续预留与去重有稳定键。
+      const sessionId = payload.sessionId ?? `session_${randomUUID()}`;
       const additionalDirectories =
-        prepared?.additionalDirectories ?? payload.additionalDirectories;
-      const offPeakToolEnabled = isOffPeakToolSupported(params);
+        params.projectId !== undefined || options?.prepareSessionCreation
+          ? await options?.prepareSessionCreation?.({
+              ...params,
+              sessionId,
+              projectId: params.projectId ?? null,
+              creationCommand: { clientId: envelope.clientId, commandId: envelope.commandId },
+              additionalDirectories: payload.additionalDirectories,
+            })
+          : payload.additionalDirectories;
       return {
         ...envelope,
         payload: {
@@ -3931,14 +3916,16 @@ export function createRaspberryCodeAgentService(
 
     async createSession(params: RaspberryCodeAgentCreateSessionParams) {
       if (options?.prepareSessionCreation) {
-        const prepared = await options.prepareSessionCreation({
+        const sessionId = params.sessionId ?? `session_${randomUUID()}`;
+        const directories = await options.prepareSessionCreation({
           ...params,
+          sessionId,
           projectId: params.projectId ?? null,
         });
         params = {
           ...params,
-          sessionId: prepared.sessionId,
-          additionalDirectories: params.additionalDirectories ?? prepared.additionalDirectories,
+          sessionId,
+          additionalDirectories: params.additionalDirectories ?? directories,
         };
       } else if (params.projectId !== undefined) {
         throw new Error("project.creation-unavailable");
@@ -4188,7 +4175,7 @@ export function createRaspberryCodeAgentService(
       );
     },
 
-    async measureSessionData(params) {
+    async measureSessionData(params: RaspberryCodeAgentMeasureSessionDataParams) {
       // 只读测量：和全局工作流同一载体选择（本机已活跃 runtime，否则管理面进程）。
       const { client } = await resolveGlobalSavedWorkflowCarrier();
       return client.request(
@@ -4198,14 +4185,15 @@ export function createRaspberryCodeAgentService(
       );
     },
 
-    async purgeSessionData({ workspace, ...params }) {
+    async purgeSessionData(params: RaspberryCodeAgentPurgeSessionDataParams) {
+      const { workspace, ...request } = params;
       if (!isLocalActiveWorkspaceClient(workspace)) throw new Error("project.data-local-only");
       // 会话可能已加载在该 cwd 的 Agent 进程里：必须由那个进程删除，它才能判断运行中并释放会话；
       // 绝不为删除拉起该项目的 Agent（文件夹可能已不存在），没有进程时交给管理面进程。
       const client = await getReadOnlyClient(workspace, "existing-only").catch(() =>
         getPluginManagementClient(),
       );
-      return client.request(V4_METHODS.sessionDataPurge, params, v4SessionDataPurgeResultSchema);
+      return client.request(V4_METHODS.sessionDataPurge, request, v4SessionDataPurgeResultSchema);
     },
 
     async getTaskTokenUsage(params: RaspberryCodeAgentTaskTokenUsageParams) {
@@ -4364,7 +4352,7 @@ export function createRaspberryCodeAgentService(
       );
     },
 
-    async setWorkspaceMcpTrust(params) {
+    async setWorkspaceMcpTrust(params: RaspberryCodeAgentSetWorkspaceMcpTrustParams) {
       const client = await getReadOnlyClient(params);
       return client.request(
         raspberrycodeProtocolMethods.workspaceMcpTrust,

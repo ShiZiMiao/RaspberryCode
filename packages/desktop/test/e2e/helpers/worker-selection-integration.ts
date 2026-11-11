@@ -106,15 +106,14 @@ export async function createWorkerSelectionIntegration(
   const projects: ProjectRepositoryContract = await repo.getProjectRepository();
   const agent = createRaspberryCodeAgentService({
     // 真实 Host 创建端口必须预留任务归属；旧夹具漏装配，Worker 启动前即报 creation-unavailable。
-    prepareSessionCreation: async (target) => {
-      const prepared = projects.reserveCreatedTask({
+    // 与生产实现同约：preparation 只返回目录列表，sessionId 由参数决定。
+    prepareSessionCreation: async (target) =>
+      projects.reserveCreatedTask({
         task: { ...target, taskId: target.sessionId },
         projectId: target.projectId,
         creationCommand: target.creationCommand,
         additionalDirectories: target.additionalDirectories,
-      });
-      return { sessionId: prepared.taskId, additionalDirectories: prepared.additionalDirectories };
-    },
+      }).additionalDirectories,
     commandResolver: () => ({
       command: process.execPath,
       args: [

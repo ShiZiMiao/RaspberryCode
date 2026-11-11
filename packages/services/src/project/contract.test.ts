@@ -213,6 +213,15 @@ it("routes every foreign project operation to its existing owner and never falls
       workspacePath: "/remote",
       additionalDirectories: ["/extra"],
     })),
+    measureProjectData: vi.fn(async () => ({ projects: [] })),
+    deleteProjectData: vi.fn(async () => ({
+      freedBytes: 0,
+      deletedSessions: 0,
+      runningSessions: 0,
+      referencedSessions: 0,
+      failed: 0,
+    })),
+    restoreProject: vi.fn(async () => ({}) as VirtualProject),
   } satisfies IProjectService;
   const resolveHost = vi.fn(async (hostId: string) => {
     if (hostId === "offline") throw new Error("project.host-offline");

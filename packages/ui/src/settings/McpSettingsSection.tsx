@@ -1184,8 +1184,8 @@ export function McpSettingsSection({
     shouldShowRemoteSyncActions({
       remoteSessionId,
       remoteTarget,
-      clientMode: isMobileOverlay ? "web-remote-replayable" : "desktop-continuous",
-      hasLocalSourceService: Boolean(baseServices.mcpSyncService),
+      isMobileOverlay,
+      hasLocalSourceService: Boolean(services.mcpSyncService),
     }) && activeWorkspacePath
       ? remoteTarget
       : null;

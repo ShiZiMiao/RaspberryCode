@@ -126,6 +126,21 @@ declare global {
       printPageToPdf?(): Promise<import("@raspberrycode/shared").PrintPageToPdfResult>;
       /** 从系统拖拽/文件输入得到的 Web File 解析真实本地路径 */
       getPathForFile?(file: unknown): string | null;
+      /** agent 首次 browser 命令建好受控 view 且触发下载时回调，返回 disposer */
+      onBrowserViewDownloadStarted?(
+        handler: (payload: { webContentsId: number; urls: string[] }) => void,
+      ): () => void;
+      /** 在内嵌 BrowserView 中加载 URL（受控 view，不走 window.open） */
+      browserViewLoadUrl?(payload: { webContentsId: number; url: string }): Promise<void>;
+      /** 本机文件的系统关联应用；Web/远端/目录不提供本机应用 */
+      getFileApplications?(
+        target: import("@raspberrycode/shared").FileApplicationTarget,
+      ): Promise<import("@raspberrycode/shared").FileApplicationInfo[]>;
+      /** 重新确认系统关联后，使用指定应用打开本机文件 */
+      openFileWithApplication?(
+        applicationId: string,
+        target: import("@raspberrycode/shared").FileApplicationTarget,
+      ): Promise<{ success: boolean; error?: string }>;
       /** dwf 产物「作为文件打开」：把某一版的字节落成本机副本，返回其路径 */
       materializeWorkflowArtifactFile(
         payload: import("@raspberrycode/shared").MaterializeWorkflowArtifactFileRequest,

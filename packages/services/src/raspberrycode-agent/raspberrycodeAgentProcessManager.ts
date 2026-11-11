@@ -559,6 +559,11 @@ export class RaspberryCodeAgentProcessManager {
   private readonly ownedProcesses = new Set<ManagedRaspberryCodeAgentProcess>();
   private readonly startingByWorkspaceKey = new Map<string, Promise<RaspberryCodeProtocolClient>>();
   private readonly runtimeGenerationByWorkspaceKey = new Map<string, number>();
+  /**
+   * 重启代号：dispose/restart 时自增，用于让进行中的 start 等待者识别
+   * 「自己在等待期间已被重启取代」，避免把旧启动结果当作有效运行时复用。
+   */
+  private readonly restartGenerationByWorkspaceKey = new Map<string, number>();
   private readonly availableRuntimeIdentityByWorkspaceKey = new Map<string, string>();
   private readonly startAdmissionAbortControllersByWorkspaceKey = new Map<
     string,

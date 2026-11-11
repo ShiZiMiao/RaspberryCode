@@ -3,24 +3,24 @@ import {
   IRemoteProjectService,
   projectWorkspaceSettings,
   readRemoteProjectDirectory,
-} from "#src/remote-projects/index.js";
+} from "./remote-projects/index.js";
 export {
   createRemoteProjectConnectionAdmission,
   remoteProjectHostIdForProfile,
   remoteProjectHostIdForTarget,
   prepareRemoteServerConnection,
-} from "#src/remote-projects/index.js";
+} from "./remote-projects/index.js";
 import {
   createProjectDataPort,
   createProjectService,
   createTaskAutoArchiveScheduler,
   IProjectService,
   shouldRescanTaskAutoArchive,
-} from "#src/project/index.js";
-export { createLegacySingleRootProjectService } from "#src/project/index.js";
-export { createRemoteProjectService } from "#src/remote-projects/index.js";
-import { getRaspberryCodeDataRootDir as projectDataRoot } from "#src/paths.js";
-import { createTaskGroupService, ITaskGroupService, groupTaskKey } from "#src/task-groups/index.js";
+} from "./project/index.js";
+export { createLegacySingleRootProjectService } from "./project/index.js";
+export { createRemoteProjectService } from "./remote-projects/index.js";
+import { getRaspberryCodeDataRootDir as projectDataRoot } from "./paths.js";
+import { createTaskGroupService, ITaskGroupService, groupTaskKey } from "./task-groups/index.js";
 import { IGenUiService } from "./gen-ui/contract.js";
 import { createGenUiService } from "./gen-ui/node.js";
 import { channelReplyHostRequestSchema, channelReplyResultSchema } from "@raspberrycode/shared";
@@ -170,7 +170,7 @@ export type {
   CuaHelperInstaller,
   CuaHelperInstallerOptions,
 } from "./cua-permission-broker/index.js";
-export { createProjectWorkspaceNavigation } from "#src/project-workspace-navigation/index.js";
+export { createProjectWorkspaceNavigation } from "./project-workspace-navigation/index.js";
 export { createBotsService } from "./bots/botsService.js";
 export { createFileWatcherService } from "./fileWatcher/fileWatcherService.js";
 export { createOAuthService } from "./oauth/oauthService.js";
@@ -368,16 +368,16 @@ import { createRaspberryCodeTaskServiceAdapter } from "./raspberrycode-agent/ras
 import { createRaspberryCodeSessionService } from "./raspberrycode-session/raspberrycodeSessionService.js";
 import { createRaspberryCodeTaskIndexSyncer } from "./raspberrycode-agent/raspberrycodeTaskIndexSyncer.js";
 import { TaskIndexRepo } from "./session/taskIndexRepo.js";
-import { AutomationRepo } from "#src/session/automationRepo.js";
+import { AutomationRepo } from "./session/automationRepo.js";
 import type { AppSettings } from "@raspberrycode/shared";
 import { createBotsService } from "./bots/botsService.js";
-import { BotsRepo } from "#src/bots/repo.js";
+import { BotsRepo } from "./bots/repo.js";
 import {
   createBotProjectRuntime,
   type BotProjectConnection,
-} from "#src/bot-project-runtime/index.js";
-export type { BotProjectConnection } from "#src/bot-project-runtime/contract.js";
-import type { SessionMessageSendRequested } from "#src/session/sessionMailbox.js";
+} from "./bot-project-runtime/index.js";
+export type { BotProjectConnection } from "./bot-project-runtime/contract.js";
+import type { SessionMessageSendRequested } from "./session/sessionMailbox.js";
 import { createFileWatcherService } from "./fileWatcher/fileWatcherService.js";
 import { createOAuthService } from "./oauth/oauthService.js";
 import { createOAuthProviderLogoutHandler } from "./oauth/oauthProviderLogout.js";
@@ -444,7 +444,7 @@ import {
 import type {
   RuntimeProcessLifecycleReporter,
   RuntimeTaskReporter,
-} from "#src/process/runtimeProcessLifecycle.js";
+} from "./process/runtimeProcessLifecycle.js";
 import { initializeRuntimeProcessEnv } from "./runtime-tools/runtimeCommandEnv.js";
 import {
   buildAgentEndpointOriginEnv,
@@ -452,12 +452,8 @@ import {
 } from "./runtime-tools/agentProxyEnv.js";
 import { ensureAppCaCert } from "./runtime-tools/appCaCert.js";
 import { buildHelperOpenArgs, isCuaLocalDevelopmentRuntime } from "@raspberrycode/raspberrycode-cua/broker/server";
-import { createServiceLogger, type ServiceLogger } from "#src/logger/serviceLogger.js";
-import { ensureTelemetryDeviceMid } from "#src/telemetry/telemetryCore.js";
-import {
-  createOfficialMcpAuthHeadersResolver,
-  resolveOfficialMcpCredentials,
-} from "./official-mcp/officialMcpCredentials.js";
+import { createServiceLogger, type ServiceLogger } from "./logger/serviceLogger.js";
+import { ensureTelemetryDeviceMid } from "./telemetry/telemetryCore.js";
 import {
   createOfficialMcpTrustedOriginRegistry,
   OFFICIAL_MCP_DEV_TRUSTED_ORIGINS_ENV,
@@ -488,18 +484,18 @@ import {
   type CuaPermissionState,
   type CuaPermissionStatusQueryOptions,
   type CuaPermissionStatusResult,
-} from "#src/cua-permission-broker/index.js";
+} from "./cua-permission-broker/index.js";
 import {
   resolveWindowsCuaRuntime,
   WindowsCuaDevRuntimeResolutionError,
   type WindowsCuaRuntime,
-} from "#src/cua-permission-broker/windowsCuaDevRuntime.js";
+} from "./cua-permission-broker/windowsCuaDevRuntime.js";
 import { createCanonicalCuaHelperInstaller } from "./cua-permission-broker/cuaHelperInstaller.js";
-import { WindowsCuaHelperHost } from "#src/cua-permission-broker/windowsCuaDevHelperHost.js";
+import { WindowsCuaHelperHost } from "./cua-permission-broker/windowsCuaDevHelperHost.js";
 import {
   getStableCuaPipeName,
   resolveStableCuaWinRecipe,
-} from "#src/cua-permission-broker/stableCuaTransport.js";
+} from "./cua-permission-broker/stableCuaTransport.js";
 import { HELPER_APP_NAME } from "@raspberrycode/raspberrycode-cua/broker/helperConstants";
 import { resolveBrokerSocketPath } from "@raspberrycode/raspberrycode-cua/broker/socketPath";
 import {
@@ -1921,24 +1917,18 @@ export function createLocalServices(options: {
         parentTaskId: target.parentSessionId,
       });
     },
-    prepareSessionCreation: async (target) => {
-      const prepared = (await taskIndexRepo.getProjectRepository()).reserveCreatedTask({
+    // 仅返回目录列表；sessionId 由调用方按 payload 决定（Host 侧若无则自行生成）。
+    prepareSessionCreation: async (target) =>
+      (
+        await taskIndexRepo.getProjectRepository()).reserveCreatedTask({
         task: { ...target, taskId: target.sessionId },
         projectId: target.projectId,
         creationCommand: target.creationCommand,
         additionalDirectories: target.additionalDirectories,
-      });
-      return { sessionId: prepared.taskId, additionalDirectories: prepared.additionalDirectories };
-    },
+      }).additionalDirectories,
     resolveSessionDirectories: async (target) =>
       (await projectService.resolveSessionDirectories({ ...target, taskId: target.sessionId }))
         .additionalDirectories,
-    ...(agentAccountProviderConfigSource
-      ? { accountProviderConfigSource: agentAccountProviderConfigSource }
-      : {}),
-    accountRequestAuthService,
-    readRequestVerificationConfig: () =>
-      codingPlanSubscriptionService.getRequestVerificationConfig(),
     ...(modelSelectionReadinessSource ? { modelSelectionReadinessSource } : {}),
     authorizeLocalMediaPreviewPath: options?.authorizeLocalMediaPreviewPath,
     // 动态工作流灰度不按 serviceAuthorityMode 裁剪——SSH/WSL/Docker 的 desktop-attached-remote Host
@@ -2617,9 +2607,9 @@ export async function migrateApplicationStorage(
 export {
   bindRemoteProjectIdentities,
   createRemoteIdentityRegistrationCache,
-} from "#src/project/index.js";
+} from "./project/index.js";
 
-export { startupStorage } from "#src/startup-storage/index.js";
+export { startupStorage } from "./startup-storage/index.js";
 
 /** 独立 Server 共用迁移屏障与身份装配；入口不得以 local owner 开放远端项目 RPC。 */
 export async function createServerHostServices(options: {

@@ -1291,6 +1291,34 @@ function backgroundTaskNotificationToolUpdatesFromInput(params: {
   originMeta: unknown;
   taskId: string;
   traceId: TraceId;
+}): Extract<RaspberryCodeStreamEvent, { type: "tool_call_update" }>[] {
+  // 终态与失败原文优先取本轮 originMeta 的结构化结果，不解析 summary 文本。
+  // 合并轮的每条通知各自更新自己的工具。
+  return parseRaspberryCodeBackgroundTaskNotifications(params.input, params.originMeta).map(
+    (parsed) => {
+      const status = raspberrycodeBackgroundTaskNotificationToolUpdateStatus(
+        parsed.notification.status,
+      );
+      return {
+        type: "tool_call_update" as const,
+        taskId: params.taskId,
+        traceId: params.traceId,
+        ...(params.inputId ? { inputId: params.inputId } : {}),
+        toolId: parsed.toolUseId,
+        status,
+        content: parsed.notification.result ?? parsed.notification.summary,
+        // 合并轮没有结构化结果、通知里也没有 <error> 时，失败详情原本是空的；
+        // 这里统一从 notification 兜底取失败原文，避免 replayable 与 continuous 分叉。
+        ...(status === "failed"
+          ? { error: raspberrycodeBackgroundTaskNotificationFailureText(parsed.notification) }
+          : {}),
+        raw: attachRaspberryCodeBackgroundTaskNotificationToRaw(
+          { toolCallId: parsed.toolUseId },
+          parsed.notification,
+        ),
+      };
+    },
+  );
 }
 
 function raspberrycodeMessageToRaspberryCodePersistedMessage(

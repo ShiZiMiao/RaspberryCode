@@ -54,8 +54,7 @@ describe("CWP02 分区标题拖拽", () => {
       // 正式回放曾在此刷新后进入欢迎页；保留配置事实，不能用重载或重试掩盖启动异常。
       const [providers, settings] = await Promise.all([readModelProviders(), readSettings()]);
       throw new Error(
-        `CWP02 持久化验证刷新失败: ${JSON.stringify({
-          providerFamilyDomain: settings.providerFamilyDomain,
+        `CWP02 持久化验证刷新失败: ${JSON.stringify({
           providers: providers.map((provider) => ({
             id: provider.id,
             enabled: provider.enabled,

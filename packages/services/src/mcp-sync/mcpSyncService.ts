@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, dirname, join, posix, win32 } from "node:path";
@@ -6,6 +7,10 @@ import type {
   LoadCliMcpFromUserDirectoryResult,
   McpScope,
   McpServerConfig,
+  McpSyncCandidate,
+  McpSyncExportedServer,
+  McpSyncImportResult,
+  McpSyncRemoteStatus,
   McpSyncSource,
   NativeMcpServerRecord,
   SaveCliMcpToUserDirectoryRequest,
@@ -15,6 +20,7 @@ import type {
 import type { IMcpSyncService } from "./mcpSync.js";
 import { createMcpDataSyncMethods } from "../data-sync/node.js";
 import { createServiceLogger } from "../logger/serviceLogger.js";
+import { checkRemoteSyncDirectoryWriteAccess } from "../remote-sync/remoteSyncWriteAccess.js";
 
 const logger = createServiceLogger("mcp-sync");
 
@@ -65,6 +71,39 @@ const DIRECTORY_MCP_DESCRIPTORS: readonly DirectoryMcpDescriptor[] = [
   RASPBERRYCODE_MCP_DESCRIPTOR,
   AGENTS_MCP_DESCRIPTOR,
 ];
+
+/** 候选条目 ID：来源 + 路径 + 名称唯一确定，跨端同步时用它对齐同一条 server。 */
+function createCandidateId(record: UserMcpRecord): string {
+  return createHash("sha256")
+    .update(`${record.source}:${record.path}:${record.name}`)
+    .digest("hex");
+}
+
+function recordToCandidate(record: UserMcpRecord): McpSyncCandidate {
+  return {
+    id: createCandidateId(record),
+    name: record.name,
+    config: cloneMcpConfig(record.config),
+    enabled: record.enabled,
+    source: record.source,
+    path: record.path,
+  };
+}
+
+/**
+ * 同名 server 在多个来源目录里可能存在多份；按规范化名称取第一个，
+ * 用于判断远端是否已存在同名配置（只判存在性，不做覆盖决策）。
+ */
+async function collectEffectiveUserMcpRecordByName(): Promise<Map<string, UserMcpRecord>> {
+  const result = new Map<string, UserMcpRecord>();
+  for (const record of await collectEffectiveUserMcpRecords()) {
+    const nameKey = normalizeMcpNameKey(record.name);
+    if (!result.has(nameKey)) {
+      result.set(nameKey, record);
+    }
+  }
+  return result;
+}
 
 export interface McpSyncServiceDependencies {
   setWorkspaceMcpTrust?: IMcpSyncService["setWorkspaceMcpTrust"];
@@ -593,10 +632,10 @@ async function importMcpServers(params: {
         server.name,
         setServerEnabled(cloneMcpConfig(server.config), server.enabled),
         {
-          localHomeDir: params.localHomeDir,
-          localWorkspacePath: params.localWorkspacePath,
-          remoteHomeDir: resolveUserHomeDir(),
-          remoteWorkspacePath: params.remoteWorkspacePath,
+          sourceHomeDir: params.localHomeDir,
+          sourceWorkspacePath: params.localWorkspacePath,
+          targetHomeDir: resolveUserHomeDir(),
+          targetWorkspacePath: params.remoteWorkspacePath,
         },
       );
       targetServers[server.name] = rewrittenConfig as Record<string, unknown>;

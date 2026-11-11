@@ -53,8 +53,6 @@ import {
   withTopicPreparationUnits,
   type ConversationLatestTurnSummary,
 } from "@/v4/conversationTimelineLiveTail.js";
-import { armHighspeedFooterExpiryClock } from "@/highspeed/highspeedFooterExpiryClock.js";
-import { resolveNextHighspeedExpiryMsInPartition } from "@/highspeed/highspeedConversationRows.js";
 import { getConversationRowsPartition } from "@/v4/conversationProjectionStore.js";
 import {
   CONVERSATION_STATUS_PANEL_TOP_CLEARANCE_CLASS_NAME,
@@ -533,10 +531,6 @@ function ConversationTimelineImpl({
     };
     onLatestTurnSummaryChange(latestTurnSummary);
   }, [latestTurnSummary, onLatestTurnSummaryChange]);
-  const nextHighspeedExpiryMs = useMemo(
-    () => resolveNextHighspeedExpiryMsInPartition(rowsPartition, liveNowMs),
-    [liveNowMs, rowsPartition],
-  );
   const selectTurnNavigatorQueryRowIds = useMemo(
     () => createConversationTurnNavigatorQueryRowIdsSelector(),
     [],

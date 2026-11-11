@@ -185,9 +185,12 @@ export function createDesktopPlatform(options: {
     onApplicationLocaleChanged: (callback) =>
       window.raspberrycode.onApplicationLocaleChanged?.(callback) ?? (() => {}),
     getInstalledEditors: (filePath) => window.raspberrycode.getInstalledEditors(filePath),
-    getFileApplications: (target) => window.raspberrycode.getFileApplications(target),
+    // 旧 preload 不提供本机应用能力：返回空列表/失败结果，UI 据此隐藏入口。
+    getFileApplications: (target) =>
+      window.raspberrycode.getFileApplications?.(target) ?? Promise.resolve([]),
     openFileWithApplication: (applicationId, target) =>
-      window.raspberrycode.openFileWithApplication(applicationId, target),
+      window.raspberrycode.openFileWithApplication?.(applicationId, target) ??
+      Promise.resolve({ success: false, error: "not_supported" }),
     getApplicationIcon: (bundleId) =>
       window.raspberrycode.getApplicationIcon?.(bundleId) ?? Promise.resolve(null),
     openInEditor: (editorId, path, editorOptions) =>

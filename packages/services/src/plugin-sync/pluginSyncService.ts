@@ -1,16 +1,24 @@
 import { createHash, randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
-import { cp, lstat, mkdir, readFile, readdir, rm } from "node:fs/promises";
+import { cp, lstat, mkdir, readFile, readdir, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
-import { dirname, isAbsolute, join, resolve } from "node:path";
-import type { PluginSyncMarketplaceMirrorInspection } from "@raspberrycode/shared";
+import { basename, dirname, isAbsolute, join, resolve } from "node:path";
+import type {
+  PluginSyncCandidate,
+  PluginSyncComponentType,
+  PluginSyncImportResult,
+  PluginSyncMarketplaceMirrorInspection,
+  PluginSyncRemoteStatus,
+} from "@raspberrycode/shared";
 import { PLUGIN_DATA_SYNC_MAX_ITEM_BYTES } from "@raspberrycode/shared";
 import type { IPluginSyncService } from "./pluginSync.js";
+import type { PluginSyncArchiveMetadata } from "./pluginSyncArchive.js";
 import {
   createPluginSyncArchive,
   extractPluginSyncArchive,
   PLUGIN_SYNC_METADATA_ARCHIVE_PATH,
 } from "./pluginSyncArchive.js";
+import { checkRemoteSyncDirectoryWriteAccess } from "../remote-sync/remoteSyncWriteAccess.js";
 import { normalizePluginSyncRelativePath, resolvePluginSyncPathWithin } from "./pluginSyncPath.js";
 import { createInlinePluginDataSyncMethods } from "../data-sync/node.js";
 
@@ -21,6 +29,8 @@ export interface PluginManifestInfo {
   version?: string;
   /** manifest 的 userConfig（options schema），原样保留。 */
   userConfig: Record<string, unknown>;
+  /** 该插件实际包含的组件类型（skills/commands/hooks/mcp），用于远端同步时展示同步范围。 */
+  componentTypes: PluginSyncComponentType[];
 }
 
 interface UserPluginConfigState {
@@ -73,6 +83,114 @@ export function createPluginSyncService(options?: {
   return {
     // 数据同步：单个 inline 插件目录上限 50MB；marketplace 来源镜像归档也用同一上限。
     ...createInlinePluginDataSyncMethods({ maxItemBytes: maxArchiveBytes }),
+    async listLocalUserPluginCandidates() {
+      return {
+        candidates: await collectLocalUserPluginCandidates(),
+        maxArchiveBytes,
+      };
+    },
+    async listRemoteUserPluginStatuses(params) {
+      const targetRoot = getUserRaspberrycodePluginRoot();
+      const existingPluginPathById = await collectConfiguredInlinePluginPathById();
+      return {
+        statuses: params.plugins.map((plugin): PluginSyncRemoteStatus => {
+          const directoryName = normalizePluginSyncRelativePath(plugin.directoryName);
+          const pluginId = normalizePluginId(plugin.pluginId);
+          const targetPath = resolvePluginSyncPathWithin(targetRoot, directoryName);
+          if (existsSync(targetPath)) {
+            return {
+              pluginId,
+              directoryName,
+              exists: true,
+              path: targetPath,
+              reason: "targetExists",
+            };
+          }
+          const existingPath = existingPluginPathById.get(normalizePluginIdKey(pluginId));
+          return existingPath
+            ? {
+                pluginId,
+                directoryName,
+                exists: true,
+                path: existingPath,
+                reason: "samePluginId",
+              }
+            : { pluginId, directoryName, exists: false };
+        }),
+      };
+    },
+    async checkRemoteUserPluginWriteAccess() {
+      // 插件目录与 config.json 所在的配置目录都要可写：前者放插件本体，后者记录启用状态。
+      const pluginAccess = await checkRemoteSyncDirectoryWriteAccess(
+        getUserRaspberrycodePluginRoot(),
+      );
+      if (!pluginAccess.ok) return pluginAccess;
+      return await checkRemoteSyncDirectoryWriteAccess(
+        dirname(getUserRaspberrycodeConfigPath()),
+      );
+    },
+    async exportPluginsArchive(params) {
+      const candidates = await collectLocalUserPluginCandidates();
+      const candidateById = new Map(candidates.map((candidate) => [candidate.id, candidate]));
+      const selected = params.pluginIds.map((id) => {
+        const candidate = candidateById.get(id);
+        if (!candidate) {
+          throw new Error(`plugin sync candidate not found: ${id}`);
+        }
+        return candidate;
+      });
+      const selectedBytes = selected.reduce((total, candidate) => total + candidate.sizeBytes, 0);
+      if (selectedBytes > maxArchiveBytes) {
+        throw new Error(`plugin sync archive exceeds limit: ${selectedBytes}/${maxArchiveBytes}`);
+      }
+      const archive = await createPluginSyncArchive({
+        entries: await Promise.all(
+          selected.map(async (candidate) => ({
+            sourcePath: await realpath(candidate.path),
+            archivePath: candidate.directoryName,
+          })),
+        ),
+        metadata: {
+          plugins: selected.map((candidate) => ({
+            name: candidate.name,
+            pluginId: candidate.pluginId,
+            directoryName: candidate.directoryName,
+            ...(candidate.enabledOverride !== undefined
+              ? { enabled: candidate.enabledOverride }
+              : {}),
+          })),
+        },
+      });
+      if (archive.byteLength > maxArchiveBytes) {
+        throw new Error(
+          `plugin sync archive exceeds limit: ${archive.byteLength}/${maxArchiveBytes}`,
+        );
+      }
+      return {
+        archive,
+        archiveBytes: archive.byteLength,
+        plugins: selected.map((candidate) => ({
+          id: candidate.id,
+          name: candidate.name,
+          pluginId: candidate.pluginId,
+          directoryName: candidate.directoryName,
+          ...(candidate.enabledOverride !== undefined
+            ? { enabled: candidate.enabledOverride }
+            : {}),
+        })),
+      };
+    },
+    async importPluginsArchive(params) {
+      if (params.overwrite) {
+        throw new Error("plugin sync overwrite is not supported");
+      }
+      if (params.archive.byteLength > maxArchiveBytes) {
+        throw new Error(
+          `plugin sync archive exceeds limit: ${params.archive.byteLength}/${maxArchiveBytes}`,
+        );
+      }
+      return await importPluginsArchive(params.archive, maxArchiveBytes);
+    },
     async exportMarketplaceSourceArchive(params) {
       const result = await exportMarketplaceSourceArchiveInternal(params, maxArchiveBytes);
       if (result.archive.byteLength > maxArchiveBytes) {
@@ -656,9 +774,40 @@ export async function readPluginManifestInfo(
         ? { version: parsed.version.trim() }
         : {}),
       userConfig: isRecord(parsed.userConfig) ? parsed.userConfig : {},
+      componentTypes: await resolvePluginComponentTypes(pluginRoot, parsed),
     };
   }
   return null;
+}
+
+/** 判定插件实际包含的组件类型：manifest 显式声明优先，否则按约定目录/文件名探测。 */
+async function resolvePluginComponentTypes(
+  pluginRoot: string,
+  manifest: Record<string, unknown>,
+): Promise<PluginSyncComponentType[]> {
+  const componentTypes: PluginSyncComponentType[] = [];
+  if ("skills" in manifest || (await pathExists(join(pluginRoot, "skills")))) {
+    componentTypes.push("skills");
+  }
+  if ("commands" in manifest || (await pathExists(join(pluginRoot, "commands")))) {
+    componentTypes.push("commands");
+  }
+  if ("hooks" in manifest || (await pathExists(join(pluginRoot, "hooks", "hooks.json")))) {
+    componentTypes.push("hooks");
+  }
+  if ("mcpServers" in manifest || (await pathExists(join(pluginRoot, ".mcp.json")))) {
+    componentTypes.push("mcp");
+  }
+  return componentTypes;
+}
+
+async function pathExists(path: string): Promise<boolean> {
+  try {
+    await lstat(path);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function computeRecursiveSize(path: string): Promise<number> {
@@ -734,6 +883,230 @@ function readRequiredString(value: unknown, label: string): string {
     throw new Error(`missing ${label}`);
   }
   return value.trim();
+}
+
+/** 目录名去重：同名插件目录按路径哈希后缀区分，保证同步目标端不互相覆盖。 */
+function createUniqueDirectoryName(
+  directoryBasename: string,
+  pluginName: string,
+  pluginRoot: string,
+  usedDirectoryNames: Set<string>,
+): string {
+  const baseName = toSafeDirectoryName(directoryBasename || pluginName);
+  if (!usedDirectoryNames.has(baseName)) {
+    usedDirectoryNames.add(baseName);
+    return baseName;
+  }
+  const dedupedName = toSafeDirectoryName(`${baseName}-${createShortHash(pluginRoot).slice(0, 8)}`);
+  usedDirectoryNames.add(dedupedName);
+  return dedupedName;
+}
+
+function createCandidateId(pluginId: string, pluginRoot: string): string {
+  return createShortHash(`${pluginId}:${pluginRoot}`);
+}
+
+/**
+ * 本端用户插件候选：遍历已配置插件目录，读 manifest 并测量体积。
+ * 同一真实路径只计一次（符号链接/重复配置不重复同步）。
+ */
+async function collectLocalUserPluginCandidates(): Promise<PluginSyncCandidate[]> {
+  const config = await readUserPluginConfigState();
+  const candidates: PluginSyncCandidate[] = [];
+  const seenRealpaths = new Set<string>();
+  const usedDirectoryNames = new Set<string>();
+
+  for (const rawDir of config.dirs) {
+    const pluginRoot = resolve(rawDir);
+    const canonicalRoot = await realpath(pluginRoot).catch(() => pluginRoot);
+    if (seenRealpaths.has(canonicalRoot)) {
+      continue;
+    }
+    seenRealpaths.add(canonicalRoot);
+    const manifest = await readPluginManifestInfo(canonicalRoot);
+    if (!manifest) {
+      continue;
+    }
+    const enabledOverride = config.enabledOverrides.get(normalizePluginIdKey(manifest.pluginId));
+    const directoryName = createUniqueDirectoryName(
+      basename(canonicalRoot),
+      manifest.name,
+      canonicalRoot,
+      usedDirectoryNames,
+    );
+    candidates.push({
+      id: createCandidateId(manifest.pluginId, canonicalRoot),
+      name: manifest.name,
+      pluginId: manifest.pluginId,
+      directoryName,
+      ...(manifest.description ? { description: manifest.description } : {}),
+      ...(manifest.version ? { version: manifest.version } : {}),
+      path: canonicalRoot,
+      sizeBytes: await computeRecursiveSize(canonicalRoot),
+      enabled: enabledOverride ?? true,
+      ...(enabledOverride !== undefined ? { enabledOverride } : {}),
+      componentTypes: manifest.componentTypes,
+    });
+  }
+
+  return candidates.sort((left, right) => left.name.localeCompare(right.name));
+}
+
+/** pluginId（小写）→ 已配置内联插件目录，用于判定目标端是否已有同一插件的其他目录。 */
+async function collectConfiguredInlinePluginPathById(): Promise<Map<string, string>> {
+  const config = await readUserPluginConfigState();
+  const byId = new Map<string, string>();
+  for (const rawDir of config.dirs) {
+    const pluginRoot = resolve(rawDir);
+    const manifest = await readPluginManifestInfo(pluginRoot);
+    if (!manifest) continue;
+    byId.set(normalizePluginIdKey(manifest.pluginId), manifestPathOrRoot(pluginRoot));
+  }
+  return byId;
+}
+
+function manifestPathOrRoot(pluginRoot: string): string {
+  return pluginRoot;
+}
+
+/** 读取归档内的插件元数据清单（同步时用于对照目标端已有配置）。 */
+async function readArchiveMetadata(tempRoot: string): Promise<PluginSyncArchiveMetadata> {
+  const raw = await readFile(join(tempRoot, PLUGIN_SYNC_METADATA_ARCHIVE_PATH), "utf-8");
+  const parsed = JSON.parse(raw) as unknown;
+  if (!isRecord(parsed) || !Array.isArray(parsed.plugins)) {
+    throw new Error("invalid plugin sync archive metadata");
+  }
+  const plugins: PluginSyncArchiveMetadata["plugins"] = [];
+  for (const item of parsed.plugins) {
+    if (!isRecord(item)) {
+      throw new Error("invalid plugin sync archive plugin metadata");
+    }
+    const name = readRequiredString(item.name, "plugin metadata name");
+    const pluginId = normalizePluginId(readRequiredString(item.pluginId, "plugin metadata id"));
+    const directoryName = normalizePluginSyncRelativePath(
+      readRequiredString(item.directoryName, "plugin metadata directory"),
+    );
+    plugins.push({
+      name,
+      pluginId,
+      directoryName,
+      ...(typeof item.enabled === "boolean" ? { enabled: item.enabled } : {}),
+    });
+  }
+  return { plugins };
+}
+
+/**
+ * 解包插件归档到本端插件根：同名目录已存在则跳过（不覆盖），
+ * 解包成功后把新目录登记进 config.json 的 plugins.dirs，保留来源端的启用态。
+ */
+async function importPluginsArchive(
+  archive: Uint8Array,
+  maxArchiveBytes: number,
+): Promise<PluginSyncImportResult> {
+  const tempRoot = join(tmpdir(), `raspberrycode-plugin-sync-${randomUUID()}`);
+  try {
+    await extractPluginSyncArchive(archive, tempRoot, {
+      maxExtractedBytes: maxArchiveBytes,
+    });
+    const metadata = await readArchiveMetadata(tempRoot);
+    const targetRoot = getUserRaspberrycodePluginRoot();
+    await mkdir(targetRoot, { recursive: true });
+    const results: PluginSyncImportResult["results"] = [];
+    for (const plugin of metadata.plugins) {
+      const targetPath = resolvePluginSyncPathWithin(targetRoot, plugin.directoryName);
+      if (existsSync(targetPath)) {
+        results.push({
+          name: plugin.name,
+          pluginId: plugin.pluginId,
+          directoryName: plugin.directoryName,
+          status: "skipped",
+          path: targetPath,
+        });
+        continue;
+      }
+      const sourcePath = join(tempRoot, plugin.directoryName);
+      if (!existsSync(sourcePath)) {
+        results.push({
+          name: plugin.name,
+          pluginId: plugin.pluginId,
+          directoryName: plugin.directoryName,
+          status: "failed",
+          error: "plugin directory missing in archive",
+        });
+        continue;
+      }
+      try {
+        await cp(sourcePath, targetPath, { recursive: true });
+        await addPluginDirToUserConfig(targetPath, plugin.pluginId, plugin.enabled);
+        results.push({
+          name: plugin.name,
+          pluginId: plugin.pluginId,
+          directoryName: plugin.directoryName,
+          status: "synced",
+          path: targetPath,
+        });
+      } catch (error) {
+        results.push({
+          name: plugin.name,
+          pluginId: plugin.pluginId,
+          directoryName: plugin.directoryName,
+          status: "failed",
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+    return { results };
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true }).catch(() => undefined);
+  }
+}
+
+/** 把插件目录写回 config.json 的 plugins.dirs，并按需写入启用态覆盖。 */
+async function addPluginDirToUserConfig(
+  pluginPath: string,
+  pluginId: string,
+  enabledOverride: boolean | undefined,
+): Promise<void> {
+  const filePath = getUserRaspberrycodeConfigPath();
+  const parsed = await readJsonFileOrEmpty(filePath);
+  const plugins = isRecord(parsed.plugins) ? parsed.plugins : {};
+  const resolvedPluginPath = resolve(pluginPath);
+  const dirs = readStringArray(plugins.dirs);
+  const nextDirs = dirs.map((item) => resolve(item)).includes(resolvedPluginPath)
+    ? dirs
+    : [...dirs, resolvedPluginPath];
+  const enabledPlugins = isRecord(plugins.enabledPlugins) ? plugins.enabledPlugins : {};
+  await writeJsonFileAtomic(filePath, {
+    ...parsed,
+    plugins: {
+      ...plugins,
+      dirs: nextDirs,
+      ...(enabledOverride !== undefined
+        ? {
+            enabledPlugins: {
+              ...enabledPlugins,
+              [pluginId]: enabledOverride,
+            },
+          }
+        : Object.keys(enabledPlugins).length > 0
+          ? { enabledPlugins }
+          : {}),
+    },
+  });
+}
+
+async function writeJsonFileAtomic(
+  filePath: string,
+  value: Record<string, unknown>,
+): Promise<void> {
+  await mkdir(dirname(filePath), { recursive: true });
+  const tempPath = join(dirname(filePath), `.tmp-${basename(filePath)}-${randomUUID()}`);
+  await writeFile(tempPath, `${JSON.stringify(value, null, 2)}\n`, {
+    encoding: "utf-8",
+    mode: 0o600,
+  });
+  await rename(tempPath, filePath);
 }
 
 async function readJsonFileOrEmpty(filePath: string): Promise<Record<string, unknown>> {

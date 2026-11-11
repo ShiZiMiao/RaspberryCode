@@ -2,6 +2,12 @@ import type {
   LoadCliMcpFromUserDirectoryRequest,
   LoadCliMcpFromUserDirectoryResult,
   McpDataSyncPayload,
+  McpSyncCandidateListResult,
+  McpSyncExportResult,
+  McpSyncExportedServer,
+  McpSyncImportResult,
+  McpSyncRemoteStatusResult,
+  RemoteSyncWriteAccessResult,
   SaveCliMcpToUserDirectoryRequest,
   RaspberryCodeAgentMcpServer,
   RaspberryCodeMcpListMode,
@@ -33,6 +39,17 @@ export interface IMcpSyncService extends IDataSyncCategoryService<McpDataSyncPay
   }): Promise<RaspberryCodeMcpListResult>;
   setWorkspaceMcpTrust?(params: WorkspaceMcpTrustDecision): Promise<RaspberryCodeWorkspaceMcpTrustResult>;
   saveMcpToUserDirectory(payload: SaveCliMcpToUserDirectoryRequest): Promise<void>;
+  listLocalUserMcpCandidates(): Promise<McpSyncCandidateListResult>;
+  listRemoteUserMcpStatuses(params: { names: string[] }): Promise<McpSyncRemoteStatusResult>;
+  exportMcpServers(params: { serverIds: string[] }): Promise<McpSyncExportResult>;
+  checkRemoteUserMcpWriteAccess(): Promise<RemoteSyncWriteAccessResult>;
+  importMcpServers(params: {
+    servers: McpSyncExportedServer[];
+    localHomeDir: string;
+    localWorkspacePath?: string;
+    remoteWorkspacePath?: string;
+    overwrite?: false;
+  }): Promise<McpSyncImportResult>;
 }
 
 export const IMcpSyncService = createServiceDescriptor<IMcpSyncService>(ServiceChannels.McpSync);

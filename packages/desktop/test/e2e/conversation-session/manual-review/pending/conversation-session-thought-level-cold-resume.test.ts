@@ -63,8 +63,7 @@ describe("历史 session 思考深度冷恢复 E2E", () => {
       // 正式回放曾在准备阶段重启后进入欢迎页；先保留脱敏配置事实，区分 seed 丢失与启动门禁问题。
       const [providers, settings] = await Promise.all([readModelProviders(), readSettings()]);
       throw new Error(
-        `I63 准备阶段重启失败: ${JSON.stringify({
-          providerFamilyDomain: settings.providerFamilyDomain,
+        `I63 准备阶段重启失败: ${JSON.stringify({
           providers: providers.map((provider) => ({
             id: provider.id,
             enabled: provider.enabled,

@@ -52,6 +52,8 @@ export interface WorkspaceHeaderTitleSectionProps {
   workspaceHeaderState: WorkspaceHeaderState;
   isMacDesktop?: boolean;
   isMacFullscreen?: boolean;
+  /** 窄屏叠加层布局标志（原手机远控壳）。 */
+  isMobileOverlay?: boolean;
   isWindowsDesktop?: boolean;
   selectedEditor: EditorInfo | null;
   compact?: boolean;

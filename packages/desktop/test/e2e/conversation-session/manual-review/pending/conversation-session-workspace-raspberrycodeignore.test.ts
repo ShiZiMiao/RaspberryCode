@@ -1,8 +1,8 @@
 import { startDraftFromProject } from "#e2e/helpers/project-sidebar";
 import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { DEFAULT_WORKSPACE } from "../helpers/desktop-app.js";
-import { skipOccupationOnboardingIfPresent } from "../helpers/occupation-onboarding.js";
+import { DEFAULT_WORKSPACE } from "#e2e/helpers/desktop-app";
+import { skipOccupationOnboardingIfPresent } from "#e2e/helpers/occupation-onboarding";
 import { prepareV4ConversationE2E, setV4ComposerText } from "#e2e/helpers/v4-conversation";
 
 // gitignore 解析按行识别，行尾风格不影响规则；统一写 \n 避免 e2e 源码里出现跨行字面量。

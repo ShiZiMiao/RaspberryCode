@@ -87,7 +87,6 @@ export function useRootPlatformEffects({
       isDesktop &&
       initialWorkspaceAbsPath &&
       initialWorkspacePurpose === "project" &&
-      clientMode === "desktop-continuous" &&
       !initialWorkspaceIdentity &&
       !initialTaskId &&
       !initialTaskDraft &&

@@ -65,7 +65,7 @@ export class RemoteConversationTelemetry {
     ) {
       this.commands.add(key);
       // 只在权威开始事实建 seed，重连/重复 ACK 不会重复创建或产生 send_btn。
-      if (fact.inputSource !== "background_task" && !fact.automationId && !fact.offPeakTaskId)
+      if (fact.inputSource !== "background_task" && !fact.automationId)
         this.engine.acceptPromptSeed(
           {
             sessionId: fact.sessionId,

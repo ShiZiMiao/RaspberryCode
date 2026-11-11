@@ -455,14 +455,6 @@ export interface ConversationComposerProps {
   disabled?: boolean;
   onRetryInitialization?: () => void;
   onRetryError?: () => void;
-  /** 当前 Task 可用的 Highspeed 卡；只影响静态标识和模型锁定。 */
-  highspeedCard?: HighspeedCardSnapshot | null;
-  /**
-   * 发送路径 draw 新命中登记的一次性激活请求（值为 cardId）。
-   * 命中当前卡时才播放激活动效，composer 锁定入场方式后经回调消费；切回、恢复与重挂载不重播。
-   */
-  highspeedActivationCardId?: string | null;
-  onHighspeedActivationApplied?: (cardId: string) => void;
   /**
    * 是否在新建任务 / 切换会话 / 挂载后自动把光标聚焦到输入框（默认开）。
    * 竖切多 pane 时由宿主传入 SessionPane.focused，仅焦点 pane 聚焦、后台 pane 不抢焦点。
@@ -588,9 +580,6 @@ function ConversationComposerImpl({
   disabled: disabledProp = false,
   onRetryInitialization,
   onRetryError,
-  highspeedCard = null,
-  highspeedActivationCardId = null,
-  onHighspeedActivationApplied,
   autoFocusEnabled = true,
   isMobileOverlay = false,
   workspacePath,
@@ -1372,8 +1361,7 @@ function ConversationComposerImpl({
     !hasWebElementContexts &&
     !hasPptxElementReferences &&
     !hasConversationSelectionReferences &&
-    !hasPluginUiContexts &&
-    !pendingShareContext;
+    !hasPluginUiContexts;
   const canReload = recoveryAllowed && reloadText && remoteAvailable;
   const canSend =
     !disabled &&
@@ -1411,7 +1399,6 @@ function ConversationComposerImpl({
       const hasPendingPptxElementReferences = currentPptxElementReferences.length > 0;
       const currentConversationSelections = conversationSelectionReferences;
       const hasPendingConversationSelections = currentConversationSelections.length > 0;
-      const submittedShareContext = pendingShareContext;
       // /reload 是本地操作，在模型配置、队列和消息历史处理之前截获；参数和附件不发给模型。
       if (/^\/reload(?:\s|$)/.test(trimmed)) {
         if (
@@ -1798,7 +1785,6 @@ function ConversationComposerImpl({
       telemetryDraftConfig,
       modelSelectionView,
       onSendText,
-      pendingShareContext,
       persistDraftNow,
       provider,
       removeCodeCommentContext,

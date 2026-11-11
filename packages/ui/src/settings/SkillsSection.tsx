@@ -256,8 +256,8 @@ export function SkillsSection({
     shouldShowRemoteSyncActions({
       remoteSessionId,
       remoteTarget,
-      clientMode: isMobileOverlay ? "web-remote-replayable" : "desktop-continuous",
-      hasLocalSourceService: Boolean(baseServices.skillSyncService),
+      isMobileOverlay,
+      hasLocalSourceService: Boolean(targetServiceResolution.services.skillSyncService),
     }) &&
     activeWorkspacePath
       ? remoteTarget

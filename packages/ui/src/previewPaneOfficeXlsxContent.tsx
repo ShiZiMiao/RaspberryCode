@@ -172,8 +172,6 @@ export function PreviewPaneOfficeXlsxContent({
       <XlsxViewer
         file={buffer}
         fileName={sourcePath}
-        // Canvas 单元格及形状/图片曾直接 window.open，绕过 <a> 检查；共同出口交由宿主校验。
-        onOpenLink={handleOpenLink}
         height="100%"
         isDark={isDark}
         readOnly

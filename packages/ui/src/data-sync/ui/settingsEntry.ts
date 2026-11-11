@@ -14,9 +14,13 @@ import {
 export function shouldShowRemoteSyncActions(params: {
   remoteSessionId?: string | null;
   remoteTarget?: RemoteTarget | null;
-  isWebRemoteControl?: boolean;
+  /** 窄屏叠加层布局下不展示远端同步入口。 */
+  isMobileOverlay?: boolean;
+  /** 本端没有该来源服务时（如远端 Host 未提供）不展示同步入口。 */
+  hasLocalSourceService?: boolean;
 }): boolean {
-  if (params.isWebRemoteControl) return false;
+  if (params.isMobileOverlay) return false;
+  if (params.hasLocalSourceService === false) return false;
   return Boolean(
     params.remoteSessionId?.trim() && isDataSyncEntryRemoteTarget(params.remoteTarget),
   );

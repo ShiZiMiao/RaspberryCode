@@ -1,4 +1,7 @@
 import type { PluginUiToolResultNotification } from "@raspberrycode/shared/mcp-apps";
+import type { RaspberryCodeWorkspaceMcpTrustResult } from "@raspberrycode/shared";
+import type { SessionLifecycleSnapshot } from "@raspberrycode/shared";
+import type { RemoteConversationTelemetryEvent } from "@raspberrycode/shared/conversation-telemetry";
 import type {
   BackgroundBashOutputResult,
   SessionDebugSnapshot,
@@ -117,9 +120,12 @@ import type {
   V4ConversationWorkflowRunWorkspaceResult,
   V4ConversationWorkflowRunsResult,
   V4ConversationRowsRangeResult,
+  V4ConversationInputPredictionResult,
   V4ConversationResyncResult,
   V4ConversationSubscribeResult,
   V4SessionsIndexSubscribeResult,
+  V4SessionDataMeasureResult,
+  V4SessionDataPurgeResult,
   V4WorkspaceConfigSubscribeResult,
   WorkspaceConfigTopicWireCandidate,
 } from "@raspberrycode/shared/raspberrycode-protocol-v4";
@@ -138,6 +144,9 @@ import type {
   RaspberryCodeAgentDescribePluginParams,
   RaspberryCodeAgentInstallPluginParams,
   RaspberryCodeAgentListMcpServerStatusesParams,
+  RaspberryCodeAgentMeasureSessionDataParams,
+  RaspberryCodeAgentPurgeSessionDataParams,
+  RaspberryCodeAgentSetWorkspaceMcpTrustParams,
   RaspberryCodeAgentPluginViewParams,
   RaspberryCodeAgentPluginReferenceCatalogParams,
   RaspberryCodeAgentSkillReferenceCatalogParams,
@@ -422,6 +431,17 @@ export interface RaspberryCodeAgentConversationRowsRangeParams extends Raspberry
   beforeRowId?: number;
   /** 1..rowsRangeMaxLimit（200）。 */
   limit: number;
+  /** 只读热会话：仅复用已运行的工作区 CLI，不为读取拉起新进程。 */
+  residency?: "resident-only";
+}
+
+/** 输入预测：只读草稿建议，不写会话状态。 */
+export interface RaspberryCodeAgentConversationInputPredictionParams
+  extends RaspberryCodeAgentSessionTarget {
+  /** 客户端可见的会话修订号；用于丢弃跨修订的过期建议。 */
+  revision: number;
+  draft?: string;
+  requestId?: string;
 }
 
 /** 当前有效分支里的终态 ExitPlanMode 目录。 */
@@ -662,6 +682,18 @@ export interface IRaspberryCodeAgentService {
     params: RaspberryCodeAgentGrantWorkspaceHookTrustParams,
   ): Promise<RaspberryCodeWorkspaceHookTrustGrantResult>;
   listMcpServerStatuses(params: RaspberryCodeAgentListMcpServerStatusesParams): Promise<RaspberryCodeMcpListResult>;
+  /** 只读测量会话/工作区数据占用；不拉起新 runtime，只观察现有载体。 */
+  measureSessionData(
+    params: RaspberryCodeAgentMeasureSessionDataParams,
+  ): Promise<V4SessionDataMeasureResult>;
+  /** 删除会话/工作区数据；仅限本机已活跃工作区，由持有会话的进程执行。 */
+  purgeSessionData(
+    params: RaspberryCodeAgentPurgeSessionDataParams,
+  ): Promise<V4SessionDataPurgeResult>;
+  /** 写入 workspace 级 MCP 服务信任状态（digest 绑定声明内容，防内容漂移后沿用旧信任）。 */
+  setWorkspaceMcpTrust(
+    params: RaspberryCodeAgentSetWorkspaceMcpTrustParams,
+  ): Promise<RaspberryCodeWorkspaceMcpTrustResult>;
   listPlugins(params: RaspberryCodeAgentPluginViewParams): Promise<RaspberryCodePluginsListResult>;
   /**
    * Plugin 对话引用 catalog：session-scoped 只读投影。
@@ -894,6 +926,20 @@ export interface IRaspberryCodeAgentService {
   conversationRowsRangeV4(
     params: RaspberryCodeAgentConversationRowsRangeParams,
   ): Promise<V4ConversationRowsRangeResult>;
+  /** 输入预测（ghost hint）：只读 query，失败或不可用时降级为空结果。 */
+  conversationInputPredictionV4(
+    params: RaspberryCodeAgentConversationInputPredictionParams,
+  ): Promise<V4ConversationInputPredictionResult>;
+  /** 读取会话生命周期权威快照；旧 CLI 无该协议时返回 null，由调用方回落订阅。 */
+  getSessionLifecycle(
+    params: RaspberryCodeAgentSessionTarget,
+  ): Promise<SessionLifecycleSnapshot | null>;
+  /** 确保会话运行时已就绪（必要时冷启动）；幂等，重复调用不会重建已完成实例。 */
+  ensureSessionReady(params: RaspberryCodeAgentSessionTarget): Promise<void>;
+  /** 停止会话运行时（保留会话数据），用于释放资源而不丢历史。 */
+  stopSessionRuntime(params: RaspberryCodeAgentSessionTarget): Promise<void>;
+  /** 重启会话运行时；旧 CLI 不支持该协议时抛 fault.sessionLifecycle.unsupported。 */
+  restartSessionRuntime(params: RaspberryCodeAgentSessionTarget): Promise<void>;
   conversationPlansV4(
     params: RaspberryCodeAgentConversationPlansParams,
   ): Promise<V4ConversationPlansResult>;
@@ -965,6 +1011,12 @@ export interface IRaspberryCodeAgentService {
   onDynamicConversationTelemetryFact(
     params: RaspberryCodeAgentWorkspaceTarget,
   ): Event<ConversationTelemetryFact>;
+  /** workspace 级会话生命周期快照流（phase 变化）；只推当前 workspace。 */
+  onDynamicSessionLifecycle(
+    params: RaspberryCodeAgentWorkspaceTarget,
+  ): Event<SessionLifecycleSnapshot>;
+  /** 远端会话遥测事件流（连接级，不按 workspace 过滤）。 */
+  onDynamicRemoteConversationTelemetry(): Event<RemoteConversationTelemetryEvent>;
   /** 当前窗口全部本地 live task 的 CUA 权限观察；历史、远程与 replayable 不在此事件面。 */
   onDynamicCuaPermissionObservation(): Event<RaspberryCodeAgentCuaPermissionObservation>;
   /** 本地桌面窗口创建插件页面，不依赖 conversation 订阅。 */
@@ -1015,7 +1067,13 @@ export interface IRaspberryCodeAgentService {
   ) => IDisposable;
   /** 当前 desktop-local CUA turn 是否仍在执行，用于 Helper recovery 避免中途回收 Agent。 */
   hasActiveCuaOperationTurn(): boolean;
-  disposeWorkspace(params: RaspberryCodeAgentWorkspaceTarget): Promise<void>;
+  /**
+   * 释放 workspace 运行时。releasePreparation 仅对共享 runtime 生效：
+   * 取消仍在排队的启动等待，避免「已卸载的 workspace 被迟到的启动请求重新拉起」。
+   */
+  disposeWorkspace(
+    params: RaspberryCodeAgentWorkspaceTarget & { releasePreparation?: boolean },
+  ): Promise<void>;
   disposeAll(): void;
 }
 

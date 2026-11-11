@@ -92,8 +92,15 @@ export function compareCompatibilityVersions(left: string, right: string): numbe
   return 0;
 }
 
-export interface SourceServerCompatibilityResult {
-  compatible: boolean;
+/**
+ * 语义化版本比较（semver 前缀/预发布规则同 compareCompatibilityVersions）。
+ * 供数据同步与远端更新提示使用：返回 <0 / 0 / >0 分别表示左旧、相等、左新。
+ */
+export function compareSemverVersions(left: string, right: string): number {
+  return compareCompatibilityVersions(left, right);
+}
+
+export interface SourceServerCompatibilityResult {  compatible: boolean;
   updateAvailable: boolean;
   newerEndpoint: "controller" | "server" | "equal";
   upgradeTarget?: "controller" | "server";

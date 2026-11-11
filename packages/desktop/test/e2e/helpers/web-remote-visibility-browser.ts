@@ -1,7 +1,6 @@
 import { appendFile } from "node:fs/promises";
 import { join } from "node:path";
 import { chromium, type Page } from "playwright-core";
-import { openMobilePairingPage } from "#e2e/helpers/mobile-pairing";
 
 interface LocalChromiumPage extends Page {
   _connection?: {
@@ -31,11 +30,7 @@ async function useNativeVisibility(page: Page) {
 }
 
 /** 使用成熟导航与清理流程，仅撤销测试框架强制前台；浏览器仍是真实headed Chrome。 */
-export async function createWebRemoteVisibilityBrowser(
-  artifactDir: string,
-  options: { width?: number; caseMarker?: string } = {},
-) {
-  const caseMarker = options.caseMarker ?? "MRO03";
+export async function createWebRemoteVisibilityBrowser(artifactDir: string) {
   const executablePath =
     process.env.RASPBERRYCODE_E2E_MOBILE_BROWSER_EXECUTABLE || process.env.R3_MOBILE_CHROME;
   const chrome = await chromium.launch({
@@ -43,7 +38,7 @@ export async function createWebRemoteVisibilityBrowser(
     headless: false,
   });
   const context = await chrome.newContext({
-    viewport: { width: options.width ?? 1440, height: 1000 },
+    viewport: { width: 1440, height: 1000 },
     locale: "zh-CN",
   });
   const page = await context.newPage();
@@ -52,7 +47,7 @@ export async function createWebRemoteVisibilityBrowser(
   const recordEvent = (stage: string, detail?: unknown) => {
     logFlight = logFlight.then(() =>
       appendFile(
-        join(artifactDir, `${caseMarker}-native-stages.jsonl`),
+        join(artifactDir, "MRO03-native-stages.jsonl"),
         JSON.stringify({ stage, detail }) + "\n",
       ),
     );
@@ -84,21 +79,13 @@ export async function createWebRemoteVisibilityBrowser(
   });
   let cover: Page | undefined;
   return {
-    page,
     evaluate: <T>(expression: string) => page.evaluate<T, void>(expression, undefined),
-    async navigate(url: string, credentials: Record<string, string>, readySelector?: string) {
+    async navigate(url: string, credentials: Record<string, string>) {
       await context.addInitScript((values) => {
         if (!location.protocol.startsWith("http")) return;
         for (const [key, value] of Object.entries(values)) localStorage.setItem(key, value);
       }, credentials);
-      if (readySelector)
-        await openMobilePairingPage(page, url, {
-          artifactDir,
-          caseMarker,
-          phase: "native-admission",
-          readySelector,
-        });
-      else await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60_000 });
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60_000 });
       await useNativeVisibility(page);
       await page.bringToFront();
       await record("native-navigation");

@@ -139,7 +139,6 @@ export type {
   RaspberryCodeAgentRuntimePolicy,
   RaspberryCodeAgentReadSessionParams,
   RaspberryCodeAgentRespondProviderRuntimeHeadersParams,
-  RaspberryCodeAgentProviderRuntimeHeadersRequest,
   RaspberryCodeAgentResumeSessionParams,
   RaspberryCodeAgentRunAutomationNowResult,
   RaspberryCodeAgentSavedWorkflowTarget,

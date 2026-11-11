@@ -1,39 +1,11 @@
-import type { IHighspeedCardService, IServiceAccessor } from "@raspberrycode/services";
+import type { IServiceAccessor } from "@raspberrycode/services";
 import type { RemoteTarget } from "@raspberrycode/shared";
-
-/**
- * 高速卡与闲时任务只在本地生效（2026-10-21 产品决定），远程 workspace 一律不得路由到远端。
- *
- * Bug 原因：3.16 起已识别 Source 的远程 workspace 整套使用远端服务，远端合同没有
- * highspeed-card / off-peak-task 频道。发送前 await prepareTurn 要等满 Host ChannelServer
- * 的 1000ms 未知频道超时才继续；闲时通知轮询每 30s 同样超时一次。
- * 修复：高速卡注入不 draw 的实现，发送立即走普通模型；闲时任务只属于本地项目，固定取本地服务。
- */
-const remoteUnsupportedHighspeedCardService: IHighspeedCardService = {
-  prepareTurn: async () => ({ kind: "fallback", reason: "unavailable", nextDrawAt: null }),
-  getSnapshot: async () => ({ card: null, nextDrawAt: null, drawing: false }),
-  invalidateCard: async () => false,
-  healthy: async () => {
-    throw new Error("highspeed.remote-unsupported");
-  },
-};
-
-function withLocalOnlyAccountServices(
-  baseServices: IServiceAccessor,
-  services: IServiceAccessor,
-): IServiceAccessor {
-  return {
-    ...services,
-    highspeedCardService: remoteUnsupportedHighspeedCardService,
-    offPeakTaskService: baseServices.offPeakTaskService,
-  };
-}
 
 export function buildRemoteWorkspaceSessionServices(
   baseServices: IServiceAccessor,
   remoteServices: IServiceAccessor,
 ): IServiceAccessor {
-  return withLocalOnlyAccountServices(baseServices, {
+  return {
     ...baseServices,
     fileService: remoteServices.fileService,
     // 根因：遗漏此覆盖会用本机输出根目录校验远端 HTML，合法文件也被判越界。
@@ -80,7 +52,7 @@ export function buildRemoteWorkspaceSessionServices(
     // 无法读取远端待审 Hook。
     // hooks 读写（loadHooks/saveHooks）与 grantWorkspaceHookTrust 授权都必须打到远端 host。
     hooksService: remoteServices.hooksService,
-  });
+  };
 }
 
 export function buildServerRemoteWorkspaceSessionServices(
@@ -89,7 +61,7 @@ export function buildServerRemoteWorkspaceSessionServices(
 ): IServiceAccessor {
   // Server remote 连接的是完整运行中的 RaspberryCode server；workspace/runtime/model-provider
   // 等状态以 server 为准，本地 renderer 只保留窗口与 UI shell 状态。
-  return withLocalOnlyAccountServices(baseServices, remoteServices);
+  return remoteServices;
 }
 
 export function buildRemoteWorkspaceSessionServicesForRegistration(params: {

@@ -21,7 +21,7 @@ export function ProjectSidebarNavigation({
     <div data-testid="sidebar-primary-navigation" className="flex flex-col gap-1 px-2 py-3">
       <NewTaskButtonGroup onCreateTask={onCreate} />
       {/* 远控主视图会把自动化和插件市场重置为聊天；入口必须一同隐藏，避免点击无效。 */}
-      {!props.isWebRemoteControl && props.onOpenAutomations ? (
+      {props.onOpenAutomations ? (
         <Button
           variant="ghost"
           size="lg"
@@ -35,19 +35,17 @@ export function ProjectSidebarNavigation({
           {intl.formatMessage({ id: "workspace.openScheduledSettings" })}
         </Button>
       ) : null}
-      {!props.isWebRemoteControl ? (
-        <Button
-          variant="ghost"
-          size="lg"
-          className={`w-full justify-start gap-2 ${props.pluginStoreActive ? "bg-selected text-foreground" : ""}`}
-          aria-pressed={props.pluginStoreActive ?? false}
-          data-testid="plugin-store-sidebar-open"
-          onClick={() => props.onOpenPluginStore?.()}
-        >
-          <Blocks className="size-4" />
-          {intl.formatMessage({ id: "workspace.openPluginsSettings" })}
-        </Button>
-      ) : null}
+      <Button
+        variant="ghost"
+        size="lg"
+        className={`w-full justify-start gap-2 ${props.pluginStoreActive ? "bg-selected text-foreground" : ""}`}
+        aria-pressed={props.pluginStoreActive ?? false}
+        data-testid="plugin-store-sidebar-open"
+        onClick={() => props.onOpenPluginStore?.()}
+      >
+        <Blocks className="size-4" />
+        {intl.formatMessage({ id: "workspace.openPluginsSettings" })}
+      </Button>
     </div>
   );
 }

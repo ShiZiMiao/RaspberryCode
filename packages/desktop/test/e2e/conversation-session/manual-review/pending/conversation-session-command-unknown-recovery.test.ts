@@ -68,8 +68,7 @@ describe("PV4-25U：unknown command recovery 保留待确认", () => {
       // 正式默认轮在刷新后进入欢迎页；仅采集脱敏配置，不通过重载或重试绕过启动异常。
       const [providers, settings] = await Promise.all([readModelProviders(), readSettings()]);
       throw new Error(
-        `PV4-25U 刷新恢复失败: ${JSON.stringify({
-          providerFamilyDomain: settings.providerFamilyDomain,
+        `PV4-25U 刷新恢复失败: ${JSON.stringify({
           providers: providers.map((provider) => ({
             id: provider.id,
             enabled: provider.enabled,

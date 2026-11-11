@@ -37,6 +37,24 @@ export interface RaspberryCodeAgentListMcpServerStatusesParams extends Raspberry
   mode?: RaspberryCodeMcpListMode;
 }
 
+/** 会话/工作区数据体量测量：CLI 不感知项目，Host 传会话 ID 与目录。 */
+export interface RaspberryCodeAgentMeasureSessionDataParams {
+  sessionIds: string[];
+  directories: Array<{ workspacePath: string; workspaceIdentity?: string }>;
+}
+
+/** 会话/工作区数据彻底删除：workspace 用于定位持有会话的进程。 */
+export interface RaspberryCodeAgentPurgeSessionDataParams extends RaspberryCodeAgentMeasureSessionDataParams {
+  workspace: RaspberryCodeAgentWorkspaceTarget;
+}
+
+export interface RaspberryCodeAgentSetWorkspaceMcpTrustParams extends RaspberryCodeAgentWorkspaceTarget {
+  serverName: string;
+  /** 与声明内容绑定；内容变更后旧信任自动失效。 */
+  declarationDigest: string;
+  trusted: boolean;
+}
+
 export interface RaspberryCodeAgentAddPluginMarketplaceParams extends RaspberryCodeAgentPluginMutationTarget {
   dryRun?: boolean;
   operationId?: string;

@@ -140,7 +140,7 @@ function liveStatusFromMeta(meta: RaspberryCodeTaskMeta): WindowHostControllerTa
  */
 export function createWindowHostControllerRuntime(options: {
   createId: () => string;
-  readHostTaskList: IZCodeTaskService["listTaskList"];
+  readHostTaskList: IRaspberryCodeTaskService["listTaskList"];
   resolveSource: (scope: RaspberryCodeTaskListWorkspaceScope) => ResolvedWindowHostControllerSource | null;
   onSourceError?: (
     scope: WindowHostControllerSourceScope,

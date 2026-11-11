@@ -105,8 +105,6 @@ import { seedRemoteOnboardingFixture } from "./test/e2e/helpers/remote-startup-p
 import { getE2EProviderEndpointEnv } from "#e2e/helpers/e2e-provider-endpoint";
 import { prepareOAuthCompletionRaceFixture } from "./test/e2e/helpers/oauth-completion-race-fixture.js";
 import { prepareAccessToken401Fixture } from "./test/e2e/helpers/access-token-401-fixture.js";
-import { prepareOfficialMcpAuthRoutingFixture } from "#e2e/helpers/mcp-official-auth-routing-fixture";
-import { prepareMcpFailureGuidanceFixture } from "#e2e/helpers/mcp-failure-guidance-fixture";
 import { createE2EReplayFixtureVariables } from "./test/e2e/helpers/e2e-runtime-paths.js";
 import { stageE2EAppOutput } from "./test/e2e/helpers/e2e-app-output-stage.js";
 import { withE2EDesktopBuildLock } from "./scripts/ensure-e2e-desktop-build.mjs";
@@ -595,8 +593,6 @@ let dynamicWorkflowConfigMockServer: DynamicWorkflowConfigMockServer | null = nu
 let stopOAuthCompletionRaceFixture: (() => Promise<void>) | null = null;
 let stopTtftOtlpFixture: (() => Promise<void>) | null = null;
 let stopAccessToken401Fixture: (() => Promise<void>) | null = null;
-let stopOfficialMcpAuthRoutingFixture: (() => Promise<void>) | null = null;
-let stopMcpFailureGuidanceFixture: (() => Promise<void>) | null = null;
 let pluginCdnZipFixtureServer: PluginCdnZipFixtureServer | null = null;
 let upstreamE2EBaseUrl: string = e2eProviderPreset.baseUrl;
 let e2eRunnerExitWatchdog: ReturnType<typeof setTimeout> | null = null;
@@ -4038,10 +4034,10 @@ async function seedUpstreamE2EModelConfig(specs: string[] = []) {
       // P06 必须连续经过 tool-batch 与 text-only 两个 steer drain 边界；240-token
       // 小窗口会在第三次主请求前插入 auto compact，覆盖掉本 case 要验证的时序。
       (spec.includes("test/e2e/conversation-session/manual-review/") &&
-        !modelSwitchToolEditForkSpec &&
-        !forkMergedAssistantSpec &&
-        !bashReadStateSpec &&
-        !runningGuideSteerSpec &&
+        !spec.includes("conversation-session-model-switch-tool-edit-fork.test.ts") &&
+        !spec.includes("conversation-session-fork-merged-assistant.test.ts") &&
+        !spec.includes("conversation-session-bash-read-state.test.ts") &&
+        !spec.includes("conversation-session-background-guide-steer.test.ts") &&
         // OTC08/OTC09/OTC10 只观察 output-limit Continue 的累计 assistant 投影。manual-review
         // 默认 240/80 小窗口会在相邻 partial 之间插入 Compact，既污染 UI，也会让
         // summary 替换原始 marker 后使第三段 fixture 退化到通用 fallback。
@@ -4051,7 +4047,7 @@ async function seedUpstreamE2EModelConfig(specs: string[] = []) {
           "conversation-session-output-limit-continue-markdown-content-types.test.ts",
         ) &&
         !spec.includes("conversation-session-output-limit-continue-markdown-protocols.test.ts") &&
-        !subagentProviderRegistryColdStartSpec &&
+        !spec.includes("conversation-session-subagent-provider-registry-cold-start.test.ts") &&
         // 本 case 连续验证三组 parent/child 请求；极小窗口会在第二组前插入 compact，
         // 与 model + reasoning effort 的目标语义无关。
         !builtInSubagentModelOverridesSpec &&
@@ -4627,19 +4623,6 @@ export const config: WebdriverIO.Config = {
           credentialsFile: E2E_APP_CREDENTIALS_FILE,
           settingsFile: E2E_APP_SETTINGS_FILE,
         });
-        stopOfficialMcpAuthRoutingFixture = await prepareOfficialMcpAuthRoutingFixture({
-          specs,
-          credentialsFile: E2E_APP_CREDENTIALS_FILE,
-          settingsFile: E2E_APP_SETTINGS_FILE,
-          workspacePath: resolve(E2E_HOME_DIR, "RaspberryCodeProject"),
-        });
-        stopMcpFailureGuidanceFixture = await prepareMcpFailureGuidanceFixture({
-          specs,
-          credentialsFile: E2E_APP_CREDENTIALS_FILE,
-          settingsFile: E2E_APP_SETTINGS_FILE,
-          workspacePath: resolve(E2E_HOME_DIR, "RaspberryCodeProject"),
-        });
-        // resetHome 之后、Electron 启动之前安装，Main -> Host -> Agent 才会同时继承
         // case-owned PATH；其他 spec 由 helper 保持 no-op。
         await installBashPrefixPermissionPnpmShim({
           environment: process.env,
@@ -4751,10 +4734,6 @@ export const config: WebdriverIO.Config = {
           stopTtftOtlpFixture = null;
           await stopAccessToken401Fixture?.();
           stopAccessToken401Fixture = null;
-          await stopOfficialMcpAuthRoutingFixture?.();
-          stopOfficialMcpAuthRoutingFixture = null;
-          await stopMcpFailureGuidanceFixture?.();
-          stopMcpFailureGuidanceFixture = null;
           currentE2EBeforeSessionError = null;
           e2eFailureArtifacts = null;
           currentE2EWorkerSessionSpecs = [];
@@ -4833,10 +4812,6 @@ export const config: WebdriverIO.Config = {
           stopOAuthCompletionRaceFixture = null;
           await stopAccessToken401Fixture?.();
           stopAccessToken401Fixture = null;
-          await stopOfficialMcpAuthRoutingFixture?.();
-          stopOfficialMcpAuthRoutingFixture = null;
-          await stopMcpFailureGuidanceFixture?.();
-          stopMcpFailureGuidanceFixture = null;
           await stopPluginCdnZipFixture();
         } finally {
           await cleanupE2EElectronProcesses("onComplete");

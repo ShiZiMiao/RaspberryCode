@@ -141,16 +141,13 @@ export async function createBotWorkerIntegration(baseUrl: string, dropTextContai
     const agent = createRaspberryCodeAgentService({
       // 项目化创建要求先预留 task 归属；旧夹具漏接此 Host 端口，在调用 CLI 前即失败。
       prepareSessionCreation: async (target) => {
-        const prepared = projects.reserveCreatedTask({
+        // 夹具与生产实现同约：preparation 只返回目录列表，sessionId 由参数决定。
+        return projects.reserveCreatedTask({
           task: { ...target, taskId: target.sessionId },
           projectId: target.projectId,
           creationCommand: target.creationCommand,
           additionalDirectories: target.additionalDirectories,
-        });
-        return {
-          sessionId: prepared.taskId,
-          additionalDirectories: prepared.additionalDirectories,
-        };
+        }).additionalDirectories;
       },
       commandResolver: () => ({
         command: process.execPath,
