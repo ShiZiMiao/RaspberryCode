@@ -1185,7 +1185,6 @@ export function McpSettingsSection({
       remoteSessionId,
       remoteTarget,
       isMobileOverlay,
-      hasLocalSourceService: Boolean(services.mcpSyncService),
     }) && activeWorkspacePath
       ? remoteTarget
       : null;

@@ -257,7 +257,6 @@ export function SkillsSection({
       remoteSessionId,
       remoteTarget,
       isMobileOverlay,
-      hasLocalSourceService: Boolean(targetServiceResolution.services.skillSyncService),
     }) &&
     activeWorkspacePath
       ? remoteTarget
