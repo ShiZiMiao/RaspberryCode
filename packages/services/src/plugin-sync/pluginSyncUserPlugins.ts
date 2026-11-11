@@ -161,9 +161,23 @@ export async function importPluginsArchive(
     const metadata = await readArchiveMetadata(tempRoot);
     const targetRoot = getUserRaspberrycodePluginRoot();
     await mkdir(targetRoot, { recursive: true });
+    // 同名 pluginId 已登记在目标端 plugins.dirs 时整体跳过：再装一个同 id 目录会让
+    // 启用态与 options 归属产生歧义，且在 config.json 里无法区分两者。
+    const existingPluginPathById = await collectConfiguredInlinePluginPathById();
     const results: PluginSyncImportResult["results"] = [];
     for (const plugin of metadata.plugins) {
       const targetPath = resolvePluginSyncPathWithin(targetRoot, plugin.directoryName);
+      const existingPath = existingPluginPathById.get(normalizePluginIdKey(plugin.pluginId));
+      if (existingPath) {
+        results.push({
+          name: plugin.name,
+          pluginId: plugin.pluginId,
+          directoryName: plugin.directoryName,
+          status: "skipped",
+          path: existingPath,
+        });
+        continue;
+      }
       if (existsSync(targetPath)) {
         results.push({
           name: plugin.name,

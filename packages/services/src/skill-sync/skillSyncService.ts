@@ -143,21 +143,38 @@ async function importSkillsArchive(
     await extractSkillSyncArchive(archive, tempRoot, { maxExtractedBytes: maxArchiveBytes });
     const targetRoot = getUserRaspberrycodeSkillRoot();
     await mkdir(targetRoot, { recursive: true });
+    // 归档保留 skills 根内的相对层级（如 group/review），因此按 SKILL.md 定位技能目录，
+    // 不能只取顶层目录名——否则嵌套技能会被截断成外层分组目录。
+    const existingSkillPathByName = await collectUserSkillDirectoryPathByName();
     const results: import("@raspberrycode/shared").SkillSyncImportResult["results"] = [];
-    for (const entry of await readdir(tempRoot, { withFileTypes: true })) {
-      if (!entry.isDirectory()) continue;
-      const directoryName = normalizeSkillSyncRelativePath(entry.name);
+    for await (const skillPath of walkSkillMarkdownPaths(tempRoot)) {
+      const sourceDirectory = dirname(skillPath);
+      // relative 在 Windows 上给反斜杠，归档/校验口径统一用 /。
+      const directoryName = normalizeSkillSyncRelativePath(
+        relative(tempRoot, sourceDirectory).replaceAll("\\", "/"),
+      );
+      const name = basename(directoryName);
+      // 冲突判定用 SKILL.md 里的技能名（而非归档目录名）：目录名可以不同，
+      // 但同名技能装进来会让启用态与调用解析产生歧义。
+      const content = await readSkillFileOrNull(skillPath);
+      const skillName = content === null ? name : parseSkillMetadata(content, name).name;
       const targetPath = resolveSkillSyncPathWithin(targetRoot, directoryName);
+      const existingPath = existingSkillPathByName.get(normalizeSkillNameKey(skillName));
+      if (existingPath) {
+        results.push({ name, directoryName, status: "skipped", path: existingPath });
+        continue;
+      }
       if (existsSync(targetPath)) {
-        results.push({ name: entry.name, directoryName, status: "skipped", path: targetPath });
+        results.push({ name, directoryName, status: "skipped", path: targetPath });
         continue;
       }
       try {
-        await cp(join(tempRoot, directoryName), targetPath, { recursive: true });
-        results.push({ name: entry.name, directoryName, status: "synced", path: targetPath });
+        await mkdir(dirname(targetPath), { recursive: true });
+        await cp(sourceDirectory, targetPath, { recursive: true });
+        results.push({ name, directoryName, status: "synced", path: targetPath });
       } catch (error) {
         results.push({
-          name: entry.name,
+          name,
           directoryName,
           status: "failed",
           error: error instanceof Error ? error.message : String(error),
@@ -170,12 +187,20 @@ async function importSkillsArchive(
   }
 }
 
-/** 已配置技能目录名 → 该技能所在目录，用于判定目标端是否已有同名技能的其他目录。 */
+/**
+ * 已安装技能名（取自 SKILL.md 元数据）→ 该技能所在目录。
+ * 用于判定目标端是否已有同名技能的其他目录；两个技能根都参与（同名技能装在另一个根里同样冲突）。
+ */
 async function collectUserSkillDirectoryPathByName(): Promise<Map<string, string>> {
   const byName = new Map<string, string>();
-  for (const candidate of await collectUserSkillCandidates()) {
-    const key = normalizeSkillNameKey(candidate.name);
-    if (!byName.has(key)) byName.set(key, dirname(candidate.path));
+  for (const root of [getUserRaspberrycodeSkillRoot(), getUserAgentsSkillRoot()]) {
+    for await (const skillPath of walkSkillMarkdownPaths(root)) {
+      const content = await readSkillFileOrNull(skillPath);
+      if (content === null) continue;
+      const metadata = parseSkillMetadata(content, basename(dirname(skillPath)));
+      const key = normalizeSkillNameKey(metadata.name);
+      if (!byName.has(key)) byName.set(key, dirname(skillPath));
+    }
   }
   return byName;
 }

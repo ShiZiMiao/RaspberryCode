@@ -18,7 +18,7 @@ import {
   extractPluginSyncArchive,
   PLUGIN_SYNC_METADATA_ARCHIVE_PATH,
 } from "./pluginSyncArchive.js";
-import { checkRemoteSyncDirectoryWriteAccess } from "../remote-sync/remoteSyncWriteAccess.js";
+import { checkRemoteSyncDirectoriesWriteAccess } from "../remote-sync/remoteSyncWriteAccess.js";
 import {
   collectConfiguredInlinePluginPathById,
   collectLocalUserPluginCandidates,
@@ -106,13 +106,10 @@ export function createPluginSyncService(options?: {
     },
     async checkRemoteUserPluginWriteAccess() {
       // 插件目录与 config.json 所在的配置目录都要可写：前者放插件本体，后者记录启用状态。
-      const pluginAccess = await checkRemoteSyncDirectoryWriteAccess(
+      return checkRemoteSyncDirectoriesWriteAccess([
         getUserRaspberrycodePluginRoot(),
-      );
-      if (!pluginAccess.ok) return pluginAccess;
-      return await checkRemoteSyncDirectoryWriteAccess(
         dirname(getUserRaspberrycodeConfigPath()),
-      );
+      ]);
     },
     async exportPluginsArchive(params) {
       const candidates = await collectLocalUserPluginCandidates();
