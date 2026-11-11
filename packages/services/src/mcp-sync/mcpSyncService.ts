@@ -20,7 +20,6 @@ import type {
 import type { IMcpSyncService } from "./mcpSync.js";
 import { createMcpDataSyncMethods } from "../data-sync/node.js";
 import { createServiceLogger } from "../logger/serviceLogger.js";
-import { checkRemoteSyncDirectoryWriteAccess } from "../remote-sync/remoteSyncWriteAccess.js";
 
 const logger = createServiceLogger("mcp-sync");
 
@@ -135,62 +134,6 @@ export function createMcpSyncService(
     },
     async saveMcpToUserDirectory(payload) {
       await saveMcpToUserDirectory(payload);
-    },
-    async listLocalUserMcpCandidates() {
-      const localHomeDir = resolveUserHomeDir();
-      return {
-        candidates: (await collectEffectiveUserMcpRecords()).map(
-          recordToCandidate,
-        ),
-        localHomeDir,
-      };
-    },
-    async listRemoteUserMcpStatuses(params) {
-      const remoteHomeDir = resolveUserHomeDir();
-      const existingByName = await collectEffectiveUserMcpRecordByName();
-      return {
-        remoteHomeDir,
-        statuses: params.names.map((name): McpSyncRemoteStatus => {
-          const existing = existingByName.get(normalizeMcpNameKey(name));
-          return existing
-            ? { name, exists: true, path: existing.path }
-            : { name, exists: false };
-        }),
-      };
-    },
-    async exportMcpServers(params) {
-      const candidates = (await collectEffectiveUserMcpRecords()).map(
-        recordToCandidate,
-      );
-      const candidateById = new Map(
-        candidates.map((candidate) => [candidate.id, candidate]),
-      );
-      return {
-        localHomeDir: resolveUserHomeDir(),
-        servers: params.serverIds.map((id): McpSyncExportedServer => {
-          const candidate = candidateById.get(id);
-          if (!candidate) {
-            throw new Error(`mcp sync candidate not found: ${id}`);
-          }
-          return {
-            id: candidate.id,
-            name: candidate.name,
-            config: cloneMcpConfig(candidate.config),
-            enabled: candidate.enabled,
-            source: candidate.source,
-            path: candidate.path,
-          };
-        }),
-      };
-    },
-    async checkRemoteUserMcpWriteAccess() {
-      return checkRemoteSyncDirectoryWriteAccess(dirname(getUserRaspberrycodeMcpConfigPath()));
-    },
-    async importMcpServers(params) {
-      if (params.overwrite) {
-        throw new Error("mcp sync overwrite is not supported");
-      }
-      return await importMcpServers(params);
     },
   };
 }

@@ -307,12 +307,24 @@ describe("createLocalServices remote authority", () => {
 
     try {
       services.exposeOnChannelServer(server);
+      // 通道暴露的验证点：插件同步的 marketplace 预检可经 RPC 调用并返回结构化结果。
+      const marketplaceRoot = join(home, "market");
+      mkdirSync(marketplaceRoot, { recursive: true });
+      writeFileSync(
+        join(marketplaceRoot, "marketplace.json"),
+        JSON.stringify({ name: "empty-market", plugins: [] }),
+      );
       const result = await client
         .getChannel(IPluginSyncService.channelName)
-        .call("listLocalUserPluginCandidates", []);
+        .call("inspectMarketplaceSourceMirror", [
+          {
+            marketplaceId: "empty-market",
+            pluginNames: [],
+            source: { source: "directory", path: marketplaceRoot },
+          },
+        ]);
 
-      expect(result.candidates).toEqual([]);
-      expect(result.maxArchiveBytes).toBeGreaterThan(0);
+      expect(result.blocked).toEqual({});
     } finally {
       client.dispose();
       server.dispose();

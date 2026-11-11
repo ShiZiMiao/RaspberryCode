@@ -1,29 +1,13 @@
-import { createHash, randomUUID } from "node:crypto";
-import { existsSync } from "node:fs";
-import { cp, lstat, mkdir, readFile, readdir, realpath, rename, rm, writeFile } from "node:fs/promises";
-import { homedir, tmpdir } from "node:os";
-import { basename, dirname, isAbsolute, join, resolve } from "node:path";
+import { createHash } from "node:crypto";
+import { lstat, readFile, readdir } from "node:fs/promises";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import type {
-  PluginSyncCandidate,
   PluginSyncComponentType,
-  PluginSyncImportResult,
   PluginSyncMarketplaceMirrorInspection,
-  PluginSyncRemoteStatus,
 } from "@raspberrycode/shared";
 import { PLUGIN_DATA_SYNC_MAX_ITEM_BYTES } from "@raspberrycode/shared";
 import type { IPluginSyncService } from "./pluginSync.js";
-import type { PluginSyncArchiveMetadata } from "./pluginSyncArchive.js";
-import {
-  createPluginSyncArchive,
-  extractPluginSyncArchive,
-  PLUGIN_SYNC_METADATA_ARCHIVE_PATH,
-} from "./pluginSyncArchive.js";
-import { checkRemoteSyncDirectoriesWriteAccess } from "../remote-sync/remoteSyncWriteAccess.js";
-import {
-  collectConfiguredInlinePluginPathById,
-  collectLocalUserPluginCandidates,
-  importPluginsArchive,
-} from "./pluginSyncUserPlugins.js";
 import {
   CrossMarketplaceDependencyError,
   exportMarketplaceSourceArchiveInternal,
@@ -31,7 +15,7 @@ import {
   loadMarketplaceSource,
   resolveMarketplacePluginClosure,
 } from "./pluginSyncMarketplace.js";
-import { normalizePluginSyncRelativePath, resolvePluginSyncPathWithin } from "./pluginSyncPath.js";
+import { normalizePluginSyncRelativePath } from "./pluginSyncPath.js";
 import { createInlinePluginDataSyncMethods } from "../data-sync/node.js";
 
 export interface PluginManifestInfo {
@@ -68,111 +52,6 @@ export function createPluginSyncService(options?: {
   return {
     // 数据同步：单个 inline 插件目录上限 50MB；marketplace 来源镜像归档也用同一上限。
     ...createInlinePluginDataSyncMethods({ maxItemBytes: maxArchiveBytes }),
-    async listLocalUserPluginCandidates() {
-      return {
-        candidates: await collectLocalUserPluginCandidates(),
-        maxArchiveBytes,
-      };
-    },
-    async listRemoteUserPluginStatuses(params) {
-      const targetRoot = getUserRaspberrycodePluginRoot();
-      const existingPluginPathById = await collectConfiguredInlinePluginPathById();
-      return {
-        statuses: params.plugins.map((plugin): PluginSyncRemoteStatus => {
-          const directoryName = normalizePluginSyncRelativePath(plugin.directoryName);
-          const pluginId = normalizePluginId(plugin.pluginId);
-          const targetPath = resolvePluginSyncPathWithin(targetRoot, directoryName);
-          if (existsSync(targetPath)) {
-            return {
-              pluginId,
-              directoryName,
-              exists: true,
-              path: targetPath,
-              reason: "targetExists",
-            };
-          }
-          const existingPath = existingPluginPathById.get(normalizePluginIdKey(pluginId));
-          return existingPath
-            ? {
-                pluginId,
-                directoryName,
-                exists: true,
-                path: existingPath,
-                reason: "samePluginId",
-              }
-            : { pluginId, directoryName, exists: false };
-        }),
-      };
-    },
-    async checkRemoteUserPluginWriteAccess() {
-      // 插件目录与 config.json 所在的配置目录都要可写：前者放插件本体，后者记录启用状态。
-      return checkRemoteSyncDirectoriesWriteAccess([
-        getUserRaspberrycodePluginRoot(),
-        dirname(getUserRaspberrycodeConfigPath()),
-      ]);
-    },
-    async exportPluginsArchive(params) {
-      const candidates = await collectLocalUserPluginCandidates();
-      const candidateById = new Map(candidates.map((candidate) => [candidate.id, candidate]));
-      const selected = params.pluginIds.map((id) => {
-        const candidate = candidateById.get(id);
-        if (!candidate) {
-          throw new Error(`plugin sync candidate not found: ${id}`);
-        }
-        return candidate;
-      });
-      const selectedBytes = selected.reduce((total, candidate) => total + candidate.sizeBytes, 0);
-      if (selectedBytes > maxArchiveBytes) {
-        throw new Error(`plugin sync archive exceeds limit: ${selectedBytes}/${maxArchiveBytes}`);
-      }
-      const archive = await createPluginSyncArchive({
-        entries: await Promise.all(
-          selected.map(async (candidate) => ({
-            sourcePath: await realpath(candidate.path),
-            archivePath: candidate.directoryName,
-          })),
-        ),
-        metadata: {
-          plugins: selected.map((candidate) => ({
-            name: candidate.name,
-            pluginId: candidate.pluginId,
-            directoryName: candidate.directoryName,
-            ...(candidate.enabledOverride !== undefined
-              ? { enabled: candidate.enabledOverride }
-              : {}),
-          })),
-        },
-      });
-      if (archive.byteLength > maxArchiveBytes) {
-        throw new Error(
-          `plugin sync archive exceeds limit: ${archive.byteLength}/${maxArchiveBytes}`,
-        );
-      }
-      return {
-        archive,
-        archiveBytes: archive.byteLength,
-        plugins: selected.map((candidate) => ({
-          id: candidate.id,
-          name: candidate.name,
-          pluginId: candidate.pluginId,
-          directoryName: candidate.directoryName,
-          ...(candidate.enabledOverride !== undefined
-            ? { enabled: candidate.enabledOverride }
-            : {}),
-        })),
-      };
-    },
-    async importPluginsArchive(params) {
-      if (params.overwrite) {
-        throw new Error("plugin sync overwrite is not supported");
-      }
-      if (params.archive.byteLength > maxArchiveBytes) {
-        throw new Error(
-          `plugin sync archive exceeds limit: ${params.archive.byteLength}/${maxArchiveBytes}`,
-        );
-      }
-      return await importPluginsArchive(params.archive, maxArchiveBytes);
-    },
     async exportMarketplaceSourceArchive(params) {
       const result = await exportMarketplaceSourceArchiveInternal(params, maxArchiveBytes);
       if (result.archive.byteLength > maxArchiveBytes) {

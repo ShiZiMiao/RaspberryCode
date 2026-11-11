@@ -1,11 +1,16 @@
 // Modified for RaspberryCode: 数据目录断言随 .raspberrycode 独立改名
-import { mkdir, readFile, symlink, writeFile } from "node:fs/promises";
+//
+// 本文件只覆盖「用户技能发现」：collectUserSkillCandidates 是数据同步
+// （data-sync/skillDataSync.ts）与技能管理的共同底座。旧的候选/状态/归档
+// 服务方法已随远端同步弹窗下线移除，其等价能力由 IDataSyncCategoryService
+// 在 data-sync 层覆盖（见 desktop E2E 的 remote-data-sync-skill-push）。
+import { mkdir, symlink, writeFile } from "node:fs/promises";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { MAX_SKILL_SCAN_DEPTH, SKILL_SYNC_SIZE_LIMIT_ERROR_CODE } from "@raspberrycode/shared";
+import { MAX_SKILL_SCAN_DEPTH } from "@raspberrycode/shared";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createSkillSyncService } from "../src/skill-sync/skillSyncService.js";
+import { collectUserSkillCandidates } from "../src/skill-sync/skillSyncService.js";
 
 async function symlinkSkillDirectory(target: string, linkPath: string) {
   // 修复原因：Windows 普通目录 symlink 依赖开发者模式或管理员权限，CI/本机 pre-push
@@ -43,7 +48,7 @@ async function writeBareSkill(
   return dir;
 }
 
-describe("skill sync service", () => {
+describe("user skill candidates", () => {
   let originalHome: string | undefined;
 
   beforeEach(() => {
@@ -58,62 +63,21 @@ describe("skill sync service", () => {
     const home = makeHome();
     process.env.HOME = home;
     await writeSkill(home, "review");
-    const service = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
 
-    const result = await service.listLocalUserSkillCandidates();
+    const candidates = await collectUserSkillCandidates();
 
-    expect(result.candidates).toMatchObject([
-      {
-        name: "review",
-        directoryName: "review",
-        description: "review desc",
-      },
-    ]);
-  });
-
-  it("checks remote skill root write access before sync", async () => {
-    const remoteHome = makeHome();
-    process.env.HOME = remoteHome;
-    const service = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
-
-    const result = await service.checkRemoteUserSkillWriteAccess();
-
-    expect(result).toMatchObject({
-      ok: true,
-      path: join(remoteHome, ".raspberrycode", "skills"),
-    });
-  });
-
-  it("reports remote skill write preflight failure when the target is not a directory", async () => {
-    const remoteHome = makeHome();
-    process.env.HOME = remoteHome;
-    await mkdir(join(remoteHome, ".raspberrycode"), { recursive: true });
-    await writeFile(join(remoteHome, ".raspberrycode", "skills"), "not a directory");
-    const service = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
-
-    const result = await service.checkRemoteUserSkillWriteAccess();
-
-    expect(result.ok).toBe(false);
-    expect(result.path).toBe(join(remoteHome, ".raspberrycode", "skills"));
-    expect(result.error).toBeTruthy();
+    expect(candidates.map((candidate) => candidate.directoryName)).toEqual(["review"]);
+    expect(candidates[0]).toMatchObject({ name: "review", description: "review desc" });
   });
 
   it("lists local user agents skills as candidates when raspberrycode skills are empty", async () => {
     const home = makeHome();
     process.env.HOME = home;
     await writeSkill(home, "lark-doc", "lark-doc", ".agents");
-    const service = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
 
-    const result = await service.listLocalUserSkillCandidates();
+    const candidates = await collectUserSkillCandidates();
 
-    expect(result.candidates).toMatchObject([
-      {
-        name: "lark-doc",
-        directoryName: "lark-doc",
-        description: "lark-doc desc",
-        path: join(home, ".agents", "skills", "lark-doc", "SKILL.md"),
-      },
-    ]);
+    expect(candidates.map((candidate) => candidate.directoryName)).toEqual(["lark-doc"]);
   });
 
   it("does not list skills beyond the shared scan depth limit", async () => {
@@ -124,11 +88,10 @@ describe("skill sync service", () => {
       (_, index) => `level-${index}`,
     ).join("/");
     await writeSkill(home, `${deepPath}/too-deep`);
-    const service = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
 
-    const result = await service.listLocalUserSkillCandidates();
+    const candidates = await collectUserSkillCandidates();
 
-    expect(result.candidates.map((candidate) => candidate.directoryName)).not.toContain(
+    expect(candidates.map((candidate) => candidate.directoryName)).not.toContain(
       `${deepPath}/too-deep`,
     );
   });
@@ -138,11 +101,10 @@ describe("skill sync service", () => {
     process.env.HOME = home;
     await writeSkill(home, "review-raspberrycode", "review", ".raspberrycode");
     await writeSkill(home, "review-agents", "review", ".agents");
-    const service = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
 
-    const result = await service.listLocalUserSkillCandidates();
+    const candidates = await collectUserSkillCandidates();
 
-    expect(result.candidates.map((candidate) => candidate.directoryName)).toEqual([
+    expect(candidates.map((candidate) => candidate.directoryName)).toEqual([
       "review-raspberrycode",
     ]);
   });
@@ -154,13 +116,10 @@ describe("skill sync service", () => {
     const raspberrycodeRoot = join(home, ".raspberrycode", "skills");
     await mkdir(raspberrycodeRoot, { recursive: true });
     await symlinkSkillDirectory(sourceDir, join(raspberrycodeRoot, "linked-external"));
-    const service = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
 
-    const result = await service.listLocalUserSkillCandidates();
+    const candidates = await collectUserSkillCandidates();
 
-    expect(result.candidates.map((candidate) => candidate.directoryName)).toEqual([
-      "linked-external",
-    ]);
+    expect(candidates.map((candidate) => candidate.directoryName)).toEqual(["linked-external"]);
   });
 
   it("deduplicates agents skills covered by raw raspberrycode directory names before realpath de-dupe", async () => {
@@ -174,274 +133,37 @@ describe("skill sync service", () => {
     await symlinkSkillDirectory(sourceDir, join(raspberrycodeRoot, "aaa-link"));
     await symlinkSkillDirectory(sourceDir, join(raspberrycodeRoot, "agents-only"));
     await writeBareSkill(home, "agents-only", ".agents");
-    const service = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
 
-    const result = await service.listLocalUserSkillCandidates();
+    const candidates = await collectUserSkillCandidates();
 
-    expect(result.candidates.map((candidate) => candidate.directoryName)).toEqual([
-      "aaa-link",
-    ]);
+    expect(candidates.map((candidate) => candidate.directoryName)).toEqual(["aaa-link"]);
   });
 
-  it("exports nested agents skills preserving their relative directory path", async () => {
+  it("keeps nested agents skills' relative directory path", async () => {
     const localHome = makeHome();
     process.env.HOME = localHome;
     await writeSkill(localHome, "group/review", "review", ".agents");
-    const localService = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
-    const candidates = await localService.listLocalUserSkillCandidates();
 
-    expect(candidates.candidates.map((candidate) => candidate.directoryName)).toEqual([
-      "group/review",
-    ]);
+    const candidates = await collectUserSkillCandidates();
 
-    const archive = await localService.exportSkillsArchive({
-      skillIds: candidates.candidates.map((candidate) => candidate.id),
-    });
-    const remoteHome = makeHome();
-    process.env.HOME = remoteHome;
-    const remoteService = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
-
-    const result = await remoteService.importSkillsArchive({ archive: archive.archive });
-
-    expect(result.results[0]).toMatchObject({
-      directoryName: "group/review",
-      status: "synced",
-    });
-    await expect(
-      readFile(join(remoteHome, ".raspberrycode", "skills", "group", "review", "SKILL.md"), "utf-8"),
-    ).resolves.toContain("name: review");
+    expect(candidates.map((candidate) => candidate.directoryName)).toEqual(["group/review"]);
   });
 
-  it("exports raspberrycode skill directory symlinks as regular remote skill directories", async () => {
-    const localHome = makeHome();
-    process.env.HOME = localHome;
-    const sourceDir = await writeSkill(localHome, "external-source", "external", ".agents");
-    const raspberrycodeRoot = join(localHome, ".raspberrycode", "skills");
-    await mkdir(raspberrycodeRoot, { recursive: true });
-    await symlinkSkillDirectory(sourceDir, join(raspberrycodeRoot, "linked-external"));
-    const localService = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
-    const candidates = await localService.listLocalUserSkillCandidates();
-
-    expect(candidates.candidates).toMatchObject([
-      {
-        name: "external",
-        directoryName: "linked-external",
-        path: join(raspberrycodeRoot, "linked-external", "SKILL.md"),
-      },
-    ]);
-
-    const archive = await localService.exportSkillsArchive({
-      skillIds: candidates.candidates.map((candidate) => candidate.id),
-    });
-    const remoteHome = makeHome();
-    process.env.HOME = remoteHome;
-    const remoteService = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
-
-    const result = await remoteService.importSkillsArchive({ archive: archive.archive });
-
-    expect(result.results[0]).toMatchObject({
-      directoryName: "linked-external",
-      status: "synced",
-    });
-    await expect(
-      readFile(join(remoteHome, ".raspberrycode", "skills", "linked-external", "SKILL.md"), "utf-8"),
-    ).resolves.toContain("name: external");
-  });
-
-  it("imports missing skills and skips existing directory names", async () => {
-    const localHome = makeHome();
-    process.env.HOME = localHome;
-    await writeSkill(localHome, "review");
-    const localService = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
-    const candidates = await localService.listLocalUserSkillCandidates();
-    const archive = await localService.exportSkillsArchive({
-      skillIds: candidates.candidates.map((candidate) => candidate.id),
-    });
-
-    const remoteHome = makeHome();
-    process.env.HOME = remoteHome;
-    await writeSkill(remoteHome, "existing");
-    const remoteService = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
-
-    const first = await remoteService.importSkillsArchive({ archive: archive.archive });
-    const second = await remoteService.importSkillsArchive({ archive: archive.archive });
-
-    expect(first.results[0]).toMatchObject({ directoryName: "review", status: "synced" });
-    expect(second.results[0]).toMatchObject({ directoryName: "review", status: "skipped" });
-    await expect(
-      readFile(join(remoteHome, ".raspberrycode", "skills", "review", "SKILL.md"), "utf-8"),
-    ).resolves.toContain("name: review");
-  });
-
-  it("marks remote skills as existing when the skill name already exists in another directory", async () => {
-    const remoteHome = makeHome();
-    process.env.HOME = remoteHome;
-    await writeSkill(remoteHome, "remote-review-copy", "review");
-    const remoteService = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
-
-    const status = await remoteService.listRemoteUserSkillStatuses({
-      directoryNames: ["review"],
-      skills: [{ directoryName: "review", name: "review" }],
-    });
-
-    expect(status.statuses).toEqual([
-      {
-        directoryName: "review",
-        exists: true,
-        path: join(remoteHome, ".raspberrycode", "skills", "remote-review-copy"),
-      },
-    ]);
-  });
-
-  it("marks remote agents skills as existing when the same skill name exists there", async () => {
-    const remoteHome = makeHome();
-    process.env.HOME = remoteHome;
-    await writeSkill(remoteHome, "agents-review-copy", "review", ".agents");
-    const remoteService = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
-
-    const status = await remoteService.listRemoteUserSkillStatuses({
-      directoryNames: ["review"],
-      skills: [{ directoryName: "review", name: "review" }],
-    });
-
-    expect(status.statuses).toEqual([
-      {
-        directoryName: "review",
-        exists: true,
-        path: join(remoteHome, ".agents", "skills", "agents-review-copy"),
-      },
-    ]);
-  });
-
-  it("rejects remote status directory names that escape the skill root", async () => {
-    const remoteHome = makeHome();
-    process.env.HOME = remoteHome;
-    await mkdir(join(remoteHome, ".ssh"), { recursive: true });
-    const remoteService = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
-
-    await expect(
-      remoteService.listRemoteUserSkillStatuses({
-        directoryNames: ["../../.ssh"],
-      }),
-    ).rejects.toThrow("unsafe skill sync path");
-  });
-
-  it("rejects remote status skill metadata directory names that escape the skill root", async () => {
-    const remoteHome = makeHome();
-    process.env.HOME = remoteHome;
-    const remoteService = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
-
-    await expect(
-      remoteService.listRemoteUserSkillStatuses({
-        directoryNames: ["review"],
-        skills: [{ directoryName: "../review", name: "review" }],
-      }),
-    ).rejects.toThrow("unsafe skill sync path");
-  });
-
-  it("skips imports when the remote already has the same skill name in another directory", async () => {
-    const localHome = makeHome();
-    process.env.HOME = localHome;
-    await writeSkill(localHome, "local-review", "review");
-    const localService = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
-    const candidates = await localService.listLocalUserSkillCandidates();
-    const archive = await localService.exportSkillsArchive({
-      skillIds: candidates.candidates.map((candidate) => candidate.id),
-    });
-
-    const remoteHome = makeHome();
-    process.env.HOME = remoteHome;
-    await writeSkill(remoteHome, "remote-review-copy", "review");
-    const remoteService = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
-
-    const result = await remoteService.importSkillsArchive({ archive: archive.archive });
-
-    expect(result.results[0]).toMatchObject({
-      directoryName: "local-review",
-      status: "skipped",
-      path: join(remoteHome, ".raspberrycode", "skills", "remote-review-copy"),
-    });
-    await expect(
-      readFile(join(remoteHome, ".raspberrycode", "skills", "local-review", "SKILL.md"), "utf-8"),
-    ).rejects.toThrow();
-  });
-
-  it("skips imports when the remote agents root already has the same skill name", async () => {
-    const localHome = makeHome();
-    process.env.HOME = localHome;
-    await writeSkill(localHome, "local-review", "review");
-    const localService = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
-    const candidates = await localService.listLocalUserSkillCandidates();
-    const archive = await localService.exportSkillsArchive({
-      skillIds: candidates.candidates.map((candidate) => candidate.id),
-    });
-
-    const remoteHome = makeHome();
-    process.env.HOME = remoteHome;
-    await writeSkill(remoteHome, "agents-review-copy", "review", ".agents");
-    const remoteService = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
-
-    const result = await remoteService.importSkillsArchive({ archive: archive.archive });
-
-    expect(result.results[0]).toMatchObject({
-      directoryName: "local-review",
-      status: "skipped",
-      path: join(remoteHome, ".agents", "skills", "agents-review-copy"),
-    });
-    await expect(
-      readFile(join(remoteHome, ".raspberrycode", "skills", "local-review", "SKILL.md"), "utf-8"),
-    ).rejects.toThrow();
-  });
-
-  it("rejects export when selected skill content exceeds the sync size limit before gzip", async () => {
+  it("keeps raspberrycode skill directory symlinks as regular candidate directories", async () => {
     const home = makeHome();
     process.env.HOME = home;
-    const skillDir = await writeSkill(home, "large-skill");
-    await writeFile(join(skillDir, "large.txt"), "a".repeat(4096));
-    const service = createSkillSyncService({ maxArchiveBytes: 1024 });
-    const candidates = await service.listLocalUserSkillCandidates();
+    const sourceDir = join(home, "outside", "shared-skill");
+    await mkdir(sourceDir, { recursive: true });
+    await writeFile(
+      join(sourceDir, "SKILL.md"),
+      "---\nname: shared-skill\ndescription: shared desc\n---\nBody",
+    );
+    const raspberrycodeRoot = join(home, ".raspberrycode", "skills");
+    await mkdir(raspberrycodeRoot, { recursive: true });
+    await symlinkSkillDirectory(sourceDir, join(raspberrycodeRoot, "shared-skill"));
 
-    await expect(
-      service.exportSkillsArchive({
-        skillIds: candidates.candidates.map((candidate) => candidate.id),
-      }),
-    ).rejects.toMatchObject({
-      code: SKILL_SYNC_SIZE_LIMIT_ERROR_CODE,
-      data: {
-        actualBytes: expect.any(Number),
-        maxBytes: 1024,
-        phase: "selected-content",
-      },
-    });
-  });
+    const candidates = await collectUserSkillCandidates();
 
-  it("rejects import when extracted skill content exceeds the sync size limit", async () => {
-    const localHome = makeHome();
-    process.env.HOME = localHome;
-    const skillDir = await writeSkill(localHome, "large-skill");
-    await writeFile(join(skillDir, "large.txt"), "a".repeat(4096));
-    const localService = createSkillSyncService({ maxArchiveBytes: 1024 * 1024 });
-    const candidates = await localService.listLocalUserSkillCandidates();
-    const archive = await localService.exportSkillsArchive({
-      skillIds: candidates.candidates.map((candidate) => candidate.id),
-    });
-
-    const remoteHome = makeHome();
-    process.env.HOME = remoteHome;
-    const remoteService = createSkillSyncService({ maxArchiveBytes: 1024 });
-
-    await expect(
-      remoteService.importSkillsArchive({ archive: archive.archive }),
-    ).rejects.toMatchObject({
-      code: SKILL_SYNC_SIZE_LIMIT_ERROR_CODE,
-      data: {
-        actualBytes: expect.any(Number),
-        maxBytes: 1024,
-        phase: "extracted-content",
-      },
-    });
-    await expect(
-      readFile(join(remoteHome, ".raspberrycode", "skills", "large-skill", "large.txt"), "utf-8"),
-    ).rejects.toThrow();
+    expect(candidates.map((candidate) => candidate.directoryName)).toEqual(["shared-skill"]);
   });
 });

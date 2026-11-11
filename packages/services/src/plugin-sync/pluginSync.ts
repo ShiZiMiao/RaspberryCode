@@ -1,13 +1,8 @@
 import type {
   PluginDataSyncPayload,
-  PluginSyncArchiveExportResult,
-  PluginSyncCandidateListResult,
-  PluginSyncImportResult,
   PluginSyncMarketplaceMirrorInspection,
   PluginSyncMarketplaceSourceArchiveExportResult,
   PluginSyncMarketplaceSourceImportResult,
-  PluginSyncRemoteStatusResult,
-  RemoteSyncWriteAccessResult,
 } from "@raspberrycode/shared";
 import { ServiceChannels } from "@raspberrycode/shared";
 import { createServiceDescriptor } from "../descriptors.js";
@@ -18,18 +13,6 @@ import type { IDataSyncCategoryService } from "../data-sync/contract.js";
  * marketplace 插件依赖 Agent RPC，编排在 Renderer 的数据同步适配层；本服务只提供来源镜像的导出、导入与预检。
  */
 export interface IPluginSyncService extends IDataSyncCategoryService<PluginDataSyncPayload> {
-  /** 本端用户插件候选（可跨端同步的顶层插件目录）。 */
-  listLocalUserPluginCandidates(): Promise<PluginSyncCandidateListResult>;
-  /** 目标端同名冲突预检：按 pluginId + directoryName 对齐。 */
-  listRemoteUserPluginStatuses(params: {
-    plugins: Array<{ pluginId: string; directoryName: string }>;
-  }): Promise<PluginSyncRemoteStatusResult>;
-  exportPluginsArchive(params: { pluginIds: string[] }): Promise<PluginSyncArchiveExportResult>;
-  importPluginsArchive(params: {
-    archive: Uint8Array;
-    overwrite?: false;
-  }): Promise<PluginSyncImportResult>;
-  checkRemoteUserPluginWriteAccess(): Promise<RemoteSyncWriteAccessResult>;
   exportMarketplaceSourceArchive(params: {
     marketplaceId: string;
     pluginNames: string[];

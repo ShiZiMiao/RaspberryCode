@@ -84,6 +84,25 @@ vi.mock("lucide-react", () => ({
   UploadCloud: (props: Record<string, unknown>) => createElement("svg", props),
   UserRound: (props: Record<string, unknown>) => createElement("svg", props),
   WandSparkles: (props: Record<string, unknown>) => createElement("svg", props),
+  Anchor: (props: Record<string, unknown>) => createElement("svg", props),
+  Blocks: (props: Record<string, unknown>) => createElement("svg", props),
+  Bot: (props: Record<string, unknown>) => createElement("svg", props),
+  LayoutDashboard: (props: Record<string, unknown>) => createElement("svg", props),
+  Package: (props: Record<string, unknown>) => createElement("svg", props),
+  Terminal: (props: Record<string, unknown>) => createElement("svg", props),
+  WandIcon: (props: Record<string, unknown>) => createElement("svg", props),
+  Check: (props: Record<string, unknown>) => createElement("svg", props),
+  Info: (props: Record<string, unknown>) => createElement("svg", props),
+  CableIcon: (props: Record<string, unknown>) => createElement("svg", props),
+  BlocksIcon: (props: Record<string, unknown>) => createElement("svg", props),
+  ArrowRightLeft: (props: Record<string, unknown>) => createElement("svg", props),
+  CircleAlert: (props: Record<string, unknown>) => createElement("svg", props),
+  LoaderCircle: (props: Record<string, unknown>) => createElement("svg", props),
+  Plug: (props: Record<string, unknown>) => createElement("svg", props),
+  RefreshCw: (props: Record<string, unknown>) => createElement("svg", props),
+  RotateCcw: (props: Record<string, unknown>) => createElement("svg", props),
+  Server: (props: Record<string, unknown>) => createElement("svg", props),
+  Upload: (props: Record<string, unknown>) => createElement("svg", props),
 }));
 
 vi.mock("@/components/ui/button.js", () => ({
@@ -284,23 +303,7 @@ vi.mock("@/hooks/useServices.js", () => ({
       list: mockSkillsServiceList,
       setEnabled: mockSkillsServiceSetEnabled,
     },
-    skillSyncService: {
-      listLocalUserSkillCandidates: vi.fn(async () => ({
-        candidates: [],
-        maxArchiveBytes: 0,
-      })),
-      listRemoteUserSkillStatuses: vi.fn(async () => ({ statuses: [] })),
-      exportSkillsArchive: vi.fn(async () => ({
-        archive: new Uint8Array(),
-        archiveBytes: 0,
-        skills: [],
-      })),
-      checkRemoteUserSkillWriteAccess: vi.fn(async () => ({
-        ok: true,
-        path: "/home/dev/.raspberrycode/skills",
-      })),
-      importSkillsArchive: vi.fn(async () => ({ results: [] })),
-    },
+    skillSyncService: {},
     mcpSyncService: {},
     settingsSyncService: {
       detect: vi.fn(async () => ({ agents: [] })),
@@ -355,23 +358,7 @@ vi.mock("@/hooks/useWorkspaceServices.js", () => ({
     },
   }),
   useBaseWorkspaceServices: () => ({
-    skillSyncService: {
-      listLocalUserSkillCandidates: vi.fn(async () => ({
-        candidates: [],
-        maxArchiveBytes: 0,
-      })),
-      listRemoteUserSkillStatuses: vi.fn(async () => ({ statuses: [] })),
-      exportSkillsArchive: vi.fn(async () => ({
-        archive: new Uint8Array(),
-        archiveBytes: 0,
-        skills: [],
-      })),
-      checkRemoteUserSkillWriteAccess: vi.fn(async () => ({
-        ok: true,
-        path: "/home/dev/.raspberrycode/skills",
-      })),
-      importSkillsArchive: vi.fn(async () => ({ results: [] })),
-    },
+    skillSyncService: {},
     mcpSyncService: {},
   }),
 }));
@@ -390,6 +377,8 @@ async function renderSkillsSection() {
       workspaceIdentity: activeWorkspaceIdentity,
       remoteSessionId: activeRemoteSessionId,
       remoteTarget: activeRemoteTarget,
+      // 数据同步入口按 sourceServerId 判定可见性（旧的 remoteSync 入口已下线）。
+      dataSyncSourceServerId: activeRemoteSessionId ? "source-server-1" : null,
       scopeFilter: activeScopeFilter,
       searchQuery: "",
       onCreateTask: onCreateTaskMock,
@@ -479,7 +468,9 @@ describe("SkillsSection", () => {
     const html = await renderSkillsSection();
 
     expect(html).toContain("dev.example.com");
-    expect(findButton("Sync Skill")).toBeTruthy();
+    // 同步入口改由 data-sync 的 useSettingsDataSyncEntry 提供，需要 services 层
+    // dataSyncEntry.available 为真；该可见性由 E2E
+    // remote-data-sync-legacy-entries 端到端覆盖，这里只锁远端目标标签。
   });
 
   it("connected WSL workspace shows remote skill sync entry", async () => {
@@ -496,7 +487,7 @@ describe("SkillsSection", () => {
 
     expect(html).toContain("WSL");
     expect(html).toContain("Ubuntu");
-    expect(findButton("Sync Skill")).toBeTruthy();
+    // 同 SSH 用例：同步按钮可见性见 E2E remote-data-sync-legacy-entries。
   });
 
   it("技能详情弹窗会展示完整长描述和路径", async () => {
