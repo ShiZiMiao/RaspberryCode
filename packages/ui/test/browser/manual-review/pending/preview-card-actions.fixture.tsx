@@ -13,7 +13,7 @@ const params = new URLSearchParams(location.search);
 const locale = params.get("locale") === "en-US" ? "en-US" : "zh-CN";
 localStorage.setItem("raspberrycode-locale-preference", locale);
 document.documentElement.className =
-  params.get("theme") === "light" ? "theme-zai-light" : "theme-zai-dark dark";
+  params.get("theme") === "light" ? "theme-light" : "theme-dark dark";
 
 // 浏览器夹具没有桌面宿主：整卡点击契约只关心回调是否恰好触发一次，
 // 平台能力按 Web 形态关闭本地文件通道，fileService 固定回显存在。

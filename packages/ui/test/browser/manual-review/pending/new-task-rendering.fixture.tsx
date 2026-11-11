@@ -25,7 +25,7 @@ const mobile = params.get("mobile") === "1";
 const activity = params.get("activity") === "1";
 const boundaries = params.get("boundaries") === "1";
 const tooltips = params.get("tooltips") === "1";
-document.documentElement.className = `${theme} theme-zai-${theme}`;
+document.documentElement.className = `${theme} theme-${theme}`;
 const noop = () => {};
 const activate = () => true;
 const dispose = () => ({ dispose: noop });

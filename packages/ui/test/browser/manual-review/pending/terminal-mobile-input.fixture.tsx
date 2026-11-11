@@ -9,7 +9,7 @@ const writes: string[] = [];
 const listeners = new Set<(data: string) => void>();
 const query = new URLSearchParams(location.search);
 const theme = query.get("theme") ?? "dark";
-document.documentElement.className = `${theme} theme-zai-${theme}`;
+document.documentElement.className = `${theme} theme-${theme}`;
 const terminalService: ITerminalService = {
   async create() {
     return { id: "input-fixture", shell: "/bin/sh" };

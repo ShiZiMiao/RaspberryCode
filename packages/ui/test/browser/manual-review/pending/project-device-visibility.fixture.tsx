@@ -32,7 +32,7 @@ const broadcast: IBroadcastService = {
   tryClaim: async () => false,
 };
 const store = createRaspberryCodeStore(broadcast);
-document.documentElement.className = `${theme} theme-zai-${theme}`;
+document.documentElement.className = `${theme} theme-${theme}`;
 const rows = (["online", "offline", "needs-upgrade"] as const).map((state, i) => {
   const project: VirtualProject = {
     id: state,
@@ -100,7 +100,6 @@ function Fixture() {
               remoteHost={host}
               deviceLabel={`Device ${project.id}`}
               isDesktop={!mobile}
-              isWebRemoteControl={mobile}
               availability={availability}
               hasUnread
               tasks={[]}

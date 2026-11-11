@@ -10,7 +10,7 @@ import "@/styles.css";
 const params = new URLSearchParams(location.search);
 const locale = params.get("locale") === "en-US" ? "en-US" : "zh-CN";
 document.documentElement.className =
-  params.get("theme") === "dark" ? "theme-zai-dark dark" : "theme-zai-light";
+  params.get("theme") === "dark" ? "theme-dark dark" : "theme-light";
 const platform = { canOpenLocalFiles: false, saveFile: saveBrowserFile } as IPlatformService;
 
 createRoot(document.getElementById("root")!).render(

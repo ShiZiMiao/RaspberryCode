@@ -9,13 +9,12 @@ import { ConfirmDialogHost } from "@/ConfirmDialog.js";
 import { PermissionDialog } from "@/PermissionDialog.js";
 import { V4ComposerModeSwitch } from "@/v4/composer/V4ComposerModeControls.js";
 import { AutomationEditView } from "@/settings/AutomationEditView.js";
-import { OffPeakEditView } from "@/settings/OffPeakEditView.js";
 import { TabStoreProvider } from "@/store/TabStoreProvider.js";
 import { TooltipProvider } from "@/components/ui/tooltip.js";
 import "@/styles.css";
 const params = new URLSearchParams(location.search);
 const theme = params.get("theme") ?? "light";
-document.documentElement.className = `${theme} theme-zai-${theme}`;
+document.documentElement.className = `${theme} theme-${theme}`;
 const modelView = {
   revision: 1,
   providers: [],
@@ -79,7 +78,7 @@ function Fixture() {
         <PermissionDialog
           request={request}
           workspacePath="/example"
-          isWebRemoteControl={innerWidth < 600}
+          isMobileOverlay={innerWidth < 600}
           onRespond={(_id, option) => setResponse(option.optionId)}
         />
       )}
@@ -87,20 +86,6 @@ function Fixture() {
         <AutomationEditView
           key={target}
           editing={null}
-          defaultWorkspacePath="/example"
-          saving={false}
-          onBack={() => setResponse("back")}
-          onSubmit={async (value) => {
-            setResponse(JSON.stringify(value));
-            return true;
-          }}
-        />
-      )}
-      {surface === "offpeak" && (
-        <OffPeakEditView
-          key={target}
-          editing={null}
-          modelSelectionView={modelView}
           defaultWorkspacePath="/example"
           saving={false}
           onBack={() => setResponse("back")}

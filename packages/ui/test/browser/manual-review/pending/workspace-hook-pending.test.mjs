@@ -21,7 +21,7 @@ import "@/styles.css";
 const query = new URLSearchParams(location.search);
 const theme = query.get("theme");
 const Indicator = query.get("kind") === "mcp" ? WorkspaceMcpPendingIndicator : WorkspaceHookPendingIndicator;
-document.documentElement.className = theme + " theme-zai-" + theme;
+document.documentElement.className = theme + " theme-" + theme;
 function Fixture() {
   const [bundle, setBundle] = useState(1);
   const [session, setSession] = useState("a");

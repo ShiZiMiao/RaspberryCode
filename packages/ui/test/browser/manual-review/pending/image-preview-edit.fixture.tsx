@@ -8,7 +8,7 @@ const params = new URLSearchParams(location.search);
 const locale = params.get("locale") === "en-US" ? "en-US" : "zh-CN";
 localStorage.setItem("raspberrycode-locale-preference", locale);
 document.documentElement.className =
-  params.get("theme") === "light" ? "theme-zai-light" : "theme-zai-dark dark";
+  params.get("theme") === "light" ? "theme-light" : "theme-dark dark";
 const src =
   "data:image/svg+xml," +
   encodeURIComponent(

@@ -9,7 +9,7 @@ import "@/styles.css";
 
 const params = new URLSearchParams(location.search);
 const theme = params.get("theme") === "light" ? "light" : "dark";
-document.documentElement.className = `${theme} theme-zai-${theme}`;
+document.documentElement.className = `${theme} theme-${theme}`;
 const paragraph = "Deterministic long conversation. 保留完整的问题目录和正文阅读位置。 ".repeat(6);
 const initial: ConversationRow[] = Array.from({ length: 80 }, (_, index) => {
   const base = { turnId: `perf-${index}`, createdAt: 1, createdAtSeq: index * 10 + 1 };

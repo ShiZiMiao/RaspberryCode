@@ -5,7 +5,7 @@ import { RaspberryCodeIntlProvider, useRaspberryCodeIntl } from "@/i18n/IntlProv
 import "@/styles.css";
 
 const params = new URLSearchParams(location.search);
-document.documentElement.className = `${params.get("theme")} theme-zai-${params.get("theme")}`;
+document.documentElement.className = `${params.get("theme")} theme-${params.get("theme")}`;
 function Fixture() {
   const [opened, setOpened] = useState(false);
   const { intl } = useRaspberryCodeIntl();

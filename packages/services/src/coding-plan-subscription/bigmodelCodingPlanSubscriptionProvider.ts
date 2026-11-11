@@ -246,24 +246,6 @@ function unwrapClientConfigForceUpdate(
   return { minimalVersion: minimalVersion.trim() };
 }
 
-/**
- * 账号态 Provider（闲时/加速卡）可用性探测共用的鉴权头工具。
- * token 来自 credential 存储（历史 OAuth 登录态或注入凭据）；探测失败语义由调用方裁决。
- */
-export function createBigModelLoginAuthHeaders(token: string): Record<string, string> {
-  return {
-    // BigModel 登录态业务接口要求 Authorization 直接传 accessToken。
-    // 这里不能套 Bearer；Bearer 只适用于模型/API Key 类接口。
-    Authorization: token,
-    "Content-Type": "application/json",
-  };
-}
-
-export function createZaiLoginAuthHeaders(token: string): Record<string, string> {
-  return {
-    // Z.ai provider connection 已把 access_token 持久化为业务 JWT。
-    // 这里不能使用模型 API key，也不能给业务 JWT 添加 Bearer 前缀。
-    Authorization: token,
-    "Content-Type": "application/json",
-  };
-}
+// 厂商侧账号态探测的鉴权头工具（createBigModelLoginAuthHeaders /
+// createZaiLoginAuthHeaders）随闲时任务与加速卡一并移除：两个函数已无调用方，
+// 也不经 index/node 导出，仅剩品牌字面量在源码里空转。

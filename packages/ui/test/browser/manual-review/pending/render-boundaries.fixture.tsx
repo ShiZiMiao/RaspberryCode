@@ -25,7 +25,7 @@ import "@/styles.css";
 
 const params = new URLSearchParams(location.search);
 const theme = params.get("theme") === "light" ? "light" : "dark";
-document.documentElement.className = `${theme} theme-zai-${theme}`;
+document.documentElement.className = `${theme} theme-${theme}`;
 const workspace = "/render-boundary";
 if (params.get("group") === "1")
   useRaspberryCodeSessionStore

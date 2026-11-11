@@ -100,7 +100,7 @@ function Fixture() {
             isDesktop={false}
             isMacDesktop={false}
             isWindowsDesktop={false}
-            isWebRemoteControl={params.get("mobile") === "1"}
+            isMobileOverlay={params.get("mobile") === "1"}
             unscopedServices={services[host]}
             onOpenPluginStore={() => {}}
           />
