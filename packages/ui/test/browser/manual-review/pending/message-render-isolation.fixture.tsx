@@ -35,7 +35,7 @@ import "@/styles.css";
 const query = new URLSearchParams(location.search);
 const mobile = query.get("mobile") === "true";
 const theme = query.get("theme") === "light" ? "light" : "dark";
-document.documentElement.className = `${theme} theme-zai-${theme}`;
+document.documentElement.className = `${theme} theme-${theme}`;
 const start = 1_700_000_000_000;
 const context = {
   workspacePath: "/fixture",

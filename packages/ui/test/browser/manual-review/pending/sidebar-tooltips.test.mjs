@@ -36,7 +36,6 @@ before(async () => {
             return "export const useWebRemoteControlStatus=()=>({mobileConnected:false});";
           if (id.endsWith("/v4/useWorkspaceSessionsIndexItems.ts"))
             return "const result={items:[]}; export const useWorkspaceSessionsIndexItems=()=>result;";
-            return "export const useCodingPlanUpgradeDialog=()=>({openCodingPlanUpgrade:()=>{}}); export const useOptionalCodingPlanUpgradeDialog=()=>null;";
           if (id.endsWith("/WorkspaceSidebarFooter.tsx"))
             return "export const WorkspaceSidebarFooter=()=>null;";
           if (id.endsWith("/shortcuts/useShortcutBindings.ts"))
