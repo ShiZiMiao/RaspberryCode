@@ -62,6 +62,18 @@ export async function applyDesktopChromiumNetworkPolicies(
       fallbackProxyMode: "direct" as const,
     },
     {
+      // electron-updater 的下载走 session.fromPartition("electron-updater")（见
+      // electron-updater/out/electronHttpExecutor.js 的 NET_SESSION_NAME），
+      // 与 defaultSession 是两个 session。此前完全没有为它配置代理，
+      // 导致「需要代理才能访问 GitHub」的用户永远下不动更新
+      // （实测：defaultSession 的 direct 策略 + 该 session 无代理 → 全部 ERR_CONNECTION_CLOSED）。
+      // 更新下载是用户主动获取安装包的行为，与内置浏览器同类，留空时跟随系统代理。
+      name: "client-updater",
+      session: sessionProvider.fromPartition("electron-updater"),
+      allowInsecure: false,
+      fallbackProxyMode: "system" as const,
+    },
+    {
       name: "embedded-browser",
       session: sessionProvider.fromPartition(EMBEDDED_BROWSER_PARTITION),
       // 自签名放行只开在内置浏览器出口：defaultSession 承载 renderer 对 RaspberryCode 后端与模型 API

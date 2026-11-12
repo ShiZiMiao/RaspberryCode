@@ -151,3 +151,25 @@ describe("UpdateDownloadFallback", () => {
     expect(fallback.currentAttemptKey).toBe("v0.2.0");
   });
 });
+
+describe("UpdateDownloadFallback.resetAttemptKey", () => {
+  it("保留已降级路线，只换归属键（供检查→下载交接）", () => {
+    const fallback = new UpdateDownloadFallback();
+    fallback.beginAttempt("check");
+    fallback.advance(); // mirror → direct
+    expect(fallback.currentRoute).toBe("direct");
+
+    fallback.resetAttemptKey("0.2.0");
+    // 关键：不能被打回 mirror，否则下载会在同一处再失败一次
+    expect(fallback.currentRoute).toBe("direct");
+    expect(fallback.currentAttemptKey).toBe("v0.2.0");
+  });
+
+  it("不改变 succeeded 标记", () => {
+    const fallback = new UpdateDownloadFallback();
+    fallback.beginAttempt("check");
+    fallback.markSucceeded();
+    fallback.resetAttemptKey("0.2.0");
+    expect(fallback.hasSucceeded).toBe(true);
+  });
+});

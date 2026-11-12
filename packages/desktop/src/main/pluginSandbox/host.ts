@@ -4,6 +4,7 @@ import type { PluginSandboxHandle, PluginSandboxRegisterInput } from "@raspberry
 import {
   BrowserWindow,
   clipboard,
+  ClipboardItem,
   MessageChannelMain,
   app,
   dialog,
@@ -337,9 +338,12 @@ export function installPluginSandboxHost(input: {
     // 截图期间页面可能释放或换代；旧请求不得把错误页面的图像写入剪贴板。
     if (!isCurrent()) throw new Error("Sandbox capture is no longer available");
     const cropped = captured.crop(scaleCaptureRect(request, captured.getSize()));
-    // 以 NativeImage 写入剪贴板：Electron 的 clipboard.write 只接受 Data 结构
-    // （{image} / {text} / {html}），不接受 DOM 的 ClipboardItem。
-    await clipboard.write({ image: cropped });
+    // Electron 44 移除同步 writeImage；以 PNG 保留图像编码，等待原生写入后才确认复制成功。
+    await clipboard.write([
+      new ClipboardItem({
+        "image/png": new Blob([Uint8Array.from(cropped.toPNG())], { type: "image/png" }),
+      }),
+    ]);
   });
   ipcMain.handle(
     PlatformChannels.PluginSandboxDispose,

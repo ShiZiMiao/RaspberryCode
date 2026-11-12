@@ -125,6 +125,18 @@ let silentCheckTimer: ReturnType<typeof setTimeout> | null = null;
 
 /** 下载镜像三级回退状态（mirror → direct → manual）；由 webRequest 层读取。 */
 const downloadFallback = new UpdateDownloadFallback();
+/**
+ * 检查更新的降级重试是否正在进行。
+ * 用于区分「一次全新的检查」与「同一次检查的降级重试」：前者从镜像起步，
+ * 后者必须沿用已降级到的路线，否则会在 mirror 上无限循环。
+ */
+let checkRetryInFlight = false;
+/**
+ * 上一次已处理过的更新错误指纹（`状态:消息`）。
+ * electron-updater 的同一失败会同时经 error 事件与 checkForUpdates 的 reject 到达，
+ * 不去重会一次失败连降两级。
+ */
+let lastHandledUpdateError: string | null = null;
 /** 当前生效的更新源仓库，供 manual 回退时拼 release 页面地址。 */
 let feedOwner: string = DEFAULT_UPDATE_FEED_GITHUB.owner;
 let feedRepo: string = DEFAULT_UPDATE_FEED_GITHUB.repo;
@@ -317,24 +329,52 @@ function handleUpdaterError(error: Error): void {
   }
   releaseUpdateTargetLockForFailure();
 
-  // 下载阶段失败且尚有下一级可退时，自动降级重试：
-  //   mirror（ghfast）→ direct（github 原站）→ manual（交给用户手动下载）。
-  // 仅在「正在下载」语义下降级：检查失败不该被当成下载失败反复重试。
-  if (state.kind === "download-progress" && downloadFallback.currentAttemptKey && !downloadFallback.hasSucceeded) {
+  // 失败且尚有下一级可退时，自动降级重试：
+  //   mirror（镜像）→ direct（github 原站）→ manual（交给用户手动下载）。
+  //
+  // 触发面覆盖「检查」与「下载」两个阶段：镜像不只影响安装包，latest.yml 同样要经它取。
+  // 实测 ghfast.top 声明 ALPN=h2 但 h2 连接会被关闭（curl 走 h1 才通），Chromium 优先选 h2
+  // 就在检查阶段直接 ERR_CONNECTION_CLOSED——若只在 download-progress 降级，用户会看到
+  // 「检查更新失败」而永远退不到直连。
+  //
+  // 去重：electron-updater 对同一次失败会同时发 error 事件并让 checkForUpdates reject，
+  // 两条路径都会进本函数。若不去重，一次失败会连降两级直接跳到 manual。
+  const errorFingerprint = `${state.kind}:${error.message}`;
+  const isDuplicate = lastHandledUpdateError === errorFingerprint;
+  lastHandledUpdateError = errorFingerprint;
+  const inUpdateFlow =
+    (state.kind === "download-progress" || state.kind === "checking") &&
+    downloadFallback.currentAttemptKey !== null &&
+    !isDuplicate;
+  logger.info(
+    `[auto-update] error routing: state=${state.kind} route=${downloadFallback.currentRoute} attempt=${downloadFallback.currentAttemptKey ?? "none"} succeeded=${downloadFallback.hasSucceeded} inFlow=${inUpdateFlow} dup=${isDuplicate} message=${error.message}`,
+  );
+  if (inUpdateFlow && !downloadFallback.hasSucceeded) {
     const failedRoute = downloadFallback.currentRoute;
+    const failedStage = state.kind === "checking" ? "check" : "download";
     const nextRoute = downloadFallback.advance();
-    if (nextRoute !== "manual" && availableUpdate) {
+    if (nextRoute !== "manual") {
       logger.warn(
-        `[auto-update] download failed on ${failedRoute} (${error.message}); retry via ${nextRoute}`,
+        `[auto-update] ${failedStage} failed on ${failedRoute} (${error.message}); retry via ${nextRoute}`,
       );
-      downloadingVersion = availableUpdate.version;
-      downloadCancellationToken = new CancellationToken();
-      void updater?.downloadUpdate(downloadCancellationToken).catch((retryError: unknown) => {
-        if (!isCancellationError(retryError)) {
-          logger.warn(`[auto-update] retry downloadUpdate rejected: ${String(retryError)}`);
-        }
-      });
-      return;
+      // 按失败阶段重试：检查失败要重新 checkForUpdates（否则停在 idle 再也不动），
+      // 下载失败则重发 downloadUpdate。
+      if (failedStage === "check") {
+        downloadFallback.resetAttemptKey("check");
+        checkRetryInFlight = true;
+        void runCheck("startup");
+        return;
+      }
+      if (availableUpdate) {
+        downloadingVersion = availableUpdate.version;
+        downloadCancellationToken = new CancellationToken();
+        void updater?.downloadUpdate(downloadCancellationToken).catch((retryError: unknown) => {
+          if (!isCancellationError(retryError)) {
+            logger.warn(`[auto-update] retry downloadUpdate rejected: ${String(retryError)}`);
+          }
+        });
+        return;
+      }
     }
     // 降级到 manual：保留 update-available 语义并标记需要手动下载。
     if (nextRoute === "manual" && availableUpdate) {
@@ -379,16 +419,33 @@ async function runCheck(reason: "startup" | "manual"): Promise<void> {
   }
   const preferences = await readPreferences();
   applyFeed(preferences.owner, preferences.repo);
+  // 检查阶段也要从镜像起步并允许降级：latest.yml 走同一个 session，
+  // 镜像的 h2 问题会先在这里炸，而不是等到下载。
+  //
+  // 降级重试会再次进入本函数。此时不能把路线重置回 mirror（会死循环），
+  // 所以只在「还没有任何在途尝试」时才从镜像起步；否则沿用现有路线。
+  if (downloadFallback.currentAttemptKey === null && !checkRetryInFlight) {
+    downloadFallback.beginAttempt("check");
+  } else {
+    downloadFallback.resetAttemptKey("check");
+  }
   nextState({ kind: "checking", enabled });
   try {
     await updater.checkForUpdates();
     // electron-updater 在 promise 收口前已发 update-available/not-available 事件；
     // 若事件缺失（异常 provider 行为）这里兜底回 idle，不悬挂 checking。
+    checkRetryInFlight = false;
+    lastHandledUpdateError = null;
     if (state.kind === "checking") {
       nextState({ kind: "idle", enabled });
     }
   } catch (error) {
     handleUpdaterError(error instanceof Error ? error : new Error(String(error)));
+    // 降级分支会带着 checkRetryInFlight=true 重新进入本函数，此处不清标记；
+    // 走到这里说明本次检查已终局（成功或到 manual），清掉避免影响下次启动检查。
+    if (!checkRetryInFlight) {
+      checkRetryInFlight = false;
+    }
     if (state.kind === "checking") {
       nextState({ kind: "idle", enabled });
     }
@@ -513,8 +570,14 @@ export function downloadAvailableUpdate(reason = "renderer"): void {
   if (quitAndInstallState !== "idle") return;
   downloadingVersion = state.version;
   downloadCancellationToken = new CancellationToken();
-  // 每次新下载都从镜像是重试：不让上一次直连成功永久跳过镜像。
-  downloadFallback.beginAttempt(state.version);
+  // 检查阶段若已降级（镜像取 latest.yml 失败），下载要沿用该路线，
+  // 否则会把路线重置回 mirror、在同一处再失败一次。只有「还在 mirror 起步态」
+  // 或用户显式重试时才重置。
+  if (downloadFallback.currentRoute === "mirror") {
+    downloadFallback.beginAttempt(state.version);
+  } else {
+    downloadFallback.resetAttemptKey(state.version);
+  }
   logger.info(`[auto-update] download started (${reason}) version=${state.version} route=${downloadFallback.currentRoute}`);
   void updater.downloadUpdate(downloadCancellationToken).catch((error: unknown) => {
     // 真实失败由 error 事件统一收口；这里只防空拒绝未处理。

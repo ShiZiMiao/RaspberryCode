@@ -129,7 +129,7 @@ import {
   updateRaspberryCodeStdioTapDevMenuState,
 } from "./desktopApplicationMenu.js";
 import { disposeAutoUpdateService, getUpdateDownloadRoute, initAutoUpdateService, isAutoUpdateMode } from "./autoUpdate/index.js";
-import { installUpdateMirrorRedirect } from "./autoUpdate/updateMirrorSession.js";
+import { installUpdateMirrorRedirect, UPDATER_SESSION_PARTITION } from "./autoUpdate/updateMirrorSession.js";
 import { applyAppIcon } from "./desktopWindowChrome.js";
 import { resolveWindowsAppUserModelIdForFlavor } from "../../scripts/desktop-product-identity.mjs";
 import type { DesktopWindowSize } from "./desktopWindowSize.js";
@@ -1769,7 +1769,9 @@ app.whenReady().then(async () => {
     // 装不上也不致命（退回直连，等同改造前行为）。
     try {
       installUpdateMirrorRedirect({
-        session: session.defaultSession,
+        // 必须用 electron-updater 自己的 partition session：它的下载走
+        // session.fromPartition("electron-updater")，装在 defaultSession 上不生效。
+        resolveSession: () => session.fromPartition(UPDATER_SESSION_PARTITION, { cache: false }),
         getRoute: getUpdateDownloadRoute,
       });
     } catch (mirrorError) {

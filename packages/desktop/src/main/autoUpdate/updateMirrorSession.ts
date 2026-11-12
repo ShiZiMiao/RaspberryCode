@@ -25,8 +25,21 @@ export interface UpdateMirrorInstallOptions {
   mirrorPrefix?: string;
   /** 当前下载阶段由 UpdateDownloadFallback 决定；mirror / direct / manual。 */
   getRoute: () => UpdateDownloadRoute;
-  session: Session;
+  /**
+   * 目标 session。默认取 electron-updater 自己的 partition。
+   *
+   * 关键：electron-updater 的下载走 `session.fromPartition("electron-updater")`
+   * （见 electron-updater/out/electronHttpExecutor.js 的 NET_SESSION_NAME），
+   * 不是 defaultSession。装在 defaultSession 上对下载请求完全不生效——
+   * v0.2.0 首次实测即因此零重定向。测试可注入 fake session。
+   */
+  session?: Session;
+  /** 构造 session 的工厂；仅测试用，生产走 electron 的 session.fromPartition。 */
+  resolveSession?: () => Session;
 }
+
+/** electron-updater 使用的 session partition 名（与上游保持一致，勿改）。 */
+export const UPDATER_SESSION_PARTITION = "electron-updater";
 
 /**
  * 安装下载请求改写。返回卸载函数（测试与热重载用）。
@@ -35,7 +48,11 @@ export interface UpdateMirrorInstallOptions {
  * 重复调用会覆盖前一个，因此这里只做幂等安装。
  */
 export function installUpdateMirrorRedirect(options: UpdateMirrorInstallOptions): () => void {
-  const { session, getRoute, mirrorPrefix = DEFAULT_UPDATE_MIRROR_PREFIX } = options;
+  const { getRoute, mirrorPrefix = DEFAULT_UPDATE_MIRROR_PREFIX, resolveSession } = options;
+  const session = options.session ?? resolveSession?.();
+  if (!session) {
+    throw new Error("[auto-update] update mirror requires a session or resolveSession");
+  }
   const { webRequest } = session;
 
   const listener = (
@@ -64,6 +81,9 @@ export function installUpdateMirrorRedirect(options: UpdateMirrorInstallOptions)
   };
 
   webRequest.onBeforeRequest({ urls: ["https://github.com/*"] }, listener);
+  logger.info(
+    `[auto-update] mirror redirect installed: partition=${session.storagePath ?? "n/a"} prefix=${mirrorPrefix || "(direct only)"}`,
+  );
 
   return () => {
     // Electron 不提供移除单个 listener 的 API；置空等价于不重定向。

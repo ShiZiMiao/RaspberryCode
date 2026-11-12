@@ -137,4 +137,14 @@ export class UpdateDownloadFallback {
     this.attemptKey = null;
     this.succeeded = false;
   }
+
+  /**
+   * 只更新归属键、保留当前路线与成功标记。
+   *
+   * 用于「检查阶段已降级」的场景：下载沿用已降级到的 direct，不再回退到 mirror
+   * 重蹈同一个失败；同时把 attemptKey 从 "check" 换成真实版本号。
+   */
+  resetAttemptKey(version: string): void {
+    this.attemptKey = buildDownloadAttemptKey(version);
+  }
 }
