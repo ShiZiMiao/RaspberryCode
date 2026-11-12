@@ -1260,3 +1260,21 @@ exceptions:
       - apps/raspberrycode-cli/packages/node-repl-host/src/no-progress-guard.ts
       - apps/raspberrycode-cli/packages/node-repl-host/src/tool-contract.ts
     reason: Admitted upstream node_repl host gains a self-contained no-progress hint file and a serverInfo version bump; adopting the whole node-repl-host package needs a separate module boundary refactor.
+  - id: upstream-session-import-multi-source-unmanaged-edit
+    rule: unmanaged-new-file
+    paths:
+      - packages/services/src/session/claude-native/codexSessionParser.ts
+      - packages/services/src/session/claude-native/opencodeSessionReader.ts
+      - packages/services/src/session/claude-native/externalSessionImportRepo.ts
+      - packages/services/src/session/claude-native/importExternalNativeSessions.ts
+    reason: 上游 ZCode v3.17.2 的「会话迁移支持多来源」功能带入 codex/opencode 解析与外部会话导入实现，落在既有 claude-native 目录内，与已在用的 claude 解析器同构、同属会话导入这一条业务链；session 模块仍为 legacy（managed:false），整体接管该目录需要独立模块边界重构，不在本次同步范围内。
+  - id: upstream-plugin-sync-marketplace-split-unmanaged-edit
+    rule: unmanaged-new-file
+    paths:
+      - packages/services/src/plugin-sync/pluginSyncMarketplace.ts
+    reason: 上游同步后 plugin-sync 目录内文件超行数上限，按既有职责拆出 marketplace 归档导出/导入与镜像预检；services 模块仍为 legacy（managed:false），拆分不改变层归属与依赖方向，接管整个 plugin-sync 目录不属于本次发版范围。
+  - id: adapters-runner-runtime-headers-restore-unmanaged-edit
+    rule: unmanaged-new-file
+    paths:
+      - apps/raspberrycode-cli/packages/adapters/src/model/runner-runtime-headers.ts
+    reason: 合并上游 v3.17.2 时该文件被误删，本次按上游原样补回（运行时请求头刷新失败的类型与文案），属于恢复既有实现而非新增边界；raspberrycode-cli 为 legacy 三方应用（managed:false），接管整个 adapters 包不在本次范围内。
