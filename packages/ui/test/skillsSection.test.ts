@@ -325,23 +325,7 @@ vi.mock("@/hooks/useWorkspaceServices.js", () => ({
         list: mockSkillsServiceList,
         setEnabled: mockSkillsServiceSetEnabled,
       },
-      skillSyncService: {
-        listLocalUserSkillCandidates: vi.fn(async () => ({
-          candidates: [],
-          maxArchiveBytes: 0,
-        })),
-        listRemoteUserSkillStatuses: vi.fn(async () => ({ statuses: [] })),
-        exportSkillsArchive: vi.fn(async () => ({
-          archive: new Uint8Array(),
-          archiveBytes: 0,
-          skills: [],
-        })),
-        checkRemoteUserSkillWriteAccess: vi.fn(async () => ({
-          ok: true,
-          path: "/home/dev/.raspberrycode/skills",
-        })),
-        importSkillsArchive: vi.fn(async () => ({ results: [] })),
-      },
+      skillSyncService: {},
     },
     remoteSessionId: activeRemoteSessionId ?? null,
     isRemoteTarget: Boolean(activeWorkspaceIdentity || activeRemoteSessionId || activeRemoteTarget),
