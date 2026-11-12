@@ -12,16 +12,16 @@ overrides:
 
 patchedDependencies:
   '@ai-sdk/anthropic@3.0.81':
-    hash: d3a7c381eba7f5157f765a0528003af17cf84544911dfb7412c7800168e01c18
+    hash: 443c3c365177882dff2df827eea03ff0bfce755f9523e6520631d084362ca34d
     path: patches/@ai-sdk__anthropic@3.0.81.patch
   '@ai-sdk/openai-compatible@2.0.60':
-    hash: 9632fe9d821b3dc20939ae509cc35b968d90d018bbd1d812390718898182a38b
+    hash: 558d786cec856f82e40b4c92a986e9b6355431e246ebd2b074d8bf6f5471ca40
     path: patches/@ai-sdk__openai-compatible@2.0.60.patch
   '@aiden0z/pptx-renderer@1.2.4':
     hash: e1a90a724324c45a2cc90cf84d1ae1f35755b8fc9438a208d610960bd0d5f65a
     path: patches/@aiden0z__pptx-renderer@1.2.4.patch
   '@arms/rum-electron@0.0.3':
-    hash: 36855354851ea495bc47a03340b0484ff62836b739cad56904b8a69f18e2ae97
+    hash: eac7aa6bbe7b3e29ac1e73dba6d40068560cb186393e387bb886ff23fa710d9b
     path: patches/@arms__rum-electron@0.0.3.patch
   '@extend-ai/react-xlsx@0.16.0':
     hash: b2fc5fcfa1aab1271d20fd539d2a367f06aac08a191425885cf8f1125b7c6bc8
@@ -53,6 +53,9 @@ importers:
       '@jridgewell/trace-mapping':
         specifier: 0.3.31
         version: 0.3.31
+      '@raspberrycode/raspberrycode-cua':
+        specifier: workspace:*
+        version: link:packages/raspberrycode-cua
       '@release-it/conventional-changelog':
         specifier: ^10.0.6
         version: 10.0.6(conventional-commits-filter@5.0.0)(conventional-commits-parser@6.4.0)(release-it@19.2.4(@types/node@25.6.0)(magicast@0.5.5))
@@ -62,9 +65,9 @@ importers:
       '@types/node':
         specifier: ^25.5.0
         version: 25.6.0
-      '@zcode/zcode-cua':
-        specifier: workspace:*
-        version: link:packages/zcode-cua
+      '@vitest/coverage-v8':
+        specifier: ^4.1.1
+        version: 4.1.7(vitest@4.1.4)
       concurrently:
         specifier: ^9.1.2
         version: 9.2.1
@@ -115,7 +118,7 @@ importers:
         version: 6.0.2
       vitest:
         specifier: ^4.1.1
-        version: 4.1.4(@opentelemetry/api@1.9.1)(@types/node@25.6.0)(@vitest/coverage-v8@4.1.4)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@25.6.0)(typescript@6.0.2))(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
+        version: 4.1.4(@opentelemetry/api@1.9.1)(@types/node@25.6.0)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@25.6.0)(typescript@6.0.2))(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
       yaml:
         specifier: 2.9.0
         version: 2.9.0
@@ -163,7 +166,7 @@ importers:
         specifier: ^8.0.2
         version: 8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)
 
-  apps/zcode-cli:
+  apps/raspberrycode-cli:
     dependencies:
       dotenv:
         specifier: ^17.4.2
@@ -192,7 +195,7 @@ importers:
         version: 0.47.0
       oxlint:
         specifier: ^1.62.0
-        version: 1.67.0
+        version: 1.81.0
       postject:
         specifier: ^1.0.0-alpha.6
         version: 1.0.0-alpha.6
@@ -209,38 +212,38 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@5.9.3))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.25.12)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/adapters:
+  apps/raspberrycode-cli/packages/adapters:
     dependencies:
       '@ai-sdk/anthropic':
         specifier: 3.0.81
-        version: 3.0.81(patch_hash=d3a7c381eba7f5157f765a0528003af17cf84544911dfb7412c7800168e01c18)(zod@4.6.5)
+        version: 3.0.81(patch_hash=443c3c365177882dff2df827eea03ff0bfce755f9523e6520631d084362ca34d)(zod@4.6.5)
       '@ai-sdk/openai':
         specifier: ^3.0.58
         version: 3.0.65(zod@4.6.5)
       '@ai-sdk/openai-compatible':
         specifier: ^2.0.58
-        version: 2.0.60(patch_hash=9632fe9d821b3dc20939ae509cc35b968d90d018bbd1d812390718898182a38b)(zod@4.6.5)
+        version: 2.0.60(patch_hash=558d786cec856f82e40b4c92a986e9b6355431e246ebd2b074d8bf6f5471ca40)(zod@4.6.5)
       '@modelcontextprotocol/client':
         specifier: 2.0.0
         version: 2.0.0
-      '@zcode/contracts':
+      '@raspberrycode/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@zcode/dynamic-workflow':
+      '@raspberrycode/dynamic-workflow':
         specifier: workspace:*
         version: link:../dynamic-workflow
-      '@zcode/model-option-map':
+      '@raspberrycode/model-option-map':
         specifier: workspace:*
         version: link:../../../../packages/model-option-map
-      '@zcode/provider':
+      '@raspberrycode/provider':
         specifier: workspace:*
         version: link:../../../../packages/provider
-      '@zcode/shared':
+      '@raspberrycode/raspberrycode-cua':
+        specifier: workspace:*
+        version: link:../../../../packages/raspberrycode-cua
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../../../../packages/shared
-      '@zcode/zcode-cua':
-        specifier: workspace:*
-        version: link:../../../../packages/zcode-cua
       ai:
         specifier: 6.0.193
         version: 6.0.193(zod@4.6.5)
@@ -288,7 +291,7 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@6.0.2))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/android-emulator-plugin:
+  apps/raspberrycode-cli/packages/android-emulator-plugin:
     dependencies:
       '@modelcontextprotocol/server':
         specifier: 2.0.0
@@ -310,36 +313,36 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@5.9.3))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.25.12)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/bootstrap:
+  apps/raspberrycode-cli/packages/bootstrap:
     dependencies:
-      '@zcode/adapters':
+      '@raspberrycode/adapters':
         specifier: workspace:*
         version: link:../adapters
-      '@zcode/contracts':
+      '@raspberrycode/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@zcode/core':
+      '@raspberrycode/core':
         specifier: workspace:*
         version: link:../core
-      '@zcode/dynamic-workflow':
+      '@raspberrycode/dynamic-workflow':
         specifier: workspace:*
         version: link:../dynamic-workflow
-      '@zcode/dynamic-workflow-runtime':
+      '@raspberrycode/dynamic-workflow-runtime':
         specifier: workspace:*
         version: link:../dynamic-workflow-runtime
-      '@zcode/i18n':
+      '@raspberrycode/i18n':
         specifier: workspace:*
         version: link:../i18n
-      '@zcode/provider':
+      '@raspberrycode/provider':
         specifier: workspace:*
         version: link:../../../../packages/provider
-      '@zcode/provider-node':
+      '@raspberrycode/provider-node':
         specifier: workspace:*
         version: link:../../../../packages/provider-node
-      '@zcode/shared':
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../../../../packages/shared
-      '@zcode/telemetry':
+      '@raspberrycode/telemetry':
         specifier: workspace:*
         version: link:../telemetry
       diff:
@@ -349,34 +352,34 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
     devDependencies:
+      '@raspberrycode/formal-proof':
+        specifier: workspace:*
+        version: link:../../../../packages/formal-proof
       '@types/node':
         specifier: ^24.0.0
         version: 24.12.2
       '@types/yazl':
         specifier: ^3.3.1
         version: 3.3.1
-      '@zcode/formal-proof':
-        specifier: workspace:*
-        version: link:../../../../packages/formal-proof
       yazl:
         specifier: ^3.3.1
         version: 3.3.1
 
-  apps/zcode-cli/packages/browser-use-plugin:
+  apps/raspberrycode-cli/packages/browser-use-plugin:
     dependencies:
       '@modelcontextprotocol/server':
         specifier: 2.0.0
         version: 2.0.0
-      '@zcode/contracts':
+      '@raspberrycode/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@zcode/core':
+      '@raspberrycode/core':
         specifier: workspace:*
         version: link:../core
-      '@zcode/node-repl-host':
+      '@raspberrycode/node-repl-host':
         specifier: workspace:*
         version: link:../node-repl-host
-      '@zcode/shared':
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../../../../packages/shared
       zod:
@@ -386,15 +389,15 @@ importers:
       '@modelcontextprotocol/client':
         specifier: 2.0.0
         version: 2.0.0
+      '@raspberrycode/adapters':
+        specifier: workspace:*
+        version: link:../adapters
+      '@raspberrycode/bootstrap':
+        specifier: workspace:*
+        version: link:../bootstrap
       '@types/node':
         specifier: ^24.0.0
         version: 24.12.2
-      '@zcode/adapters':
-        specifier: workspace:*
-        version: link:../adapters
-      '@zcode/bootstrap':
-        specifier: workspace:*
-        version: link:../bootstrap
       esbuild:
         specifier: ^0.25.0
         version: 0.25.12
@@ -408,36 +411,36 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@5.9.3))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.25.12)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/cli:
+  apps/raspberrycode-cli/packages/cli:
     dependencies:
-      '@zcode/adapters':
+      '@raspberrycode/adapters':
         specifier: workspace:*
         version: link:../adapters
-      '@zcode/bootstrap':
+      '@raspberrycode/bootstrap':
         specifier: workspace:*
         version: link:../bootstrap
-      '@zcode/contracts':
+      '@raspberrycode/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@zcode/core':
+      '@raspberrycode/core':
         specifier: workspace:*
         version: link:../core
-      '@zcode/dynamic-workflow-runtime':
+      '@raspberrycode/dynamic-workflow-runtime':
         specifier: workspace:*
         version: link:../dynamic-workflow-runtime
-      '@zcode/i18n':
+      '@raspberrycode/i18n':
         specifier: workspace:*
         version: link:../i18n
-      '@zcode/provider-node':
+      '@raspberrycode/provider-node':
         specifier: workspace:*
         version: link:../../../../packages/provider-node
-      '@zcode/shared':
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../../../../packages/shared
-      '@zcode/shared-types':
+      '@raspberrycode/shared-types':
         specifier: workspace:*
         version: link:../shared-types
-      '@zcode/tui':
+      '@raspberrycode/tui':
         specifier: workspace:*
         version: link:../tui
       dotenv:
@@ -447,9 +450,9 @@ importers:
         specifier: 1.59.1
         version: 1.59.1
 
-  apps/zcode-cli/packages/contracts:
+  apps/raspberrycode-cli/packages/contracts:
     dependencies:
-      '@zcode/shared':
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../../../../packages/shared
       zod:
@@ -466,23 +469,23 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@6.0.2))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/core:
+  apps/raspberrycode-cli/packages/core:
     dependencies:
-      '@zcode/contracts':
+      '@raspberrycode/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@zcode/dynamic-workflow':
+      '@raspberrycode/dynamic-workflow':
         specifier: workspace:*
         version: link:../dynamic-workflow
-      '@zcode/shared':
+      '@raspberrycode/raspberrycode-cua':
+        specifier: workspace:*
+        version: link:../../../../packages/raspberrycode-cua
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../../../../packages/shared
-      '@zcode/shared-types':
+      '@raspberrycode/shared-types':
         specifier: workspace:*
         version: link:../shared-types
-      '@zcode/zcode-cua':
-        specifier: workspace:*
-        version: link:../../../../packages/zcode-cua
       cheerio:
         specifier: ^1.0.0
         version: 1.2.0
@@ -512,12 +515,12 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@6.0.2))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/debug:
+  apps/raspberrycode-cli/packages/debug:
     dependencies:
       '@hono/node-server':
         specifier: ^1.14.4
         version: 1.19.14(hono@4.12.12)
-      '@zcode/shared':
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../../../../packages/shared
       hono:
@@ -564,13 +567,13 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@5.9.3))(vite@7.3.3(@types/node@24.12.2)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/documents-plugin:
+  apps/raspberrycode-cli/packages/documents-plugin:
     devDependencies:
-      '@zcode/office-runtime':
+      '@raspberrycode/office-runtime':
         specifier: workspace:*
         version: link:../office-runtime
 
-  apps/zcode-cli/packages/dynamic-workflow:
+  apps/raspberrycode-cli/packages/dynamic-workflow:
     dependencies:
       typescript:
         specifier: ^5.9.0
@@ -583,9 +586,9 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@5.9.3))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/dynamic-workflow-runtime:
+  apps/raspberrycode-cli/packages/dynamic-workflow-runtime:
     dependencies:
-      '@zcode/dynamic-workflow':
+      '@raspberrycode/dynamic-workflow':
         specifier: workspace:*
         version: link:../dynamic-workflow
     devDependencies:
@@ -596,9 +599,9 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@6.0.2))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/i18n:
+  apps/raspberrycode-cli/packages/i18n:
     dependencies:
-      '@zcode/contracts':
+      '@raspberrycode/contracts':
         specifier: workspace:*
         version: link:../contracts
     devDependencies:
@@ -606,9 +609,9 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@25.6.0)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@25.6.0)(typescript@6.0.2))(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/image-search-plugin: {}
+  apps/raspberrycode-cli/packages/image-search-plugin: {}
 
-  apps/zcode-cli/packages/ios-simulator-plugin:
+  apps/raspberrycode-cli/packages/ios-simulator-plugin:
     dependencies:
       '@modelcontextprotocol/server':
         specifier: 2.0.0
@@ -630,23 +633,23 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@5.9.3))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.25.12)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/node-repl-host:
+  apps/raspberrycode-cli/packages/node-repl-host:
     dependencies:
       '@modelcontextprotocol/server':
         specifier: 2.0.0
         version: 2.0.0
-      '@zcode/contracts':
+      '@raspberrycode/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@zcode/core':
+      '@raspberrycode/core':
         specifier: workspace:*
         version: link:../core
-      '@zcode/shared':
+      '@raspberrycode/raspberrycode-cua':
+        specifier: workspace:*
+        version: link:../../../../packages/raspberrycode-cua
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../../../../packages/shared
-      '@zcode/zcode-cua':
-        specifier: workspace:*
-        version: link:../../../../packages/zcode-cua
       zod:
         specifier: ^4.4.3
         version: 4.6.5
@@ -667,7 +670,7 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@5.9.3))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.25.12)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/office-runtime:
+  apps/raspberrycode-cli/packages/office-runtime:
     devDependencies:
       '@aiden0z/pptx-renderer':
         specifier: 1.2.4
@@ -733,45 +736,106 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
 
-  apps/zcode-cli/packages/pdf-plugin:
+  apps/raspberrycode-cli/packages/pdf-plugin:
     devDependencies:
-      '@zcode/office-runtime':
+      '@raspberrycode/office-runtime':
         specifier: workspace:*
         version: link:../office-runtime
 
-  apps/zcode-cli/packages/plugin-creator-plugin: {}
+  apps/raspberrycode-cli/packages/plugin-creator-plugin: {}
 
-  apps/zcode-cli/packages/presentations-plugin:
+  apps/raspberrycode-cli/packages/presentations-plugin:
     devDependencies:
-      '@zcode/office-runtime':
+      '@raspberrycode/office-runtime':
         specifier: workspace:*
         version: link:../office-runtime
 
-  apps/zcode-cli/packages/restore-legacy-sessions-plugin: {}
+  apps/raspberrycode-cli/packages/raspberrycode-cua-plugin:
+    dependencies:
+      '@raspberrycode/raspberrycode-cua':
+        specifier: workspace:*
+        version: link:../../../../packages/raspberrycode-cua
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.12.2
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
 
-  apps/zcode-cli/packages/shared-types:
+  apps/raspberrycode-cli/packages/raspberrycode-guide-plugin: {}
+
+  apps/raspberrycode-cli/packages/raspberrycode-site-plugin:
+    devDependencies:
+      '@modelcontextprotocol/client':
+        specifier: 2.0.0
+        version: 2.0.0
+      '@modelcontextprotocol/core':
+        specifier: 2.0.0
+        version: 2.0.0
+      '@modelcontextprotocol/ext-apps':
+        specifier: 2.0.0
+        version: 2.0.0(@modelcontextprotocol/client@2.0.0)(@modelcontextprotocol/core@2.0.0)(@modelcontextprotocol/server@2.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(zod@4.6.5)
+      '@modelcontextprotocol/sdk':
+        specifier: 1.29.0
+        version: 1.29.0(zod@4.6.5)
+      '@raspberrycode/shared':
+        specifier: workspace:*
+        version: link:../../../../packages/shared
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.12.2
+      '@types/react':
+        specifier: ^19.2.14
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: ^19.2.3
+        version: 19.2.3(@types/react@19.2.14)
+      esbuild:
+        specifier: ^0.25.0
+        version: 0.25.12
+      lucide-react:
+        specifier: ^1.17.0
+        version: 1.17.0(react@19.2.7)
+      react:
+        specifier: 19.2.7
+        version: 19.2.7
+      react-dom:
+        specifier: 19.2.7
+        version: 19.2.7(react@19.2.7)
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.2
+      vitest:
+        specifier: ^4.1.5
+        version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@6.0.2))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.25.12)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
+
+  apps/raspberrycode-cli/packages/shared-types:
     devDependencies:
       '@types/node':
         specifier: ^24.0.0
         version: 24.12.2
 
-  apps/zcode-cli/packages/skill-creator-plugin: {}
+  apps/raspberrycode-cli/packages/skill-creator-plugin: {}
 
-  apps/zcode-cli/packages/spreadsheets-plugin:
+  apps/raspberrycode-cli/packages/spreadsheets-plugin:
     devDependencies:
-      '@zcode/office-runtime':
+      '@raspberrycode/office-runtime':
         specifier: workspace:*
         version: link:../office-runtime
 
-  apps/zcode-cli/packages/superpowers-plugin: {}
+  apps/raspberrycode-cli/packages/superpowers-plugin: {}
 
-  apps/zcode-cli/packages/swift-bridge:
+  apps/raspberrycode-cli/packages/swift-bridge:
     dependencies:
-      '@zcode/shared-types':
+      '@raspberrycode/shared-types':
         specifier: workspace:*
         version: link:../shared-types
 
-  apps/zcode-cli/packages/telemetry:
+  apps/raspberrycode-cli/packages/telemetry:
     dependencies:
       '@opentelemetry/api':
         specifier: ^1.9.0
@@ -797,7 +861,7 @@ importers:
       '@opentelemetry/sdk-trace-base':
         specifier: 2.6.1
         version: 2.6.1(@opentelemetry/api@1.9.1)
-      '@zcode/contracts':
+      '@raspberrycode/contracts':
         specifier: workspace:*
         version: link:../contracts
     devDependencies:
@@ -808,7 +872,7 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@6.0.2))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/packages/tui:
+  apps/raspberrycode-cli/packages/tui:
     dependencies:
       '@mbears/opentui-core':
         specifier: 0.2.15
@@ -816,13 +880,13 @@ importers:
       '@mbears/opentui-react':
         specifier: 0.2.15
         version: 0.2.15(react-devtools-core@7.0.1)(react@19.2.7)(typescript@6.0.2)(web-tree-sitter@0.25.10)(ws@8.18.0)
-      '@zcode/contracts':
+      '@raspberrycode/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@zcode/i18n':
+      '@raspberrycode/i18n':
         specifier: workspace:*
         version: link:../i18n
-      '@zcode/shared':
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../../../../packages/shared
       react:
@@ -848,72 +912,9 @@ importers:
         specifier: ^4.20.0
         version: 4.21.0
 
-  apps/zcode-cli/packages/visualize-plugin: {}
+  apps/raspberrycode-cli/packages/visualize-plugin: {}
 
-  apps/zcode-cli/packages/zcode-cua-plugin:
-    dependencies:
-      '@zcode/zcode-cua':
-        specifier: workspace:*
-        version: link:../../../../packages/zcode-cua
-    devDependencies:
-      '@types/node':
-        specifier: ^24.0.0
-        version: 24.12.2
-      typescript:
-        specifier: ^5.9.0
-        version: 5.9.3
-
-  apps/zcode-cli/packages/zcode-guide-plugin: {}
-
-  apps/zcode-cli/packages/zcode-site-plugin:
-    devDependencies:
-      '@modelcontextprotocol/client':
-        specifier: 2.0.0
-        version: 2.0.0
-      '@modelcontextprotocol/core':
-        specifier: 2.0.0
-        version: 2.0.0
-      '@modelcontextprotocol/ext-apps':
-        specifier: 2.0.0
-        version: 2.0.0(@modelcontextprotocol/client@2.0.0)(@modelcontextprotocol/core@2.0.0)(@modelcontextprotocol/server@2.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(zod@4.6.5)
-      '@modelcontextprotocol/sdk':
-        specifier: 1.29.0
-        version: 1.29.0(zod@4.6.5)
-      '@types/node':
-        specifier: ^24.0.0
-        version: 24.12.2
-      '@types/react':
-        specifier: ^19.2.14
-        version: 19.2.14
-      '@types/react-dom':
-        specifier: ^19.2.3
-        version: 19.2.3(@types/react@19.2.14)
-      '@zcode/shared':
-        specifier: workspace:*
-        version: link:../../../../packages/shared
-      esbuild:
-        specifier: ^0.25.0
-        version: 0.25.12
-      lucide-react:
-        specifier: ^1.17.0
-        version: 1.17.0(react@19.2.7)
-      react:
-        specifier: 19.2.7
-        version: 19.2.7
-      react-dom:
-        specifier: 19.2.7
-        version: 19.2.7(react@19.2.7)
-      typescript:
-        specifier: ^6.0.2
-        version: 6.0.2
-      vitest:
-        specifier: ^4.1.5
-        version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@6.0.2))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.25.12)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
-      zod:
-        specifier: 4.6.5
-        version: 4.6.5
-
-  apps/zcode-cli/tools/prompt-trajectory:
+  apps/raspberrycode-cli/tools/prompt-trajectory:
     devDependencies:
       '@types/node':
         specifier: ^24.0.0
@@ -925,27 +926,27 @@ importers:
         specifier: ^5.9.0
         version: 5.9.3
 
-  apps/zcode-cli/tools/provider-regression:
+  apps/raspberrycode-cli/tools/provider-regression:
     dependencies:
-      '@zcode/adapters':
+      '@raspberrycode/adapters':
         specifier: workspace:*
         version: link:../../packages/adapters
-      '@zcode/bootstrap':
+      '@raspberrycode/bootstrap':
         specifier: workspace:*
         version: link:../../packages/bootstrap
-      '@zcode/contracts':
+      '@raspberrycode/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@zcode/core':
+      '@raspberrycode/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@zcode/model-option-map':
+      '@raspberrycode/model-option-map':
         specifier: workspace:*
         version: link:../../../../packages/model-option-map
-      '@zcode/provider':
+      '@raspberrycode/provider':
         specifier: workspace:*
         version: link:../../../../packages/provider
-      '@zcode/provider-node':
+      '@raspberrycode/provider-node':
         specifier: workspace:*
         version: link:../../../../packages/provider-node
       zod:
@@ -965,17 +966,17 @@ importers:
         specifier: ^4.1.5
         version: 4.1.7(patch_hash=11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0)(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@24.12.2)(typescript@5.9.3))(vite@8.0.8(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
 
-  apps/zcode-cli/tools/typescript: {}
+  apps/raspberrycode-cli/tools/typescript: {}
 
   packages/client:
     dependencies:
-      '@zcode/rpc':
+      '@raspberrycode/rpc':
         specifier: workspace:*
         version: link:../rpc
-      '@zcode/services':
+      '@raspberrycode/services':
         specifier: workspace:*
         version: link:../services
-      '@zcode/shared':
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../shared
     devDependencies:
@@ -987,7 +988,7 @@ importers:
     dependencies:
       '@arms/rum-electron':
         specifier: ^0.0.3
-        version: 0.0.3(patch_hash=36855354851ea495bc47a03340b0484ff62836b739cad56904b8a69f18e2ae97)(@babel/runtime@7.29.7)(electron@44.7.0)
+        version: 0.0.3(patch_hash=eac7aa6bbe7b3e29ac1e73dba6d40068560cb186393e387bb886ff23fa710d9b)(@babel/runtime@7.29.7)(electron@44.7.0)
       '@babel/runtime':
         specifier: ^7.24.5
         version: 7.29.7
@@ -1030,36 +1031,36 @@ importers:
       '@opentelemetry/sdk-trace-base':
         specifier: 2.6.1
         version: 2.6.1(@opentelemetry/api@1.9.1)
-      '@zcode/client':
+      '@raspberrycode/client':
         specifier: workspace:*
         version: link:../client
-      '@zcode/e2e-report':
+      '@raspberrycode/e2e-report':
         specifier: workspace:*
         version: link:../e2e-report
-      '@zcode/provider':
+      '@raspberrycode/provider':
         specifier: workspace:*
         version: link:../provider
-      '@zcode/provider-node':
+      '@raspberrycode/provider-node':
         specifier: workspace:*
         version: link:../provider-node
-      '@zcode/rpc':
+      '@raspberrycode/raspberrycode-cua':
+        specifier: workspace:*
+        version: link:../raspberrycode-cua
+      '@raspberrycode/rpc':
         specifier: workspace:*
         version: link:../rpc
-      '@zcode/server':
+      '@raspberrycode/server':
         specifier: workspace:*
         version: link:../server
-      '@zcode/services':
+      '@raspberrycode/services':
         specifier: workspace:*
         version: link:../services
-      '@zcode/shared':
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../shared
-      '@zcode/ui':
+      '@raspberrycode/ui':
         specifier: workspace:*
         version: link:../ui
-      '@zcode/zcode-cua':
-        specifier: workspace:*
-        version: link:../zcode-cua
       electron-updater:
         specifier: 6.8.10
         version: 6.8.10
@@ -1267,10 +1268,10 @@ importers:
 
   packages/provider:
     dependencies:
-      '@zcode/model-option-map':
+      '@raspberrycode/model-option-map':
         specifier: workspace:*
         version: link:../model-option-map
-      '@zcode/shared':
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../shared
       zod:
@@ -1283,12 +1284,58 @@ importers:
 
   packages/provider-node:
     dependencies:
-      '@zcode/provider':
+      '@raspberrycode/provider':
         specifier: workspace:*
         version: link:../provider
-      '@zcode/shared':
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../shared
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
+    devDependencies:
+      '@raspberrycode/model-option-map':
+        specifier: workspace:*
+        version: link:../model-option-map
+      '@types/node':
+        specifier: ^25.5.0
+        version: 25.6.0
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.2
+
+  packages/raspberrycode-cua:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.27.1
+        version: 1.29.0(zod@4.6.5)
+
+  packages/raspberrycode-server-cli:
+    dependencies:
+      '@hono/node-server':
+        specifier: ^1.19.11
+        version: 1.19.14(hono@4.12.12)
+      '@hono/node-ws':
+        specifier: ^1.3.0
+        version: 1.3.0(@hono/node-server@1.19.14(hono@4.12.12))(hono@4.12.12)
+      '@raspberrycode/rpc':
+        specifier: workspace:*
+        version: link:../rpc
+      '@raspberrycode/services':
+        specifier: workspace:*
+        version: link:../services
+      '@raspberrycode/shared':
+        specifier: workspace:*
+        version: link:../shared
+      hono:
+        specifier: ^4.12.9
+        version: 4.12.12
+      ws:
+        specifier: ^8.20.0
+        version: 8.20.0
+      yauzl:
+        specifier: ^3.3.0
+        version: 3.3.0
       zod:
         specifier: 4.6.5
         version: 4.6.5
@@ -1296,9 +1343,18 @@ importers:
       '@types/node':
         specifier: ^25.5.0
         version: 25.6.0
-      '@zcode/model-option-map':
-        specifier: workspace:*
-        version: link:../model-option-map
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.1
+      '@types/yauzl':
+        specifier: ^2.10.3
+        version: 2.10.3
+      tsup:
+        specifier: ^8.4.0
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.9)(tsx@4.21.0)(typescript@6.0.2)(yaml@2.9.0)
+      tsx:
+        specifier: ^4.19.4
+        version: 4.21.0
       typescript:
         specifier: ^6.0.2
         version: 6.0.2
@@ -1332,16 +1388,16 @@ importers:
       '@lydell/node-pty-linux-x64':
         specifier: 1.2.0-beta.10
         version: 1.2.0-beta.10
-      '@zcode/client':
+      '@raspberrycode/client':
         specifier: workspace:*
         version: link:../client
-      '@zcode/rpc':
+      '@raspberrycode/rpc':
         specifier: workspace:*
         version: link:../rpc
-      '@zcode/services':
+      '@raspberrycode/services':
         specifier: workspace:*
         version: link:../services
-      '@zcode/shared':
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../shared
       axios:
@@ -1417,21 +1473,21 @@ importers:
       '@larksuiteoapi/node-sdk':
         specifier: 1.64.0
         version: 1.64.0
-      '@zcode/provider':
+      '@raspberrycode/provider':
         specifier: workspace:*
         version: link:../provider
-      '@zcode/provider-node':
+      '@raspberrycode/provider-node':
         specifier: workspace:*
         version: link:../provider-node
-      '@zcode/rpc':
+      '@raspberrycode/raspberrycode-cua':
+        specifier: workspace:*
+        version: link:../raspberrycode-cua
+      '@raspberrycode/rpc':
         specifier: workspace:*
         version: link:../rpc
-      '@zcode/shared':
+      '@raspberrycode/shared':
         specifier: workspace:*
         version: link:../shared
-      '@zcode/zcode-cua':
-        specifier: workspace:*
-        version: link:../zcode-cua
       chokidar:
         specifier: 4.0.3
         version: 4.0.3
@@ -1482,202 +1538,9 @@ importers:
         specifier: ^6.0.2
         version: 6.0.2
 
-  packages/share-ui:
-    dependencies:
-      '@aiden0z/pptx-renderer':
-        specifier: 1.2.4
-        version: 1.2.4(patch_hash=e1a90a724324c45a2cc90cf84d1ae1f35755b8fc9438a208d610960bd0d5f65a)(pdfjs-dist@5.4.296)
-      '@dnd-kit/core':
-        specifier: ^6.3.1
-        version: 6.3.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@dnd-kit/dom':
-        specifier: ^0.4.0
-        version: 0.4.0
-      '@dnd-kit/helpers':
-        specifier: ^0.4.0
-        version: 0.4.0
-      '@dnd-kit/react':
-        specifier: ^0.4.0
-        version: 0.4.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@dnd-kit/sortable':
-        specifier: ^10.0.0
-        version: 10.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
-      '@dnd-kit/utilities':
-        specifier: ^3.2.2
-        version: 3.2.2(react@19.2.7)
-      '@extend-ai/react-docx':
-        specifier: ^0.8.1
-        version: 0.8.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@extend-ai/react-xlsx':
-        specifier: ^0.16.0
-        version: 0.16.0(patch_hash=b2fc5fcfa1aab1271d20fd539d2a367f06aac08a191425885cf8f1125b7c6bc8)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@lexical/react':
-        specifier: ^0.42.0
-        version: 0.42.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(yjs@13.6.30)
-      '@pierre/diffs':
-        specifier: ^1.1.22
-        version: 1.1.22(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@radix-ui/react-radio-group':
-        specifier: ^1.3.8
-        version: 1.3.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@radix-ui/react-use-controllable-state':
-        specifier: ^1.2.2
-        version: 1.2.2(@types/react@19.2.14)(react@19.2.7)
-      '@rive-app/react-webgl2':
-        specifier: ^4.27.3
-        version: 4.28.0(react@19.2.7)
-      '@streamdown/cjk':
-        specifier: ^1.0.3
-        version: 1.0.3(@types/mdast@4.0.4)(micromark-util-types@2.0.2)(micromark@4.0.2)(react@19.2.7)(unified@11.0.5)
-      '@streamdown/code':
-        specifier: ^1.1.1
-        version: 1.1.1(react@19.2.7)
-      '@streamdown/math':
-        specifier: ^1.0.2
-        version: 1.0.2(react@19.2.7)
-      '@streamdown/mermaid':
-        specifier: ^1.0.2
-        version: 1.0.2(react@19.2.7)
-      '@stripe/react-stripe-js':
-        specifier: ^6.4.0
-        version: 6.4.0(@stripe/stripe-js@9.6.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@stripe/stripe-js':
-        specifier: ^9.6.0
-        version: 9.6.0
-      '@xterm/addon-clipboard':
-        specifier: ^0.2.0
-        version: 0.2.0
-      '@xterm/addon-fit':
-        specifier: ^0.10.0
-        version: 0.10.0(@xterm/xterm@5.5.0)
-      '@xterm/xterm':
-        specifier: ^5.5.0
-        version: 5.5.0
-      '@xyflow/react':
-        specifier: ^12.10.1
-        version: 12.10.2(@types/react@19.2.14)(immer@11.1.8)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@zcode/shared':
-        specifier: workspace:*
-        version: link:../shared
-      ai:
-        specifier: ^6.0.138
-        version: 6.0.159(zod@4.6.5)
-      ansi-to-react:
-        specifier: ^6.2.6
-        version: 6.2.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      class-variance-authority:
-        specifier: ^0.7.1
-        version: 0.7.1
-      clsx:
-        specifier: ^2.1.1
-        version: 2.1.1
-      cmdk:
-        specifier: ^1.1.1
-        version: 1.1.1(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      docx-preview:
-        specifier: ^0.4.0
-        version: 0.4.0
-      embla-carousel-react:
-        specifier: ^8.6.0
-        version: 8.6.0(react@19.2.7)
-      highlight.js:
-        specifier: ^11.11.1
-        version: 11.11.1
-      katex:
-        specifier: ^0.16.45
-        version: 0.16.45
-      lexical:
-        specifier: ^0.42.0
-        version: 0.42.0
-      lucide-react:
-        specifier: ^1.17.0
-        version: 1.17.0(react@19.2.7)
-      media-chrome:
-        specifier: ^4.18.2
-        version: 4.19.0(react@19.2.7)
-      motion:
-        specifier: ^12.38.0
-        version: 12.38.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      nanoid:
-        specifier: ^5.1.7
-        version: 5.1.7
-      pdfjs-dist:
-        specifier: 5.4.296
-        version: 5.4.296
-      qrcode:
-        specifier: ^1.5.4
-        version: 1.5.4
-      radix-ui:
-        specifier: ^1.4.3
-        version: 1.4.3(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      react:
-        specifier: 19.2.7
-        version: 19.2.7
-      react-dom:
-        specifier: 19.2.7
-        version: 19.2.7(react@19.2.7)
-      react-jsx-parser:
-        specifier: ^2.4.1
-        version: 2.4.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      react-pdf:
-        specifier: ^10.4.1
-        version: 10.4.1(@types/react@19.2.14)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      react-resizable-panels:
-        specifier: ^4.8.0
-        version: 4.10.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      recharts:
-        specifier: ^3.8.0
-        version: 3.8.0(@types/react@19.2.14)(react-dom@19.2.7(react@19.2.7))(react-is@18.3.1)(react@19.2.7)(redux@5.0.1)
-      remark-cjk-friendly-gfm-strikethrough:
-        specifier: ^2.0.1
-        version: 2.0.1(@types/mdast@4.0.4)(micromark-util-types@2.0.2)(micromark@4.0.2)(unified@11.0.5)
-      shadcn:
-        specifier: 4.1.1
-        version: 4.1.1(@types/node@25.6.0)(typescript@6.0.2)
-      shiki:
-        specifier: ^4.0.2
-        version: 4.0.2
-      streamdown:
-        specifier: ^2.5.0
-        version: 2.5.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      swr:
-        specifier: ^2.5.1
-        version: 2.5.1(react@19.2.7)
-      tailwind-merge:
-        specifier: ^3.5.0
-        version: 3.5.0
-      tailwind-scrollbar-hide:
-        specifier: ^4.0.0
-        version: 4.0.0(tailwindcss@4.2.2)
-      tokenlens:
-        specifier: ^1.3.1
-        version: 1.3.1
-      tw-animate-css:
-        specifier: ^1.4.0
-        version: 1.4.0
-      use-stick-to-bottom:
-        specifier: ^1.1.3
-        version: 1.1.3(react@19.2.7)
-      zustand:
-        specifier: ^5.0.12
-        version: 5.0.12(@types/react@19.2.14)(immer@11.1.8)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))
-    devDependencies:
-      '@tailwindcss/typography':
-        specifier: ^0.5.19
-        version: 0.5.19(tailwindcss@4.2.2)
-      '@types/react':
-        specifier: ^19.2.14
-        version: 19.2.14
-      '@types/react-dom':
-        specifier: ^19.2.3
-        version: 19.2.3(@types/react@19.2.14)
-      typescript:
-        specifier: ^6.0.2
-        version: 6.0.2
-
   packages/shared:
     dependencies:
-      '@zcode/model-option-map':
+      '@raspberrycode/model-option-map':
         specifier: workspace:*
         version: link:../model-option-map
       zod:
@@ -1787,6 +1650,18 @@ importers:
       '@radix-ui/react-use-controllable-state':
         specifier: ^1.2.2
         version: 1.2.2(@types/react@19.2.14)(react@19.2.7)
+      '@raspberrycode/provider':
+        specifier: workspace:*
+        version: link:../provider
+      '@raspberrycode/rpc':
+        specifier: workspace:*
+        version: link:../rpc
+      '@raspberrycode/services':
+        specifier: workspace:*
+        version: link:../services
+      '@raspberrycode/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@rive-app/react-webgl2':
         specifier: ^4.27.3
         version: 4.28.0(react@19.2.7)
@@ -1820,18 +1695,6 @@ importers:
       '@xyflow/react':
         specifier: ^12.10.1
         version: 12.10.2(@types/react@19.2.14)(immer@11.1.8)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@zcode/provider':
-        specifier: workspace:*
-        version: link:../provider
-      '@zcode/rpc':
-        specifier: workspace:*
-        version: link:../rpc
-      '@zcode/services':
-        specifier: workspace:*
-        version: link:../services
-      '@zcode/shared':
-        specifier: workspace:*
-        version: link:../shared
       ai:
         specifier: ^6.0.138
         version: 6.0.159(zod@4.6.5)
@@ -1971,144 +1834,6 @@ importers:
       unified:
         specifier: ^11.0.5
         version: 11.0.5
-
-  packages/web:
-    dependencies:
-      '@zcode/client':
-        specifier: workspace:*
-        version: link:../client
-      '@zcode/shared':
-        specifier: workspace:*
-        version: link:../shared
-      '@zcode/ui':
-        specifier: workspace:*
-        version: link:../ui
-      react:
-        specifier: 19.2.7
-        version: 19.2.7
-      react-dom:
-        specifier: 19.2.7
-        version: 19.2.7(react@19.2.7)
-    devDependencies:
-      '@tailwindcss/vite':
-        specifier: ^4.2.2
-        version: 4.2.2(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
-      '@types/react':
-        specifier: ^19.2.14
-        version: 19.2.14
-      '@types/react-dom':
-        specifier: ^19.2.3
-        version: 19.2.3(@types/react@19.2.14)
-      '@vitejs/plugin-react':
-        specifier: ^6.0.1
-        version: 6.0.1(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
-      tailwindcss:
-        specifier: ^4.2.2
-        version: 4.2.2
-      typescript:
-        specifier: ^6.0.2
-        version: 6.0.2
-      vite:
-        specifier: ^8.0.2
-        version: 8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)
-      ws:
-        specifier: ^8.20.0
-        version: 8.20.0
-
-  packages/web-share:
-    dependencies:
-      '@zcode/share-ui':
-        specifier: workspace:*
-        version: link:../share-ui
-      '@zcode/shared':
-        specifier: workspace:*
-        version: link:../shared
-      lucide-react:
-        specifier: ^1.17.0
-        version: 1.17.0(react@19.2.7)
-      react:
-        specifier: 19.2.7
-        version: 19.2.7
-      react-dom:
-        specifier: 19.2.7
-        version: 19.2.7(react@19.2.7)
-    devDependencies:
-      '@tailwindcss/vite':
-        specifier: ^4.2.2
-        version: 4.2.2(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
-      '@types/react':
-        specifier: ^19.2.14
-        version: 19.2.14
-      '@types/react-dom':
-        specifier: ^19.2.3
-        version: 19.2.3(@types/react@19.2.14)
-      '@vitejs/plugin-react':
-        specifier: ^6.0.1
-        version: 6.0.1(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
-      tailwindcss:
-        specifier: ^4.2.2
-        version: 4.2.2
-      typescript:
-        specifier: ^6.0.2
-        version: 6.0.2
-      vite:
-        specifier: ^8.0.2
-        version: 8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)
-
-  packages/zcode-cua:
-    dependencies:
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.27.1
-        version: 1.29.0(zod@4.6.5)
-
-  packages/zcode-server-cli:
-    dependencies:
-      '@hono/node-server':
-        specifier: ^1.19.11
-        version: 1.19.14(hono@4.12.12)
-      '@hono/node-ws':
-        specifier: ^1.3.0
-        version: 1.3.0(@hono/node-server@1.19.14(hono@4.12.12))(hono@4.12.12)
-      '@zcode/rpc':
-        specifier: workspace:*
-        version: link:../rpc
-      '@zcode/services':
-        specifier: workspace:*
-        version: link:../services
-      '@zcode/shared':
-        specifier: workspace:*
-        version: link:../shared
-      hono:
-        specifier: ^4.12.9
-        version: 4.12.12
-      ws:
-        specifier: ^8.20.0
-        version: 8.20.0
-      yauzl:
-        specifier: ^3.3.0
-        version: 3.3.0
-      zod:
-        specifier: 4.6.5
-        version: 4.6.5
-    devDependencies:
-      '@types/node':
-        specifier: ^25.5.0
-        version: 25.6.0
-      '@types/ws':
-        specifier: ^8.18.1
-        version: 8.18.1
-      '@types/yauzl':
-        specifier: ^2.10.3
-        version: 2.10.3
-      tsup:
-        specifier: ^8.4.0
-        version: 8.5.1(jiti@2.7.0)(postcss@8.5.9)(tsx@4.21.0)(typescript@6.0.2)(yaml@2.9.0)
-      tsx:
-        specifier: ^4.19.4
-        version: 4.21.0
-      typescript:
-        specifier: ^6.0.2
-        version: 6.0.2
 
 packages:
 
@@ -4605,12 +4330,6 @@ packages:
     cpu: [arm]
     os: [android]
 
-  '@oxlint/binding-android-arm-eabi@1.67.0':
-    resolution: {integrity: sha512-VrSi571rDv1N8HaEDM+DEX8nmT0y9jJo8tzzW13vsOWTx59xQczCIJx68n2zWOXRT5YKZsOZXp4qkHN/10x4mw==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [arm]
-    os: [android]
-
   '@oxlint/binding-android-arm-eabi@1.81.0':
     resolution: {integrity: sha512-IcCRsXiedJoJopY6mpZUBEeVFsUrutmrG7dZ87zMuKJlhg70Ora9bBl1WcCxZQtyI10YpnVdEso5oCg7YcfSHw==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -4619,12 +4338,6 @@ packages:
 
   '@oxlint/binding-android-arm64@1.60.0':
     resolution: {integrity: sha512-7ANS7PpXCfq84xZQ8E5WPs14gwcuPcl+/8TFNXfpSu0CQBXz3cUo2fDpHT8v8HJN+Ut02eacvMAzTnc9s6X4tw==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [arm64]
-    os: [android]
-
-  '@oxlint/binding-android-arm64@1.67.0':
-    resolution: {integrity: sha512-l6+NdYxMoRohix5r5bbigW16LPicceCwGcQ6LKKuE1kUdjgFfQolJjrJsQYPFetIs78Gxj/G/f5TEGoTCwj9nQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [android]
@@ -4641,12 +4354,6 @@ packages:
     cpu: [arm64]
     os: [darwin]
 
-  '@oxlint/binding-darwin-arm64@1.67.0':
-    resolution: {integrity: sha512-jOzXxS1AxFxhImLIRbtGIMrEwaXcgMw3gR57WB1cRk8ai+vpr6726kxXqVvlNsrXtJ/FrmOm8RxlC0m8SW24Qg==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [arm64]
-    os: [darwin]
-
   '@oxlint/binding-darwin-arm64@1.81.0':
     resolution: {integrity: sha512-qNQ9tXRgLuKbqSV1S2h9h4KPHjbovO7RRR2/enUOtHzTkFZ7B9X5zqqHJua8dRyc7dBy7Aoyq5pqTSLFVcAzGQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -4655,12 +4362,6 @@ packages:
 
   '@oxlint/binding-darwin-x64@1.60.0':
     resolution: {integrity: sha512-Ue1aXHX49ivwflKqGJc7zcd/LeLgbhaTcDCQStgx5x06AXgjEAZmvrlMuIkWd4AL4FHQe6QJ9f33z04Cg448VQ==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [x64]
-    os: [darwin]
-
-  '@oxlint/binding-darwin-x64@1.67.0':
-    resolution: {integrity: sha512-3DFAVY94OqjIZHXIPz37yGRSWwOFTAqChQ64/M69GYLawzP0KiwdhDNfqdKKYT0bTR/DNxmMnQsj3ns+8+X/Lg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [darwin]
@@ -4677,12 +4378,6 @@ packages:
     cpu: [x64]
     os: [freebsd]
 
-  '@oxlint/binding-freebsd-x64@1.67.0':
-    resolution: {integrity: sha512-e4dDKZuLu8TR9DEBssWSDahlPgZBwojTTHZUvnjBRJfJJbpxYCjfjKfi0Z1+CSLMiJBwI2yCDtRM1XJQaARjmg==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [x64]
-    os: [freebsd]
-
   '@oxlint/binding-freebsd-x64@1.81.0':
     resolution: {integrity: sha512-/+8wVWDXEC7wHVAhOc59Fw/SkMc1arLkFD8iQCaSsmzenK1X4doFqquL9H1wrtGUzaiycVqkf/sSpcILK6W1UA==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -4691,12 +4386,6 @@ packages:
 
   '@oxlint/binding-linux-arm-gnueabihf@1.60.0':
     resolution: {integrity: sha512-c7dxM2Zksa45Qw16i2iGY3Fti2NirJ38FrsBsKw+qcJ0OtqTsBgKJLF0xV+yLG56UH01Z8WRPgsw31e0MoRoGQ==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [arm]
-    os: [linux]
-
-  '@oxlint/binding-linux-arm-gnueabihf@1.67.0':
-    resolution: {integrity: sha512-BKytFdcQzbITV3xlnzDUDTEDtbUMCCiC4EaNTDZ4FyT8gdNvBC4gfiLucXp/sQl0XU3p7syTlorUWVVVBZab2g==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm]
     os: [linux]
@@ -4713,12 +4402,6 @@ packages:
     cpu: [arm]
     os: [linux]
 
-  '@oxlint/binding-linux-arm-musleabihf@1.67.0':
-    resolution: {integrity: sha512-XYAv0esBDX7BpTzRDjVX2Vdj+zndd8ll2dFQiaeQ6zTZr7A8GRDTN7fH3FP3jU+O0vCDx85oH/EtG7BzPgAXuw==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [arm]
-    os: [linux]
-
   '@oxlint/binding-linux-arm-musleabihf@1.81.0':
     resolution: {integrity: sha512-u3vna8KdGplH4DRCW9K54D68fcMo7IxVrkCJWwXnIhwtBdnDnYrmzOUA/XjmBlPpcLsgw9Z5BNdY4za9+Dj+MQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -4727,13 +4410,6 @@ packages:
 
   '@oxlint/binding-linux-arm64-gnu@1.60.0':
     resolution: {integrity: sha512-tpy+1w4p9hN5CicMCxqNy6ymfRtV5ayE573vFNjp1k1TN/qhLFgflveZoE/0++RlkHikBz2vY545NWm/hp7big==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [arm64]
-    os: [linux]
-    libc: [glibc]
-
-  '@oxlint/binding-linux-arm64-gnu@1.67.0':
-    resolution: {integrity: sha512-zizRMjA0i6u/2B0evgda04iycu+MoNuf1pBy6Eh+1CjC5wMEG7qN5zdDKTCvFc0KSYSDM9QTG3gjZHirgtQuKg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [linux]
@@ -4753,13 +4429,6 @@ packages:
     os: [linux]
     libc: [musl]
 
-  '@oxlint/binding-linux-arm64-musl@1.67.0':
-    resolution: {integrity: sha512-zB/Tf6sUjmmvvbva9Gj3JTJ8rJ9t4I8/U0o6vSRtd0DRIsIuyegBwJAzhSUFQHdMijIRJkW0exs/yBhpw2S20w==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [arm64]
-    os: [linux]
-    libc: [musl]
-
   '@oxlint/binding-linux-arm64-musl@1.81.0':
     resolution: {integrity: sha512-k5iAp3dNxW0/uDCBY+WSm8jKB2szu7SkEQZdgRRpDXvuDd69vvDcqhB3A/pWCfCwXyenjNjFn9Td1fVoyAc+Yg==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -4769,13 +4438,6 @@ packages:
 
   '@oxlint/binding-linux-ppc64-gnu@1.60.0':
     resolution: {integrity: sha512-nxehly5XYBHUWI9VJX1bqCf9j/B43DaK/aS/T1fcxCpX3PA4Rm9BB54nPD1CKayT8xg6REN1ao+01hSRNgy8OA==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [ppc64]
-    os: [linux]
-    libc: [glibc]
-
-  '@oxlint/binding-linux-ppc64-gnu@1.67.0':
-    resolution: {integrity: sha512-kgU40Gt74CK0TCsF51KZymkIwN9U0BajKsMijB52zPqOeZU9NAHkA/NSQkZDHEaCakx42DxhXkODiAqf2b4Gug==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [ppc64]
     os: [linux]
@@ -4795,13 +4457,6 @@ packages:
     os: [linux]
     libc: [glibc]
 
-  '@oxlint/binding-linux-riscv64-gnu@1.67.0':
-    resolution: {integrity: sha512-tOYhkk/iaG9aD3FvGpBFd1Lrw0x0RaVoJBxjUkfNzS50rC5NS5BteNCwgr8A2zCdADrIIoze6D7u6U5Ic++/iQ==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [riscv64]
-    os: [linux]
-    libc: [glibc]
-
   '@oxlint/binding-linux-riscv64-gnu@1.81.0':
     resolution: {integrity: sha512-UEcySvGS0NOVo7h7n7CYyJL9+6gFAh7Zc/ToDXVScFvzHSTIxtzkMVU30rmQ6+nQ1LF+UdiRDdJajpDu+OylLg==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -4811,13 +4466,6 @@ packages:
 
   '@oxlint/binding-linux-riscv64-musl@1.60.0':
     resolution: {integrity: sha512-YELKPRefQ/q/h3RUmeRfPCUhh2wBvgV1RyZ/F9M9u8cDyXsQW2ojv1DeWQTt466yczDITjZnIOg/s05pk7Ve2A==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [riscv64]
-    os: [linux]
-    libc: [musl]
-
-  '@oxlint/binding-linux-riscv64-musl@1.67.0':
-    resolution: {integrity: sha512-sEtywrPb+0b+tHYl1SDCrw903fiC4eyKoNqzP3v+f2JT3Xcv4NEYG+P8rj+eEnX7IWhqV/xj8/JmcmVj21CXaA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [riscv64]
     os: [linux]
@@ -4837,13 +4485,6 @@ packages:
     os: [linux]
     libc: [glibc]
 
-  '@oxlint/binding-linux-s390x-gnu@1.67.0':
-    resolution: {integrity: sha512-BvR8Moa0zCLxroOx4vZaZN9nUfwAUpSTwjZdxZyKy4bv3PrzrXrxKR/ZQ0L9wNSvlPhnMJeZfa3q5w6ZCTuN6Q==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [s390x]
-    os: [linux]
-    libc: [glibc]
-
   '@oxlint/binding-linux-s390x-gnu@1.81.0':
     resolution: {integrity: sha512-8znJ/5TekjOKg1j1Acho4PJMdiAHLtlcXuWEiipOhAMV6rQcXdmDdXCbheyDczN6TjBwiNfjcP81k4AthrKRzw==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -4853,13 +4494,6 @@ packages:
 
   '@oxlint/binding-linux-x64-gnu@1.60.0':
     resolution: {integrity: sha512-XjKHdFVCpZZZSWBCKyyqCq65s2AKXykMXkjLoKYODrD+f5toLhlwsMESscu8FbgnJQ4Y/dpR/zdazsahmgBJIA==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [x64]
-    os: [linux]
-    libc: [glibc]
-
-  '@oxlint/binding-linux-x64-gnu@1.67.0':
-    resolution: {integrity: sha512-mm2cxM6fksOpq6l0uFws8BUGKAR4dNa/cZCn37Npq7PFbhD5HDJqWfnoIvTaeRKMy5XdS2tO0MA0qbHDrnXAAA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [linux]
@@ -4879,13 +4513,6 @@ packages:
     os: [linux]
     libc: [musl]
 
-  '@oxlint/binding-linux-x64-musl@1.67.0':
-    resolution: {integrity: sha512-WmbMuLapKyDlobMkXAaAL0Y+Uczh4LETfIfQsUpbId4Ip8Ai82/jqeYTOoUCkuuhBFapgqP253+d83tLKOksJg==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [x64]
-    os: [linux]
-    libc: [musl]
-
   '@oxlint/binding-linux-x64-musl@1.81.0':
     resolution: {integrity: sha512-cPInHp/ddEe5qkyK2IiyQ8Q3Mp2oLLEhhsGgTK2oZx4L6+llGam1H1yBvJZ7qHfOXj8N3hxBS8sj4tO+gtFlIg==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -4895,12 +4522,6 @@ packages:
 
   '@oxlint/binding-openharmony-arm64@1.60.0':
     resolution: {integrity: sha512-H+PUITKHk04stFpWj3x3Kg08Afp/bcXSBi0EhasR5a0Vw7StXHTzdl655PUI0fB4qdh2Wsu6Dsi+3ACxPoyQnA==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [arm64]
-    os: [openharmony]
-
-  '@oxlint/binding-openharmony-arm64@1.67.0':
-    resolution: {integrity: sha512-9g/PqxYJelzzTAOR5Y+RiRqdeydhEuXv2KxNeFcAKQ7UsvnWSY1OP4MsuPMbTO2Pf70tz7mFhl1j13H3fyh+8g==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [openharmony]
@@ -4917,12 +4538,6 @@ packages:
     cpu: [arm64]
     os: [win32]
 
-  '@oxlint/binding-win32-arm64-msvc@1.67.0':
-    resolution: {integrity: sha512-2VhwE6Gatb0vJGnN0TBuQMbKCOiZlSQ/zJvVWYLK4a9d4iDiJOen/yVQkGpmsJ90MuH66fzi0kEKI0jRQMDxGA==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [arm64]
-    os: [win32]
-
   '@oxlint/binding-win32-arm64-msvc@1.81.0':
     resolution: {integrity: sha512-l0hbeISm9673hVrrQU8j/p2M7YH9Ouoj7p7E/QM55NTrKVLP+P3PF8hLu+OY+x0VtGRW+ggiQKZqmdYps9H+TA==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -4935,12 +4550,6 @@ packages:
     cpu: [ia32]
     os: [win32]
 
-  '@oxlint/binding-win32-ia32-msvc@1.67.0':
-    resolution: {integrity: sha512-EQ3VExXfeM1InbE5+JjufhZZTWy+kHUwgt3yZR7gQ47Je/mE0WspQPan0OJznh493L5anM210YNJtH1PXjTSFg==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [ia32]
-    os: [win32]
-
   '@oxlint/binding-win32-ia32-msvc@1.81.0':
     resolution: {integrity: sha512-ksqPP5jbFXcYreEQ7zdJh06rJQBymCTyGRCdaXjfcf2aG4f8KxUWY5wcgYHmaTK+FJ4bPG5sUAdOX+6trnH1JA==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -4949,12 +4558,6 @@ packages:
 
   '@oxlint/binding-win32-x64-msvc@1.60.0':
     resolution: {integrity: sha512-JOro4ZcfBLamJCyfURQmOQByoorgOdx3ZjAkSqnb/CyG/i+lN3KoV5LAgk5ZAW6DPq7/Cx7n23f8DuTWXTWgyQ==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [x64]
-    os: [win32]
-
-  '@oxlint/binding-win32-x64-msvc@1.67.0':
-    resolution: {integrity: sha512-bw24y+/1MHS4QDkons3YyHkPT9uCMoLHHgQhb+mb8NOjTYwub1CZ+K9Ngr8aO5DMrDrkqHwTzlTwFP2vS8Y/ZQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [win32]
@@ -6735,15 +6338,6 @@ packages:
       '@rolldown/plugin-babel':
         optional: true
       babel-plugin-react-compiler:
-        optional: true
-
-  '@vitest/coverage-v8@4.1.4':
-    resolution: {integrity: sha512-x7FptB5oDruxNPDNY2+S8tCh0pcq7ymCe1gTHcsp733jYjrJl8V1gMUlVysuCD9Kz46Xz9t1akkv08dPcYDs1w==}
-    peerDependencies:
-      '@vitest/browser': 4.1.4
-      vitest: 4.1.4
-    peerDependenciesMeta:
-      '@vitest/browser':
         optional: true
 
   '@vitest/coverage-v8@4.1.7':
@@ -10109,9 +9703,6 @@ packages:
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
 
-  magicast@0.5.2:
-    resolution: {integrity: sha512-E3ZJh4J3S9KfwdjZhe2afj6R9lGIN5Pher1pF39UGrXRqq/VDaGVIGN13BjHd2u8B61hArAGOnso7nBOouW3TQ==}
-
   magicast@0.5.5:
     resolution: {integrity: sha512-UicdXN8zQ3JHlxVq+28afMXPr1z7WNY6+7EJnzTdQWkTAlMLF5fNCCKxJHBQwGaNGR11581EiQmQzx73+MvszA==}
 
@@ -10791,8 +10382,8 @@ packages:
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
-  oxlint-plugin-react-doctor@0.9.18:
-    resolution: {integrity: sha512-1mfeb/jzXnduWOZJxrvdJjvKT0pFNKrNFYcPO4ncpFAnfW41M0mLz/23lAFzHb0knNLYayEgIQ5DjI4ZfFe+DQ==}
+  oxlint-plugin-react-doctor@0.9.22:
+    resolution: {integrity: sha512-kf9MwCpK3YlAWYUyX5Zx7XYrdIbA/4lQD2QREIqC8DvmNb2I+wP8zyjL4NeGl2FO2EC1sLuYvW8ir4Ooq1Xd2A==}
     engines: {node: ^20.19.0 || >=22.13.0}
 
   oxlint@1.60.0:
@@ -10803,19 +10394,6 @@ packages:
       oxlint-tsgolint: '>=0.18.0'
     peerDependenciesMeta:
       oxlint-tsgolint:
-        optional: true
-
-  oxlint@1.67.0:
-    resolution: {integrity: sha512-blwwaHPdoH8piQ5/z0KHeoHFR7FZgl12WluKJfu4qFLPkZl6mK04PkLE45Fw1NxfBRSlh40Gu7MkxHUw++ociQ==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    hasBin: true
-    peerDependencies:
-      oxlint-tsgolint: '>=0.22.1'
-      vite-plus: '*'
-    peerDependenciesMeta:
-      oxlint-tsgolint:
-        optional: true
-      vite-plus:
         optional: true
 
   oxlint@1.81.0:
@@ -11347,8 +10925,8 @@ packages:
   react-devtools-core@7.0.1:
     resolution: {integrity: sha512-C3yNvRHaizlpiASzy7b9vbnBGLrhvdhl1CbdU6EnZgxPNbai60szdLtl+VL76UNOt5bOoVTOz5rNWZxgGt+Gsw==}
 
-  react-doctor@0.9.18:
-    resolution: {integrity: sha512-4Ach00KtfnfjTBGgr2PyPgHua85vT/UfPY5sR0bHgRAc/QSu0JInA0GHCL6a7WFGMeGUrxtGnI8oqZinG44BOA==}
+  react-doctor@0.9.22:
+    resolution: {integrity: sha512-SyZOIl61VMCZ3sN7v7Vr2zCsPlyy7nNnBshtIrl0B/X+uY+rL9MGfyNhTmp/FLXfuDKEv61Y6xMguya7vn1Ulg==}
     engines: {node: ^20.19.0 || >=22.13.0}
     hasBin: true
 
@@ -13411,7 +12989,7 @@ snapshots:
     dependencies:
       zod: 4.6.5
 
-  '@ai-sdk/anthropic@3.0.81(patch_hash=d3a7c381eba7f5157f765a0528003af17cf84544911dfb7412c7800168e01c18)(zod@4.6.5)':
+  '@ai-sdk/anthropic@3.0.81(patch_hash=443c3c365177882dff2df827eea03ff0bfce755f9523e6520631d084362ca34d)(zod@4.6.5)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
       '@ai-sdk/provider-utils': 4.0.27(zod@4.6.5)
@@ -13431,7 +13009,7 @@ snapshots:
       '@vercel/oidc': 3.1.0
       zod: 4.6.5
 
-  '@ai-sdk/openai-compatible@2.0.60(patch_hash=9632fe9d821b3dc20939ae509cc35b968d90d018bbd1d812390718898182a38b)(zod@4.6.5)':
+  '@ai-sdk/openai-compatible@2.0.60(patch_hash=558d786cec856f82e40b4c92a986e9b6355431e246ebd2b074d8bf6f5471ca40)(zod@4.6.5)':
     dependencies:
       '@ai-sdk/provider': 3.0.14
       '@ai-sdk/provider-utils': 4.0.39(zod@4.6.5)
@@ -13499,7 +13077,7 @@ snapshots:
     dependencies:
       '@babel/runtime': 7.29.7
 
-  '@arms/rum-electron@0.0.3(patch_hash=36855354851ea495bc47a03340b0484ff62836b739cad56904b8a69f18e2ae97)(@babel/runtime@7.29.7)(electron@44.7.0)':
+  '@arms/rum-electron@0.0.3(patch_hash=eac7aa6bbe7b3e29ac1e73dba6d40068560cb186393e387bb886ff23fa710d9b)(@babel/runtime@7.29.7)(electron@44.7.0)':
     dependencies:
       '@arms/rum-browser': 0.1.8(@babel/runtime@7.29.7)
       '@arms/rum-core': 0.1.4(@babel/runtime@7.29.7)
@@ -15868,16 +15446,10 @@ snapshots:
   '@oxlint/binding-android-arm-eabi@1.60.0':
     optional: true
 
-  '@oxlint/binding-android-arm-eabi@1.67.0':
-    optional: true
-
   '@oxlint/binding-android-arm-eabi@1.81.0':
     optional: true
 
   '@oxlint/binding-android-arm64@1.60.0':
-    optional: true
-
-  '@oxlint/binding-android-arm64@1.67.0':
     optional: true
 
   '@oxlint/binding-android-arm64@1.81.0':
@@ -15886,16 +15458,10 @@ snapshots:
   '@oxlint/binding-darwin-arm64@1.60.0':
     optional: true
 
-  '@oxlint/binding-darwin-arm64@1.67.0':
-    optional: true
-
   '@oxlint/binding-darwin-arm64@1.81.0':
     optional: true
 
   '@oxlint/binding-darwin-x64@1.60.0':
-    optional: true
-
-  '@oxlint/binding-darwin-x64@1.67.0':
     optional: true
 
   '@oxlint/binding-darwin-x64@1.81.0':
@@ -15904,16 +15470,10 @@ snapshots:
   '@oxlint/binding-freebsd-x64@1.60.0':
     optional: true
 
-  '@oxlint/binding-freebsd-x64@1.67.0':
-    optional: true
-
   '@oxlint/binding-freebsd-x64@1.81.0':
     optional: true
 
   '@oxlint/binding-linux-arm-gnueabihf@1.60.0':
-    optional: true
-
-  '@oxlint/binding-linux-arm-gnueabihf@1.67.0':
     optional: true
 
   '@oxlint/binding-linux-arm-gnueabihf@1.81.0':
@@ -15922,16 +15482,10 @@ snapshots:
   '@oxlint/binding-linux-arm-musleabihf@1.60.0':
     optional: true
 
-  '@oxlint/binding-linux-arm-musleabihf@1.67.0':
-    optional: true
-
   '@oxlint/binding-linux-arm-musleabihf@1.81.0':
     optional: true
 
   '@oxlint/binding-linux-arm64-gnu@1.60.0':
-    optional: true
-
-  '@oxlint/binding-linux-arm64-gnu@1.67.0':
     optional: true
 
   '@oxlint/binding-linux-arm64-gnu@1.81.0':
@@ -15940,16 +15494,10 @@ snapshots:
   '@oxlint/binding-linux-arm64-musl@1.60.0':
     optional: true
 
-  '@oxlint/binding-linux-arm64-musl@1.67.0':
-    optional: true
-
   '@oxlint/binding-linux-arm64-musl@1.81.0':
     optional: true
 
   '@oxlint/binding-linux-ppc64-gnu@1.60.0':
-    optional: true
-
-  '@oxlint/binding-linux-ppc64-gnu@1.67.0':
     optional: true
 
   '@oxlint/binding-linux-ppc64-gnu@1.81.0':
@@ -15958,16 +15506,10 @@ snapshots:
   '@oxlint/binding-linux-riscv64-gnu@1.60.0':
     optional: true
 
-  '@oxlint/binding-linux-riscv64-gnu@1.67.0':
-    optional: true
-
   '@oxlint/binding-linux-riscv64-gnu@1.81.0':
     optional: true
 
   '@oxlint/binding-linux-riscv64-musl@1.60.0':
-    optional: true
-
-  '@oxlint/binding-linux-riscv64-musl@1.67.0':
     optional: true
 
   '@oxlint/binding-linux-riscv64-musl@1.81.0':
@@ -15976,16 +15518,10 @@ snapshots:
   '@oxlint/binding-linux-s390x-gnu@1.60.0':
     optional: true
 
-  '@oxlint/binding-linux-s390x-gnu@1.67.0':
-    optional: true
-
   '@oxlint/binding-linux-s390x-gnu@1.81.0':
     optional: true
 
   '@oxlint/binding-linux-x64-gnu@1.60.0':
-    optional: true
-
-  '@oxlint/binding-linux-x64-gnu@1.67.0':
     optional: true
 
   '@oxlint/binding-linux-x64-gnu@1.81.0':
@@ -15994,16 +15530,10 @@ snapshots:
   '@oxlint/binding-linux-x64-musl@1.60.0':
     optional: true
 
-  '@oxlint/binding-linux-x64-musl@1.67.0':
-    optional: true
-
   '@oxlint/binding-linux-x64-musl@1.81.0':
     optional: true
 
   '@oxlint/binding-openharmony-arm64@1.60.0':
-    optional: true
-
-  '@oxlint/binding-openharmony-arm64@1.67.0':
     optional: true
 
   '@oxlint/binding-openharmony-arm64@1.81.0':
@@ -16012,25 +15542,16 @@ snapshots:
   '@oxlint/binding-win32-arm64-msvc@1.60.0':
     optional: true
 
-  '@oxlint/binding-win32-arm64-msvc@1.67.0':
-    optional: true
-
   '@oxlint/binding-win32-arm64-msvc@1.81.0':
     optional: true
 
   '@oxlint/binding-win32-ia32-msvc@1.60.0':
     optional: true
 
-  '@oxlint/binding-win32-ia32-msvc@1.67.0':
-    optional: true
-
   '@oxlint/binding-win32-ia32-msvc@1.81.0':
     optional: true
 
   '@oxlint/binding-win32-x64-msvc@1.60.0':
-    optional: true
-
-  '@oxlint/binding-win32-x64-msvc@1.67.0':
     optional: true
 
   '@oxlint/binding-win32-x64-msvc@1.81.0':
@@ -17009,7 +16530,7 @@ snapshots:
     dependencies:
       '@types/estree': 1.0.8
       estree-walker: 2.0.2
-      picomatch: 4.0.4
+      picomatch: 4.0.7
     optionalDependencies:
       rollup: 4.60.1
 
@@ -17471,8 +16992,8 @@ snapshots:
 
   '@types/babel__core@7.20.5':
     dependencies:
-      '@babel/parser': 7.29.2
-      '@babel/types': 7.29.0
+      '@babel/parser': 7.29.9
+      '@babel/types': 7.29.8
       '@types/babel__generator': 7.27.0
       '@types/babel__template': 7.4.4
       '@types/babel__traverse': 7.28.0
@@ -17808,10 +17329,10 @@ snapshots:
       '@rolldown/pluginutils': 1.0.0-rc.7
       vite: 8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)
 
-  '@vitest/coverage-v8@4.1.4(vitest@4.1.4)':
+  '@vitest/coverage-v8@4.1.7(vitest@4.1.4)':
     dependencies:
       '@bcoe/v8-coverage': 1.0.2
-      '@vitest/utils': 4.1.4
+      '@vitest/utils': 4.1.7
       ast-v8-to-istanbul: 1.0.0
       istanbul-lib-coverage: 3.2.2
       istanbul-lib-report: 3.0.1
@@ -17820,8 +17341,7 @@ snapshots:
       obug: 2.1.1
       std-env: 4.0.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.4(@opentelemetry/api@1.9.1)(@types/node@25.6.0)(@vitest/coverage-v8@4.1.4)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@25.6.0)(typescript@6.0.2))(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
-    optional: true
+      vitest: 4.1.4(@opentelemetry/api@1.9.1)(@types/node@25.6.0)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@25.6.0)(typescript@6.0.2))(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
 
   '@vitest/coverage-v8@4.1.7(vitest@4.1.7)':
     dependencies:
@@ -17831,7 +17351,7 @@ snapshots:
       istanbul-lib-coverage: 3.2.2
       istanbul-lib-report: 3.0.1
       istanbul-reports: 3.2.0
-      magicast: 0.5.2
+      magicast: 0.5.5
       obug: 2.1.1
       std-env: 4.0.0
       tinyrainbow: 3.1.0
@@ -18315,7 +17835,7 @@ snapshots:
       '@ai-sdk/gateway': 3.0.121(zod@4.6.5)
       '@ai-sdk/provider': 3.0.10
       '@ai-sdk/provider-utils': 4.0.27(zod@4.6.5)
-      '@opentelemetry/api': 1.9.0
+      '@opentelemetry/api': 1.9.1
       zod: 4.6.5
 
   ajv-formats@3.0.1(ajv@8.18.0):
@@ -19887,7 +19407,7 @@ snapshots:
       data-view-byte-offset: 1.0.1
       es-define-property: 1.0.1
       es-errors: 1.3.0
-      es-object-atoms: 1.1.1
+      es-object-atoms: 1.1.2
       es-set-tostringtag: 2.1.0
       es-to-primitive: 1.3.4
       function.prototype.name: 1.2.0
@@ -19899,7 +19419,7 @@ snapshots:
       has-property-descriptors: 1.0.2
       has-proto: 1.2.0
       has-symbols: 1.1.0
-      hasown: 2.0.2
+      hasown: 2.0.4
       internal-slot: 1.1.0
       is-array-buffer: 3.0.5
       is-callable: 1.2.7
@@ -20351,6 +19871,10 @@ snapshots:
   fdir@6.5.0(picomatch@4.0.4):
     optionalDependencies:
       picomatch: 4.0.4
+
+  fdir@6.5.0(picomatch@4.0.7):
+    optionalDependencies:
+      picomatch: 4.0.7
 
   fetch-blob@3.2.0:
     dependencies:
@@ -21117,7 +20641,7 @@ snapshots:
   internal-slot@1.1.0:
     dependencies:
       es-errors: 1.3.0
-      hasown: 2.0.2
+      hasown: 2.0.4
       side-channel: 1.1.0
 
   internmap@1.0.1: {}
@@ -21253,7 +20777,7 @@ snapshots:
       call-bound: 1.0.4
       gopd: 1.2.0
       has-tostringtag: 1.0.2
-      hasown: 2.0.2
+      hasown: 2.0.4
 
   is-regexp@3.1.0: {}
 
@@ -21862,12 +21386,6 @@ snapshots:
   magic-string@0.30.21:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
-
-  magicast@0.5.2:
-    dependencies:
-      '@babel/parser': 7.29.2
-      '@babel/types': 7.29.0
-      source-map-js: 1.2.1
 
   magicast@0.5.5:
     dependencies:
@@ -22745,7 +22263,7 @@ snapshots:
       call-bind: 1.0.9
       call-bound: 1.0.4
       define-properties: 1.2.1
-      es-object-atoms: 1.1.1
+      es-object-atoms: 1.1.2
       has-symbols: 1.1.0
       object-keys: 1.1.1
 
@@ -23025,7 +22543,7 @@ snapshots:
       '@oxfmt/binding-win32-ia32-msvc': 0.47.0
       '@oxfmt/binding-win32-x64-msvc': 0.47.0
 
-  oxlint-plugin-react-doctor@0.9.18:
+  oxlint-plugin-react-doctor@0.9.22:
     dependencies:
       '@shaderfrog/glsl-parser': 7.0.1
       '@typescript-eslint/types': 8.72.0
@@ -23055,28 +22573,6 @@ snapshots:
       '@oxlint/binding-win32-arm64-msvc': 1.60.0
       '@oxlint/binding-win32-ia32-msvc': 1.60.0
       '@oxlint/binding-win32-x64-msvc': 1.60.0
-
-  oxlint@1.67.0:
-    optionalDependencies:
-      '@oxlint/binding-android-arm-eabi': 1.67.0
-      '@oxlint/binding-android-arm64': 1.67.0
-      '@oxlint/binding-darwin-arm64': 1.67.0
-      '@oxlint/binding-darwin-x64': 1.67.0
-      '@oxlint/binding-freebsd-x64': 1.67.0
-      '@oxlint/binding-linux-arm-gnueabihf': 1.67.0
-      '@oxlint/binding-linux-arm-musleabihf': 1.67.0
-      '@oxlint/binding-linux-arm64-gnu': 1.67.0
-      '@oxlint/binding-linux-arm64-musl': 1.67.0
-      '@oxlint/binding-linux-ppc64-gnu': 1.67.0
-      '@oxlint/binding-linux-riscv64-gnu': 1.67.0
-      '@oxlint/binding-linux-riscv64-musl': 1.67.0
-      '@oxlint/binding-linux-s390x-gnu': 1.67.0
-      '@oxlint/binding-linux-x64-gnu': 1.67.0
-      '@oxlint/binding-linux-x64-musl': 1.67.0
-      '@oxlint/binding-openharmony-arm64': 1.67.0
-      '@oxlint/binding-win32-arm64-msvc': 1.67.0
-      '@oxlint/binding-win32-ia32-msvc': 1.67.0
-      '@oxlint/binding-win32-x64-msvc': 1.67.0
 
   oxlint@1.81.0:
     optionalDependencies:
@@ -23331,8 +22827,7 @@ snapshots:
 
   picomatch@4.0.4: {}
 
-  picomatch@4.0.7:
-    optional: true
+  picomatch@4.0.7: {}
 
   pify@2.3.0: {}
 
@@ -23673,7 +23168,7 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  react-doctor@0.9.18(@opentelemetry/core@2.12.0(@opentelemetry/api@1.9.1))(eslint@10.13.0(jiti@2.7.0))(react@19.2.7):
+  react-doctor@0.9.22(@opentelemetry/core@2.12.0(@opentelemetry/api@1.9.1))(eslint@10.13.0(jiti@2.7.0))(react@19.2.7):
     dependencies:
       '@astrojs/compiler': 4.0.0
       '@sentry/node': 10.76.2(@opentelemetry/core@2.12.0(@opentelemetry/api@1.9.1))
@@ -23688,7 +23183,7 @@ snapshots:
       oxc-parser: 0.148.0
       oxc-resolver: 11.24.2
       oxlint: 1.81.0
-      oxlint-plugin-react-doctor: 0.9.18
+      oxlint-plugin-react-doctor: 0.9.22
       playwright-core: 1.64.1
       prompts: 2.4.2
       typescript: 5.9.3
@@ -23800,7 +23295,7 @@ snapshots:
       preact: 10.29.8
       prompts: 2.4.2
       react: 19.2.7
-      react-doctor: 0.9.18(@opentelemetry/core@2.12.0(@opentelemetry/api@1.9.1))(eslint@10.13.0(jiti@2.7.0))(react@19.2.7)
+      react-doctor: 0.9.22(@opentelemetry/core@2.12.0(@opentelemetry/api@1.9.1))(eslint@10.13.0(jiti@2.7.0))(react@19.2.7)
       react-dom: 19.2.7(react@19.2.7)
       react-grab: 0.2.0(react@19.2.7)
     optionalDependencies:
@@ -23958,7 +23453,7 @@ snapshots:
       define-properties: 1.2.1
       es-abstract: 1.24.2
       es-errors: 1.3.0
-      es-object-atoms: 1.1.1
+      es-object-atoms: 1.1.2
       get-intrinsic: 1.3.0
       get-proto: 1.0.1
       which-builtin-type: 1.2.1
@@ -24414,7 +23909,7 @@ snapshots:
     dependencies:
       dunder-proto: 1.0.1
       es-errors: 1.3.0
-      es-object-atoms: 1.1.1
+      es-object-atoms: 1.1.2
 
   setimmediate@1.0.5: {}
 
@@ -24721,7 +24216,7 @@ snapshots:
     dependencies:
       call-bind: 1.0.9
       define-properties: 1.2.1
-      es-object-atoms: 1.1.1
+      es-object-atoms: 1.1.2
 
   string_decoder@1.1.1:
     dependencies:
@@ -25475,8 +24970,8 @@ snapshots:
   vite@7.3.3(@types/node@24.12.2)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.21.0)(yaml@2.9.0):
     dependencies:
       esbuild: 0.27.7
-      fdir: 6.5.0(picomatch@4.0.4)
-      picomatch: 4.0.4
+      fdir: 6.5.0(picomatch@4.0.7)
+      picomatch: 4.0.7
       postcss: 8.5.9
       rollup: 4.60.1
       tinyglobby: 0.2.16
@@ -25533,7 +25028,7 @@ snapshots:
       tsx: 4.21.0
       yaml: 2.9.0
 
-  vitest@4.1.4(@opentelemetry/api@1.9.1)(@types/node@25.6.0)(@vitest/coverage-v8@4.1.4)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@25.6.0)(typescript@6.0.2))(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)):
+  vitest@4.1.4(@opentelemetry/api@1.9.1)(@types/node@25.6.0)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.13.3(@types/node@25.6.0)(typescript@6.0.2))(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)):
     dependencies:
       '@vitest/expect': 4.1.4
       '@vitest/mocker': 4.1.4(msw@2.13.3(@types/node@25.6.0)(typescript@6.0.2))(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
@@ -25558,7 +25053,7 @@ snapshots:
     optionalDependencies:
       '@opentelemetry/api': 1.9.1
       '@types/node': 25.6.0
-      '@vitest/coverage-v8': 4.1.4(vitest@4.1.4)
+      '@vitest/coverage-v8': 4.1.7(vitest@4.1.4)
       jsdom: 29.1.1(@noble/hashes@2.2.0)
     transitivePeerDependencies:
       - msw
@@ -25577,10 +25072,10 @@ snapshots:
       magic-string: 0.30.21
       obug: 2.1.1
       pathe: 2.0.3
-      picomatch: 4.0.4
+      picomatch: 4.0.7
       std-env: 4.0.0
       tinybench: 2.9.0
-      tinyexec: 1.1.1
+      tinyexec: 1.2.4
       tinyglobby: 0.2.16
       tinyrainbow: 3.1.0
       vite: 7.3.3(@types/node@24.12.2)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.21.0)(yaml@2.9.0)
@@ -25607,10 +25102,10 @@ snapshots:
       magic-string: 0.30.21
       obug: 2.1.1
       pathe: 2.0.3
-      picomatch: 4.0.4
+      picomatch: 4.0.7
       std-env: 4.0.0
       tinybench: 2.9.0
-      tinyexec: 1.1.1
+      tinyexec: 1.2.4
       tinyglobby: 0.2.16
       tinyrainbow: 3.1.0
       vite: 8.0.8(@types/node@24.12.2)(esbuild@0.25.12)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)
@@ -25637,10 +25132,10 @@ snapshots:
       magic-string: 0.30.21
       obug: 2.1.1
       pathe: 2.0.3
-      picomatch: 4.0.4
+      picomatch: 4.0.7
       std-env: 4.0.0
       tinybench: 2.9.0
-      tinyexec: 1.1.1
+      tinyexec: 1.2.4
       tinyglobby: 0.2.16
       tinyrainbow: 3.1.0
       vite: 8.0.8(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)
@@ -25667,10 +25162,10 @@ snapshots:
       magic-string: 0.30.21
       obug: 2.1.1
       pathe: 2.0.3
-      picomatch: 4.0.4
+      picomatch: 4.0.7
       std-env: 4.0.0
       tinybench: 2.9.0
-      tinyexec: 1.1.1
+      tinyexec: 1.2.4
       tinyglobby: 0.2.16
       tinyrainbow: 3.1.0
       vite: 8.0.8(@types/node@24.12.2)(esbuild@0.25.12)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)
@@ -25697,10 +25192,10 @@ snapshots:
       magic-string: 0.30.21
       obug: 2.1.1
       pathe: 2.0.3
-      picomatch: 4.0.4
+      picomatch: 4.0.7
       std-env: 4.0.0
       tinybench: 2.9.0
-      tinyexec: 1.1.1
+      tinyexec: 1.2.4
       tinyglobby: 0.2.16
       tinyrainbow: 3.1.0
       vite: 8.0.8(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)
@@ -25727,10 +25222,10 @@ snapshots:
       magic-string: 0.30.21
       obug: 2.1.1
       pathe: 2.0.3
-      picomatch: 4.0.4
+      picomatch: 4.0.7
       std-env: 4.0.0
       tinybench: 2.9.0
-      tinyexec: 1.1.1
+      tinyexec: 1.2.4
       tinyglobby: 0.2.16
       tinyrainbow: 3.1.0
       vite: 8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)

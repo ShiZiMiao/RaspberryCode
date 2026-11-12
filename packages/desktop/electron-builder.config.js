@@ -350,6 +350,19 @@ const PACKAGING_PRUNE_PATTERNS = [
   "!node_modules/node-addon-api/**",
   "!node_modules/cpu-features/**",
   "!node_modules/nan/**",
+  // hoisted 布局（.npmrc node-linker=hoisted）下根 node_modules 是完整的 workspace 依赖图，
+  // 26.17 收集器会把「纯前端/纯开发」包一并收进 app.asar。以下各包已用项目自带的
+  // collectBundleExternalPackageNames(out/{main,host,preload,plugin-sandbox}) 逐项核实：
+  // 真实运行时依赖只有 18 个，这些均不在其中（渲染器已由 vite 打包进 renderer bundle，
+  // 不经 node_modules 加载）。v0.2.0 打包实测它们合计约 7.7k 文件 / app.asar +63MB。
+  "!node_modules/lucide-react/**",
+  "!node_modules/echarts/**",
+  "!node_modules/zrender/**",
+  "!node_modules/shiki/**",
+  "!node_modules/@shikijs/**",
+  "!node_modules/highlight.js/**",
+  "!node_modules/es-toolkit/**",
+  "!node_modules/msw/**",
 ];
 
 function buildDesktopArtifactName(platformName, extension = "${ext}") {
