@@ -351,7 +351,8 @@ export async function runRaspberryCodeProtocolAgent(
         memoryRoot: ({ workspacePath, workspaceIdentity }) =>
           getProjectMemoryRoot(protocolCliStorageRoot, workspacePath, workspaceIdentity),
       }),
-      syncAccountProviderConfig: activeProviderRegistryRuntime.syncAccountProviderConfig,
+      // 账号态 provider 配置同步（syncAccountProviderConfig）随账号体系一并移除：
+      // 单机版只有 BYOK 手动 Key，不存在需要从账号侧下发的配置。
       refreshProviderRegistry: async (reason) => {
         await activeProviderRegistryRuntime.runtime.registryService.refresh(reason);
       },

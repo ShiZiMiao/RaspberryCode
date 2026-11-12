@@ -1,7 +1,5 @@
 import {
   expandCustomCommandPrompt,
-  expandCustomCommandTemplate,
-  formatCustomCommandPrompt,
   type ExecutionPort,
   type SessionId,
   type TraceContext,

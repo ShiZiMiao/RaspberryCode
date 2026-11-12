@@ -66,7 +66,7 @@ export function stageAgentBundle({ repoRoot, platformKey, log = console.log }) {
   // 还没构建它（build-desktop-agent-cli 的 defaultBuildFilters 会先建再 stage），跳过
   // 并留给打包链报错，不在共享实现里重复校验。
   const nodeReplHostSource = resolve(repoRoot, "apps", "raspberrycode-cli", "packages", "node-repl-host");
-  const nodeReplHostTarget = resolve(glmDir, "packages", "node-repl-host");
+  const nodeReplHostTarget = resolve(agentDir, "packages", "node-repl-host");
   if (existsSync(resolve(nodeReplHostSource, "dist", "mcp", "server.js"))) {
     mkdirSync(nodeReplHostTarget, { recursive: true });
     for (const entry of STAGED_NODE_REPL_HOST_ENTRIES) {

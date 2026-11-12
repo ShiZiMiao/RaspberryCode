@@ -348,6 +348,7 @@ export class ConversationTelemetryFactNormalizer {
             : {}),
           ...(inputId ? { sourceCommandId: inputId } : {}),
           ...automationAdmission(inputId, optionalString(payload.automationId)),
+          // offPeakTaskId / offPeakRunType：闲时任务体系已拆除，TurnStartedPayload 不再携带。
           ...(payload.executionKind ? { executionKind: payload.executionKind } : {}),
           ...(payload.inputSource ? { inputSource: payload.inputSource } : {}),
           ...(backgroundSource ? { backgroundSource } : {}),

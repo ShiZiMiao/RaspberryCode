@@ -399,7 +399,6 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
     name: "raspberrycode-site",
     defaultEnabled: true,
     listing: {
-      author: ZAI_AUTHOR,
       category: "productivity",
       displayName: "RaspberryCode Sites",
       displayName_i18n: { "zh-CN": "RaspberryCode Sites" },
@@ -408,7 +407,6 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
       },
       examplePrompts: ["Deploy this project as a website"],
       examplePrompts_i18n: { "zh-CN": ["把这个项目部署成网站"] },
-      icon: `${OFFICIAL_PLUGIN_ASSETS_BASE_URL}/raspberrycode-site/icon.png`,
     },
     rootCandidates: [
       "packages/raspberrycode-site-plugin",

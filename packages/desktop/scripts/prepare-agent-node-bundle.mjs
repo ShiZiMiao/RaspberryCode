@@ -444,7 +444,8 @@ function stageBundledSkillPack() {
 async function stageBundledNpmRuntime() {
   const stagedRoot = await stageBundledNpm({
     cacheDir: resolve(repoRoot, "node_modules", ".cache", "raspberrycode-bundled-npm"),
-    glmDir,
+    // stageBundledNpm 的入参名沿用上游的 glmDir（历史命名），语义即本包的 agent 暂存目录。
+    glmDir: agentDir,
   });
   console.log(`[prepare:agent-bundle] staged npm@${BUNDLED_NPM_VERSION} into ${stagedRoot}`);
 }

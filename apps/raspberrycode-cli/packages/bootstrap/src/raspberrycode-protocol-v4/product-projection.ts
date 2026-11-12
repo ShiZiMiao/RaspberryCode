@@ -82,6 +82,7 @@ import {
   parseRaspberryCodeBackgroundTaskNotifications,
   resolveRaspberryCodeBackgroundTaskControlKind,
   raspberrycodeBackgroundTaskNotificationToolUpdateStatus,
+  type RaspberryCodeParsedBackgroundTaskNotification,
 } from "@raspberrycode/shared";
 import { verdictWorkspaceHookReviewRequest } from "@raspberrycode/shared/workspace-hook-review-monotonicity";
 import type {
@@ -3694,7 +3695,6 @@ export class ProductProjection {
               ? { state: "steering" }
               : { state: "notRequested" },
       dispatch: { state: "queued" },
-      ...(highspeed ? { highspeed } : {}),
       automationId: payload.automationId ?? existing?.automationId,
       ...(payload.toolDisallowlist ? { toolDisallowlist: [...payload.toolDisallowlist] } : {}),
       admittedAt: payload.intent?.admittedAt ?? existing?.admittedAt ?? this.ms(event),

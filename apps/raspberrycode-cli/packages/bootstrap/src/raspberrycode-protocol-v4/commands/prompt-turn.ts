@@ -198,7 +198,6 @@ async function startPromptTurnAfterPreflight(
           ? { browserAmbientContext: params.browserAmbientContext }
           : {}),
         inputId: params.inputId,
-        ...(params.inputPresentation ? { inputPresentation: params.inputPresentation } : {}),
         ...turnBackgroundAttributionOf({ automationId: activeAutomationId }),
         intent: params.intent,
         ...(params.modelExecution ? { modelExecution: params.modelExecution } : {}),

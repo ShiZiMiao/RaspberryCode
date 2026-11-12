@@ -96,8 +96,6 @@ export const builtInTools: ToolEntry[] = [
   cronUpdateToolEntry,
   cronDeleteToolEntry,
   cronPauseSelfToolEntry,
-  offPeakCreateToolEntry,
-  offPeakListToolEntry,
   enterPlanModeToolEntry,
   exitPlanModeToolEntry,
   askUserQuestionToolEntry,

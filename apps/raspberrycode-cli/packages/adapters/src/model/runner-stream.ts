@@ -398,7 +398,9 @@ export async function* runStreamText(input: {
             requestHeaderCount,
             requestHeaders,
             repairThinkingSignatureRejection,
-            canRecoverProjectToken: (error) => authRetry.canRecoverProjectToken(error),
+            // 账号体系与 PAT 刷新重试已随登录态拆除（AccountRequestRetry 一并移除）：
+            // 没有可恢复的项目级 token，恒返回 false 即「不进入刷新重试分支」。
+            canRecoverProjectToken: () => false,
             countUnrecognizedCode,
             retryBudgetAttempt,
             startedAt,

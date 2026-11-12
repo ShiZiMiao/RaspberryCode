@@ -1,5 +1,5 @@
-import { observeLocalTtftCompaction } from "../local-ttft-compaction.js";
-import { LocalTtftClockWatch } from "../local-ttft-clock.js";
+import { observeLocalTtftCompaction } from "./local-ttft-compaction.js";
+import { LocalTtftClockWatch } from "./local-ttft-clock.js";
 import {
   SessionEventType,
   observeLocalTurnPreparation,
@@ -14,7 +14,7 @@ import {
 import {
   ConversationTelemetryFactNormalizer,
   streamingParentToolCallId,
-} from "../conversation-telemetry-facts.js";
+} from "./conversation-telemetry-facts.js";
 import { randomUUID } from "node:crypto";
 import {
   LOCAL_TTFT_MAX_PENDING,

@@ -117,8 +117,12 @@ const artifactRoots = [
 // 二进制产物按 ASCII 子串扫（asar/cjs/map/tar.gz 内嵌文本）。
 const binaryArtifactP0 = /(?<![a-z0-9])z[-_ ]?code/iu;
 const binaryArtifactP1 = /Z\.ai|codegeex/iu;
-// 法务声明文件（上游技能 LICENSE 等）：Apache-2.0/MIT 版权行，产物中合法保留。
-const artifactLegalFiles = /(?:^|\/)(?:LICENSE|LICENSE\.txt|LICENSES\.[^/]*\.html|NOTICE[^/]*)$/iu;
+// 法务声明文件（上游技能 LICENSE、自动生成的第三方许可证清单等）：Apache-2.0/MIT 版权行
+// 与「第三方作品源码来源路径」都是许可证归属必需内容，产物中合法保留。
+// THIRD-PARTY-NOTICES.md 由 scripts/licenses.mjs 生成，正文含 apps/zcode-cli/... 这类
+// 原始来源路径记录（归属声明，不是品牌自称），必须与 LICENSE/NOTICE 同口径豁免。
+const artifactLegalFiles =
+  /(?:^|\/)(?:LICENSE|LICENSE\.txt|LICENSES\.[^/]*\.html|NOTICE[^/]*|THIRD-PARTY-NOTICES\.[^/]*)$/iu;
 // 模型 ID 目录数据（编译产物中的平铺第三方标识，如 GLM 系模型 ID）。
 const modelIdData = /charglm|codegeex-4|emohaa/iu;
 // 厂商 logo 资产清单（平铺随包，与源码层 provider-icons 白名单同口径）。
@@ -183,8 +187,21 @@ for (const root of scanRoots) {
     });
 
     if (p0Lines.length > 0) {
-      if (isP0Exempt) exemptShown.push({ rel, count: p0Lines.length, kind: "P0-exempt" });
-      else p0Hits.push({ rel, hits: p0Lines });
+      // bundled-agents / dist / out 里是构建期复制进来的产物副本（如插件包整目录被拷进
+      // packages/desktop/bundled-agents/<平台>/agent/）。它们的上游路径豁免在源码层已成立
+      // （p0ExemptPaths 按 apps/... 前缀匹配），副本前缀变了会漏判，这里按产物同口径处理：
+      // 命中原文件的 wire 豁免即视为合法副本，不再计为源码层 P0 违规。
+      const isArtifactCopy = /(^|\/)(dist|out|win-unpacked|bundled-agents)(\/|$)/u.test(rel);
+      // 还原副本对应的源码路径：bundled-agents/<平台>/agent/<包内相对路径>
+      // → apps/raspberrycode-cli/<包内相对路径>，再套源码层豁免表判定。
+      const artifactCopySourceRel = isArtifactCopy
+        ? `apps/raspberrycode-cli/${rel.replace(/^.*?\/bundled-agents\/[^/]+\/agent\//u, "")}`
+        : rel;
+      const isArtifactCopyExempt =
+        isArtifactCopy && p0ExemptPaths.some((re) => re.test(artifactCopySourceRel));
+      if (isP0Exempt || isArtifactCopyExempt) {
+        exemptShown.push({ rel, count: p0Lines.length, kind: isP0Exempt ? "P0-exempt" : "P0-exempt(产物副本)" });
+      } else p0Hits.push({ rel, hits: p0Lines });
     }
     if (p1Lines.length > 0) {
       const allowed = p1AllowedFiles.find((r) => r.path.test(rel));
