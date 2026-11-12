@@ -30,6 +30,7 @@ export function UpdateStatusDialog({
   onCancelDownload,
   onDownloadUpdate,
   onOpenChange,
+  onOpenReleaseNotesExternalUrl,
   onRestartUpdate,
   onSkipUpdate,
   open,
@@ -39,6 +40,7 @@ export function UpdateStatusDialog({
   releaseDateLabel,
   showOverlay = true,
   skippableVersion,
+  manualDownloadUrl,
 }: {
   displayVersion: string;
   edgeToEdge?: boolean;
@@ -49,6 +51,11 @@ export function UpdateStatusDialog({
   onAutoDownloadAndInstallUpdatesChange: (enabled: boolean) => Promise<void>;
   onCancelDownload: () => Promise<void>;
   onDownloadUpdate: () => Promise<void>;
+  /**
+   * 镜像与直连都失败时给出的手动下载页地址（GitHub release 页）。
+   * 有值时「下载更新」替换为「手动下载」——此态下自动下载已被证明不可用。
+   */
+  manualDownloadUrl?: string;
   onOpenChange: (open: boolean) => void;
   onOpenReleaseNotesExternalUrl: (url: string) => void;
   onRestartUpdate: () => Promise<void>;
@@ -238,6 +245,17 @@ export function UpdateStatusDialog({
                 onClick={() => void onCancelDownload()}
               >
                 {intl.formatMessage({ id: "updateDialog.cancelDownload" })}
+              </Button>
+            ) : manualDownloadUrl ? (
+              // 自动下载在镜像与直连两跳都失败：改走手动下载，把 release 页交给浏览器。
+              <Button
+                type="button"
+                size="lg"
+                className="h-9 px-4"
+                disabled={isUpdateActionPending}
+                onClick={() => onOpenReleaseNotesExternalUrl(manualDownloadUrl)}
+              >
+                {intl.formatMessage({ id: "updateDialog.manualDownload" })}
               </Button>
             ) : (
               <Button

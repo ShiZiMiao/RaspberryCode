@@ -44,6 +44,13 @@ export type UpdateStatePayload =
       enabled: boolean;
       version: string;
       releaseNotes?: PostUpdateReleaseNotesPayload;
+      /**
+       * 镜像与直连都失败后置为 true：本次自动下载不可用，UI 需提供「手动下载」入口
+       * （打开 release 页面，交给浏览器/下载工具）。重试或换网络后会自动清除。
+       */
+      manualDownloadRequired?: boolean;
+      /** 手动下载目标页（GitHub release 详情页），仅 manualDownloadRequired 时有值。 */
+      manualDownloadUrl?: string;
     }
   | {
       kind: "download-progress";

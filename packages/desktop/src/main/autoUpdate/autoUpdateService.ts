@@ -68,6 +68,7 @@ import type {
   InitAutoUpdateServiceOptions,
   SettingServiceLike,
 } from "./contract.js";
+import { buildManualDownloadUrl, UpdateDownloadFallback } from "./updateMirror.js";
 
 /** 单通道语义：跳过版本沿用 skippedElectronUpdateVersions.stable（读写兼容既有字段）。 */
 const SKIP_VERSION_CHANNEL = "stable" as const;
@@ -121,6 +122,17 @@ let downloadCancellationToken: CancellationToken | null = null;
 let downloadingVersion: string | null = null;
 let availableUpdate: { version: string; releaseNotes?: PostUpdateReleaseNotesPayload } | null = null;
 let silentCheckTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** 下载镜像三级回退状态（mirror → direct → manual）；由 webRequest 层读取。 */
+const downloadFallback = new UpdateDownloadFallback();
+/** 当前生效的更新源仓库，供 manual 回退时拼 release 页面地址。 */
+let feedOwner: string = DEFAULT_UPDATE_FEED_GITHUB.owner;
+let feedRepo: string = DEFAULT_UPDATE_FEED_GITHUB.repo;
+
+/** 下载阶段的回退状态查询入口（updateMirrorSession 接线时注入）。 */
+export function getUpdateDownloadRoute() {
+  return downloadFallback.currentRoute;
+}
 
 // ---------------------------------------------------------------------------
 // 纯函数（可单测）
@@ -223,6 +235,9 @@ async function readPreferences(): Promise<{
 function applyFeed(owner: string, repo: string): void {
   const feed = resolveGithubFeedOptions(owner, repo);
   updater?.setFeedURL(feed);
+  // 记录当前仓库：下载回退到 manual 时要用它拼 release 页面地址。
+  feedOwner = feed.owner;
+  feedRepo = feed.repo;
   logger.info(`[auto-update] github feed applied owner=${feed.owner} repo=${feed.repo}`);
 }
 
@@ -257,6 +272,8 @@ function handleUpdateAvailable(info: UpdateInfo): void {
 function handleDownloadProgress(progress: ProgressInfo): void {
   if (quitAndInstallState !== "idle") return;
   downloadingVersion = progress.total > 0 ? downloadingVersion : downloadingVersion;
+  // 收到有效字节即视为当前路线可用，锁定不再降级（避免中途换源导致文件拼接损坏）。
+  if (progress.transferred > 0) downloadFallback.markSucceeded();
   nextState({
     kind: "download-progress",
     enabled,
@@ -287,6 +304,7 @@ function handleUpdaterError(error: Error): void {
     logger.info("[auto-update] download cancelled by user");
     downloadingVersion = null;
     downloadCancellationToken = null;
+    downloadFallback.reset();
     if (availableUpdate && quitAndInstallState === "idle") {
       nextState({
         kind: "update-available",
@@ -298,10 +316,52 @@ function handleUpdaterError(error: Error): void {
     return;
   }
   releaseUpdateTargetLockForFailure();
+
+  // 下载阶段失败且尚有下一级可退时，自动降级重试：
+  //   mirror（ghfast）→ direct（github 原站）→ manual（交给用户手动下载）。
+  // 仅在「正在下载」语义下降级：检查失败不该被当成下载失败反复重试。
+  if (state.kind === "download-progress" && downloadFallback.currentAttemptKey && !downloadFallback.hasSucceeded) {
+    const failedRoute = downloadFallback.currentRoute;
+    const nextRoute = downloadFallback.advance();
+    if (nextRoute !== "manual" && availableUpdate) {
+      logger.warn(
+        `[auto-update] download failed on ${failedRoute} (${error.message}); retry via ${nextRoute}`,
+      );
+      downloadingVersion = availableUpdate.version;
+      downloadCancellationToken = new CancellationToken();
+      void updater?.downloadUpdate(downloadCancellationToken).catch((retryError: unknown) => {
+        if (!isCancellationError(retryError)) {
+          logger.warn(`[auto-update] retry downloadUpdate rejected: ${String(retryError)}`);
+        }
+      });
+      return;
+    }
+    // 降级到 manual：保留 update-available 语义并标记需要手动下载。
+    if (nextRoute === "manual" && availableUpdate) {
+      logger.warn(
+        `[auto-update] download failed on ${failedRoute} (${error.message}); manual download required`,
+      );
+      downloadingVersion = null;
+      downloadCancellationToken = null;
+      if (quitAndInstallState === "idle") {
+        nextState({
+          kind: "update-available",
+          enabled,
+          version: availableUpdate.version,
+          releaseNotes: availableUpdate.releaseNotes,
+          manualDownloadRequired: true,
+          manualDownloadUrl: buildManualDownloadUrl(feedOwner, feedRepo, availableUpdate.version),
+        });
+      }
+      return;
+    }
+  }
+
   logger.warn(`[auto-update] updater error: ${error.message}`);
   if (quitAndInstallState === "idle") {
     downloadingVersion = null;
     downloadCancellationToken = null;
+    downloadFallback.reset();
     nextState({ kind: "idle", enabled });
   }
 }
@@ -453,7 +513,9 @@ export function downloadAvailableUpdate(reason = "renderer"): void {
   if (quitAndInstallState !== "idle") return;
   downloadingVersion = state.version;
   downloadCancellationToken = new CancellationToken();
-  logger.info(`[auto-update] download started (${reason}) version=${state.version}`);
+  // 每次新下载都从镜像是重试：不让上一次直连成功永久跳过镜像。
+  downloadFallback.beginAttempt(state.version);
+  logger.info(`[auto-update] download started (${reason}) version=${state.version} route=${downloadFallback.currentRoute}`);
   void updater.downloadUpdate(downloadCancellationToken).catch((error: unknown) => {
     // 真实失败由 error 事件统一收口；这里只防空拒绝未处理。
     if (!isCancellationError(error)) {

@@ -47,6 +47,20 @@ release notes 展示与「桌面端过旧」强更提示。
    迟到的检查/下载结果不得替换已锁定的安装目标（`quitAndInstallState !== "idle"` 时忽略）。
 9. **中立性**：更新链路无遥测上报、无强更、无灰度、无厂商域名；GitHub 仓库地址仅作为
    用户可配的更新源，不引入其他外部服务。
+10. **下载镜像与三级回退**：
+    - **动机**：GitHub Releases 的下载域名在部分网络下不可用或极慢。实测同一 126MB
+      安装包：直连约 34KB/s（全量需 63 分钟）；经 `ghfast.top` 前缀镜像约 1.05MB/s（2 分钟）。
+    - **路线顺序**：`mirror`（默认 `https://ghfast.top/`，前缀 + 完整原 URL 形态）
+      → `direct`（原站直连，等同改造前行为）→ `manual`（不再自动下载，UI 给「手动下载」）。
+    - **触发降级**：仅当处于「下载中」且本次下载尚未收到任何有效字节时，失败才降级；
+      收到首块数据即锁定当前路线，避免中途换源拼坏文件。检查更新的失败不触发降级。
+    - **实现位置**：不改 electron-updater 内部（其下载 URL 由 baseUrl 拼装，`resolveFiles`
+      私有、`createClient` 不可注入，无法靠配置接入路径前缀式镜像）。改在 Electron
+      `session.webRequest.onBeforeRequest` 重写 release 资产下载请求；
+      只拦 `github.com/<o>/<r>/releases/download/...`，不影响 `api.github.com` 元数据请求。
+    - **手动兜底**：两跳都失败时 `update-available` 携带 `manualDownloadRequired: true` 与
+      `manualDownloadUrl`（release 详情页而非资产直链），弹窗把「下载更新」替换为「手动下载」，
+      交由浏览器/下载工具打开。
 
 ## 状态所有者
 

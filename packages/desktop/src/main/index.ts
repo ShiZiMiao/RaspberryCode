@@ -128,7 +128,8 @@ import {
   updateCheckForUpdateMenuState,
   updateRaspberryCodeStdioTapDevMenuState,
 } from "./desktopApplicationMenu.js";
-import { disposeAutoUpdateService, initAutoUpdateService, isAutoUpdateMode } from "./autoUpdate/index.js";
+import { disposeAutoUpdateService, getUpdateDownloadRoute, initAutoUpdateService, isAutoUpdateMode } from "./autoUpdate/index.js";
+import { installUpdateMirrorRedirect } from "./autoUpdate/updateMirrorSession.js";
 import { applyAppIcon } from "./desktopWindowChrome.js";
 import { resolveWindowsAppUserModelIdForFlavor } from "../../scripts/desktop-product-identity.mjs";
 import type { DesktopWindowSize } from "./desktopWindowSize.js";
@@ -1763,6 +1764,17 @@ app.whenReady().then(async () => {
   // （v0.1.0 实机：electron-updater 默认导入取到命名空间对象 → updater.on 抛 TypeError
   //  → app.whenReady() 整链中断 → 进程活着但永不建窗，用户观感是"点击无反应"）。
   try {
+    // 下载镜像接线：把 release 资产下载请求按当前回退阶段改写（mirror → direct → manual）。
+    // 必须在 initAutoUpdateService 之前装好，否则首次自动下载可能赶不上重定向；
+    // 装不上也不致命（退回直连，等同改造前行为）。
+    try {
+      installUpdateMirrorRedirect({
+        session: session.defaultSession,
+        getRoute: getUpdateDownloadRoute,
+      });
+    } catch (mirrorError) {
+      logger.warn("[startup] update mirror redirect install failed (fallback to direct):", mirrorError);
+    }
     initAutoUpdateService({
     settingService: mainSettingService,
     broadcastState: (updateState) => {

@@ -292,6 +292,11 @@ export function UpdateStatusDialogController({
       intl={intl}
       isUpdateActionPending={updateActionInFlight !== null}
       localizedUpdateReleaseNotes={visibleUpdateReleaseNotes}
+      manualDownloadUrl={
+        updateState?.kind === "update-available" && updateState.manualDownloadRequired
+          ? updateState.manualDownloadUrl
+          : undefined
+      }
       onAutoDownloadAndInstallUpdatesChange={handleAutoDownloadAndInstallUpdatesChange}
       onCancelDownload={handleCancelDownload}
       onDownloadUpdate={handleDownloadUpdate}
