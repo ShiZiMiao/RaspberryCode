@@ -2,14 +2,15 @@ import { resolve } from "node:path";
 import { createServer } from "vite";
 
 const webRoot = resolve(import.meta.dirname, "../../web");
-// 端口由夹具传入；"0" 表示独立夹具，从 5174 开始由 Vite 自行绑定空闲端口（Vite 把 0 当作默认端口）。
+// 端口由夹具传入；"0" 表示独立夹具，从 6174 开始由 Vite 自行绑定空闲端口（Vite 把 0 当作默认端口）。
+// 6174 的由来同 desktop/vite.config.ts：Windows 动态端口保留段含 5141-5240，原 5174 无法 bind。
 const requestedPort = process.argv[2] || "5173";
 const server = await createServer({
   root: webRoot,
   configFile: resolve(webRoot, "vite.config.ts"),
   server: {
     host: "127.0.0.1",
-    port: requestedPort === "0" ? 5174 : Number(requestedPort),
+    port: requestedPort === "0" ? 6174 : Number(requestedPort),
     strictPort: requestedPort !== "0",
   },
   optimizeDeps: {

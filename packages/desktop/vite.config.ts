@@ -217,7 +217,9 @@ export default defineConfig(({ command, mode }) => {
       },
       dedupe: ["react", "react-dom", "lucide-react"],
     },
-    server: { port: 5174, strictPort: true },
+    // 6174 而非 Vite 惯用的 5174：Windows 的动态端口保留段（Hyper-V/WSL 占用）
+    // 会包含 5141-5240，5174 在其中无法 bind（EACCES）。6174 不在任何保留段内。
+    server: { port: 6174, strictPort: true },
     define: {
       __RASPBERRYCODE_VERSION__: JSON.stringify(buildMetadata.appVersion),
       __RASPBERRYCODE_MIN_COMPATIBLE_VERSION__: JSON.stringify(buildMetadata.minCompatibleVersion),
