@@ -1099,6 +1099,20 @@ export default {
   nsis: {
     oneClick: false,
     allowToChangeInstallationDirectory: true,
+    // 快捷方式必须显式要求「始终创建」。
+    //
+    // electron-builder 的默认策略会配合 keepShortcuts 机制：安装器把
+    // KeepShortcuts=true 写进注册表，后续安装读到它就认为「用户可能删过快捷方式，
+    // 不要重建」。但 addStartMenuLink 在该分支里只做「旧路径 → 新路径」重命名，
+    // 路径相同（同版本重装、或升级时 ShortcutName 未变）时既不重命名也不创建，
+    // 而 cleanupOldMenuDirectory 已经把原快捷方式删掉 —— 结果就是快捷方式凭空消失。
+    //
+    // 实测（2026-11-13，0.2.1 本机）：首次安装生成 1 个开始菜单项 + 1 个桌面项；
+    // 紧接着再装一次同一安装包，两者都被清空。用户侧表现即「装完没有快捷方式」。
+    // createDesktopShortcut: "always" 会定义 RECREATE_DESKTOP_SHORTCUT，
+    // 绕过 keepShortcuts 判定，保证每次安装都重建。
+    createDesktopShortcut: "always",
+    createStartMenuShortcut: true,
     // Windows 安装流程使用独立安装图标，和应用运行时图标解耦。
     installerIcon: "build/icon_installer.ico",
     uninstallerIcon: "build/icon_installer.ico",

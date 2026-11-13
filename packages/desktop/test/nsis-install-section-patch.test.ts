@@ -110,3 +110,48 @@ describe("NSIS installSection template patch", () => {
     );
   });
 });
+
+describe("快捷方式必须每次安装都重建", () => {
+  // 需覆盖补丁依次要求的全部锚点，否则会在更早的 replaceRequired 处抛错，
+  // 测不到快捷方式这一段。
+  const template = [
+    "${IfNot} ${Silent}",
+    "  SetDetailsPrint none",
+    "${endif}",
+    "!insertmacro uninstallOldVersion SHELL_CONTEXT",
+    "!insertmacro handleUninstallResult SHELL_CONTEXT",
+    '${if} $installMode == "all"',
+    "  !insertmacro uninstallOldVersion HKEY_CURRENT_USER",
+    "  !insertmacro handleUninstallResult HKEY_CURRENT_USER",
+    "${endIf}",
+    "!insertmacro installApplicationFiles",
+    "!insertmacro addStartMenuLink $keepShortcuts",
+    "!insertmacro addDesktopLink $keepShortcuts",
+    "",
+  ].join("\n");
+
+  it("在创建快捷方式前把 keepShortcuts 压回 false", () => {
+    const patched = patchNsisInstallSectionSource(template);
+    // keepShortcuts=true 时 addStartMenuLink 只做「旧路径→新路径」重命名，
+    // 路径不变时什么都不做，而旧的已被 cleanupOldMenuDirectory 删除，
+    // 结果就是每装一次少一批快捷方式（实测 0.2.1 重复安装后开始菜单与桌面全空）。
+    const forceIndex = patched.indexOf('StrCpy $keepShortcuts "false"');
+    const startMenuIndex = patched.indexOf("addStartMenuLink");
+    expect(forceIndex).toBeGreaterThanOrEqual(0);
+    expect(forceIndex).toBeLessThan(startMenuIndex);
+  });
+
+  it("强制重置位于两个宏之前，开始菜单与桌面都走重建分支", () => {
+    const patched = patchNsisInstallSectionSource(template);
+    const forceIndex = patched.indexOf('StrCpy $keepShortcuts "false"');
+    expect(forceIndex).toBeLessThan(patched.indexOf("addStartMenuLink"));
+    expect(forceIndex).toBeLessThan(patched.indexOf("addDesktopLink"));
+  });
+
+  it("重复打补丁保持幂等（不会叠加多条重置）", () => {
+    const once = patchNsisInstallSectionSource(template);
+    const twice = patchNsisInstallSectionSource(once);
+    const count = twice.split('StrCpy $keepShortcuts "false"').length - 1;
+    expect(count).toBe(1);
+  });
+});
