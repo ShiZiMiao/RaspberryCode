@@ -194,8 +194,14 @@ for (const root of scanRoots) {
       const isArtifactCopy = /(^|\/)(dist|out|win-unpacked|bundled-agents)(\/|$)/u.test(rel);
       // 还原副本对应的源码路径：bundled-agents/<平台>/agent/<包内相对路径>
       // → apps/raspberrycode-cli/<包内相对路径>，再套源码层豁免表判定。
+      //
+      // 打包后平台段会消失：electron-builder 把 bundled-agents/<平台>/agent/ 整个复制成
+      // dist/<target>/resources/agent/，于是路径里不再有 bundled-agents。
+      // 只认 bundled-agents 会让这类副本漏判豁免（实测 dist/win-unpacked/resources/agent/
+      // 下的 site-plugin 被误报 P0）。故补 resources/agent/ 这一形态。
+      const agentPkgRel = rel.replace(/^.*?\/(?:bundled-agents\/[^/]+\/agent|resources\/agent)\//u, "");
       const artifactCopySourceRel = isArtifactCopy
-        ? `apps/raspberrycode-cli/${rel.replace(/^.*?\/bundled-agents\/[^/]+\/agent\//u, "")}`
+        ? `apps/raspberrycode-cli/${agentPkgRel}`
         : rel;
       const isArtifactCopyExempt =
         isArtifactCopy && p0ExemptPaths.some((re) => re.test(artifactCopySourceRel));
@@ -216,6 +222,21 @@ for (const root of scanRoots) {
 const artifactP0Hits = [];
 const artifactP1Notes = [];
 const artifactExempt = [];
+
+/**
+ * 产物副本是否命中源码层豁免。
+ *
+ * 产物里的 agent 包是源码的副本，路径前缀变了（bundled-agents/<平台>/agent/ →
+ * dist/<target>/resources/agent/），必须还原成源码路径再套 p0ExemptPaths，
+ * 否则站点的 `.__zcode/` 保留名（外部服务端约定）会被重复计为产物 P0。
+ * 与源码扫描分支保持同一判定口径。
+ */
+function artifactP0Exempt(rel) {
+  const pkgRel = rel.replace(/^.*?\/(?:bundled-agents\/[^/]+\/agent|resources\/agent)\//u, "");
+  if (pkgRel === rel) return false;
+  return p0ExemptPaths.some((re) => re.test(`apps/raspberrycode-cli/${pkgRel}`));
+}
+
 for (const root of artifactRoots) {
   const abs = join(repoRoot, root);
   let stat;
@@ -239,6 +260,7 @@ for (const root of artifactRoots) {
       const p1 = asText.match(binaryArtifactP1);
       if (p0) {
         if (legal) artifactExempt.push({ rel, note: "法务声明" });
+        else if (artifactP0Exempt(rel)) artifactExempt.push({ rel, note: "P0-exempt(产物副本)" });
         else {
           const idx = asText.indexOf(p0[0]);
           artifactP0Hits.push({ hits: [{ line: 0, text: p0[0] + " @ " + asText.slice(Math.max(0, idx - 30), idx + 50).replace(/[^\x20-\x7e]/g, ".") }], rel });
