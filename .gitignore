@@ -75,3 +75,6 @@ packages/desktop/resources/macos-window-bounds/
 __pycache__/
 *.pyc
 .raspberrycode-runtime
+
+# 本机测试截图（非产品资产）
+.shots/
