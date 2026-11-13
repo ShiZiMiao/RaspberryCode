@@ -34,14 +34,37 @@
 **不要改** `apps/raspberrycode-cli/package.json` 的版本（`private: true`，跟随上游 ZCode 版本线，
 与产品发版无关）。
 
+## 发版铁律：未全面测试禁止发版
+
+**用户 2026-11-13 明确要求。** 这不是建议，是准入门槛。
+
+发版前必须过 `node scripts/release-gate.mjs`（`pnpm release` 已内置该前置步骤，
+`release:raw` 才是裸 release-it）。该脚本自动判定版本一致性、产物内容、三份资产；
+**但它无法替代真实安装与功能点验**，脚本末尾会打印人工确认清单，逐项做完才算通过。
+
+历史教训（两次都是用户先发现）：
+- `0.2.0` / `0.2.1`：更新下载功能实际不可用（镜像重定向装错 session）。
+- `0.1.0` / `0.2.0`：装完没有开始菜单与桌面快捷方式。
+
 ## 发版检查清单
 
 1. 确认变更类别 → 决定升哪一位（见上表）。
 2. 改 `packages/desktop/package.json` 与根 `package.json` 的 `version`。
-3. 确认 `pnpm-lock.yaml` 若涉及依赖变更已被提交（否则 CI 装出不同树）。
-4. 跑门禁：`typecheck` / `lint` / `audit-neutrality`。
-5. 构建安装包（见项目记忆的打包定式）。
-6. 打 tag `v<version>` 并推送；创建 GitHub Release，**必须上传三个资产**：
+3. **重新生成构建元数据**：`pnpm --dir packages/desktop run prepare:build-meta`。
+   跳过这步会打出旧版本号的包 —— `extraMetadata.version` 读的是
+   `out/metadata/build-meta.json` 缓存，不是 package.json。
+4. **完整构建**：`pnpm --dir packages/desktop run build`（= 运行时资产 +
+   build-meta + `run-production-build.mjs` 真正编译）。
+   **只跑 electron-builder 不会编译 TS**，会拿旧 `out/` 打包。
+5. 跑门禁：`typecheck` / `lint` / `audit-neutrality`。
+6. 构建安装包（见项目记忆的打包定式）。
+7. **真实安装与升级实测**（不可跳过）：
+   - 卸载旧版 → 装新版 → 版本号正确
+   - 开始菜单 + 桌面快捷方式存在且能启动
+   - 旧版 → 检查更新 → 下载 → 安装 → 重启 → 版本号变新
+8. **主要功能以用户视角逐项点过**：新建对话收发消息、文件编辑、终端、
+   设置页、MCP/技能/插件、自动化。UI 改动必须看真实截图。
+9. 打 tag `v<version>` 并推送；创建 GitHub Release，**必须上传三个资产**：
    - `RaspberryCode-<version>-win-x64.exe`
    - `RaspberryCode-<version>-win-x64.exe.blockmap`（差量更新用）
    - `latest.yml`（自更新清单）

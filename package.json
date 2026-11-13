@@ -60,7 +60,7 @@
     "lint:fix": "oxlint --fix --fix-suggestions",
     "bootstrap": "node scripts/bootstrap.mjs",
     "bootstrap:with-remote": "node scripts/bootstrap.mjs --with-remote",
-    "release": "release-it",
+    "release": "node scripts/release-gate.mjs && release-it",
     "release:cli": "pnpm --dir apps/raspberrycode-cli run release",
     "release:cli:dry": "pnpm --dir apps/raspberrycode-cli run release:dry",
     "architecture:check": "node scripts/architecture/architecture-check.mjs check",
@@ -76,7 +76,10 @@
     "provider:regression": "pnpm --filter @raspberrycode/bootstrap... build && tsx apps/raspberrycode-cli/tools/provider-regression/src/cli.ts",
     "test:engineering": "vitest run --project engineering",
     "test:engineering:affected": "node scripts/run-affected-engineering-tests.mjs",
-    "test:engineering-tools": "node --test scripts/test/affected-engineering-test-cli.test.mjs scripts/test/pre-push-worktree.test.mjs scripts/test/retired-app-unit-evidence.test.mjs scripts/test/e2e-remote-targets-check.test.mjs"
+    "test:engineering-tools": "node --test scripts/test/affected-engineering-test-cli.test.mjs scripts/test/pre-push-worktree.test.mjs scripts/test/retired-app-unit-evidence.test.mjs scripts/test/e2e-remote-targets-check.test.mjs",
+    "release:gate": "node scripts/release-gate.mjs",
+    "release:gate:quick": "node scripts/release-gate.mjs --quick",
+    "release:raw": "release-it"
   },
   "dependencies": {
     "border-beam": "^1.0.1",
