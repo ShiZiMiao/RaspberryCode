@@ -36,6 +36,17 @@ export interface UpdateMirrorInstallOptions {
   session?: Session;
   /** 构造 session 的工厂；仅测试用，生产走 electron 的 session.fromPartition。 */
   resolveSession?: () => Session;
+  /**
+   * 按当前阶段切换该 session 的代理模式；不传则不切换（沿用外部已配置的代理）。
+   *
+   * 为什么必须切：镜像与 GitHub 在这里是**互斥**的两条网络路径。
+   * 实测（2026-11-13，系统代理 127.0.0.1:7897 可访问 GitHub）：
+   *   - ghfast.top 直连 200，经 7897 代理 ERR_CONNECTION_CLOSED
+   *   - github.com  直连 RESET，经 7897 代理 200
+   * 若统一跟随系统代理，镜像请求会被代理劫持而全灭；若统一直连，GitHub 又不通。
+   * 因此按阶段切换：mirror 阶段 direct，direct 阶段 system。
+   */
+  applyProxyForRoute?: (route: UpdateDownloadRoute) => Promise<void>;
 }
 
 /** electron-updater 使用的 session partition 名（与上游保持一致，勿改）。 */
@@ -55,6 +66,17 @@ export function installUpdateMirrorRedirect(options: UpdateMirrorInstallOptions)
   }
   const { webRequest } = session;
 
+  // 代理切换在「阶段变化」时进行，而不是在请求回调里做：回调是同步的，
+  // 而 setProxy 是异步的，在回调里切会来不及作用于当前请求。
+  let appliedRoute: UpdateDownloadRoute | null = null;
+  const applyProxyIfNeeded = (route: UpdateDownloadRoute): void => {
+    if (!options.applyProxyForRoute || appliedRoute === route) return;
+    appliedRoute = route;
+    void options.applyProxyForRoute(route).catch((error: unknown) => {
+      logger.warn(`[auto-update] apply proxy for route=${route} failed:`, error);
+    });
+  };
+
   const listener = (
     details: Electron.OnBeforeRequestListenerDetails,
     callback: (response: Electron.CallbackResponse) => void,
@@ -69,6 +91,9 @@ export function installUpdateMirrorRedirect(options: UpdateMirrorInstallOptions)
       callback({});
       return;
     }
+    // 语义保底：某个阶段第一次出现的请求，先把该阶段的代理切好再放行。
+    // 命中缓存（appliedRoute 相同）时不重复切，热路径无额外开销。
+    applyProxyIfNeeded(route);
     const target = resolveDownloadUrl(details.url, route, mirrorPrefix);
     if (!target || target === details.url) {
       callback({});

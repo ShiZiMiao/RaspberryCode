@@ -128,7 +128,7 @@ import {
   updateCheckForUpdateMenuState,
   updateRaspberryCodeStdioTapDevMenuState,
 } from "./desktopApplicationMenu.js";
-import { disposeAutoUpdateService, getUpdateDownloadRoute, initAutoUpdateService, isAutoUpdateMode } from "./autoUpdate/index.js";
+import { disposeAutoUpdateService, getUpdateDownloadRoute, initAutoUpdateService, isAutoUpdateMode, registerUpdateSessionProxySync } from "./autoUpdate/index.js";
 import { installUpdateMirrorRedirect, UPDATER_SESSION_PARTITION } from "./autoUpdate/updateMirrorSession.js";
 import { applyAppIcon } from "./desktopWindowChrome.js";
 import { resolveWindowsAppUserModelIdForFlavor } from "../../scripts/desktop-product-identity.mjs";
@@ -1768,10 +1768,26 @@ app.whenReady().then(async () => {
     // 必须在 initAutoUpdateService 之前装好，否则首次自动下载可能赶不上重定向；
     // 装不上也不致命（退回直连，等同改造前行为）。
     try {
+      const updaterSession = session.fromPartition(UPDATER_SESSION_PARTITION, { cache: false });
+      const switchUpdaterProxy = async (route: string): Promise<void> => {
+        const config: Electron.ProxyConfig =
+          route === "mirror" ? { mode: "direct" } : { mode: "system" };
+        await updaterSession.setProxy(config);
+        await updaterSession.closeAllConnections();
+        logger.info(
+          `[auto-update] update session proxy -> ${route === "mirror" ? "direct" : "system"}`,
+        );
+      };
+      // 初始阶段是 mirror，先把代理置 direct：启动时 desktopNetworkPolicy 会把该
+      // session 设成 system，而镜像经代理不可达（首个请求就会失败）。
+      await switchUpdaterProxy("mirror").catch((error: unknown) => {
+        logger.warn("[startup] preset update session proxy=direct failed:", error);
+      });
+      registerUpdateSessionProxySync(switchUpdaterProxy);
       installUpdateMirrorRedirect({
         // 必须用 electron-updater 自己的 partition session：它的下载走
         // session.fromPartition("electron-updater")，装在 defaultSession 上不生效。
-        resolveSession: () => session.fromPartition(UPDATER_SESSION_PARTITION, { cache: false }),
+        session: updaterSession,
         getRoute: getUpdateDownloadRoute,
       });
     } catch (mirrorError) {

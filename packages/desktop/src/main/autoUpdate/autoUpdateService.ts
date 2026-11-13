@@ -68,7 +68,7 @@ import type {
   InitAutoUpdateServiceOptions,
   SettingServiceLike,
 } from "./contract.js";
-import { buildManualDownloadUrl, UpdateDownloadFallback } from "./updateMirror.js";
+import { buildManualDownloadUrl, UpdateDownloadFallback, type UpdateDownloadRoute } from "./updateMirror.js";
 
 /** 单通道语义：跳过版本沿用 skippedElectronUpdateVersions.stable（读写兼容既有字段）。 */
 const SKIP_VERSION_CHANNEL = "stable" as const;
@@ -144,6 +144,29 @@ let feedRepo: string = DEFAULT_UPDATE_FEED_GITHUB.repo;
 /** 下载阶段的回退状态查询入口（updateMirrorSession 接线时注入）。 */
 export function getUpdateDownloadRoute() {
   return downloadFallback.currentRoute;
+}
+
+/**
+ * 由 index.ts 注入的「按阶段切换 updater session 代理」实现。
+ * 镜像与 GitHub 在此网络下互斥（镜像直连通/代理断，GitHub 反之），
+ * 必须在请求发出前把代理切到与阶段匹配的模式。
+ */
+let updateSessionProxySync: ((route: UpdateDownloadRoute) => Promise<void>) | null = null;
+
+export function registerUpdateSessionProxySync(
+  sync: (route: UpdateDownloadRoute) => Promise<void>,
+): void {
+  updateSessionProxySync = sync;
+}
+
+/** 确保 updater session 的代理与当前阶段一致；未注入实现时为 no-op（保持旧行为）。 */
+async function syncUpdateSessionProxy(route: UpdateDownloadRoute): Promise<void> {
+  if (!updateSessionProxySync) return;
+  try {
+    await updateSessionProxySync(route);
+  } catch (error) {
+    logger.warn(`[auto-update] sync proxy for route=${route} failed:`, error);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -368,11 +391,18 @@ function handleUpdaterError(error: Error): void {
       if (availableUpdate) {
         downloadingVersion = availableUpdate.version;
         downloadCancellationToken = new CancellationToken();
-        void updater?.downloadUpdate(downloadCancellationToken).catch((retryError: unknown) => {
-          if (!isCancellationError(retryError)) {
-            logger.warn(`[auto-update] retry downloadUpdate rejected: ${String(retryError)}`);
+        // 换路线后必须先把代理切到新阶段，再发请求；
+        // 否则重试仍会用旧代理，在同一条不可达的路径上再失败一次。
+        void (async () => {
+          await syncUpdateSessionProxy(downloadFallback.currentRoute);
+          try {
+            await updater?.downloadUpdate(downloadCancellationToken);
+          } catch (retryError) {
+            if (!isCancellationError(retryError)) {
+              logger.warn(`[auto-update] retry downloadUpdate rejected: ${String(retryError)}`);
+            }
           }
-        });
+        })();
         return;
       }
     }
@@ -401,7 +431,12 @@ function handleUpdaterError(error: Error): void {
   if (quitAndInstallState === "idle") {
     downloadingVersion = null;
     downloadCancellationToken = null;
-    downloadFallback.reset();
+    // 同一个失败的第二条路径（dup）不得 reset：它会把刚降级好的路线打回 mirror，
+    // 导致降级重试仍在镜像上跑（实测 route 变回 mirror 的直接原因）。
+    // 只有「本次失败已终局、不再重试」时才清回起始态，供下一次检查重新从镜像起步。
+    if (!isDuplicate) {
+      downloadFallback.reset();
+    }
     nextState({ kind: "idle", enabled });
   }
 }
@@ -426,9 +461,16 @@ async function runCheck(reason: "startup" | "manual"): Promise<void> {
   // 所以只在「还没有任何在途尝试」时才从镜像起步；否则沿用现有路线。
   if (downloadFallback.currentAttemptKey === null && !checkRetryInFlight) {
     downloadFallback.beginAttempt("check");
+    logger.info(`[auto-update] check starts fresh, route=${downloadFallback.currentRoute}`);
   } else {
     downloadFallback.resetAttemptKey("check");
+    logger.info(
+      `[auto-update] check retry continues, route=${downloadFallback.currentRoute} retry=${checkRetryInFlight}`,
+    );
   }
+  // 代理必须与当前阶段匹配才发起请求：镜像走直连、直连阶段走系统代理。
+  // 放在这里（而不是请求回调里）才能保证 setProxy 先完成、请求后发出。
+  await syncUpdateSessionProxy(downloadFallback.currentRoute);
   nextState({ kind: "checking", enabled });
   try {
     await updater.checkForUpdates();

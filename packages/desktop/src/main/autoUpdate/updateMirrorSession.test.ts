@@ -119,3 +119,50 @@ describe("installUpdateMirrorRedirect", () => {
     expect(UPDATER_SESSION_PARTITION).toBe("electron-updater");
   });
 });
+
+describe("按阶段应用代理", () => {
+  it("阶段首次出现时调用一次，同一阶段内不重复调用", () => {
+    const fake = createFakeSession();
+    const applyProxyForRoute = vi.fn(async () => {});
+    installUpdateMirrorRedirect({
+      session: fake.session as never,
+      getRoute: () => "mirror",
+      applyProxyForRoute,
+    });
+
+    fake.dispatch(DOWNLOAD_URL);
+    fake.dispatch(DOWNLOAD_URL);
+    fake.dispatch(DOWNLOAD_URL);
+
+    // 镜像阶段应只切一次：每跳都切会让 closeAllConnections 打断正在进行的下载
+    expect(applyProxyForRoute).toHaveBeenCalledTimes(1);
+    expect(applyProxyForRoute).toHaveBeenCalledWith("mirror");
+  });
+
+  it("阶段变化时重新应用（mirror → direct）", () => {
+    const fake = createFakeSession();
+    let route: "mirror" | "direct" | "manual" = "mirror";
+    const applyProxyForRoute = vi.fn(async () => {});
+    installUpdateMirrorRedirect({
+      session: fake.session as never,
+      getRoute: () => route,
+      applyProxyForRoute,
+    });
+
+    fake.dispatch(DOWNLOAD_URL);
+    route = "direct";
+    fake.dispatch(DOWNLOAD_URL);
+
+    expect(applyProxyForRoute).toHaveBeenCalledTimes(2);
+    expect(applyProxyForRoute).toHaveBeenNthCalledWith(2, "direct");
+  });
+
+  it("未注入 applyProxyForRoute 时不报错（保持旧行为）", () => {
+    const fake = createFakeSession();
+    installUpdateMirrorRedirect({
+      session: fake.session as never,
+      getRoute: () => "mirror",
+    });
+    expect(() => fake.dispatch(DOWNLOAD_URL)).not.toThrow();
+  });
+});
