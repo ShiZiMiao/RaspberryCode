@@ -31,8 +31,27 @@ async function resolvePushBase(root, head, remote) {
 }
 
 async function firstPushBase(root, head) {
-  // 首次推送没有 remote SHA；只使用已确认的集成分支，缺失时严格报错，不猜测其他分支。
-  const staging = await commit(root, "origin/staging");
+  // 首次推送没有 remote SHA；优先用已确认的集成分支，缺失时按候选顺序回退。
+  //
+  // 本仓库从上游 fork 而来，主分支是 main，不存在上游模板假设的 staging。
+  // 原先只认 origin/staging 会直接抛错，导致 pre-push 在 tag / 首次推送时
+  // 一律失败（实测推 v0.2.1 tag 被卡住）。这里改为按候选探测，全缺失才报错。
+  const candidates = ["origin/staging", "origin/main", "origin/master", "upstream/main"];
+  let staging = null;
+  for (const ref of candidates) {
+    try {
+      staging = await commit(root, ref);
+      break;
+    } catch {
+      // 试下一个候选
+    }
+  }
+  if (!staging) {
+    throw new Error(
+      `无法解析基线：以下分支均不存在 ${candidates.join(" / ")}。` +
+        "请先 fetch，或用 RASPBERRYCODE_PRE_PUSH_BASE 显式指定基线。",
+    );
+  }
   return (await git(root, ["merge-base", staging, head])).toString().trim();
 }
 
