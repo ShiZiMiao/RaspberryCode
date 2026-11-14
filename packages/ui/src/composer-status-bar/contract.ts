@@ -27,8 +27,17 @@ export const COMPOSER_STATUS_CHIP_CLASS_NAME =
 export const COMPOSER_STATUS_CHIP_ICON_CLASS_NAME =
   "flex size-3.5 shrink-0 items-center justify-center";
 
-/** 摘要文字：数值等宽，窄容器下省略而不是撑开容器。 */
-export const COMPOSER_STATUS_CHIP_LABEL_CLASS_NAME = "min-w-0 truncate tabular-nums";
+/**
+ * 摘要文字：数值等宽，窄容器下省略而不是撑开容器。
+ *
+ * 底排形态下容器很挤——左侧有分支/权限/模式，右侧有很长的模型名，
+ * 中间留给状态条的宽度可能只有一两百 px。此时逐个 chip 各自 truncate 会得到
+ * 「5 轮 7 步·4…」「2…」这种没有信息量的碎片，反而不如整块收起。
+ * 因此窄容器下把摘要文字整个隐藏，只留图标（图标本身有语义：仪表=会话统计、
+ * 数据库=Token、圆环=容量，圆环还带用量弧），完整数字进悬停面板。
+ */
+export const COMPOSER_STATUS_CHIP_LABEL_CLASS_NAME =
+  "min-w-0 truncate tabular-nums @max-[1180px]/composer:hidden";
 
 /** `v4/conversation/usage` 中状态条消费的部分（协议完整结果见 shared transport）。 */
 export interface ComposerSessionUsageFacts {

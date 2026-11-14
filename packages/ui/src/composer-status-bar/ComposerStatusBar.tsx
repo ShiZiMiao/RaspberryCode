@@ -16,8 +16,6 @@ import {
   buildSessionStatSummary,
   buildTokenUsageLines,
   buildTokenUsageSummary,
-  hasSessionStats,
-  hasTokenUsage,
   type ComposerSessionUsageFacts,
 } from "./contract.js";
 import { useComposerSessionUsage } from "./useComposerSessionUsage.js";
@@ -202,12 +200,4 @@ export function ComposerStatusBar({
       ) : null}
     </div>
   );
-}
-
-/** 供会话容器判断是否需要占位；零数据时状态条不渲染，容器也不该留空白。 */
-export function shouldShowComposerStatusBar(
-  facts: ComposerSessionUsageFacts | null,
-  hasContextWindow: boolean,
-): boolean {
-  return hasContextWindow || (facts !== null && (hasSessionStats(facts) || hasTokenUsage(facts)));
 }

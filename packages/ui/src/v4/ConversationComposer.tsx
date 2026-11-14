@@ -2712,26 +2712,6 @@ function ConversationComposerImpl({
           contextHeader ? "rounded-2xl bg-surface shadow-xl/5" : "rounded-xl bg-background",
         )}
       >
-        {/* 会话状态条占据输入卡上沿内侧的一行（specs/composer-status-bar.md）。
-            曾经是 `absolute bottom-full` 悬浮在输入卡之外、与消息动作行共用同一水平带，
-            但正文滚动时必经那条带，遮罩又是全宽渐变分不清左右——只能二选一：
-            要么淡掉左侧动作行，要么让正文压住 chip。改成占位行后三层在垂直方向分离，
-            任何滚动位置都不重叠。
-            紧凑处理：行高只由 chip 自身 24px 决定，用 `-mb-0.5` 吃掉输入卡顶部内边距，
-            不额外撑高输入卡。零数据时组件自身返回 null，这一行整体塌陷不占位。 */}
-        <ComposerStatusBar
-          workspacePath={workspacePath}
-          workspaceIdentity={workspaceIdentity}
-          sessionId={sessionId}
-          active={canStop || composerPhase === "running" || composerPhase === "prewarming"}
-          usage={composerUsage}
-          // `pr-1` 与输入框右内边距对齐；`-mb-0.5` 让这一行贴着输入框上沿。
-          // 这一行自带不透明底：它虽是占位行，但本身没有背景时，滚上来的内容会从
-          // 右侧空白处透出（用户看到「回复OK」半截浮在用量条后面）。
-          // 整行铺底色（不是只覆盖 chip 宽度）：这一行右侧的空白区若透明，
-          // 滚上来的用户气泡会从那里露出半截。
-          className="relative z-10 -mb-0.5 flex w-full justify-end bg-background pr-1"
-        />
         {contextHeader ? (
           // 旧 ChatViewComposer contextHeaderContent 同款包装（workspace 菜单 + Git 分支）。
           <div className="relative z-10 p-1.5 flex min-w-0 flex-wrap items-center gap-0">
@@ -2799,6 +2779,19 @@ function ConversationComposerImpl({
           )}
           enableMentionPanel
           leadingActions={leadingActionsNode}
+          // 状态条并入底排中部，与模型选择器同排右对齐（specs/composer-status-bar.md）。
+          // 不再单独占输入卡上方一行：那一行曾与消息动作行共用水平带，长期互相压制。
+          // 底排宽度不足时由 chip 自身的容器查询降级为只留图标（见 contract.ts）。
+          footerInlineSlot={
+            <ComposerStatusBar
+              workspacePath={workspacePath}
+              workspaceIdentity={workspaceIdentity}
+              sessionId={sessionId}
+              active={canStop || composerPhase === "running" || composerPhase === "prewarming"}
+              usage={composerUsage}
+              className="justify-end"
+            />
+          }
           submitControl={submitControlNode}
           layout={layout}
           className="p-0"

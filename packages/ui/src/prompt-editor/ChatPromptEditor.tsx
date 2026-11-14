@@ -66,6 +66,7 @@ export function ChatPromptEditor({
   leadingActions,
   attachmentAction,
   betweenCancelAndSubmitAction,
+  footerInlineSlot,
   submitControl,
   inputTestId,
   submitTestId,
@@ -130,6 +131,12 @@ export function ChatPromptEditor({
   };
   /** 行内编辑专用：固定插在取消与主提交之间的第二动作。 */
   betweenCancelAndSubmitAction?: ReactNode;
+  /**
+   * 底排中部的内联插槽：夹在左侧操作按钮与右侧模型/发送之间。
+   * 会话状态条走这里（specs/composer-status-bar.md），不再单独占输入卡上方的一行。
+   * 没有它时（行内编辑等形态）底排布局与原来完全一致。
+   */
+  footerInlineSlot?: ReactNode;
   submitControl?: ReactNode;
   inputTestId?: string;
   submitTestId?: string;
@@ -451,7 +458,7 @@ export function ChatPromptEditor({
           ref={toolbarRef}
           className={cn("group/toolbar flex items-end gap-3", isInline && "shrink-0 gap-1.5")}
         >
-          <div className="flex min-w-0 flex-1 items-center" data-composer-leading-actions>
+          <div className="flex min-w-0 flex-1 items-center gap-2" data-composer-leading-actions>
             <div className="flex shrink-0 items-center gap-1" data-composer-leading-content>
               {isInline ? null : actionMenuNode}
               {/* Bugfix：权限/模式选择曾作为 leadingActions 先于动作菜单渲染，导致常驻顺序与产品规范相反。 */}
@@ -460,6 +467,15 @@ export function ChatPromptEditor({
                 <span ref={onModeSwitchContainerChange} className="flex shrink-0 items-center" />
               ) : null}
             </div>
+            {/* 中部弹性区：状态条在这里右对齐贴住模型选择器，窗口变窄时先压缩它而不是挤掉按钮。 */}
+            {footerInlineSlot ? (
+              <div
+                className="ml-auto flex min-w-0 shrink items-center justify-end overflow-hidden"
+                data-composer-footer-inline
+              >
+                {footerInlineSlot}
+              </div>
+            ) : null}
           </div>
           <div
             className="ml-auto flex shrink-0 items-center justify-end gap-1.5"
