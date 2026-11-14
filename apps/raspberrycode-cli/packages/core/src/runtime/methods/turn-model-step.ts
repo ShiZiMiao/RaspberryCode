@@ -1,7 +1,7 @@
 import type { ToolSearchExecutionContext } from "@raspberrycode/contracts";
 import { getTurnTools } from "./turn-tool-visibility.js";
 
-import { beginLocalTurnPreparation } from "@raspberrycode/contracts";
+import { beginLocalTurnPreparation, getModelUsageContextTokens } from "@raspberrycode/contracts";
 import {
   CompactTrigger,
   CoreErrorType,
@@ -47,6 +47,7 @@ import type {
   RuntimeModelTextResult,
 } from "../types.js";
 import type { AgentRuntimeInternal } from "../internal.js";
+import { persistContextUsageBreakdown } from "../context-usage-breakdown/context-usage-breakdown.js";
 import { executeToolCallsForModelStep } from "./turn-tools.js";
 import {
   captureAssistantPersistenceAnchor,
@@ -730,6 +731,18 @@ async function runModelBackedTurnStepImpl(
   );
   await this.appendEvent(modelCompleteEvent, modelTraceContext);
   state.events.push(modelCompleteEvent);
+  // 来源占比只随内存事件下发，冷启动后重建不出来（事件存储是进程内内存态），弹窗的来源明细
+  // 会整块消失。主链路这次已经确认是 main_turn 且拿到了当次窗口事实，落一份 session entry
+  // 供冷恢复兜底；best-effort，不影响下面的用量记账。
+  if (querySource === "main_turn" && result.contextUsageBreakdown) {
+    // used/size 必须与服务端对齐口径（`getModelUsageContextTokens` + 当次上下文窗口），
+    // 否则冷恢复时 applyContextUsageBreakdown 会因对不上而丢弃这份快照。
+    const contextTokens = getModelUsageContextTokens(result.usage);
+    void persistContextUsageBreakdown(this, result.contextUsageBreakdown, {
+      ...(contextTokens !== undefined ? { used: contextTokens } : {}),
+      ...(executionContextWindow !== undefined ? { size: executionContextWindow } : {}),
+    });
+  }
   this.lastAssistantCompletedAtMs = Date.now();
   await recordMainTurnModelUsage(this, state, {
     assistantMessageId,

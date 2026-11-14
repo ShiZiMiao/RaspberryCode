@@ -298,6 +298,174 @@ describe("queryTaskUsage", () => {
     }
   });
 
+  // 状态条（specs/composer-status-bar.md）：轮/步/模型用时/TTFT/TPS 只认主链路，
+  // 辅助请求（compact、标题生成）与 subagent 不得计入主链路步数或速度。
+  it("aggregates status-bar session stats from main_turn records only", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "raspberrycode-task-usage-status-bar-"));
+    const dbPath = join(tempRoot, "session.sqlite");
+    const store = await createSqliteSessionStore({ dbPath });
+    const sessionID = createSessionId("task-usage-status-bar");
+    const turnID = createTurnId("task-usage-status-bar-turn");
+    const now = Date.now();
+    try {
+      await store.createSession({
+        id: sessionID,
+        projectID: createProjectId("project-status-bar"),
+        slug: String(sessionID),
+        directory: tempRoot,
+        title: String(sessionID),
+        version: "0.1.0",
+      });
+
+      // 主链路两步：第一步 2 秒请求、首 token 0.5 秒、输出 100；第二步 1 秒、0.2 秒、输出 50。
+      await store.recordModelUsage({
+        id: "sb-main-1",
+        logicalRequestId: "sb-main-1",
+        sessionID,
+        turnID,
+        querySource: "main_turn",
+        providerId: "p",
+        modelId: "model-a",
+        status: "completed",
+        startedAt: now,
+        durationMs: 2000,
+        timeToFirstTokenMs: 500,
+        inputTokens: 1000,
+        outputTokens: 100,
+        cacheReadInputTokens: 400,
+        computedTotalTokens: 1100,
+      });
+      await store.recordModelUsage({
+        id: "sb-main-2",
+        logicalRequestId: "sb-main-2",
+        sessionID,
+        turnID,
+        querySource: "main_turn",
+        providerId: "p",
+        modelId: "model-a",
+        status: "completed",
+        startedAt: now + 1,
+        durationMs: 1000,
+        timeToFirstTokenMs: 200,
+        inputTokens: 1200,
+        outputTokens: 50,
+        cacheReadInputTokens: 600,
+        computedTotalTokens: 1250,
+      });
+      // subagent 与 compact 不参与主链路步数/速度。
+      await store.recordModelUsage({
+        id: "sb-subagent",
+        logicalRequestId: "sb-subagent",
+        sessionID,
+        turnID,
+        querySource: "subagent",
+        providerId: "p",
+        modelId: "model-b",
+        status: "completed",
+        startedAt: now + 2,
+        durationMs: 9000,
+        timeToFirstTokenMs: 4000,
+        inputTokens: 300,
+        outputTokens: 900,
+        computedTotalTokens: 1200,
+      });
+      await store.recordModelUsage({
+        id: "sb-compact",
+        logicalRequestId: "sb-compact",
+        sessionID,
+        turnID,
+        querySource: "compact",
+        providerId: "p",
+        modelId: "model-a",
+        status: "completed",
+        startedAt: now + 3,
+        durationMs: 5000,
+        timeToFirstTokenMs: 2500,
+        inputTokens: 50,
+        outputTokens: 500,
+        computedTotalTokens: 550,
+      });
+      // 无首 token 的失败请求：不进入 TTFT 均值，也不进入 TPS 分母。
+      await store.recordModelUsage({
+        id: "sb-main-error",
+        logicalRequestId: "sb-main-error",
+        sessionID,
+        turnID,
+        querySource: "main_turn",
+        providerId: "p",
+        modelId: "model-a",
+        status: "error",
+        startedAt: now + 4,
+        durationMs: 300,
+        inputTokens: 800,
+        outputTokens: 0,
+        computedTotalTokens: 800,
+      });
+
+      const result = await store.queryTaskUsage({ sessionID });
+
+      expect(result.stepCount).toBe(3);
+      expect(result.modelDurationMs).toBe(3300);
+      // (500 + 200) / 2：失败请求没有首 token 样本。
+      expect(result.avgTimeToFirstTokenMs).toBe(350);
+      // (100 + 50) / ((2000-500) + (1000-200)) 秒 → 150 / 2.3s。
+      expect(result.outputTokensPerSecond).toBeCloseTo((150 * 1000) / 2300, 6);
+      // 缓存读取按增量归因：400（首行全量）+ 200（第二行上限）= 600。
+      // 输入增量 1000 + 200（context 增长）+ 300（subagent）+ 50（compact）+ 0
+      // （失败行 input 侧回落，baseline 随之下降而不产生增量）= 1550。
+      expect(result.cacheHitRate).toBeCloseTo(600 / 1550, 6);
+      expect(result.uncachedInputTokens).toBe(950);
+      // 面板四行必须与顶部总量自洽：未缓存输入 + 缓存读取 + 输出 = 总量。
+      expect(result.uncachedInputTokens + 600 + result.outputTokens).toBe(result.totalTokens);
+    } finally {
+      store.close();
+      await rm(tempRoot, { force: true, recursive: true });
+    }
+  });
+
+  it("reports unknown cache hit rate instead of a fabricated zero", async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), "raspberrycode-task-usage-cache-unknown-"));
+    const dbPath = join(tempRoot, "session.sqlite");
+    const store = await createSqliteSessionStore({ dbPath });
+    const sessionID = createSessionId("task-usage-cache-unknown");
+    const turnID = createTurnId("task-usage-cache-unknown-turn");
+    try {
+      await store.createSession({
+        id: sessionID,
+        projectID: createProjectId("project-cache-unknown"),
+        slug: String(sessionID),
+        directory: tempRoot,
+        title: String(sessionID),
+        version: "0.1.0",
+      });
+      // provider 没回报任何 input 侧 token：input_side_tokens = 0 → 命中率不可用。
+      await store.recordModelUsage({
+        id: "cu-main-1",
+        logicalRequestId: "cu-main-1",
+        sessionID,
+        turnID,
+        querySource: "main_turn",
+        providerId: "p",
+        modelId: "model-a",
+        status: "completed",
+        startedAt: Date.now(),
+        durationMs: 1000,
+        outputTokens: 40,
+        computedTotalTokens: 40,
+      });
+
+      const result = await store.queryTaskUsage({ sessionID });
+
+      expect(result.cacheHitRate).toBeNull();
+      expect(result.uncachedInputTokens).toBe(0);
+      expect(result.outputTokensPerSecond).toBeNull();
+      expect(result.avgTimeToFirstTokenMs).toBeNull();
+    } finally {
+      store.close();
+      await rm(tempRoot, { force: true, recursive: true });
+    }
+  });
+
   it("counts repeated context sources by incremental input and survives compaction resets", async () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "raspberrycode-task-usage-incremental-"));
     const dbPath = join(tempRoot, "session.sqlite");

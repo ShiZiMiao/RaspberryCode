@@ -835,6 +835,14 @@ export const SESSION_ENTRY_DYNAMIC_WORKFLOW_ACTIVATION =
   "runtime/dynamic_workflow_activation" as const;
 /** 本会话用过的能力标签（docs/design/v2/model/session-features-header.md）。 */
 export const SESSION_ENTRY_SESSION_FEATURES = "runtime/session_features" as const;
+/**
+ * 最近一次主链路模型请求的上下文来源占比快照。
+ *
+ * 上下文容量弹窗的来源明细（系统提示词 / 系统工具 / MCP 工具 / 技能 / 消息 …）由本地估算得到，
+ * 只随 ModelComplete 事件下发。事件存储是进程内内存态，冷启动后重建不出明细，弹窗只剩
+ * 容量条与缓存命中率。落一份 session entry 让冷恢复也能画出同样的明细。
+ */
+export const SESSION_ENTRY_CONTEXT_USAGE_BREAKDOWN = "runtime/context_usage_breakdown" as const;
 
 export const SESSION_ENTRY_TYPES = [
   SESSION_ENTRY_TARGET_COMPLETION_VERIFICATION,
@@ -846,6 +854,7 @@ export const SESSION_ENTRY_TYPES = [
   SESSION_ENTRY_WORKSPACE_FILE_REWIND,
   SESSION_ENTRY_DYNAMIC_WORKFLOW_ACTIVATION,
   SESSION_ENTRY_SESSION_FEATURES,
+  SESSION_ENTRY_CONTEXT_USAGE_BREAKDOWN,
 ] as const;
 
 export type SessionEntryType = (typeof SESSION_ENTRY_TYPES)[number];
@@ -1094,6 +1103,22 @@ export interface TaskUsageQueryResult {
   modelRequestCount: number;
   modelErrorCount: number;
   inputBaselineBySource: Record<string, number>;
+  // ── 输入框下方状态条（specs/composer-status-bar.md）──
+  // 口径统一在 queryTaskUsage 一处计算：UI 不做二次求和，避免两套基线漂移。
+  /** 未缓存输入：input 侧 token 减缓存读取，下限 0。 */
+  uncachedInputTokens: number;
+  /** 缓存命中率 0..1；分母缺失或存在未知用量行为 null。 */
+  cacheHitRate: number | null;
+  /** 已完成轮次（turn_usage 行数）。 */
+  roundCount: number;
+  /** 主链路模型步数（main_turn 请求数）。 */
+  stepCount: number;
+  /** 主链路模型用时累计（不含工具执行）。 */
+  modelDurationMs: number;
+  /** 首 token 延迟均值；无样本为 null。 */
+  avgTimeToFirstTokenMs: number | null;
+  /** 输出速度：输出 token / 首 token 之后的生成时长；无完整样本为 null。 */
+  outputTokensPerSecond: number | null;
 }
 
 export interface UsageStorePort {

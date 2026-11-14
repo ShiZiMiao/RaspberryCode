@@ -50,6 +50,15 @@ describe("raspberrycode protocol v4 usage query", () => {
       modelRequestCount: 3,
       modelErrorCount: 0,
       inputBaselineBySource: { "web-remote-replayable": 5 },
+      // 状态条统计（specs/composer-status-bar.md）：additive 但无默认值，
+      // 缺失即解析失败——CLI 与桌面必须同批发版。
+      uncachedInputTokens: 30,
+      cacheHitRate: 0.5,
+      roundCount: 1,
+      stepCount: 3,
+      modelDurationMs: 2_400,
+      avgTimeToFirstTokenMs: 800,
+      outputTokensPerSecond: 434.2,
     };
     expect(v4ConversationUsageResultSchema.parse(result)).toEqual(result);
     // 用量字段不允许负数（聚合器不变量）。
@@ -59,5 +68,14 @@ describe("raspberrycode protocol v4 usage query", () => {
         totalTokens: -1,
       }).success,
     ).toBe(false);
+    // 可空统计项：null 是「不可用」，不能被静默降级成 0。
+    expect(
+      v4ConversationUsageResultSchema.safeParse({
+        ...result,
+        cacheHitRate: null,
+        avgTimeToFirstTokenMs: null,
+        outputTokensPerSecond: null,
+      }).success,
+    ).toBe(true);
   });
 });

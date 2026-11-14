@@ -13,9 +13,14 @@ import { resolveEffectiveBashShellSelection } from "@raspberrycode/adapters/exec
 import { inputIntentMetadata } from "../raspberrycode-protocol-v4/commands/input-intent.js";
 import { createModelExecutionContext } from "./model-execution.js";
 import type { SendInputOptions } from "../app/types.js";
-import { repairPersistedRemoteSessionPaths, type TurnAttachment } from "@raspberrycode/core";
+import {
+  repairPersistedRemoteSessionPaths,
+  parseContextUsageBreakdownEntryData,
+  type TurnAttachment,
+} from "@raspberrycode/core";
 import {
   CoreErrorType,
+  SESSION_ENTRY_CONTEXT_USAGE_BREAKDOWN,
   SESSION_ENTRY_TARGET_COMPLETION_VERIFICATION,
   createMessageId,
   createPartId,
@@ -38,6 +43,7 @@ import {
   type SessionInfo,
   type SessionTaskType,
   type CollaborationMode,
+  type ContextUsageBreakdownItem,
   type TargetCompletionVerificationPayload,
   type TraceId,
   type TurnBackgroundAttribution,
@@ -2022,7 +2028,14 @@ export async function readSessionContextUsage(
   );
   return resolveSessionContextUsage({
     messages,
-    persistedContextUsageBreakdownEvents: events,
+    // 与 legacy 快照共用同一个来源：事件里没有明细时回落到 runtime 落盘的 session entry。
+    // 只传原始 events 的话，冷启动（事件存储是进程内内存态）拿不到明细，容量弹窗就只剩
+    // 容量条与缓存命中率——这正是「详细信息怎么没有了」。
+    persistedContextUsageBreakdownEvents: await withPersistedContextUsageBreakdown(
+      context,
+      record,
+      events,
+    ),
     projection,
   });
 }
@@ -3052,6 +3065,13 @@ export async function getTaskTokenUsage(
       modelRequestCount: 0,
       modelErrorCount: 0,
       inputBaselineBySource: {},
+      uncachedInputTokens: 0,
+      cacheHitRate: null,
+      roundCount: 0,
+      stepCount: 0,
+      modelDurationMs: 0,
+      avgTimeToFirstTokenMs: null,
+      outputTokensPerSecond: null,
     };
   }
 
@@ -3069,6 +3089,13 @@ export async function getTaskTokenUsage(
     modelRequestCount: usage.modelRequestCount,
     modelErrorCount: usage.modelErrorCount,
     inputBaselineBySource: usage.inputBaselineBySource,
+    uncachedInputTokens: usage.uncachedInputTokens,
+    cacheHitRate: usage.cacheHitRate,
+    roundCount: usage.roundCount,
+    stepCount: usage.stepCount,
+    modelDurationMs: usage.modelDurationMs,
+    avgTimeToFirstTokenMs: usage.avgTimeToFirstTokenMs,
+    outputTokensPerSecond: usage.outputTokensPerSecond,
   };
 }
 
@@ -3777,7 +3804,7 @@ async function snapshotWithDiagnostics(
       readSessionTargetCompletionVerificationEvents(context, record),
     ),
     measureSnapshotPhase("contextUsageBreakdownEvents", () =>
-      readSessionContextUsageBreakdownEvents(record),
+      readSessionContextUsageBreakdownEvents(context, record),
     ),
   ]);
   const messages = projectActiveSessionMessages(persistedMessages, session, rewindEvents);
@@ -3993,10 +4020,86 @@ async function readSessionMessages(
 }
 
 async function readSessionContextUsageBreakdownEvents(
+  context: RaspberryCodeProtocolAgentServerContext,
   record: RaspberryCodeProtocolSessionRecord,
 ): Promise<SessionEvent[]> {
   const events = await record.eventStore.getEvents(record.app.sessionId as SessionId);
-  return events.filter((event) => event.type === SessionEventType.ModelComplete);
+  return withPersistedContextUsageBreakdown(context, record, events);
+}
+
+/**
+ * 事件里的来源明细不可用时，补一条由 session entry 还原的 ModelComplete 事件。
+ *
+ * 事件存储是进程内内存态，冷启动后 ModelComplete 全没了——弹窗的来源明细会整块消失
+ * （只剩容量条与缓存命中率）。runtime 在主链路完成时落了一份 session entry，这里把它的形状
+ * 补成一条 ModelComplete，让下游 `applyContextUsageBreakdown` 的对齐规则原样复用，
+ * 不必再写第二套判据。
+ *
+ * legacy 快照（`readSessionContextUsageBreakdownEvents`）与 V4 冷恢复
+ * （`readSessionContextUsage`）都必须经过它，否则两条路径对同一会话给出不同的明细。
+ */
+async function withPersistedContextUsageBreakdown(
+  context: RaspberryCodeProtocolAgentServerContext,
+  record: RaspberryCodeProtocolSessionRecord,
+  events: readonly SessionEvent[],
+): Promise<SessionEvent[]> {
+  const modelCompleteEvents = events.filter(
+    (event) => event.type === SessionEventType.ModelComplete,
+  );
+  if (modelCompleteEvents.some((event) => hasUsableContextUsageBreakdown(event))) {
+    return modelCompleteEvents;
+  }
+  const persisted = await readPersistedContextUsageBreakdown(context, record);
+  if (!persisted) return modelCompleteEvents;
+  return [
+    ...modelCompleteEvents,
+    {
+      type: SessionEventType.ModelComplete,
+      payload: {
+        querySource: "main_turn",
+        usage: {
+          ...(persisted.used !== undefined ? { inputTokens: persisted.used } : {}),
+          ...(persisted.used !== undefined ? { outputTokens: 0 } : {}),
+        },
+        // 刻意不写 contextWindow：对齐规则会拿它和**当前** projection 的窗口比，
+        // 而落盘时的窗口（写盘那次请求的模型容量）与冷恢复时的模型容量可能不同
+        // （实测 1024768 vs 200000），一比就判为「不同上下文」把明细整个丢掉。
+        // 只保留 used 做水位对齐——它才是「这份构成是否还属于当前上下文」的判据。
+        contextUsageBreakdown: persisted.breakdown,
+      },
+    } as SessionEvent,
+  ];
+}
+
+/** 事件里是否带着可用的来源明细（空数组等同没有）。 */
+function hasUsableContextUsageBreakdown(event: SessionEvent): boolean {
+  const payload = event.payload as { contextUsageBreakdown?: unknown } | undefined;
+  const breakdown = payload?.contextUsageBreakdown;
+  return Array.isArray(breakdown) && breakdown.length > 0;
+}
+
+/**
+ * 从 session store 读回 runtime 落盘的来源明细。
+ *
+ * 复用 core 的解析器，保证落盘/读取两侧对 source 词表与 chars 校验的口径一致。
+ */
+async function readPersistedContextUsageBreakdown(
+  context: RaspberryCodeProtocolAgentServerContext,
+  record: RaspberryCodeProtocolSessionRecord,
+): Promise<{ breakdown: ContextUsageBreakdownItem[]; used?: number; size?: number } | undefined> {
+  try {
+    const entries = await context.deps.sessionStore?.sessionEntries?.({
+      sessionID: record.app.sessionId as SessionId,
+      type: SESSION_ENTRY_CONTEXT_USAGE_BREAKDOWN,
+    });
+    return parseContextUsageBreakdownEntryData(entries?.at(-1)?.data);
+  } catch (error) {
+    // 读失败按「没有明细」处理：来源占比是展示信息，不能让它挡住会话恢复。
+    context.logger?.warn("context-usage-breakdown restore failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return undefined;
+  }
 }
 
 async function readActiveSessionMessages(

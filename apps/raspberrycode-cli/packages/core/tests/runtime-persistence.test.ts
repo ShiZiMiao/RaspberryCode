@@ -5039,6 +5039,13 @@ function buildUsageTotals(records: readonly ModelUsageRecord[]) {
     modelErrorCount: records.filter((usage) => usage.status === "error").length,
     inputBaselineBySource: {},
     avgTimeToFirstTokenMs: null,
+    // 状态条统计（specs/composer-status-bar.md）：测试桩只服务既有断言，取零值即可。
+    uncachedInputTokens: 0,
+    cacheHitRate: null,
+    roundCount: 0,
+    stepCount: 0,
+    modelDurationMs: 0,
+    outputTokensPerSecond: null,
   };
 }
 

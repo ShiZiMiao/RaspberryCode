@@ -87,6 +87,13 @@ describe("BOT-E2E-SC-01 Feishu streaming card lifecycle", () => {
         modelRequestCount: 0,
         modelErrorCount: 0,
         inputBaselineBySource: {},
+        uncachedInputTokens: 0,
+        cacheHitRate: null,
+        roundCount: 0,
+        stepCount: 0,
+        modelDurationMs: 0,
+        avgTimeToFirstTokenMs: null,
+        outputTokensPerSecond: null,
       }),
       resumeTask: async () => ({
         taskId: "task-e2e-bot-streaming-card",

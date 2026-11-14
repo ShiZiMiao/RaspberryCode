@@ -628,8 +628,23 @@ function applyContextUsageBreakdown(
   contextUsage: RaspberryCodeSessionContextUsage | undefined,
   candidate: ContextUsageBreakdownCandidate | undefined,
 ): RaspberryCodeSessionContextUsage | undefined {
-  if (!contextUsage || !candidate || candidate.breakdown.length === 0) {
+  if (!candidate || candidate.breakdown.length === 0) {
     return contextUsage;
+  }
+  // 冷恢复时 runtime projection 可能还没有任何用量事实（contextUsed=0，例如刚完成 resume、
+  // 尚未走过一次模型请求）。此时 contextUsage 是 undefined，若直接返回就丢掉了来源明细——
+  // 而明细本身已经持久化（session entry 携带 used/size），完全够画弹窗。只有 candidate
+  // 自带 used/size 时才用它兜底构造，避免凭空造出没有容量分母的 meter。
+  if (!contextUsage) {
+    if (candidate.used <= 0 || candidate.contextWindow === undefined) {
+      return undefined;
+    }
+    return {
+      breakdown: candidate.breakdown,
+      cost: null,
+      size: candidate.contextWindow,
+      used: candidate.used,
+    };
   }
   if (contextUsage.breakdown && contextUsage.breakdown.length > 0) {
     return contextUsage;

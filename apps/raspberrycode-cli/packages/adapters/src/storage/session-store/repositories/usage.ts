@@ -603,7 +603,9 @@ export async function queryTaskUsage(
          cache_creation_input_tokens as cacheCreationTokens,
          cache_read_input_tokens as cacheReadTokens,
          computed_total_tokens as computedTotalTokens,
-         provider_total_tokens as providerTotalTokens
+         provider_total_tokens as providerTotalTokens,
+         duration_ms as durationMs,
+         time_to_first_token_ms as timeToFirstTokenMs
        from model_usage
        where session_id = ?
        order by started_at asc, id asc`,
@@ -612,12 +614,14 @@ export async function queryTaskUsage(
     cacheCreationTokens: number;
     cacheReadTokens: number;
     computedTotalTokens: number;
+    durationMs: number | null;
     inputTokens: number;
     outputTokens: number;
     providerTotalTokens: number | null;
     querySource: string;
     reasoningTokens: number;
     status: string;
+    timeToFirstTokenMs: number | null;
   }>;
 
   let totalTokens = 0;
@@ -628,6 +632,21 @@ export async function queryTaskUsage(
   let cacheReadTokens = 0;
   let modelErrorCount = 0;
   const inputBaselineBySource: Record<string, number> = {};
+
+  // ── 状态条统计（specs/composer-status-bar.md）──
+  // 只累计基线来源（main_turn / subagent / workflow_child），与增量口径同一批行：
+  // 标题生成、compact、验证器等辅助请求既不属于「主链路步」，也会把命中率稀释成假值。
+  let stepCount = 0;
+  let modelDurationMs = 0;
+  // 缓存读取按**增量**口径归属：面板四行必须与顶部总量自洽
+  // （未缓存输入 + 缓存读取 + 输出 = 总量），否则用户一对照就发现数字对不上。
+  let attributedCacheReadTokens = 0;
+  let ttftSamples = 0;
+  let ttftTotalMs = 0;
+  let generationTokens = 0;
+  let generationDurationMs = 0;
+  // provider 未回报 input 侧 token 的行会让命中率分母失真；显式置 null 而不是算成 0%。
+  let hasUnknownCacheUsage = false;
 
   for (const row of rows) {
     const rawTotalTokens = Number(row.providerTotalTokens ?? row.computedTotalTokens ?? 0);
@@ -657,7 +676,40 @@ export async function queryTaskUsage(
     if (row.status === "error") {
       modelErrorCount += 1;
     }
+
+    if (source !== undefined) {
+      // 单行缓存读取不能超过该行的增量输入：压缩后 raw cache 仍可能大于新增输入，
+      // 直接累加会让「缓存读取」比「输入」还大。
+      attributedCacheReadTokens += Math.min(integer(row.cacheReadTokens), incrementalInputTokens);
+      if (inputSideTokens <= 0) {
+        hasUnknownCacheUsage = true;
+      }
+    }
+
+    // 模型用时/步数/TPS 只认主链路：subagent 与 workflow child 的耗时属于另一条执行线。
+    if (row.querySource === "main_turn") {
+      stepCount += 1;
+      modelDurationMs += Math.max(0, integer(row.durationMs));
+      const ttft = row.timeToFirstTokenMs;
+      if (typeof ttft === "number" && Number.isFinite(ttft) && ttft >= 0) {
+        ttftSamples += 1;
+        ttftTotalMs += ttft;
+        // TPS 只衡量首 token 之后的生成段；请求总耗时里含排队与预填充，不能当分母。
+        const rowDurationMs = integer(row.durationMs);
+        if (rowDurationMs > ttft) {
+          generationTokens += rowOutputTokens;
+          generationDurationMs += rowDurationMs - ttft;
+        }
+      }
+    }
   }
+
+  const roundRows = db
+    .prepare(`select count(*) as roundCount from turn_usage where session_id = ?`)
+    .get(input.sessionID) as { roundCount: number | null } | undefined;
+
+  // 增量输入上限内归因，保证 未缓存输入 + 缓存读取 = 输入增量。
+  const attributedCacheRead = Math.min(attributedCacheReadTokens, inputTokens);
 
   return {
     sessionID: input.sessionID,
@@ -670,6 +722,15 @@ export async function queryTaskUsage(
     modelRequestCount: rows.length,
     modelErrorCount,
     inputBaselineBySource,
+    uncachedInputTokens: Math.max(0, inputTokens - attributedCacheRead),
+    cacheHitRate:
+      hasUnknownCacheUsage || inputTokens <= 0 ? null : attributedCacheRead / inputTokens,
+    roundCount: integer(roundRows?.roundCount),
+    stepCount,
+    modelDurationMs,
+    avgTimeToFirstTokenMs: ttftSamples > 0 ? ttftTotalMs / ttftSamples : null,
+    outputTokensPerSecond:
+      generationDurationMs > 0 ? (generationTokens * 1000) / generationDurationMs : null,
   };
 }
 

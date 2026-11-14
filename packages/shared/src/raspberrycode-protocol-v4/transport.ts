@@ -839,6 +839,23 @@ export const v4ConversationUsageResultSchema = z
     modelRequestCount: z.number().int().nonnegative(),
     modelErrorCount: z.number().int().nonnegative(),
     inputBaselineBySource: z.record(z.string(), z.number().int().nonnegative()),
+    // ── 输入框下方状态条（specs/composer-status-bar.md）──
+    // additive 但**不设 default**：CLI 与桌面同批发版，缺字段说明两侧版本不匹配，
+    // 让解析失败暴露而不是静默渲染 0。
+    /** 未缓存输入 token：input 侧总量减缓存读取，下限 0。 */
+    uncachedInputTokens: z.number().int().nonnegative(),
+    /** 缓存命中率 0..1；分母缺失或存在未知用量行为 null（不臆造 0%）。 */
+    cacheHitRate: z.number().nonnegative().nullable(),
+    /** 已完成轮次（turn_usage 行数）。 */
+    roundCount: z.number().int().nonnegative(),
+    /** 主链路模型步数（main_turn 请求数）。 */
+    stepCount: z.number().int().nonnegative(),
+    /** 主链路模型用时累计（不含工具执行）。 */
+    modelDurationMs: z.number().nonnegative(),
+    /** 首 token 延迟均值；无样本为 null。 */
+    avgTimeToFirstTokenMs: z.number().nonnegative().nullable(),
+    /** 输出速度：输出 token / 首 token 之后的生成时长；无完整样本为 null。 */
+    outputTokensPerSecond: z.number().nonnegative().nullable(),
   })
   .strict();
 export type V4ConversationUsageResult = z.infer<typeof v4ConversationUsageResultSchema>;

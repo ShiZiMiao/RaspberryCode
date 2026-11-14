@@ -105,6 +105,13 @@ export function createLegacyTaskService(): IRaspberryCodeTaskService {
       modelRequestCount: 0,
       modelErrorCount: 0,
       inputBaselineBySource: {},
+      uncachedInputTokens: 0,
+      cacheHitRate: null,
+      roundCount: 0,
+      stepCount: 0,
+      modelDurationMs: 0,
+      avgTimeToFirstTokenMs: null,
+      outputTokensPerSecond: null,
     })),
     resumeTask: vi.fn(async () => ({
       taskId: "task-1",

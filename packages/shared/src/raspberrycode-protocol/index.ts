@@ -2086,6 +2086,15 @@ export const raspberrycodeTaskTokenUsageResultSchema = z
     modelRequestCount: z.number().int().nonnegative(),
     modelErrorCount: z.number().int().nonnegative(),
     inputBaselineBySource: z.record(z.string(), z.number().int().nonnegative()),
+    // legacy 词与 v4 共用同一数据访问层（getTaskTokenUsage），字段集合必须一致，
+    // 否则旧 case 分派会把新增统计字段解析成多余键（strict）。
+    uncachedInputTokens: z.number().int().nonnegative(),
+    cacheHitRate: z.number().nonnegative().nullable(),
+    roundCount: z.number().int().nonnegative(),
+    stepCount: z.number().int().nonnegative(),
+    modelDurationMs: z.number().nonnegative(),
+    avgTimeToFirstTokenMs: z.number().nonnegative().nullable(),
+    outputTokensPerSecond: z.number().nonnegative().nullable(),
   })
   .strict();
 export type RaspberryCodeTaskTokenUsageResult = z.infer<typeof raspberrycodeTaskTokenUsageResultSchema>;

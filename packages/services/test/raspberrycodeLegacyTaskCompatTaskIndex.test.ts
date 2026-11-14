@@ -343,6 +343,13 @@ function createAgentMock() {
       modelRequestCount: 0,
       modelErrorCount: 0,
       inputBaselineBySource: {},
+      uncachedInputTokens: 0,
+      cacheHitRate: null,
+      roundCount: 0,
+      stepCount: 0,
+      modelDurationMs: 0,
+      avgTimeToFirstTokenMs: null,
+      outputTokensPerSecond: null,
     })),
     readSession: vi.fn(
       async (params) =>
