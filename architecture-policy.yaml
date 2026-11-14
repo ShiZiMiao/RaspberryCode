@@ -501,6 +501,16 @@ modules:
     layers: { app: . }
     owner: agent
 
+  - id: context-usage-breakdown
+    roots:
+      - apps/raspberrycode-cli/packages/core/src/runtime/context-usage-breakdown
+    managed: true
+    requires: [raspberrycode-cli]
+    publicEntrypoints:
+      - apps/raspberrycode-cli/packages/core/src/runtime/context-usage-breakdown/context-usage-breakdown.ts
+    layers: { app: . }
+    owner: agent
+
   - id: tool-discovery
     roots:
       - apps/raspberrycode-cli/packages/core/src/tool/search
@@ -771,6 +781,22 @@ modules:
       - packages/ui/src/client-update/contract.ts
     layers:
       ui: .
+
+  # composer-status-bar：输入框下方会话统计 / Token 用量 / 上下文容量状态条
+  # （specs/composer-status-bar.md）。只读展示，不写协议、不改会话状态。
+  - id: composer-status-bar
+    roots:
+      - packages/ui/src/composer-status-bar
+    managed: true
+    requires:
+      - shared
+      - ui
+    publicEntrypoints:
+      - packages/ui/src/composer-status-bar/index.ts
+      - packages/ui/src/composer-status-bar/contract.ts
+    layers:
+      ui: .
+    owner: conversation
 
   # 发行策略使用独立目录；修改后的文件由本模块承担边界检查。
   - id: request-security-edition
