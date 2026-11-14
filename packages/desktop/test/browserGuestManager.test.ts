@@ -2375,6 +2375,54 @@ describe("BrowserGuestManager", () => {
     expect(logs).not.toContainEqual(expect.stringContaining("download cleanup failed"));
   });
 
+  it("ignores residency reports for a tab that attach has not created yet", async () => {
+    // 新建浏览器 tab 时 renderer 的 effect 先于 attach 执行：主进程此刻还没有这个 logical tab。
+    // 旧行为：抛 `browser tab ... is unavailable for renderer scope`，每次开新 tab 都往日志里打一条
+    // "Error occurred in handler"，看起来像功能异常。
+    const mgr = new BrowserGuestManager();
+    await expect(
+      mgr.reportResidency({
+        tabId: "browser:not-created-yet",
+        windowId: 1,
+        workspaceKey: "/repo",
+        sessionId: "session-a",
+        selected: true,
+        visible: true,
+        currentTask: true,
+        loading: false,
+        restoreUrl: "https://example.com/",
+        title: "Example",
+      }),
+    ).resolves.toBeUndefined();
+    // 放行不等于凭空建 tab：attach 仍负责真正的 tab 生命周期。
+    expect(mgr.hasGuest("browser:not-created-yet")).toBe(false);
+  });
+
+  it("still rejects a residency report whose scope does not own the existing tab", async () => {
+    // 放宽只对「tab 不存在」生效；已存在的 tab 被别的 workspace/session 上报仍必须拒绝，
+    // 否则跨对话越权上报会绕过 ownership 隔离。
+    const g = registerGuest(33);
+    const mgr = new BrowserGuestManager();
+    mgr.attachGuest("browser:owned", g.guest.id, {
+      windowId: 1,
+      workspaceKey: "/repo",
+      sessionId: "session-a",
+    });
+    await expect(
+      mgr.reportResidency({
+        tabId: "browser:owned",
+        windowId: 1,
+        workspaceKey: "/repo",
+        sessionId: "session-b",
+        selected: true,
+        visible: true,
+        currentTask: true,
+        loading: false,
+        title: null,
+      }),
+    ).rejects.toThrow(/unavailable for renderer scope/u);
+  });
+
   it("guest destroyed 重绑后恢复 logical URL，避免替代 guest 永久停在 about:blank", async () => {
     const old = registerGuest(31);
     const replacement = registerGuest(32);

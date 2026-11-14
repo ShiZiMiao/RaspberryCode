@@ -903,6 +903,15 @@ export class BrowserGuestManager {
   async reportResidency(
     payload: BrowserViewResidencyReportPayload & { windowId: number },
   ): Promise<void> {
+    // residency 上报是「补全已知 tab 的状态」，不是授权动作，因此对未知 tab 必须幂等放行。
+    // 新建浏览器 tab 时 renderer 的 effect 先于 attach 执行：主进程此刻还没有这个 logical tab，
+    // 严格校验会抛 `unavailable for renderer scope`，让每次开新 tab 都往日志里打一条
+    // "Error occurred in handler"。随后 attach 建出 tab，同一个 effect 会再上报一次真实状态，
+    // 所以这里直接返回不会丢信息。
+    // 注意：tab 存在但 scope 不匹配时仍然严格拒绝（下面 requireRendererOwnedTab 照旧抛错），
+    // 跨 window/workspace/session 越权上报不能被这条放宽绕过。
+    const existing = this.tabs.get(payload.tabId);
+    if (!existing || existing.lifecycle === "closed") return;
     const tab = this.requireRendererOwnedTab(payload);
     tab.cachedUrl = payload.restoreUrl?.trim() || tab.cachedUrl;
     if (payload.title !== undefined) tab.cachedTitle = payload.title ?? "";
