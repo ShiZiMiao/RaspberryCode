@@ -63,6 +63,8 @@ export {
   installMarketplacePlugin,
   listInstalledPluginRecords,
   loadKnownMarketplacesSync,
+  hasVisibleRefreshFailure,
+  isRefreshableMarketplaceSource,
   loadMarketplaceManifestSync,
   normalizeAuthorValue,
   parseEntryStoreListing,

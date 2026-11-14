@@ -32,6 +32,7 @@ import {
   removeMarketplace,
   uninstallMarketplacePlugin,
   updateMarketplace,
+  hasVisibleRefreshFailure,
   validateLocalPluginPath,
   validateMarketplacePlugin,
   validateMarketplaceSource,
@@ -390,7 +391,9 @@ export function getRaspberryCodePluginsOverview(
       ...outcome.diagnostics,
       ...marketplaceDeclarationDiagnostics,
       ...known.flatMap((record): PluginLoadOutcome["diagnostics"] =>
-        record.lastRefreshFailure
+        // 无远端源的市场（官方市场 source 为空）不该有刷新失败态；磁盘上可能残留历史误记，
+        // 读侧统一过滤，避免刷新逻辑修好后旧记录继续以红色横幅冒出来。
+        hasVisibleRefreshFailure(record)
           ? [
               {
                 code: record.lastRefreshFailure.code,
@@ -1186,7 +1189,7 @@ function toMarketplaceSummaryData(
     ...(record.lastUpdated ? { lastUpdated: record.lastUpdated } : {}),
     pluginCount: pluginCount ?? record.pluginCount,
     isOfficial: isOfficialMarketplaceId(record.id),
-    ...(record.lastRefreshFailure
+    ...(hasVisibleRefreshFailure(record)
       ? {
           refreshFailure: {
             code: record.lastRefreshFailure.code,

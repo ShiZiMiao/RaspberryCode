@@ -376,6 +376,9 @@ export async function ensureMarketplaceManifestAvailable(input: {
     (item) => item.id === input.marketplace,
   );
   if (!record) return null;
+  // 无远端源的市场（官方市场 source 为空）懒加载同样无可拉取内容：直接返回记录，
+  // 让调用方基于本地 seed 清单工作，而不是拿空串建 URL 抛 invalid_url。
+  if (!isRefreshableMarketplaceSource(record.source)) return record;
   // 受信任的内部懒加载：用 known record 的规范 source 拉取，并以 record.id 作为 trustedId，
   // 使官方 id 只能由本来就是该官方 id 的记录刷新得到。
   return await addMarketplace({
@@ -584,6 +587,15 @@ export async function updateMarketplace(input: {
   const updated: KnownMarketplaceRecord[] = [];
   for (const record of selected) {
     throwIfPluginOperationAborted(input.signal);
+
+    // 没有可用来源的市场不参与刷新。官方市场中立化后 source 就是空串（厂商 CDN 分发已断开），
+    // 落盘为 {source:"url", url:""}；此前无条件拿它建 URL，抛 `Invalid URL: ` 并被记成
+    // error 级 refresh failure，最终在插件市场顶部渲染成红色横幅，让用户以为功能坏了。
+    // 跳过 ≠ 失败：必须顺手清掉历史误记的失败，否则那条横幅会一直留在磁盘上。
+    if (!isRefreshableMarketplaceSource(record.source)) {
+      await clearMarketplaceRefreshFailure(input.storageRoot, record.id);
+      continue;
+    }
 
     // 受信任的刷新会重新拉取已知 marketplace 自带的 source；record.id 作为 trustedId，
     // 使官方 id 只能由原本就是该 id 的记录刷新得到。
@@ -1940,6 +1952,44 @@ async function upsertKnownMarketplace(
   };
 }
 
+/**
+ * 该市场来源是否真的能拉取。
+ *
+ * 中立化后官方市场的 `source` 是空串（落盘为 `{source:"url", url:""}`）——它是内置插件 seed
+ * 的本地归属 id，没有远端可拉。空来源不是错误配置，而是「无远端源」的合法状态，
+ * 因此刷新必须跳过它而不是拿空串去建 URL 报错。
+ */
+export function isRefreshableMarketplaceSource(source: MarketplaceSource): boolean {
+  switch (source.source) {
+    case "url":
+    case "git":
+      return source.url.trim().length > 0;
+    case "github":
+      return source.repo.trim().length > 0;
+    case "npm":
+      return source.package.trim().length > 0;
+    case "file":
+    case "directory":
+      return source.path.trim().length > 0;
+    default:
+      return true;
+  }
+}
+
+/**
+ * 该记录是否应把 `lastRefreshFailure` 当作「用户可见的刷新失败」。
+ *
+ * 磁盘上可能残留历史误记（无远端源的市场在旧版本里会被刷成 `Invalid URL:`）。
+ * 只修刷新逻辑不够：用户不点刷新就永远看不到修复后的状态，所以读侧也要按同一口径过滤，
+ * 让这些残留记录不再作为 error 诊断冒到 UI 上。
+ */
+export function hasVisibleRefreshFailure<
+  T extends Pick<KnownMarketplaceRecord, "lastRefreshFailure" | "source">,
+>(record: T): record is T & { lastRefreshFailure: MarketplaceRefreshFailure } {
+  if (!record.lastRefreshFailure) return false;
+  return isRefreshableMarketplaceSource(record.source);
+}
+
 async function persistMarketplaceRefreshFailure(
   storageRoot: string,
   marketplace: string,
@@ -1949,6 +1999,26 @@ async function persistMarketplaceRefreshFailure(
   const index = known.findIndex((record) => record.id === marketplace);
   if (index < 0 || !known[index]) return;
   known[index] = { ...known[index], lastRefreshFailure: failure };
+  await writeKnownMarketplaces(storageRoot, known);
+}
+
+/**
+ * 清掉某个市场的历史刷新失败。
+ *
+ * 用于两种情况：来源本身没有远端可拉（不该有失败态），以及本次刷新成功。
+ * 只改内存态不落盘会让 UI 继续显示已经失效的错误横幅，所以必须写回。
+ */
+async function clearMarketplaceRefreshFailure(
+  storageRoot: string,
+  marketplace: string,
+): Promise<void> {
+  const known = loadKnownMarketplacesSync(storageRoot);
+  const index = known.findIndex((record) => record.id === marketplace);
+  const record = index >= 0 ? known[index] : undefined;
+  if (!record?.lastRefreshFailure) return;
+  const next = { ...record };
+  delete next.lastRefreshFailure;
+  known[index] = next;
   await writeKnownMarketplaces(storageRoot, known);
 }
 

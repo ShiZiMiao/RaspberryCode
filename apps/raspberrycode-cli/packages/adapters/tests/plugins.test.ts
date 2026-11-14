@@ -457,6 +457,52 @@ describe("NodePluginAdapter", () => {
     }
   });
 
+  it("skips refreshing a marketplace with no remote source instead of failing on an empty URL", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "raspberrycode-plugin-empty-source-"));
+    const storageRoot = join(dir, "storage");
+
+    try {
+      // 官方市场中立化后 source 为空串（厂商 CDN 分发已断开），落盘为 url:""。
+      // 旧行为：拿空串建 URL → `Invalid URL: ` → 记成 error 级 refresh failure →
+      // 商店顶部渲染成红色横幅，用户以为功能坏了。
+      await writeKnownMarketplaces(storageRoot, [
+        {
+          id: "raspberrycode-plugins-official",
+          source: { source: "url", url: "" },
+          name: "raspberrycode-plugins-official",
+          addedAt: "2026-01-01T00:00:00.000Z",
+          pluginCount: 0,
+          // 旧版本已经写进磁盘的误记失败，修复后必须被清掉，否则横幅会一直留在 UI 上。
+          lastRefreshFailure: {
+            code: "plugin_marketplace_invalid",
+            failedAt: "2026-01-02T00:00:00.000Z",
+            message: "Invalid URL: ",
+          },
+        },
+      ]);
+
+      const fetchSpy = vi.fn();
+      vi.stubGlobal("fetch", fetchSpy);
+
+      expect(
+        await updateMarketplace({ marketplace: "raspberrycode-plugins-official", storageRoot }),
+      ).toEqual([]);
+      // 不该发出任何请求：没有远端源就没有可拉取的东西。
+      expect(fetchSpy).not.toHaveBeenCalled();
+      // 历史误记的失败被清除，UI 不再显示红色横幅。
+      expect(
+        loadKnownMarketplacesSync(storageRoot)[0]?.lastRefreshFailure,
+      ).toBeUndefined();
+      // 记录本身保留：它仍是内置插件 seed 的归属 id。
+      expect(loadKnownMarketplacesSync(storageRoot)[0]?.id).toBe(
+        "raspberrycode-plugins-official",
+      );
+    } finally {
+      vi.unstubAllGlobals();
+      await rm(dir, { force: true, recursive: true });
+    }
+  });
+
   it("seeds Claude official marketplace without overwriting an existing record", async () => {
     const dir = await mkdtemp(join(tmpdir(), "raspberrycode-plugin-default-marketplace-"));
     const storageRoot = join(dir, "storage");
