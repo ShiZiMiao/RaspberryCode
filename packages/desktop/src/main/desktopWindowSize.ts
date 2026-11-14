@@ -3,7 +3,28 @@ import type { AppSettings } from "@raspberrycode/shared";
 
 export const DEFAULT_DESKTOP_WINDOW_WIDTH = 1200;
 export const DEFAULT_DESKTOP_WINDOW_HEIGHT = 800;
-export const MIN_DESKTOP_WINDOW_WIDTH = 480;
+/**
+ * 最小窗口宽度按「输入卡上方那一行的两块内容不重叠」推导，不是随手取的整数。
+ *
+ * 那一行有两个贴边元素（specs/composer-status-bar.md）：
+ * - 左：消息尾部动作行（复制/点赞/点踩/时间戳），实测约 137px（1040 宽窗口、中文文案）；
+ * - 右：会话状态条三个 chip（会话统计 / Token 用量 / 上下文容量），实测约 372px。
+ * 两者之间还要留出可辨认的间隙（取 24px，实际渲染 gap 为 12px，留一倍余量）。
+ *
+ * 再加主列以外的固定占用：
+ * - 工作区侧栏最小宽度 264px（`WORKSPACE_SIDEBAR_MIN_WIDTH_PX`，与 UI 保持一致）；
+ * - 主列输入区左右内边距 8px×2（Timeline 的 `px-2`）。
+ *
+ * 137 + 24 + 372 + 264 + 16 = 813。
+ *
+ * 实测校正（2026-11-13）：840 宽下两块确实不重叠（动作行止于 x≈325，状态条起于 x≈441），
+ * 但间隙只剩约 116px，英文界面 chip 文案更长（`cache hit` / `uncached input`）会进一步吃紧。
+ * 因此取 900：在 813 的理论下限之上留出跨语言余量，仍明显小于默认 1200，不牺牲可用性。
+ *
+ * 同步约束：改动状态条 chip 数量/文案长度，或改工作区侧栏最小宽度时，必须重算这里，
+ * 并按「动作行 + 状态条同行不重叠」在真机上复核。
+ */
+export const MIN_DESKTOP_WINDOW_WIDTH = 900;
 export const MIN_DESKTOP_WINDOW_HEIGHT = 640;
 const WINDOW_SIZE_PERSIST_DEBOUNCE_MS = 250;
 

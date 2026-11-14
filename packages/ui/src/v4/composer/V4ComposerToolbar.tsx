@@ -1,12 +1,13 @@
-/* oxlint-disable eslint(max-lines) -- V4ComposerToolbar 汇聚模型/思考深度/context usage 三件套；继续拆分会打散工具条热键与模型目录 memo 的共享状态。 */
+/* oxlint-disable eslint(max-lines) -- V4ComposerToolbar 汇聚模型/思考深度/模式三件套；继续拆分会打散工具条热键与模型目录 memo 的共享状态。 */
 /**
  * V4 composer 工具条。
  *
  * 展示件全部复用旧 chat-input-toolbar 的纯 props 组件（ModelConfigSelect /
- * ChatModeSwitchControl / ChatContextUsage），外观与旧
+ * ChatModeSwitchControl），外观与旧
  * ChatInputToolbar 对齐；但状态编排是全新 v4 wiring，不复活旧 ChatInputToolbar 的
  * effect 链 / 旧协议写路径：
- * - 当前模型/档位来自 Composer；已运行会话的用量来自 snapshot.usage.contextWindow
+ * - 当前模型/档位来自 Composer；上下文容量与会话统计在输入框下方的状态条
+ *   （`composer-status-bar`，specs/composer-status-bar.md），不在工具条里
  * - 模型、思考深度和模式只更新下一次 Submission 的 Composer 意图
  * - 模型静态事实来自目标 Host ModelSelectionView；workspace configOptions 只提供
  *   mode 等非模型 presentation
@@ -16,7 +17,6 @@
  * 三件套不能全部门控在 config!==null 上——草稿态会整体不渲染。
  */
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { cn } from "@/components/lib/utils.js";
 import {
   RASPBERRYCODE_AGENT_PROVIDER,
   type RaspberryCodeConfigOption,
@@ -31,7 +31,6 @@ import type {
 import { ModelConfigSelect, type ModelSelectGroup } from "@/ModelConfigSelect.js";
 import type { ComposerModelOptions } from "@/chat-input-toolbar/ComposerModelMenu.js";
 import { Button } from "@/components/ui/button.js";
-import { ChatContextUsage } from "@/chat-input-toolbar/display.js";
 import {
   getNextThoughtLevelValue,
   getThoughtLevelLabel,
@@ -125,7 +124,6 @@ export interface V4ComposerToolbarProps {
     value: string,
     sourceModel: ModelSelectionSource | null,
   ) => Promise<void> | void;
-  onSendCompressionCommand?: (command: string) => void;
 }
 
 function V4ComposerModelControlsImpl({
@@ -147,10 +145,9 @@ function V4ComposerModelControlsImpl({
   onConfigPickerOpenChange,
   onSelectModel,
   onSelectThought,
-  onSendCompressionCommand,
   onRecoverCustomModelSelection,
 }: V4ComposerToolbarProps) {
-  const { intl, locale } = useRaspberryCodeIntl();
+  const { intl } = useRaspberryCodeIntl();
   const displayProvider = provider ?? RASPBERRYCODE_AGENT_PROVIDER;
   // 配置面读取：workspace 缺省目录（taskId=null），不读旧会话态。
   const { error: configOptionsError } = useToolbarConfigOptions(
@@ -431,16 +428,6 @@ function V4ComposerModelControlsImpl({
     });
   }, [effectiveConfig, onSelectThought, thoughtOption]);
 
-  const taskUsage = useMemo(() => {
-    const contextWindow = usage?.contextWindow;
-    if (!contextWindow) return null;
-    return {
-      used: contextWindow.usedTokens,
-      size: contextWindow.maxTokens,
-      ...(contextWindow.cache ? { cache: contextWindow.cache } : {}),
-      ...(contextWindow.breakdown ? { breakdown: contextWindow.breakdown } : {}),
-    };
-  }, [usage?.contextWindow]);
   // 工具条热键已转正为命令表命令：tooltip 快捷键文案读生效表，
   // 改绑后按钮提示即时跟随（不能用硬编码文案）。
   const modelShortcutLabel = useShortcutCommandLabel("openModelMenu");
@@ -558,14 +545,8 @@ function V4ComposerModelControlsImpl({
         data-usage-max={usage?.contextWindow?.maxTokens ?? ""}
         className="hidden"
       />
-      <ChatContextUsage
-        taskUsage={taskUsage}
-        selectedProvider={displayProvider}
-        intl={intl}
-        locale={locale}
-        onSendCompressionCommand={onSendCompressionCommand}
-        compressionDisabled={disabled || recoveryPending}
-      />
+      {/* 上下文容量入口已移到输入框下方的状态条（specs/composer-status-bar.md）；
+          工具条只留模型/思考档位与模式。data-usage-* 锚点保留在本节点，e2e 契约不变。 */}
       {modelSelectionState.status === "error" && modelSelectionReload ? (
         <Button
           type="button"

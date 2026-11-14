@@ -100,6 +100,54 @@ function getBreakdownToneStyle(index: number): CSSProperties {
   };
 }
 
+/**
+ * 容量圆环：与 ai-elements `ContextIcon` 同一几何形状，但由当前用量直接驱动
+ * （不读 HoverCard context），供输入框下方的状态条 chip 复用。
+ */
+export function ContextUsageRingIcon({
+  usedTokens,
+  maxTokens,
+}: {
+  usedTokens: number;
+  maxTokens: number;
+}) {
+  const radius = 5;
+  const circumference = 2 * Math.PI * radius;
+  const usedPercent =
+    maxTokens > 0 ? Math.min(Math.max(usedTokens / maxTokens, 0), PERCENT_MAX / 100) : 0;
+  return (
+    <svg
+      aria-hidden="true"
+      className="size-3.5 shrink-0"
+      focusable="false"
+      viewBox="0 0 14 14"
+    >
+      <circle
+        cx="7"
+        cy="7"
+        fill="none"
+        opacity="0.25"
+        r={radius}
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <circle
+        cx="7"
+        cy="7"
+        fill="none"
+        opacity="0.75"
+        r={radius}
+        stroke="currentColor"
+        strokeDasharray={`${circumference} ${circumference}`}
+        strokeDashoffset={circumference * (1 - usedPercent)}
+        strokeLinecap="round"
+        strokeWidth="2"
+        style={{ transform: "rotate(-90deg)", transformOrigin: "center" }}
+      />
+    </svg>
+  );
+}
+
 const BREAKDOWN_SOURCE_LABEL_ID: Record<ContextUsageBreakdownSource, string> = {
   messages: "chat.contextUsage.breakdown.messages",
   system_prompt: "chat.contextUsage.breakdown.systemPrompt",
@@ -200,28 +248,29 @@ export function refreshContextUsageOnOpen(
   }
 }
 
-export function ChatContextUsage({
+export interface ContextUsageTaskUsage {
+  used: number;
+  size: number;
+  cache?: { hitRate: number | null };
+  breakdown?: RaspberryCodeContextUsageBreakdownItem[];
+}
+
+/**
+ * 上下文用量的**展示事实**（不含触发器与弹出层）。
+ *
+ * 拆出来是为了让输入框下方的状态条 chip 与 composer 工具条按钮共用同一份折算：
+ * 两处都必须得到相同的百分比、摘要与来源占比，各算一遍必然漂移。
+ * 返回 null 表示「没有可展示的容量」（used/size 非法或为 0），调用方据此不渲染。
+ */
+export function useContextUsageView({
   taskUsage,
-  selectedProvider: _selectedProvider,
   intl,
   locale,
 }: {
-  taskUsage: {
-    used: number;
-    size: number;
-    cache?: { hitRate: number | null };
-    breakdown?: RaspberryCodeContextUsageBreakdownItem[];
-  } | null;
-  selectedProvider: RaspberryCodeProvider;
+  taskUsage: ContextUsageTaskUsage | null;
   intl: ReturnType<typeof useRaspberryCodeIntl>["intl"];
   locale: string;
-  onSendCompressionCommand?: (command: string) => void;
-  compressionDisabled?: boolean;
 }) {
-  const [contextOpen, setContextOpen] = useState(false);
-  const handleContextOpenChange = useCallback((open: boolean) => {
-    setContextOpen(open);
-  }, []);
   const renderableTaskUsage = getRenderableTaskUsage(taskUsage);
 
   const numberFormatter = useMemo(
@@ -275,20 +324,162 @@ export function ChatContextUsage({
     Math.max(renderableTaskUsage.used / renderableTaskUsage.size, 0),
     1,
   );
-  const compactTokenUsageLabel = formatContextUsageSummary({
-    locale,
-    percent: usagePercent,
-    size: renderableTaskUsage.size,
-    used: renderableTaskUsage.used,
-  });
-  const triggerLabel = contextUsageLabel;
-  const contextUsedTokens = renderableTaskUsage.used;
-  const contextMaxTokens = renderableTaskUsage.size;
+
+  return {
+    usedTokens: renderableTaskUsage.used,
+    maxTokens: renderableTaskUsage.size,
+    usagePercent,
+    /** 完整 aria-label：`上下文已用 X / 总量 Y`。 */
+    contextUsageLabel,
+    /** chip 摘要：`2.5%`。 */
+    percentageLabel: percentageFormatter.format(usagePercent),
+    /** 面板右侧摘要：`2.6万/102万 (2.5%)`。 */
+    compactTokenUsageLabel: formatContextUsageSummary({
+      locale,
+      percent: usagePercent,
+      size: renderableTaskUsage.size,
+      used: renderableTaskUsage.used,
+    }),
+    breakdownSegments,
+    progressSegments,
+    cacheHitRateLabel,
+    percentageFormatter,
+    intl,
+  };
+}
+
+export type ContextUsageView = NonNullable<ReturnType<typeof useContextUsageView>>;
+
+/**
+ * 容量明细面板正文：容量条 + 来源占比 + 缓存命中率。
+ *
+ * `showHeader` 控制是否自带「标题 + 摘要」：composer 工具条的悬浮面板需要它，
+ * 而输入框下方状态条由 `ComposerStatusChip` 外壳统一渲染标题区，正文必须省略，
+ * 否则出现两遍相同的「上下文容量 2.6万/102万 (2.5%)」。
+ */
+export function ContextUsagePanelBody({
+  view,
+  showHeader = true,
+  className,
+}: {
+  view: ContextUsageView;
+  showHeader?: boolean;
+  className?: string;
+}) {
+  const {
+    breakdownSegments,
+    cacheHitRateLabel,
+    compactTokenUsageLabel,
+    intl,
+    percentageFormatter,
+    progressSegments,
+    usagePercent,
+  } = view;
+
+  return (
+    <div className={cn("space-y-3", className)}>
+      <div className="space-y-2">
+        {showHeader ? (
+          <div className="flex min-w-0 mb-3 items-center gap-3">
+            <span className="shrink-0 text-ui-base font-medium text-foreground">
+              {intl.formatMessage({ id: "chat.contextUsage.title" })}
+            </span>
+            <span className="ml-auto shrink-0 text-right font-mono text-ui-sm text-foreground-subtle">
+              {compactTokenUsageLabel}
+            </span>
+          </div>
+        ) : null}
+        <Progress
+          className="h-2 bg-surface"
+          indicatorClassName="min-w-2"
+          segments={progressSegments}
+          value={usagePercent * PERCENT_MAX}
+        />
+      </div>
+      {breakdownSegments.length > 0 || cacheHitRateLabel ? (
+        <>
+          {breakdownSegments.length > 0 ? (
+            <div
+              aria-label={intl.formatMessage({
+                id: "chat.contextUsage.breakdown",
+              })}
+              className="space-y-1.5"
+            >
+              <div className="grid gap-1.5">
+                {breakdownSegments.map((segment, index) => (
+                  <div
+                    className="flex min-w-0 items-center gap-2 text-ui-sm"
+                    key={segment.source}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="size-2 shrink-0 rounded-sm border border-border"
+                      style={getBreakdownToneStyle(index)}
+                    />
+                    <span className="min-w-0 truncate text-foreground-subtle">
+                      {intl.formatMessage({
+                        id: BREAKDOWN_SOURCE_LABEL_ID[segment.source],
+                      })}
+                    </span>
+                    {/* Bugfix: breakdown 行只展示占比，分项 token 数会和顶部总量口径混在一起造成误读。 */}
+                    <span className="ml-auto min-w-10 shrink-0 text-right font-mono text-ui-sm tabular-nums text-foreground">
+                      {percentageFormatter.format(segment.percent)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {cacheHitRateLabel ? (
+            <div
+              className={cn(
+                "flex items-center justify-between gap-3 text-ui-sm",
+                breakdownSegments.length > 0 && "border-t border-border pt-3",
+              )}
+            >
+              <span className="text-foreground-subtle">
+                {intl.formatMessage({
+                  id: "chat.contextUsage.cacheHitRate",
+                })}
+              </span>
+              <span className="font-mono text-ui-sm text-foreground">
+                {cacheHitRateLabel}
+              </span>
+            </div>
+          ) : null}
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+/** composer 工具条里的容量入口（圆形图标按钮 + 悬停面板）。 */
+export function ChatContextUsage({
+  taskUsage,
+  selectedProvider: _selectedProvider,
+  intl,
+  locale,
+}: {
+  taskUsage: ContextUsageTaskUsage | null;
+  selectedProvider: RaspberryCodeProvider;
+  intl: ReturnType<typeof useRaspberryCodeIntl>["intl"];
+  locale: string;
+  onSendCompressionCommand?: (command: string) => void;
+  compressionDisabled?: boolean;
+}) {
+  const [contextOpen, setContextOpen] = useState(false);
+  const handleContextOpenChange = useCallback((open: boolean) => {
+    setContextOpen(open);
+  }, []);
+  const view = useContextUsageView({ taskUsage, intl, locale });
+  if (!view) {
+    return null;
+  }
 
   return (
     <Context
-      usedTokens={contextUsedTokens}
-      maxTokens={contextMaxTokens}
+      usedTokens={view.usedTokens}
+      maxTokens={view.maxTokens}
       open={contextOpen}
       onOpenChange={handleContextOpenChange}
     >
@@ -302,7 +493,7 @@ export function ChatContextUsage({
             HoverCard 触发器，避免两个 Radix 浮层在同一 DOM 上叠加 ref。 */}
         <span className="inline-flex shrink-0">
           <ContextTrigger
-            aria-label={triggerLabel}
+            aria-label={view.contextUsageLabel}
             className="text-foreground-subtle"
             data-chat-toolbar-popover-trigger="true"
             data-testid={TID_CHAT_CONTEXT_USAGE_TRIGGER}
@@ -328,79 +519,8 @@ export function ChatContextUsage({
         side="top"
         sideOffset={2}
       >
-        <ContextContentBody className="space-y-3">
-          {/* Bugfix: 默认 ai-elements Header 会硬编码标题并把摘要拆到独立头部。
-          工具栏上下文 hover 只需要一块紧凑信息面板，摘要和明细统一放在 body 里。 */}
-          <div className="space-y-2">
-            <div className="flex min-w-0 mb-3 items-center gap-3">
-              <span className="shrink-0 text-ui-base font-medium text-foreground">
-                {intl.formatMessage({ id: "chat.contextUsage.title" })}
-              </span>
-              <span className="ml-auto shrink-0 text-right font-mono text-ui-sm text-foreground-subtle">
-                {compactTokenUsageLabel}
-              </span>
-            </div>
-            <Progress
-              className="h-2 bg-surface"
-              indicatorClassName="min-w-2"
-              segments={progressSegments}
-              value={usagePercent * PERCENT_MAX}
-            />
-          </div>
-          {breakdownSegments.length > 0 || cacheHitRateLabel ? (
-            <>
-              {breakdownSegments.length > 0 ? (
-                <div
-                  aria-label={intl.formatMessage({
-                    id: "chat.contextUsage.breakdown",
-                  })}
-                  className="space-y-1.5"
-                >
-                  <div className="grid gap-1.5">
-                    {breakdownSegments.map((segment, index) => (
-                      <div
-                        className="flex min-w-0 items-center gap-2 text-ui-sm"
-                        key={segment.source}
-                      >
-                        <span
-                          aria-hidden="true"
-                          className="size-2 shrink-0 rounded-sm border border-border"
-                          style={getBreakdownToneStyle(index)}
-                        />
-                        <span className="min-w-0 truncate text-foreground-subtle">
-                          {intl.formatMessage({
-                            id: BREAKDOWN_SOURCE_LABEL_ID[segment.source],
-                          })}
-                        </span>
-                        {/* Bugfix: breakdown 行只展示占比，分项 token 数会和顶部总量口径混在一起造成误读。 */}
-                        <span className="ml-auto min-w-10 shrink-0 text-right font-mono text-ui-sm tabular-nums text-foreground">
-                          {percentageFormatter.format(segment.percent)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-              {cacheHitRateLabel ? (
-                <div
-                  className={cn(
-                    "flex items-center justify-between gap-3 text-ui-sm",
-                    breakdownSegments.length > 0 &&
-                      "border-t border-border pt-3",
-                  )}
-                >
-                  <span className="text-foreground-subtle">
-                    {intl.formatMessage({
-                      id: "chat.contextUsage.cacheHitRate",
-                    })}
-                  </span>
-                  <span className="font-mono text-ui-sm text-foreground">
-                    {cacheHitRateLabel}
-                  </span>
-                </div>
-              ) : null}
-            </>
-          ) : null}
+        <ContextContentBody>
+          <ContextUsagePanelBody view={view} />
         </ContextContentBody>
       </ContextContent>
     </Context>

@@ -91,7 +91,6 @@ import {
   anchorActionAfterContentChange,
   historyPrefetchTriggerPx,
   initialFollowing,
-  isAtBottom,
   prependScrollAdjustment,
   prependVirtualAnchorAdjustment,
   reconcileFollowingForContentAnchor,
@@ -117,8 +116,6 @@ const EMPTY_PENDING_GUIDES: readonly QueueItem[] = [];
 // 保留两轮滚动缓冲，避免把小行列表的 overscan 放大为数十屏布局工作。
 const ROW_OVERSCAN = 2;
 const RUNNING_WORK_DURATION_TICK_MS = 1000;
-const COMPOSER_MESSAGE_MASK_FADE_PX = 24;
-const COMPOSER_MESSAGE_MASK_TRANSPARENT_HEIGHT_PX = 96;
 const USER_SCROLL_INTENT_TTL_MS = 1200;
 const LAYOUT_SCROLL_GUARD_MS = 250;
 const CONTENT_WIDTH_RESIZE_SETTLE_MS = 120;
@@ -977,43 +974,22 @@ function ConversationTimelineImpl({
     }
   }, []);
 
-  const syncMessageLayerMask = useCallback((element: HTMLDivElement) => {
+  // 消息层不再使用渐变遮罩。
+  //
+  // 历史实现用「离底滚动时把靠近输入区的内容淡出」来处理内容与 composer 的重叠。
+  // 但淡出带是**相对视口固定**的，而消息动作行（复制/点赞/时间戳）随内容滚动：
+  // 它一旦滑进那条带就被整行削成半透明——用户三次反馈「动作区发灰、和用量条糊在一起」。
+  // 把带宽调小、给内容加 padding、把状态条挪进输入卡，都只是改变命中位置，无法根治。
+  //
+  // 现在改为：底部输入区整层不透明（dock 外壳 + 输入卡 + 状态条行三层都带底色），
+  // 滚到它下方的内容被**直接盖住**。动作行只有「完整可见」和「被盖住」两种状态，
+  // 不存在半灰的中间态。因此这里恒定清空遮罩，仅保留函数以便复用在既有调用点
+  // （遮罩样式可能在旧会话恢复时留下残留，必须主动清除）。
+  const clearMessageLayerMask = useCallback(() => {
     const messageLayer = messageLayerRef.current;
     if (!messageLayer) return;
-
-    if (
-      // 浮窗形态下输入区不在滚动视口内，消息不会经过输入框，底部遮罩只会吃掉消息。
-      floatingComposerDockRef.current ||
-      isAtBottom({
-        scrollTop: element.scrollTop,
-        viewportHeight: element.clientHeight,
-        contentHeight: element.scrollHeight,
-      })
-    ) {
-      // 贴底时消息已经位于正常文档流末尾，不会经过 sticky composer；
-      // 继续保留 mask 会无意义地淡出最后一条消息，只有离底滚动时才需要遮罩。
-      messageLayer.style.maskImage = "none";
-      messageLayer.style.webkitMaskImage = "none";
-      return;
-    }
-
-    const viewportHeight = element.clientHeight;
-    const transparentStart = Math.max(
-      0,
-      viewportHeight - COMPOSER_MESSAGE_MASK_TRANSPARENT_HEIGHT_PX,
-    );
-    const opaqueEnd = Math.max(0, transparentStart - COMPOSER_MESSAGE_MASK_FADE_PX);
-    const viewportTopInLayer = Math.max(0, element.scrollTop - messageLayer.offsetTop);
-    const maskImage = `linear-gradient(to bottom, black 0, black ${opaqueEnd}px, transparent ${transparentStart}px, transparent 100%)`;
-
-    // dock 的透明 padding 能保留分屏 focus ring，但消息会从留白透出；
-    // mask 必须随 scroll viewport 对齐且只裁消息层，不能裁掉 sticky composer 与按钮。
-    messageLayer.style.maskImage = maskImage;
-    messageLayer.style.webkitMaskImage = maskImage;
-    messageLayer.style.maskPosition = `0 ${viewportTopInLayer}px`;
-    messageLayer.style.webkitMaskPosition = `0 ${viewportTopInLayer}px`;
-    messageLayer.style.maskSize = `100% ${viewportHeight}px`;
-    messageLayer.style.webkitMaskSize = `100% ${viewportHeight}px`;
+    messageLayer.style.maskImage = "none";
+    messageLayer.style.webkitMaskImage = "none";
   }, []);
 
   useLayoutEffect(() => {
@@ -1028,18 +1004,18 @@ function ConversationTimelineImpl({
         `${dock.getBoundingClientRect().height}px`,
       );
     sync();
-    if (scrollRef.current) syncMessageLayerMask(scrollRef.current);
+    if (scrollRef.current) clearMessageLayerMask();
     const resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(sync);
     resizeObserver?.observe(dock);
     return () => {
       resizeObserver?.disconnect();
       root.style.removeProperty("--v4-floating-composer-dock-height");
     };
-  }, [floatingComposerDock, hasBottomDock, syncMessageLayerMask]);
+  }, [floatingComposerDock, hasBottomDock, clearMessageLayerMask]);
 
   const syncTurnNavigatorViewport = useCallback(
     (element: HTMLDivElement) => {
-      syncMessageLayerMask(element);
+      clearMessageLayerMask();
       if (!turnNavigatorEnabledRef.current) {
         turnNavigatorAnchorsRef.current = null;
         return;
@@ -1079,7 +1055,7 @@ function ConversationTimelineImpl({
       });
       setTurnNavigatorActiveQueryRowId(activeQueryRowId);
     },
-    [syncMessageLayerMask],
+    [clearMessageLayerMask],
   );
 
   useLayoutEffect(() => {
@@ -1087,13 +1063,17 @@ function ConversationTimelineImpl({
     const messageLayer = messageLayerRef.current;
     if (!scrollElement || !messageLayer) return;
 
-    const sync = () => syncMessageLayerMask(scrollElement);
+    const sync = () => clearMessageLayerMask();
     sync();
     if (typeof ResizeObserver !== "undefined") {
       const observer = new ResizeObserver(sync);
       messageLayerMaskObserverRef.current = observer;
       observer.observe(scrollElement);
       observer.observe(messageLayer);
+      // dock 高度直接决定遮罩的透明起点：输入框换行、附件条、权限卡片、待确认队列
+      // 都会让它变高，不观察它就会用上一版高度算遮罩，正文露出一截被压住。
+      const dock = composerDockRef.current;
+      if (dock) observer.observe(dock);
       return () => {
         observer.disconnect();
         if (messageLayerMaskObserverRef.current === observer)
@@ -1103,7 +1083,7 @@ function ConversationTimelineImpl({
 
     window.addEventListener("resize", sync);
     return () => window.removeEventListener("resize", sync);
-  }, [syncMessageLayerMask, renderUnitCount === 0]);
+  }, [clearMessageLayerMask, renderUnitCount === 0]);
 
   const buildCurrentScrollMemoryState = useCallback(
     (element: HTMLDivElement): ChatSessionScrollMemoryState => {
@@ -1965,7 +1945,13 @@ function ConversationTimelineImpl({
   return (
     <div
       ref={timelineRootRef}
-      className={cn("relative flex min-h-0 flex-1 flex-col", compactForOverlay && "min-w-0")}
+      // `overflow-hidden` 必须有：dock 已移到滚动容器外、作为本节点的 flex 子项，
+      // 若不裁剪，dock 会溢出到本节点边界之外（实测 root 高 830、dock 高 144 却
+      // visible=false，输入框直接跑出可视区）。裁剪后 dock 被约束在根节点内。
+      className={cn(
+        "relative flex min-h-0 flex-1 flex-col overflow-hidden",
+        compactForOverlay && "min-w-0",
+      )}
     >
       {selectionActions ? (
         <ConversationSelectionTooltip
@@ -2072,7 +2058,7 @@ function ConversationTimelineImpl({
               ref={messageLayerRef}
               data-v4-timeline-message-layer="true"
               data-sandbox-page-container="true"
-              className="relative w-full flex-1 [mask-repeat:no-repeat] [-webkit-mask-repeat:no-repeat]"
+              className="relative w-full flex-1"
             >
               {/*
                * headerSlot 必须落在被 mask 的消息层内、并套用与实时消息列相同的宽度类：
@@ -2195,57 +2181,68 @@ function ConversationTimelineImpl({
               ) : null}
             </div>
           )}
-          {bottomDock ? (
-            <div
-              ref={composerDockRef}
-              data-v4-composer-dock="true"
-              className={cn(
-                // sticky dock 是 z-20 的全宽透明层，过去会盖住 z-10 rail
-                // 在 composer 左侧留白内的按钮。外壳不接事件，只让实际内容列恢复命中。
-                "pointer-events-none z-20 flex w-full justify-center",
-                // 浮窗形态：滚动容器与内容层都没有定位，absolute 的包含块是时间线根节点，
-                // 输入区贴在时间线底部、不随消息滚动，也不被滚动容器裁剪。
-                floatingComposerDock
-                  ? "absolute inset-x-0 bottom-0"
-                  : responsiveCenteredEmptyLayout
-                    ? "mt-3 shrink-0"
-                    : centeredEmptyLayout
-                      ? "shrink-0"
-                      : "sticky bottom-0",
-              )}
-            >
-              <div
-                data-v4-composer-dock-content="true"
-                className={cn(
-                  // 同 virtual history/live tail，恢复宽度过渡避免硬跳。
-                  // ≥1280px 面板让位时降级为只过渡 transform，避免大范围跳变叠加位移抖动。
-                  "pointer-events-auto relative z-10 w-full shrink-0 transition-[width,max-width,transform] duration-150 ease-out @min-[1280px]/conversation:transition-[transform]",
-                  contentWidthClassName,
-                  // 浮窗形态下输入框外壳就是浮窗最外层，不留内边距。
-                  !centeredEmptyLayout && !floatingComposerDock && "px-2 pb-4",
-                  !centeredEmptyLayout && summaryPanelInlineOffsetClassName,
-                )}
-              >
-                <div data-v4-back-to-bottom-anchor="composer-dock" className="relative">
-                  {backToBottomVisible ? (
-                    <ConversationBackToBottomButton
-                      // 分屏下 composer 属于滚动视口内的 sticky dock；按钮若挂在
-                      // timeline 外层 absolute bottom，会相对整个 pane 落到 input 下方。
-                      //
-                      // 圆钮采用自己的居中定位；`pointer-events-auto` 保留：
-                      // 它是"按钮点得动"唯一可断言的契约。
-                      className="pointer-events-auto absolute bottom-full left-1/2 z-30 mb-2 -translate-x-1/2 shadow-sm"
-                      label={intl.formatMessage({ id: "chat.scrollToBottom" })}
-                      onClick={handleBackToBottom}
-                    />
-                  ) : null}
-                  {bottomDock}
-                </div>
-              </div>
-            </div>
-          ) : null}
         </div>
       </div>
+      {bottomDock ? (
+        <div
+          ref={composerDockRef}
+          data-v4-composer-dock="true"
+          className={cn(
+            // sticky dock 是 z-20 的全宽层，过去会盖住 z-10 rail 在 composer
+            // 左侧留白内的按钮。外壳不接事件，只让实际内容列恢复命中。
+            // 外壳必须有底：消息遮罩取消后，内容会从内容列两侧的留白处透出来
+            // （表现为用户气泡半截浮在状态条后面）。底色只在这一层的底部区段可见。
+            "pointer-events-none z-20 flex w-full justify-center bg-background",
+            // 浮窗形态：滚动容器与内容层都没有定位，absolute 的包含块是时间线根节点，
+            // 输入区贴在时间线底部、不随消息滚动，也不被滚动容器裁剪。
+            //
+            // dock 现在挂在滚动容器**之外**（timelineRoot 的直接子项），因此可以
+            // 既是 `shrink-0` 又始终可见：滚动容器只负责消息，它的底边天然止于
+            // dock 上沿，内容不可能进入 dock 区域被裁（这是 fix 的核心）。
+            //
+            // 历史教训：dock 曾经在滚动容器内部。那时 `sticky bottom-0` 能常显但内容
+            // 会滚到它背后被裁断（动作行只剩半截）；改成 `shrink-0` 后不裁了，但输入框
+            // 会随内容滚出视野。两者只改其一都只能解决一半——必须把它移出滚动容器。
+            floatingComposerDock
+              ? "absolute inset-x-0 bottom-0"
+              : responsiveCenteredEmptyLayout
+                ? "mt-3 shrink-0"
+                : "shrink-0",
+          )}
+        >
+          <div
+            data-v4-composer-dock-content="true"
+            className={cn(
+              // 同 virtual history/live tail，恢复宽度过渡避免硬跳。
+              // ≥1280px 面板让位时降级为只过渡 transform，避免大范围跳变叠加位移抖动。
+              "pointer-events-auto relative z-10 w-full shrink-0 transition-[width,max-width,transform] duration-150 ease-out @min-[1280px]/conversation:transition-[transform]",
+              contentWidthClassName,
+              // 不透明底：消息遮罩已取消，滚到输入区下方的正文/动作行由这层底色直接盖住。
+              // 没有它，内容会从输入卡周围透出来，看起来就是「压在用量条上」。
+              !centeredEmptyLayout && "bg-background",
+              // 浮窗形态下输入框外壳就是浮窗最外层，不留内边距。
+              !centeredEmptyLayout && !floatingComposerDock && "px-2 pb-4",
+              !centeredEmptyLayout && summaryPanelInlineOffsetClassName,
+            )}
+          >
+            <div data-v4-back-to-bottom-anchor="composer-dock" className="relative">
+              {backToBottomVisible ? (
+                <ConversationBackToBottomButton
+                  // 分屏下 composer 属于滚动视口内的 sticky dock；按钮若挂在
+                  // timeline 外层 absolute bottom，会相对整个 pane 落到 input 下方。
+                  //
+                  // 圆钮采用自己的居中定位；`pointer-events-auto` 保留：
+                  // 它是"按钮点得动"唯一可断言的契约。
+                  className="pointer-events-auto absolute bottom-full left-1/2 z-30 mb-2 -translate-x-1/2 shadow-sm"
+                  label={intl.formatMessage({ id: "chat.scrollToBottom" })}
+                  onClick={handleBackToBottom}
+                />
+              ) : null}
+              {bottomDock}
+            </div>
+          </div>
+        </div>
+      ) : null}
       {backToBottomVisible && !bottomDock ? (
         <ConversationBackToBottomButton
           className="absolute bottom-3 left-1/2 -translate-x-1/2 shadow-sm"

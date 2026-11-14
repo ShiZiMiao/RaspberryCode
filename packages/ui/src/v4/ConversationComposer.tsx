@@ -103,6 +103,7 @@ import {
 } from "@/ChatMediaAttachmentPreviewDialog.js";
 import type { LexicalChatInputHandle } from "@/LexicalChatInput.js";
 import { ChatPromptEditor } from "@/prompt-editor/ChatPromptEditor.js";
+import { ComposerStatusBar } from "@/composer-status-bar/ComposerStatusBar.js";
 import { usePromptEditorDragState } from "@/prompt-editor/usePromptEditorDragState.js";
 import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { advanceComposerDraftRevision } from "@/v4/composer/composerDraftRevision.js";
@@ -606,7 +607,9 @@ function ConversationComposerImpl({
   backgroundWorkOpenTarget = "panel",
   runningSubagentCount = 0,
   onRecoverCustomModelSelection,
-  onSendCompressionCommand,
+  // 容量面板目前没有渲染压缩按钮（`ChatContextUsage` 从未消费该回调），
+  // 状态条接管容量入口后这里不再向下传递；保留接口字段以兼容宿主调用方。
+  onSendCompressionCommand: _onSendCompressionCommand,
   error,
   onDismissError,
   onOpenModelSettings,
@@ -2459,7 +2462,6 @@ function ConversationComposerImpl({
               onSelectThought={onSelectThought}
               onSwitchMode={onSwitchMode}
               onRecoverCustomModelSelection={onRecoverCustomModelSelection}
-              onSendCompressionCommand={onSendCompressionCommand}
             />
           </span>
         ) : null}
@@ -2522,7 +2524,6 @@ function ConversationComposerImpl({
       modelSelectionView,
       onSelectThought,
       onRecoverCustomModelSelection,
-      onSendCompressionCommand,
       onSwitchMode,
       pending,
       provider,
@@ -2705,9 +2706,32 @@ function ConversationComposerImpl({
       <div
         className={cn(
           "chat-composer-input-surface relative w-full",
-          contextHeader && "rounded-2xl bg-surface shadow-xl/5",
+          // 会话态也必须有底色：状态条占位在这一层，消息遮罩取消后滚上来的正文会
+          // 从这一行的透明背景里透出来（表现为「回复OK」半截浮在用量条后面）。
+          // 草稿态本来就有 bg-surface 卡片，这里只补会话态。
+          contextHeader ? "rounded-2xl bg-surface shadow-xl/5" : "rounded-xl bg-background",
         )}
       >
+        {/* 会话状态条占据输入卡上沿内侧的一行（specs/composer-status-bar.md）。
+            曾经是 `absolute bottom-full` 悬浮在输入卡之外、与消息动作行共用同一水平带，
+            但正文滚动时必经那条带，遮罩又是全宽渐变分不清左右——只能二选一：
+            要么淡掉左侧动作行，要么让正文压住 chip。改成占位行后三层在垂直方向分离，
+            任何滚动位置都不重叠。
+            紧凑处理：行高只由 chip 自身 24px 决定，用 `-mb-0.5` 吃掉输入卡顶部内边距，
+            不额外撑高输入卡。零数据时组件自身返回 null，这一行整体塌陷不占位。 */}
+        <ComposerStatusBar
+          workspacePath={workspacePath}
+          workspaceIdentity={workspaceIdentity}
+          sessionId={sessionId}
+          active={canStop || composerPhase === "running" || composerPhase === "prewarming"}
+          usage={composerUsage}
+          // `pr-1` 与输入框右内边距对齐；`-mb-0.5` 让这一行贴着输入框上沿。
+          // 这一行自带不透明底：它虽是占位行，但本身没有背景时，滚上来的内容会从
+          // 右侧空白处透出（用户看到「回复OK」半截浮在用量条后面）。
+          // 整行铺底色（不是只覆盖 chip 宽度）：这一行右侧的空白区若透明，
+          // 滚上来的用户气泡会从那里露出半截。
+          className="relative z-10 -mb-0.5 flex w-full justify-end bg-background pr-1"
+        />
         {contextHeader ? (
           // 旧 ChatViewComposer contextHeaderContent 同款包装（workspace 菜单 + Git 分支）。
           <div className="relative z-10 p-1.5 flex min-w-0 flex-wrap items-center gap-0">
