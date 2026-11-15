@@ -64,7 +64,6 @@ export function ComposerStatusBar({
       ? {
           used: usage.contextWindow.usedTokens,
           size: usage.contextWindow.maxTokens,
-          ...(usage.contextWindow.cache ? { cache: usage.contextWindow.cache } : {}),
           ...(usage.contextWindow.breakdown
             ? { breakdown: usage.contextWindow.breakdown }
             : {}),

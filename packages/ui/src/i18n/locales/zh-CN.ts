@@ -4700,7 +4700,6 @@ const zhCN: Record<string, string> = {
   "chat.reasoning.durationSeconds": "持续了 {seconds} 秒",
   "chat.contextUsage": "上下文已用 {used} / 总量 {total}",
   "chat.contextUsage.title": "上下文容量",
-  "chat.contextUsage.cacheHitRate": "平均缓存命中率",
   "chat.contextUsage.breakdown": "上下文来源",
   "chat.contextUsage.breakdown.messages": "消息",
   "chat.contextUsage.breakdown.systemPrompt": "系统提示词",

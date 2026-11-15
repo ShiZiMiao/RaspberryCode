@@ -60,10 +60,17 @@
    | --- | --- | --- |
    | 会话统计 | `{rounds} 轮 {steps} 步 · {tps} tok/s`（tps 缺失时省略该段） | 标题「会话统计」+ 右侧 `{rounds} 轮 {steps} 步`；行：模型用时 / 首 token 平均（TTFT）/ 输出速度（TPS） |
    | Token 用量 | `{totalTok} tok · 缓存命中 {rate}`（rate 缺失时省略该段） | 标题「Token 用量」+ 右侧 `{totalTok} tok`；行：缓存命中 / 未缓存输入 / 缓存读取 / 输出 |
-   | 上下文容量 | 圆环图标 + `{percent}` | 沿用现有 `ChatContextUsage` 明细（容量条 + 来源占比 + 缓存命中率） |
+   | 上下文容量 | 圆环图标 + `{percent}` | 沿用现有 `ChatContextUsage` 明细（容量条 + 来源占比）。**不含缓存命中率**，见下条 |
 
 4. **交互**：桌面 hover 即展开、点击固定；触摸端 `pointerdown` 展开（沿用
    `ChatContextUsage` 已有的 touch 分支）。弹出层方向 `top`，与 chip 底部对齐。
+4. **缓存命中率只在 Token 用量面板出现一次**。
+   两处曾各有一份，公式相同（`cacheRead ÷ inputTokens`）但聚合范围不同：
+   - Token 用量：落盘 `turn_usage` 汇总，覆盖会话内**全部**模型请求；
+   - 上下文容量：runtime 内存态 `mainTurnCacheHitAggregate`，只统计**主链路**。
+   于是跑过子 agent 的会话会出现两个不同百分比，且都不标明口径，用户无法判断
+   该信哪个。保留 Token 用量那一处：口径覆盖更全、落盘后冷启动仍在，
+   且与同面板的 token 总额同源。上下文容量面板只负责"容量被谁占了"。
 5. **数字格式**：token 数用 `formatCompactTokenNumber`（`9.9K tok`、`1.2M tok`）；
    用时小于 1 秒用 `0.8 秒`，否则 `1.1 秒`；TPS 取整（`434 tok/s`）；百分比保留 1 位小数。
 6. **不新增第二份状态**：chip 只消费
