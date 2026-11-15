@@ -210,17 +210,29 @@ export function ConversationDraftEmptyState({
       <div
         aria-hidden="true"
         className={cn(
-          // 尺寸同时受宽度和高度约束。只按宽度取 `min(72vw,25rem)` 时，矮窗口里宽度
-          // 不变而高度不够，logo 会向上溢出滚动区、被 overflow 裁掉顶部（用户实测
-          // 600px 高窗口切掉叶尖）。加入 `46vh` 上限让矮窗口自动缩小：
-          // aspect 5/4 下高度约为宽度的 0.8 倍，46vh 宽对应约 37vh 高，
-          // 加上 `-mt-10` 的上移量，仍能完整落在「视口 − 输入卡」之内
-          // （500/600/640/720/900 高逐档实测无裁切）。
-          "pointer-events-none absolute left-1/2 top-1/2 aspect-[5/4] w-[min(72vw,46vh,25rem)] -mt-10",
-          "-translate-x-1/2 -translate-y-1/2 text-foreground-subtlest",
+          // logo 参与布局（不是 absolute 装饰层），这样「logo + 问候语 + 输入卡」
+          // 才是一个整体、能被真正垂直居中。
+          //
+          // 历史：它曾是 `absolute top-1/2 -translate-y-1/2 -mt-10`，向上溢出容器
+          // 约 200px。居中只按「问候语 + 输入卡」计算，logo 的溢出部分不进布局，
+          // 视觉重心因此偏上，用户反馈「不如把 logo 和输入框当一个整体居中」。
+          //
+          // 尺寸受宽度与高度双重约束：只取 `min(72vw,25rem)` 时矮窗口宽度不变而
+          // 高度不够，插画会顶出滚动区被裁（实测 600px 高切掉叶尖）。`46vh` 上限
+          // 让矮窗口自动缩小。
+          //
+          // 容器高度按「可见比例」给、图片保持 5/4 原比例绘制，底部那截由
+          // `overflow-hidden` 裁掉，使**布局高度 == 可见高度**：
+          // - 若整块 5/4 参与布局，插画自带的 `transparent 70%` 渐隐区会变成
+          //   「logo 与问候语之间莫名一大段空白」；
+          // - 若用负 margin 压掉它，布局比实际绘制矮、整组被算小后上移出界
+          //   （实测 620 高窗口裁掉叶尖）。
+          // 裁切是唯一让两者一致的做法。0.8 来自 5/4 比值，0.72 是可见比例。
+          "pointer-events-none w-[min(72vw,46vh,25rem)] shrink-0 overflow-hidden text-foreground-subtlest",
+          "h-[calc(min(72vw,46vh,25rem)*0.8*0.72)]",
         )}
       >
-        <RaspberryCodeEmptyStateLogo className="h-full w-full" />
+        <RaspberryCodeEmptyStateLogo className="block aspect-[5/4] w-full" />
       </div>
       <p
         ref={greetingContainerRef}
