@@ -2026,13 +2026,32 @@ function ConversationTimelineImpl({
       >
         <div
           className={cn(
-            // 固定高度断点会在窗口跨过临界值时让问候语与 composer 整组跳动。
-            // 顶部留白按视口高度伸缩，输入框的位置不再受下方推荐列表高度影响；
-            // 空间不足时顶部可收缩到底线，底部继续随内容自然排布。
+            // 草稿空态定位：让「问候语 + 输入框」回到整组居中的历史观感。
+            //
+            // Bug 根因（2026-11-15 用户报告"主页布局和以前不一样"）：
+            // `8e4ca64a` 把输入区 dock 移出滚动容器、挂成时间线根节点的兄弟项之后，
+            // 空态仍在滚动容器里沿用旧的 `before/after` 假留白方案。那套方案是为
+            // 「dock 在滚动区内」设计的：`after:flex-1` 负责把输入框推下去、把问候语
+            // 抬起来。dock 移出后滚动区只剩「视口 − dock」（实测 792 − 202 = 516px），
+            // 而 `after:flex-1` 仍吃掉全部剩余空间（实测 396px），于是问候语被顶到
+            // 滚动区顶部、输入框在滚动区之外独占底部，中间空出约 300px，
+            // 看起来就是「输入框被推到底、和问候语脱开」。
+            //
+            // 草稿空态：整组垂直居中，但必须给 logo 的装饰性上溢留出可收缩的余量。
+            //
+            // Bug 根因（2026-11-15 用户报告「缩小后 logo 被遮挡」）：
+            // 空态 logo 是绝对定位装饰层，`aspect-[5/4] w-[min(72vw,25rem)]` 加
+            // `-translate-y-1/2 -mt-10`，天生向「问候语所在容器」的中心上方溢出约 200px。
+            // 容器一矮，`justify-center` 会把整组往上推，logo 顶部越过滚动区上沿被
+            // `overflow-hidden` 裁掉且无法滚回（实测 720 高窗口：logo top=39、
+            // 滚动区 top=55，顶部切掉 16px；窗口越矮切得越多）。
+            //
+            // 解法：不用纯 `justify-center`，改为「可收缩的上留白 + 自然排布 + 可收缩的
+            // 下留白」。上留白 `basis` 用 flex 让它在小窗口自动压到 0（此时整组贴顶但
+            // logo 完整），大窗口撑开产生居中效果。这比 m-auto 更可控：m-auto 在
+            // 多个子项上会各自拉伸，把问候语和输入卡撑成两大段空隙。
             responsiveCenteredEmptyLayout
-              ? // Bugfix 根因：动态修改原生窗口下限会把内容换行反馈到窗口拖动，产生阻尼；
-                // 容器保留固有最小高度，由外层 timeline 统一承接受限高度下的溢出内容。
-                "flex min-h-full flex-col items-center px-2 before:block before:min-h-[52px] before:w-full before:shrink before:basis-[29dvh] before:content-[''] after:block after:min-h-4 after:w-full after:flex-1 after:content-['']"
+              ? "flex min-h-full flex-col items-center px-2"
               : centeredEmptyLayout
                 ? "flex min-h-full flex-col items-center justify-center gap-4 px-2"
                 : "flex min-h-full flex-col",
@@ -2043,16 +2062,42 @@ function ConversationTimelineImpl({
           style={{ overflowAnchor: "none" }}
         >
           {renderUnitCount === 0 && !headerSlot ? (
-            <div
-              className={cn(
-                centeredEmptyLayout
-                  ? "flex w-full max-w-2xl shrink-0 items-center justify-center"
-                  : "min-h-0 flex-1",
-                !centeredEmptyLayout && summaryPanelInlineOffsetClassName,
-              )}
-            >
-              {emptyState}
-            </div>
+            <>
+              {/* 可收缩上留白：撑开时产生居中效果，窗口变矮时先压到 0，
+                  保证 logo 的装饰性上溢始终落在滚动区之内（不被 overflow 裁掉）。 */}
+              {responsiveCenteredEmptyLayout ? (
+                <div aria-hidden="true" className="min-h-0 w-full flex-1 basis-0" />
+              ) : null}
+              <div
+                className={cn(
+                  centeredEmptyLayout
+                    ? "flex w-full max-w-2xl shrink-0 items-center justify-center"
+                    : "min-h-0 flex-1",
+                  !centeredEmptyLayout && summaryPanelInlineOffsetClassName,
+                )}
+              >
+                {emptyState}
+              </div>
+              {/* 草稿整组居中：dock 必须和空态同处一个居中列，否则两者会被
+                  「滚动区 / dock」这条硬边界拆开（滚动区占视口减 dock 的高度并各自居中，
+                  中间必然空出大半屏）。这里只在草稿居中态把 dock 内联到滚动流里，
+                  会话态仍走下面的独立 dock 分支，不动 8e4ca64a 修好的常显/不遮挡行为。 */}
+              {responsiveCenteredEmptyLayout && bottomDock ? (
+                <div
+                  ref={composerDockRef}
+                  data-v4-composer-dock="true"
+                  data-v4-draft-inline-dock="true"
+                  className="pointer-events-auto w-full max-w-2xl shrink-0"
+                >
+                  {bottomDock}
+                </div>
+              ) : null}
+              {/* 与上留白配平：两者同为 `flex-1`，剩余空间由它们均分，
+                  整组才真正居中。小窗口下两者都压到 0，留白消失但不裁 logo。 */}
+              {responsiveCenteredEmptyLayout ? (
+                <div aria-hidden="true" className="min-h-0 w-full flex-1 basis-0" />
+              ) : null}
+            </>
           ) : (
             <div
               ref={messageLayerRef}
@@ -2183,7 +2228,7 @@ function ConversationTimelineImpl({
           )}
         </div>
       </div>
-      {bottomDock ? (
+      {bottomDock && !responsiveCenteredEmptyLayout ? (
         <div
           ref={composerDockRef}
           data-v4-composer-dock="true"

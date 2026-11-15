@@ -210,7 +210,13 @@ export function ConversationDraftEmptyState({
       <div
         aria-hidden="true"
         className={cn(
-          "pointer-events-none absolute left-1/2 top-1/2 aspect-[5/4] w-[min(72vw,25rem)] -mt-10",
+          // 尺寸同时受宽度和高度约束。只按宽度取 `min(72vw,25rem)` 时，矮窗口里宽度
+          // 不变而高度不够，logo 会向上溢出滚动区、被 overflow 裁掉顶部（用户实测
+          // 600px 高窗口切掉叶尖）。加入 `46vh` 上限让矮窗口自动缩小：
+          // aspect 5/4 下高度约为宽度的 0.8 倍，46vh 宽对应约 37vh 高，
+          // 加上 `-mt-10` 的上移量，仍能完整落在「视口 − 输入卡」之内
+          // （500/600/640/720/900 高逐档实测无裁切）。
+          "pointer-events-none absolute left-1/2 top-1/2 aspect-[5/4] w-[min(72vw,46vh,25rem)] -mt-10",
           "-translate-x-1/2 -translate-y-1/2 text-foreground-subtlest",
         )}
       >
