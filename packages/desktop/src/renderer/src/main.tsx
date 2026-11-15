@@ -1,7 +1,7 @@
 /* eslint-disable max-lines -- Desktop renderer bridge 聚合平台、远端 attachment 与启动编排契约。 */
 import { DatabaseStartupAdmission } from "./databaseStartupAdmission.js";
 import { initializeDesktopLocalTtft } from "./local-ttft/contract.js";
-import { createRoot } from "react-dom/client";
+import { createRoot, type Root as ReactRoot } from "react-dom/client";
 import { useEffect } from "react";
 import {
   AppErrorBoundary,
@@ -161,13 +161,45 @@ initializeDesktopUserActionTrace({
  * 所以 preload 用 window.postMessage + transfer 把 port 原样传递到 renderer。
  * 本地窗口的 port 来自 utilityProcess，远程窗口也一样，renderer 无需区分。
  */
-// 之前用匿名函数注册 addEventListener("message")，reload/HMR 时会重复注册，
-// 导致多次 createRoot 在同一 DOM 节点上挂载。用 flag 防止重复初始化。
 // 窗口 hidden 时禁用 CSS 动画，避免 DocumentTimeline 持有已卸载的 DOM 子树。
 installDocumentHiddenMotionPause();
+/**
+ * renderer 只允许存在一个 React root。
+ *
+ * Bug 根因：旧实现直接在模块作用域 `createRoot(document.getElementById("root"))`。
+ * 生产加载只会执行一次模块，但开发态 Vite HMR 会把改动过的模块（连带上游入口）重新求值，
+ * 于是同一个 #root 上被反复创建 root。每个 root 都会渲染一棵 `h-dvh` 整高树并各自持有
+ * container 的 children 所有权，后续提交互相 removeChild 对方节点，抛
+ * `Failed to execute 'removeChild' on 'Node'`，错误边界又把整高兜底卡片追加进 #root，
+ * 最终表现为应用整体下推、底部输入区被裁出视口。
+ *
+ * 因此 root 实例挂在 window 上跨 HMR 复用：重复求值只拿回同一个 root，
+ * 并在复用前清掉上一次求值遗留的 DOM，避免旧树与兜底卡片叠加。
+ * 符号必须在 createRendererRoot 调用之前初始化，否则模块顶层会踩 TDZ。
+ */
+const RENDERER_ROOT_SYMBOL = Symbol.for("raspberrycode.renderer.root");
+
+function createRendererRoot(): ReactRoot {
+  const container = document.getElementById("root");
+  if (!container) {
+    throw new Error("renderer root container is missing");
+  }
+  const scope = window as Window & { [RENDERER_ROOT_SYMBOL]?: ReactRoot };
+  const existing = scope[RENDERER_ROOT_SYMBOL];
+  if (existing) {
+    // HMR 重入：旧树的节点仍留在 container 里，必须先清空再交给复用的 root。
+    container.replaceChildren();
+    return existing;
+  }
+  const root = createRoot(container);
+  scope[RENDERER_ROOT_SYMBOL] = root;
+  return root;
+}
 let appInitialized = false;
 const databaseStartupAdmission = new DatabaseStartupAdmission();
-const appRoot = createRoot(document.getElementById("root")!);
+// 注意：appInitialized 只门禁"业务根是否已建立"，不负责挂载去重。
+// 挂载去重由上面的 createRendererRoot 承担，两者职责不同，不能互相替代。
+const appRoot = createRendererRoot();
 const sendStartupControl = (control: DatabaseStartupControl) =>
   window.postMessage({ type: InternalChannels.DatabaseStartupControl, control }, "*");
 function renderDatabaseStartup(): void {
@@ -361,6 +393,21 @@ function initializeBusinessRoot(port: MessagePort): void {
   );
 }
 
-window.addEventListener("message", handleServicePortMessage);
+// 监听器同样必须在 HMR 下保持单份：每次重入先摘掉上一次注册的处理函数，
+// 否则同一个 ServicePort 消息会被多份闭包分别处理，重复 render 与重复 acceptPort。
+// HMR 重入时本模块内的函数是新引用，removeEventListener 摘不掉旧闭包，
+// 因此把登记过的处理函数也挂在 window 上，按引用精确移除。
+const SERVICE_PORT_LISTENER_SYMBOL = Symbol.for("raspberrycode.renderer.servicePortListener");
+{
+  const scope = window as Window & {
+    [SERVICE_PORT_LISTENER_SYMBOL]?: (event: MessageEvent) => void;
+  };
+  const previous = scope[SERVICE_PORT_LISTENER_SYMBOL];
+  if (previous) {
+    window.removeEventListener("message", previous);
+  }
+  scope[SERVICE_PORT_LISTENER_SYMBOL] = handleServicePortMessage;
+  window.addEventListener("message", handleServicePortMessage);
+}
 renderDatabaseStartup();
 sendStartupControl({ action: "snapshot" });
