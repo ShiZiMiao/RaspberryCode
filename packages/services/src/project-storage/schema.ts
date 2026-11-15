@@ -24,6 +24,14 @@ CREATE TABLE IF NOT EXISTS remote_project_entries (
 export const REMOTE_ENTRY_DELETED_CACHE_SQL =
   "ALTER TABLE remote_project_entries ADD COLUMN cached_deleted INTEGER NOT NULL DEFAULT 0";
 
+/**
+ * 项目归属相关列。
+ *
+ * 注意：本对象被 `0005_projects` 迁移的 `sql` 字段内嵌（JSON 序列化后参与 checksum
+ * 计算）。**往这里加列会让已应用该迁移的库 checksum 失配、启动报 `sql_failed`**。
+ * 新列必须单独开一条幂等迁移（见 `project-storage/index.ts` 的 0011），
+ * 不能在这里追加。`placeholder_at` 就是按这个规则单独迁移的。
+ */
 export const TASK_PROJECT_COLUMNS: Readonly<Record<string, string>> = {
   host_id: "TEXT",
   root_path: "TEXT",

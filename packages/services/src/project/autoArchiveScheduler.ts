@@ -8,6 +8,15 @@ import { createServiceLogger } from "#src/logger/serviceLogger.js";
  */
 export const TASK_AUTO_ARCHIVE_SCAN_INTERVAL_MS = 5 * 60 * 1000;
 
+/**
+ * 占位行保留时长。
+ *
+ * 占位行要等 CLI 的 `applyCliFacts` 回写事实才算完成握手。正常情况是秒级，
+ * 但远程 Host、SSH 工作区或进程排队都可能拖到分钟级。留一天是为了让「慢但没失败」
+ * 的创建仍然能完成；超过一天还没有 CLI 事实的，只可能是中断残留。
+ */
+export const TASK_ORPHAN_PLACEHOLDER_RETENTION_MS = 24 * 60 * 60 * 1000;
+
 /** 变更后需要立即补扫的设置键。 */
 const TASK_AUTO_ARCHIVE_SETTING_KEYS: ReadonlySet<string> = new Set([
   "taskAutoArchiveEnabled",
@@ -21,7 +30,9 @@ export function shouldRescanTaskAutoArchive(keys: readonly string[]): boolean {
 export interface TaskAutoArchiveSchedulerOptions {
   /** 读取当前策略；返回 null 表示自动归档关闭。 */
   readPolicy(): Promise<AutoArchiveInput | null>;
-  repository(): Promise<Pick<ProjectRepositoryContract, "archiveInactive">>;
+  repository(): Promise<
+    Pick<ProjectRepositoryContract, "archiveInactive" | "pruneOrphanPlaceholders">
+  >;
   /** 至少归档一条后调用，负责广播项目变更；没有变化时不调用。 */
   afterChange(): Promise<void>;
   intervalMs?: number;
@@ -57,7 +68,19 @@ export function createTaskAutoArchiveScheduler(
   const runOnce = async (): Promise<ProjectTaskRef[]> => {
     const policy = await options.readPolicy();
     if (!policy || disposed) return [];
-    const archived = (await options.repository()).archiveInactive(policy);
+    const repository = await options.repository();
+    // 占位行回收放在归档之前：这些行 `cli_created_at IS NULL`，本来就不会出现在列表里，
+    // 也不参与归档判定；先清掉能避免它们被下面的 DELETE/UPDATE 条件反复扫到。
+    // 阈值给足一天：仍在握手中的新建任务不能被当成孤儿，宁可晚一轮再回收。
+    const prunedPlaceholders = repository.pruneOrphanPlaceholders(
+      Date.now() - TASK_ORPHAN_PLACEHOLDER_RETENTION_MS,
+    );
+    if (prunedPlaceholders > 0) {
+      log.info(undefined, `回收 ${prunedPlaceholders} 条未完成的占位任务行`, {
+        retentionMs: TASK_ORPHAN_PLACEHOLDER_RETENTION_MS,
+      });
+    }
+    const archived = repository.archiveInactive(policy);
     if (archived.length === 0) return archived;
     log.info(undefined, `自动归档 ${archived.length} 条任务`, {
       cutoff: policy.cutoff,

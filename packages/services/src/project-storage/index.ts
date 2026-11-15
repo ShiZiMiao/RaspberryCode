@@ -92,6 +92,24 @@ export const projectStorage: ProjectStorageContract = {
           sql: REMOTE_TASK_OWNERSHIP_MIGRATION,
           apply: repairRemoteTaskOwnership,
         },
+        {
+          // 占位行回收需要「占位建立时刻」。该列由 addProjectSchema 的 ensureColumns 声明，
+          // 但那条路径只在一次性迁移 0005 里跑；已有安装不会再进 0005，新列就永远加不上。
+          // 单独开一条幂等迁移，让 upgrade 与全新安装都能拿到这一列。
+          id: "0011_task_placeholder_at",
+          appVersion: "3.18.0",
+          touchedTables: ["tasks"],
+          // 记录用途：实际执行走下面的 apply（幂等，列已存在时跳过）。
+          sql: "-- add tasks.placeholder_at INTEGER (idempotent)",
+          apply: (database) => {
+            const columns = database.prepare("PRAGMA table_info(tasks)").all() as {
+              name?: string;
+            }[];
+            if (!columns.some((column) => column.name === "placeholder_at")) {
+              database.exec("ALTER TABLE tasks ADD COLUMN placeholder_at INTEGER");
+            }
+          },
+        },
       ],
       {
         database: "tasks_index",

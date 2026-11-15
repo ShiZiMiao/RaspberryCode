@@ -198,6 +198,36 @@ export class ProjectRepository implements ProjectRepositoryContract, ProjectData
     });
   }
 
+  /**
+   * 回收「占位行」：只有 Host 归属、CLI 从未回写事实的任务行。
+   *
+   * 为什么会有这类行：`createTask` / `forkTask` 必须在 CLI 首发之前占位，否则 ACK 到达
+   * UI 时归属还是空的。占位后等 CLI 的 `applyCliFacts` 补全 `cli_created_at`。
+   * 若这次握手中断（创建失败、用户取消、进程重启），行就永远停在未补全状态。
+   * 列表查询用 `cli_created_at IS NOT NULL` 过滤，所以它们不显示也不影响功能，
+   * 但会随每次失败的创建累积（实测本机积了 72 条）。
+   *
+   * 只删早于 cutoff 的：仍在握手中的新行必须保留，否则会把用户刚建、CLI 还没回写的
+   * 任务一起删掉，并在列表里表现为「刚创建就消失」。
+   * 兼容历史数据：`placeholder_at` 之前不存在（列为后加），旧占位行的该字段为 NULL，
+   * 没有时间可比；但这类行只要还没被补全就必然是孤儿（补全一定会写 cli_created_at），
+   * 因此一并回收。
+   */
+  pruneOrphanPlaceholders(cutoff: number): number {
+    return transaction(this.db, () => {
+      const result = this.db
+        .prepare(
+          `DELETE FROM tasks
+           WHERE cli_created_at IS NULL
+             AND deleted=0
+             AND (placeholder_at IS NULL OR placeholder_at < ?)
+             AND host_id=?`,
+        )
+        .run(cutoff, this.ownerHostId ?? "local");
+      return Number(result.changes ?? 0);
+    });
+  }
+
   readTree(options?: {
     includeDeleted?: boolean;
     includeDeletedTasks?: boolean;
@@ -509,10 +539,13 @@ export class ProjectRepository implements ProjectRepositoryContract, ProjectData
         throw new Error("project.host-mismatch");
       if (!existing) {
         // fork 正文先由 CLI 提交；Host 在 ACK 对 UI 可见之前持久化父任务归属，避免立即打开时空归属。
+        //
+        // created_at / updated_at 保持 0（代表「尚无 CLI 事实」），占位时刻另记 placeholder_at：
+        // 复用 created_at 会让 applyCliFacts 之前的读取方把占位时刻误当会话创建时刻。
         this.db
           .prepare(`INSERT INTO tasks(workspace_key,workspace_path,workspace_identity,task_id,created_at,updated_at,
-          host_id,root_path,project_id,handoff_pending,execution_directories,forked_from_task_id)
-          VALUES(?,?,?,?,0,0,?,?,?,?,?,?)`)
+          host_id,root_path,project_id,handoff_pending,execution_directories,forked_from_task_id,placeholder_at)
+          VALUES(?,?,?,?,0,0,?,?,?,?,?,?,?)`)
           .run(
             resolveWorkspaceKey(input.task),
             input.task.workspacePath,
@@ -524,6 +557,7 @@ export class ProjectRepository implements ProjectRepositoryContract, ProjectData
             OWNERSHIP_DECIDED,
             parent.execution_directories ?? null,
             input.parentTaskId,
+            Date.now(),
           );
       } else if (parent.host_id !== "local" && existing.project_id == null) {
         // sessions-index 可能先于 ACK 到达；只补同父链的缺失远端归属，重放不能覆盖用户移动。
@@ -593,9 +627,11 @@ export class ProjectRepository implements ProjectRepositoryContract, ProjectData
             throw new Error("project.cwd-not-in-roots");
         }
         // 创建归属必须先于 CLI 首发；空事实不是假会话，列表只读取已有 CLI 事实的行。
+        //
+        // 同 forkTask：占位时刻记 placeholder_at，created_at 留给 CLI 事实。
         this.db
-          .prepare(`INSERT INTO tasks(workspace_key,workspace_path,workspace_identity,task_id,created_at,updated_at,host_id,root_path,project_id,handoff_pending,execution_directories)
-          VALUES(?,?,?,?,0,0,?,?,?,?,?)`)
+          .prepare(`INSERT INTO tasks(workspace_key,workspace_path,workspace_identity,task_id,created_at,updated_at,host_id,root_path,project_id,handoff_pending,execution_directories,placeholder_at)
+          VALUES(?,?,?,?,0,0,?,?,?,?,?,?)`)
           .run(
             key,
             task.workspacePath,
@@ -608,6 +644,7 @@ export class ProjectRepository implements ProjectRepositoryContract, ProjectData
             input.additionalDirectories === undefined
               ? null
               : JSON.stringify(executionDirectoriesSchema.parse(input.additionalDirectories)),
+            Date.now(),
           );
       }
       const directories = resolveDirectories(this.db, task, this.ownerHostId);

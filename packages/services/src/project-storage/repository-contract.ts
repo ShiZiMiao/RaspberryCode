@@ -72,6 +72,18 @@ export interface ProjectRepositoryContract {
 
   /** 单事务纯按 CLI 最后活动时间筛选，置顶与 activeTasks 除外，仅写组织态；覆盖未归类 cwd。 */
   archiveInactive(input: AutoArchiveInput): ProjectTaskRef[];
+  /**
+   * 清理「占位行」——只有 Host 侧归属、CLI 从未确认过的任务行。
+   *
+   * `createTask` / `forkTask` 会在 CLI 首发前先插一行 `created_at=0, cli_created_at=NULL`
+   * 占位，等 CLI 回写事实后补全。若会话创建中途失败、被取消或进程重启打断了这次握手，
+   * 占位行就永远停在未补全状态。列表查询用 `cli_created_at IS NOT NULL` 过滤，
+   * 所以它们不可见也不影响功能，但会无限累积。
+   *
+   * 只删 `cli_created_at IS NULL` 且创建时间早于 cutoff 的行：仍在握手中的新行必须保留，
+   * 否则会把用户刚创建、CLI 还没回写事实的任务一起抹掉。
+   */
+  pruneOrphanPlaceholders(cutoff: number): number;
   /** 可只取目录，并参与调用方已有的 SQLite 读快照。 */
   readTree(options?: {
     includeDeleted?: boolean;
