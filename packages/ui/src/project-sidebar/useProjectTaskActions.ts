@@ -96,5 +96,12 @@ export function useProjectTaskActions(task: ProjectTask, refresh: () => Promise<
     },
     [mutate, refresh, task.unreadAt, report],
   );
-  return { remoteSessionId, rename, pin, archive, unread };
+  const remove = useCallback(async () => {
+    // 删除与归档共用同一条 Host 条件写入链路，区别只是 tombstone 后不再进入归档列表。
+    // 成功后才回收本窗口运行态；失败保持任务行并抛出，由菜单 owner 显示失败提示。
+    await mutate({ kind: "delete" });
+    removeTaskState(task.workspacePath, task.taskId, task.workspaceIdentity);
+    await refresh();
+  }, [mutate, refresh, task, removeTaskState]);
+  return { remoteSessionId, rename, pin, archive, unread, remove };
 }

@@ -769,6 +769,7 @@ export function TaskListItemContextMenuContent({
   onStartRenameTask,
   onArchiveTask,
   onMarkTaskAsUnread,
+  onDeleteTask,
   disableTaskActions = false,
   disabledReason,
 }: {
@@ -783,6 +784,8 @@ export function TaskListItemContextMenuContent({
   onStartRenameTask: (taskId: string, currentTitle: string) => void;
   onArchiveTask: (taskId: string) => void;
   onMarkTaskAsUnread: (taskId: string) => void;
+  /** 缺省时不渲染删除入口；确认框由列表 owner 统一持有。 */
+  onDeleteTask?: (taskId: string) => void;
   disableTaskActions?: boolean;
   disabledReason?: string;
 }) {
@@ -881,6 +884,13 @@ export function TaskListItemContextMenuContent({
       onMarkTaskAsUnread={() => {
         onMarkTaskAsUnread(task.taskId);
       }}
+      onDeleteTask={
+        onDeleteTask
+          ? () => {
+              onDeleteTask(task.taskId);
+            }
+          : undefined
+      }
       onOpenTaskFeedback={() => {
         void handleOpenTaskFeedback();
       }}

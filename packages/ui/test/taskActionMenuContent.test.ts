@@ -7,14 +7,15 @@ const PIN_ITEM_INDEX = 0;
 const RENAME_ITEM_INDEX = 1;
 const ARCHIVE_ITEM_INDEX = 2;
 const UNREAD_ITEM_INDEX = 3;
-const FILE_MANAGER_ITEM_INDEX = 4;
-const WORKSPACE_PATH_ITEM_INDEX = 5;
-const TASK_PATH_ITEM_INDEX = 6;
-const TASK_LOG_PATH_ITEM_INDEX = 7;
-const PROVIDER_CONFIG_ITEM_INDEX = 8;
+const DELETE_ITEM_INDEX = 4;
+const FILE_MANAGER_ITEM_INDEX = 5;
+const WORKSPACE_PATH_ITEM_INDEX = 6;
+const TASK_PATH_ITEM_INDEX = 7;
+const TASK_LOG_PATH_ITEM_INDEX = 8;
+const PROVIDER_CONFIG_ITEM_INDEX = 9;
 
 function renderMenu(overrides: Partial<React.ComponentProps<typeof TaskActionMenuContent>> = {}) {
-  const itemStates: Array<{ disabled?: boolean }> = [];
+  const itemStates: Array<{ disabled?: boolean; variant?: string; testId?: string }> = [];
 
   const html = renderToStaticMarkup(
     createElement(TaskActionMenuContent, {
@@ -42,19 +43,28 @@ function renderMenu(overrides: Partial<React.ComponentProps<typeof TaskActionMen
         children,
         title,
         disabled,
+        variant,
+        "data-testid": testId,
       }: {
         children: React.ReactNode;
         title?: string;
         disabled?: boolean;
+        variant?: "default" | "destructive";
+        "data-testid"?: string;
       }) => {
-        itemStates.push({ disabled });
-        return createElement("button", { title, disabled }, children);
+        itemStates.push({ disabled, variant, testId });
+        return createElement(
+          "button",
+          { title, disabled, "data-variant": variant, "data-testid": testId },
+          children,
+        );
       },
       Separator: () => createElement("hr"),
       onTogglePinTask: vi.fn(),
       onStartRenameTask: vi.fn(),
       onArchiveTask: vi.fn(),
       onMarkTaskAsUnread: vi.fn(),
+      onDeleteTask: vi.fn(),
       onOpenTaskPathInFileManager: vi.fn(),
       onCopyWorkspacePath: vi.fn(),
       onCopyTaskPath: vi.fn(),
@@ -104,6 +114,7 @@ describe("TaskActionMenuContent", () => {
     expect(itemStates[RENAME_ITEM_INDEX]?.disabled).toBe(true);
     expect(itemStates[ARCHIVE_ITEM_INDEX]?.disabled).toBe(true);
     expect(itemStates[UNREAD_ITEM_INDEX]?.disabled).toBe(true);
+    expect(itemStates[DELETE_ITEM_INDEX]?.disabled).toBe(true);
     expect(itemStates[TASK_PATH_ITEM_INDEX]?.disabled).toBe(true);
     expect(itemStates[TASK_LOG_PATH_ITEM_INDEX]?.disabled).toBe(true);
     expect(itemStates[FILE_MANAGER_ITEM_INDEX]?.disabled).toBe(false);
@@ -121,6 +132,30 @@ describe("TaskActionMenuContent", () => {
     expect(html).toContain("appHeader.copyPath");
     expect(html).toContain("appHeader.copyTaskPath");
     expect(html).toContain("appHeader.copyLogPath");
+  });
+
+  it("删除任务紧随标记未读，使用不可撤销的 destructive 语义", () => {
+    const { html, itemStates } = renderMenu();
+
+    expect(html).toContain("taskList.delete");
+    expect(itemStates[DELETE_ITEM_INDEX]).toMatchObject({
+      disabled: false,
+      variant: "destructive",
+      testId: "task-delete",
+    });
+    // 删除属于任务管理动作组，必须排在“在文件管理器中打开”分隔线之前。
+    expect(html.indexOf("taskList.delete")).toBeLessThan(html.indexOf("Open in Finder"));
+    expect(html.indexOf("taskList.markAsUnread")).toBeLessThan(html.indexOf("taskList.delete"));
+  });
+
+  it("调用方不提供删除命令时不渲染删除入口且不占用索引", () => {
+    const { html, itemStates } = renderMenu({ onDeleteTask: undefined });
+
+    expect(html).not.toContain("taskList.delete");
+    expect(itemStates.some((state) => state.testId === "task-delete")).toBe(false);
+    // 删掉删除项后，紧随其后的“在文件管理器中打开”顶到原删除位。
+    expect(itemStates[DELETE_ITEM_INDEX]?.testId).toBeUndefined();
+    expect(html).toContain("Open in Finder");
   });
 
   it("不再提供在分屏打开入口", () => {

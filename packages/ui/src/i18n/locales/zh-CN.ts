@@ -1687,6 +1687,9 @@ const zhCN: Record<string, string> = {
   "taskList.deleteAllArchivedError": "操作或列表刷新失败，请刷新后检查剩余任务。",
   "confirmDialog.taskArchiveTitle": "归档这个任务？",
   "confirmDialog.taskArchiveDescription": "任务“{taskTitle}”会移入归档列表，之后仍可恢复。",
+  "confirmDialog.taskDeleteTitle": "删除这个任务？",
+  "confirmDialog.taskDeleteDescription":
+    "任务“{taskTitle}”会从任务列表中移除，之后不会再出现。此操作不可撤销。",
   "bots.title": "机器人",
   "bots.description": "把外部聊天工具和 Webhook 接入 RaspberryCode 机器人。",
   "bots.addBot": "新建机器人",
@@ -3054,6 +3057,8 @@ const zhCN: Record<string, string> = {
   "chat.slash.app.reload.description":
     "Reload the task runtime, preserving history and stopping current execution.",
   "taskList.markAsUnread": "标记为未读",
+  "taskList.delete": "删除任务",
+  "taskList.deleteFailed": "删除任务失败",
   "chat.toolCall.agent.openInSidePane": "在右侧打开",
   "v4Pane.closePane": "关闭窗格",
   "v4Pane.closePaneTitle": "关闭窗格（会话继续运行）",

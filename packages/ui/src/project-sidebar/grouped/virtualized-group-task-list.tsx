@@ -58,6 +58,7 @@ export function VirtualizedGroupedTaskList({
   onStartRenameTask,
   onArchiveTask,
   onMarkTaskAsUnread,
+  onDeleteTask,
   activeDragTaskKey,
   tooltipsDisabled,
 }: {
@@ -77,6 +78,7 @@ export function VirtualizedGroupedTaskList({
   onStartRenameTask: (task: RaspberryCodeTaskMeta) => void;
   onArchiveTask: (task: RaspberryCodeTaskMeta) => void;
   onMarkTaskAsUnread: (task: RaspberryCodeTaskMeta) => void;
+  onDeleteTask?: (task: RaspberryCodeTaskMeta) => void;
   activeDragTaskKey?: string | null;
   tooltipsDisabled?: boolean;
 }) {
@@ -172,6 +174,7 @@ export function VirtualizedGroupedTaskList({
         onStartRenameTask={onStartRenameTask}
         onArchiveTask={onArchiveTask}
         onMarkTaskAsUnread={onMarkTaskAsUnread}
+        onDeleteTask={onDeleteTask}
         dragId={taskKey(task)}
         dragging={activeDragTaskKey === taskKey(task)}
         tooltipsDisabled={tooltipsDisabled}
@@ -185,8 +188,9 @@ export function VirtualizedGroupedTaskList({
       getTaskWorkspaceLabel,
       groupId,
       groups,
-          onArchiveTask,
+      onArchiveTask,
       onCloseTask,
+      onDeleteTask,
       onMarkTaskAsUnread,
       onMoveTaskToGroup,
       onMoveTaskToTop,

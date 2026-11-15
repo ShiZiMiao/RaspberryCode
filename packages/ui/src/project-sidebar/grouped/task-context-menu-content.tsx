@@ -26,6 +26,7 @@ export function GroupedTaskContextMenuContent({
   onStartRenameTask,
   onArchiveTask,
   onMarkTaskAsUnread,
+  onDeleteTask,
   onOpenTaskPathInFileManager,
   onCopyText,
   onOpenProviderConfig,
@@ -47,6 +48,7 @@ export function GroupedTaskContextMenuContent({
   onStartRenameTask: (task: RaspberryCodeTaskMeta) => void;
   onArchiveTask: (task: RaspberryCodeTaskMeta) => void;
   onMarkTaskAsUnread: (task: RaspberryCodeTaskMeta) => void;
+  onDeleteTask?: (task: RaspberryCodeTaskMeta) => void;
   onOpenTaskPathInFileManager: () => void;
   onCopyText: (label: string, text: string | null) => void;
   onOpenProviderConfig: () => void;
@@ -153,6 +155,22 @@ export function GroupedTaskContextMenuContent({
           {intl.formatMessage({ id: "taskList.markAsUnread" })}
         </ContextMenuItem>
       </SidebarNativeTooltip>
+      {onDeleteTask ? (
+        /* 与默认列表一致：删除紧随未读之后，使用 destructive 语义，确认框由分组视图 owner 持有。 */
+        <ContextMenuItem
+          data-testid="task-delete"
+          variant="destructive"
+          disabled={Boolean(disabledReason)}
+          title={disabledReason}
+          onSelect={() => {
+            if (!disabledReason) {
+              onDeleteTask(task);
+            }
+          }}
+        >
+          {intl.formatMessage({ id: "taskList.delete" })}
+        </ContextMenuItem>
+      ) : null}
       <ContextMenuSeparator />
       <SidebarNativeTooltip>
         <ContextMenuItem

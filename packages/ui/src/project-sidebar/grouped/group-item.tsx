@@ -75,6 +75,7 @@ export function GroupItem({
   onStartRenameTask,
   onArchiveTask,
   onMarkTaskAsUnread,
+  onDeleteTask,
   newGroupSetup,
   onNewGroupSetupStarted,
   collapsed,
@@ -107,6 +108,7 @@ export function GroupItem({
   onStartRenameTask: (task: RaspberryCodeTaskMeta) => void;
   onArchiveTask: (task: RaspberryCodeTaskMeta) => void;
   onMarkTaskAsUnread: (task: RaspberryCodeTaskMeta) => void;
+  onDeleteTask?: (task: RaspberryCodeTaskMeta) => void;
   newGroupSetup: boolean;
   onNewGroupSetupStarted: (groupId: string) => void;
   collapsed: boolean;
@@ -736,6 +738,7 @@ export function GroupItem({
                     onStartRenameTask={onStartRenameTask}
                     onArchiveTask={onArchiveTask}
                     onMarkTaskAsUnread={onMarkTaskAsUnread}
+                    onDeleteTask={onDeleteTask}
                     activeDragTaskKey={activeDragTaskKey}
                     tooltipsDisabled={tooltipsDisabled}
                   />
@@ -763,6 +766,7 @@ export function GroupItem({
                       onStartRenameTask={onStartRenameTask}
                       onArchiveTask={onArchiveTask}
                       onMarkTaskAsUnread={onMarkTaskAsUnread}
+                    onDeleteTask={onDeleteTask}
                       activeDragTaskKey={activeDragTaskKey}
                       tooltipsDisabled={tooltipsDisabled}
                     />

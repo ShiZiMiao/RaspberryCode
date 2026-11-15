@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "caseName": "conversation-session-task-delete-context-menu",
+  "spec": "./test/e2e/conversation-session/conversation-session-task-delete-context-menu.test.ts",
+  "fixtures": [
+    {
+      "id": "task-delete-context-menu-title",
+      "description": "删除任务 case 首发的标题生成响应。",
+      "metadata": {
+        "kind": "common",
+        "timingPolicy": "fast-text",
+        "source": "synthetic",
+        "syntheticReason": "首发会触发默认 title sidecar；固定 marker 响应避免回退共享 provider fixture。"
+      },
+      "match": {
+        "method": "POST",
+        "pathIncludes": "/messages",
+        "bodyIncludes": ["Generate a concise title", "E2E_TASK_DELETE_CONTEXT_MENU"],
+        "bodyExcludes": ["CRITICAL: Respond with TEXT ONLY"]
+      },
+      "response": {
+        "statusCode": 200,
+        "headers": { "content-type": "application/json; charset=utf-8" },
+        "body": "{\"id\":\"task-delete-context-menu-title\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"deepseek-v4-flash\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"title\\\":\\\"Task Delete E2E\\\"}\"}],\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"usage\":{\"input_tokens\":64,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"output_tokens\":8,\"service_tier\":\"standard\"}}"
+      }
+    },
+    {
+      "id": "task-delete-context-menu-seed",
+      "description": "建立一个可在侧栏右键删除的正式 V4 session。",
+      "metadata": {
+        "kind": "main",
+        "timingPolicy": "fast-text",
+        "source": "synthetic",
+        "syntheticReason": "该 case 验证右键删除确认与 tasks-index tombstone 的本地闭环，模型回复只用于确定性建立正式 session。"
+      },
+      "maxMatches": 1,
+      "match": {
+        "method": "POST",
+        "pathIncludes": "/messages",
+        "lastUserMessageIncludes": ["E2E_TASK_DELETE_CONTEXT_MENU"],
+        "bodyExcludes": ["Generate a concise title", "CRITICAL: Respond with TEXT ONLY"]
+      },
+      "response": {
+        "statusCode": 200,
+        "text": {
+          "id": "task-delete-context-menu-seed",
+          "inputTokens": 80,
+          "outputTokens": 8,
+          "text": "TASK_DELETE_CONTEXT_MENU_OK"
+        }
+      }
+    }
+  ]
+}

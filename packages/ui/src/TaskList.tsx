@@ -8,6 +8,7 @@ import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu.js
 import { toast } from "@/components/ui/toast.js";
 import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { useRaspberryCodeSessionStore } from "@/store/raspberrycodeSessionStore.js";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog.js";
 import { NewTaskButtonGroup } from "@/NewTaskButtonGroup.js";
 import { useTabStore } from "@/store/TabStoreProvider.js";
 import { MemoTaskItem, TaskListItemContextMenuContent } from "@/TaskListItem.js";
@@ -49,6 +50,7 @@ export const TaskList = memo(function TaskList({
   onArchiveTask,
   isArchived = false,
   onSetTaskUnread,
+  onDeleteTask,
   readOnlyReason,
   onOpenFileTree,
   organizationActions,
@@ -76,6 +78,8 @@ export const TaskList = memo(function TaskList({
   onArchiveTask: (taskId: string) => Promise<RaspberryCodeTaskMeta | null>;
   isArchived?: boolean;
   onSetTaskUnread: (taskId: string, unread: boolean) => Promise<RaspberryCodeTaskMeta | null>;
+  /** 缺省时不显示删除入口；由持有 Host 删除命令的列表 owner 显式提供。 */
+  onDeleteTask?: (taskId: string) => Promise<void>;
   readOnlyReason?: string;
   onOpenFileTree?: () => void | Promise<void>;
 }) {
@@ -86,6 +90,7 @@ export const TaskList = memo(function TaskList({
   );
   const taskLookup = useMemo(() => [...tasks, ...pinnedTasks], [pinnedTasks, tasks]);
   const startDraft = useRaspberryCodeSessionStore((state) => state.startDraft);
+  const confirmDialog = useConfirmDialog();
   const openSettingsTab = useTabStore((state) => state.openSettingsTab);
   const [pendingArchiveTaskId, setPendingArchiveTaskId] = useState<string | null>(null);
   const [renamingTaskId, setRenamingTaskId] = useState<string | null>(null);
@@ -98,12 +103,14 @@ export const TaskList = memo(function TaskList({
   const onSetTaskPinnedRef = useRef(onSetTaskPinned);
   const onArchiveTaskRef = useRef(onArchiveTask);
   const onSetTaskUnreadRef = useRef(onSetTaskUnread);
+  const onDeleteTaskRef = useRef(onDeleteTask);
   pendingArchiveTaskIdRef.current = pendingArchiveTaskId;
   renamingTaskIdRef.current = renamingTaskId;
   onSelectTaskRef.current = onSelectTask;
   onSetTaskPinnedRef.current = onSetTaskPinned;
   onArchiveTaskRef.current = onArchiveTask;
   onSetTaskUnreadRef.current = onSetTaskUnread;
+  onDeleteTaskRef.current = onDeleteTask;
   const handleCancelArchiveConfirm = useCallback(() => {
     setPendingArchiveTaskId(null);
   }, []);
@@ -305,6 +312,57 @@ export const TaskList = memo(function TaskList({
     [readOnlyReason],
   );
 
+  const handleDeleteTask = useCallback(
+    async (taskId: string) => {
+      if (readOnlyReason || !onDeleteTaskRef.current) {
+        return;
+      }
+      const task = taskLookup.find((candidate) => candidate.taskId === taskId);
+      // 原因：删除会从列表永久移除任务，且和归档不同没有恢复入口。
+      // 右键菜单一旦误触就无法撤销，因此必须走与 Header 归档一致的确认框，
+      // 并在确认前固定目标 taskId，避免等待期间列表换代把删除写到别的任务上。
+      const confirmed = await confirmDialog({
+        intent: "task-delete",
+        title: intl.formatMessage({ id: "confirmDialog.taskDeleteTitle" }),
+        description: intl.formatMessage(
+          { id: "confirmDialog.taskDeleteDescription" },
+          {
+            taskTitle:
+              task?.title?.trim() || intl.formatMessage({ id: "taskList.untitled" }),
+          },
+        ),
+        confirmLabel: intl.formatMessage({ id: "taskList.delete" }),
+        confirmVariant: "destructive",
+      });
+      if (!confirmed) {
+        return;
+      }
+      setContextMenuTaskId(null);
+      setPendingArchiveTaskId(null);
+      handleCancelRenameTask();
+      try {
+        await onDeleteTaskRef.current(taskId);
+      } catch (error) {
+        logger.error("[TaskList] delete task failed", {
+          taskId,
+          workspacePath,
+          workspaceIdentity,
+          message: error instanceof Error ? error.message : String(error),
+        });
+        toast(intl.formatMessage({ id: "taskList.deleteFailed" }));
+      }
+    },
+    [
+      confirmDialog,
+      handleCancelRenameTask,
+      intl,
+      readOnlyReason,
+      taskLookup,
+      workspaceIdentity,
+      workspacePath,
+    ],
+  );
+
   useEffect(() => {
     if (!renamingTaskId) {
       return;
@@ -475,6 +533,9 @@ export const TaskList = memo(function TaskList({
                   onStartRenameTask={handleStartRenameTask}
                   onArchiveTask={handleArchiveTask}
                   onMarkTaskAsUnread={handleMarkTaskAsUnread}
+                  onDeleteTask={
+                    onDeleteTask ? (taskId) => void handleDeleteTask(taskId) : undefined
+                  }
                   disableTaskActions={Boolean(readOnlyReason)}
                   disabledReason={readOnlyReason}
                 />

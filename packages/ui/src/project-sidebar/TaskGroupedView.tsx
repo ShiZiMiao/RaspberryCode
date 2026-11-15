@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button.js";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
 import { TaskRenameDialog } from "@/TaskRenameDialog.js";
 import { useProjectDirectory } from "@/project-sidebar/ProjectDirectoryProvider.js";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog.js";
 import { ProjectTaskListContext } from "@/project-sidebar/ProjectTaskListContext.js";
 import type {
   ProjectTask,
@@ -91,6 +92,7 @@ export function TaskGroupedView({
 }) {
   const { groups: organization, loading } = useProjectDirectory();
   const { intl } = useRaspberryCodeIntl();
+  const confirmDialog = useConfirmDialog();
   const presentation = useContext(ProjectTaskListContext);
   const { raspberrycodeTaskService: service, windowControllerService: controller } =
     useBaseWorkspaceServices();
@@ -265,6 +267,31 @@ export function TaskGroupedView({
     },
     onMarkTaskAsUnread: (task: ProjectTask) =>
       action(() => mutate(task, { kind: "mark-unread" }), "taskList.markAsUnreadFailed"),
+    onDeleteTask: (task: ProjectTask) => {
+      // 分组视图有独立菜单实现，删除必须和默认列表同一语义：先确认再写 membership，
+      // 成功后清理本窗口运行态（归档只清 UI 状态，删除要连草稿一起回收）。
+      void (async () => {
+        const confirmed = await confirmDialog({
+          intent: "task-delete",
+          title: intl.formatMessage({ id: "confirmDialog.taskDeleteTitle" }),
+          description: intl.formatMessage(
+            { id: "confirmDialog.taskDeleteDescription" },
+            { taskTitle: task.title?.trim() || intl.formatMessage({ id: "taskList.untitled" }) },
+          ),
+          confirmLabel: intl.formatMessage({ id: "taskList.delete" }),
+          confirmVariant: "destructive",
+        });
+        if (!confirmed) return;
+        try {
+          await mutate(task, { kind: "delete" });
+          useRaspberryCodeSessionStore
+            .getState()
+            .removeTaskState(task.workspacePath, task.taskId, task.workspaceIdentity);
+        } catch (error) {
+          report(error, "taskList.deleteFailed");
+        }
+      })();
+    },
   };
   // Bug 根因：一条任务活动会重建整组行回调，击穿所有未变任务的 memo。
   // 行事件只转发到最近已提交的实现，既稳定引用，也不捕获过期的任务/分组和远端地址。
@@ -284,6 +311,7 @@ export function TaskGroupedView({
       onMoveTaskToTop: (task: ProjectTask) => rowActionsRef.current.onMoveTaskToTop(task),
       onStartRenameTask: (task: ProjectTask) => rowActionsRef.current.onStartRenameTask(task),
       onMarkTaskAsUnread: (task: ProjectTask) => rowActionsRef.current.onMarkTaskAsUnread(task),
+      onDeleteTask: (task: ProjectTask) => rowActionsRef.current.onDeleteTask(task),
     }),
     [],
   );

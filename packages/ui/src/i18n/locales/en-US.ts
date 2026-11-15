@@ -1830,6 +1830,9 @@ const enUS: Record<string, string> = {
   "confirmDialog.taskArchiveTitle": "Archive this task?",
   "confirmDialog.taskArchiveDescription":
     "Task “{taskTitle}” will move to the archive list and can still be restored later.",
+  "confirmDialog.taskDeleteTitle": "Delete this task?",
+  "confirmDialog.taskDeleteDescription":
+    "Task “{taskTitle}” will be removed from the task list and will not come back. This cannot be undone.",
   "bots.title": "Bots",
   "bots.description": "Connect external chats and webhooks to RaspberryCode bots.",
   "bots.addBot": "New bot",
@@ -3261,6 +3264,8 @@ const enUS: Record<string, string> = {
   "chat.slash.app.reload.description":
     "Reload the task runtime, preserving history and stopping current execution.",
   "taskList.markAsUnread": "Mark as unread",
+  "taskList.delete": "Delete task",
+  "taskList.deleteFailed": "Could not delete task",
   "chat.toolCall.agent.openInSidePane": "Open in side pane",
   "v4Pane.closePane": "Close pane",
   "v4Pane.closePaneTitle": "Close pane (session keeps running)",

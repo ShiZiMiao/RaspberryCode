@@ -25,7 +25,10 @@ export const ProjectTaskRow = memo(function Row({
   showFiles: boolean;
 }) {
   const presentation = useContext(ProjectTaskListContext);
-  const { remoteSessionId, rename, pin, archive, unread } = useProjectTaskActions(task, refresh);
+  const { remoteSessionId, rename, pin, archive, unread, remove } = useProjectTaskActions(
+    task,
+    refresh,
+  );
   const workspaceKey = task.workspaceIdentity?.trim() || task.workspacePath;
   const activeId = useRaspberryCodeSessionStore(
     (state) => state.workspaces[workspaceKey]?.activeTaskId ?? null,
@@ -75,6 +78,7 @@ export const ProjectTaskRow = memo(function Row({
         onArchiveTask={archive}
         isArchived={task.archived}
         onSetTaskUnread={unread}
+        onDeleteTask={remove}
       />
     </div>
   );

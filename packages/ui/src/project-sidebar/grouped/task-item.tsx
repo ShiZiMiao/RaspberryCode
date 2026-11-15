@@ -63,6 +63,7 @@ function GroupedTaskItemComponent({
   onStartRenameTask,
   onArchiveTask,
   onMarkTaskAsUnread,
+  onDeleteTask,
   dragId,
   dragging,
   dragOverlay,
@@ -82,6 +83,7 @@ function GroupedTaskItemComponent({
   onStartRenameTask: (task: RaspberryCodeTaskMeta) => void;
   onArchiveTask: (task: RaspberryCodeTaskMeta) => void;
   onMarkTaskAsUnread: (task: RaspberryCodeTaskMeta) => void;
+  onDeleteTask?: (task: RaspberryCodeTaskMeta) => void;
   dragId?: UniqueIdentifier;
   dragging?: boolean;
   dragOverlay?: boolean;
@@ -104,6 +106,7 @@ function GroupedTaskItemComponent({
         onStartRenameTask={onStartRenameTask}
         onArchiveTask={onArchiveTask}
         onMarkTaskAsUnread={onMarkTaskAsUnread}
+        onDeleteTask={onDeleteTask}
         dragId={dragId}
         dragging={dragging}
         dragOverlay={dragOverlay}

@@ -4,6 +4,8 @@ interface TaskActionMenuItemProps {
   disabled?: boolean;
   onSelect?: () => void;
   title?: string;
+  /** 删除这类不可撤销动作需要独立语义色，和普通管理动作区分。 */
+  variant?: "default" | "destructive";
 }
 
 interface TaskActionMenuSeparatorProps {
@@ -30,6 +32,7 @@ export function TaskActionMenuContent({
   onStartRenameTask,
   onArchiveTask,
   onMarkTaskAsUnread,
+  onDeleteTask,
   onRestartTask,
   restartPending = false,
   onOpenTaskFeedback,
@@ -66,6 +69,8 @@ export function TaskActionMenuContent({
   onStartRenameTask: () => void;
   onArchiveTask: () => void;
   onMarkTaskAsUnread: () => void;
+  /** 缺省时不渲染删除入口；入口由持有删除命令的调用方显式提供。 */
+  onDeleteTask?: () => void;
   onRestartTask?: () => void;
   restartPending?: boolean;
   onOpenTaskFeedback?: () => void;
@@ -125,6 +130,23 @@ export function TaskActionMenuContent({
       >
         {intl.formatMessage({ id: "taskList.markAsUnread" })}
       </Item>
+      {onDeleteTask ? (
+        /* 删除放到任务管理动作组末尾：它和归档一样属于 membership 变更，但不可撤销，
+           因此不进上方 pin/rename 的高频组，紧随未读之后保持管理动作连续。 */
+        <Item
+          data-testid="task-delete"
+          variant="destructive"
+          disabled={taskTargetActionsDisabled}
+          title={taskTargetActionsDisabled ? disabledReason : undefined}
+          onSelect={() => {
+            if (!taskTargetActionsDisabled) {
+              onDeleteTask();
+            }
+          }}
+        >
+          {intl.formatMessage({ id: "taskList.delete" })}
+        </Item>
+      ) : null}
       {onRestartTask ? (
         <Item
           data-testid="task-restart"
