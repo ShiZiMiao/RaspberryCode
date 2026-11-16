@@ -6,5 +6,5 @@ export const contextUsageBreakdownModule = {
   id: "context-usage-breakdown",
   requires: ["raspberrycode-cli"],
   provides: ["context-usage-breakdown"],
-  publicEntrypoints: ["context-usage-breakdown.ts"],
+  publicEntrypoints: ["contract.ts", "context-usage-breakdown.ts"],
 } as const;

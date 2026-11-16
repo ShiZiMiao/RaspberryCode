@@ -507,6 +507,7 @@ modules:
     managed: true
     requires: [raspberrycode-cli]
     publicEntrypoints:
+      - apps/raspberrycode-cli/packages/core/src/runtime/context-usage-breakdown/contract.ts
       - apps/raspberrycode-cli/packages/core/src/runtime/context-usage-breakdown/context-usage-breakdown.ts
     layers: { app: . }
     owner: agent
