@@ -2467,6 +2467,7 @@ const zhCN: Record<string, string> = {
   "workspace.openFolder": "打开文件夹",
   "workspace.openPluginsSettings": "插件市场",
   "workspace.backToWorkspace": "返回工作区",
+  "workspace.backToWorkspaceFromFooter": "返回工作区（侧边栏底部的设置按钮）",
   "workspace.wslUncPrompt.title": "建议通过 WSL 远程连接打开",
   "workspace.wslUncPrompt.description":
     "你选择的是 WSL 路径：\n{path}\n\n建议通过 WSL 连接打开，也可以继续按路径打开。",

@@ -2642,6 +2642,7 @@ const enUS: Record<string, string> = {
   "workspace.openFolder": "Open folder",
   "workspace.openPluginsSettings": "Plugin Marketplace",
   "workspace.backToWorkspace": "Back to workspace",
+  "workspace.backToWorkspaceFromFooter": "Back to workspace (settings button at sidebar bottom)",
   "workspace.wslUncPrompt.title": "Open this through WSL remote connection?",
   "workspace.wslUncPrompt.description":
     "You selected a WSL path:\n{path}\n\nWe recommend opening it through WSL connection, though you can still continue with the path.",

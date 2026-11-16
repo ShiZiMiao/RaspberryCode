@@ -165,6 +165,18 @@ export const WorkspaceSidebarFooter = memo(function WorkspaceSidebarFooterCompon
     settingsButtonMode === "back"
       ? intl.formatMessage({ id: "workspace.backToWorkspace" })
       : intl.formatMessage({ id: "settings.title" });
+  /**
+   * 无障碍名需与设置页顶部那个同为「返回工作区」的箭头按钮区分开。
+   *
+   * 设置页同时可见两个语义相同的按钮：导航区顶部是箭头返回，这里是页脚的齿轮
+   * 双态切换（设置态下文案变为「返回工作区」）。两者 `aria-label` 若完全相同，
+   * 屏幕阅读器用户与自动化工具都无法分辨要点哪一个（实测会报 AMBIGUOUS_TARGET）。
+   * 视觉与 tooltip 保持不变，只给页脚这一个加上位置线索。
+   */
+  const settingsButtonAriaLabel =
+    settingsButtonMode === "back"
+      ? intl.formatMessage({ id: "workspace.backToWorkspaceFromFooter" })
+      : settingsButtonLabel;
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [desktopZoomLevel, setDesktopZoomLevel] = useState(0);
   const runDesktopZoomCommand = useCallback(
@@ -413,7 +425,7 @@ export const WorkspaceSidebarFooter = memo(function WorkspaceSidebarFooterCompon
               variant="ghost"
               size="icon-lg"
               data-testid={TID_TASK_SETTINGS_BUTTON}
-              aria-label={settingsButtonLabel}
+              aria-label={settingsButtonAriaLabel}
               disabled={!onSettingsButtonClick}
               onClick={onSettingsButtonClick}
             >
