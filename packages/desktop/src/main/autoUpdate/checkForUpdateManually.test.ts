@@ -14,7 +14,11 @@
  * 2. 确实没有新版本 → 仍必须是 `up-to-date`（不能矫枉过正成 error）。
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { checkForUpdateManually, initAutoUpdateService } from "./index.js";
+import {
+  __setCheckTimeoutForTesting,
+  checkForUpdateManually,
+  initAutoUpdateService,
+} from "./index.js";
 import type { AutoUpdaterLike, SettingServiceLike } from "./contract.js";
 
 /** 只实现状态机用到的端口；事件注册全部 no-op。 */
@@ -125,5 +129,31 @@ describe("checkForUpdateManually 结果映射", () => {
     const result = await checkForUpdateManually();
 
     expect(result.kind).not.toBe("up-to-date");
+  });
+
+  it("checkForUpdates 永久挂起时不得无限等待（超时后必须给出结果）", async () => {
+    // 实测场景：direct 路线走系统代理、GitHub 不可达时 electron-updater 的
+    // promise 不会 reject，没有超时兜底按钮会永久停在「检查中…」。
+    const updater = createFakeUpdater({
+      checkForUpdates: () => new Promise(() => {}),
+    });
+    initAutoUpdateService({
+      settingService: createFakeSettingService(),
+      updater,
+      isPackaged: true,
+      currentVersion: "0.2.3",
+    });
+
+    // 用注入的短超时走真实计时，避免 fake timers 与内部 await 链的兼容问题。
+    __setCheckTimeoutForTesting(30);
+    try {
+      const result = await checkForUpdateManually();
+      expect(result.kind).toBe("error");
+      if (result.kind === "error") {
+        expect(result.message).toContain("timed out");
+      }
+    } finally {
+      __setCheckTimeoutForTesting(null);
+    }
   });
 });

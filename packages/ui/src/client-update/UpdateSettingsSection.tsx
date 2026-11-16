@@ -67,12 +67,23 @@ export function UpdateSettingsSection({ isDesktop }: { isDesktop?: boolean }) {
   const handleCheckForUpdates = () => {
     if (checkingForUpdate) return;
     setCheckingForUpdate(true);
-    void platform.executeDesktopCommand(DesktopCommandIds.CheckForUpdates).catch((error) => {
-      // 命令通道自身失败（窗口已关、IPC 断开等）不会有推送回来，
-      // 不在这里收口会让按钮永久卡在「检查中」。
-      logger.warn("[settings] 检查更新命令失败", { error: String(error) });
+    // main 侧已有 60s 检查超时并会推送结果，这里只是最后一道保险：
+    // 万一 IPC 回执与推送同时丢失，按钮也不能永久停在「检查中」。
+    const fallbackTimer = setTimeout(() => {
       setCheckingForUpdate(false);
-    });
+    }, 90_000);
+    const clearFallback = () => {
+      clearTimeout(fallbackTimer);
+    };
+    void platform
+      .executeDesktopCommand(DesktopCommandIds.CheckForUpdates)
+      .then(clearFallback)
+      .catch((error) => {
+        // 命令通道自身失败（窗口已关、IPC 断开等）不会有推送回来。
+        logger.warn("[settings] 检查更新命令失败", { error: String(error) });
+        clearFallback();
+        setCheckingForUpdate(false);
+      });
   };
 
   const handleAutoDownloadChange = (enabled: boolean) => {
