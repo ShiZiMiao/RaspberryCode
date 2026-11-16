@@ -56,20 +56,29 @@ function findPnpmRunner() {
   const exeName = process.platform === "win32" ? "pnpm.exe" : "pnpm";
   const nodeDir = dirname(process.execPath);
 
-  // 1) pnpm.cjs（用当前 node 执行，最可移植）
-  const cjsCandidates = [
-    join(nodeDir, "node_modules", "pnpm", "bin", "pnpm.cjs"),
-    join(nodeDir, "..", "lib", "node_modules", "pnpm", "bin", "pnpm.cjs"),
-    join(repoRoot, "node_modules", "pnpm", "bin", "pnpm.cjs"),
-    join(nodeDir, "..", "pnpm", "bin", "pnpm.cjs"),
-  ];
-  for (const candidate of cjsCandidates) {
-    if (existsSync(candidate)) {
+  // 1) pnpm 的 JS 入口（用当前 node 执行，最可移植）。
+  //    pnpm 10 起入口是 bin/pnpm.mjs；早期版本是 bin/pnpm.cjs，两者都要认。
+  const jsCandidates = [];
+  for (const entry of ["pnpm.mjs", "pnpm.cjs"]) {
+    jsCandidates.push(
+      join(nodeDir, "node_modules", "pnpm", "bin", entry),
+      join(nodeDir, "..", "lib", "node_modules", "pnpm", "bin", entry),
+      join(repoRoot, "node_modules", "pnpm", "bin", entry),
+      join(nodeDir, "..", "pnpm", "bin", entry),
+      // npm 全局安装形态：pnpm 与 node 不在同一目录，而是落在 %APPDATA%\npm 下
+      join(process.env.APPDATA ?? "", "npm", "node_modules", "pnpm", "bin", entry),
+    );
+  }
+  for (const candidate of jsCandidates) {
+    if (candidate && existsSync(candidate)) {
       return { cmd: process.execPath, args: [candidate] };
     }
   }
 
-  // 2) 独立可执行文件：先看 PATH，再看 node 同级目录
+  // 2) 独立可执行文件：先看 PATH，再看 node 同级目录。
+  //    Windows 上 npm 全局安装只有无扩展名的 sh 脚本与 pnpm.cmd（后者需经 cmd.exe
+  //    执行，不能直接 spawn），因此这里只认真正的 .exe；.cmd 形态由上一步的
+  //    pnpm.mjs 覆盖。
   const pathDirs = (process.env.PATH ?? "").split(process.platform === "win32" ? ";" : ":");
   const exeDirs = [...pathDirs, nodeDir, join(nodeDir, "..")];
   for (const dir of exeDirs) {
