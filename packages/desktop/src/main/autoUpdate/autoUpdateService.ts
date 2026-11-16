@@ -137,6 +137,16 @@ let checkRetryInFlight = false;
  * 不去重会一次失败连降两级。
  */
 let lastHandledUpdateError: string | null = null;
+/**
+ * 本次手动/自动检查收口时的最终失败原因（null 表示成功或未发生失败）。
+ *
+ * 为什么需要单独记录：`runCheck` 捕获错误后会把 state 归位到 `idle`，而 `idle`
+ * 与「确实没有新版本」在状态机里无法区分。手动「检查更新」若只看 state，
+ * 会把网络失败误报成「已是最新」，用户点了按钮却既无成功也无失败反馈
+ * （spec 产品规则 6 要求六种结果 toast 都必须出现，含「检查失败」）。
+ * 因此把失败原因从 `runCheck` 内部显式带出来，供 `checkForUpdateManually` 判定。
+ */
+let lastCheckFailure: string | null = null;
 /** 当前生效的更新源仓库，供 manual 回退时拼 release 页面地址。 */
 let feedOwner: string = DEFAULT_UPDATE_FEED_GITHUB.owner;
 let feedRepo: string = DEFAULT_UPDATE_FEED_GITHUB.repo;
@@ -334,7 +344,12 @@ function handleUpdateDownloaded(event: UpdateDownloadedEvent): void {
   });
 }
 
-function handleUpdaterError(error: Error): void {
+/**
+ * 统一处理更新器错误。
+ * @returns true 表示已安排降级重试（调用方不得把本次失败当作最终结果）；
+ *          false 表示本次失败已终局，调用方应记录失败原因。
+ */
+function handleUpdaterError(error: Error): boolean {
   if (isCancellationError(error)) {
     logger.info("[auto-update] download cancelled by user");
     downloadingVersion = null;
@@ -348,7 +363,8 @@ function handleUpdaterError(error: Error): void {
         releaseNotes: availableUpdate.releaseNotes,
       });
     }
-    return;
+    // 用户主动取消不算失败，但也不是「降级重试」，交回调用方按终局处理。
+    return false;
   }
   releaseUpdateTargetLockForFailure();
 
@@ -384,9 +400,10 @@ function handleUpdaterError(error: Error): void {
       // 下载失败则重发 downloadUpdate。
       if (failedStage === "check") {
         downloadFallback.resetAttemptKey("check");
+        // 不在这里自启 runCheck：调用方（runCheck 的循环）会接着重试，
+        // 自启会与循环形成两条并发检查，且 await 等不到结果。
         checkRetryInFlight = true;
-        void runCheck("startup");
-        return;
+        return true;
       }
       if (availableUpdate) {
         downloadingVersion = availableUpdate.version;
@@ -403,7 +420,7 @@ function handleUpdaterError(error: Error): void {
             }
           }
         })();
-        return;
+        return true;
       }
     }
     // 降级到 manual：保留 update-available 语义并标记需要手动下载。
@@ -423,7 +440,9 @@ function handleUpdaterError(error: Error): void {
           manualDownloadUrl: buildManualDownloadUrl(feedOwner, feedRepo, availableUpdate.version),
         });
       }
-      return;
+      // 降级到 manual 不是「无法反馈的失败」：状态已变成 update-available
+      // 并带 manualDownloadRequired，手动检查会命中该状态并弹出「发现新版本」。
+      return true;
     }
   }
 
@@ -439,6 +458,9 @@ function handleUpdaterError(error: Error): void {
     }
     nextState({ kind: "idle", enabled });
   }
+  // 走到这里说明没有下一级可退、也没有可呈现的 update-available，
+  // 是用户点了按钮却看不到任何结果的唯一成因，必须回报给调用方。
+  return false;
 }
 
 async function runCheck(reason: "startup" | "manual"): Promise<void> {
@@ -454,6 +476,11 @@ async function runCheck(reason: "startup" | "manual"): Promise<void> {
   }
   const preferences = await readPreferences();
   applyFeed(preferences.owner, preferences.repo);
+  // 一次全新的检查（非降级重试）开始前清空上一轮的失败记录，
+  // 否则上次失败原因会残留，让本次成功的检查被误判为失败。
+  if (!checkRetryInFlight) {
+    lastCheckFailure = null;
+  }
   // 检查阶段也要从镜像起步并允许降级：latest.yml 走同一个 session，
   // 镜像的 h2 问题会先在这里炸，而不是等到下载。
   //
@@ -470,26 +497,50 @@ async function runCheck(reason: "startup" | "manual"): Promise<void> {
   }
   // 代理必须与当前阶段匹配才发起请求：镜像走直连、直连阶段走系统代理。
   // 放在这里（而不是请求回调里）才能保证 setProxy 先完成、请求后发出。
-  await syncUpdateSessionProxy(downloadFallback.currentRoute);
-  nextState({ kind: "checking", enabled });
-  try {
-    await updater.checkForUpdates();
-    // electron-updater 在 promise 收口前已发 update-available/not-available 事件；
-    // 若事件缺失（异常 provider 行为）这里兜底回 idle，不悬挂 checking。
-    checkRetryInFlight = false;
-    lastHandledUpdateError = null;
-    if (state.kind === "checking") {
-      nextState({ kind: "idle", enabled });
-    }
-  } catch (error) {
-    handleUpdaterError(error instanceof Error ? error : new Error(String(error)));
-    // 降级分支会带着 checkRetryInFlight=true 重新进入本函数，此处不清标记；
-    // 走到这里说明本次检查已终局（成功或到 manual），清掉避免影响下次启动检查。
-    if (!checkRetryInFlight) {
+  //
+  // 用循环而不是「catch 里再 void runCheck()」承载降级：
+  // 手动「检查更新」必须等到整条 mirror→direct→manual 链走完才能给出结果。
+  // 若降级是脱离本调用栈的浮动 promise，await 会在第一次失败就返回，
+  // 状态还是 idle —— 又被误判成「已是最新」（这正是本缺陷的直接成因）。
+  // 循环天然保证调用方 await 到最终结论。
+  for (;;) {
+    await syncUpdateSessionProxy(downloadFallback.currentRoute);
+    nextState({ kind: "checking", enabled });
+    try {
+      await updater.checkForUpdates();
+      // electron-updater 在 promise 收口前已发 update-available/not-available 事件；
+      // 若事件缺失（异常 provider 行为）这里兜底回 idle，不悬挂 checking。
       checkRetryInFlight = false;
-    }
-    if (state.kind === "checking") {
-      nextState({ kind: "idle", enabled });
+      lastHandledUpdateError = null;
+      lastCheckFailure = null;
+      if (state.kind === "checking") {
+        nextState({ kind: "idle", enabled });
+      }
+      return;
+    } catch (error) {
+      const failure = error instanceof Error ? error : new Error(String(error));
+      const retryScheduled = handleUpdaterError(failure);
+      if (!checkRetryInFlight) {
+        checkRetryInFlight = false;
+      }
+      if (retryScheduled) {
+        // 降级重试同样可能以「同一次失败的第二条路径」命中 dup 去重：
+        // 这种情况下 handleUpdaterError 因 inFlow=false 不会推进路线，
+        // 若继续循环就会在同一个路线上空转。只有路线真的变了才继续。
+        if (state.kind === "checking") {
+          nextState({ kind: "idle", enabled });
+        }
+        logger.info(
+          `[auto-update] ${reason} check retrying on route=${downloadFallback.currentRoute}`,
+        );
+        continue;
+      }
+      // 没有下一级可退：记录最终失败原因，供手动检查返回 error 而不是 up-to-date。
+      lastCheckFailure = failure.message;
+      if (state.kind === "checking") {
+        nextState({ kind: "idle", enabled });
+      }
+      return;
     }
   }
 }
@@ -509,6 +560,14 @@ export function initAutoUpdateService(options: InitAutoUpdateServiceOptions): vo
   availableUpdate = null;
   downloadingVersion = null;
   downloadCancellationToken = null;
+  // 重新初始化必须清空「本次检查」的瞬时状态，否则上一个更新器/上一轮检查的
+  // 降级标记与错误指纹会残留：checkRetryInFlight=true 会让新一轮检查被当成
+  // 降级重试（沿用旧路线且跳过失败记录），dup 命中去重后连错误路由都不走，
+  // 手动检查最终落回 up-to-date —— 正是「检查失败却报已是最新」的另一条路径。
+  checkRetryInFlight = false;
+  lastHandledUpdateError = null;
+  lastCheckFailure = null;
+  downloadFallback.reset();
 
   if (!enabled) {
     // 开发态更新器不初始化：无静默检查、无入口（spec 产品规则 2）。
@@ -582,6 +641,11 @@ export async function checkForUpdateManually(): Promise<UpdateCheckResultPayload
   if (quitAndInstallState !== "idle") {
     return { kind: "error", message: "update install in progress" };
   }
+  // 更新器未初始化时 runCheck 会直接返回、state 停在 idle，若不加这道守卫
+  // 会把「根本没有检查」报成「已是最新」，同类误报必须堵在源头。
+  if (!updater) {
+    return { kind: "error", message: "update service is not initialized" };
+  }
   await runCheck("manual");
   switch (state.kind) {
     case "update-available":
@@ -595,7 +659,12 @@ export async function checkForUpdateManually(): Promise<UpdateCheckResultPayload
     case "update-downloaded":
       return { kind: "ready", version: state.version };
     case "idle":
-      return { kind: "up-to-date", currentVersion };
+      // idle 有两种来源：确实没有新版本，或本次检查以失败收口（runCheck 的 catch
+      // 会把 state 归位到 idle）。必须用失败记录区分，否则网络异常会被误报成
+      // 「已是最新」——用户点了按钮看不到任何失败提示（spec 产品规则 6）。
+      return lastCheckFailure
+        ? { kind: "error", message: lastCheckFailure }
+        : { kind: "up-to-date", currentVersion };
     default:
       return { kind: "error", message: `unexpected update state: ${state.kind}` };
   }

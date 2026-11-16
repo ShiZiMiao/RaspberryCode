@@ -6714,6 +6714,7 @@ const zhCN: Record<string, string> = {
   "settings.update.autoUpdateDescription":
     "启动时自动检查并静默下载安装更新（增量下载），下次启动生效；关闭后需手动检查更新",
   "settings.update.checkForUpdates": "检查更新",
+  "settings.update.checking": "检查中…",
   "settings.update.checkForUpdatesDescription": "从 GitHub Releases 检查 RaspberryCode 新版本",
   "settings.update.skippedVersion": "已跳过的版本",
   "settings.update.skippedVersionDescription": "v{version} 的更新提醒已跳过，恢复后将重新提示",

@@ -25,6 +25,10 @@ export function UpdateSettingsSection({ isDesktop }: { isDesktop?: boolean }) {
   const [ownerDraft, setOwnerDraft] = useState("");
   const [repoDraft, setRepoDraft] = useState("");
   const [saving, setSaving] = useState(false);
+  // 手动检查更新的在途态：main 的 executeDesktopCommand 不回传结果，
+  // 只能靠 UpdateCheckResult 推送判断结束。没有这个态时用户点完按钮
+  // 在慢网络下会看到「什么都没发生」，无法区分是没点上还是仍在等待。
+  const [checkingForUpdate, setCheckingForUpdate] = useState(false);
   // 只在生效值真正变化时回填输入框，避免用户逐字编辑被重置；
   // 用 ref 追踪上次回填值，替代对 lint 的依赖抑制。
   const lastAppliedOwnerRef = useRef("");
@@ -47,12 +51,28 @@ export function UpdateSettingsSection({ isDesktop }: { isDesktop?: boolean }) {
     }
   }, [effectiveOwner, effectiveRepo]);
 
+  // 收到任意检查结果即结束在途态。必须挂在 isDesktop 早退之前：
+  // hooks 数量不能随 props 变化，否则切换 Desktop/Web 时会崩。
+  useEffect(() => {
+    if (!checkingForUpdate) return;
+    return platform.onUpdateCheckResult?.(() => {
+      setCheckingForUpdate(false);
+    });
+  }, [checkingForUpdate, platform]);
+
   if (!isDesktop) {
     return null;
   }
 
   const handleCheckForUpdates = () => {
-    void platform.executeDesktopCommand(DesktopCommandIds.CheckForUpdates);
+    if (checkingForUpdate) return;
+    setCheckingForUpdate(true);
+    void platform.executeDesktopCommand(DesktopCommandIds.CheckForUpdates).catch((error) => {
+      // 命令通道自身失败（窗口已关、IPC 断开等）不会有推送回来，
+      // 不在这里收口会让按钮永久卡在「检查中」。
+      logger.warn("[settings] 检查更新命令失败", { error: String(error) });
+      setCheckingForUpdate(false);
+    });
   };
 
   const handleAutoDownloadChange = (enabled: boolean) => {
@@ -133,8 +153,16 @@ export function UpdateSettingsSection({ isDesktop }: { isDesktop?: boolean }) {
         label={intl.formatMessage({ id: "settings.update.checkForUpdates" })}
         description={intl.formatMessage({ id: "settings.update.checkForUpdatesDescription" })}
         control={
-          <Button type="button" variant="outline" size="sm" onClick={handleCheckForUpdates}>
-            {intl.formatMessage({ id: "settings.update.checkForUpdates" })}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={checkingForUpdate}
+            onClick={handleCheckForUpdates}
+          >
+            {checkingForUpdate
+              ? intl.formatMessage({ id: "settings.update.checking" })
+              : intl.formatMessage({ id: "settings.update.checkForUpdates" })}
           </Button>
         }
       />

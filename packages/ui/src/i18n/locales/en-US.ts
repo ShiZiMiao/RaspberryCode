@@ -7035,6 +7035,7 @@ const enUS: Record<string, string> = {
   "settings.update.autoUpdateDescription":
     "Check for updates at startup and download and install them silently (differential download); the new version applies on next launch. Turn off to update manually",
   "settings.update.checkForUpdates": "Check for updates",
+  "settings.update.checking": "Checking…",
   "settings.update.checkForUpdatesDescription":
     "Check GitHub Releases for a new version of RaspberryCode",
   "settings.update.skippedVersion": "Skipped version",
