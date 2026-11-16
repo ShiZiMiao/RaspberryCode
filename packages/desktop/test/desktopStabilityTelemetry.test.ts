@@ -93,6 +93,41 @@ describe("desktopStabilityTelemetry", () => {
       ).toBeNull();
     });
 
+    it("treats renderer gone during app quit as normal exit, not a crash", async () => {
+      const { classifyRenderProcessCrash } =
+        await import("../src/main/desktopStabilityTelemetry.js");
+      // 实测：强制结束进程时 Electron 报 reason=crashed（不是 killed），
+      // 退出流程中的连带终止若被计入 perf_crash 会污染 crash-free 指标。
+      expect(
+        classifyRenderProcessCrash({
+          reason: "crashed",
+          exitCode: -1,
+          webContentsType: "window",
+          windowScene: "main",
+          appQuitting: true,
+        }),
+      ).toBeNull();
+    });
+
+    it("still reports a real main-window crash when the app is not quitting", async () => {
+      const { classifyRenderProcessCrash } =
+        await import("../src/main/desktopStabilityTelemetry.js");
+      // 防矫枉过正：非退出态的同形事件必须照旧上报。
+      expect(
+        classifyRenderProcessCrash({
+          reason: "crashed",
+          exitCode: -1,
+          webContentsType: "window",
+          windowScene: "main",
+          appQuitting: false,
+        }),
+      ).toEqual({
+        crashKind: "native",
+        crashScope: "main_window_renderer",
+        crashCause: "process_crashed",
+      });
+    });
+
     it("maps all non-OOM process crashes to native instead of calling them JS errors", async () => {
       const { classifyRenderProcessCrash } =
         await import("../src/main/desktopStabilityTelemetry.js");

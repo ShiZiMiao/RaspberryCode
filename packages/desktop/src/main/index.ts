@@ -215,6 +215,7 @@ import {
   reportAgentProcessExitToArms,
   reportAgentProcessReadyToArms,
   reportAgentProcessStartToArms,
+  markAppQuitting,
   reportAgentProcessSpawnErrorToArms,
   reportAgentProcessExceptionToArms,
   registerDesktopStabilityMonitors,
@@ -2173,6 +2174,11 @@ app.on("before-quit", (event) => {
     explicitQuitRef.current = false;
     return;
   }
+
+  // 走到这里说明退出已确认。标记退出流程开始，让稳定性遥测把随之而来的
+  // renderer/子进程连带终止记为正常退出而不是 crash（Electron 会把强杀报成
+  // `crashed` 而非 `killed`，不标记就会污染 crash-free 指标）。
+  markAppQuitting();
 
   if (!hasPreparedAppQuit) {
     localMediaPreviewPathRegistry.clear();

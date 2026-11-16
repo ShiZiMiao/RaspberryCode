@@ -112,6 +112,16 @@ export interface RenderProcessGoneInput {
   exitCode: number;
   webContentsType: string;
   windowScene?: StabilityWindowScene;
+  /**
+   * 主进程是否已在退出流程中（`before-quit` 之后）。
+   *
+   * 为什么必需：应用退出（含被任务管理器/脚本强杀）时，renderer 与所有子进程
+   * 会被连带终止，Electron 此时报的 `reason` 是 `crashed` 而不是 `killed`，
+   * 于是被当成真实崩溃上报 `perf_crash`，按「非真实崩溃」把 crash-free 指标拉低。
+   * 实测 2026-11-16 三次此类误报全部集中在强制结束进程的时刻，且日志中
+   * 没有任何 `before-quit` / 正常关闭记录。
+   */
+  appQuitting?: boolean;
 }
 
 export interface ChildProcessGoneInput {
@@ -128,6 +138,22 @@ let lifecycleScene: StabilityLifecycleScene = "runtime";
 // Resource Manager / 更新 / About。只登记 createWindowInstance 创建的业务窗口，避免辅助窗污染 Crash 率。
 const mainWindowIds = new Set<number>();
 let perfAppStartReported = false;
+/**
+ * 主进程已进入退出流程。见 `RenderProcessGoneInput.appQuitting` 的说明：
+ * 退出时的连带终止会被 Electron 报成 `crashed`，不能计入 crash-free。
+ * 只置 true 不回落——一旦开始退出，后续任何 gone 都不该再算事故。
+ */
+let appQuitting = false;
+
+/** 由 `before-quit` 调用，标记退出流程已开始。幂等。 */
+export function markAppQuitting(): void {
+  appQuitting = true;
+}
+
+/** 仅供测试：重置退出标记，隔离用例间状态。 */
+export function __resetAppQuittingForTesting(): void {
+  appQuitting = false;
+}
 const unresponsiveByWebContentsId = new Map<number, UnresponsiveWatchState>();
 
 function normalizeOsCategory(platform: NodeJS.Platform): string {
@@ -691,6 +717,11 @@ export function classifyRenderProcessCrash(
   if (input.reason === "killed" || input.reason === "clean-exit") {
     return null;
   }
+  // 退出流程中的 renderer 终止不是事故：退出时 Electron 会把连带终止报成
+  // `crashed`（而非 `killed`），不拦截就会把正常退出计成 native crash。
+  if (input.appQuitting === true) {
+    return null;
+  }
   return {
     crashKind: mapExitReasonToCrashKind(input.reason),
     crashScope:
@@ -1031,6 +1062,7 @@ export function registerDesktopStabilityMonitors(
         webContentsType: webContents.getType(),
         // 必须使用崩溃 WebContents 自身所属窗口；回退到当前焦点窗会把辅助窗误判成主业务窗。
         windowScene: resolveRegisteredWindowScene(win),
+        appQuitting,
       };
       const classification = classifyRenderProcessCrash(input);
       if (classification) {
