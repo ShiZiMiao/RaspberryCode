@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import { ToolCallBlock } from "@/ToolCallBlocks.js";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";

@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 // timeline/pinned/archived 查询路径：tasks-index 提供持久行与 membership，
 // sessions-index 只补充实时 activity/detail。验证 kind 过滤与字段权威边界；
 // 纯本地无搜索场景旧 listTaskList 零调用；搜索场景回落旧全文检索路径。

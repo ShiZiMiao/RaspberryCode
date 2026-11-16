@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import type { IBroadcastService } from "@raspberrycode/services";
 import { createElement } from "react";
 import type { ReactElement } from "react";

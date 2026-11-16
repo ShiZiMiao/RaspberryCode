@@ -1,5 +1,9 @@
+// @vitest-environment jsdom
+
 import type { IServiceAccessor } from "@/hooks/useServices.js";
 import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -38,8 +42,10 @@ describe("WorkspaceFileSearch settings section", () => {
     // 契约断言（同 hooksSection 模式）：编辑页必须走 fileService 的专用 RPC，
     // 不允许绕过服务层直接读写本地文件；分区操作必须走 applyTransform（分区重写，
     // 不允许整体覆盖用户内容）。
+    // jsdom 环境下 import.meta.url 不是 file:// scheme，readFileSync 会抛
+    // 「The URL must be of scheme file」。先归一成本地目录再拼路径。
     const source = readFileSync(
-      new URL("../src/settings/WorkspaceFileSearchSection.tsx", import.meta.url),
+      resolve(dirname(fileURLToPath(import.meta.url)), "../src/settings/WorkspaceFileSearchSection.tsx"),
       "utf8",
     );
 

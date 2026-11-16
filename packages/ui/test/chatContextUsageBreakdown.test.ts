@@ -3,7 +3,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   buildContextUsageBreakdownSegments,
-  formatContextCacheHitRateLabel,
   formatContextUsageSummary,
   formatContextUsageTokenCount,
   refreshContextUsageOnOpen,
@@ -74,25 +73,14 @@ describe("formatContextUsageSummary", () => {
   });
 });
 
-describe("formatContextCacheHitRateLabel", () => {
-  it("keeps the production threshold for low cache hit rates", () => {
-    expect(formatContextCacheHitRateLabel(0.048, "en-US")).toBeNull();
-  });
-
-  it("formats low cache hit rates when development diagnostics are enabled", () => {
-    expect(
-      formatContextCacheHitRateLabel(0.048, "en-US", {
-        showBelowThreshold: true,
-      }),
-    ).toBe("4.8%");
-  });
-
-  it("does not invent a cache hit rate when the provider omits it", () => {
-    expect(
-      formatContextCacheHitRateLabel(null, "en-US", {
-        showBelowThreshold: true,
-      }),
-    ).toBeNull();
+describe("formatContextCacheHitRateLabel 已随缓存命中率收敛移除", () => {
+  // 修复原因（2026-11-15）：83662a2c 按设计删除了 formatContextCacheHitRateLabel
+  // （缓存命中率只保留 Token 用量一处），但漏清本文件的 describe 块，导致 4 个用例
+  // TypeError: not a function。这里不留空壳断言——该函数已不存在，行为由「Token 用量
+  // 面板显示命中率」覆盖，不再在本文件重复钉住已删除的 API。
+  it("导出面上不再提供该函数", async () => {
+    const mod = await import("../src/chat-input-toolbar/contextUsage.js");
+    expect("formatContextCacheHitRateLabel" in mod).toBe(false);
   });
 });
 

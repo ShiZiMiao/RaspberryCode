@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import type { Hook, WorkspaceHookReviewTrustState } from "@raspberrycode/shared";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";

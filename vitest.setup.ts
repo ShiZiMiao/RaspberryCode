@@ -44,3 +44,21 @@ vi.mock("node:os", async (importOriginal) => {
     },
   };
 });
+
+// jsdom 环境补齐：jsdom 不实现 window.matchMedia，而主题同步（store/index.ts
+// syncSystemThemeListener、useTheme.ts getSystemTheme）在模块加载与订阅时就调用它。
+// 修复原因（2026-11-15）：233 个 UI 测试因 @testing-library 缺失长期 `(0 test)` 加载失败，
+// 补回依赖后才暴露此处——151 个 ui 测试文件从未真正执行过，各自零散 stub matchMedia。
+// 在全局入口统一提供最小实现，避免每个用例重复桩；需要特定返回值的用例仍可自行覆盖。
+if (typeof window !== "undefined" && typeof window.matchMedia !== "function") {
+  window.matchMedia = ((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  })) as typeof window.matchMedia;
+}

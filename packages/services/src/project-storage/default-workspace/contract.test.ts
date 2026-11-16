@@ -1,8 +1,33 @@
 import { describe, expect, it } from "vitest";
 import { createHash } from "node:crypto";
+import type { DatabaseSync } from "node:sqlite";
 import { fixture, port } from "#src/project-storage/test-fixture.js";
-import { reconcileLegacy } from "#src/project-storage/legacy-tasks.js";
+import {
+  reconcileLegacy,
+  REMOTE_TASK_OWNERSHIP_MIGRATION,
+} from "#src/project-storage/legacy-tasks.js";
 import { migrateProjects } from "#src/project-storage/migrate-projects.js";
+import { SESSION_CREATION_COMMANDS_SQL } from "#src/project-storage/schema.js";
+import { REMOTE_ENTRY_DELETED_CACHE_SQL } from "#src/project-storage/schema.js";
+
+/**
+ * 把指定迁移记为「已应用」到 schema_migration 账本。
+ *
+ * 修复原因（2026-11-15）：本文件若干用例模拟「已迁移过的旧库」，需要前置账本与真实
+ * 旧库一致。checksum 必须与 runner 同算法（sha256(sql.trim())），否则 runner 会把它
+ * 当成被篡改的迁移而拒绝继续。
+ */
+function markApplied(
+  db: DatabaseSync,
+  rows: ReadonlyArray<readonly [id: string, sql: string, appVersion: string]>,
+): void {
+  const insert = db.prepare(
+    "INSERT OR REPLACE INTO schema_migration(id,checksum,app_version,applied_at) VALUES(?,?,?,?)",
+  );
+  for (const [id, sql, appVersion] of rows) {
+    insert.run(id, createHash("sha256").update(sql.trim()).digest("hex"), appVersion, 10);
+  }
+}
 
 describe("系统 default 项目纠偏", () => {
   it.each(["renamed", "multi-root", "newer"])("preserves a %s user project", async (scenario) => {
@@ -36,6 +61,20 @@ describe("系统 default 项目纠偏", () => {
       reconcileLegacy(db);
       db.exec(`CREATE TABLE schema_migration(id TEXT PRIMARY KEY,checksum TEXT,app_version TEXT,applied_at INTEGER);
         INSERT INTO schema_migration VALUES('0005_projects','ac00a61c7c45a5ceb3814b1487901372c5580eb6eb8d31bde5bcdfbd1ed0f0da','3.12.0',10);`);
+      // 修复原因（2026-11-15）：本用例模拟「已迁移过的旧库」，断言后续只补跑 0006/0007。
+      // 原账本只记 0005，但 0008~0011 早已发布、在真实旧库中已应用（0011 是本轮新增）。
+      // 夹具补齐这些迁移需要的列后，它们不再因缺列中断而会真实补跑，导致断言多出四项。
+      // 这里按真实旧库状态把 0008~0011 记为已应用（checksum 用与 runner 相同的算法：
+      // sha256(migration.sql.trim())），不动 0006/0007 —— 那正是本用例要验证的补跑项。
+      markApplied(
+        db,
+        [
+          ["0008_remote_entry_deleted_cache", REMOTE_ENTRY_DELETED_CACHE_SQL, "3.16.3"],
+          ["0009_session_creation_commands", SESSION_CREATION_COMMANDS_SQL, "3.16.3"],
+          ["0010_remote_task_ownership", REMOTE_TASK_OWNERSHIP_MIGRATION, "3.17.2"],
+          ["0011_task_placeholder_at", "-- add tasks.placeholder_at INTEGER (idempotent)", "3.18.0"],
+        ],
+      );
       const originalId = db
         .prepare("SELECT project_id FROM tasks WHERE task_id='normal'")
         .get()!.project_id;

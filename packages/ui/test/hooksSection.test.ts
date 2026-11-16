@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import type { IHooksService } from "@raspberrycode/services";
 import type { Hook } from "@raspberrycode/shared";
 import { createElement } from "react";

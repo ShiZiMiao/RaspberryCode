@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 // 后台 workflow 通知行（docs/dynamic-workflow/transcript-and-notifications.md「The notification row」）——工具卡语法。
 //
 // 文件名是 `.test.ts`（不是 `.test.tsx`）：根 vitest 只收 packages/*/test/**/*.test.ts。

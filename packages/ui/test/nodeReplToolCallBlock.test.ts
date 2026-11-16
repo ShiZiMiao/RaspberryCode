@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import type { IBroadcastService } from "@raspberrycode/services";
 import { createElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";

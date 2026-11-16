@@ -17,11 +17,20 @@ export async function fixture(savedWorkspaces: readonly string[] = []) {
   const directory = await mkdtemp(join(tmpdir(), "raspberrycode-project-migration-"));
   const db = new DatabaseSync(":memory:");
   resources.push({ db, directory });
+  // 修复原因（2026-11-15）：上游 v3.17.2 同步（a9fe401e）后，0008~0011 迁移会读
+  // `forked_from_task_id` / `host_id` / `root_path` 并触发 initializeLegacyTaskIdentity
+  // （写 cli_* 与 handoff_pending）。夹具原先停在 0005 之前的最小列集，导致这些迁移
+  // 一跑就 `no such column: forked_from_task_id`（原先 11 个用例因此失败）。
+  // 这里补齐「迁移与列表查询会读到的列」；projects / project_roots 仍由 addProjectSchema 建。
+  // host_id 保持无默认值：initializeLegacyTaskIdentity 靠 `host_id IS NULL` 判定待补全。
   db.exec(`CREATE TABLE tasks (
     workspace_key TEXT, workspace_path TEXT, workspace_identity TEXT, task_id TEXT,
     title TEXT DEFAULT '', provider TEXT DEFAULT 'glm', title_overridden INTEGER DEFAULT 0, deleted INTEGER DEFAULT 0,
     archived INTEGER DEFAULT 0, pinned INTEGER DEFAULT 0, unread_at INTEGER,
     task_status TEXT DEFAULT 'completed', created_at INTEGER DEFAULT 1, updated_at INTEGER DEFAULT 2,
+    host_id TEXT, root_path TEXT, forked_from_task_id TEXT,
+    cli_created_at INTEGER, cli_updated_at INTEGER, cli_title TEXT, cli_deleted INTEGER DEFAULT 0,
+    cli_title_source TEXT, cli_last_outcome TEXT, handoff_pending INTEGER DEFAULT 0,
     PRIMARY KEY(workspace_key,task_id));
     CREATE TABLE task_groups(group_id TEXT PRIMARY KEY,title TEXT,color TEXT,created_at INTEGER,updated_at INTEGER);
     CREATE TABLE task_group_members(group_id TEXT,workspace_key TEXT,workspace_path TEXT,workspace_identity TEXT,task_id TEXT,sort_order INTEGER);

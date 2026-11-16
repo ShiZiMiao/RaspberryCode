@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 // 草稿预热会话在 runtime 换代后的重建门禁。
 // 覆盖：状态机全分支（纯函数）+ hook 接线（换代触发 invalidate、超时回落、重建中再换代重置计时器）。
 import { act, createElement } from "react";

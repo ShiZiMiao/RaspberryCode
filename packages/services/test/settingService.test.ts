@@ -885,7 +885,7 @@ describe("settingService", () => {
             }
           : null;
       },
-      repository: async () => ({ archiveInactive }),
+      repository: async () => ({ archiveInactive, pruneOrphanPlaceholders: () => 0 }),
       afterChange: async () => {},
     });
     await scheduler.scan();
@@ -1001,7 +1001,7 @@ describe("settingService", () => {
         (await service.get()).taskAutoArchiveEnabled
           ? { cutoff: Date.now(), activeTasks: [] }
           : null,
-      repository: async () => ({ archiveInactive }),
+      repository: async () => ({ archiveInactive, pruneOrphanPlaceholders: () => 0 }),
       afterChange: async () => {},
     });
     await expect(scheduler.scan()).rejects.toMatchObject({ code: "EACCES" });

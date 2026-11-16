@@ -1,9 +1,15 @@
+// @vitest-environment jsdom
+
 import { readFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { JSDOM } from "jsdom";
 import { describe, expect, it, vi } from "vitest";
 
+// jsdom 环境下 import.meta.url 不是 file:// scheme，readFile 会抛
+// 「The URL must be of scheme file」。先归一成本地目录再拼路径。
 const html = await readFile(
-  new URL("../src/assets/cloud-content/weekend-plan-hero.html", import.meta.url),
+  resolve(dirname(fileURLToPath(import.meta.url)), "../src/assets/cloud-content/weekend-plan-hero.html"),
   "utf8",
 );
 function fixture() {

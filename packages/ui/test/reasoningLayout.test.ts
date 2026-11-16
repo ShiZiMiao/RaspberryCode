@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import type { IBroadcastService, IServiceAccessor } from "@raspberrycode/services";
 import type { IPlatformService } from "@raspberrycode/shared";
 import { PlatformProvider } from "@/hooks/usePlatform.js";

@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import { ToolCallBlock } from "@/ToolCallBlocks.js";
 import type { IBroadcastService, IServiceAccessor } from "@raspberrycode/services";
 import { createElement } from "react";

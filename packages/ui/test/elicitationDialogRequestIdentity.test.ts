@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import type { RaspberryCodeElicitationRequest } from "@raspberrycode/shared";
 import { act, createElement, forwardRef, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";

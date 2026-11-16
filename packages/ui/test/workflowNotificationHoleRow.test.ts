@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 // 留白通知行（docs/dynamic-workflow/transcript-and-notifications.md「The hole row's live state」）：
 // 笔图标、三态种类词按 run 投影的 holes 翻转、主文本 `· run · 留白名` + 类型徽标、展开体的提示 /
 // 位置 / 类型 / 草稿路径 / 等待时长 / run 链接。永不 shimmer。

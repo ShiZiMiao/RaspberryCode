@@ -1,9 +1,13 @@
+// @vitest-environment jsdom
+
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { RaspberryCodeIntlProvider } from "@/i18n/IntlProvider.js";
 import { SourceServerUpdateActivity } from "@/settings/SourceServerUpdateActivity.js";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 /**
@@ -12,8 +16,12 @@ import { describe, expect, it } from "vitest";
  * 解析不了的构造一律抛错失败，禁止静默跳过或回退硬编码近似值。
  */
 
+// jsdom 环境下 import.meta.url 不是 file:// scheme，readFileSync 会抛
+// 「The URL must be of scheme file」。先归一成本地目录再拼路径。
+const testDir = dirname(fileURLToPath(import.meta.url));
+
 const stylesCss = stripComments(
-  readFileSync(new URL("../src/styles.css", import.meta.url), "utf8"),
+  readFileSync(resolve(testDir, "../src/styles.css"), "utf8"),
 );
 const tailwindThemeCss = stripComments(
   readFileSync(createRequire(import.meta.url).resolve("tailwindcss/theme.css"), "utf8"),

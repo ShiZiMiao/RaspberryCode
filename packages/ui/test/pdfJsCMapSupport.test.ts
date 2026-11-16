@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import { describe, expect, it } from "vitest";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 

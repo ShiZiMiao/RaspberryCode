@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import { MeteredUsageQuotaProvider } from "../../services/src/usage-stats/providers/meteredUsageQuotaProvider.js";
 import type { ReactElement } from "react";
 import type { Root } from "react-dom/client";

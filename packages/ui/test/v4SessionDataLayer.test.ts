@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 // m3-ui-core：SessionDataLayer + ConversationProjectionStore 单测。
 // 覆盖 04-sync-and-recovery 三条客户端规则、R-01 代际防护、引用计数 + keep-warm 生命周期、
 // optimistic overlay 与权威投影的收口（R-07 sourceCommandId / pendingCommands 锚点）。

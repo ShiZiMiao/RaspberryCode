@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 // submit_result 工具卡（docs/chat/submit-result-tool-card.md）。
 //
 // 文件名刻意是 `.test.ts` 而不是 `.test.tsx`：根 vitest 配置只收

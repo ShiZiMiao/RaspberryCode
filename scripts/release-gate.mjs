@@ -20,7 +20,7 @@
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join, dirname, resolve } from "node:path";
 
 const repoRoot = resolve(import.meta.dirname, "..");
 const dist = join(repoRoot, "packages/desktop/dist");
@@ -42,6 +42,45 @@ const warn = (msg) => {
 const need = (msg) => manual.push(msg);
 
 const readJson = (p) => JSON.parse(readFileSync(p, "utf8"));
+
+/**
+ * 定位可用的 pnpm 执行方式，返回 `{ cmd, args }` 供 execFileSync 直接调用。
+ *
+ * 不走 `npx pnpm` 的原因见下面「自动门禁」段的注释：Windows 上 execFileSync 直接
+ * spawn `.cmd`（npx.cmd）会 ENOENT。这里按两种真实形态找：
+ *   1. pnpm 的 JS 入口 pnpm.cjs —— 用 process.execPath 执行（npm 全局安装形态）；
+ *   2. pnpm 独立可执行文件 pnpm.exe / pnpm —— 直接执行（mise / 独立安装形态）。
+ * 两步都在 PATH 与常见安装目录里找，均找不到返回 null 由调用方报错。
+ */
+function findPnpmRunner() {
+  const exeName = process.platform === "win32" ? "pnpm.exe" : "pnpm";
+  const nodeDir = dirname(process.execPath);
+
+  // 1) pnpm.cjs（用当前 node 执行，最可移植）
+  const cjsCandidates = [
+    join(nodeDir, "node_modules", "pnpm", "bin", "pnpm.cjs"),
+    join(nodeDir, "..", "lib", "node_modules", "pnpm", "bin", "pnpm.cjs"),
+    join(repoRoot, "node_modules", "pnpm", "bin", "pnpm.cjs"),
+    join(nodeDir, "..", "pnpm", "bin", "pnpm.cjs"),
+  ];
+  for (const candidate of cjsCandidates) {
+    if (existsSync(candidate)) {
+      return { cmd: process.execPath, args: [candidate] };
+    }
+  }
+
+  // 2) 独立可执行文件：先看 PATH，再看 node 同级目录
+  const pathDirs = (process.env.PATH ?? "").split(process.platform === "win32" ? ";" : ":");
+  const exeDirs = [...pathDirs, nodeDir, join(nodeDir, "..")];
+  for (const dir of exeDirs) {
+    if (!dir) continue;
+    const candidate = join(dir, exeName);
+    if (existsSync(candidate)) {
+      return { cmd: candidate, args: [] };
+    }
+  }
+  return null;
+}
 
 function section(title) {
   console.log(`\n== ${title} ==`);
@@ -170,6 +209,12 @@ if (quick) {
   warn("已跳过 typecheck / lint / audit-neutrality，发版前必须无 --quick 跑一次");
 } else {
   section("自动门禁");
+  // 修复原因（2026-11-15 验收实测）：原来用 execFileSync("npx", ["pnpm", ...]) 调门禁，
+  // 在 Windows 上必然失败——npx 实际是 npx.cmd，execFileSync 不走 shell 时 spawn 返回
+  // ENOENT，于是 lint/typecheck 永远判 FAIL，与命令真实结果无关。这比门禁失效更危险：
+  // 它让「门禁失败」失去可信度，容易被当成噪声绕过。
+  // 改法：用当前 node 直接跑 pnpm 的 JS 入口（pnpm.cjs），完全不依赖 .cmd/shell。
+  const pnpmRunner = findPnpmRunner();
   const run = (label, cmd, args) => {
     try {
       execFileSync(cmd, args, { cwd: repoRoot, stdio: "pipe" });
@@ -177,13 +222,26 @@ if (quick) {
       return true;
     } catch (error) {
       const out = `${error.stdout ?? ""}${error.stderr ?? ""}`.toString();
-      fail(`${label} 未通过${out ? `：${out.split("\n").slice(0, 3).join(" / ")}` : ""}`);
+      const hint =
+        error.code === "ENOENT"
+          ? `（无法执行 ${cmd}，请检查工具链）`
+          : out
+            ? `：${out.split("\n").slice(0, 3).join(" / ")}`
+            : "";
+      fail(`${label} 未通过${hint}`);
       return false;
     }
   };
-  run("typecheck", "npx", ["pnpm", "run", "typecheck"]);
-  run("lint", "npx", ["pnpm", "run", "lint"]);
-  run("audit-neutrality", "node", ["scripts/audit-neutrality.mjs"]);
+  const runPnpm = (label, script) => {
+    if (!pnpmRunner) {
+      fail(`${label} 未通过：找不到 pnpm 可执行文件，请先安装 pnpm`);
+      return false;
+    }
+    return run(label, pnpmRunner.cmd, [...pnpmRunner.args, "run", script]);
+  };
+  runPnpm("typecheck", "typecheck");
+  runPnpm("lint", "lint");
+  run("audit-neutrality", process.execPath, ["scripts/audit-neutrality.mjs"]);
 }
 
 // ---------------------------------------------------------------------------

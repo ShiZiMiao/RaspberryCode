@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import type { RaspberryCodeElicitationRequest } from "@raspberrycode/shared";
 import { createElement, type ComponentType } from "react";
 import { renderToStaticMarkup } from "react-dom/server";

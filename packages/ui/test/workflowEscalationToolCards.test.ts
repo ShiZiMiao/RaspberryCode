@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 // escalate / ResolveWorkflowQuestion 专用工具卡（apps/raspberrycode-cli/packages/dynamic-workflow/docs/execution-engine.md）。
 //
 // 文件名刻意是 `.test.ts` 而不是 `.test.tsx`：根 vitest 配置只收

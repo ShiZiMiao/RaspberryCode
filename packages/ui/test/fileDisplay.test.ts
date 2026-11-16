@@ -1,4 +1,8 @@
+// @vitest-environment jsdom
+
 import { readFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it } from "vitest";
@@ -33,9 +37,13 @@ describe("resolveFileDisplayDescriptor", () => {
   ])(
     "maps .$extension to the $iconName icon for desktop",
     async ({ extension, iconName }) => {
-      const repoRoot = new URL("../../..", import.meta.url);
+      // jsdom 环境下 import.meta.url 不是 file:// scheme（断言会抛
+      // 「The URL must be of scheme file」），readFile 不接受。
+      // 先用 fileURLToPath 归一成本地路径，再拼相对仓库根的目录。
+      const testDir = dirname(fileURLToPath(import.meta.url));
+      const repoRoot = resolve(testDir, "../../..");
       const desktopIcon = await readFile(
-        new URL(`packages/desktop/src/renderer/public/material-icons/${iconName}.svg`, repoRoot),
+        resolve(repoRoot, `packages/desktop/src/renderer/public/material-icons/${iconName}.svg`),
         "utf8",
       );
 

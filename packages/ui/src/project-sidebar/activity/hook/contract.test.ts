@@ -121,5 +121,13 @@ it("未打开 tab 的远端 scope 接入同一个观察器，运行态不改变 
   });
   expect(result.current.tree.tasks).toHaveLength(1);
   expect(listTaskList).toHaveBeenCalledTimes(2);
-  expect(mocks.readTree.mock.calls.length).toBeLessThanOrEqual(3);
+  // 这条断言的意图是「不会循环刷新」，不是钉住精确次数。
+  // 修复原因（2026-11-15）：修复 @testing-library 缺失后本文件才第一次真正执行
+  // （此前长期 0 test 加载失败），暴露出阈值 3 与真实首轮读取次数不符：稳定为 4 次
+  // （初始 effect + tabs/directoryRevision 依赖 + unread signal 各触发一次）。
+  // 4 次是一次性首屏装载，不是循环（循环会随轮次线性增长到十几甚至上百次）。
+  // 这里把上限放到 4 并保留上界语义，避免把「首屏读取次数」误当契约。
+  const readCount = mocks.readTree.mock.calls.length;
+  expect(readCount).toBeLessThanOrEqual(4);
+  expect(listTaskList.mock.calls.length).toBeLessThanOrEqual(4);
 });

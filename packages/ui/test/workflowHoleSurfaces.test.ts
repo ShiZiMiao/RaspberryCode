@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 // 留白在各个面上的画法（docs/dynamic-workflow/presentation.md「Holes on the timeline」）：时间线的留白站
 // （虚线灯、虚线轨道、尾巴残段、补全的头与框）、run 卡的「{n} 处留白待补全」芯片、
 // 确认窗的留白行与「2 个阶段 · 2 处留白」、侧栏迷你轨道的虚线灯与「{name} · 等待补全」、

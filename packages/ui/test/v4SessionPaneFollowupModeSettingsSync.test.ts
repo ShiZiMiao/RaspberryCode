@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 // Modified for RaspberryCode: 数据目录断言随 .raspberrycode 独立改名
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";

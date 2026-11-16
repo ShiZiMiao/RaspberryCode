@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import {
   OFFICIAL_CUA_PERMISSION_RULE_TOOL_NAME,
   type RaspberryCodePermissionRequest,

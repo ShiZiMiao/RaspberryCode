@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 // 草稿态 v4 draft session 预热控制器（m5-composer-parity §5.4）生命周期测试。
 // 覆盖：就绪上抛 / 未用清理 / 提升不删 / 失效不删 / 在飞 dispose 就地删 / 创建失败降级。
 import { act, createElement } from "react";

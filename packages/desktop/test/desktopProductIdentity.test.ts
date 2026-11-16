@@ -13,14 +13,18 @@ import {
 } from "../scripts/desktop-product-identity.mjs";
 
 describe("desktop product identity", () => {
-  it("根锁文件的发布版本与构建版本一致", () => {
-    // 合并上游发布提交只对齐当前版本，不恢复上游旧版本，也不重算依赖锁。
+  it("根 package.json 版本与 desktop 包版本一致", () => {
+    // 修复原因（2026-11-15）：本仓库用 pnpm，根锁文件是 pnpm-lock.yaml，它不记录根包
+    // 自身版本（只有 lockfileVersion 与依赖快照）。原断言读 package-lock.json 是上游
+    // npm 时代的遗留，在本仓必然 ENOENT。
+    // 这里改查真正生效的一致性约束：electron-builder 取 desktop 包的 version 生成安装包名
+    // 与 latest.yml，根 package.json 必须跟随，否则产物名与仓库版本错位。
+    // 锁文件层的一致性由 scripts/release-gate.mjs 的「版本一致性」段负责。
     const readRootJson = (name: string) =>
       JSON.parse(readFileSync(resolve(import.meta.dirname, "../../..", name), "utf8"));
     const version = readRootJson("package.json").version;
-    const lock = readRootJson("package-lock.json");
-    expect(lock.version).toBe(version);
-    expect(lock.packages[""].version).toBe(version);
+    const desktopVersion = readRootJson("packages/desktop/package.json").version;
+    expect(desktopVersion).toBe(version);
   });
 
   it("RASPBERRYCODE_ENV=test 使用可与生产版并排安装的 Preview 身份", () => {

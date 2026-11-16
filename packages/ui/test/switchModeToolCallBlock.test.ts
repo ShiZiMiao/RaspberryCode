@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import type { IBroadcastService, IServiceAccessor } from "@raspberrycode/services";
 import { ServiceProvider } from "@/hooks/useServices.js";
 import { RaspberryCodeIntlProvider } from "@/i18n/IntlProvider.js";
