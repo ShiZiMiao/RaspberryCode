@@ -479,6 +479,9 @@ export async function executeDesktopCommand(options: {
       // 手动检查结果单独走 UpdateCheckResult 推送（spec：specs/client-github-self-update.md），
       // 不与启动静默检查的状态广播混用。
       const result = await checkForUpdateManually();
+      options.logger.info(
+        `[desktop-command] checkForUpdates result=${result.kind} hasWindow=${Boolean(targetWindow)} destroyed=${targetWindow?.isDestroyed() ?? "n/a"}`,
+      );
       targetWindow?.webContents.send(PlatformChannels.UpdateCheckResult, result);
       return;
     }

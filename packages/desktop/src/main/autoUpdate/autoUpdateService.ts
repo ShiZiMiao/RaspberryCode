@@ -558,6 +558,7 @@ async function runCheck(reason: "startup" | "manual"): Promise<void> {
       return;
     } catch (error) {
       const failure = error instanceof Error ? error : new Error(String(error));
+      logger.info(`[auto-update] ${reason} check failed on route=${downloadFallback.currentRoute}: ${failure.message}`);
       const retryScheduled = handleUpdaterError(failure);
       if (!checkRetryInFlight) {
         checkRetryInFlight = false;
