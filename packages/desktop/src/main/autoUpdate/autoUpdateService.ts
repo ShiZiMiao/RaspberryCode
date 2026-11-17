@@ -9,6 +9,14 @@
 import { app } from "electron";
 import { createRequire } from "node:module";
 import { CancellationToken, type ProgressInfo, type UpdateDownloadedEvent, type UpdateInfo } from "electron-updater";
+import { resolveCheckTimeoutMs, withCheckTimeout } from "./checkTimeout.js";
+import { patchSingleRangeDifferential } from "./singleRangePatch.js";
+
+/**
+ * 检查超时的测试注入入口：实现已抽到 checkTimeout.ts（本文件触达 800 行上限）。
+ * 这里重新导出，保持既有测试的导入路径不变。
+ */
+export { __setCheckTimeoutForTesting } from "./checkTimeout.js";
 
 /**
  * 修复：electron-updater 的 `autoUpdater` 是 CJS 惰性 getter
@@ -84,30 +92,7 @@ export function isAutoUpdateMode(): boolean {
   return autoUpdateMode;
 }
 
-/**
- * 强制单 Range 顺序差分：electron-updater 的 github 分支忽略 useMultipleRangeRequest，
- * 且 createProviderRuntimeOptions 硬编码 isUseMultipleRangeRequest=true；GitHub 资产存储
- * 不支持 multipart/byteranges，多 Range 探测会回退整包下载。这里覆盖 runtime 选项，
- * 保证差量更新走「单 Range 顺序拉取差异块」路径（约 15MB 级差异包而非 300MB+ 全量包）。
- */
-function patchSingleRangeDifferential(target: AutoUpdaterLike): void {
-  const patched = target as AutoUpdaterLike & {
-    createProviderRuntimeOptions?: () => Record<string, unknown>;
-    raspberrycodeSingleRangePatched?: boolean;
-  };
-  if (
-    typeof patched.createProviderRuntimeOptions !== "function" ||
-    patched.raspberrycodeSingleRangePatched
-  ) {
-    return;
-  }
-  const original = patched.createProviderRuntimeOptions.bind(patched);
-  patched.createProviderRuntimeOptions = () => ({
-    ...original(),
-    isUseMultipleRangeRequest: false,
-  });
-  patched.raspberrycodeSingleRangePatched = true;
-}
+// 单 Range 差分补丁（patchSingleRangeDifferential）已抽到 ./singleRangePatch.ts。
 
 let settingService: SettingServiceLike | null = null;
 let updater: AutoUpdaterLike | null = null;
@@ -463,41 +448,7 @@ function handleUpdaterError(error: Error): boolean {
   return false;
 }
 
-/**
- * 单次 checkForUpdates 的整体超时。
- *
- * electron-updater 在代理不可达/连接挂起时不会 reject，promise 会一直挂着；
- * 没有这层兜底，手动「检查更新」的按钮会永久停在「检查中…」且拿不到任何结果
- * （实测：direct 路线走系统代理、GitHub 不可达时窗口一直处于 disabled 等待态）。
- * 60s 取得比镜像/直连两次尝试的实测耗时（各约 24s）更宽裕，不误伤慢网络。
- */
-const CHECK_TIMEOUT_MS = 60_000;
-
-/**
- * 测试专用超时覆盖：vitest 里用真实短超时验证「挂起必定收口」，
- * 不必等 60s，也避免 fake timers 与内部 await 链的兼容问题。
- */
-let checkTimeoutOverrideMs: number | null = null;
-
-/** 仅供测试注入更短的检查超时；传 null 恢复默认。 */
-export function __setCheckTimeoutForTesting(ms: number | null): void {
-  checkTimeoutOverrideMs = ms;
-}
-
-/** 给检查加超时；超时以 Error 抛出，走与真实失败相同的降级/收口路径。 */
-async function withCheckTimeout<T>(task: Promise<T>, timeoutMs: number): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_resolve, reject) => {
-    timer = setTimeout(() => {
-      reject(new Error(`update check timed out after ${timeoutMs}ms`));
-    }, timeoutMs);
-  });
-  try {
-    return await Promise.race([task, timeout]);
-  } finally {
-    if (timer) clearTimeout(timer);
-  }
-}
+// 检查超时（CHECK_TIMEOUT_MS / 测试覆盖 / withCheckTimeout）已抽到 ./checkTimeout.ts。
 
 async function runCheck(reason: "startup" | "manual"): Promise<void> {
   if (!updater || !enabled) return;
@@ -543,10 +494,7 @@ async function runCheck(reason: "startup" | "manual"): Promise<void> {
     await syncUpdateSessionProxy(downloadFallback.currentRoute);
     nextState({ kind: "checking", enabled });
     try {
-      await withCheckTimeout(
-        updater.checkForUpdates(),
-        checkTimeoutOverrideMs ?? CHECK_TIMEOUT_MS,
-      );
+      await withCheckTimeout(updater.checkForUpdates(), resolveCheckTimeoutMs());
       // electron-updater 在 promise 收口前已发 update-available/not-available 事件；
       // 若事件缺失（异常 provider 行为）这里兜底回 idle，不悬挂 checking。
       checkRetryInFlight = false;
