@@ -1,5 +1,8 @@
 node_modules/
 dist/
+# pnpm 中断的安装/构建会留下 `_tmp_<pid>_<hash>` 空目录；它们不是产物，
+# 但会让 pre-push 的「工作区必须干净」检查失败（实测反复阻断推送）。
+_tmp_*/
 # raspberrycode-server-cli 发行包 staging 输出（spec §7.1），本地组装产物不入库。
 dist-release/
 # Bugfix: macOS CI 按架构隔离 electron-builder 输出目录，这些仍是构建产物。
