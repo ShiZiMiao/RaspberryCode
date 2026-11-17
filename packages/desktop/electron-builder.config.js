@@ -2,7 +2,7 @@
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { createRequire } from "node:module";
 import { HELPER_APP_NAME } from "@raspberrycode/raspberrycode-cua/broker/helperConstants";
 import { runCommand, runCommandAndReadStdout } from "../../scripts/spawn-command.mjs";
@@ -532,13 +532,68 @@ async function injectHoistedRuntimeModulesIntoAsar(context) {
         // 所以在 afterPack 阶段直接重写 app.asar，先把这些运行时包补进去，再交给后续签名和出包。
         mkdirSync(dirname(targetModulePath), { recursive: true });
         rmSync(targetModulePath, { force: true, recursive: true });
-        cpSync(sourceModulePath, targetModulePath, { recursive: true });
+        // dereference：workspace 包（`@raspberrycode/*`）在 node_modules 下是符号链接/junction，
+        // cpSync 默认会尝试用 symlink 复刻链接，Windows 上创建符号链接需要管理员或开发者模式，
+        // 实测报 `EPERM: operation not permitted, symlink` 直接中断出包。
+        // asar 也不表示符号链接（只能存文件/目录），按内容复制才是正确语义。
+        //
+        // filter 只作用于 workspace 内部包：junction 指向包源码根，整棵树复制会把 src/、
+        // 测试、node_modules 一起塞进 asar —— 实测包体从 189MB 涨到 372MB
+        // （@raspberrycode/* 占了 7.8 万个条目）。运行时只需要 package.json 与构建产物。
+        // 第三方包保持原样复制，避免误删某个包真实依赖的 .ts/.map 资源。
+        const isWorkspacePackage = moduleName.startsWith("@raspberrycode/");
+        const workspaceSkipTopLevel = new Set([
+          "src",
+          "test",
+          "tests",
+          "__tests__",
+          "node_modules",
+          "coverage",
+          "dist-types",
+          ".turbo",
+          ".vite",
+          ".vite-temp",
+        ]);
+        cpSync(sourceModulePath, targetModulePath, {
+          recursive: true,
+          dereference: true,
+          ...(isWorkspacePackage
+            ? {
+                filter: (src) => {
+                  const rel = relative(sourceModulePath, src).replaceAll("\\", "/");
+                  if (rel === "") return true;
+                  const [top] = rel.split("/");
+                  if (workspaceSkipTopLevel.has(top)) return false;
+                  // 源码与 sourcemap 对安装包无意义；保留 .d.ts 之外的构建产物由 dist/ 提供。
+                  return !/\.(?:ts|tsx|mts|cts|map)$/u.test(rel);
+                },
+              }
+            : {}),
+        });
         if (moduleName === "node-pty") {
           // 闭包注入绕过 files 裁剪，这里对 node-pty 补目标平台裁剪（跨平台 prebuild/pdb 不入包）。
           pruneStagedNodePtyPayload({
             stagedModuleRoot: targetModulePath,
             targetPlatformKey: targetPlatform.key,
           });
+        }
+      }
+
+      // 闭包注入同样绕过了 `files` 的 `!node_modules/@lydell/node-pty-*/**` 裁剪。
+      // node-pty 1.1.0 的 prebuild 实际取自 @lydell 平台包，但它们由 beforePack 的
+      // restoreTargetNodePtyPrebuild 拷进 node-pty/prebuilds/<target>/pty.node 后就不再需要；
+      // 平台源包如果留在 asar 里，会把 darwin/linux 的 pty.node 一起带进 Windows 包
+      // （assertPackagedNativeResourcePolicy 会直接 fail-closed 拦下这种越界）。
+      const stagedLydellDir = resolve(stagingNodeModulesDir, "@lydell");
+      if (existsSync(stagedLydellDir)) {
+        for (const entry of readdirSync(stagedLydellDir, { withFileTypes: true })) {
+          if (entry.name.startsWith("node-pty-")) {
+            rmSync(resolve(stagedLydellDir, entry.name), { force: true, recursive: true });
+          }
+        }
+        // 目录空了就整个删掉，避免 asar 里留下空的 @lydell 条目。
+        if (readdirSync(stagedLydellDir).length === 0) {
+          rmSync(stagedLydellDir, { force: true, recursive: true });
         }
       }
     });
