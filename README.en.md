@@ -1,7 +1,7 @@
 # RaspberryCode
 
 <div align="center">
-  <img src="public/logo/icons/1024x1024.png" alt="RaspberryCode" width="128" height="128" />
+  <img src="design/brand/readme-icon.png" alt="RaspberryCode" width="128" height="128" />
 </div>
 <p align="center">
   <a href="README.md">简体中文</a> | English

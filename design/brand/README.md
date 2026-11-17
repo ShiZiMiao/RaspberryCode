@@ -17,6 +17,7 @@
 design/brand/
 ├── brand-sheet.png              # 当前版（粉彩）品牌总览 2304×1536
 ├── brand-sheet-pastel.png       # 同上（源目录内的副本，保留以备对照）
+├── readme-icon.png              # 仓库 README 头部图标 512×512（裁边后撑满，勿直接当应用图标用）
 ├── icon-set/                    # 当前生效：粉彩版
 │   ├── apple-touch-icon.png     # 180×180
 │   ├── favicon.ico              # 内含 16/32/48/64 四档
