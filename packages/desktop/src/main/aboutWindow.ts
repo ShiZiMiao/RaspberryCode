@@ -96,11 +96,9 @@ export function createCustomAboutDialogHtml(input: CustomAboutDialogHtmlInput): 
         display: flex;
         align-items: center;
         justify-content: center;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        background: linear-gradient(180deg, #000000 0%, #151718 100%);
-        color: #ffffff;
-        box-shadow: 0 10px 13px -3px rgb(0 0 0 / 0.2), 0 4px 5px -3px rgb(0 0 0 / 0.2);
+        /* Modified for RaspberryCode: 去掉深色圆角底板，改透明悬挂——
+           粉彩标记在浅色模式（#f4f4f5）与深色模式（#171717）下都可辨，
+           与标题栏、启动动画的形态保持一致。 */
       }
 
       .app-logo {
@@ -174,9 +172,11 @@ export function createCustomAboutDialogHtml(input: CustomAboutDialogHtmlInput): 
         <div class="content">
           <div class="app-icon" aria-hidden="true">
             <!-- Modified for RaspberryCode: 品牌标记替换为 RaspberryCode 资产（原 RaspberryCode Z 形内联 SVG） -->
-            ${input.brandMarkDataUri
-              ? `<img class="app-logo" src="${input.brandMarkDataUri}" alt="" />`
-              : ""}
+            ${
+              input.brandMarkDataUri
+                ? `<img class="app-logo" src="${input.brandMarkDataUri}" alt="" />`
+                : ""
+            }
           </div>
           <h1 id="about-title" class="title">
             ${escapeHtml(input.applicationName)}<br />

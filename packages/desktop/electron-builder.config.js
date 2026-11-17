@@ -10,7 +10,10 @@ import { loadBuiltinProviderConfig } from "../../scripts/builtin-provider-config
 import { noticesFileName, stageElectronNotices } from "../../scripts/third-party-notices.mjs";
 import { resolveNativeSearchReleasePlan } from "../../scripts/native-search-tools-config.mjs";
 import { getBuildMetadata } from "./scripts/build-metadata.mjs";
-import { collectRuntimeModuleClosureEntries, collectBundleExternalPackageNames } from "./scripts/runtime-dependency-closure.mjs";
+import {
+  collectRuntimeModuleClosureEntries,
+  collectBundleExternalPackageNames,
+} from "./scripts/runtime-dependency-closure.mjs";
 import {
   resolvePackagedNodePtyPrebuildPath,
   restoreTargetNodePtyPrebuild,
@@ -864,9 +867,7 @@ export default {
           })
         : null;
     if (shouldSkipBuiltinRcedit) {
-      runTimedSync("afterPack:editWinExecutableMetadata", () =>
-        editWinExecutableMetadata(context),
-      );
+      runTimedSync("afterPack:editWinExecutableMetadata", () => editWinExecutableMetadata(context));
     }
     await runTimedAsync("afterPack:injectHoistedRuntimeModulesIntoAsar", () =>
       injectHoistedRuntimeModulesIntoAsar(context),
@@ -956,8 +957,9 @@ export default {
     },
     {
       // Modified for RaspberryCode: 品牌标记资产，About 弹窗按 resourcesPath 加载转 data URI。
-      from: "build/brand-mark-white.svg",
-      to: "brand-mark-white.svg",
+      // 用粉彩版：About 浅色模式背景 #f4f4f5，纯白标记会白底配白标看不见。
+      from: "build/brand-mark-color.svg",
+      to: "brand-mark-color.svg",
     },
     ...(targetPlatform.os === "linux"
       ? [

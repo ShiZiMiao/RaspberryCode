@@ -50,10 +50,10 @@ design/brand/
 
 | 本目录文件                          | 项目内对应位置                                                                                                                       | 当前状态                         |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
-| `svg/mark-mono-white.svg`           | `packages/ui/src/assets/brand-mark-white.svg`<br>`packages/desktop/build/brand-mark-white.svg`                                       | 两处**字节完全相同**             |
+| `svg/mark-mono-white.svg`           | `packages/ui/src/assets/brand-mark-white.svg`                                                                                        | 字节完全相同                     |
 | `svg/mark-mono-dark.svg`            | `packages/ui/src/assets/brand-mark-black.svg`                                                                                        | 字节完全相同（文件名保留 black） |
 | `svg/logo-horizontal-light.svg`     | `packages/ui/src/assets/brand-wordmark.svg`                                                                                          | 字节完全相同                     |
-| `svg/mark-color.svg`                | `packages/ui/src/assets/app-logo.svg`                                                                                                | 字节完全相同                     |
+| `svg/mark-color.svg`                | `packages/ui/src/assets/app-logo.svg`<br>`packages/desktop/build/brand-mark-color.svg`                                               | 两处**字节完全相同**             |
 | `png/mark-color-{256,512,1024}.png` | `packages/desktop/build/icon.png`<br>`icon_windows.png`<br>`icon_installer.png`<br>`icons/1024x1024.png`<br>`public/icon_512@2x.png` | 由它裁边后撑满正方形生成         |
 | `png/mark-color-1024.png`           | `packages/desktop/build/icons/{16..512}.png`、两个 `.ico`、两个 `.icns`                                                              | 同上（缺失档位从 1024 缩放）     |
 | `png/mark-mono-dark-1024.png`       | `packages/desktop/src/renderer/startup-logo.png`                                                                                     | 裁边后缩到 336×293（2x）         |
@@ -67,7 +67,7 @@ design/brand/
 | 启动动画（数据库启动态） | `packages/ui/src/assets/app-logo.svg`（`bare` 分支）                                 | **透明粉彩**，无背板，56px + 脉冲动画                 |
 | 引导页（onboarding）     | `packages/ui/src/assets/brand-mark-white.svg`（= `mark-mono-white.svg`）             | 白色单色 + 深色圆角底板（叠在渐变背景上，有意保留）   |
 | 空状态（对话草稿）       | `brand-mark-black.svg` / `brand-mark-white.svg`                                      | 按主题二选一（`dark:hidden` / `dark:block`）          |
-| About 弹窗               | `packages/desktop/build/brand-mark-white.svg`                                        | 白色单色，配深色弹窗底                                |
+| About 弹窗               | `packages/desktop/build/brand-mark-color.svg`（= `mark-color.svg`）                  | **透明粉彩**，30px，无底板                            |
 
 ## 打包图标的实际形态
 

@@ -7,8 +7,10 @@ import { RootStartupLoading, RaspberryCodeStartupLogoBadge } from "@/root/RootSt
 
 describe("RootStartupLoading", () => {
   it("静态品牌图标不渲染呼吸动画", () => {
-    const html = renderToStaticMarkup(createElement(RaspberryCodeStartupLogoBadge, { animated: false }));
-    // 品牌中立化后启动 Logo 是外置 SVG 文件（<img> 载体），动画语义由 animate-pulse 表达。
+    const html = renderToStaticMarkup(
+      createElement(RaspberryCodeStartupLogoBadge, { animated: false }),
+    );
+    // 默认分支（引导页）保留白色单色标记 + 深色底板。
     expect(html).toContain("brand-mark-white.svg");
     expect(html).not.toContain("animate-pulse");
   });
@@ -17,8 +19,19 @@ describe("RootStartupLoading", () => {
 
     expect(html).toContain('data-testid="root-startup-loading"');
     expect(html).toContain('aria-label="加载中..."');
-    expect(html).toContain("brand-mark-white.svg");
+    // 启动动画走 bare 分支：透明粉彩标记（app-logo.svg），不再套深色底板。
+    expect(html).toContain("app-logo.svg");
     expect(html).toContain("animate-pulse");
     expect(html).not.toContain(">加载中...<");
+  });
+  it("启动动画不渲染深色底板", () => {
+    const html = renderToStaticMarkup(createElement(RootStartupLoading, { label: "加载中..." }));
+    expect(html).not.toContain("linear-gradient(180deg,#000000");
+  });
+  it("引导页仍保留深色底板", () => {
+    const html = renderToStaticMarkup(
+      createElement(RaspberryCodeStartupLogoBadge, { animated: false }),
+    );
+    expect(html).toContain("linear-gradient(180deg,#000000");
   });
 });

@@ -1,8 +1,4 @@
-import type {
-  AboutPanelOptionsOptions,
-  BrowserWindow,
-  MessageBoxReturnValue,
-} from "electron";
+import type { AboutPanelOptionsOptions, BrowserWindow, MessageBoxReturnValue } from "electron";
 import { existsSync, readFileSync } from "node:fs";
 import { arch, hostname, platform, release, type, version as osVersion } from "node:os";
 import { join } from "node:path";
@@ -154,7 +150,9 @@ export function createAboutSnapshot(options: AboutSnapshotOptions = {}): AboutSn
   };
 
   return {
-    appVersion: normalizeValue(options.appVersion ?? buildMetadata?.appVersion ?? RASPBERRYCODE_VERSION),
+    appVersion: normalizeValue(
+      options.appVersion ?? buildMetadata?.appVersion ?? RASPBERRYCODE_VERSION,
+    ),
     buildCommitId: normalizeValue(buildMetadata?.buildCommitId ?? RASPBERRYCODE_COMMIT),
     buildTime: normalizeValue(buildMetadata?.buildTime ?? RASPBERRYCODE_BUILD_TIME),
     environment: normalizeValue(options.environment ?? RASPBERRYCODE_ENV),
@@ -237,10 +235,14 @@ function resolveAboutIconPath(isPackaged: boolean): string {
 
 // Modified for RaspberryCode: 品牌标记与 icon.png 同源解析（dev 走 build/，打包走 resources），
 // 供自绘 About 弹窗以 data URI 渲染（弹窗 CSP 只允许 data: 图片）。
+//
+// 用 mark-color（粉彩）而非 mark-mono-white：About 弹窗浅色模式背景是 #f4f4f5，
+// 纯白标记在这种浅底上几乎不可见（白底配白标）。粉彩标记在明暗两种背景下都可辨，
+// 与标题栏、启动动画的形态也一致。
 function resolveAboutBrandMarkPath(isPackaged: boolean): string {
   return isPackaged
-    ? join(process.resourcesPath, "brand-mark-white.svg")
-    : join(import.meta.dirname, "../../build/brand-mark-white.svg");
+    ? join(process.resourcesPath, "brand-mark-color.svg")
+    : join(import.meta.dirname, "../../build/brand-mark-color.svg");
 }
 
 export async function showAboutDialog(
