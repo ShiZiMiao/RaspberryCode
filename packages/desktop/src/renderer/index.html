@@ -45,30 +45,30 @@
         align-items: center;
         justify-content: center;
         border-radius: 24px;
-        background: linear-gradient(180deg, #000000 0%, #151718 100%);
-        box-shadow:
-          0 20px 25px -5px rgb(0 0 0 / 0.2),
-          0 8px 10px -6px rgb(0 0 0 / 0.2);
+        /* Modified for RaspberryCode: 启动页改用 mark-mono-dark（深紫单色标记），
+           原深色底板会让深紫图形几乎不可见，因此去掉底板与描边，只保留容器尺寸与动画。 */
         transform: scale(0.72);
         opacity: 0;
         animation: startup-logo-pop 0.72s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         transform-origin: center;
       }
 
-      .startup-logo-shell::before {
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        content: "";
-        /* 修复原因：启动 logo 壳是固定深色底，边框不能跟随浅色主题 token，否则首屏边框过重。 */
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: inherit;
+      .startup-logo {
+        /* 52.4px 而非 56px：新 PNG 已按内容裁边（无 viewBox 留白），
+           而原 SVG 的 viewBox 有 6.4% 留白，56px 容器里图形实际只占 52.4px。
+           取 52.4px 才能让「图形本身」的大小与改造前完全一致。 */
+        width: 52.4px;
+        height: auto;
       }
 
-      .startup-logo {
-        width: 56px;
-        height: auto;
-        color: #ffffff;
+      /* mark-mono-dark 主色是深紫 #2B2145，在深色系统主题下会与透明窗口透出的深色桌面撞色。
+         这里不换图，直接 invert 反白同一张标记，保证两种主题都可辨。
+         不加 hue-rotate：深紫反转后本身就是接近 #D4DEBA 的浅色，再转色相会偏黄，
+         保持中性浅色更贴近单色标记的用法。 */
+      @media (prefers-color-scheme: dark) {
+        .startup-logo {
+          filter: invert(1);
+        }
       }
 
       @keyframes startup-logo-pop {
@@ -109,8 +109,8 @@
     <div id="root"></div>
     <div id="loading" class="[app-region:drag]" role="status" aria-busy="true" aria-label="Loading...">
       <div class="startup-logo-shell">
-        <!-- Modified for RaspberryCode: 启动标记替换为品牌资产（原 RaspberryCode Z 形内联 SVG） -->
-        <img class="startup-logo" src="./startup-logo.svg" alt="" aria-hidden="true" />
+        <!-- Modified for RaspberryCode: 启动标记替换为品牌资产 mark-mono-dark-1024（深紫单色）；原为白色单色 SVG。 -->
+        <img class="startup-logo" src="./startup-logo.png" alt="" aria-hidden="true" />
       </div>
     </div>
     <script type="module">
