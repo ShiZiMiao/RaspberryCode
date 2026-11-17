@@ -58,13 +58,16 @@ design/brand/
 | `png/mark-color-1024.png`           | `packages/desktop/build/icons/{16..512}.png`、两个 `.ico`、两个 `.icns`                                                              | 同上（缺失档位从 1024 缩放）     |
 | `png/mark-mono-dark-1024.png`       | `packages/desktop/src/renderer/startup-logo.png`                                                                                     | 裁边后缩到 336×293（2x）         |
 
-### UI 内三处品牌标记的用法（2026-11-17 更新）
+### UI 内各处品牌标记的用法（2026-11-17 晚更新）
 
-| 位置                    | 文件                                                                                 | 形态                                                  |
-| ----------------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------- |
-| 标题栏左上角（Windows） | `packages/ui/src/assets/app-logo.svg`（= `mark-color.svg`）                          | **透明粉彩**，无背板                                  |
-| 启动页（HTML 启动壳）   | `packages/desktop/src/renderer/startup-logo.png`（= `mark-mono-dark-1024.png` 裁边） | **透明深紫单色**，深色主题下 CSS `invert(1)` 自动反白 |
-| 数据库启动 / 引导页     | `packages/ui/src/assets/brand-mark-white.svg`（= `mark-mono-white.svg`）             | 白色单色 + 深色圆角底板                               |
+| 位置                     | 文件                                                                                 | 形态                                                  |
+| ------------------------ | ------------------------------------------------------------------------------------ | ----------------------------------------------------- |
+| 标题栏左上角（Windows）  | `packages/ui/src/assets/app-logo.svg`（= `mark-color.svg`）                          | **透明粉彩**，无背板，13px                            |
+| HTML 启动壳              | `packages/desktop/src/renderer/startup-logo.png`（= `mark-mono-dark-1024.png` 裁边） | **透明深紫单色**，深色主题下 CSS `invert(1)` 自动反白 |
+| 启动动画（数据库启动态） | `packages/ui/src/assets/app-logo.svg`（`bare` 分支）                                 | **透明粉彩**，无背板，56px + 脉冲动画                 |
+| 引导页（onboarding）     | `packages/ui/src/assets/brand-mark-white.svg`（= `mark-mono-white.svg`）             | 白色单色 + 深色圆角底板（叠在渐变背景上，有意保留）   |
+| 空状态（对话草稿）       | `brand-mark-black.svg` / `brand-mark-white.svg`                                      | 按主题二选一（`dark:hidden` / `dark:block`）          |
+| About 弹窗               | `packages/desktop/build/brand-mark-white.svg`                                        | 白色单色，配深色弹窗底                                |
 
 ## 打包图标的实际形态
 
@@ -80,6 +83,16 @@ design/brand/
 **已知取舍**：透明无背板的粉彩图标在 Windows 浅色任务栏上对比度偏低，
 16px 时细节偏糊（32px 以上清晰）。这是选择「无背板」形态的固有代价；
 `app-icon-light` / `app-icon-dark` 带背板版本已归档但未启用，需要时可切换。
+
+### macOS DMG 安装背景 `build/dmg_background{,@2x}.png`
+
+画布 540×380 / 1080×760，浅灰底 `#F4F5F7`，四周是浅灰线稿装饰图标，
+中央是粉彩标记 + `RaspberryCode` 文字（Segoe UI Bold，深紫 `#2B2145`），
+下方箭头指向右侧 Applications 目录（对应 dmg 配置里 `{x:410,y:220}` 的 link 位置）。
+
+**这处曾长期遗漏**：原图中央印的是上游品牌 `ZCODE` 大字（2026-10-26 首次品牌替换时漏改），
+因为只发 Windows 包所以一直没暴露。**中立性审计扫不到它** —— 审计只按文本读字节，
+PNG 里画出来的字不在其覆盖范围。换品牌时务必单独核对这张图。
 
 ## 更换图标的操作步骤
 

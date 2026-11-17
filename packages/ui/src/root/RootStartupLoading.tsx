@@ -20,7 +20,7 @@ export function RootStartupLoading({ label, children, busy = true }: RootStartup
       aria-label={label}
       data-testid="root-startup-loading"
     >
-      <RaspberryCodeStartupLogoBadge />
+      <RaspberryCodeStartupLogoBadge bare />
       {children}
     </div>
   );
@@ -29,16 +29,19 @@ export function RootStartupLoading({ label, children, busy = true }: RootStartup
 /**
  * 初始化与引导共用品牌图标，保持底色、描边、圆角和标志比例一致。
  *
- * Modified for RaspberryCode: 标题栏改用透明粉彩标记（mark-color），不再套深色底板——
- * 粉彩配色在纯黑底板上几乎不可辨，且产品要求标题栏与系统图标风格统一为透明。
- * 启动页/引导页仍保留深色底板（那里需要与首屏固定深底形成视觉锚点），底板样式不变。
+ * Modified for RaspberryCode: 标题栏与启动动画改用透明标记，不再套深色底板——
+ * 粉彩配色在纯黑底板上几乎不可辨，且产品要求这两处与系统图标风格统一为透明。
+ * 引导页（onboarding）保留深色底板：那里叠在渐变背景上有光扫动画，深底是设计的一部分。
  */
 export function RaspberryCodeStartupLogoBadge({
   animated = true,
   size = "default",
+  bare = false,
 }: {
   animated?: boolean;
   size?: "default" | "titlebar";
+  /** 透明无背板：标题栏与启动动画使用；引导页保持默认（带深色底板）。 */
+  bare?: boolean;
 }) {
   // 标题栏：透明无背板，直接渲染粉彩标记。
   if (size === "titlebar") {
@@ -48,6 +51,18 @@ export function RaspberryCodeStartupLogoBadge({
         className="relative flex size-5 items-center justify-center"
       >
         <RaspberryCodeTitlebarLogo className="size-auto w-3.25" animated={animated} />
+      </span>
+    );
+  }
+
+  // 启动动画：同样是透明粉彩，但保留 96px 容器尺寸与脉冲动画。
+  if (bare) {
+    return (
+      <span
+        data-desktop-logo-badge="true"
+        className="relative flex size-24 items-center justify-center"
+      >
+        <RaspberryCodeTitlebarLogo className="h-auto w-14" animated={animated} />
       </span>
     );
   }

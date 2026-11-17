@@ -3,7 +3,7 @@ import { cn } from "@/components/lib/utils.js";
 import appLogoUrl from "@/assets/app-logo.svg";
 
 /**
- * 桌面端标题栏左上角同款应用 logo（圆角方块 + RaspberryCode 标记，自带底色，深浅主题通用）。
+ * 桌面端标题栏左上角同款应用 logo（RaspberryCode 粉彩标记，透明无背板，深浅主题通用）。
  * 装饰性图片：调用方负责在旁边给出可读的品牌文字，避免屏幕阅读器重复朗读。
  */
 export function RaspberryCodeAppLogo({ className }: RaspberryCodeAppLogoProps) {
