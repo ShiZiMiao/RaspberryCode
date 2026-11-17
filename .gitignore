@@ -81,3 +81,8 @@ __pycache__/
 
 # 本机测试截图（非产品资产）
 .shots/
+
+# 本地发版验证中间产物（安装包备份、错误 flavor 产物），不随仓库分发
+.old-dist/
+.bad-dist/
+.upgrade-test-*.exe
