@@ -7,10 +7,7 @@ import { z } from "zod";
 import { executionOutputPreviewSchema } from "../execution-output-preview.js";
 import { timestampSchema } from "./core.js";
 import { conversationInputSourceSchema } from "./input-intent.js";
-import {
-  backgroundResultOriginMetaSchema,
-  workflowLaunchMetaSchema,
-} from "./workflow-row-meta.js";
+import { backgroundResultOriginMetaSchema, workflowLaunchMetaSchema } from "./workflow-row-meta.js";
 import { attachmentRefSchema } from "./attachment-ref.js";
 
 // RowBase。rowId：session 内单调、永不复用、事件日志的确定性纯函数。
@@ -91,6 +88,20 @@ export const turnHeaderRowSchema = z.object({
   activeMs: z.number().optional(),
   // 当前 product turn 内主链路 ModelComplete 的 output usage 累计；optional 兼容旧快照。
   outputTokens: z.number().int().nonnegative().optional(),
+  // 本轮主链路 token 用量明细（与 outputTokens 同源、同一批 ModelComplete 累加）。
+  // 只用于轮尾展示「本用量」，不参与上下文水位或会话累计；optional 兼容旧快照与
+  // 无 provider 用量事实的轮次（缺失 = 不知道，不得补 0 冒充「用了一点」）。
+  usage: z
+    .object({
+      inputTokens: z.number().int().nonnegative(),
+      outputTokens: z.number().int().nonnegative(),
+      cacheReadTokens: z.number().int().nonnegative(),
+      cacheWriteTokens: z.number().int().nonnegative(),
+      // 本轮实际使用的提供方 / 模型身份；随首次 ModelComplete 落定，模型切换不改写历史轮。
+      provider: z.string().min(1).optional(),
+      model: z.string().min(1).optional(),
+    })
+    .optional(),
   // CLI 从运行时事件聚合的真实耗时；optional 兼容旧快照及普通 turn。
   modelDurationMs: z.number().nonnegative().optional(),
   toolDurationMs: z.number().nonnegative().optional(),

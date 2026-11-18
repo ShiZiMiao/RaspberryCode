@@ -908,6 +908,22 @@ interface TurnHeaderRow extends RowBase {
   endedAt?: Timestamp;
   activeMs?: number; // 权威工时：排除权限等待/用户输入等待/verifier 等待（P1-11 语义上收）
   outputTokens?: number; // 当前 product turn 的主链路 ModelComplete output usage 累计；optional 兼容旧快照
+  // 本轮用量明细。与 outputTokens 同源（同一批 main_turn ModelComplete），
+  // 但允许整体缺席：provider 未回报用量、旧 transcript、冷恢复只有零占位的轮次都没有事实，
+  // 缺席不得补 0 —— 0 是「用了一点」，缺席是「不知道」。
+  // 只用于轮尾展示，不参与上下文水位（那是 usage.contextWindow）或会话累计（usage.cumulative）。
+  usage?: {
+    inputTokens: number;
+    outputTokens: number;
+    cacheReadTokens: number;
+    cacheWriteTokens: number;
+    // 本轮首个有模型的请求的提供方/模型；一轮内切模型不改写已落定身份。
+    // 冷恢复路径由会话 config 兜底（合成事件是零用量、不写身份）。
+    // ⚠ provider 是 **providerId**（用户自建连接时为自动生成的 `new-provider`），
+    // 不是用户看到的显示名；显示名在 provider_config.providerName，只有渲染侧能折算。
+    provider?: string;
+    model?: string;
+  };
   // 仅 guide turn 需要显式下发；普通 turn 缺省并沿用 turn 级工时。
   // accepted guide 关闭上一段并以 guided user entity 开启下一段，但不切 product turn；
   // 同一次取出的多条 guide 只由第一条开段。UI 只按 triggerEntityId 切分，不自行推断。

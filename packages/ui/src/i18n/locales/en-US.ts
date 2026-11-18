@@ -4965,6 +4965,16 @@ const enUS: Record<string, string> = {
   "chat.message.disliked": "Disliked",
   "chat.message.fork": "Fork",
   "chat.message.fork.derivedFrom": "Forked from conversation",
+  "chat.message.regenerate": "Regenerate",
+  "chat.message.regenerate.confirm":
+    "Click to regenerate the conversation and its artifacts. This cannot be undone.",
+  "chat.message.usage.title": "Turn usage",
+  "chat.message.usage.summary": "Usage {tokens} tok",
+  "chat.message.usage.providerModel": "Provider / model",
+  "chat.message.usage.cacheHit": "Cache hit",
+  "chat.message.usage.uncachedInput": "Uncached input",
+  "chat.message.usage.cacheRead": "Cache read",
+  "chat.message.usage.output": "Output",
   "chat.hooks.label": "Hooks",
   "chat.hooks.source.user": "User",
   "chat.hooks.source.project": "Workspace",
@@ -6321,7 +6331,8 @@ const enUS: Record<string, string> = {
     "Claude Code does not recognize {command}. Check the command name, or switch to an Agent/skill that supports it and try again.",
   "raspberrycode.error.CLAUDE_UNKNOWN_COMMAND_WITH_ARGS":
     "Claude Code does not recognize {command} (args: {args}). Check the command name, or switch to an Agent/skill that supports it and try again.",
-  "raspberrycode.error.providerBusiness.1006": "Your login session has expired. Please sign in again.",
+  "raspberrycode.error.providerBusiness.1006":
+    "Your login session has expired. Please sign in again.",
   "raspberrycode.error.providerBusiness.1005":
     "Today's free plan quota has been used up. Switch to a Coding Plan subscription or another model, or wait for the quota to reset.",
   "raspberrycode.error.providerBusiness.3006":

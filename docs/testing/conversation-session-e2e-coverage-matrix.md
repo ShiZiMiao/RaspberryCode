@@ -6103,3 +6103,40 @@ CLI 定向回归已通过：V4 两种投递模式的并发 workspace 隔离、�
 桌面/手机交互沿用 HF01–02 和 SLR 综合候选。本轮实跑 covered：`desktop-e2e-20261102054133648-p182647-caa0869ba42a5410`，Linux Electron 与 390×844 触屏 Chromium，2 spec / 3 test 全通过，无 skipped 或自动重试。没有新增 UI 行为，既有 case 断言保持不变；不自动晋升 formal/CI。
 
 已就绪实例 identity 预检补全回归（2026-11-02）：CLI 协议验证仅替换/删除 identity 的 ensureReady/restart 均拒绝，原实例不关闭且 generation 不变；3 文件 183 项通过。正常 HF01–02 / SLR 交互 covered：`desktop-e2e-20261102060952670-p190384-9867bbf844a8e3cd`，Linux Electron 与触屏 Chromium，2 spec / 3 test 全通过，无自动重试。矛盾 identity 参数由协议回归覆盖，不宣称原生 SSH/WSL E2E。
+
+## 轮尾用量与重新生成（TUD，pending，2026-11-18）
+
+speaker：`packages/desktop/test/e2e/conversation-session/manual-review/pending/conversation-session-turn-usage-detail.test.ts`。
+
+覆盖两项产品行为，均为「用户能在动作行看到什么」：
+
+1. 轮尾用量 chip 只报 `inputTokens + outputTokens` 合计；缓存命中率与提供方/模型只出现在 hover 明细面板。
+2. 「重新生成」入口只出现在全时间线最后一条完成的 assistant 行，且 tooltip 明确告知会重新生成会话和产物。
+
+**关键口径**（本 case 真正拦的错误）：
+
+fixture 在 wire 上是 Anthropic 协议 `input_tokens=2071`（不含缓存）、`cache_read_input_tokens=565760`、`output_tokens=1459`。
+AI SDK 把 `usage.inputTokens` 归一成含缓存的合计 `total = noCache + cacheWrite + cacheRead = 567831`，
+`cacheReadTokens` 是其明细拆分。因此正确合计是 `567831 + 1459 = 569290`（显示「56.9万」）；
+若把缓存读取再叠加一次会得到 1135050（「113万」）——断言用 `not.toContain("113")` 专门拦这一种。
+命中率为 `565760 / 567831 = 99.6%`，只允许出现在面板。
+
+实现侧验证点：`TurnUsageChip` 的合计只取 `input + output`（缓存是 input 明细，不重复相加）；
+未缓存输入按 `inputTokens - cacheReadTokens` 归零取正；提供方经 `context.modelSelectionView` 折算成
+`providerName`，目录未命中时只显示模型名，不暴露自动生成的 providerId。
+
+本地 Windows Electron 回放通过：2 项用例全通过、无 skipped、无重试，
+运行 `desktop-e2e-20261118-130827-012`。实测 chip 文本为 `用量 56.9万 tok`，
+tooltip 实读 `点击将重新生成会话和产物，请谨慎操作`，retry 按钮 `aria-label=重新生成`、`disabled=false`、数量 1。
+`e2e:fixture:check` 通过且无警告。
+
+**未验证**：Windows 原生高分屏缩放、macOS/Linux、实体手机、真实模型供应商的 token 记账；
+该 case 使用合成 fixture 固定 token 数值，不宣称真实模型的缓存命中率或计费一致性。
+
+Docker `replay-isolated` 准入**本轮主动跳过**：按项目决定，WSL / Docker / SSH 等远程相关测试
+统一延后集中处理，不逐 case 单独跑容器。因此本 case 没有 Docker admission 证据，
+候选保持 pending，不自动转正 formal / Docker preset。
+尝试记录：镜像构建在 `pnpm install --frozen-lockfile` 层超过 30 分钟未推进（Windows Docker Desktop），
+已停止并清理构建缓存，未产生 `raspberrycode-desktop-e2e-demo` 镜像；该阻塞属环境而非用例问题。
+恢复 Docker 准入时的入口：
+`E2E_SPEC=./test/e2e/conversation-session/<promoted>.test.ts pnpm run test:e2e:container`。

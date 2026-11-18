@@ -1,6 +1,7 @@
 import { getLocalTtftObserver } from "@/v4/telemetry/local-ttft/contract.js";
 import { GenUiMessageResponse } from "@/gen-ui/index.js";
 import { ConversationUserInputBubble } from "@/v4/ConversationUserInputBubble.js";
+import { TurnUsageChip } from "@/v4/TurnUsageChip.js";
 import { expandTopicInputMessages } from "@/v4/topicInputMessages.js";
 import { ConnectedBotGroupDeliveryAction } from "@/v4/BotGroupDeliveryAction.js";
 /* oxlint-disable eslint(max-lines) -- v4 逐行 row 渲染分发集中收口（每种 row 一个 memo 叶子 + timelineMarker 分隔线），拆分会打散行类型对照。 */
@@ -26,12 +27,14 @@ import {
   GitBranchIcon,
   GoalIcon,
   PencilIcon,
+  RefreshCwIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
   TrendingUpDownIcon,
   XIcon,
 } from "lucide-react";
 import { parseAutomationRunId } from "@raspberrycode/shared";
+import type { ModelSelectionView } from "@raspberrycode/services";
 import {
   TID_V4_EDIT,
   TID_V4_EDIT_ATTACHMENT_REMOVE,
@@ -42,6 +45,7 @@ import {
   TID_V4_FEEDBACK_DISLIKE,
   TID_V4_FEEDBACK_LIKE,
   TID_V4_FORK,
+  TID_V4_RETRY,
   TID_V4_ROW,
   TID_V4_ROW_ATTACHMENTS,
   testId,
@@ -279,6 +283,8 @@ export interface ConversationRowViewProps {
   deferAssistantActions?: boolean;
   /** 轮尾段的复制内容 = 整轮全部 text 段合并（不是只复制最后一段）。 */
   assistantCopyText?: string;
+  /** 本轮用量明细（turnHeader.usage）；只由 TurnGroup 为轮尾段注入。 */
+  assistantTurnUsage?: TurnHeaderRow["usage"];
   /** Assistant Preview Cards 只由 TurnGroup 为轮尾 terminal assistant text 计算后下发。 */
   assistantPreviewCards?: AssistantPreviewCard[];
   /** 仅当前 renderer 观察到 running -> complete 时下发的一次性自动打开身份。 */
@@ -1480,7 +1486,11 @@ export const ConversationAssistantTextActions = memo(function ConversationAssist
   sessionId,
   turnId,
   sourceCommandIds = EMPTY_SOURCE_COMMAND_IDS,
+  turnUsage,
+  modelSelectionView,
+  canRetry = false,
   onFork,
+  onRetry,
   onFeedbackChange,
   className,
 }: {
@@ -1494,6 +1504,15 @@ export const ConversationAssistantTextActions = memo(function ConversationAssist
   sessionId?: string | null;
   turnId?: string;
   sourceCommandIds?: readonly string[];
+  /** 本轮用量明细（turnHeader.usage）；缺席即没有 provider 用量事实，chip 不渲染。 */
+  turnUsage?: TurnHeaderRow["usage"];
+  /** 会话提供方目录：把用量里的 providerId 换成用户看得懂的显示名。 */
+  modelSelectionView?: ModelSelectionView | null;
+  /**
+   * 本轮是否可以重新生成。由 CLI 投影的 `assistantText.actions.canRetry` 派生，
+   * UI 不自判：命令层与按钮必须共用同一份 latest-only 权威。
+   */
+  canRetry?: boolean;
   onFork?: (target: ConversationRowTarget) => void;
   onRetry?: (target: ConversationRowTarget) => void;
   onFeedbackChange?: AssistantFeedbackHandler;
@@ -1510,6 +1529,11 @@ export const ConversationAssistantTextActions = memo(function ConversationAssist
     id: localFeedback === "dislike" ? "chat.message.disliked" : "chat.message.dislike",
   });
   const forkLabel = intl.formatMessage({ id: "chat.message.fork" });
+  // 重新生成：走已有 retryTurn 命令（rewind 截断 + 重发原 user intent）。
+  // 文案刻意写明「会话和产物」——这个动作会丢弃本轮之后的对话与工作区改动，
+  // 和「再问一遍」不是一回事，措辞不能让用户以为只是刷新一下文本。
+  const regenerateLabel = intl.formatMessage({ id: "chat.message.regenerate" });
+  const regenerateTooltip = intl.formatMessage({ id: "chat.message.regenerate.confirm" });
   const timeLabel = formatMessageTimeLabel(createdAt, locale, intl);
   const resolveTooltip = (label: string): string | undefined =>
     compactForOverlay ? undefined : label;
@@ -1570,6 +1594,22 @@ export const ConversationAssistantTextActions = memo(function ConversationAssist
       });
     }
   }, [entityId, onFork, rowId]);
+  // 重新生成入口只在 canRetry 为真时渲染：能力由 CLI 投影裁决
+  // （latestAssistantRetryOnly —— 全时间线最新一条、同轮有 realUser canonical 输入），
+  // UI 不得自己扫 rows 判断，否则会给出必被命令层拒绝的按钮。
+  const canRegenerate = entityId !== undefined && onRetry !== undefined && canRetry === true;
+  const handleRegenerate = useCallback(() => {
+    if (entityId) {
+      runUserAction({
+        // 与 fork 同属 conversation.history.branch 埋点域，action=retry 是既有词表；
+        // 重新生成在协议层就是 retryTurn，不新造 feature 名以免与命令口径分叉。
+        input: { featureId: "conversation.history.branch", action: "retry", trigger: "button" },
+        operation: () => onRetry?.({ rowId, entityId }),
+        completed: { resultSource: "optimistic_projection" },
+        failureStage: "retry",
+      });
+    }
+  }, [entityId, onRetry, rowId]);
   return (
     <MessageActions className={cn(className, "has-[[data-bot-group-delivery]]:opacity-100")}>
       <CopyRowAction
@@ -1578,6 +1618,17 @@ export const ConversationAssistantTextActions = memo(function ConversationAssist
         label={copyLabel}
         tooltip={resolveTooltip(copyLabel)}
       />
+      {canRegenerate ? (
+        <MessageAction
+          aria-label={regenerateLabel}
+          label={regenerateLabel}
+          tooltip={resolveTooltip(regenerateTooltip)}
+          data-testid={testId(TID_V4_RETRY, String(rowId))}
+          onClick={handleRegenerate}
+        >
+          <RefreshCwIcon className="size-3.5" />
+        </MessageAction>
+      ) : null}
       {entityId && onFeedbackChange ? (
         <>
           <MessageAction
@@ -1632,6 +1683,13 @@ export const ConversationAssistantTextActions = memo(function ConversationAssist
       {turnId && hookInvocations ? (
         <ConversationHookDetailsAction rows={hookInvocations} turnId={turnId} />
       ) : null}
+      {/* 本轮用量：紧贴时间之前，与截图一致（`用量 569K tok · 13:12`）。
+          没有 provider 用量事实的轮次整块缺席，不落一个 0 tok 的假读数。
+          提供方目录必须传下去：`usage.provider` 是 providerId（用户自建连接时为
+          自动生成的 `new-provider`），显示名 providerName 只有渲染侧拿得到。 */}
+      {turnUsage ? (
+        <TurnUsageChip usage={turnUsage} modelSelectionView={modelSelectionView} />
+      ) : null}
       {/* Bugfix: 旧 conversation surface 删除后，V4 动作栏漏掉了消息创建时间；
           时间是 row.createdAt 的只读派生展示，不新增 renderer 状态。 */}
       {timeLabel ? (
@@ -1653,6 +1711,7 @@ const AssistantTextRowView = memo(function AssistantTextRowView({
   hideActions,
   deferActions,
   copyText,
+  turnUsage,
   previewCards,
   previewCardsAutoOpenKey,
   codeCommentCards,
@@ -1666,6 +1725,8 @@ const AssistantTextRowView = memo(function AssistantTextRowView({
   hideActions?: boolean;
   deferActions?: boolean;
   copyText?: string;
+  /** 本轮用量（turnHeader.usage），由 TurnGroup 从所属轮 header 注入。 */
+  turnUsage?: TurnHeaderRow["usage"];
   previewCards?: AssistantPreviewCard[];
   previewCardsAutoOpenKey?: string;
   codeCommentCards?: AssistantCodeCommentCard[];
@@ -1800,6 +1861,9 @@ const AssistantTextRowView = memo(function AssistantTextRowView({
           compactForOverlay={context.compactForOverlay}
           feedback={readAssistantFeedback(row)}
           sessionId={context.sessionId}
+          turnUsage={turnUsage}
+          modelSelectionView={context.modelSelectionView}
+          canRetry={row.actions?.canRetry === true}
           onFork={onFork}
           onRetry={onRetry}
           onFeedbackChange={onFeedbackChange}
@@ -2375,6 +2439,7 @@ function ConversationRowViewImpl({
   hideAssistantActions,
   deferAssistantActions,
   assistantCopyText,
+  assistantTurnUsage,
   assistantPreviewCards,
   assistantPreviewCardsAutoOpenKey,
   assistantCodeCommentCards,
@@ -2404,6 +2469,7 @@ function ConversationRowViewImpl({
           hideActions={hideAssistantActions}
           deferActions={deferAssistantActions}
           copyText={assistantCopyText}
+          turnUsage={assistantTurnUsage}
           previewCards={assistantPreviewCards}
           previewCardsAutoOpenKey={assistantPreviewCardsAutoOpenKey}
           codeCommentCards={assistantCodeCommentCards}

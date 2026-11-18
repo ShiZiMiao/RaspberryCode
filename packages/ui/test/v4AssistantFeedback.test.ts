@@ -35,6 +35,8 @@ const platform = {
 
 function renderActions(params: {
   feedback?: "like" | "dislike" | null;
+  canRetry?: boolean;
+  onRetry?: React.ComponentProps<typeof ConversationAssistantTextActions>["onRetry"];
   onFeedbackChange?: React.ComponentProps<
     typeof ConversationAssistantTextActions
   >["onFeedbackChange"];
@@ -53,6 +55,8 @@ function renderActions(params: {
           createdAt: 1,
           sessionId: "session-1",
           feedback: params.feedback,
+          canRetry: params.canRetry,
+          onRetry: params.onRetry,
           onFeedbackChange: params.onFeedbackChange,
         }),
       ),
@@ -61,9 +65,7 @@ function renderActions(params: {
 }
 
 function feedbackAction(testId: string): Record<string, unknown> {
-  const action = actionCapture.props.find(
-    (props) => props["data-testid"] === testId,
-  );
+  const action = actionCapture.props.find((props) => props["data-testid"] === testId);
   if (!action) throw new Error(`missing feedback action ${testId}`);
   return action;
 }
@@ -150,5 +152,31 @@ describe("V4 assistant feedback", () => {
       ),
     ).toBe(false);
     expect(reportAppTelemetryEvent).not.toHaveBeenCalled();
+  });
+});
+
+describe("V4 assistant regenerate", () => {
+  beforeEach(() => {
+    actionCapture.props = [];
+    reportAppTelemetryEvent.mockClear();
+  });
+
+  it("canRetry 为真时渲染重新生成入口，点击提交 retryTurn target", () => {
+    const onRetry = vi.fn();
+    renderActions({ canRetry: true, onRetry });
+
+    (feedbackAction("v4-retry-9").onClick as () => void)();
+
+    expect(onRetry).toHaveBeenCalledWith({ rowId: 9, entityId: "assistant-entity-9" });
+  });
+
+  it("canRetry 缺省（历史轮 / synthetic 轮 / 运行中）不渲染按钮，避免提交必被拒绝的命令", () => {
+    renderActions({ onRetry: vi.fn() });
+    expect(actionCapture.props.some((props) => props["data-testid"] === "v4-retry-9")).toBe(false);
+  });
+
+  it("有 canRetry 但上层未注入 handler（只读会话）时不渲染按钮", () => {
+    renderActions({ canRetry: true });
+    expect(actionCapture.props.some((props) => props["data-testid"] === "v4-retry-9")).toBe(false);
   });
 });

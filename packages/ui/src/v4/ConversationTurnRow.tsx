@@ -3,6 +3,7 @@ import type {
   CommandAck,
   ConversationRow,
   ConversationRowTarget,
+  TurnHeaderRow,
 } from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import type { AssistantPreviewCard } from "@/lib/assistantPreviewCards.js";
 import type { AssistantCodeCommentCard } from "@/lib/assistantCodeComment.js";
@@ -32,6 +33,8 @@ interface ConversationTurnRowProps {
   hideAssistantActions?: boolean;
   deferAssistantActions?: boolean;
   assistantCopyText?: string;
+  /** 本轮用量明细（turnHeader.usage），由 TurnGroup 从所属轮 header 注入。 */
+  assistantTurnUsage?: TurnHeaderRow["usage"];
   assistantPreviewCards?: AssistantPreviewCard[];
   assistantPreviewCardsAutoOpenKey?: string;
   assistantCodeCommentCards?: AssistantCodeCommentCard[];
@@ -51,6 +54,7 @@ export function ConversationTurnRow({
   hideAssistantActions,
   deferAssistantActions,
   assistantCopyText,
+  assistantTurnUsage,
   assistantPreviewCards,
   assistantPreviewCardsAutoOpenKey,
   assistantCodeCommentCards,
@@ -70,6 +74,7 @@ export function ConversationTurnRow({
       hideAssistantActions={hideAssistantActions}
       deferAssistantActions={deferAssistantActions}
       assistantCopyText={assistantCopyText}
+      assistantTurnUsage={assistantTurnUsage}
       assistantPreviewCards={assistantPreviewCards}
       assistantPreviewCardsAutoOpenKey={assistantPreviewCardsAutoOpenKey}
       assistantCodeCommentCards={assistantCodeCommentCards}

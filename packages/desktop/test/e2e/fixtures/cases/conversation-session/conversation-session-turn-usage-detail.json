@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "caseName": "conversation-session-turn-usage-detail",
+  "spec": "./test/e2e/conversation-session/conversation-session-turn-usage-detail.test.ts",
+  "providerFixtures": [
+    "./test/e2e/fixtures/upstream/conversation-session/conversation-session-turn-usage-detail.json"
+  ],
+  "fileFixtures": [],
+  "requests": [
+    {
+      "id": "turn-usage-detail-title-sidecar",
+      "kind": "common",
+      "source": "synthetic",
+      "timingPolicy": "fast-text",
+      "syntheticReason": "标题生成不属于本 case 的 provider 合同，固定返回即可；显式登记以免依赖 legacy fixture 或触发后台网络重试。"
+    },
+    {
+      "id": "turn-usage-detail-main",
+      "kind": "main",
+      "source": "synthetic",
+      "timingPolicy": "fast-text",
+      "syntheticReason": "本 case 断言的是用量展示口径的纯折算（合计只取 input+output、命中率只在面板），不依赖真实模型的 token 消耗；固定 input=2071 / output=1459 / cache_read=565760 才能精确核对 3530 与 99.6% 两个数值。"
+    }
+  ]
+}

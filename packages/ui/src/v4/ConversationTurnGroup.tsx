@@ -22,6 +22,7 @@ import type {
   AttachmentRef,
   CommandAck,
   ConversationRowTarget,
+  TurnHeaderRow,
 } from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import { ChatLoading } from "@/components/ai-elements/chat-loading.js";
 import { ChatApiRetryStatus } from "@/chat-input-toolbar/display.js";
@@ -575,6 +576,7 @@ function ConversationWorkSegmentFlow({
   assistantPreviewCardsAutoOpenKey,
   assistantCodeCommentCards,
   assistantCodeCommentProjectionEnabled,
+  assistantTurnUsage,
   canForkLatestAssistant,
   canRetryLatestAssistant,
 }: {
@@ -591,6 +593,7 @@ function ConversationWorkSegmentFlow({
   assistantPreviewCardsAutoOpenKey?: string;
   assistantCodeCommentCards: AssistantCodeCommentCard[];
   assistantCodeCommentProjectionEnabled: boolean;
+  assistantTurnUsage?: TurnHeaderRow["usage"];
   canForkLatestAssistant: boolean;
   canRetryLatestAssistant: boolean;
 }) {
@@ -678,6 +681,7 @@ function ConversationWorkSegmentFlow({
               hideAssistantActions={!item.latest}
               deferAssistantActions={item.latest}
               assistantCopyText={item.latest ? assistantCopyText : undefined}
+              assistantTurnUsage={item.latest ? assistantTurnUsage : undefined}
               assistantPreviewCards={item.latest ? assistantPreviewCards : undefined}
               assistantPreviewCardsAutoOpenKey={
                 item.latest ? assistantPreviewCardsAutoOpenKey : undefined
@@ -711,11 +715,7 @@ function ConversationWorkSegmentFlow({
         );
       })}
       {shouldShowHistoryStatus && firstAssistantFlowItemIndex < 0 ? (
-        <AssistantHistoryStatus
-          segment={segment}
-          sourceCommandIds={sourceCommandIds}
-          open={open}
-        />
+        <AssistantHistoryStatus segment={segment} sourceCommandIds={sourceCommandIds} open={open} />
       ) : null}
     </Collapsible>
   );
@@ -852,6 +852,7 @@ function ConversationTurnFlow({
           assistantPreviewCardsAutoOpenKey={assistantPreviewCardsAutoOpenKey}
           assistantCodeCommentCards={assistantCodeCommentCards}
           assistantCodeCommentProjectionEnabled={assistantCodeCommentProjectionEnabled}
+          assistantTurnUsage={unit.header?.usage}
           canForkLatestAssistant={canForkLatestAssistant}
           canRetryLatestAssistant={canRetryLatestAssistant}
         />
@@ -1083,6 +1084,7 @@ function ConversationBackgroundResultWork({
           onRetry={latestAssistantTextRow.actions?.canRetry === true ? onRetry : undefined}
           deferAssistantActions
           assistantCopyText={assistantCopyText}
+          assistantTurnUsage={unit.header?.usage}
           assistantPreviewCards={assistantPreviewCards}
           assistantPreviewCardsAutoOpenKey={assistantPreviewCardsAutoOpenKey}
           assistantCodeCommentCards={assistantCodeCommentCards}
@@ -1379,6 +1381,9 @@ function ConversationTurnGroupImpl({
               compactForOverlay={context.compactForOverlay}
               feedback={readAssistantFeedback(latestAssistantTextRow)}
               sessionId={context.sessionId}
+              turnUsage={unit.header?.usage}
+              modelSelectionView={context.modelSelectionView}
+              canRetry={latestAssistantTextRow.actions?.canRetry === true}
               onFork={canForkLatestAssistant ? onFork : undefined}
               onRetry={canRetryLatestAssistant ? onRetry : undefined}
               onFeedbackChange={onFeedbackChange}

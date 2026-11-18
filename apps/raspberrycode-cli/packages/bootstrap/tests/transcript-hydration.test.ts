@@ -3690,3 +3690,91 @@ it("cold canonical input retains Gen UI context for edit/retry while rows expose
   });
   expect(JSON.stringify(projection.getSnapshot().rows)).not.toContain("FROZEN_CONTEXT");
 });
+
+it("cold hydration 从 assistant info.tokens 还原 turnHeader.usage（live/cold 同形）", () => {
+  const user = userMessage("usage-u1", "查磁盘", 1000);
+  const answer = assistantMessage("usage-a1", "usage-u1", "磁盘充足", 1001);
+  answer.info.tokens = {
+    input: 2_071,
+    output: 1_459,
+    reasoning: 0,
+    cache: { read: 565_760, write: 0 },
+  };
+  const { projection } = reduce([user, answer]);
+  const header = projection
+    .getSnapshot()
+    .rows.window.find((row) => row.kind === "turnHeader");
+  expect(header).toMatchObject({
+    state: "completedSuccess",
+    usage: {
+      inputTokens: 2_071,
+      outputTokens: 1_459,
+      cacheReadTokens: 565_760,
+      cacheWriteTokens: 0,
+    },
+  });
+});
+
+it("cold hydration 的零 token assistant 不落 0 明细", () => {
+  const { projection } = reduce([
+    userMessage("zero-u1", "hi", 1000),
+    assistantMessage("zero-a1", "zero-u1", "hello", 1001),
+  ]);
+  const header = projection
+    .getSnapshot()
+    .rows.window.find((row) => row.kind === "turnHeader");
+  expect(header).not.toHaveProperty("usage");
+});
+
+it("cold hydration 忽略 compact summary 消息的 token（不属于用户这一轮）", () => {
+  const user = userMessage("summary-u1", "hi", 1000);
+  const answer = assistantMessage("summary-a1", "summary-u1", "hello", 1001);
+  answer.info.tokens = {
+    input: 100,
+    output: 20,
+    reasoning: 0,
+    cache: { read: 0, write: 0 },
+  };
+  const summary = assistantMessage("summary-a2", "summary-u1", "summary text", 1002);
+  summary.info.summary = true;
+  summary.info.tokens = {
+    input: 9_999,
+    output: 999,
+    reasoning: 0,
+    cache: { read: 0, write: 0 },
+  };
+  const { projection } = reduce([user, answer, summary]);
+  const headers = projection.getSnapshot().rows.window.filter((row) => row.kind === "turnHeader");
+  expect(headers[0]).toMatchObject({
+    usage: { inputTokens: 100, outputTokens: 20 },
+  });
+});
+
+it("cold hydration 为用量明细补上 provider/model（来自消息自身的模型身份）", () => {
+  // 回归：合成 ModelComplete 全是零用量，accumulateTurnUsage 判它「无事实」返回
+  // undefined，settle 时 previous 无身份；若只用 previous，面板永远缺「提供方/模型」。
+  const user = userMessage("prov-u1", "查磁盘", 1000);
+  // userMessage 自带的 modelSelection 会先写进 config，这里改成目标身份，
+  // 让 config 成为唯一身份来源（与真实冷恢复一致：身份来自 ModelSelected 事件）。
+  user.info.modelSelection = { providerId: "sjfd" as never, modelId: "DeepSeek-V4.1-Flash-1017" as never };
+  const answer = assistantMessage("prov-a1", "prov-u1", "磁盘充足", 1001);
+  answer.info.tokens = {
+    input: 2_071,
+    output: 1_459,
+    reasoning: 0,
+    cache: { read: 565_760, write: 0 },
+  };
+  const { projection } = reduce([user, answer]);
+  const header = projection
+    .getSnapshot()
+    .rows.window.find((row) => row.kind === "turnHeader");
+  expect(header).toMatchObject({
+    usage: {
+      inputTokens: 2_071,
+      outputTokens: 1_459,
+      cacheReadTokens: 565_760,
+      provider: "sjfd",
+      model: "DeepSeek-V4.1-Flash-1017",
+    },
+  });
+});

@@ -634,6 +634,10 @@ export const TID_V4_FEEDBACK_DISLIKE = "v4-feedback-dislike";
 export const TID_V4_HOOK_DETAILS_TRIGGER = "v4-hook-details-trigger";
 /** v4 turn Hook 详情 Popover（动态后缀为 product turnId） */
 export const TID_V4_HOOK_DETAILS_CONTENT = "v4-hook-details-content";
+/** v4 轮尾「本轮用量」chip（无后缀：每轮最多一个，按 pane 内顺序定位） */
+export const TID_V4_TURN_USAGE_CHIP = "v4-turn-usage-chip";
+/** v4 轮尾用量明细面板（HoverCard 内容，Portal 渲染在 body 下） */
+export const TID_V4_TURN_USAGE_PANEL = "v4-turn-usage-panel";
 /** v4 user 行 edit 按钮（动态后缀为 rowId） */
 export const TID_V4_EDIT = "v4-edit";
 /** v4 user query 编辑输入框（动态后缀为 rowId） */

@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "caseName": "conversation-session-turn-usage-detail",
+  "spec": "./test/e2e/conversation-session/conversation-session-turn-usage-detail.test.ts",
+  "fixtures": [
+    {
+      "id": "turn-usage-detail-title-sidecar",
+      "description": "标题旁路固定响应：本 case 不断言标题，仅显式登记以免依赖 legacy fixture 或触发后台网络重试。",
+      "metadata": {
+        "kind": "common",
+        "timingPolicy": "fast-text",
+        "source": "synthetic",
+        "syntheticReason": "标题生成不属于本 case 的 provider 合同，固定返回即可。"
+      },
+      "match": {
+        "method": "POST",
+        "pathIncludes": "/messages",
+        "bodyIncludes": ["Generate a concise title", "E2E_TURN_USAGE_DETAIL"]
+      },
+      "response": {
+        "statusCode": 200,
+        "statusMessage": "OK",
+        "headers": {
+          "cache-control": "no-cache",
+          "content-type": "text/event-stream; charset=utf-8"
+        },
+        "body": "event: message_start\ndata: {\"type\": \"message_start\", \"message\": {\"id\": \"turn-usage-detail-title\", \"type\": \"message\", \"role\": \"assistant\", \"model\": \"deepseek-v4-flash\", \"content\": [], \"stop_reason\": null, \"stop_sequence\": null, \"usage\": {\"input_tokens\": 10, \"cache_creation_input_tokens\": 0, \"cache_read_input_tokens\": 0, \"output_tokens\": 0, \"service_tier\": \"standard\"}}}\n\nevent: content_block_start\ndata: {\"type\": \"content_block_start\", \"index\": 0, \"content_block\": {\"type\": \"text\", \"text\": \"\"}}\n\nevent: content_block_delta\ndata: {\"type\": \"content_block_delta\", \"index\": 0, \"delta\": {\"type\": \"text_delta\", \"text\": \"{\\\"title\\\":\\\"用量明细\\\"}\"}}\n\nevent: content_block_stop\ndata: {\"type\": \"content_block_stop\", \"index\": 0}\n\nevent: message_delta\ndata: {\"type\": \"message_delta\", \"delta\": {\"stop_reason\": \"end_turn\", \"stop_sequence\": null}, \"usage\": {\"input_tokens\": 10, \"output_tokens\": 5, \"cache_read_input_tokens\": 0, \"service_tier\": \"standard\"}}\n\nevent: message_stop\ndata: {\"type\": \"message_stop\"}\n\n"
+      }
+    },
+    {
+      "id": "turn-usage-detail-main",
+      "description": "主链路响应：wire 上是 Anthropic 协议 input_tokens=2071（不含缓存）/ cache_read_input_tokens=565760 / output_tokens=1459。AI SDK 会把 inputTokens 归一成 total = noCache + cacheWrite + cacheRead = 568031，cacheReadTokens 保留为明细。因此桌面端 usage.inputTokens=568031、cacheReadTokens=565760、outputTokens=1 或 1459（取决于 message_delta 合并时机）。这组数值让 chip 必须显示「用量 56.8万/56.9万 tok」——正好等于 input 合计 + output，反证合计口径没有把缓存读取再叠一次（那会得出 113 万）。",
+      "metadata": {
+        "kind": "main",
+        "timingPolicy": "fast-text",
+        "source": "synthetic",
+        "syntheticReason": "本 case 断言的是用量展示口径的纯折算，不依赖真实模型的 token 消耗；固定 wire 数值才能精确核对合计与缓存命中率，并区分「缓存是 input 明细」与「缓存要额外相加」两种误读。"
+      },
+      "match": {
+        "method": "POST",
+        "pathIncludes": "/messages",
+        "lastUserMessageIncludes": ["E2E_TURN_USAGE_DETAIL"],
+        "bodyIncludes": ["E2E_TURN_USAGE_DETAIL"],
+        "bodyExcludes": ["Generate a concise title", "CRITICAL: Respond with TEXT ONLY"]
+      },
+      "response": {
+        "statusCode": 200,
+        "statusMessage": "OK",
+        "headers": {
+          "cache-control": "no-cache",
+          "content-type": "text/event-stream; charset=utf-8"
+        },
+        "body": "event: message_start\ndata: {\"type\": \"message_start\", \"message\": {\"id\": \"turn-usage-detail-main\", \"type\": \"message\", \"role\": \"assistant\", \"model\": \"deepseek-v4-flash\", \"content\": [], \"stop_reason\": null, \"stop_sequence\": null, \"usage\": {\"input_tokens\": 2071, \"cache_creation_input_tokens\": 0, \"cache_read_input_tokens\": 565760, \"output_tokens\": 0, \"service_tier\": \"standard\"}}}\n\nevent: content_block_start\ndata: {\"type\": \"content_block_start\", \"index\": 0, \"content_block\": {\"type\": \"text\", \"text\": \"\"}}\n\nevent: content_block_delta\ndata: {\"type\": \"content_block_delta\", \"index\": 0, \"delta\": {\"type\": \"text_delta\", \"text\": \"TURN_USAGE_DETAIL_OK\"}}\n\nevent: content_block_stop\ndata: {\"type\": \"content_block_stop\", \"index\": 0}\n\nevent: message_delta\ndata: {\"type\": \"message_delta\", \"delta\": {\"stop_reason\": \"end_turn\", \"stop_sequence\": null}, \"usage\": {\"input_tokens\": 2071, \"output_tokens\": 1459, \"cache_read_input_tokens\": 565760, \"service_tier\": \"standard\"}}\n\nevent: message_stop\ndata: {\"type\": \"message_stop\"}\n\n"
+      }
+    }
+  ]
+}

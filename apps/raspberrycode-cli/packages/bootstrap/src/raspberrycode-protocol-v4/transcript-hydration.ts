@@ -17,6 +17,7 @@ import type {
   MessagePart,
   MessageWithParts,
   ModelSelection,
+  TokenUsageInfo,
   TurnFileChangeSummary,
   TurnInputIntentMetadata,
 } from "@raspberrycode/contracts";
@@ -1418,6 +1419,22 @@ interface TurnOutputCollection {
   toolCallCount: number;
   historyRoundCount: number;
   turnEndedAtMs: number;
+  /** 本轮由 assistant message 的 info.tokens 还原的用量；无持久事实时缺席。 */
+  usage?: HydratedTurnUsage;
+}
+
+/**
+ * 冷恢复的轮级用量事实。
+ *
+ * 权威来源是 assistant message 的 `info.tokens`（turn-step-finish 逐请求写入 provider
+ * usage），不是合成事件里的零占位——合成 ModelComplete 只为恢复 output-token Continue
+ * 资格，它的 usage 恒为 0，不能当展示事实。
+ */
+export interface HydratedTurnUsage {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
 }
 
 /** 收集一轮的 assistant 输出（直到下一个轮边界）；普通轮与 preface 轮共用。 */
@@ -1443,6 +1460,7 @@ function collectTurnOutput(options: {
   let toolCallCount = 0;
   let historyRoundCount = 0;
   let turnEndedAtMs = options.turnStartedAtMs;
+  let turnUsage: HydratedTurnUsage | undefined;
   while (index < messages.length && !isTurnBoundaryStarter(messages[index]!)) {
     const message = messages[index]!;
     if (isProviderContextOnlyAssistant(message)) {
@@ -1561,6 +1579,11 @@ function collectTurnOutput(options: {
     );
     resultType = normalizeTurnResult(resultType, synthesized.resultType);
     toolCallCount += synthesized.toolCallCount;
+    // 轮级用量只能来自持久 message.info.tokens：summary（compact 摘要）不是真实
+    // 模型回复，它的 token 属于压缩请求本身，不能算进用户这一轮。
+    if (message.info.summary !== true) {
+      turnUsage = addHydratedUsage(turnUsage, message.info.tokens);
+    }
     if (
       message.info.role === "assistant" &&
       message.info.finish?.trim().toLowerCase() === "length" &&
@@ -1608,6 +1631,48 @@ function collectTurnOutput(options: {
     toolCallCount,
     historyRoundCount,
     turnEndedAtMs,
+    ...(turnUsage ? { usage: turnUsage } : {}),
+  };
+}
+
+/** 累加一条 assistant message 的持久 token 事实；全 0 视为无事实（旧 transcript / 合成消息）。 */
+function addHydratedUsage(
+  previous: HydratedTurnUsage | undefined,
+  tokens: TokenUsageInfo | undefined,
+): HydratedTurnUsage | undefined {
+  if (!tokens) return previous;
+  const inputTokens = (previous?.inputTokens ?? 0) + nonNegativeTokens(tokens.input);
+  const outputTokens = (previous?.outputTokens ?? 0) + nonNegativeTokens(tokens.output);
+  const cacheReadTokens = (previous?.cacheReadTokens ?? 0) + nonNegativeTokens(tokens.cache.read);
+  const cacheWriteTokens =
+    (previous?.cacheWriteTokens ?? 0) + nonNegativeTokens(tokens.cache.write);
+  if (
+    previous === undefined &&
+    inputTokens + outputTokens + cacheReadTokens + cacheWriteTokens === 0
+  ) {
+    return undefined;
+  }
+  return { inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens };
+}
+
+function nonNegativeTokens(value: number | undefined): number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
+}
+
+/** HydratedTurnUsage → TurnCompletePayload.usage（ModelUsageSummary 形状；只填真实已知字段）。 */
+function hydratedUsageSummary(usage: HydratedTurnUsage) {
+  return {
+    source: "provider" as const,
+    // 冷恢复没有逐请求行数事实；0 表示未知，不参与任何展示。
+    modelRequestCount: 0,
+    inputTokens: usage.inputTokens,
+    outputTokens: usage.outputTokens,
+    totalTokens: usage.inputTokens + usage.outputTokens,
+    cacheReadTokens: usage.cacheReadTokens,
+    cacheWriteTokens: usage.cacheWriteTokens,
+    reasoningTokens: 0,
+    webSearchRequests: 0,
+    webFetchRequests: 0,
   };
 }
 
@@ -1725,6 +1790,7 @@ export function synthesizeEventsFromMessages(
     historyRoundCount: number;
     turnStartedAtMs: number;
     turnEndedAtMs: number;
+    usage?: HydratedTurnUsage;
   }): void => {
     if (input.failure) {
       // provider 首字前失败只持久化在 assistant.info.error，旧 cold 路径
@@ -1763,6 +1829,10 @@ export function synthesizeEventsFromMessages(
       {
         response: "",
         tokenCount: 0,
+        // 轮级用量汇总：投影用它收口 turnHeader.usage（与 live 的
+        // TurnComplete.usage 同一字段、同一归约路径）。缺持久 token 事实时整字段缺席，
+        // 让「不知道」保持缺席，而不是下发全 0 冒充「用了一点」。
+        ...(input.usage ? { usage: hydratedUsageSummary(input.usage) } : {}),
         toolCallCount: input.toolCallCount,
         historyRoundCount: input.historyRoundCount,
         // 冷恢复是从 message transcript 反向合成事件，不能像 live
@@ -1860,6 +1930,7 @@ export function synthesizeEventsFromMessages(
         historyRoundCount: collected.historyRoundCount,
         turnStartedAtMs,
         turnEndedAtMs: collected.turnEndedAtMs,
+        ...(collected.usage ? { usage: collected.usage } : {}),
       });
       continue;
     }
@@ -1919,6 +1990,7 @@ export function synthesizeEventsFromMessages(
           historyRoundCount: collected.historyRoundCount,
           turnStartedAtMs,
           turnEndedAtMs: collected.turnEndedAtMs,
+          ...(collected.usage ? { usage: collected.usage } : {}),
         });
         continue;
       }
@@ -1963,6 +2035,7 @@ export function synthesizeEventsFromMessages(
         historyRoundCount: collected.historyRoundCount,
         turnStartedAtMs,
         turnEndedAtMs: collected.turnEndedAtMs,
+        ...(collected.usage ? { usage: collected.usage } : {}),
       });
       continue;
     }
@@ -2024,6 +2097,7 @@ export function synthesizeEventsFromMessages(
       historyRoundCount: collected.historyRoundCount,
       turnStartedAtMs,
       turnEndedAtMs: collected.turnEndedAtMs,
+      ...(collected.usage ? { usage: collected.usage } : {}),
     });
   }
 

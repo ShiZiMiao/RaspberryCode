@@ -20,6 +20,7 @@ import type {
   TurnExecutionModelFallbackPayload,
   ModelStreamingPayload,
   ModelUsage,
+  ModelUsageSummary,
   PermissionDeniedPayload,
   PermissionRequestedPayload,
   PermissionResolvedPayload,
@@ -165,6 +166,7 @@ import {
   createInitialConversationSnapshot,
   deltaBumpsRevision,
 } from "./projection-state.js";
+import { accumulateTurnUsage, settleTurnUsage } from "./turn-usage.js";
 
 type HookInvocationRowContent = Omit<
   HookInvocationRow,
@@ -2362,6 +2364,7 @@ export class ProductProjection {
         headerState,
         activeMs,
         payload.historyRoundCount,
+        payload.usage,
       ),
       ...(payload.resultType === "success" ? this.markStableForkAssistant(event) : []),
       {
@@ -4850,15 +4853,23 @@ export class ProductProjection {
             }
           : {};
       if (isMainTurn || "fileChanges" in fileChanges) {
+        // Bug 根因：Renderer 观察 running 快照的时机不可靠，continuous 可合并更新，
+        // replayable 也可能首次恢复即终态。单 Turn token 必须在权威事件投影中累计。
+        // 用量明细与 outputTokens 同一批 ModelComplete，但允许缺席：冷恢复会合成零用量
+        // 请求来恢复 Continue 资格，那种请求不该在 UI 上冒充「本轮用了 0 token」。
+        const nextUsage = isMainTurn
+          ? accumulateTurnUsage(headerRow.usage, usage, this.snapshot.config)
+          : undefined;
         deltas.push({
           op: "row.upserted",
           row: {
             ...headerRow,
             ...fileChanges,
-            // Bug 根因：Renderer 观察 running 快照的时机不可靠，continuous 可合并更新，
-            // replayable 也可能首次恢复即终态。单 Turn token 必须在权威事件投影中累计。
             ...(isMainTurn
-              ? { outputTokens: (headerRow.outputTokens ?? 0) + (usage.outputTokens ?? 0) }
+              ? {
+                  outputTokens: (headerRow.outputTokens ?? 0) + (usage.outputTokens ?? 0),
+                  ...(nextUsage ? { usage: nextUsage } : {}),
+                }
               : {}),
           },
         });
@@ -5451,10 +5462,16 @@ export class ProductProjection {
     state: "completedSuccess" | "completedInterrupted" | "failed",
     activeMs?: number,
     historyRoundCount?: number,
+    turnUsage?: ModelUsageSummary,
   ): ConversationDelta[] {
     const row = this.turnHeaderForEvent(event);
     if (!row) return [];
     const endedAt = this.ms(event);
+    // 轮终态的轮级汇总覆盖流式期累加值：TurnComplete.usage 是该轮全部主链路
+    // ModelComplete 的权威聚合，比逐事件累加更能覆盖「事件被合并/重放」的偏斜。
+    // config 作为身份 fallback：冷恢复的零用量合成事件不会落 provider/model，
+    // 不补这一路会让历史会话面板缺「提供方/模型」。
+    const settledUsage = settleTurnUsage(row.usage, turnUsage, this.snapshot.config);
     return [
       {
         op: "row.upserted",
@@ -5464,6 +5481,7 @@ export class ProductProjection {
           endedAt,
           ...(activeMs !== undefined ? { activeMs } : {}),
           ...(historyRoundCount !== undefined ? { historyRoundCount } : {}),
+          ...(settledUsage ? { usage: settledUsage } : {}),
           ...(row.workSegments
             ? {
                 workSegments: this.completeWorkSegments(row.workSegments, endedAt),

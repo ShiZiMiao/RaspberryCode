@@ -186,6 +186,233 @@ describe("ProductProjection 黄金测试（L1）", () => {
     expect(conversationSnapshotSchema.parse(snapshot).rows.window).toEqual(snapshot.rows.window);
   });
 
+  it("turnHeader.usage 逐请求累加主链路用量，TurnComplete 汇总收口", () => {
+    const log = new EventLog();
+    log.push(SessionEventType.SessionCreated, { mode: "default", contextWindow: 200_000 });
+    log.push(SessionEventType.ModelSelected, {
+      modelSelection: { providerId: "deepseek", modelId: "deepseek-v4" },
+    });
+    log.push(
+      SessionEventType.TurnStarted,
+      { turnNumber: 1, input: "hi", inputId: "command-1", messageId: "user-1" },
+      { turnId: "turn-1" },
+    );
+    log.push(
+      SessionEventType.ModelComplete,
+      {
+        content: "a",
+        stopReason: "tool_use",
+        querySource: "main_turn",
+        usage: {
+          inputTokens: 100,
+          outputTokens: 20,
+          cacheReadTokens: 80,
+          cacheWriteTokens: 5,
+        },
+      },
+      { turnId: "turn-1" },
+    );
+    log.push(
+      SessionEventType.ModelComplete,
+      {
+        content: "b",
+        stopReason: "end_turn",
+        querySource: "main_turn",
+        usage: {
+          inputTokens: 60,
+          outputTokens: 10,
+          cacheReadTokens: 50,
+          cacheWriteTokens: 0,
+        },
+      },
+      { turnId: "turn-1" },
+    );
+
+    const streaming = runAll(log.events).projection.getSnapshot();
+    const streamingHeader = streaming.rows.window.find((row) => row.kind === "turnHeader");
+    expect(streamingHeader).toMatchObject({
+      usage: {
+        inputTokens: 160,
+        outputTokens: 30,
+        cacheReadTokens: 130,
+        cacheWriteTokens: 5,
+        provider: "deepseek",
+        model: "deepseek-v4",
+      },
+    });
+    // 会话级累计与轮级明细是同一次归约的两个视角，必须自洽。
+    expect(streaming.usage.cumulative).toMatchObject({
+      inputTokens: 160,
+      outputTokens: 30,
+      cacheReadTokens: 130,
+      cacheWriteTokens: 5,
+    });
+  });
+
+  it("subagent / 非主链路 ModelComplete 不进 turnHeader.usage", () => {
+    const log = new EventLog();
+    log.push(SessionEventType.SessionCreated, { mode: "default", contextWindow: 200_000 });
+    log.push(
+      SessionEventType.TurnStarted,
+      { turnNumber: 1, input: "hi", inputId: "command-1", messageId: "user-1" },
+      { turnId: "turn-1" },
+    );
+    log.push(
+      SessionEventType.ModelComplete,
+      {
+        content: "child",
+        stopReason: "end_turn",
+        querySource: "subagent",
+        usage: { inputTokens: 9_000, outputTokens: 900 },
+      },
+      { turnId: "turn-1" },
+    );
+
+    const header = runAll(log.events)
+      .projection.getSnapshot()
+      .rows.window.find((row) => row.kind === "turnHeader");
+    expect(header).not.toHaveProperty("usage");
+  });
+
+  it("冷恢复合成的零用量 ModelComplete 不落 0 明细（未知不等于用了一点）", () => {
+    const log = new EventLog();
+    log.push(SessionEventType.SessionCreated, { mode: "default", contextWindow: 200_000 });
+    log.push(
+      SessionEventType.TurnStarted,
+      { turnNumber: 1, input: "hi", inputId: "command-1", messageId: "user-1" },
+      { turnId: "turn-1" },
+    );
+    log.push(
+      SessionEventType.ModelComplete,
+      {
+        content: "",
+        stopReason: "length",
+        querySource: "main_turn",
+        toolCallCount: 0,
+        usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 },
+      },
+      { turnId: "turn-1" },
+    );
+
+    const header = runAll(log.events)
+      .projection.getSnapshot()
+      .rows.window.find((row) => row.kind === "turnHeader");
+    expect(header).not.toHaveProperty("usage");
+  });
+
+  it("TurnComplete.usage 覆盖流式期累加值，按持久汇总收口", () => {
+    const log = new EventLog();
+    log.push(SessionEventType.SessionCreated, { mode: "default", contextWindow: 200_000 });
+    log.push(SessionEventType.ModelSelected, {
+      modelSelection: { providerId: "deepseek", modelId: "deepseek-v4" },
+    });
+    log.push(
+      SessionEventType.TurnStarted,
+      { turnNumber: 1, input: "hi", inputId: "command-1", messageId: "user-1" },
+      { turnId: "turn-1" },
+    );
+    log.push(
+      SessionEventType.ModelComplete,
+      {
+        content: "a",
+        stopReason: "end_turn",
+        querySource: "main_turn",
+        usage: { inputTokens: 100, outputTokens: 20 },
+      },
+      { turnId: "turn-1" },
+    );
+    log.push(
+      SessionEventType.TurnComplete,
+      {
+        response: "a",
+        tokenCount: 20,
+        toolCallCount: 0,
+        duration: 100,
+        resultType: "success",
+        usage: {
+          source: "provider",
+          modelRequestCount: 2,
+          inputTokens: 300,
+          outputTokens: 60,
+          totalTokens: 360,
+          cacheReadTokens: 200,
+          cacheWriteTokens: 0,
+          reasoningTokens: 0,
+          webSearchRequests: 0,
+          webFetchRequests: 0,
+        },
+      },
+      { turnId: "turn-1" },
+    );
+
+    const header = runAll(log.events)
+      .projection.getSnapshot()
+      .rows.window.find((row) => row.kind === "turnHeader");
+    expect(header).toMatchObject({
+      state: "completedSuccess",
+      usage: {
+        inputTokens: 300,
+        outputTokens: 60,
+        cacheReadTokens: 200,
+        cacheWriteTokens: 0,
+        provider: "deepseek",
+        model: "deepseek-v4",
+      },
+    });
+  });
+
+  it("收口时为缺席身份的轮次回填会话 config 的 provider/model", () => {
+    // 回归：冷恢复的 ModelComplete 是零用量占位，accumulateTurnUsage 判它「无事实」
+    // 返回 undefined，于是 settle 时 previous 里从来没有身份；若只用 previous，
+    // 历史会话的用量面板永远缺「提供方/模型」这一行。
+    const log = new EventLog();
+    log.push(SessionEventType.SessionCreated, { mode: "default", contextWindow: 200_000 });
+    log.push(SessionEventType.ModelSelected, {
+      modelSelection: { providerId: "sjfd", modelId: "DeepSeek-V4.1-Flash-1017" },
+    });
+    log.push(
+      SessionEventType.TurnStarted,
+      { turnNumber: 1, input: "hi", inputId: "command-1", messageId: "user-1" },
+      { turnId: "turn-1" },
+    );
+    log.push(
+      SessionEventType.TurnComplete,
+      {
+        response: "a",
+        tokenCount: 0,
+        toolCallCount: 0,
+        duration: 100,
+        resultType: "success",
+        usage: {
+          source: "provider",
+          modelRequestCount: 0,
+          inputTokens: 2_071,
+          outputTokens: 1_459,
+          totalTokens: 3_530,
+          cacheReadTokens: 565_760,
+          cacheWriteTokens: 0,
+          reasoningTokens: 0,
+          webSearchRequests: 0,
+          webFetchRequests: 0,
+        },
+      },
+      { turnId: "turn-1" },
+    );
+
+    const header = runAll(log.events)
+      .projection.getSnapshot()
+      .rows.window.find((row) => row.kind === "turnHeader");
+    expect(header).toMatchObject({
+      usage: {
+        inputTokens: 2_071,
+        outputTokens: 1_459,
+        cacheReadTokens: 565_760,
+        provider: "sjfd",
+        model: "DeepSeek-V4.1-Flash-1017",
+      },
+    });
+  });
+
   it("执行流式输出降级时中断废弃内容，并让原模型从新行继续", () => {
     const log = new EventLog();
     const turnId = "turn-stream-fallback";
