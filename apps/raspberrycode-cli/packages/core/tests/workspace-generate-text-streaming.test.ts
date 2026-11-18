@@ -277,4 +277,31 @@ describe("workspace generateText streaming aggregation", () => {
     expect(result.text).toBe("fix: commit message");
     expect(boundOptions).toEqual({ maxOutputTokens: 5_000, reasoningLevel: "disabled" });
   });
+
+  // 草稿优化是「顺手改写一段草稿」的辅助调用，和 git 提交消息同类：
+  // 必须走最低公开档位与辅助预算，不能占用会话正式请求的档位。
+  // 回归价值：它曾经不在白名单里，导致非辅助路径直接拒绝请求（缺 maxOutputTokens）。
+  it("treats prompt_enhance as an auxiliary call", async () => {
+    let boundOptions: ModelOptions | undefined;
+    const model = createStreamingModel({
+      onBind: (options) => {
+        boundOptions = options;
+      },
+    });
+    model.generateText = async () => ({
+      finishReason: "stop",
+      text: "请修复登录页的样式问题",
+      usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 },
+    });
+    const runtime = createRuntimeWithModel(model);
+
+    const result = await runtime.generateWorkspaceText({
+      selection: { providerId: "test-provider", modelId: "glm-test" },
+      prompt: "rewrite this draft",
+      querySource: "prompt_enhance",
+    });
+
+    expect(result.text).toBe("请修复登录页的样式问题");
+    expect(boundOptions).toEqual({ maxOutputTokens: 5_000, reasoningLevel: "disabled" });
+  });
 });

@@ -104,6 +104,14 @@ import {
 import type { LexicalChatInputHandle } from "@/LexicalChatInput.js";
 import { ChatPromptEditor } from "@/prompt-editor/ChatPromptEditor.js";
 import { ComposerStatusBar } from "@/composer-status-bar/ComposerStatusBar.js";
+import { toast } from "@/components/ui/toast.js";
+import {
+  PromptEnhanceButton,
+  canApplyEnhancedPrompt,
+  resolveDraftWriteMode,
+  toPromptEnhanceSelection,
+  usePromptEnhance,
+} from "@/prompt-enhance/index.js";
 import { usePromptEditorDragState } from "@/prompt-editor/usePromptEditorDragState.js";
 import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { advanceComposerDraftRevision } from "@/v4/composer/composerDraftRevision.js";
@@ -213,6 +221,13 @@ import {
 } from "@/v4/composer/composerSubmissionSettlement.js";
 
 const MODEL_SELECTION_LOADING_STATE: ModelSelectionState = { status: "loading" };
+
+/**
+ * 草稿优化的撤销窗口时长（spec：docs/prompt-enhance.md）。
+ * 取 30 秒：够用户读完改写结果并决定要不要退回，又不至于让一颗「撤销」
+ * 长期占着工具条、被误当成常规按钮。
+ */
+const PROMPT_ENHANCE_UNDO_WINDOW_MS = 30_000;
 
 export interface ConversationComposerSendOptions {
   /** 原始正文供接纳恢复对账；协议正文可能已经附加文件或页面上下文。 */
@@ -977,6 +992,144 @@ function ConversationComposerImpl({
       persistDraftNow(draftScopeRef.current);
     }, 350);
   }, [persistDraftNow, stageComposerContent]);
+
+  /**
+   * 草稿优化（spec：docs/prompt-enhance.md）。
+   *
+   * 草稿读写的所有者始终是 composer：`readDraft` 在点击那一刻取 `textRef`，
+   * 结果经 `writeEnhancedDraft` 走与手输完全相同的 `setText` → `updateText` 路径。
+   * 本功能不持有第二份草稿状态，撤销用的原文快照只在内存活到撤销窗口结束。
+   */
+  const promptEnhanceOriginalRef = useRef<string | null>(null);
+  /**
+   * 可撤销窗口：优化结果刚落地时为 true，按钮变成「撤销」。
+   * 三个出口都会关窗：用户点了撤销、用户继续编辑草稿、超时。
+   * 超时是为了不让一颗「撤销」按钮无限期挂在工具条上——那时用户多半已经在往下写了。
+   */
+  const [promptEnhanceUndoable, setPromptEnhanceUndoable] = useState(false);
+  const promptEnhanceUndoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** 优化结果落地时的文本；用于判断用户是否已在此基础上继续编辑。 */
+  const promptEnhanceAppliedRef = useRef<string | null>(null);
+  const clearPromptEnhanceUndo = useCallback(() => {
+    if (promptEnhanceUndoTimerRef.current !== null) {
+      clearTimeout(promptEnhanceUndoTimerRef.current);
+      promptEnhanceUndoTimerRef.current = null;
+    }
+    promptEnhanceOriginalRef.current = null;
+    promptEnhanceAppliedRef.current = null;
+    setPromptEnhanceUndoable(false);
+  }, []);
+  useEffect(() => () => clearPromptEnhanceUndo(), [clearPromptEnhanceUndo]);
+  const writeEnhancedDraft = useCallback(
+    (text: string) => {
+      const inputApi = inputApiRef.current;
+      // 必须按内容选写入 API：纯 setText 会用文本节点重建编辑器，
+      // 把结构化的 plugin mention chip 打回普通文字。composer 回填草稿时同样这么分流。
+      if (inputApi) {
+        if (resolveDraftWriteMode(text) === "plugin-mentions") {
+          inputApi.setTextWithPluginMentions(text);
+        } else {
+          inputApi.setText(text);
+        }
+      }
+      // 程序性写入也必须同步正文与草稿持久化，
+      // 否则 textRef 落后一帧会让随后的「草稿是否被改动」判断失真。
+      updateText(text);
+      scheduleDraftPersist();
+      inputApiRef.current?.focus();
+    },
+    [scheduleDraftPersist, updateText],
+  );
+  const promptEnhance = usePromptEnhance({
+    workspacePath,
+    workspaceIdentity,
+    // composer 实例跨会话复用（key 固定），必须让 hook 知道当前草稿属于哪个作用域，
+    // 否则在会话 A 发起、切到 B 后回来的结果会写进 B 的草稿。
+    draftScopeId,
+    // 模型来源必须用 `modelSelection`：它是 Session 接受并持久化的权威选择意图，
+    // `provider`/`model` 只是 UI 投影——历史会话里两者可能为空（工具条仍能靠目录显示名称），
+    // 只读投影会让按钮在明明有模型时被误禁用。
+    // 档位优先取 selection 自带的 reasoningLevel，缺失时回退 composer 的 thought：
+    // CLI 的 modelFactory 在创建 Model 时就要校验档位，缺了会直接拒绝。
+    selection: toPromptEnhanceSelection(draftConfig?.modelSelection, draftConfig?.thought),
+    readDraft: () => {
+      const text = textRef.current;
+      promptEnhanceOriginalRef.current = text;
+      return text;
+    },
+  });
+  const handlePromptEnhanceClick = useCallback(() => {
+    void promptEnhance.enhance().then((outcome) => {
+      const original = promptEnhanceOriginalRef.current;
+      if (outcome.status === "cancelled") {
+        toast(intl.formatMessage({ id: "chat.promptEnhance.cancelled" }));
+        return;
+      }
+      if (outcome.status === "failed") {
+        if (outcome.reason === "model-unavailable") {
+          toast(intl.formatMessage({ id: "chat.promptEnhance.unsupported" }), {
+            variant: "warning",
+          });
+        } else if (outcome.reason === "unchanged") {
+          toast(intl.formatMessage({ id: "chat.promptEnhance.unchanged" }));
+        } else if (outcome.reason === "empty-result") {
+          // 注意不能用 chat.promptEnhance.empty：那条是「草稿为空」时的按钮禁用提示，
+          // 这里用户明明已经输入了内容、请求也发出去了，只是模型返回空。
+          toast(intl.formatMessage({ id: "chat.promptEnhance.emptyResult" }), {
+            variant: "warning",
+          });
+        } else {
+          toast(
+            outcome.detail
+              ? intl.formatMessage(
+                  { id: "chat.promptEnhance.errorWithDetail" },
+                  { error: outcome.detail },
+                )
+              : intl.formatMessage({ id: "chat.promptEnhance.error" }),
+            { variant: "warning" },
+          );
+        }
+        return;
+      }
+      // 用户在请求期间继续编辑过：不覆盖新输入，如实告知。
+      if (
+        original === null ||
+        !canApplyEnhancedPrompt({ originalDraft: original, currentDraft: textRef.current })
+      ) {
+        toast(intl.formatMessage({ id: "chat.promptEnhance.draftChanged" }), {
+          variant: "warning",
+        });
+        return;
+      }
+      writeEnhancedDraft(outcome.text);
+      // 撤销入口放在工具条按钮本身（见 PromptEnhanceButton 的三态）：本仓库当前构建里
+      // toast 的 actionLabel 不渲染，把可发现性押在它上面等于没有撤销入口。
+      promptEnhanceAppliedRef.current = outcome.text;
+      setPromptEnhanceUndoable(true);
+      if (promptEnhanceUndoTimerRef.current !== null) {
+        clearTimeout(promptEnhanceUndoTimerRef.current);
+      }
+      promptEnhanceUndoTimerRef.current = setTimeout(() => {
+        promptEnhanceUndoTimerRef.current = null;
+        setPromptEnhanceUndoable(false);
+      }, PROMPT_ENHANCE_UNDO_WINDOW_MS);
+      toast(
+        intl.formatMessage({
+          // 只动了标点/空白时不能笼统说「已优化」，否则用户会觉得功能没用。
+          id:
+            outcome.verdict === "minor"
+              ? "chat.promptEnhance.appliedMinor"
+              : "chat.promptEnhance.applied",
+        }),
+      );
+    });
+  }, [intl, promptEnhance, writeEnhancedDraft]);
+  const handlePromptEnhanceUndo = useCallback(() => {
+    const original = promptEnhanceOriginalRef.current;
+    // 先关窗再写回：撤销只生效一次，重复点击不能把「已撤销的内容」再当成原文。
+    clearPromptEnhanceUndo();
+    if (original !== null) writeEnhancedDraft(original);
+  }, [clearPromptEnhanceUndo, writeEnhancedDraft]);
 
   // ── 自动聚焦（新建任务 / 切会话 / 挂载后把光标交还输入框）──
   // 触发源：startDraft 递增的 draftFocusVersion（覆盖 Cmd/Ctrl+N 与所有「新建任务」入口）、
@@ -1832,8 +1985,16 @@ function ConversationComposerImpl({
     (value: string) => {
       updateText(value);
       scheduleDraftPersist();
+      // 撤销窗口的不变量：草稿仍是「优化结果」本身。用户一旦在此基础上继续编辑，
+      // 恢复原文就等于丢弃他自己写的内容，撤销窗口必须就地关闭。
+      // 程序性写回（优化落地 / 撤销回填）写入的正是这两份快照之一，不会被误关。
+      if (promptEnhanceAppliedRef.current !== null) {
+        if (value === promptEnhanceAppliedRef.current) return;
+        if (value === promptEnhanceOriginalRef.current) return;
+        clearPromptEnhanceUndo();
+      }
     },
-    [scheduleDraftPersist, updateText],
+    [clearPromptEnhanceUndo, scheduleDraftPersist, updateText],
   );
 
   const handleEditorFocus = useCallback(() => {
@@ -2595,6 +2756,22 @@ function ConversationComposerImpl({
           onOpen={onOpenRunningBackgroundWorks}
           openTarget={backgroundWorkOpenTarget}
         />
+        {remoteAvailable ? (
+          <PromptEnhanceButton
+            pending={promptEnhance.pending}
+            undoable={promptEnhanceUndoable}
+            // 空草稿和缺模型都不给点：两种原因分别给文案，不能灰掉却不说为什么。
+            // 可撤销态由按钮自己接管可点性，不参与这里的门禁。
+            disabled={!promptEnhance.canEnhance || !textPresence.trimmed}
+            disabledReason={
+              !promptEnhance.canEnhance
+                ? intl.formatMessage({ id: "chat.promptEnhance.unsupported" })
+                : intl.formatMessage({ id: "chat.promptEnhance.empty" })
+            }
+            onClick={handlePromptEnhanceClick}
+            onUndo={handlePromptEnhanceUndo}
+          />
+        ) : null}
       </>
     ),
     [
@@ -2604,17 +2781,25 @@ function ConversationComposerImpl({
       runtimeBlocked,
       draftConfig,
       handleConfigPickerOpenChange,
+      handlePromptEnhanceClick,
+      handlePromptEnhanceUndo,
+      intl,
       isMobileOverlay,
       backgroundWorkOpenTarget,
       onOpenRunningBackgroundWorks,
       onSwitchMode,
+      promptEnhance.canEnhance,
+      promptEnhance.pending,
+      promptEnhanceUndoable,
       provider,
+      remoteAvailable,
       remoteSessionId,
       runningSubagentCount,
       sessionId,
       snapshot?.workspaceHookAdmission,
       snapshot?.workspaceMcpAdmission,
       snapshot?.backgroundWorks,
+      textPresence.trimmed,
       workspaceIdentity,
       workspacePath,
     ],

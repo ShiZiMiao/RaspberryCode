@@ -908,6 +908,19 @@ modules:
     layers:
       adapters: .
     owner: desktop
+  # prompt-enhance：输入框草稿优化（docs/prompt-enhance.md）
+  - id: prompt-enhance
+    roots:
+      - packages/ui/src/prompt-enhance
+    managed: true
+    requires:
+      - ui
+    publicEntrypoints:
+      - packages/ui/src/prompt-enhance/index.ts
+      - packages/ui/src/prompt-enhance/contract.ts
+    layers:
+      ui: .
+    owner: conversation
 
 global:
   # 临时时间戳（2026-09-10）：unmanaged-new-file 只约束此日期之后首次入库的文件。

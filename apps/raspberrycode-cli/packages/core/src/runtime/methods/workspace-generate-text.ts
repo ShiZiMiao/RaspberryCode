@@ -27,6 +27,16 @@ const CONNECTIVITY_PROBE_MAX_OUTPUT_TOKENS = 1;
 const CONNECTIVITY_PROBE_SYSTEM = "You are RaspberryCode connectivity probe.";
 const CONNECTIVITY_PROBE_USER = "hi";
 const GIT_COMMIT_MESSAGE_QUERY_SOURCE = "git_commit_message";
+/**
+ * 走辅助档位的 querySource：这些调用都是「顺手做一次改写/判断」，要最低公开档位 + 小额预算，
+ * 不能按会话正式请求的完整选项校验（缺 maxOutputTokens 会被 Registry 直接判为非法）。
+ * 新增来源必须同时评估档位语义，不能只为绕过校验而加入。
+ */
+const AUXILIARY_QUERY_SOURCES: ReadonlySet<string> = new Set([
+  GIT_COMMIT_MESSAGE_QUERY_SOURCE,
+  INPUT_PREDICTION_QUERY_SOURCE,
+  "prompt_enhance",
+]);
 
 export interface WorkspaceGenerateTextInput {
   selection: ModelSelection;
@@ -141,10 +151,10 @@ async function generateWorkspaceTextImpl(
   const baseModel = createRuntimeModel(this, { selection: requestedSelection, scope: "workspace" });
   // 辅助请求需要的是最低公开档位，不是扫描 off/nothink 等名称后强制关闭。
   // 输入预测按键触发、要求低延迟，同样走最低档位。
-  const model =
-    querySource === GIT_COMMIT_MESSAGE_QUERY_SOURCE || querySource === INPUT_PREDICTION_QUERY_SOURCE
-      ? baseModel.bind(auxiliaryModelOptions(baseModel))
-      : baseModel;
+  // 草稿优化同属辅助改写：它只重写一段草稿，不该占用会话正式请求的档位与预算。
+  const model = AUXILIARY_QUERY_SOURCES.has(querySource)
+    ? baseModel.bind(auxiliaryModelOptions(baseModel))
+    : baseModel;
   const baseTraceContext = options?.traceContext ?? this.rootTraceContext;
   const modelTraceContext = createChildTraceContext(baseTraceContext, {
     attributes: {
