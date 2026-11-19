@@ -181,6 +181,7 @@ import {
   type SourceServerManagementService,
 } from "./sourceServerManagementService.js";
 import { resolveSourceServerReleaseAsset } from "./sourceServerReleaseResolver.js";
+import { prefetchSourceServerReleases } from "./sourceServerPrefetch.js";
 import { resolveAutomationSubmissionModelSelection } from "./automationModelSelection.js";
 import { createRemoteConnectionProgressContext } from "@raspberrycode/server/remote/remoteConnectionProgressContext.js";
 import {
@@ -3640,6 +3641,17 @@ parentPort.on("message", async (e: Electron.MessageEvent) => {
           },
         );
         services.register(ISourceServerManagementService, sourceServerManagementService);
+        // 远程包后台预下载：远端首连/升级前先把当前版本的 Linux 包落到本地缓存，
+        // 连接时直接命缓存上传，省掉约 70 秒（镜像）到数分钟（直连）的下载等待。
+        // 刻意不 await：这是纯优化路径，不能拖慢 Host 就绪；失败也只记日志。
+        void prefetchSourceServerReleases({
+          remoteAssets: msg.remoteAssets ?? {},
+          remoteAssetNetwork: { fetch: hostApiNetworkTransport.fetch },
+          log: (message) => logger.info(message),
+        }).catch((error: unknown) => {
+          // 预取内部已逐项吞错，这里只兜住「连循环都没进」的意外（如缓存目录读取失败）。
+          logger.warn("[source-server-prefetch] unexpected failure", error);
+        });
         // 数据同步页的设备同步状态只属于本机 Host：不进入远程 workspace RPC 合同、
         // source-settings 服务集合，也不在手机 attachment 白名单中。
         services.register(
