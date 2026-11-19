@@ -971,6 +971,10 @@ exceptions:
     rule: unmanaged-new-file
     paths: [ packages/raspberrycode-cua/vitest.config.ts ]
     reason: 该文件只装配测试项目，开源占位版本用于保持根单测入口可运行；不包含 producer 运行逻辑，不为同目录实现文件开放例外。
+  - id: self-hosted-windows-cua-implementation
+    rule: unmanaged-new-file
+    paths: [ packages/raspberrycode-cua/src/** ]
+    reason: 自研 Windows 电脑控制的实现文件（spec：docs/cua/2026-11-19-windows-cua-self-hosted-spec.md）。该包是独立的 producer 包，公共契约已由 package.json 的 exports 与根目录 .d.ts 完整声明，新增 src/ 是实现 private 内部而非新边界；不 adopt 为受管模块是为了让上游同步该目录时冲突面最小（同步策略见 spec §2）。
   - id: opensource-tool-search-comment-cleanup
     rule: unmanaged-new-file
     paths:
@@ -1324,3 +1328,8 @@ exceptions:
       - apps/raspberrycode-cli/packages/bootstrap/src/raspberrycode-protocol-v4/turn-usage.ts
       - packages/ui/src/v4/TurnUsageChip.tsx
     reason: 轮尾「本轮用量」功能新增的两个文件，都是既有职责的纯增量拆分而非新边界——turn-usage.ts 只承载 turnHeader.usage 的累加与终态收口折算（与 product-projection 同属一条归约链，两个纯函数、不持状态），TurnUsageChip.tsx 只渲染该字段（渲染位置耦合在 ConversationRowView 的动作行内，提供方名字靠 props 注入的视图目录折算）。raspberrycode-cli 与 ui 均为 legacy（managed:false），接管整个 protocol-v4 目录或 ui/v4 目录需要独立的模块边界重构，不在本次功能范围内。
+  - id: source-server-prefetch-unmanaged-new-file
+    rule: unmanaged-new-file
+    paths:
+      - packages/desktop/src/host/sourceServerPrefetch.ts
+    reason: 远程包后台预下载是 sourceServerReleaseResolver 的纯增量延伸，不是新边界——它不自己解析 descriptor、不自己下载、不自己校验 SHA-256，只按「当前版本 × Linux 两平台」各调一次已有的 resolveSourceServerReleaseAsset，并据缓存有无给出 cached/downloaded 结果。放在同一目录是因为它必须与 resolver 共用缓存布局（remote-assets-cache/source-server/<version>/）与 target 命名，拆到别处反而会复制这套约定。desktop 为 legacy（managed:false），把 host 目录整体接管需要独立的模块边界重构，不在本次发版范围内。
