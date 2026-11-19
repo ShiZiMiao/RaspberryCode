@@ -204,6 +204,28 @@ if (!existsSync(unpackedAsar)) {
         if (inAsarVersion === desktopVersion) ok(`asar 内 package.json 版本=${inAsarVersion}`);
         else fail(`asar 内 package.json 版本=${inAsarVersion}，与 ${desktopVersion} 不一致`);
       }
+
+      // 远程连接（SSH / WSL / Docker）依赖安装包内的 Source Server 发布根。
+      //
+      // 事故：0.2.5 发出去后远程连接全部失败，报
+      // 「Unable to resolve Source Server release descriptor（HTTP release roots unreachable）」。
+      // 根因是构建期 CDN_DOMAIN / REMOTE_ASSET_RELEASE_ROOT_URL 都没配，
+      // `__RASPBERRYCODE_REMOTE_CDN_RELEASE_ROOTS__` 被常量折叠成空数组，安装包里没有任何发布根。
+      // 这条缺陷能发出去，是因为门禁只检查更新链路，远程连接一项都没覆盖。
+      //
+      // 这里判定「发布根非空」：产物里必须存在一个 http(s) 的 releases 根地址。
+      // 不能只搜变量名——生产构建会把标识符重命名，常量也已被折叠；只能看实际字面量。
+      const remoteRootMarkers = main.match(/https?:\/\/[^"'`\s)]+\/releases(?:\/|["'`])/gu) ?? [];
+      const nonPlaceholderRoots = remoteRootMarkers.filter(
+        (root) => !/intranet\.example\.invalid|example\.(?:com|invalid)/u.test(root),
+      );
+      if (nonPlaceholderRoots.length > 0) {
+        ok(`产物含远程资产发布根（${new Set(nonPlaceholderRoots).size} 个）`);
+      } else {
+        fail(
+          "产物缺少远程资产发布根：远程连接（SSH/WSL/Docker）将无法下载 Source Server。构建时须设置 REMOTE_ASSET_RELEASE_ROOT_URL 或 CDN_DOMAIN",
+        );
+      }
     }
   } catch (error) {
     fail(`读取 asar 失败：${error.message}`);
@@ -260,6 +282,9 @@ section("必须人工确认（脚本无法替代）");
 need("卸载旧版 → 安装本产物 → 版本号显示为新版");
 need("开始菜单 + 桌面快捷方式均已创建，且双击能启动");
 need("升级路径实跑：旧版 → 检查更新 → 下载 → 安装 → 重启 → 版本号变新");
+need(
+  "远程连接实测：SSH 连一台真实远端 → 能识别设备并装/升级 Source Server → 进入工作区（0.2.5 就是漏了这项）",
+);
 need("新建对话并收到模型回复（不是只看界面有没有回显）");
 need("文件编辑 / 终端 / 设置页 / MCP·技能·插件入口 逐项点过");
 need("涉及 UI 的改动已看真实界面截图确认");

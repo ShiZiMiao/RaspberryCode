@@ -119,6 +119,31 @@ describe("desktop tsup chunk isolation", () => {
     ]);
   });
 
+  // GitHub Release 的资产路径是 github.com/<owner>/<repo>/releases/download/v<version>/<file>，
+  // 域名后面不是可自由设定的前缀，无法用 CDN_DOMAIN 表达；必须有完整 URL 根这个入口。
+  it("remote runtime 发布根应支持完整 URL 直配（GitHub Release 形态）", () => {
+    expect(
+      resolveBuildRemoteCdnReleaseRoots({
+        REMOTE_ASSET_RELEASE_ROOT_URL:
+          "https://github.com/ShiZiMiao/RaspberryCode/releases/download/v0.2.6/",
+      }),
+    ).toEqual(["https://github.com/ShiZiMiao/RaspberryCode/releases/download/v0.2.6"]);
+  });
+
+  it("显式 URL 根优先于 CDN_DOMAIN，且不叠加出不可达地址", () => {
+    expect(
+      resolveBuildRemoteCdnReleaseRoots({
+        REMOTE_ASSET_RELEASE_ROOT_URL: "https://github.com/o/r/releases/download/v0.2.6",
+        CDN_DOMAIN: "cdn.example.test",
+        OSS_PATH_PREFIX: "raspberrycode/electron/releases",
+      }),
+    ).toEqual(["https://github.com/o/r/releases/download/v0.2.6"]);
+  });
+
+  it("两源都不配置时发布根为空（由解析层显式报未配置，不回退默认域名）", () => {
+    expect(resolveBuildRemoteCdnReleaseRoots({})).toEqual([]);
+  });
+
   it("remote runtime CDN 根的路径前缀数量不匹配时应失败", () => {
     expect(() =>
       resolveBuildRemoteCdnReleaseRoots({

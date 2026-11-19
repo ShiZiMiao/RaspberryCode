@@ -567,6 +567,9 @@ Host 已固定 A → 后续 Profile 编辑 B → 在途操作仍只使用 A
   按下方「Desktop 较旧时显式切换远端」由用户确认切换。
 - R2 存量 server（无 compatibility 字段）判为过旧，走同一升级链；R3 Desktop 的 `minCompatibleVersion` 设为首个携带 R3 握手合同的 Server 版本。
 - 当前发布默认不在根 `package.json` 中声明 `raspberrycodeCompatibility` 覆盖；Desktop 与 Server CLI 构建都将缺失的 `minCompatibleVersion` 回退为当前 `productVersion`，因此默认只承诺同版本兼容。只有在完成跨版本合同与发布验证后，才可重新显式声明更低的 `raspberrycodeCompatibility.minCompatibleVersion`。
+  - **该默认有一项前置条件：每个版本都能从发布根取到同版本的 Source Server 包。** 否则「同版本兼容」在实践中等于「永远无法跨版本」——旧远端被判为必须升级，却无包可下。
+  - 事故（2026-11-19，0.2.5）：构建时未注入远程资产发布根，`__RASPBERRYCODE_REMOTE_CDN_RELEASE_ROOTS__` 折叠为空数组，安装包内没有任何下载地址。远端 0.1.0 连 0.2.5 Desktop 时同时命中两道门：版本门（0.1.0 < 0.2.5）与资产门（无 `source-server-release.json` 可解析），报 `Unable to resolve Source Server release descriptor`。
+  - 现行约束：构建必须注入 `REMOTE_ASSET_RELEASE_ROOT_URL`（完整 URL 根，GitHub Release 形态）或 `CDN_DOMAIN`+`OSS_PATH_PREFIX`；`release-gate.mjs` 会检查产物内是否存在真实发布根，缺失即拒绝发版。发布根下必须同时有当前版本的 descriptor 与四个平台 archive。
 - Server 较旧且必须升级时，启动重连提示、连接向导失败面板和连接管理页都必须提供就地「立即更新」，并统一提交到 `SourceServerManagementService.updateSource`；不得要求用户记住或寻找 Settings 中的唯一入口。Desktop 较旧时主动作仍导向 Desktop 升级，不显示 Server 更新动作；只在连接向导失败面板与设备卡提供次级的「将远端切换到 <版本>」。
 - 启动/任务列表重连的 Source Server 更新 Toast 使用独立展示变体：顶部居中、完整换行展示设备与版本文案、完整「立即更新」和关闭入口。该变体只服务 Source Server，不改变 Desktop 应用更新等既有 compact update Toast 的位置与截断规则。
 - 连接向导接管某个目标后，该目标的 Server 必须升级提示由向导呈现，全局 Toast 不重复提示；收起向导仍保留接管，退出/改选目标才释放，其他设备和 Desktop 升级提示不受影响。向导在发起连接前同步发布目标，不能等 `needs-upgrade` 后才抑制提示。Host 进入 `updating`、升级需求解除或 Profile 被移除时立即撤销旧升级 Toast；点击动作须重新核对当前快照，同一提示只提交一次更新。失败回到需升级状态后保留重试入口，不因旧提示去重永久丢失通知。

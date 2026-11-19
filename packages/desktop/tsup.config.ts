@@ -48,6 +48,9 @@ function loadEnvFiles(): Record<string, string> {
   if (process.env.VITE_RASPBERRYCODE_BASE_URL) vars.VITE_RASPBERRYCODE_BASE_URL = process.env.VITE_RASPBERRYCODE_BASE_URL;
   if (process.env.CDN_DOMAIN) vars.CDN_DOMAIN = process.env.CDN_DOMAIN;
   if (process.env.OSS_PATH_PREFIX) vars.OSS_PATH_PREFIX = process.env.OSS_PATH_PREFIX;
+  // 完整 URL 发布根（GitHub Release 等无法用 CDN_DOMAIN 表达的托管形态）同样按真实环境变量优先透传。
+  if (process.env.REMOTE_ASSET_RELEASE_ROOT_URL)
+    vars.REMOTE_ASSET_RELEASE_ROOT_URL = process.env.REMOTE_ASSET_RELEASE_ROOT_URL;
   return vars;
 }
 
@@ -64,7 +67,32 @@ function parseCsvEnv(value: string | undefined): string[] {
     .filter(Boolean);
 }
 
+/**
+ * 解析构建期注入的远程资产发布根。
+ *
+ * 支持两种配置形态：
+ * 1. `CDN_DOMAIN` + `OSS_PATH_PREFIX`：对象存储/CDN 站点，拼成 `https://<domain>/<prefix>`；
+ * 2. `REMOTE_ASSET_RELEASE_ROOT_URL`：直接给完整 URL 根，用于 GitHub Release 这类
+ *    路径不受自己控制、需要带 `releases/download/v<version>` 段的托管形态。
+ *
+ * 为什么需要第 2 种：GitHub Release 的资产地址是
+ * `https://github.com/<owner>/<repo>/releases/download/v<version>/<file>`，
+ * 其中 `github.com` 后面不是可以自由设定的路径前缀，无法用 `CDN_DOMAIN` 表达。
+ * 而发布根最终要参与 `buildReleaseBaseCandidates` 的 `base/version` 与 `base` 双候选探测，
+ * 所以这里必须产出「带版本段」的完整根（额外的好处是省掉必然 404 的无版本候选）。
+ *
+ * 两源都不配时返回空数组：解析层会显式报「未配置发布根」，不静默回退任何默认域名。
+ */
 export function resolveBuildRemoteCdnReleaseRoots(runtimeEnv: Record<string, string | undefined>) {
+  const explicitRoots = parseCsvEnv(runtimeEnv.REMOTE_ASSET_RELEASE_ROOT_URL).map((root) =>
+    root.replace(/\/+$/, ""),
+  );
+  // 显式完整 URL 根优先；与 CDN_DOMAIN 同时存在时以显式根为准，避免两套来源互相叠加出
+  // 访问不到的地址（构建期只有一份发布根是真实事实，多源只会拉长每次连接的失败探测）。
+  if (explicitRoots.length > 0) {
+    return explicitRoots;
+  }
+
   const domains = parseCsvEnv(runtimeEnv.CDN_DOMAIN);
   const pathPrefixes = parseCsvEnv(runtimeEnv.OSS_PATH_PREFIX || "raspberrycode/electron/releases");
   if (domains.length === 0) {

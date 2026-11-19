@@ -42,9 +42,32 @@
 `release:raw` 才是裸 release-it）。该脚本自动判定版本一致性、产物内容、三份资产；
 **但它无法替代真实安装与功能点验**，脚本末尾会打印人工确认清单，逐项做完才算通过。
 
-历史教训（两次都是用户先发现）：
+历史教训（三次都是用户先发现）：
 - `0.2.0` / `0.2.1`：更新下载功能实际不可用（镜像重定向装错 session）。
 - `0.1.0` / `0.2.0`：装完没有开始菜单与桌面快捷方式。
+- `0.2.5`：**远程连接（SSH）全部不可用**。构建时未设置远程资产发布根，安装包里没有
+  Source Server 下载地址，连接时报「Unable to resolve Source Server release descriptor」。
+  已加两道防线：`release-gate.mjs` 强制检查产物内是否存在远程资产发布根；
+  发版清单第 7 项要求实测远程连接。
+
+## 远程连接（Source Server）发布要求
+
+远程连接的可用性**不只看 Desktop 版本**，还依赖两件事同时成立：
+
+1. **安装包内有可访问的远程资产发布根**。构建时必须注入其一：
+   - `REMOTE_ASSET_RELEASE_ROOT_URL`：完整 URL 根，用于 GitHub Release 这类托管形态
+     （形如 `https://github.com/<owner>/<repo>/releases/download/v<version>`）；
+   - `CDN_DOMAIN` + `OSS_PATH_PREFIX`：自建 CDN/OSS 形态。
+   两源皆空时产物内没有发布根，远程连接必然失败——`release-gate.mjs` 会直接拒绝发版。
+2. **该发布根下有当前版本的 `source-server-release.json` 与四个平台 tar.gz**
+   （`linux-x64` / `linux-arm64` / `darwin-x64` / `darwin-arm64`）。
+   生成入口：`pnpm --filter @raspberrycode/server-cli run stage:remote-assets`
+   （只做 Linux 时加 `--linux`），产物落在 `packages/desktop/mock-cdn/releases/<version>/`，
+   发版时需随 Release 一起上传。
+
+> `minCompatibleVersion` 默认回退为当前 `productVersion`，语义是「只承诺同版本兼容」。
+> 因此**每发一个新版本，旧版本的远端都必须能升级到新版本**，否则远端会被判为必须升级却无包可下。
+> 这条前提成立的条件就是上面的第 1、2 点都做到。
 
 ## 发版检查清单
 
@@ -56,6 +79,7 @@
 4. **完整构建**：`pnpm --dir packages/desktop run build`（= 运行时资产 +
    build-meta + `run-production-build.mjs` 真正编译）。
    **只跑 electron-builder 不会编译 TS**，会拿旧 `out/` 打包。
+   构建前必须设置远程资产发布根（见上一节），否则门禁会拒。
 5. 跑门禁：`typecheck` / `lint` / `audit-neutrality`。
 6. 构建安装包（见项目记忆的打包定式）。
 7. **真实安装与升级实测**（不可跳过）：
