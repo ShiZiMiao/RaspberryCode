@@ -17,13 +17,82 @@ export function buildReleaseBaseCandidates(remoteCdnBaseUrls: string[], version:
     const normalizedBase = remoteCdnBaseUrl.replace(/\/+$/, "");
     // 当调用方已经传入带版本的 CDN 基址时，继续盲目拼 `${base}/${version}`
     // 会先走一次必然失败的双版本路径（例如 .../0.2.10/0.2.10），产生无意义 404 噪音。
-    // 这里识别“已固定到当前版本”的场景，直接使用原基址即可。
-    if (normalizedBase.endsWith(`/${version}`)) {
+    //
+    // 版本段的两种真实形态都要认：
+    //   1. 纯版本号结尾：`.../releases/0.2.5`（自建 CDN/OSS 布局）；
+    //   2. 带 v 前缀的 tag 结尾：`.../releases/download/v0.2.5`（GitHub Release 布局）。
+    // 只判断第 1 种会让 GitHub 形态漏判，多拼一级 `/0.2.5` 得到
+    // `.../download/v0.2.5/0.2.5`，实测 404（2026-11-19 端到端实测确认），
+    // 每次连接都白白多打一轮失败请求。
+    const alreadyVersioned =
+      normalizedBase.endsWith(`/${version}`) || normalizedBase.endsWith(`/v${version}`);
+    if (alreadyVersioned) {
       return [normalizedBase];
     }
     return [`${normalizedBase}/${version}`, normalizedBase];
   });
   return Array.from(new Set(candidates));
+}
+
+/**
+ * GitHub 下载镜像前缀的默认值，与应用自更新（`updateMirror.ts`）保持同一份事实。
+ *
+ * 背景：远程 Source Server 包约 90MB/平台，直连 GitHub 实测 390KB/s（整包约 8 分钟），
+ * 经该镜像 835KB/s（约 2 分钟）；网络差的时段直连可掉到 50KB/s 以下，
+ * 一次远端升级要等十几分钟。这与应用更新遇到的是同一个网络问题。
+ *
+ * 镜像形态是「前缀 + 完整原 URL」（`https://<mirror>/https://github.com/...`），
+ * 只对 GitHub 的 release 资产下载有效，因此仅当 URL 落在 github.com 的
+ * `/<owner>/<repo>/releases/download/` 路径下才追加候选。自建 CDN/OSS 不加。
+ */
+export const DEFAULT_REMOTE_ASSET_MIRROR_PREFIX = "https://ghfast.top/";
+
+/** 判断是否为 GitHub release 资产下载地址（与会话更新镜像同一判定口径）。 */
+export function isGithubReleaseDownloadUrl(rawUrl: string): boolean {
+  try {
+    const url = new URL(rawUrl);
+    if (url.origin !== "https://github.com") return false;
+    return /^\/[^/]+\/[^/]+\/releases\/download\/[^/]+\/.+/u.test(url.pathname);
+  } catch {
+    return false;
+  }
+}
+
+/** 把 GitHub 下载地址改写为镜像地址；前缀为空或非 GitHub 地址时原样返回。 */
+export function toRemoteAssetMirrorUrl(rawUrl: string, mirrorPrefix: string): string {
+  const prefix = mirrorPrefix.trim();
+  if (!prefix) return rawUrl;
+  if (!isGithubReleaseDownloadUrl(rawUrl)) return rawUrl;
+  // 已经是镜像地址时不重复加前缀（否则回退链会拼出 https://m/https://m/https://...）。
+  if (rawUrl.startsWith(prefix.endsWith("/") ? prefix : `${prefix}/`)) return rawUrl;
+  const normalizedPrefix = prefix.endsWith("/") ? prefix : `${prefix}/`;
+  return `${normalizedPrefix}${rawUrl}`;
+}
+
+/**
+ * 为一批发布根生成「镜像优先、直连兜底」的 URL 候选。
+ *
+ * 顺序刻意是镜像在前：镜像命中就省下一次直连的 8 分钟等待；镜像不可用时
+ * 才走直连。调用方（descriptor 解析、archive 下载）都是「按顺序试，首个成功即用」，
+ * 所以顺序直接决定正常路径的快慢。
+ *
+ * 注意：不能让镜像成为**唯一**候选。镜像服务稳定性不受我们控制，
+ * 一旦它挂了而直连还在，缺兜底会让远端升级直接失败。
+ */
+export function withGithubMirrorCandidates(
+  urls: readonly string[],
+  mirrorPrefix: string = DEFAULT_REMOTE_ASSET_MIRROR_PREFIX,
+): string[] {
+  const prefix = mirrorPrefix.trim();
+  if (!prefix) return [...urls];
+  const mirrored: string[] = [];
+  for (const url of urls) {
+    const candidate = toRemoteAssetMirrorUrl(url, prefix);
+    if (candidate !== url) mirrored.push(candidate);
+  }
+  // 镜像候选整体排在前，直连候选整体排在后：同一文件先镜像后直连，
+  // 而不是逐个文件交错（否则每个文件都要先吃一次镜像失败）。
+  return Array.from(new Set([...mirrored, ...urls]));
 }
 
 export function buildReleaseAssetUrlCandidates(
