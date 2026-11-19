@@ -69,6 +69,31 @@
 > 因此**每发一个新版本，旧版本的远端都必须能升级到新版本**，否则远端会被判为必须升级却无包可下。
 > 这条前提成立的条件就是上面的第 1、2 点都做到。
 
+### GitHub Release 托管时的完整发版步骤
+
+```bash
+# 1. 生成远程资产（约 17 分钟；Linux 加 --linux，全平台约 350MB）
+pnpm --filter @raspberrycode/server-cli run stage:remote-assets
+
+# 2. 构建时注入发布根，指向本版本的 Release 下载目录
+REMOTE_ASSET_RELEASE_ROOT_URL=https://github.com/ShiZiMiao/RaspberryCode/releases/download/v<version> \
+  pnpm --dir packages/desktop run build
+
+# 3. 打包后把远程资产一并上传到同一个 Release
+gh release upload v<version> --repo ShiZiMiao/RaspberryCode \
+  packages/desktop/mock-cdn/releases/<version>/source-server-release.json \
+  packages/desktop/mock-cdn/releases/<version>/raspberrycode-server-*.tar.gz
+```
+
+### 下载镜像
+
+远程资产下载会自动优先走 GitHub 镜像（`ghfast.top`），失败回退直连。
+实测同一网络下直连 57KB/s、镜像 1301KB/s（88MB 包约 27 分钟 vs 70 秒）。
+镜像只对 `github.com/.../releases/download/...` 生效，自建 CDN/OSS 不加前缀。
+实现见 `packages/server/src/remote/remoteAssetCdn.ts` 的
+`withGithubMirrorCandidates`（与客户端自更新的 `updateMirror.ts` 同一语义，
+但两者运行在不同进程、不同网络栈，代码不共用）。
+
 ## 发版检查清单
 
 1. 确认变更类别 → 决定升哪一位（见上表）。
