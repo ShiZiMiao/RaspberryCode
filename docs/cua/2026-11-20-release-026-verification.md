@@ -262,3 +262,114 @@ gh release create v0.2.6 \
 
 且 **Release 必须真的上传 `mock-cdn/releases/0.2.6/` 里的两个 tar.gz + descriptor**，
 否则产物里的发布根指向 404，SSH 会重演 0.2.5 事故。
+
+---
+
+## 十、第二轮修复：插件缓存路径下 CUA 与浏览器控制同时不可用（2026-11-20 14:00）
+
+用户实测反馈：Agent 会话里说「没有 `mcp__node_repl__js`，CUA 要求的执行宿主不存在」，
+浏览器控制也同时不可用。
+
+### 一个缺陷同时废掉两个功能
+
+`resolveBuiltInNodeReplMcpServers` 的门禁是「Browser Use 或 Computer Use 任一启用
+即注册宿主」，两者共用同一个 `node_repl` 宿主。宿主起不来，两个能力一起不可用。
+
+### 三个根因（都在「资产搬运」这一层）
+
+**1. 宿主未声明 `node_modules` seed 白名单（主因）**
+
+`shouldSkipDirectory` 对 `node_modules` 的规则是「只有 depth===0 且在顶层白名单里
+才复制」。`computer-use` 声明了 `runtimeTopLevelPaths: ["node_modules"]`，宿主没有，
+于是宿主的 `node_modules` 被静默裁掉 —— 而宿主的 `server.js` 有静态
+`import koffi from "koffi"`（koffi 带原生 .node，esbuild 标为 external）。
+
+源码树能解析到是因为 monorepo 根有 koffi；seed 到插件缓存后是独立目录，
+祖先目录里没有，启动即 `ERR_MODULE_NOT_FOUND`。
+
+**2. 宿主 manifest 版本与另两处不一致**
+
+目录名 `0.7.0`、`package.json` `0.7.0`、`manifest` `0.6.1`。
+这正是定义文件里反复警告的「三处版本应保持一致，否则会继续加载旧缓存目录」。
+
+**3. `prepare-agent-node-bundle` 只给 cua-plugin stage koffi**
+
+sharp 当年踩过同一个坑（注释原文：「sharp 必须 stage 到宿主目录，否则宿主里的
+`import sharp` 在打包后的 app 里解析不到」），koffi 只补了一半。
+
+**4. 修复后又暴露第四层：Helper 入口没传给 node_repl 子进程**
+
+koffi 就位后宿主能启动了，但真正调用 CUA 时：
+`helper 启动前退出: code=1 signal=null`。
+
+`resolveHelperEntry` 的顺序是 `RASPBERRYCODE_CUA_HELPER_ENTRY` → 回退
+`../helper/windows-helper.js`。但 seed 到缓存的宿主**只有 `dist/mcp/server.js`**
+（`requiredSeedPaths` 就只声明那一个），没有 `dist/helper/`。Helper 真实位置在
+安装目录 `resources/agent/packages/raspberrycode-cua/dist/helper/`，
+它属于 producer workspace 包、不随插件 seed。
+
+desktop 已给 **host 子进程**注入该变量，但 `createBundledMcpRuntimeConfig`
+构造 node_repl 的 MCP 子进程 env 时把它丢了。
+
+### 修复
+
+- `official-plugin-definitions.ts`：宿主加 `runtimeTopLevelPaths: ["node_modules"]`
+- `node-repl-host/.raspberrycode-plugin/plugin.json`：版本改回 `0.7.0`
+- `prepare-agent-node-bundle.mjs`：koffi 同时 stage 到 cua-plugin 与 node-repl-host
+- `built-in-node-repl.ts` + `create-app.ts`：把 `RASPBERRYCODE_CUA_HELPER_ENTRY`
+  传给 node_repl 的 MCP 子进程
+
+### ⚠ 正确的构建顺序（本轮最大的流程教训）
+
+`run-production-build.mjs` **只跑 tsup + vite**，不含 `prepare:agent-bundle`。
+而 `prepare:agent-bundle` 不在这条链里，必须单独执行。今天前面几次打包都漏了它，
+导致 `bundled-agents/` 一直是 11 月 2 日的旧内容——改的 manifest 和 stage 的 koffi
+**都没进包**，而门禁全绿（门禁只看产物里有没有文件，不看文件是不是最新）。
+
+正确顺序（五步）：
+
+```bash
+# 1) 编译（带发布根，编译时注入）
+cd packages/desktop
+REMOTE_ASSET_RELEASE_ROOT_URL=... node scripts/run-production-build.mjs
+# 2) 准备 agent 资产（关键！含 bundled-agents 的插件与 koffi）
+npx pnpm run prepare:agent-bundle
+# 3) CUA 专项 stage（runtime dist + helper + 三处 koffi + 自检）
+node ../../scripts/stage-cua-agent-assets.mjs
+# 4) build-meta（必须在打包前，否则产物里是旧 commit）
+npx pnpm run prepare:build-meta
+# 5) 打包（显式 --config）
+npx electron-builder --win nsis --config electron-builder.config.js
+```
+
+### 升级路径验证（老用户能自动修好）
+
+缓存路径是 `cache/<marketplace>/<name>/<version>/`，`isSeedCurrent` 比对
+`marker.hash === plugin.hash`，而 `hashSeedFiles` 对每个文件的
+`path + sha256 + mode` 做哈希。加入 koffi 后 hash 必然变化 → 触发原子替换。
+
+实测（保留旧缓存直接装新版 + 启动）：
+
+```
+升级前  0.7.0: koffi=无  manifest=0.6.1
+升级后  0.7.0: koffi=有  manifest=0.7.0   ← 自动修复
+        0.6.1: koffi=无  manifest=0.6.1   ← 旧版残留，不参与加载
+```
+
+**不需要用户手工清缓存。**
+
+### 本轮验证结果
+
+| 项 | 结果 |
+|---|---|
+| 安装目录 CUA（`cua-verify-installed.mjs`） | **10 PASS / 0 FAIL** |
+| 插件缓存路径 CUA（模拟 Agent 真实链路） | **PASS** — `getApp("Notepad++")` + `getAXState()` 读出 `@state s-2 ... showing 0-23 of 24` |
+| 插件缓存路径浏览器控制 | **PASS** — 同一宿主内 `agent keys: browsers,documentation`，`agent.browsers` 为 object |
+| `release-gate` 六项自动化 | 全绿 |
+| 应用启动 / UI 渲染 | 正常（7 进程 / 1 窗口 / 界面完整） |
+
+### 一个必须记住的启动参数陷阱
+
+用 `--force-renderer-accessibility` 启动会让该版本**渲染层停在闪屏**
+（DOM 里只有空 `root` group，截图是闪屏）。不带该参数启动则界面完全正常。
+这个参数只在需要用 agent-desktop 读 Chromium 无障碍树时才加，**不能用它做 UI 正常性判断**。
