@@ -206,7 +206,30 @@ return JSON.stringify(r).slice(0, 4000);
   } catch {
     /* start 有时返回非 0，不影响 */
   }
-  await new Promise((r) => setTimeout(r, 2500));
+  // 等记事本**真的出现窗口**再继续，不要用固定 sleep。
+  // Win11 记事本冷启动经常超过 2.5s（尤其刚被 taskkill 之后进程池要重建），
+  // 固定等待会让下一步报「找不到应用 xxx.txt 的窗口」——看起来像 CUA 坏了，
+  // 其实是窗口还没起来。这里用 list_windows 轮询到目标窗口出现为止，最多 20s。
+  {
+    const deadline = Date.now() + 20_000;
+    let ready = false;
+    while (Date.now() < deadline) {
+      const probe = await runJs(`
+${BOOT}
+const lw = await agent.computerUse.computer.list_windows({});
+const sc = lw?.structuredContent ?? lw;
+const ws = sc?.windows ?? [];
+const hit = ws.some((w) => String(w.title ?? "").includes(${JSON.stringify(txtName)}));
+return hit ? "YES" : "NO";
+`);
+      if (String(probe).includes("YES")) {
+        ready = true;
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 600));
+    }
+    if (!ready) console.log("       (警告：等了 20s 仍未检测到目标记事本窗口)");
+  }
 
   const setv = await runJs(`
 ${BOOT}
