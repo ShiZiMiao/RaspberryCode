@@ -11,6 +11,18 @@ export interface ComputerUseRuntimeContext {
   clientMode?: "web-remote-replayable" | "desktop-continuous";
   deliveryKind?: "web-remote-replayable" | "desktop-continuous";
   trace?: Record<string, unknown>;
+  /**
+   * 本次任务的干扰预算。由宿主从用户设置注入，**不是模型参数**。
+   *
+   * 缺省为 `balanced`。模型无权修改——一旦可改，`quiet` 档就等于不存在。
+   */
+  interferenceBudget?: "quiet" | "balanced" | "unrestricted";
+  /**
+   * 用户是否已显式开启「允许物理注入（抢键鼠）」。
+   *
+   * 三级路径需要 `interferenceBudget === "unrestricted"` **且**本字段为 true。
+   */
+  allowPhysicalInjection?: boolean;
 }
 
 export interface ComputerUseRuntimeExecuteInput {
