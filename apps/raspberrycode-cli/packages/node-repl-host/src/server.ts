@@ -450,15 +450,42 @@ if (!isMainThread && isWorkerCallData(workerData)) {
     });
 }
 
+/**
+ * 从环境变量捕获 Computer Use runtime。
+ *
+ * 两条路，按是否存在 broker socket 决定：
+ *
+ * 1. **有 `RASPBERRYCODE_CUA_PERMISSION_BROKER_SOCKET`** → 走 broker。
+ *    这是上游架构（权限服务持有 Helper 凭据，runtime 通过 socket 转发）。
+ *
+ * 2. **没有 socket 但在 Windows 上** → 直连自研 Helper。
+ *    自研实现（`packages/raspberrycode-cua`）不依赖 broker：它自己 spawn
+ *    一个 `ELECTRON_RUN_AS_NODE` 子进程并通过命名管道通信，权限由会话上下文
+ *    （预算 + 物理注入授权）表达，不需要独立的 broker 服务。
+ *
+ * 第 2 条是必要的：上游的 recipe 解析依赖 `ax_native.node` 与 helper 应用包，
+ * 自研实现不用它们，因此那条链路永远解析失败、socket 永远不存在。
+ * 如果这里坚持「没 socket 就不启用」，自研实现就永远接不上。
+ *
+ * 平台判断放在这里而不是交给 runtime：非 Windows 平台若返回一个
+ * 必然失败的 runtime，模型会看到「工具存在但每个都报错」，
+ * 不如直接不注册。
+ */
 export function captureComputerUseRuntimeFromEnvironment(
   env: NodeJS.ProcessEnv = process.env,
 ): ComputerUseRuntime | undefined {
   const socketPath = env.RASPBERRYCODE_CUA_PERMISSION_BROKER_SOCKET?.trim();
-  if (!socketPath) return undefined;
-  return createComputerUseRuntime({
-    brokerSocketPath: socketPath,
-    refreshMarkerPath: env.RASPBERRYCODE_CUA_PERMISSION_BROKER_REFRESH_MARKER?.trim(),
-  });
+  if (socketPath) {
+    return createComputerUseRuntime({
+      brokerSocketPath: socketPath,
+      refreshMarkerPath: env.RASPBERRYCODE_CUA_PERMISSION_BROKER_REFRESH_MARKER?.trim(),
+    });
+  }
+
+  // 自研路径：只要平台受支持就启用，Helper 是懒启动的。
+  if ((env.RASPBERRYCODE_CUA_SELF_HOSTED ?? "").trim() === "0") return undefined;
+  if (process.platform !== "win32") return undefined;
+  return createComputerUseRuntime({ env: env as Record<string, string | undefined> });
 }
 
 function isWorkerCallData(value: unknown): value is WorkerCallData {

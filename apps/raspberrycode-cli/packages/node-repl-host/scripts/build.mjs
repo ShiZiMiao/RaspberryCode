@@ -55,7 +55,14 @@ export const buildNodeReplHostBundle = async ({
     outfile,
     platform: "node",
     target: "node24",
-    external: ["sharp"],
+    // `sharp` 与 `koffi` 都带原生 .node 二进制，esbuild 无法内联，必须保持外部依赖。
+    //
+    // koffi 是自研 CUA 的实现基础（直调 ole32/wtsapi32/user32 等）。它一旦被打进
+    // bundle，esbuild 会报 `No loader is configured for ".node" files` —— 而这个失败
+    // 只在**构建产物存在**（packages/raspberrycode-cua/dist 已构建）时才出现，
+    // 于是「先 build:cua 再 build host」会挂，反之不挂。这种依赖构建顺序的隐式
+    // 约束极难排查，所以显式排除。
+    external: ["sharp", "koffi"],
   });
   // 构建期守卫：define 名一旦漂移（改名、被 createSharedDefines 之类重构吞掉），
   // 产物会静默退回空串，而症状只在正式包出现且表现为超时。这里立刻失败，别再让它溜到用户手上。
