@@ -37,7 +37,7 @@
   OK    build-meta.json
   OK    安装包存在（169.44MB）
   OK    blockmap / latest.yml
-  OK    latest.yml version=0.2.6 且 size 与实际一致（177666359）
+  OK    latest.yml version=0.2.6 且 size 与实际一致（177666386）
 
 == 产物核验 ==
   OK    5 个更新链路修复标记全在
@@ -191,10 +191,46 @@ RASPBERRYCODE_ENV=production RASPBERRYCODE_PREVIEW_IDENTITY=0 \
 
 ---
 
+## 七点五、代码入库后重建复验（2026-11-20 10:15）
+
+首次打包时 CUA 的全部源码**还未进版本库**（`packages/raspberrycode-cua/src/`
+40 个文件未被跟踪）。把代码按 9 个 commit 提交后，为保证「产物 == 源码」
+重新走了完整链路：
+
+```
+编译（带发布根）  → 2m21s
+stage CUA 资产    → 自检通过
+打包              → 11m42s
+安装              → 0.2.6.0，文件时间 09:35 → 10:10
+```
+
+复验结果：
+
+| 项 | 结果 |
+|---|---|
+| `release-gate`（无 `--quick`） | **6 项自动化全绿** |
+| `cua-verify-installed.mjs` | **10 PASS / 0 FAIL** |
+| 应用启动 | 7 进程 / 1 窗口 / 标题正常 |
+| UI 渲染 | 正常（导航、任务列表、输入框、模型名） |
+
+产物：`RaspberryCode-0.2.6-win-x64.exe` 177,666,386 bytes
+
+### 同时修掉验证脚本的三处判据错误
+
+原脚本会给假失败，三处都值得记下来：
+
+1. 用 `computer.get_app_state` 的 `structuredContent` 找 `elements` —— 那里
+   只有 `element_count`，元素表要经 SDK 的 `appStateOf` 从 text block 合并。
+   改用高层 API：`getApp` → `getAXState` → `setValue`。
+2. 用磁盘文件内容判定 `set_value` —— 记事本改内存文档、不自动保存。
+   改为重新观察树读 `document` 行的 `value`。
+3. 在同一个 cell 里紧接着 `getAXState` —— 它的 `emitText` 会顶掉 `return` 值。
+   判定必须放在**下一次独立 cell**。
+
 ## 八、当前产物
 
 ```
-packages/desktop/dist/RaspberryCode-0.2.6-win-x64.exe      177,666,359 bytes
+packages/desktop/dist/RaspberryCode-0.2.6-win-x64.exe      177,666,386 bytes
 packages/desktop/dist/RaspberryCode-0.2.6-win-x64.exe.blockmap
 packages/desktop/dist/latest.yml                           version 0.2.6
 packages/desktop/dist/win-unpacked/                        未安装版（可直接运行）
