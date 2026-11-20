@@ -198,42 +198,46 @@ return JSON.stringify(r).slice(0, 4000);
 
   const setv = await runJs(`
 ${BOOT}
-// 观察记事本，拿到真实元素表后再挑可写的元素（不写死下标）。
-const obs = await agent.computerUse.computer.get_app_state({ app_ref: { name: "Notepad" } });
-const sc = obs?.structuredContent ?? obs;
-const stateId = sc?.state_id;
-const els = Array.isArray(sc?.elements) ? sc.elements : [];
-if (!stateId) return JSON.stringify({ step: "observe", failed: true, keys: Object.keys(sc ?? {}), raw: String(obs?.content?.[0]?.text ?? "").slice(0, 800) }).slice(0, 3000);
-
-// 选第一个声明支持 set_value 的元素；没有就退回 index 与数组下标一致的可编辑项。
-const target = els.find(e => Array.isArray(e?.actions) && e.actions.includes("set_value"))
-            ?? els.find(e => e?.role === "document" || e?.kind === "document")
-            ?? els.find(e => typeof e?.index === "number");
-const idx = target?.index;
-if (typeof idx !== "number") return JSON.stringify({ step: "pick", failed: true, count: els.length, sample: els.slice(0, 6) }).slice(0, 3000);
-
-const act = await agent.computerUse.computer.set_value({
-  app_ref: { name: "Notepad" },
-  target: { type: "element", index: idx },
-  value: ${JSON.stringify(marker)},
-});
-return JSON.stringify({ step: "set_value", stateId, idx, role: target?.role, kind: target?.kind, act: act?.structuredContent ?? act }).slice(0, 4000);
+// 用高层 API：getApp 绑定 → getAXState 拿树 → setValue 写。
+// 注意不能用 computer.get_app_state 的 structuredContent 找 elements：
+// 那个返回里只有 element_count，元素表要经过 SDK 的 appStateOf 从 text block 合并。
+const app = await agent.computerUse.getApp("Notepad");
+const tree = await app.getAXState();
+const m = String(tree).match(/\\n\\s*(\\d+) document .*editable/);
+if (!m) return "NO_EDITABLE_ELEMENT len=" + String(tree).length;
+const idx = Number(m[1]);
+await app.setValue(idx, ${JSON.stringify(marker)});
+return "SET_SENT idx=" + idx;
 `);
-  check("get_app_state + set_value 流程无错误", setv.isError !== true, setv.text);
+  check("getAXState + setValue 流程无错误", setv.isError !== true, setv.text);
 
-  // 从 OS 侧独立读回文件内容（不信 Agent 自己的回执）
-  await new Promise((r) => setTimeout(r, 1200));
-  let fileContent = "";
-  try {
-    const { readFileSync } = await import("node:fs");
-    fileContent = readFileSync(txtPath, "utf8");
-  } catch {
-    /* ignore */
-  }
+  // 判据：**重新观察无障碍树**，读 document 行的 value。
+  //
+  // 不能用磁盘文件内容判定 —— 记事本改的是内存文档，不会自动保存。
+  // 实测磁盘一直是 "ORIGINAL"，看起来像失败，但树里 value 已经变了。
+  // 也不能在同一个 cell 里紧接着 getAXState：它的 emitText 会顶掉 cell 的 return 值，
+  // 所以必须在**下一次独立 cell** 里重新观察。
+  const after = await runJs(`
+${BOOT}
+const app = await agent.computerUse.getApp("Notepad");
+await app.getAXState();
+// getAXState 的 emitText 会把整棵树作为 cell 文本下发，return 值会被它顶掉，
+// 所以这里直接返回；外层从文本里找 marker 即可（那正是我们想验证的 document value）。
+return "OBSERVED";
+`);
+  // 判据：树里 document 行的 value 是否变成 marker。
+  // 不能用磁盘文件内容判定 —— 记事本改的是内存文档，不会自动保存。
+  // 实测磁盘一直是 "ORIGINAL"，看起来像失败，但树里 value 已经变了。
+  const docLine =
+    after.text
+      .split("\n")
+      .find((l) => /\bdocument\b/.test(l) && l.includes("editable")) ?? "";
   check(
-    `从磁盘读回写入内容（=${marker}）`,
-    fileContent.includes(marker),
-    `实际内容: ${JSON.stringify(fileContent.slice(0, 200))}`,
+    `文档内容已被改写（期望含 ${marker}）`,
+    docLine.includes(marker) || after.text.includes(marker),
+    docLine
+      ? `实际 document 行: ${docLine.trim().slice(0, 200)}`
+      : `未找到 document 行，文本长度 ${after.text.length}`,
   );
 
   try {
