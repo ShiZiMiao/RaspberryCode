@@ -16,6 +16,11 @@ export const BUILT_IN_NODE_REPL_SERVER_NAME = "node_repl";
 export function resolveBuiltInNodeReplMcpServers(input: {
   pluginOutcome: Pick<PluginLoadOutcome, "plugins">;
   workingDirectory: string;
+  /**
+   * 自研 Windows CUA Helper 入口绝对路径（来自 `RASPBERRYCODE_CUA_HELPER_ENTRY`）。
+   * 缺省时不下发，runtime 回退到相对自身模块的 `../helper/`；插件缓存态该回退必然落空。
+   */
+  cuaHelperEntry?: string;
 }): Record<string, McpServerConfig> {
   const browserUsePackage = input.pluginOutcome.plugins.find(
     (plugin) => plugin.id === OFFICIAL_BROWSER_USE_PLUGIN_ID && plugin.enabled,
@@ -37,6 +42,23 @@ export function resolveBuiltInNodeReplMcpServers(input: {
       // 领域 root 各自注入，且只在对应能力启用时注入：宿主据此决定哪一半文档可用。
       ...(browserUsePackage ? { RASPBERRYCODE_PLUGIN_ROOT: browserUsePackage.rootPath } : {}),
       ...(cuaPackage ? { RASPBERRYCODE_CUA_PLUGIN_ROOT: cuaPackage.rootPath } : {}),
+      // CUA Helper 入口必须显式下发（2026-11-20 真机修复）。
+      //
+      // Helper 是**独立子进程入口**，runtime 的解析顺序是
+      // `RASPBERRYCODE_CUA_HELPER_ENTRY` → 回退 `../helper/windows-helper.js`
+      // （相对自身模块，即 `dist/runtime/` 的兄弟目录）。
+      //
+      // 但 seed 到插件缓存的宿主只携带 `dist/mcp/server.js`，**没有 dist/helper/**，
+      // 于是回退路径必然落空 → Helper `code=1` 退出 → 全方法不可用。
+      // 而 Helper 的真实位置在安装目录 `resources/agent/packages/raspberrycode-cua/dist/helper/`，
+      // 它不随官方插件 seed（那是 producer workspace 包，不是插件）。
+      //
+      // 所以只要能力启用且环境里有该路径，就必须传给 MCP 子进程 —— 这与 desktop 给
+      // host 子进程注入的是同一个变量（见 desktopRuntimeEnv.ts 的
+      // resolveBundledCuaHelperEntryPath）。
+      ...(cuaPackage && input.cuaHelperEntry
+        ? { RASPBERRYCODE_CUA_HELPER_ENTRY: input.cuaHelperEntry }
+        : {}),
     },
     rootPath: hostPackage.rootPath,
     timeoutMs: 600_000,

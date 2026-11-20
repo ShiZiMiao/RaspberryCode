@@ -271,6 +271,9 @@ export async function createRaspberryCodeApp(options: RaspberryCodeAppOptions): 
     const builtInMcpServers = resolveBuiltInNodeReplMcpServers({
       pluginOutcome,
       workingDirectory,
+      // desktop 已在 host fork 时注入该变量；这里转交给 node_repl 的 MCP 子进程。
+      // 缺了它，Helper 只能靠相对模块路径解析，而插件缓存里没有 dist/helper（见函数注释）。
+      cuaHelperEntry: process.env.RASPBERRYCODE_CUA_HELPER_ENTRY?.trim() || undefined,
     });
     // 用户目录已在 loader 前完成原地迁移；不能给项目/插件旧身份加内存兼容旁路。
     const subagentProfiles = [...raspberrycodeSubagentProfiles, ...pluginSubagentProfiles];
