@@ -78,6 +78,21 @@ async function assertDirectoryExists(path: string): Promise<void> {
 }
 
 
+/**
+ * 目录存在且确实是目录时返回 true，否则 false（含路径不存在）。
+ *
+ * 为什么不复用上面那个抛错版本：草稿目录的场景是**可恢复**的，
+ * 抛错会让调用方永久卡住（见 prepareSession 里 reuseDraft 分支的注释）。
+ * 这里只需要一个「还能不能用」的答案。
+ */
+async function isUsableDirectory(path: string): Promise<boolean> {
+  try {
+    return (await stat(path)).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
 function startPrimaryRootStat(path: string) {
   const flight = { startedAt: Date.now(), result: stat(path) };
   const clear = () => {
@@ -319,10 +334,27 @@ export function createProjectService(options: {
             options.workspaceDirectory,
             draftId ? `draft-${draftId}` : `${Date.now()}-${randomUUID()}`,
           );
-          // 已交付的目录若被移走，只报告缺失；不能用 mkdir 静默重建空目录。
-          if (params?.reuseDraft) {
-            await assertDirectoryExists(path);
-          } else await mkdir(path, { recursive: true });
+          // 复用草稿目录的前提是它还在。**目录已消失时必须重建，不能报错**。
+          //
+          // Bug 原因（2026-11-20 真机）：这里原先 `if (!(await stat(path)).isDirectory())
+          // throw new Error("project.directory-required")`。而前端把 draftId 连同
+          // workspacePath 一起持久化在 localStorage（composerDraftStore 的
+          // `raspberrycode-pending-task-draft:v1:*`）。一旦那个目录被清理（用户删了
+          // `~/.raspberrycode/workspace/draft-*`、或卸载/迁移遗留），前端每次新建任务都会
+          // 带着同一个 draftId + workspacePath 重试 → reuseDraft=true → 每次都校验一个
+          // 已经不存在的目录 → **永久无法创建任务**，且界面只显示
+          // `project.directory-required`，用户没有任何自救入口。
+          //
+          // 语义上也说不通：这里是「准备一个可写工作目录」，不是「校验用户指定的项目主目录」。
+          // 项目主目录失效必须报错（不能凭空复活用户的项目）；草稿目录是我们自己分配的临时
+          // 空间，重建它是正确行为，不丢任何用户数据。
+          //
+          // 保留「不能用 mkdir 静默重建**已交付**目录」的原意：`reuseDraft` 只在我们自己
+          // 分配的 draft-<uuid> 路径上生效，不会命中用户的项目目录。
+          if (params?.reuseDraft && (await isUsableDirectory(path))) {
+            return { workspacePath: path, additionalDirectories: [], projectId: null };
+          }
+          await mkdir(path, { recursive: true });
           return { workspacePath: path, additionalDirectories: [], projectId: null };
         }
         const repo = await options.repository();
