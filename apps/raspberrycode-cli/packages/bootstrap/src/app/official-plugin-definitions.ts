@@ -150,6 +150,21 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
     defaultEnabled: true,
     name: OFFICIAL_NODE_REPL_HOST_PLUGIN_NAME,
     requiredSeedPaths: OFFICIAL_NODE_REPL_HOST_REQUIRED_SEED_PATHS,
+    // ⚠ 必须同时 seed `node_modules`（2026-11-20 真机修复）。
+    //
+    // host bundle 的 `dist/mcp/server.js` 有静态顶层 `import koffi from "koffi"`
+    // （esbuild 把 koffi 标为 external，因为带原生 .node 无法内联）。源码树里能解析到，
+    // 是因为 monorepo 根有 `node_modules/koffi`；但 seed 到插件缓存后是**独立目录**，
+    // 祖先目录里没有 koffi，于是宿主启动即 `ERR_MODULE_NOT_FOUND` 退出。
+    //
+    // 后果不是「CUA 一个功能不可用」，而是**电脑控制与浏览器控制同时全废**——
+    // 两者都由这个宿主承载（见 resolveBuiltInNodeReplMcpServers 的门禁：任一启用即注册）。
+    // 表现是 Agent 说「没有 mcp__node_repl__js，CUA 要求的执行宿主不存在」。
+    //
+    // `shouldSkipDirectory` 对 `node_modules` 的规则是「只有 depth===0 且在顶层白名单
+    // 里才复制」，所以这里必须显式声明，否则会被静默裁掉（与 computer-use 声明
+    // runtimeTopLevelPaths: ["node_modules"] 同理）。
+    runtimeTopLevelPaths: ["node_modules"],
     rootCandidates: [
       "packages/node-repl-host",
       "../node-repl-host",

@@ -50,6 +50,34 @@ interface ProjectDirectoryPort {
 const PRIMARY_ROOT_STATUS_TIMEOUT_MS = 30_000;
 const inFlightPrimaryRootStats = new Map<string, { startedAt: number; result: Promise<Stats> }>();
 
+/**
+ * 目录必须存在且是目录，否则抛出**归一化**错误码。
+ *
+ * Bug 原因（2026-11-20 真机）：这里原先直接 `await stat(path)`，目录被移走时
+ * 抛出的是原始 `ENOENT: no such file or directory, stat '<path>'`。这个错误穿过
+ * RPC 边界后只剩一行 message（stack 在序列化时丢失），前端原样展示给用户，
+ * 用户看到的是系统级 ENOENT 而不是「项目目录已失效」。
+ *
+ * `prepareSession` 的 `reuseDraft` 分支注释本来就写着「已交付的目录若被移走，
+ * 只报告缺失；不能用 mkdir 静默重建空目录」，但裸 stat 让「报告缺失」变成了
+ * 泄漏系统错误。调用方按 code 分支时也拿不到可判断的值。
+ *
+ * 归一化后：不存在/不是目录 → `project.directory-required`；
+ * 其它 IO 错误原样上抛，因为那确实不是「目录缺失」。
+ */
+async function assertDirectoryExists(path: string): Promise<void> {
+  try {
+    if (!(await stat(path)).isDirectory()) throw new Error("project.directory-required");
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === "ENOENT" || code === "ENOTDIR") {
+      throw new Error("project.directory-required");
+    }
+    throw error;
+  }
+}
+
+
 function startPrimaryRootStat(path: string) {
   const flight = { startedAt: Date.now(), result: stat(path) };
   const clear = () => {
@@ -211,7 +239,7 @@ export function createProjectService(options: {
         : undefined;
       await Promise.all(
         (roots ?? []).map(async (path) => {
-          if (!(await stat(path)).isDirectory()) throw new Error("project.directory-required");
+          await assertDirectoryExists(path);
         }),
       );
       const result = (await options.repository()).saveProject({
@@ -256,8 +284,7 @@ export function createProjectService(options: {
           addMissingRoot: input.addMissingRoot,
         });
       // 确认增加缺失 root 时也校验目录，不能通过拖动绕过新增目录的存在性约束。
-      if (input.addMissingRoot && !(await stat(input.task.workspacePath)).isDirectory())
-        throw new Error("project.directory-required");
+      if (input.addMissingRoot) await assertDirectoryExists(input.task.workspacePath);
       (await options.repository()).moveTask(input);
       await changed();
     },
@@ -294,7 +321,7 @@ export function createProjectService(options: {
           );
           // 已交付的目录若被移走，只报告缺失；不能用 mkdir 静默重建空目录。
           if (params?.reuseDraft) {
-            if (!(await stat(path)).isDirectory()) throw new Error("project.directory-required");
+            await assertDirectoryExists(path);
           } else await mkdir(path, { recursive: true });
           return { workspacePath: path, additionalDirectories: [], projectId: null };
         }

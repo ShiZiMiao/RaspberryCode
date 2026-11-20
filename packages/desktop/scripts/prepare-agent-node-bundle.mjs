@@ -490,14 +490,33 @@ function stageKoffiForCuaPlugin() {
     console.log("[prepare:agent-bundle] raspberrycode-cua-plugin not staged, skip koffi staging");
     return;
   }
-  stageKoffiIntoBundledAgents({
-    koffiPackageRoot: adaptersRoot,
-    agentDir: cuaPluginStagedDir,
-    targetPlatform: { os: platform, arch },
-  });
-  console.log(
-    `[prepare:agent-bundle] staged koffi into ${resolve(cuaPluginStagedDir, "node_modules")} (${platform}-${arch})`,
-  );
+  // koffi 与 sharp 同理：它们是带 native `.node` 的外部依赖，运行时从**所在包**的
+  // node_modules 解析。宿主 bundle 里也有静态 `import koffi from "koffi"`，
+  // 所以宿主的 node_modules 必须同样带一份。
+  //
+  // 2026-11-20 真机事故：只 stage 到 cua-plugin 时，安装包能跑（因为 electron-builder
+  // 的 bundled-agents 里有宿主的 node_modules），但**官方插件 cache 的 seed 路径**会
+  // 把宿主的 node_modules 裁掉（未声明 runtimeTopLevelPaths），于是 node_repl 宿主
+  // 启动即 ERR_MODULE_NOT_FOUND —— 电脑控制与浏览器控制同时全废。
+  // 两处（cua-plugin / node-repl-host）都要 stage，任一处缺失都会让某个消费方解析不到。
+  const pluginStagedDirs = [
+    ["@raspberrycode/raspberrycode-cua-plugin", cuaPluginStagedDir],
+    [NODE_REPL_HOST_PACKAGE_NAME, resolve(agentDir, "packages", "node-repl-host")],
+  ];
+  for (const [packageName, pluginStagedDir] of pluginStagedDirs) {
+    if (!existsSync(pluginStagedDir)) {
+      console.log(`[prepare:agent-bundle] ${packageName} not staged, skip koffi staging`);
+      continue;
+    }
+    stageKoffiIntoBundledAgents({
+      koffiPackageRoot: adaptersRoot,
+      agentDir: pluginStagedDir,
+      targetPlatform: { os: platform, arch },
+    });
+    console.log(
+      `[prepare:agent-bundle] staged koffi into ${resolve(pluginStagedDir, "node_modules")} (${platform}-${arch})`,
+    );
+  }
 }
 
 // 修复原因：Electron 生产包只带 resources/agent/raspberrycode.cjs 时，app-server 进程的
