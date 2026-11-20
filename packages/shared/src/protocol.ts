@@ -291,6 +291,25 @@ export interface AppSettings {
    * 关闭后按钮不再渲染，且不因重启或版本更新自愈，仅能在设置页重新开启。
    */
   computerUseComposerEntryHidden?: boolean;
+  /**
+   * 电脑控制的干扰预算（当前任务可以打扰用户到什么程度）。
+   *
+   * - `quiet`：只允许消息投递，完全无感但能力有限
+   * - `balanced`（默认）：可用无障碍语义动作，会激活窗口但不抢键鼠
+   * - `unrestricted`：允许物理注入（需同时开启下面的授权）
+   *
+   * 由 runtime 从请求 context 读取；context 未给时回落到环境变量默认值。
+   * **不从工具参数读**——模型能自己放宽预算，`quiet` 档就形同虚设。
+   */
+  computerUseInterferenceBudget?: "quiet" | "balanced" | "unrestricted";
+  /**
+   * 用户是否接受电脑控制抢占鼠标键盘（物理注入）。
+   *
+   * 与预算的关系是**与门**：只有预算为 `unrestricted` 且本项为 true，
+   * 才会走物理注入。两项分开是因为它们表达不同的事——
+   * 预算说「这次任务可以打扰我」，授权说「我接受这个产品抢我的键鼠」。
+   */
+  computerUseAllowPhysicalInjection?: boolean;
   /** 自动归档旧会话的总开关 */
   taskAutoArchiveEnabled?: boolean;
   /** 自动归档修复后的一次性关闭标记；只用于设置迁移，不参与归档判断。 */

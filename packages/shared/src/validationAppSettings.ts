@@ -518,6 +518,19 @@ const appSettingsObjectSchema = z.object({
   // 输入框电脑操作入口改为默认不展示，设置项保留、默认关闭。
   // default 只对缺省字段生效，显式存过 false 的用户仍保持展示。
   computerUseComposerEntryHidden: z.boolean().default(true),
+  // 电脑控制的干扰预算与物理注入授权。
+  //
+  // 为什么要在设置里暴露：`type` / `key` / `paste` / `left_click_drag` 这四个方法
+  // 必须走物理注入（抢键鼠），而物理注入是**默认拒绝**的。此前这两项只存在于
+  // runtime 的类型定义里、没有任何注入点，导致上述四个方法对用户永久不可用，
+  // 模型只能提示「请在设置中开启」而设置里并无此开关。
+  //
+  // 默认值保持最保守（balanced + 不授权）：老用户升级后行为不变，
+  // 必须显式打开才会抢占键鼠。
+  computerUseInterferenceBudget: z
+    .enum(["quiet", "balanced", "unrestricted"])
+    .default("balanced"),
+  computerUseAllowPhysicalInjection: z.boolean().default(false),
   taskAutoArchiveEnabled: z.boolean().default(false),
   taskAutoArchiveResetVersion: z.literal(1).default(1),
   taskAutoArchiveOlderThanDays: z.number().int().positive().max(365).default(30),
@@ -637,6 +650,8 @@ export const appSettingsPatchSchema = z.object({
   embeddedBrowserAllowInsecureCertificates: z.boolean().optional(),
   embeddedBrowserViewportPreference: embeddedBrowserViewportPreferenceSchema.optional(),
   computerUseComposerEntryHidden: z.boolean().optional(),
+  computerUseInterferenceBudget: z.enum(["quiet", "balanced", "unrestricted"]).optional(),
+  computerUseAllowPhysicalInjection: z.boolean().optional(),
   taskAutoArchiveEnabled: z.boolean().optional(),
   taskAutoArchiveOlderThanDays: z.number().int().positive().max(365).optional(),
   closeToTrayOnWindows: z.boolean().optional(),

@@ -6889,6 +6889,10 @@ const enUS: Record<string, string> = {
   "settings.computerUse.composerEntry.requiresEnabled":
     "Turn on Computer Use first to show this button in the composer.",
   "settings.computerUse.composerEntry.saveFailed": "Failed to save: {error}",
+  "settings.computerUse.physicalInjection.label": "Allow simulated keyboard and drag",
+  "settings.computerUse.physicalInjection.description":
+    "Typing, pasting and dragging need real mouse/keyboard events, so they briefly take over input focus. When off, those actions are refused rather than silently failing. Restart RaspberryCode for changes to take effect.",
+  "settings.computerUse.physicalInjection.saveFailed": "Failed to save: {error}",
   "settings.computerUse.unsupported.title": "Computer Use is unavailable here",
   "settings.computerUse.unsupported.remoteDescription":
     "Computer Use is not yet supported for SSH, WSL, Docker, or other remote environments. Switch to a local macOS or Windows workspace.",

@@ -651,6 +651,47 @@ export function ComputerUseSection({
     [intl, updateAppSettings],
   );
 
+  // 物理注入授权。这是「我接受这个产品抢我的鼠标键盘」这个产品决策的开关，
+  // 与干扰预算分开：预算表达「这次任务可以打扰我」，授权表达「我接受被抢键鼠」。
+  //
+  // 打开后 keyboard 类方法（type / key / paste / drag）才可用；
+  // 关闭时它们会明确拒绝，而不是静默不生效。
+  const persistedAllowPhysical = appSettings?.computerUseAllowPhysicalInjection === true;
+  const [allowPhysicalOverride, setAllowPhysicalOverride] = useState<boolean | null>(null);
+  const [allowPhysicalSaving, setAllowPhysicalSaving] = useState(false);
+  const allowPhysical = allowPhysicalOverride ?? persistedAllowPhysical;
+  useEffect(() => {
+    if (allowPhysicalOverride === null) return;
+    if (persistedAllowPhysical === allowPhysicalOverride) setAllowPhysicalOverride(null);
+  }, [allowPhysicalOverride, persistedAllowPhysical]);
+  const onToggleAllowPhysical = useCallback(
+    async (next: boolean) => {
+      setAllowPhysicalOverride(next);
+      setAllowPhysicalSaving(true);
+      try {
+        // 同时把预算提到 unrestricted：只授权不提预算等于什么都不开，
+        // 用户点了开关却仍然不能输入，会被当成坏了。
+        await updateAppSettings({
+          computerUseAllowPhysicalInjection: next,
+          ...(next ? { computerUseInterferenceBudget: "unrestricted" as const } : {}),
+        });
+      } catch (error) {
+        if (mountedRef.current) {
+          setAllowPhysicalOverride(null);
+          toast(
+            intl.formatMessage(
+              { id: "settings.computerUse.physicalInjection.saveFailed" },
+              { error: error instanceof Error ? error.message : String(error) },
+            ),
+          );
+        }
+      } finally {
+        if (mountedRef.current) setAllowPhysicalSaving(false);
+      }
+    },
+    [intl, updateAppSettings],
+  );
+
   // 产品需求：denied（未授权）时右侧状态徽章本身可点击，
   // 效果同「打开系统设置」授权按钮；granted/stale/unknown 保持纯展示。
   const renderPermissionBadge = (
@@ -740,6 +781,26 @@ export function ComputerUseSection({
               checked={composerEntryVisible}
               disabled={composerEntrySaving || !cuaEnabled}
               onCheckedChange={(checked) => void onToggleComposerEntry(checked)}
+            />
+          }
+        />
+        {/* 物理注入授权：打开后电脑控制才能模拟键盘输入与拖拽。
+            关闭时相关方法会明确拒绝而非静默不生效，所以文案里说清代价。 */}
+        <SettingsRow
+          label={intl.formatMessage({ id: "settings.computerUse.physicalInjection.label" })}
+          description={intl.formatMessage({
+            id: cuaEnabled
+              ? "settings.computerUse.physicalInjection.description"
+              : "settings.computerUse.composerEntry.requiresEnabled",
+          })}
+          control={
+            <Switch
+              aria-label={intl.formatMessage({
+                id: "settings.computerUse.physicalInjection.label",
+              })}
+              checked={allowPhysical}
+              disabled={allowPhysicalSaving || !cuaEnabled}
+              onCheckedChange={(checked) => void onToggleAllowPhysical(checked)}
             />
           }
         />

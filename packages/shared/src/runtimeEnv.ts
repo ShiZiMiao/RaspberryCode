@@ -25,6 +25,26 @@ export const RASPBERRYCODE_CUA_NODE_REPL_HOST_ENV_KEY = "RASPBERRYCODE_CUA_NODE_
 // incantation. 这些开关只在未打包本地构建生效；正式 desktop/Helper bundle 会在编译期关闭并在
 // main→host 边界删除，不能用于 signed release 的 runtime override。
 export const RASPBERRYCODE_CUA_DEV_MODE_ENV_KEY = "RASPBERRYCODE_CUA_DEV_MODE";
+/**
+ * 电脑控制的干扰预算与物理注入授权（用户设置 → host → node_repl → runtime）。
+ *
+ * 这两个键是把「用户设置里的开关」送到 runtime 的唯一通道：宿主的
+ * request context 不带预算字段，runtime 只认环境变量或 context。
+ * 缺了这条链，`type` / `key` / `paste` / `left_click_drag` 四个方法
+ * 会因为永远拿不到物理注入授权而对用户不可用。
+ */
+export const RASPBERRYCODE_CUA_INTERFERENCE_BUDGET_ENV = "RASPBERRYCODE_CUA_INTERFERENCE_BUDGET";
+export const RASPBERRYCODE_CUA_ALLOW_PHYSICAL_INJECTION_ENV =
+  "RASPBERRYCODE_CUA_ALLOW_PHYSICAL_INJECTION";
+
+/**
+ * 自研（self-hosted）CUA Helper 的入口脚本绝对路径。
+ *
+ * 打包后 `raspberrycode-cua` 被内联进 main bundle，而 Helper 是**独立子进程入口**，
+ * 必须由 desktop 显式下发真实文件路径；否则 runtime 的「相对自身模块 ../helper/」回退
+ * 会指向不存在的位置，Helper 启动即 code=1 退出（2026-11-20 真实安装版暴露）。
+ */
+export const RASPBERRYCODE_CUA_HELPER_ENTRY_ENV = "RASPBERRYCODE_CUA_HELPER_ENTRY";
 
 export type RaspberryCodeRuntimeEnv = "development" | "production" | "test";
 
