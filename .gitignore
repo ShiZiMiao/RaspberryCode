@@ -86,3 +86,10 @@ __pycache__/
 .old-dist/
 .bad-dist/
 .upgrade-test-*.exe
+
+# 无人值守 / 手工验证的临时产物：进度日志、截图、启动脚本、临时探针。
+# 这些是排查过程的副产物，不是产品代码；需要长期留存的内容应整理进 docs/。
+.unattended/
+.tmp-verify/
+.cua-verify-backup/
+launch-rc.bat

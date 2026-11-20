@@ -117,6 +117,16 @@ export default defineConfig({
     maxWorkers: 4,
     testTimeout: 30_000,
     // 工程测试使用明确清单；不再发现 App 业务单测。真实子进程测试串行运行。
+    //
+    // ⚠ `unit` 与 `fork-isolated` 两个 project 与上一句相矛盾，也与上游不一致：
+    // 上游 zai-org/ZCode 的 vitest 配置只有 `engineering` + cua，并已按
+    // docs/testing/unit-test-quality.md（2026-10-26）退役 App 业务单测。
+    // 我们这条开发线从未删除这两个 project，于是 892 个 desktop + 714 个 ui
+    // 测试仍在执行。这不是有意恢复，是分叉后没跟上上游的删除（内部代号
+    // SYNC-DRIFT-UNIT，详见 docs/sync-drift-unit.md）。
+    //
+    // 在方向决定之前**不要**在这里新增 App 业务测试：新测试请写到
+    // packages/raspberrycode-cua/test/（规范明确保留、有独立入口）。
     projects: [
       {
         extends: true,

@@ -105,7 +105,7 @@
     ".agents/skills",
     "packages/formal-proof",
     "apps/raspberrycode-cli",
-    "packages/raspberrycode-cua",
+    "packages/raspberrycode-cua/dist",
     "docs/electron"
   ]
 }
