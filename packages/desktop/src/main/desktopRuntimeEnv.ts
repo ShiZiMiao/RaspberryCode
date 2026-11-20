@@ -437,6 +437,36 @@ export function resolveBundledAgentBinaryPath(): string | undefined {
   return resolveBundledRaspberryCodeAgentBinaryPath();
 }
 
+/**
+ * 解析自研（self-hosted）Windows CUA Helper 的入口脚本路径。
+ *
+ * 背景（2026-11-20 真实安装版才暴露）：`raspberrycode-cua` 的 runtime 在没拿到
+ * `RASPBERRYCODE_CUA_HELPER_ENTRY` 时，会回退到「相对自身模块的 ../helper/windows-helper.js」。
+ * 但打包后该包被 tsup 内联进 main bundle，helper 是**独立子进程入口**、必须是一个真实文件，
+ * 于是回退路径指向不存在的位置 → Helper 启动即 `code=1` 退出 → CUA 全部方法不可用。
+ *
+ * 落点由 `scripts/stage-cua-agent-assets.mjs` 的 `stageCuaRuntime()` 保证：
+ * `resources/agent/packages/raspberrycode-cua/dist/helper/windows-helper.js`。
+ *
+ * 返回 undefined 表示「没找到」，由调用方决定不下发该 env（runtime 会退回自身解析）。
+ */
+export function resolveBundledCuaHelperEntryPath(): string | undefined {
+  if (process.platform !== "win32") return undefined;
+  const candidates = [
+    // 打包态：resources/agent/packages/...
+    join(process.resourcesPath, "agent", "packages", "raspberrycode-cua", "dist", "helper", "windows-helper.js"),
+    // 开发态：仓库内构建产物（packages/desktop 向上两级）
+    join(process.cwd(), "..", "..", "packages", "raspberrycode-cua", "dist", "helper", "windows-helper.js"),
+  ];
+  return candidates.find((candidate) => {
+    try {
+      return existsSync(candidate);
+    } catch {
+      return false;
+    }
+  });
+}
+
 function resolveHostProcessBinaryEnv(
   envVar: string,
   hostProcessLocalEnv: Record<string, string>,

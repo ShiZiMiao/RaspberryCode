@@ -25,6 +25,9 @@ import {
   RUNTIME_RASPBERRYCODE_DEBUG,
   serializeLaunchMarks,
   RASPBERRYCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV,
+  RASPBERRYCODE_CUA_INTERFERENCE_BUDGET_ENV,
+  RASPBERRYCODE_CUA_ALLOW_PHYSICAL_INJECTION_ENV,
+  RASPBERRYCODE_CUA_HELPER_ENTRY_ENV,
 } from "@raspberrycode/shared";
 import type {
   PluginSandboxHandle,
@@ -168,6 +171,22 @@ export function spawnHostProcess(
     hostProcessLocalEnv: Record<string, string>;
     /** Main 进程已完成服务端灰度裁决；Host 只消费这个快照，不自行请求或分桶。 */
     desktopContextPromptEnabled?: () => boolean;
+    /**
+     * 电脑控制的干扰预算与物理注入授权（来自用户设置）。
+     *
+     * 用回调而不是值：UserData 里的设置在 Host 重启之间可能变化，
+     * fork 时读取一次快照即可，与 desktopContextPromptEnabled 同形。
+     *
+     * 不传时不下发这两个变量 —— runtime 按内置默认（balanced + 不授权）处理，
+     * 也就是**不可能**在缺少显式配置的情况下抢占用户键鼠。
+     */
+    computerUseInterferenceBudget?: () => "quiet" | "balanced" | "unrestricted" | undefined;
+    computerUseAllowPhysicalInjection?: () => boolean | undefined;
+    /**
+     * 自研 Windows CUA Helper 入口脚本的绝对路径。
+     * 缺省不下发 → runtime 退回「相对自身模块 ../helper/」解析（打包态会失败）。
+     */
+    cuaHelperEntryPath?: () => string | undefined;
     logger: {
       info: (...args: unknown[]) => void;
       warn: (...args: unknown[]) => void;
@@ -270,6 +289,26 @@ export function spawnHostProcess(
               : "0",
           }
         : {}),
+      // 电脑控制的预算与物理注入授权。只在用户显式配置过时下发，
+      // 缺省不下发 → runtime 用内置默认（不抢键鼠）。
+      ...(() => {
+        const budget = dependencies.computerUseInterferenceBudget?.();
+        return budget ? { [RASPBERRYCODE_CUA_INTERFERENCE_BUDGET_ENV]: budget } : {};
+      })(),
+      ...(() => {
+        const allow = dependencies.computerUseAllowPhysicalInjection?.();
+        return typeof allow === "boolean"
+          ? { [RASPBERRYCODE_CUA_ALLOW_PHYSICAL_INJECTION_ENV]: allow ? "1" : "0" }
+          : {};
+      })(),
+      // 自研 Windows CUA Helper 的入口脚本路径。
+      // 打包后 `raspberrycode-cua` 被 tsup 内联进 main，Helper 却是独立子进程入口，
+      // 必须由 desktop 显式下发；否则 runtime 的相对路径回退找不到文件，
+      // Helper 启动 code=1 退出，CUA 全部方法不可用（2026-11-20 安装版实测）。
+      ...(() => {
+        const entry = dependencies.cuaHelperEntryPath?.();
+        return entry ? { [RASPBERRYCODE_CUA_HELPER_ENTRY_ENV]: entry } : {};
+      })(),
     },
   });
 

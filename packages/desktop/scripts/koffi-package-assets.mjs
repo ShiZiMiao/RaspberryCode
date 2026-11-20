@@ -69,11 +69,24 @@ export function verifyStagedKoffi({
   resourcesDir,
   targetPlatform,
   pluginRelativePath = "packages/raspberrycode-cua-plugin",
+  // host bundle 也从自己的目录解析 koffi（静态顶层 import）。
+  // 2026-11-20 修复：只查 plugin 那一路会漏掉「host 解析不到 koffi → CUA 全不可用」，
+  // 而那个缺陷能一路漏到安装包里，因为它只在装机后才暴露。
+  hostRelativePath = "packages/node-repl-host",
 }) {
   const platformKey = koffiPlatformKey(targetPlatform);
-  const koffiRoot = resolve(resourcesDir, "agent", pluginRelativePath, "node_modules", "koffi");
-  const nativePath = resolve(koffiRoot, "build", "koffi", platformKey, "koffi.node");
-  return existsSync(nativePath) && existsSync(resolve(koffiRoot, "index.js"))
-    ? []
-    : [`missing staged koffi runtime for ${platformKey}: ${nativePath}`];
+  const problems = [];
+
+  const check = (label, relBase) => {
+    const koffiRoot = resolve(resourcesDir, "agent", relBase, "node_modules", "koffi");
+    const nativePath = resolve(koffiRoot, "build", "koffi", platformKey, "koffi.node");
+    if (!existsSync(nativePath) || !existsSync(resolve(koffiRoot, "index.js"))) {
+      problems.push(`missing staged koffi runtime for ${platformKey} (${label}): ${nativePath}`);
+    }
+  };
+
+  check("cua plugin", pluginRelativePath);
+  if (hostRelativePath) check("node-repl-host", hostRelativePath);
+
+  return problems;
 }

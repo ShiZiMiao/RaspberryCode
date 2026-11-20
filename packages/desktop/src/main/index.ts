@@ -159,6 +159,7 @@ import {
   listAvailableWSLDistros,
   loadHostProcessEnvFromLocalFiles,
   resolveBundledAgentBinaryPath,
+  resolveBundledCuaHelperEntryPath,
   resolveRemoteAssetDirs,
   resolveRaspberryCodeEndpointEnvBaseOrigin,
   desktopRuntimeEnv,
@@ -693,6 +694,30 @@ async function resolveCurrentRaspberryCodeEndpointOrigin() {
   });
 }
 let desktopContextPromptRollout: ReturnType<typeof createDesktopContextPromptRollout> | undefined;
+
+/**
+ * 电脑控制预算/授权的同步快照。
+ *
+ * spawnHostProcess 是同步的，而设置读取是异步的，所以这里维护一份快照：
+ * 启动时读一次（bootstrap 阶段）、设置变更时由 `syncImmediateAppSettings` 更新。
+ * Host 只在 fork 那一刻取值，因此快照最多过期到「用户改设置后的下一次 Host 启动」——
+ * 与 desktopContextPromptEnabled 的既有行为一致。
+ *
+ * 初值保持最保守（不设值）：在任何设置被读取之前，runtime 会用内置默认
+ * （balanced + 不授权），不会误抢键鼠。
+ */
+let computerUsePolicySnapshot: {
+  budget: "quiet" | "balanced" | "unrestricted" | undefined;
+  allowPhysicalInjection: boolean | undefined;
+} = { budget: undefined, allowPhysicalInjection: undefined };
+
+function resolveComputerUseBudgetForHost(): "quiet" | "balanced" | "unrestricted" | undefined {
+  return computerUsePolicySnapshot.budget;
+}
+
+function resolveComputerUseAllowPhysicalInjectionForHost(): boolean | undefined {
+  return computerUsePolicySnapshot.allowPhysicalInjection;
+}
 function resolveDesktopContextPromptEnabledForHost(): boolean {
   const rollout = desktopContextPromptRollout;
   if (!rollout) {
@@ -945,6 +970,27 @@ function syncCloseToTrayOnWindows(value: unknown) {
 
 function syncImmediateAppSettings(patch: ReturnType<typeof appSettingsPatchSchema.parse>) {
   syncCloseToTrayOnWindows(patch.closeToTrayOnWindows);
+
+  // 电脑控制的预算/授权变更：刷新快照，使之后新起的 Host 拿到新值。
+  // 不在这里重启 Host —— 打断正在进行的任务比「下次生效」更糟；
+  // 而且已起的 Host 仍用旧值，符合「设置改动不影响进行中的操作」的既有语义。
+  if (
+    patch.computerUseInterferenceBudget !== undefined ||
+    patch.computerUseAllowPhysicalInjection !== undefined
+  ) {
+    if (patch.computerUseInterferenceBudget !== undefined) {
+      computerUsePolicySnapshot = {
+        ...computerUsePolicySnapshot,
+        budget: patch.computerUseInterferenceBudget,
+      };
+    }
+    if (patch.computerUseAllowPhysicalInjection !== undefined) {
+      computerUsePolicySnapshot = {
+        ...computerUsePolicySnapshot,
+        allowPhysicalInjection: patch.computerUseAllowPhysicalInjection,
+      };
+    }
+  }
 
   if (typeof patch.keepAwakeWhileRunning === "boolean") {
     keepAwakeWhileRunning = patch.keepAwakeWhileRunning;
@@ -1450,6 +1496,11 @@ function createWindowInstance(startupBootstrap: StartupWindowBootstrap = {}) {
         {
           hostProcessLocalEnv,
           desktopContextPromptEnabled: resolveDesktopContextPromptEnabledForHost,
+          computerUseInterferenceBudget: resolveComputerUseBudgetForHost,
+          computerUseAllowPhysicalInjection: resolveComputerUseAllowPhysicalInjectionForHost,
+          // 自研 Windows CUA Helper 入口。打包态必须显式下发真实文件路径，
+          // 否则 runtime 的相对路径回退找不到 helper（安装版实测 code=1）。
+          cuaHelperEntryPath: resolveBundledCuaHelperEntryPath,
           logger,
           broadcastHub,
           taskRealtimeBus,
@@ -1634,6 +1685,13 @@ app.whenReady().then(async () => {
   let bootstrapSettings: AppSettings | undefined;
   try {
     bootstrapSettings = await mainSettingService.get();
+    // 电脑控制的预算/授权快照：必须在任何 Host fork 之前填好，
+    // 否则首个 Host 会拿不到用户已开启的物理注入授权
+    // （表现为「设置已打开但键盘输入仍被拒」，且要等下次重启才生效）。
+    computerUsePolicySnapshot = {
+      budget: bootstrapSettings.computerUseInterferenceBudget,
+      allowPhysicalInjection: bootstrapSettings.computerUseAllowPhysicalInjection,
+    };
     if (bootstrapSettings.dataBaseDir) {
       setDataBaseDir(bootstrapSettings.dataBaseDir);
     }
