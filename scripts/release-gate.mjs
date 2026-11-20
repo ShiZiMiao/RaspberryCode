@@ -182,6 +182,24 @@ if (!existsSync(unpackedAsar)) {
       };
       console.log(`  产物大小 ${(main.length / 1048576).toFixed(2)} MB`);
 
+      // 2026-11-20 修复：tsup 会做代码分割，`__RASPBERRYCODE_REMOTE_CDN_RELEASE_ROOTS__`
+      // 这类常量被折叠进 `out/main/chunk-*.js` 而不是 `index.js`。
+      // 只扫 index.js 会误报「缺少远程资产发布根」——0.2.6 打包时实测发布根确实在
+      // chunk-LRP4F6AG.js 里，但门禁判 FAIL。改为扫描 out/main 下全部 js。
+      // 注意不能用 relay 变量：这里只需要一个拼接后的全文用于字面量检索。
+      const mainBundleFiles = entries.filter((p) =>
+        /(^|[\\/])out[\\/]main[\\/][^\\/]+\.js$/.test(p),
+      );
+      const mainBundle = mainBundleFiles
+        .map((p) => {
+          try {
+            return asar.extractFile(unpackedAsar, p.replace(/^[\\/]+/, "")).toString();
+          } catch {
+            return "";
+          }
+        })
+        .join("\n");
+
       // 这些标记代表近期修复真的在包里。新增重要修复时在此登记，
       // 防止「改了源码但产物没重编」这类问题再次静默通过。
       const requiredMarkers = [
@@ -215,7 +233,7 @@ if (!existsSync(unpackedAsar)) {
       //
       // 这里判定「发布根非空」：产物里必须存在一个 http(s) 的 releases 根地址。
       // 不能只搜变量名——生产构建会把标识符重命名，常量也已被折叠；只能看实际字面量。
-      const remoteRootMarkers = main.match(/https?:\/\/[^"'`\s)]+\/releases(?:\/|["'`])/gu) ?? [];
+      const remoteRootMarkers = mainBundle.match(/https?:\/\/[^"'`\s)]+\/releases(?:\/|["'`])/gu) ?? [];
       const nonPlaceholderRoots = remoteRootMarkers.filter(
         (root) => !/intranet\.example\.invalid|example\.(?:com|invalid)/u.test(root),
       );

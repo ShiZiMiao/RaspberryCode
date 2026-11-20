@@ -139,7 +139,23 @@ function* walk(dir, relBase = "") {
   for (const entry of entries) {
     const rel = relBase ? `${relBase}/${entry.name}` : entry.name;
     if (entry.isDirectory()) {
-      if ([".git", "node_modules", ".turbo", "coverage", "mock-cdn", ".e2e-home"].includes(entry.name)) continue;
+      // 2026-11-20 补充：dist / dist-release 是构建产物目录（均在 .gitignore 内、git 不跟踪）。
+      // 其中 dist-release/<platform>/runtime/ 是 stage:remote-assets 解包出来的上游运行时代码，
+      // 会带上游品牌串 `.__zcode`。审计它等于审计第三方产物，会产出无法修复的 P0 误报
+      // （0.2.6 发版时实测 6 个 P0 全部落在这里）。产物层的品牌检查由 `productP0` 单独负责。
+      if (
+        [
+          ".git",
+          "node_modules",
+          ".turbo",
+          "coverage",
+          "mock-cdn",
+          ".e2e-home",
+          "dist",
+          "dist-release",
+        ].includes(entry.name)
+      )
+        continue;
       yield* walk(join(dir, entry.name), rel);
     } else if (entry.isFile()) {
       yield rel;
