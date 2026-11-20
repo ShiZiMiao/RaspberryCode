@@ -187,8 +187,20 @@ return JSON.stringify(r).slice(0, 4000);
   const marker = `INSTALLED-${Date.now().toString(36).toUpperCase()}`;
   const txtPath = join(tmpdir(), `cua-installed-${Date.now()}.txt`);
   writeFileSync(txtPath, "", "utf8");
+  // 用「文件名」而不是 "Notepad" 做 app_ref：app_ref 支持标题包含匹配，
+  // 而 "Notepad" 会同时命中 Notepad++（它也在跑），抓错窗口会让 document 行不存在。
+  const txtName = txtPath.split(/[\\/]/).pop();
 
   const { execSync } = await import("node:child_process");
+  // 先清掉残留的记事本。Win11 记事本会留下若干**无主窗口的进程**（MainWindowTitle 为空），
+  // 它们仍会被 app_ref 标题匹配排除在外，但残留窗口（上一个用例的 txt）会抢到
+  // 「标题包含 .txt」的匹配，导致本次断言读到别的文档 → 假失败。
+  try {
+    execSync("taskkill /IM notepad.exe /F", { stdio: "ignore", shell: true });
+    await new Promise((r) => setTimeout(r, 800));
+  } catch {
+    /* 没有残留时 taskkill 返回非 0，正常 */
+  }
   try {
     execSync(`start "" notepad.exe "${txtPath}"`, { stdio: "ignore", shell: true });
   } catch {
@@ -201,7 +213,7 @@ ${BOOT}
 // 用高层 API：getApp 绑定 → getAXState 拿树 → setValue 写。
 // 注意不能用 computer.get_app_state 的 structuredContent 找 elements：
 // 那个返回里只有 element_count，元素表要经过 SDK 的 appStateOf 从 text block 合并。
-const app = await agent.computerUse.getApp("Notepad");
+const app = await agent.computerUse.getApp(${JSON.stringify(txtName)});
 const tree = await app.getAXState();
 const m = String(tree).match(/\\n\\s*(\\d+) document .*editable/);
 if (!m) return "NO_EDITABLE_ELEMENT len=" + String(tree).length;
@@ -219,7 +231,7 @@ return "SET_SENT idx=" + idx;
   // 所以必须在**下一次独立 cell** 里重新观察。
   const after = await runJs(`
 ${BOOT}
-const app = await agent.computerUse.getApp("Notepad");
+const app = await agent.computerUse.getApp(${JSON.stringify(txtName)});
 await app.getAXState();
 // getAXState 的 emitText 会把整棵树作为 cell 文本下发，return 值会被它顶掉，
 // 所以这里直接返回；外层从文本里找 marker 即可（那正是我们想验证的 document value）。
