@@ -403,7 +403,7 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
     runtimeTopLevelPaths: ["node_modules"],
     // 这里的 version 追踪上游 raspberrycode-cua runtime 版本，使插件 UI 展示、缓存路径、
     // marketplace 条目都对齐；具体版本由原子 producer bump 工作流维护。
-    version: "0.6.5",
+    version: "0.6.6",
   },
   {
     // RaspberryCode Sites（技术方案 4）：Skill 指导 Agent 把项目改造并打包成 runner 可直接运行的产物包，

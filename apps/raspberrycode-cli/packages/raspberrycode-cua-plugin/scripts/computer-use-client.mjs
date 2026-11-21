@@ -1103,6 +1103,30 @@ export async function setupComputerUseRuntime({ globals }) {
       if (Array.isArray(parsed?.apps)) apps.push(...parsed.apps);
       else if (Array.isArray(parsed)) apps.push(...parsed);
     }
+    // text 里没有 apps 时读 structuredContent.windows。
+    //
+    // Bug 原因（2026-11-21 外部真机报告）：Windows 自研 helper 上 `list_apps` 与
+    // `list_windows` 共用 `handleListWindows`（见 runtime/handlers.ts:62 注释：
+    // Windows 上「应用」与「顶层窗口」不是一一对应，统一按窗口返回）。它的
+    // content 是渲染文本、结构化数据在 `structuredContent.windows`，**没有 apps 字段**。
+    // 于是上面那个只看 `parsed.apps` / 裸数组的循环永远取不到东西，listApps() 恒返回 []。
+    //
+    // 九月修过一次同类 bug（envelope 是裸 JSON 数组而 parseJsonRecord 对数组返回
+    // undefined），那次只解决了「解析器认不认数组」，没解决「字段名根本不同」。
+    if (apps.length === 0) {
+      const structured = result?.structuredContent;
+      const windows = Array.isArray(structured?.windows) ? structured.windows : [];
+      for (const window of windows) {
+        apps.push({
+          name: window.title || window.class_name || String(window.process_id ?? ""),
+          pid: window.process_id ?? null,
+          window_id: window.window_id ?? null,
+          framework: window.framework ?? "unknown",
+          bounds: window.bounds ?? null,
+          app_ref: window.app_ref ?? String(window.process_id ?? window.title ?? ""),
+        });
+      }
+    }
     const state = { apps };
     emitText(globals, JSON.stringify(state, null, 2), options);
     return state;
@@ -1132,6 +1156,17 @@ export async function setupComputerUseRuntime({ globals }) {
     try {
       return JSON.parse(text);
     } catch {
+      // text 不是 JSON —— 观察类工具就是这样：`list_windows` 的 content 是给人看的
+      // 渲染行（`Top-level windows (7, 65ms):\n1234 [Win32] "标题" 800x600@0,0`），
+      // 真正的结构化数据在 `structuredContent` 里（window_id / bounds / process_id …）。
+      //
+      // Bug 原因（2026-11-21 外部真机报告）：这里原先无条件 `return text`，于是
+      // bound API `computer.list_windows({})` 只能拿到字符串，`window_id` 完全取不到；
+      // 调用方只能改用 pid 绑定绕过，任何需要 window_id 的场景都会踩到。
+      // 上层 `buildTextResult(text, structured)` 只在传了第二参时才有
+      // structuredContent，所以这里必须判空再回退 —— 没有结构化数据时仍返回文本。
+      const structured = result.structuredContent;
+      if (structured && typeof structured === "object") return structured;
       return text;
     }
   };
