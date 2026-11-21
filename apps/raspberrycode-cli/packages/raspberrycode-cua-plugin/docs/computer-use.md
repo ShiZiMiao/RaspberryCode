@@ -316,6 +316,37 @@ looking for is absent because you are reading a different window, not because
 the action removed it.
 
 
+## Interference budget
+
+The budget is a per-task user setting. It is not a tool argument: it never
+appears in a tool schema, and no call can change it. Read the `budget=` line in a
+failure to learn which one is active.
+
+| Budget | Allowed dispatch paths | What an action does to the user's desktop |
+|---|---|---|
+| `quiet` | message posting only | **nothing** — foreground, keyboard focus and mouse all stay where they are |
+| `balanced` (default) | + UIA semantic actions | activates the target window and moves keyboard focus to the target control; mouse untouched |
+| `unrestricted` | + physical input injection, and only with a separate user authorization | takes both mouse and keyboard |
+
+Three consequences that change how you plan work:
+
+**Under `quiet`, an action may be impossible rather than merely refused.**
+Message posting needs screen coordinates, so a minimized window has none to give;
+and posting cannot express a value write at all, so `setValue` has no path under
+`quiet` regardless of the window state. The failure carries `budget=quiet` and
+`actionSent=false` — nothing happened, and nothing will happen if you retry.
+
+**A failure under `quiet` is the budget working, not a malfunction.** It is the
+user having said they would rather the action not happen than be disturbed. Do
+not retry it, do not switch to coordinates to route around it, and tell the user
+plainly that the current budget does not permit the action.
+
+**Changing the budget does not affect a running host.** Settings changes are
+picked up by hosts started afterwards, so the value in effect changes only after
+the user fully restarts the app. A newly opened task in the same session still
+runs under the old budget.
+
+
 ## Workflow
 
 After performing one or more UI actions, call `getAXState()` before deciding what
@@ -419,8 +450,12 @@ technology after an access refusal.
   container and observe again, or move the app's own selection (arrow keys, a
   Name Box, a search field) and read the value back from the focused element.
 - Prefer element-index actions over coordinate actions whenever an accessibility
-  element is available. They are semantic, precise, background-safe and do not
-  steal the user's focus. Fall back to a screenshot and coordinates only when
+  element is available. They are semantic, precise, and never move the mouse or
+  send input. On Windows they do **not** leave focus alone: every UIA action
+  pattern activates the target window and moves keyboard focus to the target
+  control, even for a minimized window, and the call still reports success. The
+  interference budget decides whether that is allowed — see "Interference
+  budget" below. Fall back to a screenshot and coordinates only when
   accessibility cannot locate or express the target.
 - Coordinates are integer pixels of the **latest returned raster**. Take them only
   by looking at that raster. Element and window bounds in the tree are diagnostic
@@ -454,10 +489,14 @@ technology after an access refusal.
   dotted, space-free string as `bundle_id` and anything else as `name`, and
   retries with the other field once if the app is not found, so either form
   works. There is no path form: `app_ref` has no path field.
-  Nothing here fronts a window or takes the user's focus, except on Windows:
-  launching a non-packaged app takes focus, and `include_screenshot=true` on a
-  minimized window restores it. A minimized window's tree stays fully usable, so
-  keep the default unless you need pixels.
+  Reading never fronts a window or takes focus. Windows exceptions, all about
+  launching and acting rather than reading: launching a non-packaged app may take
+  focus, and any UIA action activates the target window and moves keyboard focus
+  to it (see "Interference budget"). `include_screenshot=true` does **not**
+  restore a minimized window: it appends `[screenshot unavailable: …]` to the
+  observation and returns no image, because a minimized window has no client area
+  to capture. A minimized window's tree stays fully usable, so keep the default
+  unless you need pixels.
 - Observations wait an appropriate amount of time before capturing. Do **not**
   pause or delay (no `setTimeout`) before getting UI state; rely on that wait.
 - When the state does not show what you expected, observe once more before trying

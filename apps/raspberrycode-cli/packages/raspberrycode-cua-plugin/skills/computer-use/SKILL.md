@@ -38,8 +38,16 @@ await setupComputerUseRuntime({ globals: globalThis });
 
 ## Accessibility first
 
-Accessibility is the primary action path. It is semantic, precise, works on a
-background app and does not steal the user's focus.
+Accessibility is the primary action path. It is semantic and precise, and works
+on a background app **without moving the mouse or sending any input**.
+
+On Windows it does **not** leave the foreground alone: every UIA action pattern
+(`ValuePattern.SetValue`, `InvokePattern.Invoke`, `TogglePattern.Toggle`,
+`ExpandCollapsePattern.Expand`) activates the target window and moves keyboard
+focus to the target control, even when the window is minimized. Callers cannot
+detect this from the result — the call reports success. Use the `quiet`
+interference budget when nothing may take focus; read the budget table below
+before assuming background work is invisible.
 
 1. Observe, then search the returned tree for the target by its role, name,
    title, value or other visible identity.
@@ -54,6 +62,30 @@ background app and does not steal the user's focus.
 Do not replace an available element action with a keyboard shortcut just because
 the shortcut is shorter. Do not run both the accessibility and visual paths for
 the same action.
+
+### Interference budget decides what is allowed
+
+The budget is a per-task user setting; you cannot change it. Read the failure's
+`budget=` line to learn which one is active.
+
+| Budget | Allowed dispatch paths | Focus side effect on actions |
+|---|---|---|
+| `quiet` | message posting only | **none** — foreground, keyboard focus and mouse all stay put |
+| `balanced` (default) | + UIA semantic actions | target window is activated, keyboard focus moves to the control |
+| `unrestricted` | + physical input injection (needs separate authorization) | takes mouse and keyboard |
+
+Consequences worth knowing before you plan work:
+
+- Under `quiet`, an action may simply be impossible. Message posting needs screen
+  coordinates, so a minimized window has none; and it cannot express a value
+  write at all, so `setValue` always has no path there. The error says
+  `budget=quiet` and `actionSent=false` — the action did not happen.
+- A failed action under `quiet` is not a malfunction. It is the budget refusing
+  to disturb the user. Do not retry it, and do not switch to a coordinate path to
+  get around it.
+- Changing the budget in settings does **not** affect a host that is already
+  running; it takes effect for hosts started afterwards, i.e. after the user
+  fully restarts the app.
 
 **Observation works on a background app, screenshots included** — on any
 display, including windows at negative coordinates.
@@ -272,9 +304,13 @@ arguments object — the names below are its keys, not positional parameters:
 `get_app_state({ app_ref: { bundle_id: "com.apple.Notes" }, include_screenshot: true })`.
 
 Name an app as the OS lists it (Windows: the Start-menu name, not a window title).
-Nothing takes the user's focus, except on Windows: launching a non-packaged app
-does, and `include_screenshot=true` un-minimizes — a minimized tree is fully
-usable, so keep the default.
+Reading never touches focus or the mouse. Windows exceptions, both about actions
+and launching rather than reading: launching a non-packaged app may take focus,
+and any UIA action activates the target window and moves keyboard focus to it
+(see "Accessibility first"). `include_screenshot=true` does **not** restore a
+minimized window — it appends `[screenshot unavailable: …]` to the observation
+and returns no image, because a minimized window has no client area to capture.
+A minimized tree is fully usable, so keep the default.
 
 ```
 list_apps({})
