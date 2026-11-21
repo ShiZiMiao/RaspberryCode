@@ -192,6 +192,31 @@ source-server-release.json
 > 0.2.6 发布后所有旧版远端都会被判必须升级，Release 里没有 0.2.6 的  
 > Server 包，老用户远端会卡死。macOS 按你的指示不做。
 
+### ✅ 实测记录（2026-11-20 22:30~22:50，Release 发布后）
+
+装回 0.2.5 后启动，实测整条升级链路：
+
+```
+22:28:55  [auto-update] check starts fresh, route=mirror
+22:28:58  mirror redirect → v0.2.6/latest.yml          ← 检查
+22:28:59  download started (auto) version=0.2.6         ← 下载
+22:29:03  mirror redirect → RaspberryCode-0.2.6-win-x64.exe
+22:36     pending/RaspberryCode-0.2.6-win-x64.exe
+          191,463,587 bytes                              ← 完成
+```
+
+| 环节 | 结果 |
+|---|---|
+| 检测到 0.2.6 | PASS（走 mirror 路由，非直连） |
+| 自动下载 | PASS，约 7 分钟 |
+| sha512 校验 | PASS，与 `latest.yml` 声明**完全一致** |
+| `update-info.json` | PASS，sha512 与清单一致 |
+| 安装后版本 | **0.2.5.0 → 0.2.6.0** |
+| 数据保留 | PASS（setting.json 5279 字节、12 个任务目录、tasks-index.sqlite 都在） |
+| 缓存自动修复 | PASS（升级后 koffi 一度缺失，启动后自动重新 seed，manifest 回到 0.7.0） |
+
+**结论：老用户升级不需要任何手工操作。**
+
 ### 步骤（Release 之后）
 
 1. 装回 **0.2.5**
@@ -201,11 +226,11 @@ source-server-release.json
 5. 安装并重启 → 版本变 `0.2.6.0`
 6. 确认任务历史 / 设置还在
 
-- [ ] 0.2.5 装得上
-- [ ] 能检测到 0.2.6
-- [ ] 下载成功，速度正常
-- [ ] 重启后版本变 0.2.6
-- [ ] 数据未丢失
+- [x] 0.2.5 装得上
+- [x] 能检测到 0.2.6
+- [x] 下载成功，速度正常
+- [x] 重启后版本变 0.2.6
+- [x] 数据未丢失
 
 ---
 
