@@ -484,6 +484,49 @@ function stageSharpForNodeReplPlugin() {
   }
 }
 
+/**
+ * 把 `packages/raspberrycode-cua/dist` 整个搬进 agent bundle。
+ *
+ * 修复原因（2026-11-20 真实安装版才暴露，比 koffi 那条更致命）：
+ * 自研 CUA 的 Helper 是**独立子进程入口** `windows-helper.js`，由 `resolveHelperEntry()`
+ * 从 `new URL("../helper/windows-helper.js", import.meta.url)` 解析，或由
+ * `RASPBERRYCODE_CUA_HELPER_ENTRY` 覆盖。但 tsup 把 `@raspberrycode/raspberrycode-cua`
+ * external 进 main bundle，而打包链路从未搬运该包的 `dist`：
+ * 安装包里 asar 与 app.asar.unpacked 都搜不到 `windows-helper.js`，Helper 启动即
+ * `code=1` 退出，14 个 CUA 方法全部不可用。而开发态直接读源码树
+ * `packages/raspberrycode-cua/dist/helper/windows-helper.js`，所以本地一切正常、
+ * 既有门禁也全绿（它们只校验「文件在不在」，不校验「运行时能不能解析到」）。
+ *
+ * 这个函数原先只存在于补救脚本 `scripts/stage-cua-agent-assets.mjs`（那份是给
+ * 「office 插件构建失败」时的环境绕行用的），主链路 `prepare-agent-node-bundle`
+ * 从未包含它 —— 意味着每次全量构建出的包，CUA 都是坏的。现搬进主链路。
+ *
+ * 落点选 `agent/packages/raspberrycode-cua/dist`（与 host bundle 同级的包目录），
+ * 这样 `RASPBERRYCODE_CUA_HELPER_ENTRY` 可稳定指向它，也不依赖 asar 解包规则。
+ */
+function stageCuaRuntime() {
+  const sourceDist = resolve(repoRoot, "packages", "raspberrycode-cua", "dist");
+  const helperEntry = resolve(sourceDist, "helper", "windows-helper.js");
+  if (!existsSync(helperEntry)) {
+    throw new Error(
+      `[prepare:agent-bundle] 缺少自研 CUA Helper 产物: ${helperEntry}\n` +
+        "        先跑 pnpm --filter @raspberrycode/raspberrycode-cua build",
+    );
+  }
+  const targetDist = resolve(agentDir, "packages", "raspberrycode-cua", "dist");
+  rmSync(targetDist, { recursive: true, force: true });
+  cpSync(sourceDist, targetDist, {
+    recursive: true,
+    filter: (src) => !src.endsWith(".map"),
+  });
+  const stagedHelper = resolve(targetDist, "helper", "windows-helper.js");
+  if (!existsSync(stagedHelper)) {
+    throw new Error(`[prepare:agent-bundle] CUA helper 未落到预期位置: ${stagedHelper}`);
+  }
+  console.log(`[prepare:agent-bundle] staged cua runtime → ${targetDist}`);
+  console.log(`[prepare:agent-bundle]   helper entry = ${stagedHelper}`);
+}
+
 function stageKoffiForCuaPlugin() {
   const cuaPluginStagedDir = resolve(agentDir, "packages", "raspberrycode-cua-plugin");
   if (!existsSync(resolve(cuaPluginStagedDir, ".raspberrycode-plugin", "plugin.json"))) {
@@ -498,10 +541,16 @@ function stageKoffiForCuaPlugin() {
   // 的 bundled-agents 里有宿主的 node_modules），但**官方插件 cache 的 seed 路径**会
   // 把宿主的 node_modules 裁掉（未声明 runtimeTopLevelPaths），于是 node_repl 宿主
   // 启动即 ERR_MODULE_NOT_FOUND —— 电脑控制与浏览器控制同时全废。
-  // 两处（cua-plugin / node-repl-host）都要 stage，任一处缺失都会让某个消费方解析不到。
+  // 三处（cua-plugin / node-repl-host / raspberrycode-cua）都要 stage，
+  // 任一处缺失都会让某个消费方解析不到：
+  //   - cua-plugin：SDK 侧的 screenshot / get_app_state native 依赖
+  //   - node-repl-host：宿主 bundle 里的静态 `import koffi from "koffi"`
+  //   - raspberrycode-cua：自研 Helper 的 dist/helper/win32.js 等 12 个文件 require koffi，
+  //     它作为独立子进程启动，ESM/CJS 都不会向上级目录搜索
   const pluginStagedDirs = [
     ["@raspberrycode/raspberrycode-cua-plugin", cuaPluginStagedDir],
     [NODE_REPL_HOST_PACKAGE_NAME, resolve(agentDir, "packages", "node-repl-host")],
+    ["@raspberrycode/raspberrycode-cua", resolve(agentDir, "packages", "raspberrycode-cua")],
   ];
   for (const [packageName, pluginStagedDir] of pluginStagedDirs) {
     if (!existsSync(pluginStagedDir)) {
@@ -531,5 +580,8 @@ stageBundle();
 stageOfficialPlugins();
 stageBundledSkillPack();
 await stageBundledNpmRuntime();
+// 顺序要点：CUA runtime 必须先落地，后面的 stageKoffiForCuaPlugin 才能把 koffi 放进
+// `agent/packages/raspberrycode-cua/node_modules/`（目录不存在会被直接跳过）。
+stageCuaRuntime();
 stageKoffiForCuaPlugin();
 stageSharpForNodeReplPlugin();
