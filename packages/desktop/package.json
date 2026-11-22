@@ -1,6 +1,6 @@
 {
   "name": "@raspberrycode/desktop",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "packageManager": "pnpm@10.33.2",
   "private": true,
   "description": "RaspberryCode Desktop App",
