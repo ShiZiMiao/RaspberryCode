@@ -7,21 +7,32 @@
  * onBeforeRequest 的 redirectURL 是唯一无需 fork 依赖的接入点。
  *
  * 约束：
- * - 只重写 release 资产下载（isGithubReleaseDownloadUrl），不影响 API 元数据请求。
+ * - mirror 阶段重写 github.com 全站（不只是 /releases/download/）：
+ *   检查阶段的第一步是 releases.atom，只拦下载会让无代理用户在第一条就超时（实测必现）。
+ *   GitHubProvider 全程不访问 api.github.com，放宽范围不会误伤 API。
  * - 直连阶段不注册任何重定向（行为回到改造前）。
  * - 该监听器全局生效于传入的 session，故必须在应用启动时只安装一次。
+ * - 镜像前缀**动态读取**（getMirrorPrefix），不在此处固化：
+ *   第三方公益镜像失效时可通过配置切换而无需重新发版。
  */
 import type { Session } from "electron";
 import { logger } from "../logger.js";
 import {
   DEFAULT_UPDATE_MIRROR_PREFIX,
-  isGithubReleaseDownloadUrl,
+  isGithubMirrorTarget,
   resolveDownloadUrl,
   type UpdateDownloadRoute,
 } from "./updateMirror.js";
 
 export interface UpdateMirrorInstallOptions {
-  /** 镜像前缀；空字符串表示禁用镜像（等价于只走直连）。 */
+  /**
+   * 当前生效的镜像前缀；空字符串表示禁用镜像（等价于只走直连）。
+   *
+   * 以函数形式提供而非字符串：镜像可能被用户配置覆盖或在运行期轮换，
+   * 每次请求都取最新值，避免启动时固化。
+   */
+  getMirrorPrefix?: () => string;
+  /** 静态前缀（向后兼容旧调用方）；与 getMirrorPrefix 同时存在时后者优先。 */
   mirrorPrefix?: string;
   /** 当前下载阶段由 UpdateDownloadFallback 决定；mirror / direct / manual。 */
   getRoute: () => UpdateDownloadRoute;
@@ -59,7 +70,10 @@ export const UPDATER_SESSION_PARTITION = "electron-updater";
  * 重复调用会覆盖前一个，因此这里只做幂等安装。
  */
 export function installUpdateMirrorRedirect(options: UpdateMirrorInstallOptions): () => void {
-  const { getRoute, mirrorPrefix = DEFAULT_UPDATE_MIRROR_PREFIX, resolveSession } = options;
+  const { getRoute, resolveSession } = options;
+  // 每次请求都重新取前缀：镜像可被配置覆盖或运行期轮换。
+  const readMirrorPrefix = (): string =>
+    options.getMirrorPrefix?.() ?? options.mirrorPrefix ?? DEFAULT_UPDATE_MIRROR_PREFIX;
   const session = options.session ?? resolveSession?.();
   if (!session) {
     throw new Error("[auto-update] update mirror requires a session or resolveSession");
@@ -87,13 +101,14 @@ export function installUpdateMirrorRedirect(options: UpdateMirrorInstallOptions)
       callback({});
       return;
     }
-    if (!isGithubReleaseDownloadUrl(details.url)) {
+    if (!isGithubMirrorTarget(details.url)) {
       callback({});
       return;
     }
     // 语义保底：某个阶段第一次出现的请求，先把该阶段的代理切好再放行。
     // 命中缓存（appliedRoute 相同）时不重复切，热路径无额外开销。
     applyProxyIfNeeded(route);
+    const mirrorPrefix = readMirrorPrefix();
     const target = resolveDownloadUrl(details.url, route, mirrorPrefix);
     if (!target || target === details.url) {
       callback({});
@@ -107,7 +122,7 @@ export function installUpdateMirrorRedirect(options: UpdateMirrorInstallOptions)
 
   webRequest.onBeforeRequest({ urls: ["https://github.com/*"] }, listener);
   logger.info(
-    `[auto-update] mirror redirect installed: partition=${session.storagePath ?? "n/a"} prefix=${mirrorPrefix || "(direct only)"}`,
+    `[auto-update] mirror redirect installed: partition=${session.storagePath ?? "n/a"} prefix=${readMirrorPrefix() || "(direct only)"}`,
   );
 
   return () => {
@@ -117,7 +132,9 @@ export function installUpdateMirrorRedirect(options: UpdateMirrorInstallOptions)
 }
 
 function shorten(url: string): string {
-  const index = url.indexOf("/releases/download/");
+  // 检查阶段是 /releases.atom 与 /releases/latest，下载阶段是 /releases/download/...，
+  // 统一按 /releases/ 截断，日志里都能看出是哪一类请求。
+  const index = url.indexOf("/releases/");
   if (index < 0) return url.length > 96 ? `${url.slice(0, 96)}…` : url;
   return `…${url.slice(index)}`;
 }

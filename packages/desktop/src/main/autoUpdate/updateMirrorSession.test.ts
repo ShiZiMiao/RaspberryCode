@@ -3,9 +3,13 @@ import {
   installUpdateMirrorRedirect,
   UPDATER_SESSION_PARTITION,
 } from "./updateMirrorSession.js";
+import { DEFAULT_UPDATE_MIRROR_PREFIX } from "./updateMirror.js";
 
 const DOWNLOAD_URL =
   "https://github.com/ShiZiMiao/RaspberryCode/releases/download/v0.2.0/RaspberryCode-0.2.0-win-x64.exe";
+/** 检查阶段的元数据请求：不带 /releases/download/ 段，旧实现会漏掉它。 */
+const ATOM_URL = "https://github.com/ShiZiMiao/RaspberryCode/releases.atom";
+const LATEST_URL = "https://github.com/ShiZiMiao/RaspberryCode/releases/latest";
 
 /** 构造只记录调用的假 session，用来验证重定向行为而不依赖 Electron。 */
 function createFakeSession() {
@@ -45,7 +49,43 @@ describe("installUpdateMirrorRedirect", () => {
     });
 
     const result = fake.dispatch(DOWNLOAD_URL);
-    expect(result.redirectURL).toBe(`https://ghfast.top/${DOWNLOAD_URL}`);
+    expect(result.redirectURL).toBe(`${DEFAULT_UPDATE_MIRROR_PREFIX}${DOWNLOAD_URL}`);
+  });
+
+  it("检查阶段三条请求全部改写（这是修复「检查更新失败」的关键）", () => {
+    const fake = createFakeSession();
+    installUpdateMirrorRedirect({
+      session: fake.session as never,
+      getRoute: () => "mirror",
+    });
+
+    // 只改下载段的话，无代理用户会在第一条 atom 就超时，永远走不到下载。
+    expect(fake.dispatch(ATOM_URL).redirectURL).toBe(`${DEFAULT_UPDATE_MIRROR_PREFIX}${ATOM_URL}`);
+    expect(fake.dispatch(LATEST_URL).redirectURL).toBe(
+      `${DEFAULT_UPDATE_MIRROR_PREFIX}${LATEST_URL}`,
+    );
+    expect(fake.dispatch(DOWNLOAD_URL).redirectURL).toBe(
+      `${DEFAULT_UPDATE_MIRROR_PREFIX}${DOWNLOAD_URL}`,
+    );
+  });
+
+  it("镜像前缀可动态切换（getMirrorPrefix 优先于静态值）", () => {
+    const fake = createFakeSession();
+    let prefix = "https://first.example/";
+    installUpdateMirrorRedirect({
+      session: fake.session as never,
+      getRoute: () => "mirror",
+      getMirrorPrefix: () => prefix,
+      mirrorPrefix: "https://ignored.example/",
+    });
+
+    expect(fake.dispatch(DOWNLOAD_URL).redirectURL).toBe(`https://first.example/${DOWNLOAD_URL}`);
+    // 运行期切换（模拟候选轮换或用户改配置）：下一次请求立即生效
+    prefix = "https://second.example/";
+    expect(fake.dispatch(DOWNLOAD_URL).redirectURL).toBe(`https://second.example/${DOWNLOAD_URL}`);
+    // 空串表示禁用镜像 → 不改写，等价直连
+    prefix = "";
+    expect(fake.dispatch(DOWNLOAD_URL).redirectURL).toBeUndefined();
   });
 
   it("direct 阶段不改写", () => {
@@ -84,7 +124,7 @@ describe("installUpdateMirrorRedirect", () => {
       session: fake.session as never,
       getRoute: () => route,
     });
-    expect(fake.dispatch(DOWNLOAD_URL).redirectURL).toContain("ghfast.top");
+    expect(fake.dispatch(DOWNLOAD_URL).redirectURL).toContain(DEFAULT_UPDATE_MIRROR_PREFIX.trim());
     route = "direct";
     expect(fake.dispatch(DOWNLOAD_URL).redirectURL).toBeUndefined();
   });
@@ -104,7 +144,7 @@ describe("installUpdateMirrorRedirect", () => {
     installUpdateMirrorRedirect({ resolveSession, getRoute: () => "mirror" });
 
     expect(resolveSession).toHaveBeenCalledTimes(1);
-    expect(fake.dispatch(DOWNLOAD_URL).redirectURL).toContain("ghfast.top");
+    expect(fake.dispatch(DOWNLOAD_URL).redirectURL).toContain(DEFAULT_UPDATE_MIRROR_PREFIX.trim());
   });
 
   it("既无 session 也无 resolveSession 时抛出可诊断错误", () => {

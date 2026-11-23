@@ -128,7 +128,7 @@ import {
   updateCheckForUpdateMenuState,
   updateRaspberryCodeStdioTapDevMenuState,
 } from "./desktopApplicationMenu.js";
-import { disposeAutoUpdateService, getUpdateDownloadRoute, initAutoUpdateService, isAutoUpdateMode, registerUpdateSessionProxySync } from "./autoUpdate/index.js";
+import { disposeAutoUpdateService, getUpdateDownloadRoute, getUpdateMirrorPrefix, initAutoUpdateService, registerUpdateSessionProxySync } from "./autoUpdate/index.js";
 import { installUpdateMirrorRedirect, UPDATER_SESSION_PARTITION } from "./autoUpdate/updateMirrorSession.js";
 import { applyAppIcon } from "./desktopWindowChrome.js";
 import { resolveWindowsAppUserModelIdForFlavor } from "../../scripts/desktop-product-identity.mjs";
@@ -1848,6 +1848,10 @@ app.whenReady().then(async () => {
         // session.fromPartition("electron-updater")，装在 defaultSession 上不生效。
         session: updaterSession,
         getRoute: getUpdateDownloadRoute,
+        // 前缀不在这里写死：从 setting.json 读，运行期可切换。
+        // 第三方公益镜像不稳定（ghfast.top 已对 atom 返回 403），
+        // 写死会导致镜像失效时必须发版才能修。
+        getMirrorPrefix: getUpdateMirrorPrefix,
       });
     } catch (mirrorError) {
       logger.warn("[startup] update mirror redirect install failed (fallback to direct):", mirrorError);
@@ -1860,12 +1864,13 @@ app.whenReady().then(async () => {
           win.webContents.send(PlatformChannels.UpdateStateChanged, updateState);
         }
       }
-      // 自动更新模式下全程无感（spec 产品规则 7）：菜单保持静态「检查更新」，
-      // 不投影发现/下载/就绪等动态标签；手动点击仍走 CheckForUpdates 命令出 toast。
-      updateCheckForUpdateMenuState(
-        isAutoUpdateMode() ? { kind: "idle", enabled: true } : updateState,
-        currentApplicationLocale,
-      );
+      // 菜单标签跟随真实更新状态（2026-11-23 对齐上游 ZCode）。
+      //
+      // 此前自动模式下强制投影成 idle，导致「发现新版本」「正在下载」「重启以更新」
+      // 这些标签全都不出现，用户只能看到一个永远写着「检查更新」的菜单项，
+      // 与标题栏入口被藏、toast 纯文本叠加，形成「提示有新版本但无处可点」。
+      // 静默无感应体现在「不主动弹窗打扰」，而不是「藏掉状态」。
+      updateCheckForUpdateMenuState(updateState, currentApplicationLocale);
     },
     onBeforeQuitAndInstall: async () => {
       notifyStabilityLifecycle("update_install");

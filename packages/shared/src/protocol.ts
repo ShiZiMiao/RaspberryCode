@@ -424,6 +424,14 @@ export interface AppSettings {
   updateFeedGithubOwner?: string;
   /** GitHub 更新源 repo；空/缺省使用默认仓库。 */
   updateFeedGithubRepo?: string;
+  /**
+   * 更新镜像前缀（spec：specs/client-github-self-update.md 产品规则 10）。
+   *
+   * 第三方公益镜像生命周期不可控（ghfast.top 已对 atom 返回 403，多家镜像已关停），
+   * 因此不写死在代码里。语义：undefined = 用内置候选；"" = 禁用镜像只走直连；
+   * 非空 = 只用指定的一家。必须是 http(s) origin（不含路径）。
+   */
+  updateMirrorPrefix?: string;
   /** 首次启动设置同步提示是否已消费；只表示弹窗不再出现，不代表导入成功。 */
   settingsSyncFirstRunPromptHandled?: boolean;
   /** 设置页里的临时 endpoint override；正式/测试默认 base url 由 RASPBERRYCODE_BASE_URL env 管理。 */

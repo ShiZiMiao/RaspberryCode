@@ -8,9 +8,10 @@
 
 现恢复客户端更新功能，但更新源改为 **GitHub Releases**（electron-updater 内置 `github` provider），
 不再依赖厂商服务端 manifest、灰度通道和强更门禁。默认交互为**静默自动更新**：
-「自动更新」开关默认开启，启动检查、后台差量下载、退出静默安装、下次启动生效，全程无感；
-关闭开关则退回手动模式（标题栏更新入口 + 更新弹窗）。不恢复独立更新窗口、post-update
-release notes 展示与「桌面端过旧」强更提示。
+「自动更新」开关默认开启，启动检查、后台差量下载、退出安装、下次启动生效；
+**静默指不主动弹窗打扰，不等于隐藏状态入口**——标题栏更新入口与菜单标签照常反映真实状态
+（见产品规则 5 的「静默的边界」）。关闭开关则退回手动模式（标题栏更新入口 + 更新弹窗）。
+不恢复独立更新窗口、post-update release notes 展示与「桌面端过旧」强更提示。
 
 ## 产品规则
 
@@ -27,15 +28,24 @@ release notes 展示与「桌面端过旧」强更提示。
    「检查更新」项在各状态下更新标签（正在检查/发现新版本/正在下载/重启以更新）。
 5. **「自动更新」开关**（`autoDownloadAndInstallUpdates`，**默认开启**）：
    - **开启（静默自动模式）**：启动静默检查 → 发现更新后台自动**差量下载**（blockmap 单 Range
-     顺序差分）→ 应用退出时静默安装（NSIS `install(true, false)`，不拉起应用）→
-     **用户下次启动即新版本**。全程无感：不渲染标题栏更新入口、菜单保持静态「检查更新」、
-     不弹下载完成 toast；失败只落日志不打扰。
+     顺序差分）→ 应用退出时安装 → **用户下次启动即新版本**。
+     **静默的边界（2026-11-23 修正）**：静默指「不主动弹窗打扰」——不弹更新弹窗、
+     不弹下载完成 toast；但**状态入口必须可见**：标题栏绿色入口照常渲染（可查看进度、
+     可取消），原生菜单标签跟随真实状态（发现新版本 / 正在下载 / 重启以更新）。
+     修正前的实现把 `visibleUpdateState` 在自动模式下整体置空、菜单强制成 `idle`，
+     叠加「手动检查报 available」就形成用户反馈的「发现新版本了，然后呢？」——
+     提示存在但三处都无入口可点。该实现在 0.2.8 起废弃。
    - **关闭（手动模式）**：发现更新出标题栏绿色入口，点击打开更新弹窗：版本号、发布日期、
      release notes（GitHub release 正文 Markdown，下载中隐藏）；操作：下载更新 / 取消下载 /
      跳过此版本 / 稍后 / 重启以更新；附「以后自动下载并安装更新」勾选（即重新打开本开关）。
      重启前若有进行中的 agent 会话，先经确认弹窗。
 6. **手动检查**（菜单点击或设置页按钮，任意模式可用）：向发起窗口推送 `UpdateCheckResult`
    toast：已是最新 / 发现新版本 / 正在下载 / 已就绪 / 开发态跳过 / 检查失败。
+   **自动模式下的语义（2026-11-23 对齐上游 ZCode）**：若本次检查已触发自动下载
+   （`downloadingVersion` 已设置），结果必须返回 `downloading` 而**不是** `available`。
+   原因：自动下载是异步发起的，`download-progress` 事件尚未到达时状态仍是
+   `update-available`，直接映射成 `available` 会误报「发现新版本」，让用户以为要手动操作，
+   而系统其实正在后台下载。上游在自动分支里只发下载请求、不发 `available` 结果，本实现对齐该语义。
 7. **跳过版本**：写入 `skippedElectronUpdateVersions.stable`（单通道语义，复用既有字段）；
    检查命中跳过版本按「无更新」处理（静默模式同样生效）；设置页可清除跳过记录。
    **差量下载**依赖 GitHub Release 资产中的 `.blockmap`；资产缺失时 electron-updater
@@ -45,22 +55,74 @@ release notes 展示与「桌面端过旧」强更提示。
    win32 追加 `prepareWindowsProcessesForUpdateInstall` 资源锁清理），全部成功后才调用
    `autoUpdater.quitAndInstall()`；退出准备失败不得启动安装器，报错并恢复按钮态。
    迟到的检查/下载结果不得替换已锁定的安装目标（`quitAndInstallState !== "idle"` 时忽略）。
+
+   **NSIS 安装界面（Windows，2026-11-23 用户要求）**：
+   更新时的安装器**只显示进度页与完成页**，不出现需要逐页点「下一步」的向导
+   （不询问「为所有用户 / 仅为我安装」、不询问安装目录）。
+   用户唯一需要操作的是最后一页点「完成」。
+
+   实现约束（三层，缺一不可）：
+   - **不用 `quitAndInstall(true)`**：那是 NSIS 的 `/S` 完全静默，连进度条和完成页都不显示，
+     应用退出后用户看不到任何反馈，会误以为崩溃。必须保留 `isSilent=false`。
+   - **`oneClick:false` + `allowToChangeInstallationDirectory:true` 保持不动**：
+     这是首次安装需要向导（选目录）的前提；更新时靠 `${isUpdated}` 跳过。
+   - **补上安装模式页的跳过**：electron-builder 已给目录页包了 `skipPageIfUpdated`，
+     但 `PAGE_INSTALL_MODE` 没有，更新时会多出一页。
+     因此通过 `scripts/patch-nsis-assisted-installer.mjs` 在打包期给该页补同一个宏
+     （`${isUpdated}` 为真时 Abort），打包结束后恢复上游模板。
+     该 patch 锚点匹配失败时安全降级（不改文件），不阻断构建。
 9. **中立性**：更新链路无遥测上报、无强更、无灰度、无厂商域名；GitHub 仓库地址仅作为
    用户可配的更新源，不引入其他外部服务。
 10. **下载镜像与三级回退**：
-    - **动机**：GitHub Releases 的下载域名在部分网络下不可用或极慢。实测同一 126MB
-      安装包：直连约 34KB/s（全量需 63 分钟）；经 `ghfast.top` 前缀镜像约 1.05MB/s（2 分钟）。
-    - **路线顺序**：`mirror`（默认 `https://ghfast.top/`，前缀 + 完整原 URL 形态）
+    - **动机**：GitHub Releases 的元数据与下载域名在部分网络下不可用或极慢。实测
+      同一 183MB 安装包：直连约 34KB/s；经 `gh-proxy.com` 前缀镜像约 **9.6MB/s**（约 20 秒）。
+      **检查阶段同样需要镜像**：electron-updater 的 github provider 每次检查要发三条请求
+      （`releases.atom`、`releases/latest`、`releases/download/<tag>/latest.yml`），
+      前两条在部分镜像上被拒绝（`ghfast.top` 对 atom 返回 403），曾导致
+      「无代理用户点检查更新必定报 `net::ERR_CONNECTION_TIMED_OUT`」。
+    - **路线顺序**：`mirror`（默认 `https://gh-proxy.com/`，前缀 + 完整原 URL 形态）
       → `direct`（原站直连，等同改造前行为）→ `manual`（不再自动下载，UI 给「手动下载」）。
-    - **触发降级**：仅当处于「下载中」且本次下载尚未收到任何有效字节时，失败才降级；
-      收到首块数据即锁定当前路线，避免中途换源拼坏文件。检查更新的失败不触发降级。
+    - **重写范围**：`mirror` 阶段拦截 **`github.com` 全站**请求（不再只限
+      `/releases/download/`），以同时覆盖 `releases.atom` 与 `releases/latest`。
+      安全性依据：`GitHubProvider` 只用 `github.com` 域（atom / latest / download），
+      全程不访问 `api.github.com`，故放宽范围不会误伤任何 API 请求。
+      `direct` 阶段不重写，行为回到改造前。
+    - **镜像可配置（关键）**：第三方公益镜像生命周期不可控（历史上多家关停）。
+      镜像前缀**不得写死在代码里**，必须由配置提供，且支持：
+      `mirrorPrefix`（当前生效前缀，缺省取内置默认）、`mirrorCandidates`（候选列表，
+      用于失败时轮换）、以及「禁用镜像」（空前缀 = 只走直连）。
+      配置优先级：setting.json 用户覆盖 > 构建期环境变量 > 内置默认。
+      客户端须在检查/下载失败时按候选列表轮换镜像，避免单点失效即全功能失效。
+    - **候选列表的来源与数量**：由发版前的探测脚本（见验收场景 12）按**速度排序取前 3**
+      产出（不足 3 家有几何写几个）。**GitHub 直连不占候选名额**，它是候选全挂后的
+      下一级兜底（`direct`），再下一级是 `manual`。
+      因此即使 3 家候选全部失效，用户仍能通过直连或手动下载完成更新。
+    - **候选的唯一事实源是 shared（2026-11-23）**：常量定义在
+      `packages/shared/src/client-update/contract.ts` 的 `DEFAULT_UPDATE_MIRROR_CANDIDATES`，
+      **客户端自更新与远程资产下载（Source Server 包）共用同一份**。
+      理由：两者是两个包、两个进程、两套网络栈（前者走 Electron `webRequest`，
+      后者走 Host 子进程 undici，`Session.setProxy` 影响不到它），代码无法复用，
+      但它们面对的是同一个网络问题、同一批镜像。各维护一份必然出现
+      「客户端已切到新镜像、远程升级还在用失效旧镜像」的错位。
+      远程资产侧（`remoteAssetCdn.ts` 的 `withGithubMirrorCandidates`）接受
+      `string | readonly string[]`：传数组即按候选顺序依次生成，等价于候选轮换。
+    - **触发降级**：检查阶段与下载阶段的失败都参与降级（检查失败不再只报错，
+      而是换下一级重试）；但一旦收到有效字节即锁定当前路线，避免中途换源拼坏文件。
     - **实现位置**：不改 electron-updater 内部（其下载 URL 由 baseUrl 拼装，`resolveFiles`
       私有、`createClient` 不可注入，无法靠配置接入路径前缀式镜像）。改在 Electron
-      `session.webRequest.onBeforeRequest` 重写 release 资产下载请求；
-      只拦 `github.com/<o>/<r>/releases/download/...`，不影响 `api.github.com` 元数据请求。
-    - **手动兜底**：两跳都失败时 `update-available` 携带 `manualDownloadRequired: true` 与
+      `session.webRequest.onBeforeRequest` 重写请求。
+    - **代理与阶段匹配**：实测 `gh-proxy.com` 直连 43MB/s、经系统代理仅 153KB/s
+      （慢约 280 倍），而 `github.com` 在部分网络下需要代理。因此继续按阶段切换
+      updater session 代理：`mirror` → direct，`direct` → system。
+    - **手动兜底**：各级都失败时 `update-available` 携带 `manualDownloadRequired: true` 与
       `manualDownloadUrl`（release 详情页而非资产直链），弹窗把「下载更新」替换为「手动下载」，
       交由浏览器/下载工具打开。
+11. **CNB 备用通道（预留，暂不启用）**：国内自控分发路线已调研完成
+    （见 `docs/update-distribution-platform-evaluation.md` 第 3.1.1 节）。要点：
+    腾讯云 CNB 的 Release 附件支持匿名下载与单 Range 差量（206），速度约 5MB/s，
+    计费不含下载流量。接入时改走 `generic` provider、清单放仓库 raw 目录、
+    发布脚本须把资产写成绝对 URL（相对路径会解析到 raw 目录导致 404）。
+    该通道作为镜像方案失效时的备选，当前**不实现**，仅记录设计约束。
 
 ## 状态所有者
 
@@ -112,3 +174,39 @@ release notes 展示与「桌面端过旧」强更提示。
 10. 重启安装前退出准备失败（如资源锁清理异常被上抛）→ 不启动安装器，弹窗按钮恢复可点。
 11. `pnpm typecheck`、`pnpm lint` 通过；更新状态机/跳过版本/feed 解析/自动模式缓存/
     弹窗视图模型有单测覆盖。
+12. **发版前必须重新探测镜像**（用户 2026-11-23 明确要求）。
+    `node scripts/release-gate.mjs`（无 `--quick`）会自动执行
+    `scripts/probe-update-mirrors.mjs`，实测 30+ 家候选并输出合格清单。
+    判据三条，缺一不可：
+    - 能代理 `releases.atom` 且**响应体是真实 Atom XML**（状态码 200 不算通过：
+      实测有镜像返回 200 但 body 只有 2–3 字节 `ok`，会让 `parseXml` 抛
+      `ERR_UPDATER_INVALID_RELEASE_FEED`）；
+    - 支持单 Range，返回 `206` 且长度等于请求区间（回 200 全量会让差量静默退化为整包下载）；
+    - 能正确返回含 `version` 与 `sha512` 的 `latest.yml`。
+
+    **候选数量规则**（用户 2026-11-23 明确要求）：
+    - 全部合格镜像**按速度从快到慢排序**；
+    - **数量 > 3 时取前 3**，**不足 3 时有几个算几个**（不凑数、不降级取次优）；
+    - **GitHub 直连作为最后兜底，不占用候选名额**——由回退状态机的 `direct` 级承担。
+    完整链路固定为：`候选镜像依次轮换 → direct（GitHub 直连）→ manual（手动下载）`。
+
+    为什么上限是 3：实测第 4 名之后速度普遍低于 0.2MB/s（183MB 需 15 分钟以上），
+    真到那一步不如直接降级直连。候选过多也会延长探测与轮换耗时。
+
+    判定结果的处理：
+    - 至少一家合格 → 门禁 OK，并打印「本次取哪 3 家」；仅当
+      **当前代码声明的候选全部不合格**时才告警要求更换（速度波动极大，
+      按名次告警会变成噪音，且会让候选每天变一次）。
+    - 全部不合格 → 门禁给 WARN 而非 FAIL：更新并非不可用（还有 direct 与 manual），
+      但发版人必须显式决定并把 `updateMirrorPrefix` 设为空串，在发版说明里提示用户
+      「本版更新走直连，可能较慢」，不得沿用旧候选假装通过。
+
+    可用 `pnpm probe:update-mirrors` 单独运行探测查看完整报告。
+
+    **探测 tag 必须回退到已发布版本（2026-11-23 实际踩到的假警报）**：
+    发版流程会**先改版本号再构建**，此时本地版本（如 `0.2.8`）在 GitHub 上还没有
+    对应 release 资产。若探测直接用 `v${本地版本}` 去取 `latest.yml`，会得到 404，
+    被判成「Range 未生效」→ **全部镜像不合格** → 门禁报假警报，而镜像其实全是好的。
+    因此探测前须先验证该 tag 的资产是否存在（GET `latest.yml` 得 200 且有内容），
+    不存在则从 `releases.atom` 取最新已发布 tag 兜底，并在输出里说明用了哪个 tag。
+    可用 `UPDATE_PROBE_TAG` 显式指定以覆盖此逻辑。

@@ -30,7 +30,7 @@
     "test:coverage": "vitest run --coverage --exclude \"packages/desktop/test/e2e/**/*.test.ts\"",
     "test:unit": "vitest run --exclude \"packages/desktop/test/e2e/**/*.test.ts\"",
     "check:e2e-remote-targets": "node scripts/check-e2e-remote-targets.mjs",
-    "verify:pre-push": "pnpm run lint && pnpm run db:schema:check && pnpm run test:architecture && pnpm run architecture:check -- --changed && pnpm run test:engineering:affected --scope push",
+    "verify:pre-push": "pnpm run lint && pnpm run db:schema:check && pnpm run test:architecture && pnpm run architecture:check -- --changed && pnpm run check:e2e-remote-targets && pnpm run test:engineering:affected --scope push",
     "build": "pnpm -r build",
     "build:desktop-agent:bytecode": "node scripts/build-desktop-agent-bytecode.mjs",
     "build:docs": "pnpm --filter @raspberrycode/dev-docs build",
@@ -76,9 +76,10 @@
     "provider:regression": "pnpm --filter @raspberrycode/bootstrap... build && tsx apps/raspberrycode-cli/tools/provider-regression/src/cli.ts",
     "test:engineering": "vitest run --project engineering",
     "test:engineering:affected": "node scripts/run-affected-engineering-tests.mjs",
-    "test:engineering-tools": "node --test scripts/test/affected-engineering-test-cli.test.mjs scripts/test/pre-push-worktree.test.mjs scripts/test/retired-app-unit-evidence.test.mjs scripts/test/e2e-remote-targets-check.test.mjs",
+    "test:engineering-tools": "node --test scripts/test/affected-engineering-test-cli.test.mjs scripts/test/pre-push-worktree.test.mjs scripts/test/retired-app-unit-evidence.test.mjs scripts/test/e2e-remote-targets-check.test.mjs scripts/test/probe-update-mirrors.test.mjs",
     "release:gate": "node scripts/release-gate.mjs",
     "release:gate:quick": "node scripts/release-gate.mjs --quick",
+    "probe:update-mirrors": "node scripts/probe-update-mirrors.mjs",
     "release:raw": "release-it"
   },
   "dependencies": {

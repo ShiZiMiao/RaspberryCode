@@ -1,4 +1,8 @@
 import { posix } from "node:path";
+import {
+  DEFAULT_UPDATE_MIRROR_CANDIDATES,
+  DEFAULT_UPDATE_MIRROR_PREFIX,
+} from "@raspberrycode/shared/client-update";
 
 export interface RemoteCdnBaseOptions {
   remoteCdnBaseUrl?: string;
@@ -35,17 +39,23 @@ export function buildReleaseBaseCandidates(remoteCdnBaseUrls: string[], version:
 }
 
 /**
- * GitHub 下载镜像前缀的默认值，与应用自更新（`updateMirror.ts`）保持同一份事实。
+ * GitHub 下载镜像前缀的默认值——**与应用自更新共用同一份事实源**。
  *
- * 背景：远程 Source Server 包约 90MB/平台，直连 GitHub 实测 390KB/s（整包约 8 分钟），
- * 经该镜像 835KB/s（约 2 分钟）；网络差的时段直连可掉到 50KB/s 以下，
- * 一次远端升级要等十几分钟。这与应用更新遇到的是同一个网络问题。
+ * 取值来自 `@raspberrycode/shared/client-update` 的 `DEFAULT_UPDATE_MIRROR_PREFIX`，
+ * 该常量又在同一文件里由 `DEFAULT_UPDATE_MIRROR_CANDIDATES`（发版前实测生成，按速度前 3）
+ * 取首项得出。
+ *
+ * 为什么共用而不是各自维护：远程 Source Server 包约 90MB/平台，直连 GitHub 实测 390KB/s
+ * （整包约 8 分钟），经镜像 835KB/s（约 2 分钟）；网络差的时段直连可掉到 50KB/s 以下，
+ * 一次远端升级要等十几分钟。**这与应用更新遇到的是同一个网络问题、同一批镜像**。
+ * 若两边各写一份，必然出现「客户端已切到新镜像、远程资产还在用已失效旧镜像」的错位。
+ * 历史上这里就固定写着 `ghfast.top`，而它早已对 atom 返回 403、下载速度也大幅劣化。
  *
  * 镜像形态是「前缀 + 完整原 URL」（`https://<mirror>/https://github.com/...`），
  * 只对 GitHub 的 release 资产下载有效，因此仅当 URL 落在 github.com 的
  * `/<owner>/<repo>/releases/download/` 路径下才追加候选。自建 CDN/OSS 不加。
  */
-export const DEFAULT_REMOTE_ASSET_MIRROR_PREFIX = "https://ghfast.top/";
+export const DEFAULT_REMOTE_ASSET_MIRROR_PREFIX: string = DEFAULT_UPDATE_MIRROR_PREFIX;
 
 /** 判断是否为 GitHub release 资产下载地址（与会话更新镜像同一判定口径）。 */
 export function isGithubReleaseDownloadUrl(rawUrl: string): boolean {
@@ -78,17 +88,27 @@ export function toRemoteAssetMirrorUrl(rawUrl: string, mirrorPrefix: string): st
  *
  * 注意：不能让镜像成为**唯一**候选。镜像服务稳定性不受我们控制，
  * 一旦它挂了而直连还在，缺兜底会让远端升级直接失败。
+ *
+ * `mirrorPrefix` 可以只给一家，也可以传候选列表（数组）——传数组时按顺序
+ * 依次生成各家的镜像候选，等价于客户端自更新的「候选轮换」，只是这里的轮换
+ * 由调用方的「按顺序试」完成，不需要状态机。
  */
 export function withGithubMirrorCandidates(
   urls: readonly string[],
-  mirrorPrefix: string = DEFAULT_REMOTE_ASSET_MIRROR_PREFIX,
+  mirrorPrefix: string | readonly string[] = DEFAULT_UPDATE_MIRROR_CANDIDATES,
 ): string[] {
-  const prefix = mirrorPrefix.trim();
-  if (!prefix) return [...urls];
+  const prefixes = (Array.isArray(mirrorPrefix) ? mirrorPrefix : [mirrorPrefix as string])
+    .map((prefix) => prefix.trim())
+    .filter((prefix) => prefix.length > 0);
+  if (prefixes.length === 0) return [...urls];
   const mirrored: string[] = [];
-  for (const url of urls) {
-    const candidate = toRemoteAssetMirrorUrl(url, prefix);
-    if (candidate !== url) mirrored.push(candidate);
+  // 按镜像优先级外层循环、URL 内层循环：让「第 1 家的所有文件」排在「第 2 家」之前，
+  // 这样正常情况（第 1 家可用）不会被第 2 家的请求污染时序。
+  for (const prefix of prefixes) {
+    for (const url of urls) {
+      const candidate = toRemoteAssetMirrorUrl(url, prefix);
+      if (candidate !== url) mirrored.push(candidate);
+    }
   }
   // 镜像候选整体排在前，直连候选整体排在后：同一文件先镜像后直连，
   // 而不是逐个文件交错（否则每个文件都要先吃一次镜像失败）。

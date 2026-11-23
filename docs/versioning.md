@@ -87,12 +87,39 @@ gh release upload v<version> --repo ShiZiMiao/RaspberryCode \
 
 ### 下载镜像
 
-远程资产下载会自动优先走 GitHub 镜像（`ghfast.top`），失败回退直连。
-实测同一网络下直连 57KB/s、镜像 1301KB/s（88MB 包约 27 分钟 vs 70 秒）。
-镜像只对 `github.com/.../releases/download/...` 生效，自建 CDN/OSS 不加前缀。
-实现见 `packages/server/src/remote/remoteAssetCdn.ts` 的
-`withGithubMirrorCandidates`（与客户端自更新的 `updateMirror.ts` 同一语义，
-但两者运行在不同进程、不同网络栈，代码不共用）。
+**客户端自更新**与**远程资产下载**是两条链路，**共用同一份候选列表**：
+
+| 链路 | 实现 | 覆盖范围 |
+| --- | --- | --- |
+| 客户端自更新 | `packages/desktop/src/main/autoUpdate/updateMirror.ts` | `github.com/<o>/<r>/**` 全站（含 `releases.atom`） |
+| 远程资产 | `packages/server/src/remote/remoteAssetCdn.ts` 的 `withGithubMirrorCandidates` | `releases/download/...` |
+
+**候选的唯一事实源**：`packages/shared/src/client-update/contract.ts` 的
+`DEFAULT_UPDATE_MIRROR_CANDIDATES`。两边都从这里取，改一处即两边生效。
+
+为什么要共用：两条链路是两个包、两个进程、两套网络栈（前者走 Electron `webRequest`，
+后者走 Host 子进程 undici，`Session.setProxy` 影响不到它），代码无法复用，
+但面对的是同一个网络问题、同一批镜像。各维护一份必然出现
+「客户端已切到新镜像、远程升级还在用失效旧镜像」——历史上这里就固定写着 `ghfast.top`，
+而它早已对 atom 返回 403 且下载速度大幅劣化。
+
+共同语义是**镜像在前、直连兜底在后，绝不把镜像作唯一候选**。
+远程资产侧传数组时按候选顺序依次展开，等价于客户端的候选轮换。
+
+客户端自更新的候选列表**不得写死**：由 `pnpm probe:update-mirrors` 在发版前实测
+30+ 家公开镜像生成，规则是「三条硬条件全过 → 按速度排序 → 取前 3，不足 3 个有几个算几个」，
+GitHub 直连不占名额、作为下一级兜底。该探测已接进 `release-gate.mjs`，发版时自动执行。
+
+三条硬条件（缺一不可，都来自实测踩坑）：
+1. 能代理 `releases.atom` 且**响应体是真实 Atom XML**（≥2000 字节、含 `<feed>`）。
+   只回 200 不算——有镜像返回 200 但 body 只有几个字节 `ok`，electron-updater 会解析失败。
+2. 支持单 Range（206 且长度等于请求区间）。回 200 全量会让差量静默退化为整包。
+3. 能正确返回含 `version` + `sha512` 的 `latest.yml`。
+
+⚠️ 镜像存活率极低且速度波动极大（同一天内 0.05–14MB/s 都出现过，
+32 家「正常」站里只有 5 家能通过上述判据）。因此**每次发版前必须重跑探测**，
+不要沿用上一版候选——它们可能已全部失效。用户也可在设置里覆盖
+`updateMirrorPrefix`（空串 = 只走直连）。
 
 ## 发版检查清单
 
@@ -105,7 +132,11 @@ gh release upload v<version> --repo ShiZiMiao/RaspberryCode \
    build-meta + `run-production-build.mjs` 真正编译）。
    **只跑 electron-builder 不会编译 TS**，会拿旧 `out/` 打包。
    构建前必须设置远程资产发布根（见上一节），否则门禁会拒。
-5. 跑门禁：`typecheck` / `lint` / `audit-neutrality`。
+5. 跑门禁：`pnpm release:gate`（含 typecheck / lint / audit-neutrality /
+   **更新镜像实测探测**）。`--quick` 会跳过镜像探测，仅用于查产物一致性，
+   **正式发版必须无 `--quick` 跑一次**。
+   探测结果若要更新候选，按输出里的「可粘贴」段落替换
+   `DEFAULT_UPDATE_MIRROR_CANDIDATES` 后重新编译。
 6. 构建安装包（见项目记忆的打包定式）。
 7. **真实安装与升级实测**（不可跳过）：
    - 卸载旧版 → 装新版 → 版本号正确

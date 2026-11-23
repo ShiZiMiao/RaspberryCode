@@ -76,6 +76,31 @@ const updateFeedGithubSlugSchema = z
   .regex(/^[A-Za-z0-9._-]*$/)
   .optional();
 
+/**
+ * 更新镜像前缀：必须是不含路径的 http(s) origin，末尾斜杠可有可无（写入时统一补全）。
+ *
+ * 为什么可配置：第三方公益镜像生命周期不可控（ghfast.top 已对 atom 返回 403，
+ * 多家镜像已关停）。写死会导致镜像失效时整个更新功能不可用，且必须发版才能修。
+ * 空串语义 = 禁用镜像、只走直连。
+ */
+const updateMirrorPrefixSchema = z
+  .string()
+  .trim()
+  .max(200)
+  .refine(
+    (value) => {
+      if (value === "") return true;
+      try {
+        const url = new URL(value);
+        return (url.protocol === "https:" || url.protocol === "http:") && url.pathname === "/";
+      } catch {
+        return false;
+      }
+    },
+    { message: "update mirror prefix must be an http(s) origin" },
+  )
+  .optional();
+
 const remoteWorkspaceTargetSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("ssh"),
@@ -588,6 +613,9 @@ const appSettingsObjectSchema = z.object({
   skippedElectronUpdateVersions: skippedElectronUpdateVersionsSchema,
   updateFeedGithubOwner: updateFeedGithubSlugSchema,
   updateFeedGithubRepo: updateFeedGithubSlugSchema,
+  // 更新镜像前缀（spec：specs/client-github-self-update.md 产品规则 10）。
+  // 第三方公益镜像不稳定，必须可配置；空串 = 禁用镜像只走直连。
+  updateMirrorPrefix: updateMirrorPrefixSchema,
   settingsSyncFirstRunPromptHandled: z.boolean().optional(),
   raspberrycodeEndpointOrigin: raspberrycodeEndpointOriginSchema.optional(),
 });
@@ -703,6 +731,7 @@ export const appSettingsPatchSchema = z.object({
     .optional(),
   updateFeedGithubOwner: updateFeedGithubSlugSchema,
   updateFeedGithubRepo: updateFeedGithubSlugSchema,
+  updateMirrorPrefix: updateMirrorPrefixSchema,
   settingsSyncFirstRunPromptHandled: z.boolean().optional(),
   raspberrycodeEndpointOrigin: raspberrycodeEndpointOriginSchema.optional(),
 });

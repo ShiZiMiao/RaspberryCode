@@ -451,3 +451,39 @@ describe("远程介绍回滚兼容", () => {
     );
   });
 });
+
+describe("updateMirrorPrefix 设置（spec 产品规则 10）", () => {
+  // 第三方公益镜像不稳定（ghfast.top 已对 atom 返回 403，多家镜像已关停），
+  // 前缀必须可配置。三态语义是契约，改动会破坏「镜像失效时不发版也能修」的能力。
+  it("未设置 → undefined（用内置候选列表）", () => {
+    expect(appSettingsSchema.parse({}).updateMirrorPrefix).toBeUndefined();
+  });
+
+  it("空串 → 空串（显式禁用镜像，只走直连）", () => {
+    expect(appSettingsSchema.parse({ updateMirrorPrefix: "" }).updateMirrorPrefix).toBe("");
+  });
+
+  it("合法 http(s) origin 通过（末尾斜杠可有可无）", () => {
+    for (const value of ["https://gh-proxy.com/", "https://mirror.example", "http://127.0.0.1:8080/"]) {
+      expect(appSettingsSchema.parse({ updateMirrorPrefix: value }).updateMirrorPrefix).toBe(value);
+    }
+  });
+
+  it("带路径 / 非 URL / 非 http 协议被拒", () => {
+    for (const value of [
+      "https://x.com/foo",
+      "https://x.com/foo/",
+      "not-a-url",
+      "ftp://x.com/",
+      "github.com",
+    ]) {
+      expect(appSettingsSchema.safeParse({ updateMirrorPrefix: value }).success).toBe(false);
+    }
+  });
+
+  it("patch schema 也接受该字段（设置页可写）", () => {
+    expect(appSettingsPatchSchema.parse({ updateMirrorPrefix: "https://gh-proxy.com/" })).toEqual({
+      updateMirrorPrefix: "https://gh-proxy.com/",
+    });
+  });
+});
