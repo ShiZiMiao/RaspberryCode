@@ -48,6 +48,10 @@ import {
   patchNsisInstallSectionFile,
   restoreNsisInstallSectionFileSync,
 } from "./scripts/patch-nsis-install-section.mjs";
+import {
+  patchAssistedInstallerFile,
+  restoreAssistedInstallerFileSync,
+} from "./scripts/patch-nsis-assisted-installer.mjs";
 
 const buildMetadata = getBuildMetadata();
 const targetPlatform = getTargetPlatform();
@@ -95,6 +99,7 @@ const requireFromConfig = createRequire(import.meta.url);
 let nsisInstallSectionPatched = false;
 let nsisInstallSectionOriginalSource = null;
 let nsisInstallSectionPath = null;
+let assistedInstallerPath = null;
 const desktopElectronVersion = requireFromConfig("./package.json").devDependencies.electron;
 const asarCliPath = resolve(
   dirname(requireFromConfig.resolve("@electron/asar/package.json")),
@@ -841,6 +846,38 @@ export default {
           originalSource: nsisInstallSectionOriginalSource,
         });
       });
+    }
+
+    // 更新场景跳过「为所有用户 / 仅为我」选择页（用户要求：只显示进度，最后点完成）。
+    //
+    // 背景：我们与上游都用 `oneClick:false` + `allowToChangeInstallationDirectory:true`，
+    // 属于「辅助安装器」形态。electron-builder 已给目录页包了 skipPageIfUpdated，
+    // 但安装模式页（PAGE_INSTALL_MODE）没有——更新时仍会弹一页让人选安装范围。
+    // 这里补上同一个宏，使 --updated 拉起时自动 Abort 该页，
+    // 用户只剩「进度」与「完成」两屏。
+    //
+    // 注意不能用 quitAndInstall(true)：那是 NSIS 的 /S 完全静默，连进度和完成页都不会出现，
+    // 应用退出后用户看不到任何反馈，反而像崩溃。
+    assistedInstallerPath = resolve(
+      dirname(requireFromConfig.resolve("app-builder-lib/package.json")),
+      "templates",
+      "nsis",
+      "assistedInstaller.nsh",
+    );
+    const assistedPatch = await runTimedAsync("beforePack:patchNsisAssistedInstaller", () =>
+      patchAssistedInstallerFile(assistedInstallerPath),
+    );
+    if (assistedPatch.changed) {
+      process.once("exit", () => {
+        restoreAssistedInstallerFileSync({
+          filePath: assistedInstallerPath,
+          originalSource: assistedPatch.originalSource,
+        });
+      });
+    } else {
+      console.log(
+        "[nsis] assistedInstaller.nsh 未打补丁（已指定 INSTALL_MODE_PER_ALL_USERS，或模板结构已变）",
+      );
     }
   },
   afterExtract: async (context) => {

@@ -210,3 +210,65 @@ describe("useAppChromeState desktop chrome state", () => {
     act(() => root.unmount());
   });
 });
+
+/**
+ * 更新入口在「自动更新」开启时的可见性（2026-11-23，对齐上游 ZCode）。
+ *
+ * 缺陷：原实现 `visibleUpdateState = autoUpdateEnabled ? null : updateState`
+ * 会在自动更新（默认开启）时把状态整体置空。于是 main 广播 update-available 后，
+ * 标题栏绿色入口不渲染、原生菜单被强制成 idle、toast 又是纯文本无动作，
+ * 用户三处都找不到可点的东西 —— 正是反馈里的「发现新版本了，然后呢？」。
+ *
+ * 修复后：入口照常投影。「静默」应体现在不主动弹窗打扰，而不是藏掉状态入口。
+ */
+describe("更新入口不再被静默模式掩蔽", () => {
+  afterEach(() => {
+    delete (globalThis as { document?: unknown }).document;
+    delete (globalThis as { window?: unknown }).window;
+    delete (globalThis as { IS_REACT_ACT_ENVIRONMENT?: unknown }).IS_REACT_ACT_ENVIRONMENT;
+  });
+
+  it.each([true, false])(
+    "autoDownloadAndInstallUpdates=%s 时都投影 update-available（都能看到入口）",
+    async (autoEnabled) => {
+      const { useAppChromeState } = await import("@/app-shell/useAppChromeState.js");
+      const platform = {
+        onWindowFullscreenChanged: vi.fn(() => () => {}),
+        getAutoUpdatePreferences: vi.fn(async () => ({
+          autoDownloadAndInstallUpdates: autoEnabled,
+          skippedUpdateVersion: null,
+          updateFeedGithubOwner: "",
+          updateFeedGithubRepo: "",
+        })),
+        onSettingsChanged: vi.fn(() => () => {}),
+        getUpdateState: vi.fn(async () => ({
+          kind: "update-available" as const,
+          enabled: true,
+          version: "0.2.4",
+        })),
+        onUpdateStateChanged: vi.fn(() => () => {}),
+        onUpdateCheckResult: vi.fn(() => () => {}),
+      } as unknown as IPlatformService;
+
+      let seen: string | null | undefined;
+      const root = createRoot(installMinimalDom());
+      const Harness = () => {
+        const { updateState, updateReadyVersion } = useAppChromeState({
+          isDesktop: true,
+          platform,
+          workspaceAbsPath: "/repo/demo",
+        });
+        seen = updateState?.kind ?? null;
+        expect(updateReadyVersion).toBeNull();
+        return null;
+      };
+      try {
+        await act(async () => root.render(createElement(Harness)));
+        // 关键断言：两种模式下都必须看得见 update-available，入口才会渲染。
+        expect(seen).toBe("update-available");
+      } finally {
+        act(() => root.unmount());
+      }
+    },
+  );
+});

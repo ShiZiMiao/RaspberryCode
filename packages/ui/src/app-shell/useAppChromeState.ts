@@ -100,8 +100,19 @@ export function useAppChromeState({
     };
   }, [platform]);
 
-  // 静默模式下不投影更新入口；手动「检查更新」toast 是用户主动发起，不受此掩蔽影响。
-  const visibleUpdateState = autoUpdateEnabled ? null : updateState;
+  // 更新入口在「自动更新」开启时也要投影（2026-11-23 用户要求对齐上游 ZCode）。
+  //
+  // 此前的实现是 `autoUpdateEnabled ? null : updateState`，即静默模式下把状态整体置空。
+  // 问题在于自动下载是**异步**的：main 广播 update-available 之后，下载要等
+  // electron-updater 发首个 download-progress 事件才真正开始推进，中间有一段空窗。
+  // 而手动「检查更新」恰好在空窗内返回 available → toast 说「发现新版本」，
+  // 但标题栏入口被置空、菜单被强制成 idle，用户三处都找不到可点的东西
+  // （用户反馈原话：「发现新版本了，然后呢？」）。
+  //
+  // 对齐上游后，自动模式下也应显示入口：用户能看见进度、能取消、能重启。
+  // 「全程无感」只应体现在「不主动弹窗打扰」，而不是「藏掉所有状态入口」。
+  // 下载完成的 toast 仍由下方 autoUpdateEnabled 判断抑制，保留静默体验。
+  const visibleUpdateState = updateState;
 
   useEffect(() => {
     let cancelled = false;
@@ -180,7 +191,10 @@ export function useAppChromeState({
 
   useEffect(() => {
     // Windows 上更新下载完成给一次轻提示，不阻塞主界面；其余平台靠更新入口自明。
-    // 自动更新模式全程无感，不提示（spec 产品规则 7）。
+    //
+    // 自动模式下仍抑制这条 toast：静默的边界是「不主动弹窗打扰」（spec 产品规则 5），
+    // 下载完成属于后台流程，主动弹一次提示会打断用户。
+    // 但**入口不再隐藏**——用户随时能从标题栏看到「重启以更新」的状态。
     if (
       !isWindowsDesktop ||
       autoUpdateEnabled ||
