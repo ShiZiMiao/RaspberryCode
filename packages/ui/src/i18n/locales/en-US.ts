@@ -4972,6 +4972,7 @@ const enUS: Record<string, string> = {
   "chat.message.revert.dialog.blocked":
     "Some files cannot be restored safely, so the revert was cancelled. Resolve them manually first.",
   "chat.message.revert.failed": "Revert failed; nothing was changed",
+  "chat.message.revert.previewUnavailable": "Could not load the file-change preview. The revert still re-checks before applying and stops if files cannot be restored safely.",
   "chat.message.sentByScheduledTask": "Sent by scheduled task",
   "chat.message.copy": "Copy",
   "chat.message.like": "Like",

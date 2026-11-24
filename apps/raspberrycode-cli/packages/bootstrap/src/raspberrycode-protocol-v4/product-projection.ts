@@ -868,10 +868,48 @@ export class ProductProjection {
       return { ok: true, action, row, messageId };
     }
     if (row.kind !== "turnHeader") {
+      // 文件撤销的入口有两种真实调用方：文件摘要卡直接传 turnHeader 行；
+      // 「回退」按钮从 user 行发起（用户点的是那条消息），但作用域是整轮。
+      // 这里把 user 行归一到它所属 turn 的 header 行，而不是让 UI 去猜内部 rowId。
+      if (action !== "applyFileRewind" && action !== "fileRewindPreview") {
+        return {
+          ok: false,
+          status: "rejected",
+          reasonCode: "guard.actionUnavailable",
+        };
+      }
+      if (row.kind !== "userInput") {
+        return {
+          ok: false,
+          status: "rejected",
+          reasonCode: "guard.actionUnavailable",
+        };
+      }
+      const headerRowId = this.turnHeaderRowIdByTurnId.get(row.turnId);
+      const headerRow = headerRowId === undefined ? undefined : this.findRow(headerRowId);
+      if (!headerRow || headerRow.kind !== "turnHeader") {
+        return {
+          ok: false,
+          status: "rejected",
+          reasonCode: "guard.actionUnavailable",
+        };
+      }
+      if (
+        (action === "applyFileRewind" || action === "fileRewindPreview") &&
+        (!headerRow.fileChanges || headerRow.actions?.canRewindFiles !== true)
+      ) {
+        return {
+          ok: false,
+          status: "rejected",
+          reasonCode: "guard.actionUnavailable",
+        };
+      }
+      // 归一后的 row 是 header：turnId 相同，messageIds 覆盖整轮全部 checkpoint。
       return {
-        ok: false,
-        status: "rejected",
-        reasonCode: "guard.actionUnavailable",
+        ok: true,
+        action,
+        row: headerRow,
+        messageIds: this.getMessageIdsForTurnRow(headerRow.rowId),
       };
     }
     if (

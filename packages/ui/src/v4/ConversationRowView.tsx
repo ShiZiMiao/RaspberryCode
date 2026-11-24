@@ -1190,7 +1190,14 @@ const SingleUserInputRowView = memo(function SingleUserInputRowView({
       .then((result) => setRevertPreview(result))
       .catch((error: unknown) => {
         // 预览只用于展示，失败不阻断：确认时命令侧会重新预检一次（fail closed）。
-        setRevertError(error instanceof Error ? error.message : String(error));
+        // 内部 reasonCode（proto.* / guard.* / fault.*）不得直出给用户——
+        // 用户读不懂、也不该看到协议层词汇。原样透传过一次，弹窗上出现
+        // 「guard.actionUnavailable」，已改为日志留证 + 通用可读文案。
+        logger.warn("[v4-revert] 文件改动预检失败", {
+          rowId: row.rowId,
+          reason: error instanceof Error ? error.message : String(error),
+        });
+        setRevertError(intl.formatMessage({ id: "chat.message.revert.previewUnavailable" }));
       })
       .finally(finish);
   }, [context.previewFileRewind, context.hasComposerDraft, onRevert, row.entityId, row.rowId]);

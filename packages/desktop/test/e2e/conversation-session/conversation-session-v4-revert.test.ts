@@ -52,6 +52,10 @@ describe("PV4-31/PV4-32 user message revert", () => {
     await waitForV4Revert();
     const rowId = await clickLatestV4Revert();
     expect(rowId).toBeTruthy();
+    // 弹窗文案必须是给人读的：内部 reasonCode（proto.* / guard.* / fault.*）不得直出。
+    // 原实现把 guard.actionUnavailable 原样显示在用户面前（真实缺陷，用户截图发现）。
+    const dialogText = await readV4RevertDialogText();
+    expect(dialogText).not.toMatch(/guard\.|proto\.|fault\.|actionUnavailable|staleTarget/);
     await confirmV4Revert();
 
     const revertAck = await waitForLatestV4CommandAck("revertUserQuery", 60000);
@@ -146,6 +150,14 @@ async function prepareRevertCase() {
   await writeFile(FILE_PATH, "revert-before\n", "utf8");
   await prepareV4ConversationE2E();
   await switchV4Mode("yolo");
+}
+
+/** 读取回退确认弹窗的可见文本，用于断言内部错误码没有泄漏到用户界面。 */
+async function readV4RevertDialogText(): Promise<string> {
+  return browser.execute((dialogTestId) => {
+    const dialog = document.querySelector<HTMLElement>(`[data-testid="${dialogTestId}"]`);
+    return dialog?.innerText ?? "";
+  }, "v4-revert-confirm-dialog");
 }
 
 /**

@@ -7726,6 +7726,24 @@ describe("fork / modelChange marker", () => {
       ok: true,
     });
 
+    // 「回退」按钮从 user 行发起（用户点的是那条消息），预检/撤销的作用域仍是整轮。
+    // 原实现只认 turnHeader 行，导致弹窗预检被拒并把内部码 guard.actionUnavailable
+    // 直接显示给用户（真实缺陷）。这里锁死：user 行入口必须解析成功，
+    // 且归一后的 row 是同一 turn 的 header。
+    const userRow = projection
+      .getSnapshot()
+      .rows.window.find((row) => row.kind === "userInput");
+    expect(userRow).toBeDefined();
+    for (const action of ["fileRewindPreview", "applyFileRewind"] as const) {
+      const userResolution = projection.resolveRowActionTarget(
+        { rowId: userRow!.rowId, entityId: userRow!.entityId! },
+        action,
+      );
+      expect(userResolution, action).toMatchObject({ ok: true, action });
+      expect(userResolution.ok && userResolution.row.kind).toBe("turnHeader");
+      expect(userResolution.ok && userResolution.row.turnId).toBe("t1");
+    }
+
     projection.applyEvent(
       new EventLog().push(SessionEventType.CompactStarted, {
         operationId: "compact-files",
