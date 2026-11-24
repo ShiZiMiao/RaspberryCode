@@ -165,6 +165,19 @@ if (desktopVersion !== rootVersion) {
   ok("两个 package.json 版本一致");
 }
 
+// rc 版本禁止发版（docs/versioning.md「未发版的进行中版本用 -rc.N」）。
+//
+// 为什么必须拦：rc 一旦发到 GitHub，`releases.atom` 会收录它（实测 electron 的
+// alpha 就在 atom 里），而正式版用户 allowPrerelease=false、直接取 atom 第一条，
+// 于是 RC 会被推给全部普通用户。发版前必须先去掉 rc 段。
+if (/-rc\.\d+$/.test(desktopVersion)) {
+  fail(
+    `版本号 ${desktopVersion} 仍是 rc 预发布段，禁止发版；先把两个 package.json 改成正式版本号（如 0.2.8）并重跑 prepare:build-meta`,
+  );
+} else if (desktopVersion.includes("-")) {
+  warn(`版本号 ${desktopVersion} 含预发布段，确认这不是误发到正式通道的版本`);
+}
+
 if (!existsSync(metaPath)) {
   fail("缺少 build-meta.json —— 必须先跑 pnpm prepare:build-meta");
 } else {

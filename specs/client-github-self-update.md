@@ -171,6 +171,10 @@
 8. Release 资产含 `.blockmap` 时走单 Range 差量（日志可见 differential download）；
    缺失时回退整包下载。
 9. 断网/仓库无 release/版本号不可比：更新状态回 idle，日志有 warn，UI 无残留入口，不崩溃。
+   **含 rc 预发布段的构建属此列**：rc 版本走 `allowPrerelease=true` + channel=`rc`，
+   而 atom 里没有 rc 条目，必然抛 `ERR_UPDATER_NO_PUBLISHED_VERSIONS`。
+   这是预期行为（rc 是开发版，不该给自己推更新），按本条回归 idle 即可，不要加兜底分支。
+   版本号规则见 `docs/versioning.md` 的「未发版的进行中版本用 `-rc.N`」。
 10. 重启安装前退出准备失败（如资源锁清理异常被上抛）→ 不启动安装器，弹窗按钮恢复可点。
 11. `pnpm typecheck`、`pnpm lint` 通过；更新状态机/跳过版本/feed 解析/自动模式缓存/
     弹窗视图模型有单测覆盖。

@@ -22,6 +22,56 @@
    也不要在对话里「建议」升 MAJOR 后直接执行。
 4. 一次发版只升一位，不跳号（除同步上游的 PATCH 归零）。
 
+## 未发版的进行中版本用 `-rc.N`（用户 2026-11-24 明确要求）
+
+**功能已完成但尚未正式发版**的版本号必须带 rc 预发布段，形如 `0.2.8-rc.1`。
+
+```text
+0.2.8          ← 正式发版时才是这个
+0.2.8-rc.1     ← 开发期、功能已完成但未发版
+0.2.8-rc.2     ← 同版本内又攒了一批功能/修复
+```
+
+规则：
+
+1. **进入开发就先挂 rc**：一旦确定这一版的目标版本号（如 `0.2.8`），
+   立刻写成 `0.2.8-rc.1`，而不是先写 `0.2.8` 再等发版。
+   避免「本地版本号看起来已发版、实际没有」的混淆。
+2. **同版本内追加功能递增 rc 序号**：`-rc.1` → `-rc.2`，不新增 PATCH。
+   PATCH 只在**正式发版**时按上面的语义递增。
+3. **正式发版时去掉 rc 段**：`0.2.8-rc.3` → `0.2.8`，这是唯一一次把 rc 去掉的时机。
+4. **rc 版本号不得上传到 GitHub Release，也不得打 `v*` tag**。
+   发版动作只对无 rc 的正式版本执行。
+
+### 为什么 rc 绝不能发到 GitHub（实测依据，不是保守假设）
+
+`releases.atom` **不会**因为某个 release 被标记为 pre-release 就排除它——
+实测 `electron/electron` 的 `v46.0.0-alpha.13` 等 prerelease 条目就在 atom 里。
+而我们的 `GitHubProvider` 没有显式设置 `allowPrerelease`，完全依赖 electron-updater
+的默认逻辑：**正式版用户的 `allowPrerelease=false`，直接取 atom 第一条**。
+
+推演结果（`v0.2.8-rc.1` 若进入 atom 首位）：
+
+| 当前版本 | 行为 | 后果 |
+| --- | --- | --- |
+| `0.2.7`（正式） | 取 atom 第一条 = `v0.2.8-rc.1` | **RC 直接被推给全部普通用户** |
+| `0.2.8`（正式） | 指向 rc.1，但 semver 判定为降级 | 每次检查多走一轮「发现→拒降级」 |
+| `0.2.8-rc.1` | 同 channel 匹配到 rc.1 | 正常 |
+| `0.2.8-rc.1`（rc tag 已删） | 无同 channel 条目 | `ERR_UPDATER_NO_PUBLISHED_VERSIONS` |
+
+结论：rc 只作为**本地开发期的版本标记**（用于区分「已改版本号但未发版」），
+不参与任何分发。这样零风险，且不需要改 `allowPrerelease`。
+
+### rc 构建自己点「检查更新」会报错，这是预期
+
+rc 版本运行时 `allowPrerelease` 被 electron-updater 自动置为 `true`，
+channel 取 `rc`；而 atom 里没有任何 `rc` 条目（rc 不上传），
+于是所有条目都不满足 `isNextPreRelease`，最终抛
+`ERR_UPDATER_NO_PUBLISHED_VERSIONS`，UI 显示「检查更新失败」。
+
+**这不是缺陷，不要为此加兜底分支**：rc 是开发版，本就不该给自己推更新。
+测试 rc 构建时看到这条报错属正常现象。等改成正式版本号并发布后，该行为自动消失。
+
 ## 版本号写在哪
 
 发版版本由 **`packages/desktop/package.json` 的 `version`** 决定（electron-builder 据此生成
@@ -30,6 +80,9 @@
 - `packages/desktop/package.json` → `version`（**权威来源**）
 - 根 `package.json` → `version`（保持一致）
 - Git tag：`v<version>`（与 `version` 严格一致，自更新据此比对）
+
+**rc 版本不打 tag**：`v0.2.8-rc.1` 这种 tag 一律不创建（见上一节）。
+本地 `version` 可以是 rc，但 Git 上的 `v*` tag 只对应正式版本。
 
 **不要改** `apps/raspberrycode-cli/package.json` 的版本（`private: true`，跟随上游 ZCode 版本线，
 与产品发版无关）。
@@ -135,10 +188,13 @@ GitHub 直连不占名额、作为下一级兜底。该探测已接进 `release-
 ## 发版检查清单
 
 1. 确认变更类别 → 决定升哪一位（见上表）。
-2. 改 `packages/desktop/package.json` 与根 `package.json` 的 `version`。
+2. **去掉 rc 段**：`0.2.8-rc.3` → `0.2.8`。同时改
+   `packages/desktop/package.json` 与根 `package.json` 的 `version`。
+   这是唯一一次移除 rc 的时机；发版后不得再出现 rc 段。
 3. **重新生成构建元数据**：`pnpm --dir packages/desktop run prepare:build-meta`。
    跳过这步会打出旧版本号的包 —— `extraMetadata.version` 读的是
    `out/metadata/build-meta.json` 缓存，不是 package.json。
+   **从 rc 改成正式版号后必须重跑**，否则产物里仍是 rc 版本号。
 4. **完整构建**：`pnpm --dir packages/desktop run build`（= 运行时资产 +
    build-meta + `run-production-build.mjs` 真正编译）。
    **只跑 electron-builder 不会编译 TS**，会拿旧 `out/` 打包。

@@ -1,6 +1,6 @@
 {
   "name": "raspberrycode",
-  "version": "0.2.8",
+  "version": "0.2.8-rc.1",
   "private": true,
   "type": "module",
   "scripts": {
