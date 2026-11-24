@@ -31,6 +31,7 @@ import {
   ThumbsDownIcon,
   ThumbsUpIcon,
   TrendingUpDownIcon,
+  Undo2Icon,
   XIcon,
 } from "lucide-react";
 import { parseAutomationRunId } from "@raspberrycode/shared";
@@ -46,6 +47,7 @@ import {
   TID_V4_FEEDBACK_LIKE,
   TID_V4_FORK,
   TID_V4_RETRY,
+  TID_V4_REVERT,
   TID_V4_ROW,
   TID_V4_ROW_ATTACHMENTS,
   testId,
@@ -232,6 +234,15 @@ type UserInputEditHandler = (
 
 type AssistantMessageFeedback = "like" | "dislike";
 
+/**
+ * 回退：只回退不重发。
+ * 返回 ACK，blocked 时 UI 用它刷新确认弹窗里的文件列表；
+ * 返回 false 表示命令被拒/异常，UI 只提示失败、不改任何状态。
+ */
+export type UserInputRevertHandler = (
+  target: ConversationRowTarget,
+) => Promise<CommandAck | boolean | void> | CommandAck | boolean | void;
+
 function getAttachmentTypeLabel(filename: string, mimeType: string): string {
   const leaf = filename.split(/[\\/]/u).at(-1) ?? filename;
   const dotIndex = leaf.lastIndexOf(".");
@@ -269,6 +280,8 @@ export interface ConversationRowViewProps {
   onRetry?: (target: ConversationRowTarget) => void;
   /** user 行的 edit 入口（editUserQuery command，用行内编辑文本替换该轮）。 */
   onEdit?: UserInputEditHandler;
+  /** user 行的「回退」入口（revertUserQuery command，回退到发送前且不重发）。 */
+  onRevert?: UserInputRevertHandler;
   editWorkspaceRewindAvailability?: EditWorkspaceRewindAvailability;
   /** 嵌套在工具 Group 内时去掉 Reasoning 内容的重复左导线与缩进。 */
   reasoningContentVariant?: "default" | "nested";
@@ -936,12 +949,14 @@ const SingleUserInputRowView = memo(function SingleUserInputRowView({
   row,
   context,
   onEdit,
+  onRevert,
   editWorkspaceRewindAvailability,
   status,
 }: {
   row: UserInputRow;
   context: ConversationRowRenderContext;
   onEdit?: UserInputEditHandler;
+  onRevert?: UserInputRevertHandler;
   editWorkspaceRewindAvailability?: EditWorkspaceRewindAvailability;
   status?: string;
 }) {
@@ -974,6 +989,16 @@ const SingleUserInputRowView = memo(function SingleUserInputRowView({
   const [conflictPreview, setConflictPreview] =
     useState<V4ConversationFileRewindPreviewResult | null>(null);
   const [conflictOpen, setConflictOpen] = useState(false);
+  // 回退：确认弹窗状态与预览过程分离。预览走 applyFileRewind 之外只读的 preview，
+  // 每次打开都重新拉，避免用上一次（可能已被外部改动）的结果做决定。
+  const [revertOpen, setRevertOpen] = useState(false);
+  const [revertPreview, setRevertPreview] =
+    useState<V4ConversationFileRewindPreviewResult | null>(null);
+  const [revertPreviewLoading, setRevertPreviewLoading] = useState(false);
+  const [revertApplying, setRevertApplying] = useState(false);
+  const [revertError, setRevertError] = useState<string | null>(null);
+  // 打开弹窗那一刻的草稿事实：之后用户在弹窗背后继续输入不必再刷新这句提示。
+  const [revertDiscardsDraft, setRevertDiscardsDraft] = useState(false);
   const inputApiRef = useRef<LexicalChatInputHandle | null>(null);
   const editContextCount = countComposerPromptContexts(editPromptContexts);
   const canSubmit = draft.trim().length > 0 || editAttachments.length > 0 || editContextCount > 0;
@@ -991,6 +1016,8 @@ const SingleUserInputRowView = memo(function SingleUserInputRowView({
       : intl.formatMessage({
           id: `chat.edit.resetConversationAndFiles.${editWorkspaceRewindAvailability?.reason ?? "noFiles"}`,
         });
+  const revertLabel = intl.formatMessage({ id: "chat.message.revert" });
+  const revertTooltip = intl.formatMessage({ id: "chat.message.revert.tooltip" });
   const visibleText = parsedPrompt.visibleContent;
   const codeCommentContexts = parsedPrompt.codeComments;
   const webElementContexts = parsedPrompt.webElements;
@@ -1129,6 +1156,74 @@ const SingleUserInputRowView = memo(function SingleUserInputRowView({
       parsedPrompt.conversationSelections.length,
     ],
   );
+  // ── 回退（只回退不重发）────────────────────────────────────────
+  // 打开前先拉一次文件预览：用户要在弹窗里看清「哪些文件会恢复、哪些恢复不了」才能决定。
+  // 预览失败/超时不阻止确认：命令侧本来就会在提交前重新预检并 fail closed，
+  // 预览只是告知。把预览做成硬前置会让一个只读查询的抖动直接锁死回退入口。
+  const handleOpenRevert = useCallback(() => {
+    if (!onRevert || !row.entityId) return;
+    setRevertError(null);
+    setRevertPreview(null);
+    setRevertDiscardsDraft(context.hasComposerDraft?.() === true);
+    setRevertOpen(true);
+    const preview = context.previewFileRewind;
+    if (!preview) {
+      setRevertPreviewLoading(false);
+      return;
+    }
+    setRevertPreviewLoading(true);
+    // 预览是只读告知，不允许它把确认入口永久锁死：远端链路卡住时也要能回退。
+    // 超时后按「预览不可用」处理，确认时命令侧仍会重新预检并 fail closed。
+    const timeoutMs = 8000;
+    let settled = false;
+    const timer = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      setRevertPreviewLoading(false);
+    }, timeoutMs);
+    const finish = () => {
+      settled = true;
+      window.clearTimeout(timer);
+      setRevertPreviewLoading(false);
+    };
+    void preview({ rowId: row.rowId, entityId: row.entityId })
+      .then((result) => setRevertPreview(result))
+      .catch((error: unknown) => {
+        // 预览只用于展示，失败不阻断：确认时命令侧会重新预检一次（fail closed）。
+        setRevertError(error instanceof Error ? error.message : String(error));
+      })
+      .finally(finish);
+  }, [context.previewFileRewind, context.hasComposerDraft, onRevert, row.entityId, row.rowId]);
+
+  const handleConfirmRevert = useCallback(() => {
+    if (!onRevert || !row.entityId) return;
+    setRevertApplying(true);
+    setRevertError(null);
+    void Promise.resolve(onRevert({ rowId: row.rowId, entityId: row.entityId }))
+      .then((result) => {
+        if (result === false) {
+          setRevertError(intl.formatMessage({ id: "chat.message.revert.failed" }));
+          return;
+        }
+        // blocked：权威预览原样回填，UI 不自己推断哪一步被拒。
+        if (
+          typeof result === "object" &&
+          result !== null &&
+          result.result?.type === "revertUserQuery" &&
+          result.result.disposition === "blocked"
+        ) {
+          if (result.result.preview) setRevertPreview(result.result.preview);
+          return;
+        }
+        // reverted：该行随之被投影移除，组件卸载即关闭弹窗。
+        setRevertOpen(false);
+      })
+      .catch((error: unknown) => {
+        setRevertError(error instanceof Error ? error.message : String(error));
+      })
+      .finally(() => setRevertApplying(false));
+  }, [intl, onRevert, row.entityId, row.rowId]);
+
   const rewindWorkspaceDisabled = submitting || editWorkspaceRewindAvailability?.enabled !== true;
   const rewindWorkspaceButton = (
     <Button
@@ -1447,7 +1542,37 @@ const SingleUserInputRowView = memo(function SingleUserInputRowView({
             <PencilIcon className="size-3.5" />
           </MessageAction>
         ) : null}
+        {/* 回退放在最后：复制、编辑都不改状态，回退是唯一不可撤销的破坏性动作。 */}
+        {onRevert && row.entityId ? (
+          <MessageAction
+            label={revertLabel}
+            tooltip={context.compactForOverlay ? undefined : revertTooltip}
+            data-testid={testId(TID_V4_REVERT, String(row.rowId))}
+            onClick={handleOpenRevert}
+          >
+            <Undo2Icon className="size-3.5" />
+          </MessageAction>
+        ) : null}
       </MessageActions>
+      <ConversationFileRewindDialog
+        variant="conversationRevert"
+        open={revertOpen}
+        onOpenChange={setRevertOpen}
+        preview={revertPreview}
+        previewLoading={revertPreviewLoading}
+        applying={revertApplying}
+        error={revertError}
+        onApply={handleConfirmRevert}
+        revertContents={{
+          discardsExistingDraft: revertDiscardsDraft,
+          // 预览已知且确实没有任何文件改动 → 只回退对话，隐藏文件区块与「恢复 N 个文件」标题。
+          noFileChanges:
+            revertPreview !== null &&
+            revertPreview.safeFiles.length === 0 &&
+            revertPreview.unsafeFiles.length === 0 &&
+            revertPreview.ignoredFiles.length === 0,
+        }}
+      />
     </RowShell>
   );
 });
@@ -2435,6 +2560,7 @@ function ConversationRowViewImpl({
   onRetry,
   onFeedbackChange,
   onEdit,
+  onRevert,
   editWorkspaceRewindAvailability,
   hideAssistantActions,
   deferAssistantActions,
@@ -2454,6 +2580,7 @@ function ConversationRowViewImpl({
           row={row}
           context={context}
           onEdit={onEdit}
+          onRevert={onRevert}
           editWorkspaceRewindAvailability={editWorkspaceRewindAvailability}
           status={userInputStatus}
         />

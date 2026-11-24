@@ -21,7 +21,8 @@ const rowBaseFields = {
   visibility: z.literal("visible").optional(),
   createdAt: timestampSchema,
   createdAtSeq: z.number(),
-  // 缺省全 false；只下发为 true 的键。canRewind 不在载荷内（rewind = editUserQuery 的 UI 入口）。
+  // 缺省全 false；只下发为 true 的键。rewind = revertUserQuery 的 UI 入口
+  // （editUserQuery 只负责改文本重发，不再冒充 rewind 入口）。
   actions: z
     .object({
       canFork: z.literal(true).optional(),
@@ -29,6 +30,9 @@ const rowBaseFields = {
       canRetry: z.literal(true).optional(),
       canRewindFiles: z.literal(true).optional(),
       editDisposition: z.enum(["rewind", "fork"]).optional(),
+      // user 行「回退」入口：截断该轮之后的对话并恢复该轮文件，不重发。
+      // 与 canEdit 分开：两者副作用强度不同，条件未来分化时不得互相牵连。
+      canRevert: z.literal(true).optional(),
     })
     .optional(),
 } as const;

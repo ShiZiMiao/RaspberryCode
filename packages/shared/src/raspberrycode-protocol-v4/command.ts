@@ -3,7 +3,9 @@ import { createSessionRequestedConfigSchema } from "./create-session-config.js";
 import { localTtftContextSchema, localTtftClockSchema } from "../local-ttft/contract.js";
 import { conversationQuotesSchema } from "../conversationSelection.js";
 // Command 层：信封 / ACK / 命令全集 payload。
-// conversation rewind 无独立命令（裁决：= editUserQuery 的 UI 入口）；
+// conversation rewind 有两个入口，语义不同必须分开：
+// - editUserQuery：改文本后立即重发（历史回退只是重发副作用）。
+// - revertUserQuery：只回退到该轮之前（会话+文件），不重发；文本由 renderer 回填输入框。
 // workspace-only 文件撤销走 applyFileRewind，不截断聊天历史。
 import { z } from "zod";
 import { conversationRowTargetSchema, timestampSchema } from "./core.js";
@@ -163,6 +165,10 @@ export const commandPayloadSchemas = {
     })
     .superRefine(requireModelSelectionForExecution),
   retryTurn: z.object({ target: conversationRowTargetSchema }),
+  // 只回退不重发：截断该轮之后的对话并按 checkpoint 恢复该轮文件改动，
+  // 由 renderer 把该条消息的可见正文回填输入框（不自动发送）。
+  // 与 editUserQuery(workspaceMode=rewind) 共用文件事务，唯一差异是不启动新一轮。
+  revertUserQuery: z.object({ target: conversationRowTargetSchema }),
   // （2026-09-12）：原 setToolWidgetState / setSessionPluginUiState 已删除——插件 UI widgetState
   // 回退为宿主 renderer 内存保存，不再写 CLI 会话存储；模型可见信息改走 ui/update-model-context。
   setAssistantFeedback: z.object({
@@ -283,6 +289,7 @@ export const COMMANDS_REQUIRING_BASE_REVISION: ReadonlySet<CommandType> = new Se
   "applyFileRewind",
   "forkAssistant",
   "editUserQuery",
+  "revertUserQuery",
   "retryTurn",
   "setAssistantFeedback",
   "sendQueuedNow",
@@ -301,6 +308,7 @@ export const ROW_TARGETING_COMMANDS: ReadonlySet<CommandType> = new Set([
   "applyFileRewind",
   "forkAssistant",
   "editUserQuery",
+  "revertUserQuery",
   "retryTurn",
   "setAssistantFeedback",
 ]);
@@ -387,6 +395,15 @@ export const commandResultSchema = z.discriminatedUnion("type", [
     disposition: z.enum(["rewind", "fork", "blocked"]),
     sessionId: z.string().min(1),
     reasonCode: z.string().min(1).optional(),
+    preview: v4ConversationFileRewindPreviewResultSchema.optional(),
+  }),
+  z.object({
+    // 回退只回退不重发；回填材料不走 ACK（renderer 用该行投影回填，见 spec）。
+    type: z.literal("revertUserQuery"),
+    disposition: z.enum(["reverted", "blocked"]),
+    sessionId: z.string().min(1),
+    reasonCode: z.string().min(1).optional(),
+    // blocked 时把最新 preview 原样返回，UI 用它刷新文件列表与 unsafe 原因。
     preview: v4ConversationFileRewindPreviewResultSchema.optional(),
   }),
   z.object({

@@ -1,9 +1,14 @@
-// fork/edit/retry 命令组：forkAssistant / editUserQuery / retryTurn。
+// fork/edit/retry/revert 命令组：forkAssistant / editUserQuery / retryTurn / revertUserQuery。
 // 共同点：都以 {rowId, entityId} 定位历史实体，经 host 的 v4 投影翻译面换成 transcript messageId
 // （翻译是 v4 原生决策，翻译不到直接 reject，绝不静默兜底 latestCheckpoint——会错点）。
 // - editUserQuery = 换文本的 retryTurn：rewind 截断该 turn → 原生 prompt turn 重发新文本。
 // - retryTurn = rewind 截断 + 重发原 user prompt（原文必须在 rewind 前解析，截断后拿不到）。
+// - revertUserQuery = 只回退不重发：rewind 截断 + 文件恢复，文本由 renderer 回填输入框。
+//   与 file-summary 的 applyFileRewind 不同：它截断对话；与 editUserQuery 不同：它不重发。
 // - forkAssistant = stable resolver + conversation-only copy；running parent 与 workspace 不动。
+//
+// 四个动作共享同一 branch cut 原语 submitConversationRewind。三处各写一份必然漂移
+// （0.2.7 双拼 bug 的教训：同一判定逻辑只允许一处实现）。
 import type {
   CommandEnvelope,
   CommandPayloadMap,
@@ -94,6 +99,9 @@ export class V4RetryTargetNotLatestError extends Error {
  * 嵌套 rewind 又等待当前命令释放队列，最终 UI 永久停在编辑态。
  * 完成后 legacy 广播 session_rewound（过渡钩子，旧侧栏消费者感知；v4 投影走
  * RewindTriggered 事件自收口，不依赖本广播）。
+ *
+ * 同组共用：revertUserQuery 与 edit/retry 共用同一 branch cut 语义，
+ * 三处各写一份必然漂移（0.2.7 双拼 bug 的教训：判定逻辑只允许一处实现）。
  */
 async function submitConversationRewind(
   host: V4CommandCoreHost,
@@ -387,8 +395,141 @@ async function forkAssistant(
   return result;
 }
 
+const REVERT_USER_QUERY_COMPLETED_EVENT = "conversation.command.revert_user_query.completed";
+
+/** 与 editUserQuery 共用 latestQueryEditOnly 语义：回退只允许指向最后一条 real user query。 */
+export class V4RevertTargetNotLatestError extends Error {
+  readonly reasonCode = "guard.latestQueryEditOnly";
+
+  constructor(targetRowId: number) {
+    super(`revertUserQuery targetRowId ${targetRowId} 不是最后一轮 real user query`);
+    this.name = "V4RevertTargetNotLatestError";
+  }
+}
+
+/**
+ * revertUserQuery：只回退、不重发。
+ *
+ * 与 editUserQuery(workspaceMode=rewind) 共用同一套破坏性事务（文件 checkpoint 倒序写回
+ * → 同一 commit gate 提交 branch cut），唯一差异是**不启动新一轮**。文本回填由 renderer
+ * 用该行投影完成：把 canonical prompt 文本回填会把 code-comment / web-element 序列化标记
+ * 塞进输入框，必须用用户当时看到的可见正文。
+ */
+async function revertUserQuery(
+  host: V4CommandCoreHost,
+  envelope: CommandEnvelope,
+): Promise<CommandResult | undefined> {
+  const payload = envelope.payload as CommandPayloadMap["revertUserQuery"];
+  const record = requireRecord(host, envelope.sessionId);
+  const resolution = host.resolveRowActionTarget?.(
+    record.app.sessionId,
+    payload.target,
+    "revertUserQuery",
+  );
+  if (!resolution?.ok || !resolution.editTarget) {
+    throw new V4RevertTargetNotLatestError(payload.target.rowId);
+  }
+  const editTarget = resolution.editTarget;
+  // 运行中的轮必须先停：rewind 与旧模型请求并发会让 branch cut 与新事件交错，
+  // 随后 projection 会收到已删除轮的事件（edit 路径踩过同一坑）。
+  const runtimeHasActiveTurn =
+    record.app.runtime?.getActiveTurnInfo?.() !== undefined ||
+    record.app.runtime?.getActiveForegroundExecutionId?.() !== undefined;
+  if (record.activeAbortController || runtimeHasActiveTurn) {
+    await preemptActiveTurnAndWait(host, record, {
+      abortMessage: "v4 revertUserQuery preempts active turn",
+      goalPausedMutationReason: "revert_user_query_goal_paused",
+    });
+  }
+  const turnMessageIds = resolution.messageIds ??
+    host.getMessageIdsForTurnRow?.(record.app.sessionId, resolution.row.rowId) ?? [
+      editTarget.transcriptMessageId,
+    ];
+  const fileOptions = {
+    targetMessageIds: turnMessageIds as MessageId[],
+    targetTurnId: resolution.row.turnId as TurnId,
+    traceContext: record.traceContext,
+  };
+  const preview = await record.app.runtime.previewWorkspaceFileRewind(fileOptions);
+  const hasFileWorkload =
+    preview.safeFiles.length > 0 ||
+    preview.unsafeFiles.length > 0 ||
+    preview.ignoredFiles.length > 0;
+  // 无任何文件改动 → 只截断对话。这是回退与 edit 的关键差异：
+  // edit 把「无 safe 文件」当作组合重置不可用，回退只是「这一轮没碰文件」。
+  if (hasFileWorkload) {
+    // shell/ignored 变更无法证明完整回滚。fail closed，并把最新 preview 原样返回 UI。
+    if (!preview.canApply || preview.ignoredFiles.length > 0 || preview.safeFiles.length === 0) {
+      const reasonCode =
+        preview.unsafeFiles.length > 0
+          ? "guard.workspaceRewindUnsafeFiles"
+          : preview.ignoredFiles.length > 0
+            ? "guard.workspaceRewindIgnoredFiles"
+            : "guard.workspaceRewindUnavailable";
+      await host.cancelInputCommand?.(
+        record.app.sessionId,
+        commandAdmissionOf(envelope).queueItemId,
+        reasonCode,
+      );
+      return {
+        type: "revertUserQuery",
+        disposition: "blocked",
+        sessionId: record.app.sessionId,
+        reasonCode,
+        preview,
+      };
+    }
+    const applied = await record.app.runtime.applyWorkspaceFileRewind({
+      ...fileOptions,
+      // 文件全部写成功后才在同一 commit gate 提交 branch cut：任一步失败都不会留下
+      // 「文件已回退但对话没截断」的半程状态。
+      commitAfterApply: async () => {
+        await submitConversationRewind(host, record, editTarget.transcriptMessageId);
+      },
+    });
+    if (!applied.applied) {
+      await host.cancelInputCommand?.(
+        record.app.sessionId,
+        commandAdmissionOf(envelope).queueItemId,
+        "guard.workspaceRewindApplyConflict",
+      );
+      return {
+        type: "revertUserQuery",
+        disposition: "blocked",
+        sessionId: record.app.sessionId,
+        reasonCode: "guard.workspaceRewindApplyConflict",
+        preview: applied.preview,
+      };
+    }
+  } else {
+    await submitConversationRewind(host, record, editTarget.transcriptMessageId);
+  }
+
+  // 与 edit 的关键差异：到此为止，不 startCanonicalIntent。文本交给 renderer 回填。
+  host.logger?.info?.("v4 revertUserQuery completed", {
+    ...traceContextToLogContext(record.traceContext),
+    attachmentCount: editTarget.intent.attachments?.length ?? 0,
+    clientId: envelope.clientId,
+    commandId: envelope.commandId,
+    event: REVERT_USER_QUERY_COMPLETED_EVENT,
+    intentKind: editTarget.intent.kind,
+    module: CONVERSATION_COMMAND_LOG_MODULE,
+    restoredFileCount: preview.safeFiles.length,
+    sessionId: record.app.sessionId,
+    status: "completed",
+    targetEntityId: payload.target.entityId,
+    targetRowId: payload.target.rowId,
+  });
+  return {
+    type: "revertUserQuery",
+    disposition: "reverted",
+    sessionId: record.app.sessionId,
+  };
+}
+
 export const forkEditRetryHandlers = {
   forkAssistant,
   editUserQuery,
   retryTurn,
+  revertUserQuery,
 };

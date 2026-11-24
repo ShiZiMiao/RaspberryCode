@@ -55,6 +55,14 @@ export interface ConversationRowRenderContext {
   inSubagentDrilldown?: boolean;
   /** 手机 /remote 紧凑模式：隐藏外部 App 打开下拉，只保留应用内预览。 */
   compactForOverlay?: boolean;
+  /**
+   * 输入框当前是否有未提交草稿。回退会用历史消息覆盖输入框，必须显式告知用户
+   * 现有内容将被替换（query queue 撤回编辑也依赖同一事实，但语义相反：那条路径拒绝覆盖）。
+   *
+   * 用函数而不是布尔：草稿每次按键都变，做成 prop 会让整棵时间线随键入重渲染；
+   * 只在打开确认弹窗的那一刻取一次真值即可。
+   */
+  hasComposerDraft?: () => boolean;
   /** 当前 session 正在 compact 或 goal verify；专用状态 UI 独占进度反馈。 */
   chatLoadingBlockedByActiveWork?: boolean;
   /** 当前 session 正在等待权限确认或 AskUserQuestion 回答，隐藏底部 ChatLoading。 */

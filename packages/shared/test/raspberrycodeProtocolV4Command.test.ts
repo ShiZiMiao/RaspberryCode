@@ -279,8 +279,87 @@ describe("raspberrycode-protocol-v4 command", () => {
   });
 
 
-  it("parses createSession MCP runtime configuration", () => {
-    const result = parseCommandEnvelope({
+  // revertUserQuery = 只回退不重发的 row-targeting CAS 命令。
+  // 载荷只带 target：回填材料由 renderer 用该行投影提供（见 docs/conversation-revert-user-message.md）。
+  it("parses revertUserQuery as a row-targeting CAS command", () => {
+    const ok = parseCommandEnvelope({
+      commandId: "cmd-revert-1",
+      clientId: "client-1",
+      sessionId: "s-1",
+      baseRevision: 7,
+      baseLogEpoch: "epoch-7",
+      type: "revertUserQuery",
+      payload: { target: { rowId: 12, entityId: "message-user-12" } },
+      issuedAt: 1000,
+    });
+    expect(ok.ok).toBe(true);
+
+    // CAS 命令缺 baseRevision / baseLogEpoch 必须拒绝，否则回退可能作用在过期分支上。
+    expect(
+      parseCommandEnvelope({
+        commandId: "cmd-revert-no-rev",
+        clientId: "client-1",
+        sessionId: "s-1",
+        baseLogEpoch: "epoch-7",
+        type: "revertUserQuery",
+        payload: { target: { rowId: 12, entityId: "message-user-12" } },
+        issuedAt: 1000,
+      }).ok,
+    ).toBe(false);
+    expect(
+      parseCommandEnvelope({
+        commandId: "cmd-revert-no-epoch",
+        clientId: "client-1",
+        sessionId: "s-1",
+        baseRevision: 7,
+        type: "revertUserQuery",
+        payload: { target: { rowId: 12, entityId: "message-user-12" } },
+        issuedAt: 1000,
+      }).ok,
+    ).toBe(false);
+    // target 是唯一载荷，旧式 targetRowId 不接受。
+    expect(
+      parseCommandEnvelope({
+        commandId: "cmd-revert-old-shape",
+        clientId: "client-1",
+        sessionId: "s-1",
+        baseRevision: 7,
+        baseLogEpoch: "epoch-7",
+        type: "revertUserQuery",
+        payload: { targetRowId: 12 },
+        issuedAt: 1000,
+      }).ok,
+    ).toBe(false);
+  });
+
+  it("decodes revertUserQuery ACK in both reverted and blocked shapes", () => {
+    expect(
+      commandResultSchema.parse({
+        type: "revertUserQuery",
+        disposition: "reverted",
+        sessionId: "s-1",
+      }),
+    ).toEqual({ type: "revertUserQuery", disposition: "reverted", sessionId: "s-1" });
+
+    const blocked = commandResultSchema.parse({
+      type: "revertUserQuery",
+      disposition: "blocked",
+      sessionId: "s-1",
+      reasonCode: "guard.workspaceRewindUnsafeFiles",
+      preview: { canApply: false, ignoredFiles: [], safeFiles: [], unsafeFiles: [] },
+    });
+    expect(blocked).toMatchObject({ disposition: "blocked", reasonCode: "guard.workspaceRewindUnsafeFiles" });
+    // disposition 是闭集：未知值必须拒绝，避免 UI 把新状态当成成功。
+    expect(
+      commandResultSchema.safeParse({
+        type: "revertUserQuery",
+        disposition: "partial",
+        sessionId: "s-1",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("parses createSession MCP runtime configuration", () => {    const result = parseCommandEnvelope({
       commandId: "cmd-create-mcp",
       clientId: "client-1",
       sessionId: null,
@@ -446,6 +525,7 @@ describe("raspberrycode-protocol-v4 command", () => {
         "deleteQueueItem",
         "editQueueItem",
         "editUserQuery",
+        "revertUserQuery",
         "applyFileRewind",
         "forkAssistant",
         "pauseGoal",

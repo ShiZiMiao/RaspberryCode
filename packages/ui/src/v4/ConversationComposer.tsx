@@ -362,6 +362,12 @@ export interface ComposerRestoreRequest {
   text: string;
   attachments: readonly AttachmentRef[];
   config?: Pick<V4ComposerDraft, "mode" | "planEnabled" | "modelSelection">;
+  /**
+   * 允许覆盖输入框现有草稿。缺省 false：queue 撤回编辑必须让用户自己处理既有草稿，
+   * 静默覆盖会丢掉他没提交的内容。回退是用户明确要求「回到发这条消息之前」，
+   * 覆盖草稿正是他要的语义，所以显式传 true。
+   */
+  replaceExistingDraft?: boolean;
 }
 
 export function applyComposerRestoreRequestToComposer({
@@ -376,6 +382,7 @@ export function applyComposerRestoreRequestToComposer({
   restoreDraftConfig,
   scheduleDraftPersist,
   updateText,
+  clearExistingDraftContexts,
 }: {
   appliedRequestId: number | null;
   currentSessionId: string | null;
@@ -388,6 +395,8 @@ export function applyComposerRestoreRequestToComposer({
   restoreDraftConfig?: (config: NonNullable<ComposerRestoreRequest["config"]>) => void;
   scheduleDraftPersist: () => void;
   updateText: (text: string) => void;
+  /** 仅在 replaceExistingDraft 时由调用方注入：覆盖草稿前清空旧上下文引用。 */
+  clearExistingDraftContexts?: () => void;
 }): number | null {
   if (!request || request.requestId === appliedRequestId) {
     return appliedRequestId;
@@ -395,11 +404,13 @@ export function applyComposerRestoreRequestToComposer({
   if (
     request.sessionId !== currentSessionId ||
     request.workspaceKey !== currentWorkspaceKey ||
-    hasDraftContent ||
+    (hasDraftContent && request.replaceExistingDraft !== true) ||
     !inputApi
   ) {
     return appliedRequestId;
   }
+  // 覆盖语义下先清旧上下文再写正文：顺序反过来会在两者之间留下引用指向新正文的中间态。
+  if (request.replaceExistingDraft === true) clearExistingDraftContexts?.();
   if (!restoreSessionOwnedAttachments(request.attachments)) {
     return appliedRequestId;
   }
@@ -1225,6 +1236,19 @@ function ConversationComposerImpl({
         request: composerRestoreRequest,
         requestFocus: requestComposerFocus,
         restoreSessionOwnedAttachments: attachmentsApi.restoreSessionOwnedAttachments,
+        // 覆盖草稿时，原草稿的 code-comment / web-element / pptx / 对话引用必须一并清空：
+        // 回填的正文来自历史消息，留着旧引用会让 chips 与正文互不对应。
+        ...(composerRestoreRequest.replaceExistingDraft === true
+          ? {
+              clearExistingDraftContexts: () => {
+                clearCodeCommentContexts();
+                clearWebElementContexts();
+                clearPluginUiContexts();
+                clearPptxElementReferences();
+                clearConversationSelectionReferences();
+              },
+            }
+          : {}),
         // 撤回项携带独立 Submission 配置；沿用草稿 owner，一次恢复且保留已处理授权标记。
         restoreDraftConfig: (config) =>
           replaceComposerDraft({
@@ -1251,6 +1275,11 @@ function ConversationComposerImpl({
   }, [
     attachmentsApi.attachments.length,
     attachmentsApi.restoreSessionOwnedAttachments,
+    clearCodeCommentContexts,
+    clearConversationSelectionReferences,
+    clearPluginUiContexts,
+    clearPptxElementReferences,
+    clearWebElementContexts,
     codeCommentContexts.length,
     composerRestoreRequest,
     conversationSelectionReferences.length,

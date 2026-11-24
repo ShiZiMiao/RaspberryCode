@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "caseName": "conversation-session-v4-revert",
+  "spec": "./test/e2e/conversation-session/conversation-session-v4-revert.test.ts",
+  "providerFixtures": [
+    "./test/e2e/fixtures/upstream/common.json",
+    "./test/e2e/fixtures/upstream/conversation-session/conversation-session-v4-revert.json"
+  ],
+  "fileFixtures": [
+    {
+      "path": "v4-revert-e2e/revert.txt",
+      "source": "created-by-helper",
+      "description": "测试内创建 revert-before，Write 后由回退恢复到发送前内容。"
+    }
+  ],
+  "requests": [
+    {
+      "id": "v4-revert-title",
+      "description": "PV4-31/32/33 回退 case-local 标题响应。",
+      "kind": "common",
+      "source": "synthetic",
+      "timingPolicy": "fast-text",
+      "syntheticReason": "标题不参与回退语义，用通用 marker 隔离三条 case。"
+    },
+    {
+      "id": "v4-revert-with-file-read",
+      "description": "PV4-31 先 Read revert.txt，建立 Write 前 read state。",
+      "kind": "main",
+      "source": "synthetic",
+      "timingPolicy": "fast-text",
+      "syntheticReason": "固定产生可安全回滚的已有文件 checkpoint。"
+    },
+    {
+      "id": "v4-revert-with-file-write",
+      "description": "PV4-31 Write revert.txt 并产生安全 checkpoint。",
+      "kind": "main",
+      "source": "synthetic",
+      "timingPolicy": "fast-text",
+      "syntheticReason": "实际改文件，供回退恢复 beforeContent。"
+    },
+    {
+      "id": "v4-revert-with-file-final",
+      "description": "PV4-31 文件写入后的原分支回复（回退后必须消失）。",
+      "kind": "main",
+      "source": "synthetic",
+      "timingPolicy": "fast-text",
+      "syntheticReason": "给 branch cut 提供可见旧回复证据。"
+    },
+    {
+      "id": "v4-revert-no-file",
+      "description": "PV4-32 纯对话请求：明确不改文件，直接回复。",
+      "kind": "main",
+      "source": "synthetic",
+      "timingPolicy": "fast-text",
+      "syntheticReason": "验证「本轮没有文件改动」时回退仍然成功。"
+    },
+    {
+      "id": "v4-revert-cancel-read",
+      "description": "PV4-33 先 Read revert.txt，建立 checkpoint。",
+      "kind": "main",
+      "source": "synthetic",
+      "timingPolicy": "fast-text",
+      "syntheticReason": "取消场景需要真实文件改动，才能证明取消后文件未被恢复。"
+    },
+    {
+      "id": "v4-revert-cancel-write",
+      "description": "PV4-33 Write revert.txt。",
+      "kind": "main",
+      "source": "synthetic",
+      "timingPolicy": "fast-text",
+      "syntheticReason": "制造可回退的文件改动。"
+    },
+    {
+      "id": "v4-revert-cancel-final",
+      "description": "PV4-33 写入后的回复（取消回退后必须仍存在）。",
+      "kind": "main",
+      "source": "synthetic",
+      "timingPolicy": "fast-text",
+      "syntheticReason": "作为「取消后时间线不变」的可见证据。"
+    }
+  ]
+}

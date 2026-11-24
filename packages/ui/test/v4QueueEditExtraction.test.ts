@@ -383,4 +383,66 @@ describe("v4 queue edit extraction", () => {
     expect(inputApi.setText).toHaveBeenCalledTimes(1);
     expect(restoreDraftConfig).toHaveBeenCalledExactlyOnceWith(request.config);
   });
+
+  // 回退用 replaceExistingDraft=true 覆盖草稿；queue 撤回编辑缺省 false 时不得覆盖。
+  // 两种语义同住一个函数，必须各自有回归，否则一次「统一行为」就会静默丢草稿。
+  it("replaceExistingDraft 允许覆盖草稿，并在覆盖前清掉旧上下文引用", () => {
+    const inputApi = { setText: vi.fn() };
+    const updateText = vi.fn();
+    const requestFocus = vi.fn();
+    const scheduleDraftPersist = vi.fn();
+    const restoreSessionOwnedAttachments = vi.fn().mockReturnValue(true);
+    const clearExistingDraftContexts = vi.fn();
+    const request = {
+      requestId: 3,
+      sessionId: "session-1",
+      workspaceKey: "remote:ssh:host:/workspace",
+      inputKind: "sendText" as const,
+      text: "被回退的消息",
+      attachments: [],
+      replaceExistingDraft: true,
+    } satisfies ComposerRestoreRequest;
+
+    expect(
+      applyComposerRestoreRequestToComposer({
+        appliedRequestId: null,
+        currentSessionId: "session-1",
+        currentWorkspaceKey: "remote:ssh:host:/workspace",
+        // 输入框已有草稿：默认路径会拒绝，这里必须被覆盖。
+        hasDraftContent: true,
+        inputApi,
+        request,
+        requestFocus,
+        restoreSessionOwnedAttachments,
+        clearExistingDraftContexts,
+        scheduleDraftPersist,
+        updateText,
+      }),
+    ).toBe(3);
+    expect(clearExistingDraftContexts).toHaveBeenCalledTimes(1);
+    expect(inputApi.setText).toHaveBeenCalledWith("被回退的消息");
+    // 先清上下文再写正文：顺序反过来会在中间态留下引用指向不存在的正文。
+    expect(clearExistingDraftContexts.mock.invocationCallOrder[0]).toBeLessThan(
+      inputApi.setText.mock.invocationCallOrder[0]!,
+    );
+
+    // 缺省 false 时同样的 hasDraftContent 必须继续拒绝（queue 撤回编辑的既有契约）。
+    const plain = { ...request, requestId: 4, replaceExistingDraft: undefined };
+    expect(
+      applyComposerRestoreRequestToComposer({
+        appliedRequestId: null,
+        currentSessionId: "session-1",
+        currentWorkspaceKey: "remote:ssh:host:/workspace",
+        hasDraftContent: true,
+        inputApi,
+        request: plain,
+        requestFocus,
+        restoreSessionOwnedAttachments,
+        clearExistingDraftContexts,
+        scheduleDraftPersist,
+        updateText,
+      }),
+    ).toBeNull();
+    expect(clearExistingDraftContexts).toHaveBeenCalledTimes(1);
+  });
 });

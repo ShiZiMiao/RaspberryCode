@@ -29,6 +29,10 @@ interface ConversationTurnRowProps {
     attachments?: readonly AttachmentRef[],
     workspaceMode?: "preserve" | "rewind",
   ) => Promise<CommandAck | boolean | void> | CommandAck | boolean | void;
+  /** user 行「回退」入口（revertUserQuery）。可见性由 row.actions.canRevert 裁决。 */
+  onRevert?: (
+    target: ConversationRowTarget,
+  ) => Promise<CommandAck | boolean | void> | CommandAck | boolean | void;
   editWorkspaceRewindAvailability?: EditWorkspaceRewindAvailability;
   hideAssistantActions?: boolean;
   deferAssistantActions?: boolean;
@@ -50,6 +54,7 @@ export function ConversationTurnRow({
   onRetry,
   onFeedbackChange,
   onEdit,
+  onRevert,
   editWorkspaceRewindAvailability,
   hideAssistantActions,
   deferAssistantActions,
@@ -70,6 +75,7 @@ export function ConversationTurnRow({
       onRetry={onRetry}
       onFeedbackChange={onFeedbackChange}
       onEdit={onEdit}
+      onRevert={onRevert}
       editWorkspaceRewindAvailability={editWorkspaceRewindAvailability}
       hideAssistantActions={hideAssistantActions}
       deferAssistantActions={deferAssistantActions}

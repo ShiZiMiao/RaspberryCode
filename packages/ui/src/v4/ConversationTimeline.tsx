@@ -292,6 +292,8 @@ export interface ConversationTimelineProps {
     attachments?: readonly AttachmentRef[],
     workspaceMode?: "preserve" | "rewind",
   ) => Promise<CommandAck | boolean | void> | CommandAck | boolean | void;
+  /** user 行「回退」入口（revertUserQuery，回退到发送前且不重发）。 */
+  onRevert?: (target: ConversationRowTarget) => Promise<CommandAck | boolean | void> | CommandAck | boolean | void;
   /** 还有更早历史可拉（窗口首行 > 全序首行）。 */
   canLoadOlder?: boolean;
   /** loadOlder 在途，抑制重复触发。 */
@@ -387,6 +389,7 @@ function ConversationTimelineImpl({
   onRetry,
   onFeedbackChange,
   onEdit,
+  onRevert,
   canLoadOlder = false,
   loadingOlder = false,
   onLoadOlder,
@@ -2165,6 +2168,7 @@ function ConversationTimelineImpl({
                         onRetry={onRetry}
                         onFeedbackChange={onFeedbackChange}
                         onEdit={onEdit}
+                        onRevert={onRevert}
                         topClearedByTimeline={clearsStatusPanel}
                       />
                     </div>
@@ -2199,6 +2203,7 @@ function ConversationTimelineImpl({
                     onRetry={onRetry}
                     onFeedbackChange={onFeedbackChange}
                     onEdit={onEdit}
+                    onRevert={onRevert}
                     topClearedByTimeline={sessionStartAtTop && liveUnitIndex === 0}
                   />
                 </div>

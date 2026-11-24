@@ -12,6 +12,7 @@ const SELECTION_SIDE_CHAT_RESTRICTED_COMMANDS = new Set<CommandEnvelope["type"]>
   "pauseGoal",
   "resumeGoal",
   "editUserQuery",
+  "revertUserQuery",
   "retryTurn",
   "forkAssistant",
   "discardSharedContext",

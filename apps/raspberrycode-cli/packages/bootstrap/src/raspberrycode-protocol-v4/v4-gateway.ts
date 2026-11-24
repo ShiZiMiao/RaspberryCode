@@ -171,6 +171,7 @@ function rowTargetActionForCommand(
   switch (type) {
     case "forkAssistant":
     case "editUserQuery":
+    case "revertUserQuery":
     case "retryTurn":
     case "applyFileRewind":
     case "setAssistantFeedback":

@@ -42,6 +42,10 @@ import {
   TID_V4_QUEUE_ITEM,
   TID_V4_QUEUE_PAUSED_BANNER,
   TID_V4_QUEUE_RESUME,
+  TID_V4_REVERT,
+  TID_V4_REVERT_CANCEL,
+  TID_V4_REVERT_CONFIRM,
+  TID_V4_REVERT_CONFIRM_DIALOG,
   TID_V4_ROW,
   TID_V4_ROW_ATTACHMENTS,
   TID_V4_SESSION_PANE,
@@ -1544,6 +1548,94 @@ export async function editFirstV4UserQuery(newText: string) {
     timeoutMsg: `v4 行内编辑提交按钮没有出现: rowId=${rowId}`,
   });
   return rowId;
+}
+
+/** 等待 v4 user 行的「回退」按钮出现（回退入口只在最新 realUser 行投影）。 */
+export async function waitForV4Revert(timeout = 60000) {
+  await browser.waitUntil(
+    async () =>
+      browser.execute((revertPrefix) => {
+        const pattern = new RegExp(`^${revertPrefix}-\\d+$`);
+        return Array.from(document.querySelectorAll<HTMLElement>("[data-testid]")).some(
+          (candidate) => pattern.test(candidate.dataset.testid ?? ""),
+        );
+      }, TID_V4_REVERT),
+    { timeout, timeoutMsg: "v4 回退按钮没有出现（user 行未完成或不是最新一轮？）" },
+  );
+}
+
+/** 点击最新一条 user 行的「回退」按钮，返回该行 rowId。 */
+export async function clickLatestV4Revert(): Promise<string> {
+  const rowId = await browser.execute((revertPrefix) => {
+    const pattern = new RegExp(`^${revertPrefix}-(\\d+)$`);
+    const candidates = Array.from(document.querySelectorAll<HTMLElement>("[data-testid]")).filter(
+      (candidate) => pattern.test(candidate.dataset.testid ?? ""),
+    );
+    const target = candidates.at(-1);
+    if (!target) return null;
+    target.click();
+    return pattern.exec(target.dataset.testid ?? "")?.[1] ?? null;
+  }, TID_V4_REVERT);
+  if (!rowId) throw new Error("v4 回退按钮不存在，无法点击");
+  await waitForV4RevertConfirmDialog();
+  return rowId;
+}
+
+export async function waitForV4RevertConfirmDialog(timeout = 30000) {
+  await browser.waitUntil(
+    async () =>
+      browser.execute(
+        (testIdValue) => Boolean(document.querySelector(`[data-testid="${testIdValue}"]`)),
+        TID_V4_REVERT_CONFIRM_DIALOG,
+      ),
+    {
+      timeout,
+      // 失败时把 dialog 与 revert 相关 DOM 一并带出：只报「没出现」无法区分
+      // 「弹窗没开」与「开了但 testid 没打上」。
+      timeoutMsg: "v4 回退确认弹窗没有出现",
+    },
+  ).catch(async (error) => {
+    const dom = await browser.execute(() => ({
+      dialogs: Array.from(document.querySelectorAll('[role="dialog"], [role="alertdialog"]')).map(
+        (element) => ({
+          testId: element.getAttribute("data-testid"),
+          text: (element.textContent ?? "").slice(0, 200),
+        }),
+      ),
+      revertNodes: Array.from(document.querySelectorAll('[data-testid*="revert"]')).map(
+        (element) => element.getAttribute("data-testid"),
+      ),
+    }));
+    throw new Error(
+      `${error instanceof Error ? error.message : String(error)}; dom=${JSON.stringify(dom)}`,
+    );
+  });
+}
+
+/** 确认回退（弹窗内 destructive 按钮）。 */
+export async function confirmV4Revert() {
+  await clickTestIdByDom(TID_V4_REVERT_CONFIRM, {
+    timeout: 15000,
+    timeoutMsg: "v4 回退确认按钮没有出现或不可点击",
+  });
+}
+
+/** 取消回退，用于断言「取消后什么都没变」。 */
+export async function cancelV4Revert() {
+  await clickTestIdByDom(TID_V4_REVERT_CANCEL, {
+    timeout: 15000,
+    timeoutMsg: "v4 回退取消按钮没有出现",
+  });
+}
+
+/** 读取 composer 当前文本（回退后必须等于原消息，且不自动发送）。 */
+export async function readV4ComposerText(): Promise<string> {
+  return browser.execute((inputTestId) => {
+    const editor = document.querySelector<HTMLElement>(
+      `[data-testid="${inputTestId}"] [contenteditable="true"], [data-testid="${inputTestId}"]`,
+    );
+    return editor?.textContent ?? "";
+  }, TID_V4_COMPOSER_INPUT);
 }
 
 /** 提交行内编辑的“对话 + 文件重置”路径。 */

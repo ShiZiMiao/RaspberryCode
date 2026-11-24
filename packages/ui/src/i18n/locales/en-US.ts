@@ -4957,6 +4957,21 @@ const enUS: Record<string, string> = {
   "chat.send": "Send",
   "chat.scrollToBottom": "Scroll to bottom",
   "chat.message.edit": "Edit",
+  "chat.message.revert": "Revert",
+  "chat.message.revert.tooltip": "Revert to before this message was sent",
+  "chat.message.revert.dialog.title": "Revert to before this message?",
+  "chat.message.revert.dialog.description":
+    "This discards every reply after this message and restores the files it changed. The message text goes back into the composer for editing and is not sent automatically. This cannot be undone.",
+  "chat.message.revert.dialog.description.noFiles":
+    "This turn changed no files, so only the conversation is reverted. The message text goes back into the composer for editing and is not sent automatically. This cannot be undone.",
+  "chat.message.revert.dialog.discardDraft":
+    "The current composer content will be replaced by this message.",
+  "chat.message.revert.dialog.filesTitle": "Restored to before sending ({count} files)",
+  "chat.message.revert.dialog.filesEmpty": "This turn changed no files",
+  "chat.message.revert.dialog.confirm": "Revert",
+  "chat.message.revert.dialog.blocked":
+    "Some files cannot be restored safely, so the revert was cancelled. Resolve them manually first.",
+  "chat.message.revert.failed": "Revert failed; nothing was changed",
   "chat.message.sentByScheduledTask": "Sent by scheduled task",
   "chat.message.copy": "Copy",
   "chat.message.like": "Like",

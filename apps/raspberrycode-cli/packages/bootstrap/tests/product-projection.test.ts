@@ -6333,6 +6333,15 @@ describe("fork / modelChange marker", () => {
     const userRows = projection.getSnapshot().rows.window.filter((row) => row.kind === "userInput");
 
     expect(userRows.map((row) => row.actions?.canEdit === true)).toEqual([false, true]);
+    // 回退与编辑共享同一 latest-only 范围：历史行两个能力位都不得出现，
+    // 否则 UI 会给出一个必被命令层拒绝的按钮。
+    expect(userRows.map((row) => row.actions?.canRevert === true)).toEqual([false, true]);
+    expect(
+      projection.resolveRowActionTarget(
+        { rowId: userRows[0]!.rowId, entityId: userRows[0]!.entityId! },
+        "revertUserQuery",
+      ),
+    ).toEqual({ ok: false, status: "rejected", reasonCode: "guard.actionUnavailable" });
     expect(projection.resolveEditTargetByEntityId("message-user-1")).toBeNull();
     expect(projection.resolveEditTargetByEntityId("message-user-2")).toMatchObject({
       entityId: "message-user-2",
@@ -8205,7 +8214,18 @@ describe("P2 productTurn 切分（S1/S3/S5）", () => {
     expect(drainedUser?.turnId).toBe("msg-q2");
     expect(projection.getMessageIdForRow(drainedUser!.rowId)).toBe("msg-q2");
     expect(projection.getEntityIdForRow(drainedUser!.rowId)).toBe("msg-q2");
-    expect(drainedUser?.actions).toMatchObject({ canEdit: true, editDisposition: "rewind" });
+    expect(drainedUser?.actions).toMatchObject({
+      canEdit: true,
+      canRevert: true,
+      editDisposition: "rewind",
+    });
+    // 回退与编辑共用 latest-only 范围，但走各自的 resolver 分支：不能借 canEdit 通过。
+    expect(
+      projection.resolveRowActionTarget(
+        { rowId: drainedUser!.rowId, entityId: drainedUser!.entityId },
+        "revertUserQuery",
+      ),
+    ).toMatchObject({ ok: true, action: "revertUserQuery" });
     expect(
       projection.resolveRowActionTarget(
         { rowId: drainedUser!.rowId, entityId: drainedUser!.entityId },

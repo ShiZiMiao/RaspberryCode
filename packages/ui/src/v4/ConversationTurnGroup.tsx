@@ -107,6 +107,8 @@ interface ConversationTurnGroupProps {
     attachments?: readonly AttachmentRef[],
     workspaceMode?: "preserve" | "rewind",
   ) => Promise<CommandAck | boolean | void> | CommandAck | boolean | void;
+  /** user 行「回退」入口（revertUserQuery）。可见性由 row.actions.canRevert 裁决。 */
+  onRevert?: (target: ConversationRowTarget) => Promise<CommandAck | boolean | void> | CommandAck | boolean | void;
   /** 会话首轮：顶部留白由 Timeline 的状态胶囊 inset 提供，本轮不再留顶部 padding。 */
   topClearedByTimeline?: boolean;
 }
@@ -570,6 +572,7 @@ function ConversationWorkSegmentFlow({
   onFork,
   onRetry,
   onEdit,
+  onRevert,
   editWorkspaceRewindAvailability,
   assistantCopyText,
   assistantPreviewCards,
@@ -587,6 +590,7 @@ function ConversationWorkSegmentFlow({
   onFork?: (target: ConversationRowTarget) => void;
   onRetry?: (target: ConversationRowTarget) => void;
   onEdit?: ConversationTurnGroupProps["onEdit"];
+  onRevert?: ConversationTurnGroupProps["onRevert"];
   editWorkspaceRewindAvailability: EditWorkspaceRewindAvailability;
   assistantCopyText?: string;
   assistantPreviewCards: AssistantPreviewCard[];
@@ -637,6 +641,7 @@ function ConversationWorkSegmentFlow({
               row={item.row}
               context={context}
               onEdit={item.row.actions?.canEdit === true ? onEdit : undefined}
+              onRevert={item.row.actions?.canRevert === true ? onRevert : undefined}
               editWorkspaceRewindAvailability={editWorkspaceRewindAvailability}
             />
           );
@@ -728,6 +733,7 @@ function ConversationTurnFlow({
   onFork,
   onRetry,
   onEdit,
+  onRevert,
   editWorkspaceRewindAvailability,
   assistantCopyText,
   assistantCodeCommentCards,
@@ -740,6 +746,7 @@ function ConversationTurnFlow({
   onFork?: (target: ConversationRowTarget) => void;
   onRetry?: (target: ConversationRowTarget) => void;
   onEdit?: ConversationTurnGroupProps["onEdit"];
+  onRevert?: ConversationTurnGroupProps["onRevert"];
   editWorkspaceRewindAvailability: EditWorkspaceRewindAvailability;
   assistantCopyText?: string;
   assistantCodeCommentCards: AssistantCodeCommentCard[];
@@ -846,6 +853,7 @@ function ConversationTurnFlow({
           onFork={onFork}
           onRetry={onRetry}
           onEdit={onEdit}
+          onRevert={onRevert}
           editWorkspaceRewindAvailability={editWorkspaceRewindAvailability}
           assistantCopyText={assistantCopyText}
           assistantPreviewCards={assistantPreviewCards}
@@ -1115,6 +1123,7 @@ function ConversationTurnGroupImpl({
   onRetry,
   onFeedbackChange,
   onEdit,
+  onRevert,
   topClearedByTimeline = false,
 }: ConversationTurnGroupProps) {
   const isOfficeMode = useIsOfficeMode();
@@ -1298,6 +1307,7 @@ function ConversationTurnGroupImpl({
                   row={row}
                   context={context}
                   onEdit={row.actions?.canEdit === true ? onEdit : undefined}
+                  onRevert={row.actions?.canRevert === true ? onRevert : undefined}
                   editWorkspaceRewindAvailability={editWorkspaceRewindAvailability}
                 />
               ))}
@@ -1326,6 +1336,7 @@ function ConversationTurnGroupImpl({
               onFork={canForkLatestAssistant ? onFork : undefined}
               onRetry={onRetry}
               onEdit={onEdit}
+              onRevert={onRevert}
               editWorkspaceRewindAvailability={editWorkspaceRewindAvailability}
               assistantCopyText={assistantCopyText}
               assistantCodeCommentCards={assistantCodeCommentCards}
@@ -1431,6 +1442,7 @@ function ConversationTurnGroupImpl({
           apiRetry={apiRetry}
           context={assistantRowContext}
           onEdit={onEdit}
+          onRevert={onRevert}
           editWorkspaceRewindAvailability={editWorkspaceRewindAvailability}
           assistantCopyText={assistantCopyText}
           assistantCodeCommentCards={assistantCodeCommentCards}

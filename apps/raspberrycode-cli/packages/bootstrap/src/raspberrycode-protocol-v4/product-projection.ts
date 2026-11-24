@@ -347,6 +347,7 @@ export interface ConversationEditTarget {
 export type ConversationRowTargetAction =
   | "forkAssistant"
   | "editUserQuery"
+  | "revertUserQuery"
   | "retryTurn"
   | "applyFileRewind"
   | "fileChanges"
@@ -808,9 +809,15 @@ export class ProductProjection {
     if (!row || this.entityIdByRowId.get(target.rowId) !== target.entityId) {
       return { ok: false, status: "stale", reasonCode: "proto.staleTarget" };
     }
-    if (action === "editUserQuery") {
+    if (action === "editUserQuery" || action === "revertUserQuery") {
       const editTarget = this.resolveEditTargetByEntityId(target.entityId);
-      if (row.actions?.canEdit !== true || !row.actions.editDisposition || !editTarget) {
+      // 两个动作共用 latestQueryEditOnly 与同一份 editTarget，但能力位各自独立：
+      // canRevert 缺席时 resolver 必须拒绝 revertUserQuery，不能借用 canEdit。
+      const enabled =
+        action === "editUserQuery"
+          ? row.actions?.canEdit === true && Boolean(row.actions.editDisposition)
+          : row.actions?.canRevert === true;
+      if (!enabled || !editTarget) {
         return {
           ok: false,
           status: "rejected",
@@ -1348,9 +1355,13 @@ export class ProductProjection {
         if (row.rowId === latestEditableRowId) {
           nextActions.canEdit = true;
           nextActions.editDisposition = "rewind";
+          // 回退与编辑共享受限范围（只有最新 real user 输入可回退），但能力位独立：
+          // 回退不重发、副作用不可撤销，不允许借用 canEdit 的语义。
+          nextActions.canRevert = true;
         } else {
           delete nextActions.canEdit;
           delete nextActions.editDisposition;
+          delete nextActions.canRevert;
         }
       } else {
         if (row.rowId === latestRetryableRowId) nextActions.canRetry = true;

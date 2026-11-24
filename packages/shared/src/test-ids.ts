@@ -640,6 +640,14 @@ export const TID_V4_TURN_USAGE_CHIP = "v4-turn-usage-chip";
 export const TID_V4_TURN_USAGE_PANEL = "v4-turn-usage-panel";
 /** v4 user 行 edit 按钮（动态后缀为 rowId） */
 export const TID_V4_EDIT = "v4-edit";
+/** v4 user 行「回退」按钮（动态后缀为 rowId）：回退到发送该消息之前，不重发 */
+export const TID_V4_REVERT = "v4-revert";
+/** v4 回退确认弹窗 */
+export const TID_V4_REVERT_CONFIRM_DIALOG = "v4-revert-confirm-dialog";
+/** v4 回退确认弹窗的确认按钮 */
+export const TID_V4_REVERT_CONFIRM = "v4-revert-confirm";
+/** v4 回退确认弹窗的取消按钮 */
+export const TID_V4_REVERT_CANCEL = "v4-revert-cancel";
 /** v4 user query 编辑输入框（动态后缀为 rowId） */
 export const TID_V4_EDIT_INPUT = "v4-edit-input";
 /** v4 user query 编辑提交按钮（动态后缀为 rowId） */

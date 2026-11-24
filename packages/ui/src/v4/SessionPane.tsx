@@ -804,6 +804,9 @@ export function SessionPane({
     [onAutoOpenAssistantPptx],
   );
   const composerDraftStateRef = useRef({ hasContent: false, busy: false });
+  // 稳定引用（依赖为空）：只读 ref，供 rowContext.hasComposerDraft 使用。
+  // 定义必须早于 rowContext 的 useMemo，否则会在初始化前被引用。
+  const readComposerHasDraft = useCallback(() => composerDraftStateRef.current.hasContent, []);
   const [queueEditOperation, setQueueEditOperation] = useState<{
     queueItemId: string;
     sessionId: string;
@@ -2167,6 +2170,9 @@ export function SessionPane({
       sessionId,
       rootSessionId: rootSessionId ?? sessionId,
       compactForOverlay,
+      // 回退确认弹窗要告知「输入框现有内容会被替换」，只在打开那一刻取真值。
+      // 必须是稳定引用：内联箭头会让 rowContext 每次渲染都换身份，整条时间线随之重渲染。
+      hasComposerDraft: readComposerHasDraft,
       chatLoadingBlockedByActiveWork,
       chatLoadingBlockedByInteraction,
       messageStreamShowReasoning,
@@ -2245,6 +2251,7 @@ export function SessionPane({
       sessionId,
       rootSessionId,
       compactForOverlay,
+      readComposerHasDraft,
       chatLoadingBlockedByActiveWork,
       chatLoadingBlockedByInteraction,
       messageStreamShowReasoning,
@@ -3128,6 +3135,61 @@ export function SessionPane({
       return ack;
     },
     [dispatchCommand, sessionId],
+  );
+
+  /**
+   * 回退（只回退不重发）。
+   *
+   * 回填材料取「用户当时看到的那一行」而不是 canonical prompt：canonical 文本里带
+   * code-comment / web-element 序列化标记，回填会把内部标记露给用户。
+   * 命令成功后再回填，并且只在 pane 仍绑定同一 session 时才回填——权威回退已经生效，
+   * 切走后强行 setText 会把旧会话的文本写进新任务（queue 撤回编辑踩过同一坑）。
+   */
+  const handleRevert = useCallback(
+    async (target: ConversationRowTarget): Promise<CommandAck | false> => {
+      const current = snapshotRef.current;
+      if (!sessionId || current === null) return false;
+      // 回填材料必须在命令前抓住：回退成功后该行会从投影里消失。
+      const targetRow = current.rows.window.find((row) => row.rowId === target.rowId);
+      const restoreText = targetRow?.kind === "userInput" ? targetRow.text : null;
+      const restoreAttachments =
+        targetRow?.kind === "userInput" ? (targetRow.attachments ?? []) : [];
+      const ack = await dispatchCommand(
+        "revertUserQuery",
+        { target },
+        sessionId,
+        current.revision,
+        current.logEpoch,
+      );
+      if (ack.status !== "accepted" && ack.status !== "duplicate") {
+        logger.warn(`[v4-pane] revert 被拒绝: ${ack.status} ${ack.reasonCode ?? ""}`);
+        return ack;
+      }
+      if (ack.result?.type !== "revertUserQuery" || ack.result.disposition !== "reverted") {
+        return ack;
+      }
+      if (
+        composerBindingRef.current.sessionId !== sessionId ||
+        composerBindingRef.current.workspaceKey !== workspaceKey
+      ) {
+        logger.warn("[v4-pane] 回退未回填：ACK 返回前 composer 已切换", { sessionId, workspaceKey });
+        return ack;
+      }
+      setComposerRestoreRequest({
+        requestId: nextComposerRestoreRequestIdRef.current++,
+        sessionId,
+        workspaceKey,
+        inputKind: "sendText",
+        // 可见正文：row.text 已剥离 epilogue（splitUserInputEpilogue 只在渲染层切分），
+        // 这里用原始 text 与编辑入口一致，保证「回退后能直接重发同样内容」。
+        text: restoreText ?? "",
+        attachments: restoreAttachments,
+        // 回退的语义就是「回到发这条消息之前」，覆盖现有草稿正是用户要的结果。
+        replaceExistingDraft: true,
+      });
+      return ack;
+    },
+    [dispatchCommand, sessionId, workspaceKey],
   );
 
   const dispatchRetryTurn = useCallback(
@@ -4464,6 +4526,7 @@ export function SessionPane({
                       : undefined
                   }
                   onEdit={editActionsEnabled ? handleEdit : undefined}
+                  onRevert={editActionsEnabled ? handleRevert : undefined}
                   canLoadOlder={timelineSnapshot ? hasOlderRows(timelineSnapshot) : false}
                   loadingOlder={timelineSnapshot ? state.loadingOlder : false}
                   onLoadOlder={handleLoadOlder}
