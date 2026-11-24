@@ -82,6 +82,9 @@ Apache-2.0 **允许**二次开发、修改、商用和再分发，但有义务�
 ### L4 · 服务端点与账号体系（决定产品形态，需先决策）
 
 - `.env.example` / `config/default.json`：`raspberrycode.z.ai`、`cdn-raspberrycode.z.ai`、`chat.z.ai`、`api.z.ai`、`bigmodel.cn`
+  > 上述域名是**上游品牌域名**，改造时已从代码清除（`cdn-raspberrycode.z.ai` 等 CDN 域名实测 DNS 已不存在）。
+  > 此处仅作「需要排查的端点清单」保留。现行做法：端点走 `your-server.example` 占位 + BYOK 自配，
+  > 远程资产发布根只有 GitHub Release 一条真实链路。
 - **官方 OAuth client id 不可用于衍生品**（`ZAI_OAUTH_CLIENT_ID`），需自建服务端/换 API Key 模式
 - ⚠️ `NOTICE.md` 提到「官方 Coding Plan 模型网关转发」：匹配两个官方 Anthropic 兼容端点时请求会**自动改发 RaspberryCode 网关**——RaspberryCode 必须移除或重定向到自有模型服务
 - 自动更新源（`RASPBERRYCODE_UPDATE_FEED_URL`）、遥测（ARMS RUM）应关闭或指向自有端点

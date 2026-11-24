@@ -3,6 +3,9 @@
 > 性质：代码事实与运行验证；本轮不修改产品代码。实施入口为 [Todo127](../steps/todo-127-builtin-online-release.md)。
 >
 > 基线：`af5843586b`，Builtin revision 19。新鲜度检查提示本地 staging 落后 origin/staging 5 个提交；已比对本次审查的 Provider、Provider Node、Services 下载入口及 CLI 启动相关实现，与远端无差异。本轮不代替合并最新代码；实施前重新检查。
+>
+> **域名状态（2026-11-24，实测）**：正文中的 `cdn-raspberrycode.z.ai` 等 CDN 域名已 DNS 不存在，
+> 响应样本按调查原貌保留但**其中地址已不可访问**；本仓库现行没有自建 CDN。
 
 ## 1. 总结
 

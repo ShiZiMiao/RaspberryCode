@@ -1,5 +1,10 @@
 # RaspberryCode 中立性最终校验报告（2026-11-02）
 
+> **后续状态（2026-11-24，实测）**：本报告提到的品牌 CDN 域名中，`cdn.codegeex.cn` /
+> `cdn-raspberrycode.z.ai` / `cdn.raspberrycode-ai.com` 已 DNS 不存在；`cdn-zcode.z.ai`
+> 域名仍在（上游旧资产）但相关路径实测 404。本仓库没有可用的自建 CDN，
+> 远程资产发布根只有 GitHub Release 一条真实链路。报告作为当时审计证据保留，原貌不改。
+
 校验对象：`main`（a7aaf9b7，工作树干净，与 origin 同步）
 校验标尺：`specs/provider-neutrality.md`（供应商中立七条规则）、`specs/no-login-startup.md`（无登录启动）、历史冻结兼容面清单
 执行环境：Windows，Node 22.22.2（pnp m 下运行），`npx pnpm`
