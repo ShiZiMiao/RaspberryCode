@@ -36,7 +36,44 @@
 2. 你本机任务索引里有 1 条旧数据 `session_dd83419799465977e8ada8ae6c7f47d9` 的 meta\_json 不合新 schema
    （启动日志会 warn 后跳过）。需要的话我可以出一份数据修复/清理方案。
 
+## E. 测试环境模拟度（每次验收前必查，2026-11-24 用户要求）
+
+**原则：验收必须尽可能模拟真实用户环境。开发机独有的覆盖变量会让缺陷"消失"。**
+
+### E1 必须为空的变量
+
+| 变量 | 若设置会发生什么 |
+| --- | --- |
+| `RASPBERRYCODE_REMOTE_ASSET_LOCAL_RELEASE_DIR` | 绕过 HTTP 链路改读本地目录，**发布根拼接类缺陷完全测不出来** |
+| `RASPBERRYCODE_REMOTE_ASSET_CDN_BASE_URL` | 覆盖构建期注入的发布根，验的不是发布版真实行为 |
+| `RASPBERRYCODE_DEV_REMOTE_ASSET_USE_CDN` | dev 态强制走公网 CDN，与默认路径不同 |
+
+`node scripts/release-gate.mjs` 开头已内置该检查（`== 测试环境模拟度 ==`），有残留会打 WARN。
+
+### E2 删除变量后必须开新终端
+
+**这是最容易踩的坑**：删除用户环境变量只对**之后新启动的进程**生效。
+已经在运行的终端、IDE、构建代理会继续持有旧值并向子进程传播，
+表现为「注册表里已经没有了，但构建/运行出来的东西仍然走本地目录」。
+
+自查（当前进程是否还带旧值）：
+
+```powershell
+[Environment]::GetEnvironmentVariable('RASPBERRYCODE_REMOTE_ASSET_LOCAL_RELEASE_DIR','Process')
+```
+
+### E3 远程连接（B 节）的等价性判据
+
+远程连接必须验证到**真实 HTTP 下载链路**。判定方法：连接日志里出现
+`no local release dir configured (RASPBERRYCODE_REMOTE_ASSET_LOCAL_RELEASE_DIR)`
+才说明走的是 HTTP；若出现 `local release dir missing ...: 'D:/.../mock-cdn'`，
+说明仍在读本地目录，**这次验证对用户无效**。
+
+> 0.2.7 的远程连接缺陷（URL 版本号双拼成 `.../download/v0.2.7/0.2.7` → 404）
+> 正是因为开发机配了本地发布目录，全程绕过 HTTP 拼接逻辑，才被漏到线上。
+
 ## 通过标准
 
 A、B 两节全部勾选且无阻塞性现象，即可认定「常用功能路径可正常使用」。
 C 节覆盖安装/卸载闭环后，分发链路验收完成。
+**E 节未通过时，B 节的勾选无效。**

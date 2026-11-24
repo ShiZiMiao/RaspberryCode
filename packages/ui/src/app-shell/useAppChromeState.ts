@@ -100,7 +100,7 @@ export function useAppChromeState({
     };
   }, [platform]);
 
-  // 更新入口在「自动更新」开启时也要投影（2026-11-23 用户要求对齐上游 ZCode）。
+  // 更新入口在「自动更新」开启时也要投影（2026-11-23 用户要求对齐上游行为）。
   //
   // 此前的实现是 `autoUpdateEnabled ? null : updateState`，即静默模式下把状态整体置空。
   // 问题在于自动下载是**异步**的：main 广播 update-available 之后，下载要等

@@ -1864,7 +1864,7 @@ app.whenReady().then(async () => {
           win.webContents.send(PlatformChannels.UpdateStateChanged, updateState);
         }
       }
-      // 菜单标签跟随真实更新状态（2026-11-23 对齐上游 ZCode）。
+      // 菜单标签跟随真实更新状态（2026-11-23 对齐上游行为）。
       //
       // 此前自动模式下强制投影成 idle，导致「发现新版本」「正在下载」「重启以更新」
       // 这些标签全都不出现，用户只能看到一个永远写着「检查更新」的菜单项，

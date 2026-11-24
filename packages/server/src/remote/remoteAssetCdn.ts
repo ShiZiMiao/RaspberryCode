@@ -16,21 +16,32 @@ export function resolveRemoteCdnBaseUrls(options: RemoteCdnBaseOptions): string[
   return Array.from(new Set(candidates));
 }
 
+/**
+ * 判断发布根是否**已经带版本段**，即调用方不需要再追加 `/version`。
+ *
+ * 版本段的两种真实形态都要认：
+ *   1. 纯版本号结尾：`.../releases/0.2.5`（自建 CDN/OSS 布局）；
+ *   2. 带 v 前缀的 tag 结尾：`.../releases/download/v0.2.5`（GitHub Release 布局）。
+ *
+ * 只判断第 1 种会让 GitHub 形态漏判，多拼一级 `/0.2.5` 得到
+ * `.../download/v0.2.5/0.2.5`，实测 404（2026-11-19 端到端实测确认）。
+ *
+ * ⚠️ 这个判定必须**只有这一份实现**。0.2.7 发出去后 SSH 全部连不上，根因就是
+ * 构建期注入的是已带版本段的完整根（`.../download/v0.2.7`），而 Desktop main 侧
+ * 另写了一段「无条件拼 `/version`」的逻辑，拼出 `.../download/v0.2.7/0.2.7`。
+ * 两处各自看都「合理」，接起来就是必然 404。
+ */
+export function isReleaseRootAlreadyVersioned(releaseRoot: string, version: string): boolean {
+  const normalizedBase = releaseRoot.replace(/\/+$/, "");
+  return normalizedBase.endsWith(`/${version}`) || normalizedBase.endsWith(`/v${version}`);
+}
+
 export function buildReleaseBaseCandidates(remoteCdnBaseUrls: string[], version: string): string[] {
   const candidates = remoteCdnBaseUrls.flatMap((remoteCdnBaseUrl) => {
     const normalizedBase = remoteCdnBaseUrl.replace(/\/+$/, "");
     // 当调用方已经传入带版本的 CDN 基址时，继续盲目拼 `${base}/${version}`
     // 会先走一次必然失败的双版本路径（例如 .../0.2.10/0.2.10），产生无意义 404 噪音。
-    //
-    // 版本段的两种真实形态都要认：
-    //   1. 纯版本号结尾：`.../releases/0.2.5`（自建 CDN/OSS 布局）；
-    //   2. 带 v 前缀的 tag 结尾：`.../releases/download/v0.2.5`（GitHub Release 布局）。
-    // 只判断第 1 种会让 GitHub 形态漏判，多拼一级 `/0.2.5` 得到
-    // `.../download/v0.2.5/0.2.5`，实测 404（2026-11-19 端到端实测确认），
-    // 每次连接都白白多打一轮失败请求。
-    const alreadyVersioned =
-      normalizedBase.endsWith(`/${version}`) || normalizedBase.endsWith(`/v${version}`);
-    if (alreadyVersioned) {
+    if (isReleaseRootAlreadyVersioned(normalizedBase, version)) {
       return [normalizedBase];
     }
     return [`${normalizedBase}/${version}`, normalizedBase];

@@ -212,7 +212,7 @@ describe("useAppChromeState desktop chrome state", () => {
 });
 
 /**
- * 更新入口在「自动更新」开启时的可见性（2026-11-23，对齐上游 ZCode）。
+ * 更新入口在「自动更新」开启时的可见性（2026-11-23，对齐上游行为）。
  *
  * 缺陷：原实现 `visibleUpdateState = autoUpdateEnabled ? null : updateState`
  * 会在自动更新（默认开启）时把状态整体置空。于是 main 广播 update-available 后，

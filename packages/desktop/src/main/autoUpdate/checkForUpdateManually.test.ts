@@ -159,7 +159,7 @@ describe("checkForUpdateManually 结果映射", () => {
 });
 
 /**
- * 自动下载空窗的语义（2026-11-23，对齐上游 ZCode）。
+ * 自动下载空窗的语义（2026-11-23，对齐上游行为）。
  *
  * 缺陷：自动更新开启时，main 广播 update-available 后立刻发起下载，但下载请求
  * 是异步的、不立刻改 state。手动检查恰在这个空窗返回时，原实现报 available

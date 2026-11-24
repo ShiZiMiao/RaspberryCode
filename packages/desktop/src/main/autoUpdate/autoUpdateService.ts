@@ -689,7 +689,7 @@ export async function checkForUpdateManually(): Promise<UpdateCheckResultPayload
   await runCheck("manual");
   switch (state.kind) {
     case "update-available":
-      // 自动下载已启动但电进度事件还没到的空窗（对齐上游 ZCode，2026-11-23）。
+      // 自动下载已启动但电进度事件还没到的空窗（对齐上游行为，2026-11-23）。
       //
       // 时序：handleUpdateAvailable 广播 update-available 后，自动模式下会立刻
       // 调 downloadAvailableUpdate("auto")。它同步设置 downloadingVersion 并发起请求，

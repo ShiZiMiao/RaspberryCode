@@ -143,8 +143,12 @@ function resolveProbeTag(version) {
   const latestPublished = readLatestPublishedTag();
   if (latestPublished) {
     if (localTag) {
-      console.log(
-        `  ${localTag} 的 release 资产尚不存在（未发版的版本号），改用已发布的最新 tag ${latestPublished} 探测。`,
+      // 必须写 stderr：`--json` 模式下 stdout 只允许出现 JSON，
+      // 否则调用方（release-gate.mjs）直接 JSON.parse 会抛
+      // 「Unexpected token ...」把整段镜像探测判成「未完成」。
+      // 这条提示恰恰在「当前版本还没发版」时触发——也就是每次正式发版前的常规路径。
+      process.stderr.write(
+        `  ${localTag} 的 release 资产尚不存在（未发版的版本号），改用已发布的最新 tag ${latestPublished} 探测。\n`,
       );
     }
     return latestPublished;

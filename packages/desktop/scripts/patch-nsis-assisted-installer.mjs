@@ -10,7 +10,7 @@
  *   用户在应用退出后看不到任何反馈，会以为程序崩了。
  *   而我们要的是「有进度、能确认、不用点下一步」。
  *
- * 为什么上游 ZCode 也有同样配置却没这个多步向导：
+ * 为什么上游代码也有同样配置却没这个多步向导：
  *   上游 `electron-builder.config.js` 同样是 `oneClick:false` +
  *   `allowToChangeInstallationDirectory:true`，理论上也会出向导。
  *   差异在 electron-builder 版本与 `skipPageIfUpdated` 宏的覆盖范围（见下）。

@@ -96,6 +96,57 @@ function section(title) {
 }
 
 // ---------------------------------------------------------------------------
+// 0. 测试环境模拟度：确认当前进程没有用「只有开发机才有」的覆盖变量
+// ---------------------------------------------------------------------------
+//
+// 为什么要有这一段（2026-11-24，用户要求）：0.2.7 的远程连接缺陷（URL 版本号双拼）
+// 在开发机上**永远测不出来**，因为开发机配了
+//   RASPBERRYCODE_REMOTE_ASSET_LOCAL_RELEASE_DIR=<仓库>/mock-cdn
+// 一旦设置，解析器直接走「本地目录读 descriptor」通道，**完全绕过 HTTP 拼接逻辑**，
+// 而缺陷恰恰在 HTTP 拼接上。于是「本机能连」被当成「发布版能连」。
+//
+// 更隐蔽的一层：**删掉用户环境变量只对「之后新启动的进程」生效**。
+// 已经在跑的终端 / IDE / 构建代理会继续持有旧值并向子进程传播，
+// 表现为「注册表已空、但构建出来的东西仍走本地目录」。
+//
+// 因此这里同时检查「进程级」与「用户/机器级」：只要进程级还残留，就报警——
+// 因为门禁自己跑构建/验证时继承的正是进程级环境。
+const ENV_OVERRIDES = [
+  [
+    "RASPBERRYCODE_REMOTE_ASSET_LOCAL_RELEASE_DIR",
+    "绕过 HTTP 链路改读本地目录：会掩盖发布根拼接类缺陷（0.2.7 事故即如此被掩盖）",
+  ],
+  [
+    "RASPBERRYCODE_REMOTE_ASSET_CDN_BASE_URL",
+    "覆盖构建期注入的发布根：验证到的不是发布版真实行为",
+  ],
+  [
+    "RASPBERRYCODE_DEV_REMOTE_ASSET_USE_CDN",
+    "dev 态强制走公网 CDN：与默认路径不同",
+  ],
+];
+
+section("测试环境模拟度");
+{
+  const polluted = [];
+  for (const [name, why] of ENV_OVERRIDES) {
+    const value = (process.env[name] ?? "").trim();
+    if (value) polluted.push({ name, value, why });
+  }
+  if (polluted.length === 0) {
+    ok("无远程资产覆盖变量（等价用户环境）");
+  } else {
+    for (const { name, value, why } of polluted) {
+      warn(`检测到覆盖变量 ${name}=${value} —— ${why}`);
+    }
+    warn(
+      "当前进程环境不等于用户环境：上述变量会让远程连接/更新链路的验证结果失真。" +
+        "请在**没有**这些变量的终端里重跑（删除用户变量后必须开新终端，旧终端仍持有旧值）。",
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 1. 版本一致性：package.json / build-meta / 产物名 / latest.yml 必须同一个版本
 // ---------------------------------------------------------------------------
 section("版本一致性");
@@ -233,17 +284,100 @@ if (!existsSync(unpackedAsar)) {
       //
       // 这里判定「发布根非空」：产物里必须存在一个 http(s) 的 releases 根地址。
       // 不能只搜变量名——生产构建会把标识符重命名，常量也已被折叠；只能看实际字面量。
-      const remoteRootMarkers = mainBundle.match(/https?:\/\/[^"'`\s)]+\/releases(?:\/|["'`])/gu) ?? [];
+      //
+      // 2026-11-24 修正：旧正则 `/releases(?:\/|["'`])/` 只截到 `/releases/` 就停，
+      // 拿到的是**被截断的根** `https://github.com/<o>/<r>/releases`，
+      // 而真实注入值是 `.../releases/download/v0.2.7`。截断后既判断不出 GitHub 的 tag 段，
+      // 也永远看不出重复版本段——等于把这条检查架空。改为提取完整 URL 字面量后再筛 releases。
+      const remoteRootMarkers = [
+        ...new Set(mainBundle.match(/https?:\/\/[^"'`\s)]+/gu) ?? []),
+      ]
+        .map((root) => root.replace(/\/+$/u, ""))
+        .filter((root) => /\/releases(?:\/|$)/u.test(root));
       const nonPlaceholderRoots = remoteRootMarkers.filter(
         (root) => !/intranet\.example\.invalid|example\.(?:com|invalid)/u.test(root),
       );
       if (nonPlaceholderRoots.length > 0) {
-        ok(`产物含远程资产发布根（${new Set(nonPlaceholderRoots).size} 个）`);
+        ok(`产物含远程资产发布根（${nonPlaceholderRoots.length} 个）`);
       } else {
         fail(
           "产物缺少远程资产发布根：远程连接（SSH/WSL/Docker）将无法下载 Source Server。构建时须设置 REMOTE_ASSET_RELEASE_ROOT_URL 或 CDN_DOMAIN",
         );
       }
+
+      // 2026-11-24 追加：上面只判「有没有根」，判不出「根拼出来的 URL 是否可用」。
+      //
+      // 事故：0.2.7 发出去后远程连接全部失败。发布根其实**在**包里，字面量检查是绿的，
+      // 但 Desktop main 侧对已带 tag 的 GitHub 根（.../releases/download/v0.2.7）
+      // 又无条件追加了一次版本，拼出 .../download/v0.2.7/0.2.7 → 实测 404。
+      // 也就是说：根存在 + 根正确 + 拼接错误，三个条件同时成立时旧门禁全绿。
+      //
+      // 这里补两道：
+      //   ① 结构检查（离线）：根不得自带重复版本段。
+      //   ② 真实探测（联网）：按客户端真实会请求的形态，实际拉一次 descriptor，确认真的 200。
+      const escapedVersion = desktopVersion.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+      const doubledVersionPattern = new RegExp(
+        `/v?${escapedVersion}/v?${escapedVersion}(?:/|$)`,
+        "u",
+      );
+      const doubled = nonPlaceholderRoots.filter((root) => doubledVersionPattern.test(root));
+      if (doubled.length > 0) {
+        fail(
+          `产物里的远程资产发布根自带重复版本段（会拼出必然 404 的地址）：${doubled.join(", ")}`,
+        );
+      } else if (nonPlaceholderRoots.length > 0) {
+        ok("发布根无重复版本段");
+      }
+
+      // 真实探测：把「客户端会请求的那个 URL」真的拉一遍。
+      //
+      // 根的两种合法形态决定客户端是否再拼版本，这里按同一规则还原请求 URL：
+      //   - 已带版本段（`/v0.2.7` 或 `/0.2.7`）→ 客户端直接用，拼 `<root>/<file>`；
+      //   - 不带版本段 → 客户端会拼 `<root>/<version>/<file>`。
+      // 若将来消费侧又改坏成双拼，探测会 404，从而在发版前拦下。
+      //
+      // 探测失败只 WARN 不 FAIL —— 发版机可能无外网/走代理，不能因构建机网络拦住发版；
+      // 但必须留下痕迹，并强制人工清单确认一次真实 SSH 远程连接。
+      const descriptorName = "source-server-release.json";
+      const isVersioned = (root) =>
+        root.endsWith(`/v${desktopVersion}`) || root.endsWith(`/${desktopVersion}`);
+      const probeTargets = nonPlaceholderRoots
+        .filter((root) => /^https?:\/\//u.test(root))
+        .map((root) => `${root}${isVersioned(root) ? "" : `/${desktopVersion}`}/${descriptorName}`);
+      let probedOk = 0;
+      const probeErrors = [];
+      for (const url of probeTargets) {
+        try {
+          // 60 秒上限：descriptor 只有 1.3KB，正常亚秒级；GitHub 在国内偶发握手慢。
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 60_000);
+          let response;
+          try {
+            response = await fetch(url, {
+              method: "GET",
+              redirect: "follow",
+              signal: controller.signal,
+            });
+          } finally {
+            clearTimeout(timer);
+          }
+          if (response.ok) {
+            probedOk += 1;
+            ok(`发布根可下载 descriptor：${url}`);
+          } else {
+            probeErrors.push(`${url} -> HTTP ${response.status}`);
+          }
+        } catch (error) {
+          probeErrors.push(`${url} -> ${error?.message ?? String(error)}`);
+        }
+      }
+      if (probeTargets.length > 0 && probedOk === 0) {
+        warn(
+          `发布根 descriptor 探测未通过（可能是发版机网络问题，也可能是地址真的错）：${probeErrors.join("; ")}。` +
+            "发版前必须人工确认真实 SSH 远程连接能下载 Source Server。",
+        );
+      }
+
     }
   } catch (error) {
     fail(`读取 asar 失败：${error.message}`);
@@ -392,6 +526,10 @@ need("开始菜单 + 桌面快捷方式均已创建，且双击能启动");
 need("升级路径实跑：旧版 → 检查更新 → 下载 → 安装 → 重启 → 版本号变新");
 need(
   "远程连接实测：SSH 连一台真实远端 → 能识别设备并装/升级 Source Server → 进入工作区（0.2.5 就是漏了这项）",
+);
+need(
+  "远程连接必须在**用户等价环境**下测：不设 RASPBERRYCODE_REMOTE_ASSET_LOCAL_RELEASE_DIR / " +
+    "RASPBERRYCODE_REMOTE_ASSET_CDN_BASE_URL，且从**新开的终端**启动（旧终端仍持有已删除的旧值）",
 );
 need("新建对话并收到模型回复（不是只看界面有没有回显）");
 need("文件编辑 / 终端 / 设置页 / MCP·技能·插件入口 逐项点过");
