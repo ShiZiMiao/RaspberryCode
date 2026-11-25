@@ -12,6 +12,7 @@ import {
   type UpdateStatePayload,
 } from "@raspberrycode/shared";
 import { readRaspberryCodeStdioTapDevState } from "@raspberrycode/services/node";
+import { isElectronAppPackaged } from "./desktopElectronApp.js";
 import {
   DESKTOP_ZOOM_MAX_LEVEL,
   DESKTOP_ZOOM_MIN_LEVEL,
@@ -149,7 +150,7 @@ function buildApplicationMenuTemplate(options: {
   const getAppLabel = (id: (typeof desktopMenuMessageIds)[keyof typeof desktopMenuMessageIds]) =>
     getLabel(id).replaceAll("{appName}", app.name);
   const stdioTapState = readRaspberryCodeStdioTapDevState();
-  const isLocalDevelopmentRuntime = !app.isPackaged;
+  const isLocalDevelopmentRuntime = !isElectronAppPackaged();
   const currentZoomLevel = clampDesktopZoomLevel(options.currentZoomLevel ?? 0);
   const canResetZoom = currentZoomLevel !== 0;
   const canZoomIn = currentZoomLevel < DESKTOP_ZOOM_MAX_LEVEL;
@@ -383,7 +384,7 @@ export function rebuildApplicationMenu(options: {
       }),
     ),
   );
-  if (!app.isPackaged) {
+  if (!isElectronAppPackaged()) {
     updateRaspberryCodeStdioTapDevMenuState();
   }
 }

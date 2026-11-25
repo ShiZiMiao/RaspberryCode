@@ -15,6 +15,7 @@ import {
   type CuaPermissionDragPanel,
 } from "./cuaPermissionDragPanel.js";
 import { createSystemSettingsWindowWatcher } from "./cuaSystemSettingsWindowWatcher.js";
+import { isElectronAppPackaged } from "./desktopElectronApp.js";
 
 const execFileAsync = promisify(execFile);
 const MACOS_SYSTEM_SETTINGS_BUNDLE_ID = "com.apple.systempreferences";
@@ -36,7 +37,7 @@ let cachedRaspberryCodeIcon: Electron.NativeImage | null = null;
 
 function resolveRaspberryCodeIcon(): Electron.NativeImage {
   if (cachedRaspberryCodeIcon && !cachedRaspberryCodeIcon.isEmpty()) return cachedRaspberryCodeIcon;
-  const iconPath = app.isPackaged
+  const iconPath = isElectronAppPackaged()
     ? join(process.resourcesPath, "icon.png")
     : join(import.meta.dirname, "..", "..", "build", "icon.png");
   const image = nativeImage.createFromPath(iconPath);
@@ -263,7 +264,7 @@ function createDragPanelForSession(
   return createCuaPermissionDragPanel({
     createWindow: createRealCuaPermissionPanelWindow({
       BrowserWindow,
-      app,
+      isPackaged: isElectronAppPackaged(),
       preloadPath: join(import.meta.dirname, "../preload/cuaPermissionPanel.cjs"),
       rendererDir: join(import.meta.dirname, "../renderer"),
       rendererDevUrl: process.env["ELECTRON_RENDERER_URL"],
@@ -285,7 +286,7 @@ function createDragPanelForSession(
 /** 生产走签名包内的 extraResources；dev 走 checkout 里的构建产物。 */
 function resolveWindowBoundsBinaryPath(): string {
   const relative = join("macos-window-bounds", "raspberrycode-window-bounds");
-  return app.isPackaged
+  return isElectronAppPackaged()
     ? join(process.resourcesPath, relative)
     : join(import.meta.dirname, "..", "..", "resources", relative);
 }

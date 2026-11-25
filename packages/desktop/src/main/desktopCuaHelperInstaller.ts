@@ -1,6 +1,6 @@
 import { join } from "node:path";
-import { app } from "electron";
 import { HELPER_APP_NAME } from "@raspberrycode/raspberrycode-cua/broker/helperConstants";
+import { isElectronAppPackaged } from "./desktopElectronApp.js";
 import {
   canonicalizeCuaHelperInstallerOptions,
   createCuaHelperInstaller,
@@ -26,7 +26,7 @@ export function resolvePackagedCuaHelperAppPath(
   options: Pick<DesktopCuaHelperInstallerOptions, "platform" | "isPackaged" | "resourcesPath"> = {},
 ): string | undefined {
   const platform = options.platform ?? process.platform;
-  const isPackaged = options.isPackaged ?? app.isPackaged;
+  const isPackaged = options.isPackaged ?? isElectronAppPackaged();
   const resourcesPath =
     options.resourcesPath ?? (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath;
   const normalizedResourcesPath = resourcesPath?.trim();

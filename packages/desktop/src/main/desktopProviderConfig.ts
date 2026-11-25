@@ -1,6 +1,7 @@
 import { app } from "electron";
 import { join } from "node:path";
 import { RASPBERRYCODE_ENV } from "@raspberrycode/shared";
+import { isElectronAppPackaged } from "./desktopElectronApp.js";
 
 export function resolveRaspberryCodeBuiltinProviderConfigFilePath(options?: {
   readonly appPath?: string;
@@ -10,7 +11,7 @@ export function resolveRaspberryCodeBuiltinProviderConfigFilePath(options?: {
 }): string {
   const explicitPath = (options?.env ?? process.env)["RASPBERRYCODE_BUILTIN_PROVIDER_CONFIG_FILE"]?.trim();
   if (explicitPath) return explicitPath;
-  if (options?.isPackaged ?? app.isPackaged) {
+  if (options?.isPackaged ?? isElectronAppPackaged()) {
     return join(
       options?.resourcesPath ?? process.resourcesPath,
       "config/provider/raspberrycode-builtin.json",

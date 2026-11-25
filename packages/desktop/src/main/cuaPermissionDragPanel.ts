@@ -202,7 +202,8 @@ export function createCuaPermissionDragPanel(
  */
 export function createRealCuaPermissionPanelWindow(deps: {
   BrowserWindow: typeof import("electron").BrowserWindow;
-  app: Pick<typeof import("electron").app, "isPackaged">;
+  /** 是否打包态；开发态优先加载 renderer dev server。 */
+  isPackaged: boolean;
   preloadPath: string;
   rendererDir: string;
   rendererDevUrl?: string | undefined;
@@ -232,7 +233,7 @@ export function createRealCuaPermissionPanelWindow(deps: {
     });
 
     // 与主窗口保持一致：生产包始终加载签名包内的渲染资源。
-    if (!deps.app.isPackaged && deps.rendererDevUrl) {
+    if (!deps.isPackaged && deps.rendererDevUrl) {
       void win.loadURL(`${deps.rendererDevUrl}/cua-permission-panel.html`);
     } else {
       void win.loadFile(`${deps.rendererDir}/cua-permission-panel.html`);

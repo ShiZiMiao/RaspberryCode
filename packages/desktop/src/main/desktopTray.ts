@@ -1,5 +1,6 @@
 import { app, Menu, Tray } from "electron";
 import { join } from "node:path";
+import { isElectronAppPackaged } from "./desktopElectronApp.js";
 import {
   DesktopCommandIds,
   desktopMenuMessageIds,
@@ -16,11 +17,11 @@ export function resolveDesktopTrayIconPath(platform: NodeJS.Platform = process.p
   // Linux 托盘只接受 PNG（.ico 不会渲染）；打包态 icon.png 已由 extraResources 无条件放入
   // resources 目录（electron-builder.config.js），Windows 继续用独立托盘 .ico 避免高 DPI 模糊。
   if (platform === "linux") {
-    return app.isPackaged
+    return isElectronAppPackaged()
       ? join(process.resourcesPath, "icon.png")
       : join(import.meta.dirname, "../../build/icon.png");
   }
-  return app.isPackaged
+  return isElectronAppPackaged()
     ? join(process.resourcesPath, "tray_icon.ico")
     : join(import.meta.dirname, "../../build/icon.ico");
 }

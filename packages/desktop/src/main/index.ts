@@ -18,6 +18,7 @@ import {
 import armsRum from "@arms/rum-electron";
 import { createArmsUserIdentitySync } from "./armsUserIdentity.js";
 import { ensureDesktopDeviceMidSync } from "./desktopDeviceMid.js";
+import { isElectronAppPackaged } from "./desktopElectronApp.js";
 import {
   createDesktopContextPromptRollout,
   createElectronDesktopContextPromptConfigFetcher,
@@ -272,7 +273,10 @@ const localMediaPreviewPathRegistry = createLocalMediaPreviewPathRegistry();
 // e2e 由 Chromedriver 管理远程调试端口；如果这里继续固定到 9229，
 // 会和开发态已打开的 RaspberryCode Dev 抢端口，导致 WebDriver session 创建前白屏超时。
 // 仅本地开发运行默认开启远程调试端口，并允许 e2e 通过环境变量交给 Chromedriver 接管。
-if (!app.isPackaged && process.env.RASPBERRYCODE_DISABLE_FIXED_REMOTE_DEBUGGING_PORT !== "1") {
+if (
+  !isElectronAppPackaged() &&
+  process.env.RASPBERRYCODE_DISABLE_FIXED_REMOTE_DEBUGGING_PORT !== "1"
+) {
   app.commandLine.appendSwitch("remote-debugging-port", "9229");
 }
 
@@ -298,15 +302,15 @@ process.on("unhandledRejection", (reason) => {
 
 const iconPath =
   process.platform === "win32"
-    ? app.isPackaged
+    ? isElectronAppPackaged()
       ? join(process.resourcesPath, "icon_windows.png")
       : join(import.meta.dirname, "../../build/icon_windows.png")
-    : app.isPackaged
+    : isElectronAppPackaged()
       ? join(process.resourcesPath, "icon.png")
       : join(import.meta.dirname, "../../build/icon.png");
 const linuxDesktopIntegrationIconPath =
   process.platform === "linux"
-    ? app.isPackaged
+    ? isElectronAppPackaged()
       ? join(process.resourcesPath, "icon_512x512.png")
       : join(import.meta.dirname, "../../build/icons/512x512.png")
     : iconPath;
@@ -1295,7 +1299,7 @@ async function prepareWindowsProcessesForUpdateInstall() {
 }
 
 function logWindowsBundledRuntimeIntegrityDiagnostic() {
-  if (process.platform !== "win32" || !app.isPackaged) {
+  if (process.platform !== "win32" || !isElectronAppPackaged()) {
     return;
   }
 
@@ -1668,7 +1672,7 @@ app.whenReady().then(async () => {
     rendererDir: join(import.meta.dirname, "../renderer"),
     aliasDir: join(import.meta.dirname, "../plugin-sandbox"),
     // 开发模式 out/renderer 没有 shell 产物，从 renderer dev server 代理（同 cua-permission-panel 的做法）。
-    ...(!app.isPackaged && process.env["ELECTRON_RENDERER_URL"]
+    ...(!isElectronAppPackaged() && process.env["ELECTRON_RENDERER_URL"]
       ? { devServerUrl: process.env["ELECTRON_RENDERER_URL"] }
       : {}),
     logger: console,
@@ -1767,7 +1771,9 @@ app.whenReady().then(async () => {
     // 打包态必须与 NSIS 快捷方式使用同一 AUMID，否则 Shell 把它们当成不同应用。
     // 使用构建期产品身份，不依赖用户机器环境；开发态继续保持独立身份。
     app.setAppUserModelId(
-      resolveWindowsAppUserModelIdForFlavor(RASPBERRYCODE_PRODUCT_FLAVOR, { isPackaged: app.isPackaged }),
+      resolveWindowsAppUserModelIdForFlavor(RASPBERRYCODE_PRODUCT_FLAVOR, {
+        isPackaged: isElectronAppPackaged(),
+      }),
     );
   }
 

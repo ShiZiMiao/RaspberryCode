@@ -11,6 +11,7 @@ import {
   RASPBERRYCODE_VERSION,
 } from "@raspberrycode/shared";
 import { createCustomAboutDialogHtml } from "./aboutWindow.js";
+import { isElectronAppPackaged } from "./desktopElectronApp.js";
 
 interface DesktopBuildMetadata {
   appVersion?: string;
@@ -258,8 +259,8 @@ export async function showAboutDialog(
   // 之前只有 macOS 使用自绘 About，Windows/Linux 仍走原生 message box。
   // 问题原因：各平台原生消息框的排版、图标和按钮样式差异很大，无法复用 macOS 参考样式。
   // 这里统一使用自绘 modal，保证 About 的品牌展示和多语言文案在三端一致。
-  const iconPath = resolveAboutIconPath(app.isPackaged);
-  const brandMarkPath = resolveAboutBrandMarkPath(app.isPackaged);
+  const iconPath = resolveAboutIconPath(isElectronAppPackaged());
+  const brandMarkPath = resolveAboutBrandMarkPath(isElectronAppPackaged());
   const brandMarkDataUri = existsSync(brandMarkPath)
     ? `data:image/svg+xml;base64,${readFileSync(brandMarkPath).toString("base64")}`
     : "";

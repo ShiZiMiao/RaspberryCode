@@ -25,6 +25,7 @@ import { join } from "node:path";
 import { showAboutDialog } from "./about.js";
 import { checkForUpdateManually } from "./autoUpdate/index.js";
 import { resolveCuaOsSupport } from "./cuaOsSupport.js";
+import { isElectronAppPackaged } from "./desktopElectronApp.js";
 import { syncWindowControlsOverlayForZoomLevel } from "./desktopWindowButtonPosition.js";
 import {
   DEFAULT_DESKTOP_WINDOW_HEIGHT,
@@ -140,7 +141,7 @@ export function resolveLocalAppConfigPath(options?: {
   isPackaged?: boolean;
   resourcesPath?: string;
 }): string {
-  const isPackaged = options?.isPackaged ?? app.isPackaged;
+  const isPackaged = options?.isPackaged ?? isElectronAppPackaged();
   if (isPackaged) {
     // app.getAppPath() 在正式包中指向 resources/app.asar，向上两级后会误读
     // Contents/config。内置配置由 electron-builder 放在 resources/config，必须从 resourcesPath 解析。

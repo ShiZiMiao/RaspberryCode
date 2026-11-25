@@ -10,6 +10,7 @@ import { app } from "electron";
 import { createRequire } from "node:module";
 import { CancellationToken, type ProgressInfo, type UpdateDownloadedEvent, type UpdateInfo } from "electron-updater";
 import { resolveCheckTimeoutMs, withCheckTimeout } from "./checkTimeout.js";
+import { isElectronAppPackaged } from "../desktopElectronApp.js";
 import { patchSingleRangeDifferential } from "./singleRangePatch.js";
 
 /**
@@ -563,7 +564,7 @@ export function initAutoUpdateService(options: InitAutoUpdateServiceOptions): vo
   settingService = options.settingService;
   broadcastState = options.broadcastState;
   onBeforeQuitAndInstall = options.onBeforeQuitAndInstall;
-  enabled = options.isPackaged ?? app.isPackaged;
+  enabled = options.isPackaged ?? isElectronAppPackaged();
   currentVersion = options.currentVersion ?? app.getVersion();
   quitAndInstallState = "idle";
   availableUpdate = null;

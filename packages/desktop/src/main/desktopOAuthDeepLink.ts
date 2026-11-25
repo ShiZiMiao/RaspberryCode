@@ -15,6 +15,7 @@ import {
   isWorkspaceOpenUrl,
 } from "./desktopDeepLinkUrl.js";
 import { registerLinuxDeepLinkProtocol } from "./desktopLinuxDeepLinkRegistration.js";
+import { isElectronAppPackaged } from "./desktopElectronApp.js";
 
 interface DeepLinkWorkspaceGateOptions {
   canOpenWorkspace?: (workspacePath: string) => boolean;
@@ -350,7 +351,7 @@ export function registerDeepLinkProtocol(
     logger.info("[deep-link] 注册协议成功", { scheme });
   }
 
-  if (process.platform === "linux" && app.isPackaged) {
+  if (process.platform === "linux" && isElectronAppPackaged()) {
     registerLinuxDeepLinkProtocol({
       executablePath: process.execPath,
       homeDir: app.getPath("home"),

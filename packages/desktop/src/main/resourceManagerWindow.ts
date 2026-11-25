@@ -15,6 +15,7 @@ import {
   type RaspberryCodeProvider,
 } from "@raspberrycode/shared";
 import { logger } from "./logger.js";
+import { isElectronAppPackaged } from "./desktopElectronApp.js";
 import { configureNetworkCaptureHost, observeNetworkWindow } from "./resourceManagerNetwork.js";
 import { normalizeElectronCpuToMachinePercent } from "./electronCpuNormalization.js";
 import type { ChromiumProcessRolePids } from "./processResourceRoleClassifier.js";
@@ -278,7 +279,7 @@ export function openResourceManager(): void {
 
   observeNetworkWindow(instance, () => hostProcesses.values());
   // 与主窗口保持一致：生产包始终加载签名包内的渲染资源。
-  if (!app.isPackaged && process.env["ELECTRON_RENDERER_URL"]) {
+  if (!isElectronAppPackaged() && process.env["ELECTRON_RENDERER_URL"]) {
     const base = process.env["ELECTRON_RENDERER_URL"];
     instance.loadURL(`${base}/resource-manager.html`);
   } else {

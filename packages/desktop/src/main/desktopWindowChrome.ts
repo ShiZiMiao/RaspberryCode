@@ -18,6 +18,7 @@ import {
   PlatformChannels,
 } from "@raspberrycode/shared";
 import { loadWindow, type WindowBootstrapOptions } from "./desktopHostProcess.js";
+import { isElectronAppPackaged } from "./desktopElectronApp.js";
 import {
   buildWindowsTitleBarOverlayForZoomLevel,
   hasCustomWindowsControls,
@@ -593,7 +594,7 @@ export function createBrowserWindow(options: {
       options.currentApplicationLocale?.() ?? DEFAULT_LOCALE,
     );
 
-    if (!app.isPackaged) {
+    if (!isElectronAppPackaged()) {
       if (template.length > 0) {
         template.push({ type: "separator" });
       }

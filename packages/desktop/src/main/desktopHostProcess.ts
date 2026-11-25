@@ -36,7 +36,6 @@ import type {
 } from "@raspberrycode/shared/mcp-apps";
 import type { UtilityProcess as ElectronUtilityProcess, MessagePortMain } from "electron";
 import {
-  app,
   BrowserWindow,
   utilityProcess as electronUtilityProcess,
   MessageChannelMain,
@@ -45,6 +44,7 @@ import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { BroadcastHub } from "./broadcastHub.js";
 import { bindDatabaseStartupRelay } from "./databaseStartupRelay.js";
+import { isElectronAppPackaged } from "./desktopElectronApp.js";
 import { getMainLaunchPartialMarks } from "./desktopLaunchMarks.js";
 import { ingestHostNetworkObservations } from "./desktopNetworkTelemetry.js";
 import {
@@ -149,7 +149,9 @@ export function loadWindow(
   }
 
   // 生产包不能信任继承环境中的开发服务器地址，否则会被本机开发会话劫持为空白页。
-  if (!app.isPackaged && process.env["ELECTRON_RENDERER_URL"]) {
+  // 开发态判定必须用 isElectronAppPackaged：Electron 44 的 app.isPackaged 在
+  // `electron .` 启动时也为 true，只看它会让 dev 去加载不存在的 out/renderer。
+  if (!isElectronAppPackaged() && process.env["ELECTRON_RENDERER_URL"]) {
     const base = process.env["ELECTRON_RENDERER_URL"];
     const url = new URL(page === "login" ? `${base}/login.html` : base);
     for (const [key, value] of Object.entries(query)) {
