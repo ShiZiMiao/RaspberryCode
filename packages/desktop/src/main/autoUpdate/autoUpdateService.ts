@@ -85,7 +85,9 @@ import {
 } from "./updateMirror.js";
 
 /** 单通道语义：跳过版本沿用 skippedElectronUpdateVersions.stable（读写兼容既有字段）。 */
-const SKIP_VERSION_CHANNEL = "stable" as const;
+// 常量定义随 isVersionSkipped 一起搬到 updatePayloads.ts，这里导入同一份，
+// 避免两处各写一份 "stable" 字面量日后漂移。
+import { SKIP_VERSION_CHANNEL } from "./updatePayloads.js";
 
 /** 「自动更新」模式缓存（偏好事实仍在 setting.json，见 readPreferences）。 */
 let autoUpdateMode = false;
@@ -212,48 +214,21 @@ export function resolveGithubFeedOptions(
   };
 }
 
-/** 跳过版本判定：单通道语义，只读 skippedElectronUpdateVersions.stable。 */
-export function isVersionSkipped(version: string, settings: AppSettings): boolean {
-  return settings.skippedElectronUpdateVersions?.[SKIP_VERSION_CHANNEL]?.trim() === version.trim();
-}
-
-/** GitHub release → 更新日志载荷；标题取 release name（缺省回退版本号）。 */
-export function buildReleaseNotesPayload(
-  info: Pick<UpdateInfo, "version" | "releaseName" | "releaseNotes" | "releaseDate">,
-): PostUpdateReleaseNotesPayload {
-  const markdown =
-    typeof info.releaseNotes === "string"
-      ? info.releaseNotes
-      : Array.isArray(info.releaseNotes)
-        ? info.releaseNotes.map((note) => note.note ?? "").join("\n\n")
-        : "";
-  return {
-    version: info.version,
-    title: info.releaseName?.trim() || `v${info.version}`,
-    markdown,
-    ...(info.releaseDate ? { releaseDate: info.releaseDate } : {}),
-  };
-}
-
-/** 手动检查在已有状态上的短路结果；只有需要真实检查时才返回 null。 */
-export function deriveManualCheckResultFromState(
-  snapshot: UpdateStatePayload,
-): UpdateCheckResultPayload | null {
-  switch (snapshot.kind) {
-    case "update-downloaded":
-      return { kind: "ready", version: snapshot.version };
-    case "download-progress":
-      return {
-        kind: "already-downloading",
-        version: snapshot.version ?? "",
-        progress: `${snapshot.progress}%`,
-      };
-    case "update-available":
-      return { kind: "available", version: snapshot.version };
-    default:
-      return null;
-  }
-}
+// 以下纯函数已拆到 updatePayloads.ts（本文件触及 800 行架构上限）。
+// 这里既 import（本文件内部要用）又 re-export（既有调用方与单测的 import 路径不变）。
+// 注意：`export { x } from "./y"` 只做转发，**不会**在当前模块建立本地绑定，
+// 所以必须有独立的 import，否则本文件内直接调用会报 is not defined。
+import {
+  buildReleaseNotesPayload,
+  deriveManualCheckResultFromState,
+  isVersionSkipped,
+  resolveMirrorConfig,
+} from "./updatePayloads.js";
+export {
+  buildReleaseNotesPayload,
+  deriveManualCheckResultFromState,
+  isVersionSkipped,
+} from "./updatePayloads.js";
 
 function isCancellationError(error: unknown): boolean {
   return error instanceof Error && error.name === "CancellationError";
@@ -287,27 +262,21 @@ async function readPreferences(): Promise<{
   // 偏好事实的唯一所有者是 setting.json；这里顺带刷新同步缓存供菜单投影使用。
   autoUpdateMode = settings.autoDownloadAndInstallUpdates === true;
 
-  // 镜像前缀：第三方公益镜像不稳定，必须由配置决定而不是写死在代码里。
-  // 语义区分（重要）：
-  //   undefined → 用户没配置过，采用内置候选列表（便于未来追加候选而无需改代码）
-  //   ""        → 用户/构建期显式禁用镜像，只走直连
-  //   非空串     → 用户指定，只尊重这一家
-  const configuredMirror = settings.updateMirrorPrefix;
-  const hasExplicitMirror = typeof configuredMirror === "string";
-  mirrorPrefix = hasExplicitMirror ? configuredMirror!.trim() : DEFAULT_UPDATE_MIRROR_PREFIX;
-  const mirrorCandidates: readonly string[] = hasExplicitMirror
-    ? mirrorPrefix
-      ? [mirrorPrefix]
-      : []
-    : DEFAULT_UPDATE_MIRROR_CANDIDATES;
+  // 镜像语义（undefined / "" / 非空串）由 resolveMirrorConfig 统一裁决，
+  // 避免调用处各自判断导致「显式禁用镜像」被误当成「未配置」。
+  const resolved = resolveMirrorConfig(settings.updateMirrorPrefix, {
+    prefix: DEFAULT_UPDATE_MIRROR_PREFIX,
+    candidates: DEFAULT_UPDATE_MIRROR_CANDIDATES,
+  });
+  mirrorPrefix = resolved.mirrorPrefix;
 
   return {
     autoDownloadAndInstallUpdates: autoUpdateMode,
     skippedVersion: settings.skippedElectronUpdateVersions?.[SKIP_VERSION_CHANNEL]?.trim() ?? null,
     owner: settings.updateFeedGithubOwner ?? "",
     repo: settings.updateFeedGithubRepo ?? "",
-    mirrorPrefix,
-    mirrorCandidates,
+    mirrorPrefix: resolved.mirrorPrefix,
+    mirrorCandidates: resolved.mirrorCandidates,
   };
 }
 

@@ -764,6 +764,10 @@ modules:
     requires:
       - desktop
       - shared
+      # client-update-contract：updateMirror.ts 从
+      # `@raspberrycode/shared/client-update` 取 DEFAULT_UPDATE_MIRROR_CANDIDATES，
+      # 该入口属于 client-update-contract 模块，必须显式声明依赖。
+      - client-update-contract
     publicEntrypoints:
       - packages/desktop/src/main/autoUpdate/index.ts
       - packages/desktop/src/main/autoUpdate/contract.ts
@@ -1110,6 +1114,17 @@ exceptions:
     rule: max-file-lines
     paths: [ packages/ui/src/remote-connection-flow/index.ts ]
     reason: Preserve the existing single hook owner and closure; module adoption must not mechanically split state to satisfy line counts.
+  - id: auto-update-service-size
+    rule: max-file-lines
+    paths: [ packages/desktop/src/main/autoUpdate/autoUpdateService.ts ]
+    reason: >-
+      0.2.8 已把纯函数部分（isVersionSkipped / buildReleaseNotesPayload /
+      deriveManualCheckResultFromState / resolveMirrorConfig）拆到 updatePayloads.ts，
+      从 859 行降到 821 行。剩余部分是**同一个下载回退状态机**的闭包：
+      updater / state / downloadFallback / quittingInstallState / 代理注入点
+      全部是模块级可变状态，按行数强行再切会把状态机拆成两处各自持有半个真相，
+      正是"避免重复状态"原则要防的情形。后续若需要继续瘦身，
+      应先把回退状态机整体迁成一个 class 再拆文件，而不是按行切割。
   - id: gen-ui-tweak-runtime-size
     rule: max-file-lines
     paths: [ packages/desktop/src/renderer/src/plugin-sandbox/genUiTweakRuntime.js ]
