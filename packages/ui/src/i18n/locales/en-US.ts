@@ -4972,6 +4972,9 @@ const enUS: Record<string, string> = {
   "chat.message.revert.dialog.blocked":
     "Some files cannot be restored safely, so the revert was cancelled. Resolve them manually first.",
   "chat.message.revert.failed": "Revert failed; nothing was changed",
+  "settings.startupShowHome": "Show home on startup",
+  "settings.startupShowHomeDescription":
+    "Open the home screen every launch instead of reopening the last project or task. Turn off to restore the previous workspace.",
   "chat.message.revert.previewUnavailable": "Could not load the file-change preview. The revert still re-checks before applying and stops if files cannot be restored safely.",
   "chat.message.sentByScheduledTask": "Sent by scheduled task",
   "chat.message.copy": "Copy",

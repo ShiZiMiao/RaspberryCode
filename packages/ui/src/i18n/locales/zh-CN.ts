@@ -4655,6 +4655,9 @@ const zhCN: Record<string, string> = {
   "chat.message.revert.dialog.confirm": "回退",
   "chat.message.revert.dialog.blocked": "存在无法安全恢复的文件，回退已取消。请先手动处理这些文件。",
   "chat.message.revert.failed": "回退失败，未做任何改动",
+  "settings.startupShowHome": "启动时显示首页",
+  "settings.startupShowHomeDescription":
+    "打开后每次启动都进入首页，不自动打开上次的项目或任务；关闭则恢复上次打开的工作区。",
   "chat.message.revert.previewUnavailable": "暂时无法获取本次的文件改动预览，回退时仍会先校验，无法安全恢复会中止。",
   "chat.message.sentByScheduledTask": "由定时任务发送",
   "chat.message.copy": "复制",

@@ -105,8 +105,15 @@ export function useRootPlatformEffects({
         initialWorkspaceIdentity,
         composerClientNamespace,
       );
-      const draftIntent =
-        initialTaskDraft ?? (savedScope ? { projectId: savedScope.projectId } : undefined);
+      // 冷启动固定首页（spec：specs/2026-11-24-cold-start-home-design.md）：
+      // conversation 用途的启动必须是「未选中任何项目」。这里不能沿用 savedScope.projectId，
+      // 否则该 backing workspace 历史上写过项目归属时，首页会带着上一个项目复活。
+      // reload 与真实项目入口仍按 savedScope 恢复。
+      const isColdStartHome =
+        initialWorkspacePurpose === "conversation" && !isRendererReloadNavigation();
+      const draftIntent = isColdStartHome
+        ? { projectId: null }
+        : (initialTaskDraft ?? (savedScope ? { projectId: savedScope.projectId } : undefined));
       addTab(
         initialWorkspaceAbsPath,
         initialWorkspaceIdentity || initialWorkspacePurpose

@@ -839,6 +839,21 @@ export async function seedSettings(partial: Partial<AppSettings>): Promise<Parti
   return next;
 }
 
+/**
+ * 声明本用例要在冷启动时「恢复上次激活的 workspace」。
+ *
+ * 背景（spec：docs/superpowers/specs/2026-11-24-cold-start-home-design.md）：
+ * 产品默认 `startupShowHome=true`，冷启动固定进首页、不选中任何项目。
+ * 因此凡是要验证「重启后回到上次项目/任务」的用例，必须在 seed 里显式关闭该开关，
+ * 否则它实际测的是首页行为，断言必然落空。
+ *
+ * 用法：把返回值 merge 进 seedSettings 的入参。
+ *   await seedSettings({ ...restorePreviousWorkspaceOnStartup(), lastActiveWorkspace: entry })
+ */
+export function restorePreviousWorkspaceOnStartup(): Pick<AppSettings, "startupShowHome"> {
+  return { startupShowHome: false };
+}
+
 export async function seedCliConfig(
   partial: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {

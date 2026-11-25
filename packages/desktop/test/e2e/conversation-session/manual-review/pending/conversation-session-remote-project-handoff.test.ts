@@ -6,7 +6,12 @@ import {
   type SourceServerManagementSnapshot,
 } from "@raspberrycode/shared";
 import type { RemoteProjectDirectory } from "@raspberrycode/services";
-import { clearAppData, readSettings, seedSettings } from "#e2e/helpers/desktop-app";
+import {
+  clearAppData,
+  readSettings,
+  restorePreviousWorkspaceOnStartup,
+  seedSettings,
+} from "#e2e/helpers/desktop-app";
 import { prepareV4ConversationE2E } from "#e2e/helpers/v4-conversation";
 import { reloadElectronSessionPreservingBrowserProfile } from "#e2e/helpers/e2e-electron-reload";
 import { waitForRendererAfterColdRestart } from "#e2e/helpers/ssh-remote-lifecycle";
@@ -78,6 +83,9 @@ describe(`${MARKER}: 默认线路与原项目完成有效性`, () => {
         await seedSettings(
           appSettingsSchema.parse({
             ...settings,
+            // 本用例要观察「断连态远程入口」与手动重连，需要保留上次激活项作为入口；
+            // 关闭默认首页模式（spec：specs/2026-11-24-cold-start-home-design.md）。
+            ...restorePreviousWorkspaceOnStartup(),
             remoteStartupAutoReconnectEnabled: false,
             connectionProfiles: [...settings.connectionProfiles!, alternate],
             lastWorkspaceSession: initial.lastWorkspaceSession,

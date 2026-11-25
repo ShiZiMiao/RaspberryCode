@@ -137,6 +137,7 @@ export function GeneralSectionContent({
   notificationSoundEnabled,
   closeToTrayOnWindows,
   keepAwakeWhileRunning = false,
+  startupShowHome = true,
   desktopChromiumHardwareAccelerationEnabled = true,
   dataBaseDir,
   terminalInheritSystemProfile = true,
@@ -177,6 +178,7 @@ export function GeneralSectionContent({
   onHttpProxyCaCertPathChange = async () => {},
   onCloseToTrayOnWindowsChange,
   onKeepAwakeWhileRunningChange = async () => {},
+  onStartupShowHomeChange = async () => {},
   onDesktopChromiumHardwareAccelerationChange = async () => {},
   onMessageStreamShowReasoningChange,
   onMessageStreamShowTodosChange,
@@ -195,6 +197,8 @@ export function GeneralSectionContent({
   notificationSoundEnabled: boolean;
   closeToTrayOnWindows: boolean;
   keepAwakeWhileRunning?: boolean;
+  /** 冷启动固定首页开关（spec：specs/2026-11-24-cold-start-home-design.md）。 */
+  startupShowHome?: boolean;
   desktopChromiumHardwareAccelerationEnabled?: boolean;
   dataBaseDir: string;
   terminalInheritSystemProfile: boolean;
@@ -244,6 +248,7 @@ export function GeneralSectionContent({
   onHttpProxyNoProxyChange?: (noProxy: string) => Promise<void>;
   onHttpProxyCaCertPathChange?: (caCertPath: string) => Promise<void>;
   onCloseToTrayOnWindowsChange: (enabled: boolean) => Promise<void>;
+  onStartupShowHomeChange?: (enabled: boolean) => Promise<void>;
   onKeepAwakeWhileRunningChange?: (enabled: boolean) => Promise<void>;
   onDesktopChromiumHardwareAccelerationChange?: (enabled: boolean) => Promise<void>;
   onMessageStreamShowReasoningChange: (enabled: boolean) => Promise<void>;
@@ -694,6 +699,21 @@ export function GeneralSectionContent({
                   checked={desktopChromiumHardwareAccelerationEnabled}
                   onCheckedChange={(checked) => {
                     void onDesktopChromiumHardwareAccelerationChange(checked);
+                  }}
+                />
+              }
+            />
+            <SettingsRow
+              label={intl.formatMessage({ id: "settings.startupShowHome" })}
+              description={intl.formatMessage({
+                id: "settings.startupShowHomeDescription",
+              })}
+              control={
+                <Switch
+                  aria-label={intl.formatMessage({ id: "settings.startupShowHome" })}
+                  checked={startupShowHome}
+                  onCheckedChange={(checked) => {
+                    void onStartupShowHomeChange(checked);
                   }}
                 />
               }

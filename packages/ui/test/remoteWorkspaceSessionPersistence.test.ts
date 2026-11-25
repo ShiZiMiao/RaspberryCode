@@ -781,6 +781,86 @@ describe("restorePersistedRemoteWorkspaceSessions", () => {
 
     expect(restoreTabs).toHaveBeenCalledWith(["/workspace/local"], 0);
   });
+
+  // 冷启动固定首页（spec：specs/2026-11-24-cold-start-home-design.md）。
+  describe("activateConversationWorkspace（冷启动首页）", () => {
+    const conversationPath = "/workspace/default";
+
+    it("激活目标是 conversation workspace，上次项目只作为 inactive tab 保留", () => {
+      const tabStoreApi = createTabStore();
+      restorePersistedRemoteWorkspaceSessions({
+        settings: {
+          lastActiveWorkspace: {
+            kind: "local",
+            workspacePath: "/workspace/project-a",
+            workspacePurpose: "project",
+          },
+          lastActiveTabIndex: 0,
+        },
+        tabStoreApi,
+        conversationWorkspacePath: conversationPath,
+        activateConversationWorkspace: true,
+      });
+
+      const state = tabStoreApi.getState();
+      const workspaceTabs = state.tabs.filter(isWorkspaceTab);
+      // 上次项目仍在侧栏（不删除历史入口），但焦点必须落在无项目草稿。
+      expect(workspaceTabs.map((tab) => tab.workspacePath).sort()).toEqual(
+        [conversationPath, "/workspace/project-a"].sort(),
+      );
+      expect(state.activeWorkspacePath).toBe(conversationPath);
+      expect(
+        workspaceTabs.find((tab) => tab.workspacePath === conversationPath)?.workspacePurpose,
+      ).toBe("conversation");
+    });
+
+    it("上次 active 是远程项目时不抢激活，且不自动重连", () => {
+      const tabStoreApi = createTabStore();
+      restorePersistedRemoteWorkspaceSessions({
+        settings: {
+          lastActiveWorkspace: {
+            kind: "remote",
+            workspacePath: "/srv/app",
+            workspaceIdentity: "remote:server:source-1:/srv/app",
+            target: { kind: "ssh", host: "dev.example.com", username: "dev" },
+            lastOpenedAt: 1,
+            lastConnectionStatus: "connected",
+          },
+          lastActiveTabIndex: 0,
+        },
+        tabStoreApi,
+        conversationWorkspacePath: conversationPath,
+        activateConversationWorkspace: true,
+      });
+
+      const state = tabStoreApi.getState();
+      expect(state.activeWorkspacePath).toBe(conversationPath);
+      expect(state.activeWorkspaceIdentity).toBeNull();
+      // 远程条目只为手动重连保留入口，不得成为激活项。
+      expect(state.tabs.filter(isWorkspaceTab).map((tab) => tab.workspacePath)).toContain(
+        "/srv/app",
+      );
+    });
+
+    it("关闭开关时不改变原有激活行为", () => {
+      const tabStoreApi = createTabStore();
+      restorePersistedRemoteWorkspaceSessions({
+        settings: {
+          lastActiveWorkspace: {
+            kind: "local",
+            workspacePath: "/workspace/project-a",
+            workspacePurpose: "project",
+          },
+          lastActiveTabIndex: 0,
+        },
+        tabStoreApi,
+        conversationWorkspacePath: conversationPath,
+        activateConversationWorkspace: false,
+      });
+
+      expect(tabStoreApi.getState().activeWorkspacePath).toBe("/workspace/project-a");
+    });
+  });
 });
 
 describe("projectRemoteConversationWorkspacePurpose", () => {

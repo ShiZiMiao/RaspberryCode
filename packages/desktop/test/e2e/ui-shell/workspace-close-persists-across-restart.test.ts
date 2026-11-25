@@ -5,6 +5,7 @@ import {
   DEFAULT_WORKSPACE,
   clearAppData,
   getE2EAppDataPaths,
+  restorePreviousWorkspaceOnStartup,
   seedSettings,
   waitForDefaultWorkspaceReady,
 } from "../helpers/desktop-app.js";
@@ -29,6 +30,11 @@ describe("project removal persists across restart E2E", () => {
 
   it("WCP01: 删除项目后，完整重启不会被旧 workspace 设置复活", async function () {
     this.timeout(240_000);
+    // 本用例全程依赖「启动后处于真实项目工作区」（要先在侧栏里建/删项目）。
+    // 产品默认 startupShowHome=true 会停在首页草稿，没有 active 项目工作区可用，
+    // 所以先关掉该开关并冷启动一次，再开始操作（spec：specs/2026-11-24-cold-start-home-design.md）。
+    await seedSettings(restorePreviousWorkspaceOnStartup());
+    await reloadElectronSessionPreservingBrowserProfile(browser);
     await waitForDefaultWorkspaceReady(30_000);
     await mkdir(closedWorkspacePath, { recursive: true });
     await $('[data-testid="project-section"]').moveTo();
@@ -62,6 +68,9 @@ describe("project removal persists across restart E2E", () => {
     await reloadElectronSessionPreservingBrowserProfile(browser, {
       afterElectronProcessExit: async () => {
         await seedSettings({
+          // 验收边界是「重启后项目列表不复活已删除项」，需要在冷启动真正恢复 workspace 的前提下观察，
+          // 因此关闭默认的首页模式（spec：specs/2026-11-24-cold-start-home-design.md）。
+          ...restorePreviousWorkspaceOnStartup(),
           lastWorkspaceSession: [
             { kind: "local", workspacePath: DEFAULT_WORKSPACE },
             { kind: "local", workspacePath: closedWorkspacePath },

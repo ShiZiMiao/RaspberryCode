@@ -16,6 +16,7 @@ import {
   clearAppData,
   getE2EAppDataPaths,
   readSettings,
+  restorePreviousWorkspaceOnStartup,
   seedSettings,
 } from "#e2e/helpers/desktop-app";
 import { prepareV4ConversationE2E } from "#e2e/helpers/v4-conversation";
@@ -131,6 +132,9 @@ describe(`${CASE_MARKER}: 项目平铺与远程无项目入口停用`, () => {
         await seedSettings(
           appSettingsSchema.parse({
             ...before,
+            // 本用例验证远程项目导航在冷启动后的恢复合同，需要真正恢复上次激活项；
+            // 关闭默认首页模式（spec：specs/2026-11-24-cold-start-home-design.md）。
+            ...restorePreviousWorkspaceOnStartup(),
             remoteStartupAutoReconnectEnabled: false,
             sourceServerDirectoryMigrationVersion: 1,
             sourceServers: sources.map((sourceServerId, index) => ({

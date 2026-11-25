@@ -4,6 +4,7 @@ import { TID_V4_COMPOSER_INPUT } from "@raspberrycode/shared/test-ids";
 import {
   clearAppData,
   getE2EAppDataPaths,
+  restorePreviousWorkspaceOnStartup,
   seedSettings,
   waitForDefaultWorkspaceReady,
 } from "../helpers/desktop-app.js";
@@ -27,12 +28,21 @@ describe("TSL08: unavailable startup project opens an unclassified draft", () =>
 
   it("冷启动默认项目被移动后，直接显示可输入的无项目草稿，刷新后保持", async function () {
     this.timeout(240_000);
+    // 用例前置需要「启动后处于真实项目工作区」才能建立基准。
+    // 产品默认 startupShowHome=true 会停在首页草稿，先关掉再冷启动一次。
+    // （spec：docs/superpowers/specs/2026-11-24-cold-start-home-design.md）
+    await seedSettings(restorePreviousWorkspaceOnStartup());
+    await reloadElectronSessionPreservingBrowserProfile(browser);
     await waitForDefaultWorkspaceReady(30_000);
     await mkdir(workspacePath, { recursive: true });
     await reloadElectronSessionPreservingBrowserProfile(browser, {
       afterElectronProcessExit: async () => {
         await rename(workspacePath, movedPath);
         await seedSettings({
+          // 本用例验证「上次项目目录失效」这一条分支：必须先真的走到项目可用性判定，
+          // 才能证明失效项目被降级成无项目草稿。首页模式会绕过该分支（直接进 conversation），
+          // 那样用例虽然仍是草稿态却失去验证意义（spec：specs/2026-11-24-cold-start-home-design.md）。
+          ...restorePreviousWorkspaceOnStartup(),
           lastActiveWorkspace: { kind: "local", workspacePath, workspacePurpose: "project" },
           lastWorkspaceSession: [{ kind: "local", workspacePath, workspacePurpose: "project" }],
           lastActiveTabIndex: 0,

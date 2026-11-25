@@ -2,7 +2,13 @@ import { reloadElectronSessionPreservingBrowserProfile } from "#e2e/helpers/e2e-
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parseRemoteWorkspaceIdentity } from "@raspberrycode/shared";
-import { clearAppData, DEFAULT_WORKSPACE, readSettings } from "../helpers/desktop-app.js";
+import {
+  clearAppData,
+  DEFAULT_WORKSPACE,
+  readSettings,
+  restorePreviousWorkspaceOnStartup,
+  seedSettings,
+} from "../helpers/desktop-app.js";
 import {
   connectSSHWorkspaceAndSendFirstTurn,
   prepareSSHLifecycle,
@@ -142,7 +148,14 @@ describe(`${CASE_MARKER}: 本地与远端项目入口保留，冷启动只恢复
     expect(projectEntriesBefore.length).toBeGreaterThanOrEqual(3);
     const expectedRemoteIdentities = [taskA.identity, tabB.workspaceIdentity!];
 
-    await reloadElectronSessionPreservingBrowserProfile(browser);
+    // 本用例验证「冷启动恢复上次激活的远端项目」。产品默认 startupShowHome=true 会固定进首页
+    // （spec：specs/2026-11-24-cold-start-home-design.md），所以必须在进程退出后关掉该开关，
+    // 否则 early.active 恒为本地 conversation 草稿，下面的断言测不到恢复合同。
+    await reloadElectronSessionPreservingBrowserProfile(browser, {
+      afterElectronProcessExit: async () => {
+        await seedSettings(restorePreviousWorkspaceOnStartup());
+      },
+    });
     await waitForRendererAfterColdRestart(CASE_MARKER);
     // active-first：记录 tab store 首次非空快照（哪些 entry 先出现、哪些先在线），随后等待远端全部补齐。
     let early = await readTabs();

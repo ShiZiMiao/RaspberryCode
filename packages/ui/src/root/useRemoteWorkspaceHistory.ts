@@ -1053,6 +1053,7 @@ export function useRemoteWorkspaceHistory({
   allowRemoteWorkspace = true,
   ensureConversationWorkspaceOnRestore = false,
   deferInactiveWorkspaceRestore = false,
+  activateConversationWorkspace = false,
   unavailableWorkspacePath,
   tabStoreApi,
   activateTabByPath,
@@ -1071,6 +1072,11 @@ export function useRemoteWorkspaceHistory({
   ensureConversationWorkspaceOnRestore?: boolean;
   /** 仅 Desktop 主窗口：输入可用后再把 inactive workspace 加入 sidebar/task 数据源。 */
   deferInactiveWorkspaceRestore?: boolean;
+  /**
+   * 冷启动固定首页（spec：specs/2026-11-24-cold-start-home-design.md）：
+   * 持久化条目只作为 inactive tab 补齐，激活目标强制收敛到 conversation workspace。
+   */
+  activateConversationWorkspace?: boolean;
   unavailableWorkspacePath?: string;
   tabStoreApi: ReturnType<typeof import("@/store/TabStoreProvider.js").useTabStoreApi>;
   activateTabByPath: (workspacePath: string, options?: { workspaceIdentity?: string }) => boolean;
@@ -1757,6 +1763,7 @@ export function useRemoteWorkspaceHistory({
         remoteConversationWorkspaceBySourceServerId:
           settings.remoteConversationWorkspaceBySourceServerId,
         restoreMode: deferInactiveWorkspaceRestore ? "active-first" : "all",
+        activateConversationWorkspace,
       });
       return {
         ...(conversationWorkspacePath
@@ -1770,6 +1777,7 @@ export function useRemoteWorkspaceHistory({
     [
       allowRemoteWorkspaceRestore,
       deferInactiveWorkspaceRestore,
+      activateConversationWorkspace,
       ensureConversationWorkspaceOnRestore,
       services.fileService,
       tabStoreApi,

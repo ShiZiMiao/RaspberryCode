@@ -92,6 +92,22 @@ export async function resolveStartupWindowBootstrap({
   logger?: StartupWorkspaceLogger;
 }): Promise<StartupWindowBootstrap> {
   const settings = await readStartupSettings(settingsFile, logger);
+
+  // 冷启动固定首页（spec：specs/2026-11-24-cold-start-home-design.md）。
+  // 必须早于任何 lastActiveWorkspace 判定：否则下面的恢复分支会重新激活上次项目，
+  // 用户看到的仍是项目页而不是首页。这里只改激活目标，不清空持久化字段——
+  // 侧栏历史任务与「上次在做什么」的可追溯入口必须保留。
+  // renderer reload 与显式入口（open-workspace/deeplink）不走本函数或已被上层短路，不受影响。
+  if (settings.startupShowHome !== false) {
+    await mkdir(conversationWorkspaceDir, { recursive: true });
+    logger?.info?.("[startup-workspace] startup home enabled; activate conversation workspace");
+    return {
+      initialWorkspacePath: conversationWorkspaceDir,
+      initialWorkspacePurpose: "conversation",
+      agentWarmupTargets: [{ workspacePath: conversationWorkspaceDir }],
+    };
+  }
+
   const sessions =
     settings.lastActiveWorkspace === undefined
       ? (settings.lastWorkspaceSession ?? [])

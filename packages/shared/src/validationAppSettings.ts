@@ -559,6 +559,9 @@ const appSettingsObjectSchema = z.object({
   taskAutoArchiveEnabled: z.boolean().default(false),
   taskAutoArchiveResetVersion: z.literal(1).default(1),
   taskAutoArchiveOlderThanDays: z.number().int().positive().max(365).default(30),
+  // 冷启动固定首页（spec：specs/2026-11-24-cold-start-home-design.md）。默认开，
+  // 关闭后回到「恢复 lastActiveWorkspace」的旧行为。
+  startupShowHome: z.boolean().default(true),
   closeToTrayOnWindows: z.boolean().default(true),
   closeToTrayOnWindowsMigrationInitialized: z.boolean().default(true),
   // default(false)：新装与存量用户首次启动都视为未归位，由 main 进程按平台决定是否迁移。
@@ -682,6 +685,7 @@ export const appSettingsPatchSchema = z.object({
   computerUseAllowPhysicalInjection: z.boolean().optional(),
   taskAutoArchiveEnabled: z.boolean().optional(),
   taskAutoArchiveOlderThanDays: z.number().int().positive().max(365).optional(),
+  startupShowHome: z.boolean().optional(),
   closeToTrayOnWindows: z.boolean().optional(),
   keepAwakeWhileRunning: z.boolean().optional(),
   closeToTrayOnWindowsMigrationInitialized: z.boolean().optional(),

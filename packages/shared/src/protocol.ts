@@ -316,6 +316,13 @@ export interface AppSettings {
   taskAutoArchiveResetVersion?: 1;
   /** 自动归档阈值；当任务最后更新时间早于该天数时允许被归档 */
   taskAutoArchiveOlderThanDays?: number;
+  /**
+   * 冷启动固定进入首页（无项目草稿态），不恢复上次激活的项目/任务。
+   * 只作用于 Desktop 冷启动；renderer reload、deeplink/打开文件夹等显式入口不受影响。
+   * 关闭后回到「恢复 lastActiveWorkspace」的旧行为。
+   * spec：docs/superpowers/specs/2026-11-24-cold-start-home-design.md
+   */
+  startupShowHome?: boolean;
   /** 桌面端关闭窗口时隐藏到托盘驻留（Windows/Linux；spec：docs/desktop/linux-close-to-tray.md） */
   closeToTrayOnWindows?: boolean;
   /** 存在执行中的闲时任务时阻止系统闲置休眠（手动开关，防不了合盖）。 */

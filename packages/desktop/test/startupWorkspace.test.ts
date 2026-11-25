@@ -34,6 +34,8 @@ describe("startup workspace", () => {
     writeFileSync(
       settingsFile,
       JSON.stringify({
+        // 这些用例验证的是「恢复上次 workspace」语义；首页模式由默认值覆盖，另行单独测。
+        startupShowHome: false,
         lastActiveWorkspace: {
           kind: "local",
           workspacePath: selected,
@@ -70,6 +72,8 @@ describe("startup workspace", () => {
     writeFileSync(
       settingsFile,
       JSON.stringify({
+        // 这些用例验证的是「恢复上次 workspace」语义；首页模式由默认值覆盖，另行单独测。
+        startupShowHome: false,
         recentProjects: [workspaceDir],
         locale: "zh-CN",
         lastWorkspaceSession: [
@@ -104,6 +108,8 @@ describe("startup workspace", () => {
     writeFileSync(
       settingsFile,
       JSON.stringify({
+        // 这些用例验证的是「恢复上次 workspace」语义；首页模式由默认值覆盖，另行单独测。
+        startupShowHome: false,
         recentProjects: [workspaceA, workspaceB],
         locale: "zh-CN",
         lastWorkspaceSession: [
@@ -140,6 +146,8 @@ describe("startup workspace", () => {
     writeFileSync(
       settingsFile,
       JSON.stringify({
+        // 这些用例验证的是「恢复上次 workspace」语义；首页模式由默认值覆盖，另行单独测。
+        startupShowHome: false,
         recentProjects: ["/tmp/workspace-a"],
         locale: "zh-CN",
         lastWorkspaceSession: [
@@ -183,6 +191,8 @@ describe("startup workspace", () => {
     writeFileSync(
       settingsFile,
       JSON.stringify({
+        // 这些用例验证的是「恢复上次 workspace」语义；首页模式由默认值覆盖，另行单独测。
+        startupShowHome: false,
         recentProjects: ["/tmp/workspace-a"],
         locale: "zh-CN",
         lastWorkspaceSession: [
@@ -227,6 +237,8 @@ describe("startup workspace", () => {
     writeFileSync(
       settingsFile,
       JSON.stringify({
+        // 这些用例验证的是「恢复上次 workspace」语义；首页模式由默认值覆盖，另行单独测。
+        startupShowHome: false,
         lastWorkspaceSession: [{ kind: "local", workspacePath: missingWorkspace }],
         lastActiveTabIndex: 0,
       }),
@@ -252,6 +264,8 @@ describe("startup workspace", () => {
     writeFileSync(
       settingsFile,
       JSON.stringify({
+        // 这些用例验证的是「恢复上次 workspace」语义；首页模式由默认值覆盖，另行单独测。
+        startupShowHome: false,
         lastWorkspaceSession: [{ kind: "local", workspacePath: workspaceFile }],
         lastActiveTabIndex: 0,
       }),
@@ -279,6 +293,8 @@ describe("startup workspace", () => {
       writeFileSync(
         settingsFile,
         JSON.stringify({
+          // 这些用例验证的是「恢复上次 workspace」语义；首页模式由默认值覆盖，另行单独测。
+          startupShowHome: false,
           lastWorkspaceSession: [{ kind: "local", workspacePath: inaccessibleWorkspace }],
           lastActiveTabIndex: 0,
         }),
@@ -318,8 +334,8 @@ describe("startup workspace", () => {
         settingsFile,
         JSON.stringify(
           format === "active"
-            ? { lastActiveWorkspace: entry }
-            : { lastWorkspaceSession: [entry], lastActiveTabIndex: 0 },
+            ? { startupShowHome: false, lastActiveWorkspace: entry }
+            : { startupShowHome: false, lastWorkspaceSession: [entry], lastActiveTabIndex: 0 },
         ),
       );
       await expect(
@@ -345,6 +361,8 @@ describe("startup workspace", () => {
     await writeFile(
       settingsFile,
       JSON.stringify({
+        // 这些用例验证的是「恢复上次 workspace」语义；首页模式由默认值覆盖，另行单独测。
+        startupShowHome: false,
         lastActiveWorkspace: {
           kind: "remote",
           workspacePath: "/srv/project",
@@ -371,6 +389,8 @@ describe("startup workspace", () => {
     writeFileSync(
       settingsFile,
       JSON.stringify({
+        // 这些用例验证的是「恢复上次 workspace」语义；首页模式由默认值覆盖，另行单独测。
+        startupShowHome: false,
         lastWorkspaceSession: [
           { kind: "local", workspacePath: inactiveMissingWorkspace },
           { kind: "local", workspacePath: activeWorkspace },
@@ -394,6 +414,8 @@ describe("startup workspace", () => {
     writeFileSync(
       settingsFile,
       JSON.stringify({
+        // 这些用例验证的是「恢复上次 workspace」语义；首页模式由默认值覆盖，另行单独测。
+        startupShowHome: false,
         recentProjects: ["/tmp/workspace-a"],
         locale: "zh-CN",
         lastWorkspaceSession: [],
@@ -419,6 +441,8 @@ describe("startup workspace", () => {
     writeFileSync(
       settingsFile,
       JSON.stringify({
+        // 这些用例验证的是「恢复上次 workspace」语义；首页模式由默认值覆盖，另行单独测。
+        startupShowHome: false,
         recentProjects: [],
         locale: "zh-CN",
         lastWorkspaceSession: [],
@@ -438,5 +462,102 @@ describe("startup workspace", () => {
       agentWarmupTargets: [{ workspacePath: conversationWorkspaceDir }],
     });
     expect(existsSync(conversationWorkspaceDir)).toBe(true);
+  });
+
+  // 冷启动固定首页（spec：specs/2026-11-24-cold-start-home-design.md）。
+  // 默认开启，必须压过 lastActiveWorkspace，否则用户看到的仍是上次项目。
+  it("默认首页：即使存在 lastActiveWorkspace 也激活 conversation workspace", async () => {
+    const rootDir = makeTempDir("raspberrycode-startup-home-");
+    const settingsFile = join(rootDir, "setting.json");
+    const conversationWorkspaceDir = join(rootDir, ".raspberrycode", "workspace", "default");
+    const projectWorkspace = join(rootDir, "workspace-a");
+    mkdirSync(projectWorkspace);
+
+    writeFileSync(
+      settingsFile,
+      JSON.stringify({
+        // 不写 startupShowHome，验证 schema 默认值即首页。
+        lastActiveWorkspace: {
+          kind: "local",
+          workspacePath: projectWorkspace,
+          workspacePurpose: "project",
+        },
+        lastWorkspaceSession: [{ kind: "local", workspacePath: projectWorkspace }],
+        recentProjects: [projectWorkspace],
+        lastActiveTabIndex: 0,
+      }),
+      "utf-8",
+    );
+
+    await expect(
+      resolveStartupWindowBootstrap({ settingsFile, conversationWorkspaceDir }),
+    ).resolves.toEqual({
+      initialWorkspacePath: conversationWorkspaceDir,
+      initialWorkspacePurpose: "conversation",
+      agentWarmupTargets: [{ workspacePath: conversationWorkspaceDir }],
+    });
+    // 激活目标必须是 conversation 目录，且该目录真实存在（Agent 需要可写 cwd）。
+    expect(existsSync(conversationWorkspaceDir)).toBe(true);
+    // 不能顺手删改用户的项目目录。
+    expect(existsSync(projectWorkspace)).toBe(true);
+  });
+
+  it("默认首页：上次 active 是远程项目时也不预热远程、不返回远程 initialWorkspace", async () => {
+    const rootDir = makeTempDir("raspberrycode-startup-home-remote-");
+    const settingsFile = join(rootDir, "setting.json");
+    const conversationWorkspaceDir = join(rootDir, ".raspberrycode", "workspace", "default");
+
+    writeFileSync(
+      settingsFile,
+      JSON.stringify({
+        lastActiveWorkspace: {
+          kind: "remote",
+          workspacePath: "/srv/project",
+          workspaceIdentity: "remote:server:source-1:/srv/project",
+          target: { kind: "ssh", host: "dev.example.com", username: "dev" },
+          lastOpenedAt: 1,
+          lastConnectionStatus: "connected",
+        },
+        lastWorkspaceSession: [],
+        lastActiveTabIndex: 0,
+      }),
+      "utf-8",
+    );
+
+    await expect(
+      resolveStartupWindowBootstrap({ settingsFile, conversationWorkspaceDir }),
+    ).resolves.toEqual({
+      initialWorkspacePath: conversationWorkspaceDir,
+      initialWorkspacePurpose: "conversation",
+      agentWarmupTargets: [{ workspacePath: conversationWorkspaceDir }],
+    });
+  });
+
+  it("首页开关关闭后回到旧行为：恢复 lastActiveWorkspace", async () => {
+    const rootDir = makeTempDir("raspberrycode-startup-home-off-");
+    const settingsFile = join(rootDir, "setting.json");
+    const conversationWorkspaceDir = join(rootDir, ".raspberrycode", "workspace", "default");
+    const projectWorkspace = join(rootDir, "workspace-a");
+    mkdirSync(projectWorkspace);
+
+    writeFileSync(
+      settingsFile,
+      JSON.stringify({
+        startupShowHome: false,
+        lastActiveWorkspace: {
+          kind: "local",
+          workspacePath: projectWorkspace,
+          workspacePurpose: "project",
+        },
+        lastActiveTabIndex: 0,
+      }),
+      "utf-8",
+    );
+
+    await expect(
+      resolveStartupWindowBootstrap({ settingsFile, conversationWorkspaceDir }),
+    ).resolves.toEqual({
+      agentWarmupTargets: [{ workspacePath: projectWorkspace }],
+    });
   });
 });

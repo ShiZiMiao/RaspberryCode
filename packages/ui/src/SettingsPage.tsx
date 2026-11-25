@@ -505,6 +505,7 @@ export function SettingsPage({
   const [taskAutoArchiveEnabled, setTaskAutoArchiveEnabled] = useState(false);
   const [taskAutoArchiveOlderThanDays, setTaskAutoArchiveOlderThanDays] = useState(30);
   const [closeToTrayOnWindows, setCloseToTrayOnWindows] = useState(Boolean(isWindowsDesktop));
+  const [startupShowHome, setStartupShowHome] = useState(true);
   const [
     desktopChromiumHardwareAccelerationEnabled,
     setDesktopChromiumHardwareAccelerationEnabled,
@@ -570,6 +571,8 @@ export function SettingsPage({
           settings.embeddedBrowserAllowInsecureCertificates ?? false,
         );
         setCloseToTrayOnWindows(settings.closeToTrayOnWindows ?? Boolean(isWindowsDesktop));
+        // 冷启动首页默认开：仅在显式 false 时关闭（spec：specs/2026-11-24-cold-start-home-design.md）。
+        setStartupShowHome(settings.startupShowHome !== false);
         setDesktopChromiumHardwareAccelerationEnabled(
           settings.desktopChromiumHardwareAccelerationEnabled ?? true,
         );
@@ -886,6 +889,23 @@ export function SettingsPage({
       setCloseToTrayOnWindows(enabled);
     },
     [localHostServices.settingService, platform],
+  );
+  // 冷启动首页开关：只写设置；下一次冷启动才生效，当前窗口不重启导航。
+  const handleStartupShowHomeChange = useCallback(
+    async (enabled: boolean) => {
+      await runSettingsActionAsync({
+        featureId: "settings.desktop",
+        action: "toggle_startup_show_home",
+        trigger: "switch",
+        operation: () => updateSharedSettings({ startupShowHome: enabled }),
+        completed: {
+          resultSource: "shared_settings",
+          stateAfter: enabled ? "enabled" : "disabled",
+        },
+      });
+      setStartupShowHome(enabled);
+    },
+    [updateSharedSettings],
   );
   // keep-awake：走 useSettings 统一写盘 + syncAppSettings，和 Automations/创建页入口共享同一状态源。
   const handleKeepAwakeWhileRunningChange = useCallback(
@@ -1444,6 +1464,8 @@ export function SettingsPage({
                               notificationEnabled={notificationEnabled}
                               notificationSoundEnabled={notificationSoundEnabled}
                               closeToTrayOnWindows={closeToTrayOnWindows}
+                              startupShowHome={startupShowHome}
+                              onStartupShowHomeChange={handleStartupShowHomeChange}
                               keepAwakeWhileRunning={sharedSettings?.keepAwakeWhileRunning ?? false}
                               desktopChromiumHardwareAccelerationEnabled={
                                 desktopChromiumHardwareAccelerationEnabled

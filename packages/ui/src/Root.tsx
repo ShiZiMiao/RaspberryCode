@@ -25,6 +25,7 @@ import {
 } from "@raspberrycode/shared";
 import { TooltipProvider } from "@/components/ui/tooltip.js";
 import { Button } from "@/components/ui/button.js";
+import { isRendererReloadNavigation } from "@/lib/rendererNavigation.js";
 import { PlatformProvider } from "@/hooks/usePlatform.js";
 import { ServiceProvider, useComposerClientNamespace } from "@/hooks/useServices.js";
 import {
@@ -39,7 +40,7 @@ import {
 import { DirectoryBrowser } from "@/DirectoryBrowser.js";
 import {
   attachRemoteProjectWorkspace,
-  resolveEntryProject,
+  resolveEntryProject,
 } from "@/project-sidebar/index.js";
 import { useTabPersistence, type WorkspacePersistenceGate } from "@/hooks/useTabPersistence.js";
 import { useWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
@@ -662,6 +663,15 @@ function RootInner({
     // shared-host attachment 不能因此创建独立本地 runtime 或改变 replayable 边界。
     ensureConversationWorkspaceOnRestore: isDesktop && restoreSession && !initialWorkspaceIdentity,
     deferInactiveWorkspaceRestore: isDesktop && restoreSession && !initialWorkspaceIdentity,
+    // 冷启动固定首页（spec：specs/2026-11-24-cold-start-home-design.md）：
+    // Main 已把 initialWorkspacePurpose 收敛为 conversation，说明本次是首页启动。
+    // 判据必须排除 renderer reload——重载要保留当前任务现场，不能回首页。
+    activateConversationWorkspace:
+      isDesktop &&
+      restoreSession &&
+      !initialWorkspaceIdentity &&
+      initialWorkspacePurpose === "conversation" &&
+      !isRendererReloadNavigation(),
     unavailableWorkspacePath,
     tabStoreApi,
     activateTabByPath,

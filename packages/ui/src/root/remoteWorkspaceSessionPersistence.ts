@@ -99,6 +99,7 @@ export function restorePersistedRemoteWorkspaceSessions({
   conversationWorkspacePath,
   remoteConversationWorkspaceBySourceServerId,
   restoreMode = "all",
+  activateConversationWorkspace = false,
 }: {
   settings: AppSettings;
   tabStoreApi: TabStore;
@@ -107,6 +108,12 @@ export function restorePersistedRemoteWorkspaceSessions({
   conversationWorkspacePath?: string;
   remoteConversationWorkspaceBySourceServerId?: AppSettings["remoteConversationWorkspaceBySourceServerId"];
   restoreMode?: "all" | "active-first";
+  /**
+   * 冷启动固定首页（spec：specs/2026-11-24-cold-start-home-design.md）。
+   * true 时持久化条目一律恢复为 inactive tab，激活目标强制收敛到 conversation workspace。
+   * 这里收敛而不是让启动注入的 initialWorkspace 事后抢焦点，避免两条路径的时序互相覆盖。
+   */
+  activateConversationWorkspace?: boolean;
 }): { deferredRestore?: () => void } | undefined {
   const persistedSessions = readPersistedWorkspaceSessionEntries(settings);
   const conversationWorkspaceMap =
@@ -128,6 +135,8 @@ export function restorePersistedRemoteWorkspaceSessions({
   let restoredActiveIndex = 0;
   let canonicalConversationRestoredIndex: number | null = null;
   let shouldActivateCanonicalConversation = false;
+  // 冷启动首页：任何持久化条目都不许抢激活，最终只激活 canonical conversation tab。
+  if (activateConversationWorkspace) shouldActivateCanonicalConversation = true;
 
   for (const [index, persistedEntry] of persistedSessions.entries()) {
     if (persistedEntry.kind === "local") {
