@@ -21,6 +21,7 @@ export interface KeyReceipt {
   grabInput?: boolean;
   cursorRestored?: boolean;
   injectedEvents?: number;
+  receiverFocus?: "matched" | "unknown" | "not_applicable";
   steps?: { step: string; ok: boolean; injected: number; unknownKey?: string }[];
   elapsedMs: number;
 }
@@ -41,12 +42,20 @@ export function buildKeyResult(receipt: KeyReceipt, method: string): CallToolRes
         method,
         action_sent: receipt.dispatchStatus === "sent",
         dispatch_status: receipt.dispatchStatus,
+        delivery:
+          receipt.dispatchStatus === "not_sent"
+            ? "not_sent"
+            : receipt.dispatchStatus === "possibly_sent"
+              ? "unknown"
+              : "sent",
         effect: receipt.effect,
         retry_action: receipt.dispatchStatus === "not_sent",
+        next_step: receipt.dispatchStatus === "not_sent" ? "correct_argument" : "verify",
       },
       path: receipt.path,
       grabbed_input: true,
       cursor_restored: receipt.cursorRestored,
+      receiver_focus: receipt.receiverFocus ?? "not_applicable",
       injected_events: receipt.injectedEvents,
       steps: receipt.steps,
       elapsed_ms: receipt.elapsedMs,
@@ -61,6 +70,8 @@ export interface ScrollReceipt {
   grabInput?: boolean;
   wheelCount: number;
   budget: string;
+  coordinate?: { x: number; y: number };
+  screenPoint?: { x: number; y: number };
   elapsedMs: number;
 }
 
@@ -79,13 +90,22 @@ export function buildScrollResult(receipt: ScrollReceipt, method: string): CallT
         method,
         action_sent: receipt.dispatchStatus === "sent",
         dispatch_status: receipt.dispatchStatus,
+        delivery:
+          receipt.dispatchStatus === "not_sent"
+            ? "not_sent"
+            : receipt.dispatchStatus === "possibly_sent"
+              ? "unknown"
+              : "sent",
         effect: receipt.effect,
         retry_action: receipt.dispatchStatus === "not_sent",
+        next_step: receipt.dispatchStatus === "not_sent" ? "correct_argument" : "verify",
       },
       path: receipt.path,
       budget: receipt.budget,
       wheel_count: receipt.wheelCount,
       grabbed_input: receipt.grabInput === true,
+      ...(receipt.coordinate ? { coordinate: receipt.coordinate } : {}),
+      ...(receipt.screenPoint ? { screen_point: receipt.screenPoint } : {}),
       elapsed_ms: receipt.elapsedMs,
     },
   };
@@ -99,6 +119,8 @@ export interface DragReceipt {
   cursorRestored?: boolean;
   injectedEvents?: number;
   failureReason?: string;
+  fromCoordinate?: { x: number; y: number };
+  toCoordinate?: { x: number; y: number };
   elapsedMs: number;
 }
 
@@ -119,14 +141,23 @@ export function buildDragResult(receipt: DragReceipt, method: string): CallToolR
         method,
         action_sent: receipt.dispatchStatus === "sent",
         dispatch_status: receipt.dispatchStatus,
+        delivery:
+          receipt.dispatchStatus === "not_sent"
+            ? "not_sent"
+            : receipt.dispatchStatus === "possibly_sent"
+              ? "unknown"
+              : "sent",
         effect: receipt.effect,
         retry_action: receipt.dispatchStatus === "not_sent",
+        next_step: receipt.dispatchStatus === "not_sent" ? "correct_argument" : "verify",
       },
       path: receipt.path,
       grabbed_input: true,
       cursor_restored: receipt.cursorRestored,
       injected_events: receipt.injectedEvents,
       failure_reason: receipt.failureReason,
+      ...(receipt.fromCoordinate ? { from_coordinate: receipt.fromCoordinate } : {}),
+      ...(receipt.toCoordinate ? { to_coordinate: receipt.toCoordinate } : {}),
       elapsed_ms: receipt.elapsedMs,
     },
   };

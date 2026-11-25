@@ -38,9 +38,20 @@ import {
   stringParam,
 } from "./handler-support.ts";
 import { postScroll, sendKeyChord, sendScrollAt, sendText } from "./input.ts";
-import { focusElement, normalizeSemanticAction, selectTextRange } from "./patterns.ts";
+import {
+  focusElement,
+  normalizeSemanticAction,
+} from "./patterns.ts";
+import {
+  createTypeIntoElementHandler,
+  readCoordinate,
+  resolveCoordinate,
+  setValueByTyping,
+} from "./coordinate.ts";
+import { createSelectTextHandler } from "./select-text.ts";
 import type { SnapshotStore } from "./snapshot-store.ts";
 import { readNativeWindowHandle, relocateByRuntimeId } from "./tree.ts";
+import { hwndFromWindowKey, isWindowAlive } from "./window-visibility.ts";
 
 /** Helper 进程向动作模块提供的运行时能力。 */
 export interface ActionContext {
@@ -75,6 +86,7 @@ export function buildActionHandlers(
     CLICK: string;
     ACT: string;
     KEY: string;
+    TYPE_INTO_ELEMENT: string;
     SCROLL: string;
     DRAG: string;
     SELECT_TEXT: string;
@@ -97,7 +109,7 @@ export function buildActionHandlers(
     index: number | undefined,
   ): {
     snapshot: ReturnType<SnapshotStore["findByStateId"]> & object;
-    node: { runtimeId: string; element: unknown; bounds?: { left: number; top: number; width: number; height: number }; kind: string; name: string };
+    node: { runtimeId: string; element: unknown; bounds?: { left: number; top: number; width: number; height: number }; kind: string; name: string; inputTarget: boolean };
     element: unknown;
   } => {
     if (!stateId) {
@@ -112,6 +124,19 @@ export function buildActionHandlers(
       throw Object.assign(
         new Error(`stale stateId: ${stateId}（快照已失效，请重新观察）`),
         { code: "state_invalidated" },
+      );
+    }
+
+    // 窗口关闭后快照里的 HWND 变成悬空句柄，继续投递只会得到笼统失败。
+    // 提前判定并返回 window_closed，让 runtime 映射成 cleanup_pending，
+    // 模型据此重新观察而不是盲目重试。
+    // 用 windowKey 而不是 rootElement：窗口关闭后 COM 指针可能已失效，
+    // 再去读属性有崩溃风险；windowKey 是采集时记下的纯字符串。
+    const rootHwnd = hwndFromWindowKey(snapshot.windowKey);
+    if (rootHwnd && !isWindowAlive(rootHwnd)) {
+      throw Object.assign(
+        new Error(`目标窗口已关闭（stateId=${stateId}），请重新观察或重新选择窗口`),
+        { code: "window_closed" },
       );
     }
 
@@ -150,6 +175,37 @@ export function buildActionHandlers(
      */
     [methods.CLICK]: (params) => {
       const startedAt = Date.now();
+      const buttonRaw = stringParam(params, "button");
+      const button: MouseButton =
+        buttonRaw === "right" || buttonRaw === "middle" ? buttonRaw : "left";
+      const clickCount = intParam(params, "clickCount") ?? 1;
+
+      // 坐标目标：不需要元素索引，但仍需要 stateId 来定位窗口。
+      if (readCoordinate(params)) {
+        const target = resolveCoordinate(params, "coordinate", snapshots);
+        const result = postClick({
+          rootHwnd: target.hwnd,
+          screenX: target.screenX,
+          screenY: target.screenY,
+          button,
+          clickCount,
+        });
+        return {
+          path: DISPATCH_PATH.POST_MESSAGE,
+          dispatchStatus: result.dispatched ? "sent" : "not_sent",
+          effect: result.dispatched ? "unverifiable" : "refused",
+          escalated: false,
+          stateId: stringParam(params, "stateId"),
+          coordinate: target.coordinate,
+          screenPoint: { x: target.screenX, y: target.screenY },
+          clientPoint: { x: result.clientX, y: result.clientY },
+          targetDepth: result.targetDepth,
+          hwndSource: "windowRoot",
+          messages: result.messages,
+          elapsedMs: Date.now() - startedAt,
+        };
+      }
+
       const stateId = stringParam(params, "stateId");
       const index = intParam(params, "index");
       const { snapshot, node, element } = resolveElement(stateId, index);
@@ -173,10 +229,6 @@ export function buildActionHandlers(
         );
       }
 
-      const buttonRaw = stringParam(params, "button");
-      const button: MouseButton =
-        buttonRaw === "right" || buttonRaw === "middle" ? buttonRaw : "left";
-
       const centerX = Math.round(node.bounds.left + node.bounds.width / 2);
       const centerY = Math.round(node.bounds.top + node.bounds.height / 2);
 
@@ -185,7 +237,7 @@ export function buildActionHandlers(
         screenX: centerX,
         screenY: centerY,
         button,
-        clickCount: intParam(params, "clickCount") ?? 1,
+        clickCount,
       });
 
       return {
@@ -222,10 +274,6 @@ export function buildActionHandlers(
      */
     [methods.ACT]: (params) => {
       const startedAt = Date.now();
-      const stateId = stringParam(params, "stateId");
-      const index = intParam(params, "index");
-      const { snapshot, node, element } = resolveElement(stateId, index);
-
       const budget = budgetParam(params);
       const allowPhysicalInjection = boolParam(params, "allowPhysicalInjection") === true;
 
@@ -249,6 +297,88 @@ export function buildActionHandlers(
         // 不归一化会让「照树写的动作」必然被拒。
         semantic: semanticRaw ? normalizeSemanticAction(semanticRaw) : undefined,
       };
+
+      // 坐标目标：没有元素可查语义动作，按预算在消息投递/物理注入之间选。
+      // 默认仍走消息投递（零干扰）；只有显式要求或最小化降级时才用物理注入。
+      if (readCoordinate(params)) {
+        const target = resolveCoordinate(params, "coordinate", snapshots);
+        const forcedPath = stringParam(params, "preferPath");
+        const wantsPhysical = forcedPath === DISPATCH_PATH.FOREGROUND_SEND_INPUT;
+
+        if (!wantsPhysical) {
+          const result = postClick({
+            rootHwnd: target.hwnd,
+            screenX: target.screenX,
+            screenY: target.screenY,
+            button: intent.button,
+            clickCount: intent.clickCount,
+          });
+          if (result.dispatched || !allowPhysicalInjection || budget !== "unrestricted") {
+            return {
+              path: DISPATCH_PATH.POST_MESSAGE,
+              dispatchStatus: result.dispatched ? "sent" : "not_sent",
+              effect: result.dispatched ? "unverifiable" : "refused",
+              escalated: false,
+              budget,
+              stateId: stringParam(params, "stateId"),
+              coordinate: target.coordinate,
+              screenPoint: { x: target.screenX, y: target.screenY },
+              clientPoint: { x: result.clientX, y: result.clientY },
+              targetDepth: result.targetDepth,
+              hwndSource: "windowRoot",
+              messages: result.messages,
+              elapsedMs: Date.now() - startedAt,
+            };
+          }
+        }
+
+        if (!allowPhysicalInjection) {
+          throw Object.assign(
+            new Error(
+              "坐标动作需要物理注入（抢鼠标键盘），但用户尚未授权。请在设置中开启后再试。",
+            ),
+            { code: "authorization_required" },
+          );
+        }
+        if (budget !== "unrestricted") {
+          throw Object.assign(
+            new Error(
+              `坐标动作需要物理注入，但当前预算为 ${budget}。这是用户的设定，不能由调用方修改。`,
+            ),
+            { code: "foreground_required" },
+          );
+        }
+
+        const outcome = physicalClick({
+          hwnd: target.hwnd,
+          screenX: target.screenX,
+          screenY: target.screenY,
+          button: intent.button,
+          clickCount: intent.clickCount,
+        });
+        return {
+          path: DISPATCH_PATH.FOREGROUND_SEND_INPUT,
+          dispatchStatus: outcome.injected > 0 ? "sent" : "not_sent",
+          effect: outcome.ok ? "unverifiable" : "refused",
+          escalated: true,
+          budget,
+          stateId: stringParam(params, "stateId"),
+          coordinate: target.coordinate,
+          screenPoint: { x: target.screenX, y: target.screenY },
+          activatesWindow: true,
+          grabInput: true,
+          cursorRestored: outcome.cursorRestored,
+          foregroundRestored: outcome.foregroundRestored,
+          injectedEvents: outcome.injected,
+          failureReason: outcome.reason,
+          messages: [],
+          elapsedMs: Date.now() - startedAt,
+        };
+      }
+
+      const stateId = stringParam(params, "stateId");
+      const index = intParam(params, "index");
+      const { snapshot, node, element } = resolveElement(stateId, index);
 
       const plan = planDispatchPaths(element, intent, budget, {
         hasBounds: node.bounds !== undefined,
@@ -596,6 +726,8 @@ export function buildActionHandlers(
       throw Object.assign(new Error(`未知派发路径: ${String(chosen)}`), { code: "internal" });
     },
 
+    [methods.TYPE_INTO_ELEMENT]: createTypeIntoElementHandler(resolveElement),
+
     /**
      * 键盘输入。
      *
@@ -689,12 +821,69 @@ export function buildActionHandlers(
      */
     [methods.SCROLL]: (params) => {
       const startedAt = Date.now();
-      const stateId = stringParam(params, "stateId");
-      const index = intParam(params, "index");
       const wheelCount = intParam(params, "wheelCount");
       if (wheelCount === undefined || wheelCount === 0) {
         throw Object.assign(new Error("wheelCount 缺失或为 0"), { code: "bad_request" });
       }
+
+      // 坐标滚动：不需要元素索引，但仍需要 stateId 定位窗口。
+      if (readCoordinate(params)) {
+        const target = resolveCoordinate(params, "coordinate", snapshots);
+        const budget = budgetParam(params);
+        const allowPhysicalInjection = boolParam(params, "allowPhysicalInjection") === true;
+        const forcedPath = stringParam(params, "preferPath");
+
+        if (budget !== "unrestricted" && forcedPath !== DISPATCH_PATH.FOREGROUND_SEND_INPUT) {
+          const result = postScroll({
+            hwnd: target.hwnd,
+            screenX: target.screenX,
+            screenY: target.screenY,
+            wheelCount,
+          });
+          return {
+            path: result.path,
+            dispatchStatus: result.ok ? "sent" : "not_sent",
+            effect: "unverifiable",
+            grabInput: false,
+            activatesWindow: false,
+            wheelCount,
+            budget,
+            coordinate: target.coordinate,
+            screenPoint: { x: target.screenX, y: target.screenY },
+            elapsedMs: Date.now() - startedAt,
+          };
+        }
+
+        if (!allowPhysicalInjection) {
+          throw Object.assign(
+            new Error(
+              "坐标滚动需要物理注入（抢鼠标），但用户尚未授权。请在设置中开启，或改用 balanced/quiet 预算下的消息投递。",
+            ),
+            { code: "authorization_required" },
+          );
+        }
+
+        const result = sendScrollAt({
+          screenX: target.screenX,
+          screenY: target.screenY,
+          wheelCount,
+        });
+        return {
+          path: result.path,
+          dispatchStatus: result.ok ? "sent" : "not_sent",
+          effect: "unverifiable",
+          grabInput: true,
+          activatesWindow: false,
+          wheelCount,
+          budget,
+          coordinate: target.coordinate,
+          screenPoint: { x: target.screenX, y: target.screenY },
+          elapsedMs: Date.now() - startedAt,
+        };
+      }
+
+      const stateId = stringParam(params, "stateId");
+      const index = intParam(params, "index");
 
       const { snapshot, node, element } = resolveElement(stateId, index);
       if (!node.bounds) {
@@ -763,11 +952,43 @@ export function buildActionHandlers(
      */
     [methods.DRAG]: (params) => {
       const startedAt = Date.now();
+      const buttonRaw = stringParam(params, "button");
+      const button: MouseButton =
+        buttonRaw === "right" || buttonRaw === "middle" ? buttonRaw : "left";
+
+      // 坐标拖拽：起点与终点都是 0-1000 归一化坐标。
+      if (readCoordinate(params, "fromCoordinate") && readCoordinate(params, "toCoordinate")) {
+        const from = resolveCoordinate(params, "fromCoordinate", snapshots);
+        const to = resolveCoordinate(params, "toCoordinate", snapshots);
+        const outcome = physicalDrag({
+          hwnd: from.hwnd,
+          fromX: from.screenX,
+          fromY: from.screenY,
+          toX: to.screenX,
+          toY: to.screenY,
+          button,
+          steps: intParam(params, "steps"),
+        });
+        return {
+          path: DISPATCH_PATH.FOREGROUND_SEND_INPUT,
+          dispatchStatus: outcome.injected > 0 ? "sent" : "not_sent",
+          effect: outcome.ok ? "unverifiable" : "refused",
+          grabInput: true,
+          activatesWindow: true,
+          cursorRestored: outcome.cursorRestored,
+          injectedEvents: outcome.injected,
+          failureReason: outcome.reason,
+          fromCoordinate: from.coordinate,
+          toCoordinate: to.coordinate,
+          elapsedMs: Date.now() - startedAt,
+        };
+      }
+
       const stateId = stringParam(params, "stateId");
       const fromIndex = intParam(params, "fromIndex");
       const toIndex = intParam(params, "toIndex");
       if (fromIndex === undefined || toIndex === undefined) {
-        throw Object.assign(new Error("drag 需要 fromIndex 与 toIndex"), {
+        throw Object.assign(new Error("drag 需要 fromIndex 与 toIndex，或 fromCoordinate 与 toCoordinate"), {
           code: "bad_request",
         });
       }
@@ -784,10 +1005,6 @@ export function buildActionHandlers(
       if (!hwnd) {
         throw Object.assign(new Error("无法获取窗口句柄"), { code: "element_unavailable" });
       }
-
-      const buttonRaw = stringParam(params, "button");
-      const button: MouseButton =
-        buttonRaw === "right" || buttonRaw === "middle" ? buttonRaw : "left";
 
       const outcome = physicalDrag({
         hwnd,
@@ -812,152 +1029,6 @@ export function buildActionHandlers(
       };
     },
 
-    /**
-     * 文本选区（SDK 的 `select_text`）。
-     *
-     * 参数：`stateId` / `index` / `start` / `length`
-     * （SDK 在客户端把「要选中的文本」换算成 `[start, length]` 后传下来）。
-     *
-     * 只有一条路径：UIA TextPattern。不支持就明确报错，**不降级到物理注入**——
-     * 用 SetFocus + Shift+方向键模拟选区会抢键鼠，且要正确处理换行/自动换行，
-     * 算错就会破坏用户已有输入。选中文本是精细操作，宁可不做也不能做错。
-     */
-    [methods.SELECT_TEXT]: (params) => {
-      const startedAt = Date.now();
-      const stateId = stringParam(params, "stateId");
-      const index = intParam(params, "index");
-      const { node, element } = resolveElement(stateId, index);
-
-      const start = intParam(params, "start") ?? 0;
-      const length = intParam(params, "length") ?? 0;
-      if (start < 0 || length < 0) {
-        throw Object.assign(new Error("start 与 length 必须是非负数"), { code: "bad_request" });
-      }
-
-      const outcome = selectTextRange(element, start, length);
-      if (!outcome.ok) {
-        throw Object.assign(new Error(outcome.reason ?? "文本选区失败"), {
-          code: "element_unavailable",
-          detail: {
-            hresult: outcome.hresult,
-            documentLength: outcome.documentLength,
-            requested: { start, length },
-          },
-        });
-      }
-
-      // 校验：读回的选区必须与请求一致。不一致说明控件没按请求应用选区
-      // （只读、或有逻辑重置），此时报错比给一个「成功」回执有用。
-      const requested = length;
-      const actual = outcome.selectedText?.length ?? 0;
-      if (requested > 0 && actual !== requested) {
-        throw Object.assign(
-          new Error(
-            `选区已应用但系统读回的选中长度为 ${actual}，与请求的 ${requested} 不符。` +
-              "该控件可能限制了可选范围。",
-          ),
-          {
-            code: "element_unavailable",
-            detail: { requested: { start, length }, selectedText: outcome.selectedText },
-          },
-        );
-      }
-
-      return {
-        // 选区走 UIA，不改窗口位置也不碰键鼠——但 Select 会激活窗口，
-        // 与其它二级动作同性质，必须如实披露。
-        path: DISPATCH_PATH.AX,
-        dispatchStatus: "sent",
-        effect: "unverifiable",
-        activatesWindow: true,
-        grabInput: false,
-        stateId,
-        index,
-        elementKind: node.kind,
-        elementName: node.name,
-        semanticAction: "select_text",
-        selection: {
-          start,
-          length,
-          selectedText: outcome.selectedText,
-          documentLength: outcome.documentLength,
-        },
-        elapsedMs: Date.now() - startedAt,
-      };
-    },
-  };
-}
-
-/**
- * 通过「聚焦 → 全选 → 输入」写入文本。
- *
- * 这是 `set_value` 的**降级路径**，在 ValuePattern 不可用时启用：
- * 控件只读、provider 没实现该 pattern、或 UIA 拒绝了写操作。
- *
- * 历史教训：这条路径曾被误当成唯一路径，因为当时的结论是
- * 「ValuePattern::SetValue 必然崩溃」。那是误诊——根因是 pattern ID
- * 表抄错，拿 TextPattern 的指针当 ValuePattern 用。修正后
- * ValuePattern 正常工作，只在真正不支持时才走到这里。
- *
- * 与 `key` 方法的区别：这个带「先清空」语义（Ctrl+A 再输入），
- * 因此结果与 ValuePattern 的「整体替换」一致，而不是追加。
- *
- * 全程物理注入，调用方必须已确认授权。
- */
-function setValueByTyping(input: {
-  element: unknown;
-  node: { kind: string; name: string };
-  value: string;
-  startedAt: number;
-  budget: InterferenceBudget;
-  stateId: string;
-  index: number;
-}): Record<string, unknown> {
-  const before = captureDesktopState();
-  const steps: { step: string; ok: boolean; injected: number; unknownKey?: string }[] = [];
-
-  try {
-    // 1. 聚焦目标。UIA 的 SetFocus 会激活窗口，这是必然的干扰，如实披露。
-    focusElement(input.element);
-
-    // 2. 全选后输入等价于「整体替换」。
-    //    目标值为空时只全选再删除，避免残留旧内容。
-    const selectAll = sendKeyChord("ctrl+a");
-    steps.push({ step: "select_all", ok: selectAll.ok, injected: selectAll.injected });
-
-    const text = input.value;
-    const typed = text.length > 0 ? sendText(text) : sendKeyChord("Delete");
-    steps.push({
-      step: text.length > 0 ? `text:${text.length}chars` : "clear",
-      ok: typed.ok,
-      injected: typed.injected,
-    });
-  } finally {
-    restoreCursorTo(before);
-  }
-
-  const restored = verifyRestoration(before);
-  const totalInjected = steps.reduce((sum, s) => sum + s.injected, 0);
-
-  return {
-    path: DISPATCH_PATH.FOREGROUND_SEND_INPUT,
-    dispatchStatus: totalInjected > 0 ? "sent" : "not_sent",
-    effect: "unverifiable",
-    escalated: true,
-    budget: input.budget,
-    stateId: input.stateId,
-    index: input.index,
-    elementKind: input.node.kind,
-    elementName: input.node.name,
-    activatesWindow: true,
-    grabInput: true,
-    cursorRestored: restored.cursorRestored,
-    injectedEvents: totalInjected,
-    // 明确标注这是降级路径：set_value 名义上是二阶能力，实际走了三级。
-    // 用户有权知道「写个文本框为什么抢了我的键盘」。
-    degradedFrom: "value_pattern",
-    steps,
-    messages: [],
-    elapsedMs: Date.now() - input.startedAt,
+    [methods.SELECT_TEXT]: createSelectTextHandler(resolveElement),
   };
 }

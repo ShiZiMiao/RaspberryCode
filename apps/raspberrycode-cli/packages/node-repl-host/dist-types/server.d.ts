@@ -1,6 +1,6 @@
 import { Server } from "@modelcontextprotocol/server";
 import { type NodeReplRequestMeta, type NodeReplRunResult } from "@raspberrycode/core/repl";
-import { type ComputerUseRuntime } from "@raspberrycode/raspberrycode-cua";
+import { type ComputerUseRuntime, type ComputerUseRuntimeOptions } from "@raspberrycode/raspberrycode-cua";
 import { type NodeReplBrowserBrokerConnection } from "./browser-bridge.js";
 import { type NodeReplBrowserBrokerUpstream } from "./call-ledger/contract.js";
 import { type NodeReplCuaBrokerConnection } from "./cua-bridge.js";
@@ -57,5 +57,26 @@ export declare function main(): Promise<void>;
  * 必然失败的 runtime，模型会看到「工具存在但每个都报错」，
  * 不如直接不注册。
  */
-export declare function captureComputerUseRuntimeFromEnvironment(env?: NodeJS.ProcessEnv): ComputerUseRuntime | undefined;
+export declare function captureComputerUseRuntimeFromEnvironment(env?: NodeJS.ProcessEnv, options?: Pick<ComputerUseRuntimeOptions, "requestConfirmation">): ComputerUseRuntime | undefined;
+/**
+ * 把 CUA 高风险动作的确认请求转成 MCP elicitation。
+ *
+ * 复用现有 `elicitation/create` 通道：agent CLI 的 MCP 适配器把它交给宿主提问端口，
+ * desktop 渲染层用 ElicitationDialog 展示 Yes/No。客户端未声明 elicitation 能力时
+ * 请求会失败，runtime 捕获后退回 `confirmation_required` 两步协议。
+ */
+export interface CuaConfirmationElicitationRequester {
+    request(request: {
+        method: "elicitation/create";
+        params?: Record<string, unknown>;
+    }): Promise<{
+        action: string;
+        content?: Record<string, unknown>;
+    }>;
+}
+export declare function requestCuaConfirmationViaElicitation(server: CuaConfirmationElicitationRequester, request: {
+    tool: string;
+    action: string;
+    summary: string;
+}): Promise<boolean>;
 //# sourceMappingURL=server.d.ts.map

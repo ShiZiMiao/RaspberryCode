@@ -39,6 +39,14 @@ export const DISPATCH_PATH = Object.freeze({
   POST_MESSAGE: "post_message",
   /** 二级：无障碍 pattern。语义精确，但会激活窗口。 */
   AX: "ax",
+  /**
+   * 二级补充：定向文本输入。
+   *
+   * 走 ValuePattern / TextPattern / EM_REPLACESEL，把文本写进目标控件，
+   * 不依赖前台焦点。与 `ax` 分开是因为它的收据语义不同：
+   * 它不激活窗口，但也不保证控件真的接受了输入。
+   */
+  AX_TEXT: "ax_text",
   /** 三级：物理注入。抢键鼠，需授权。v1 未实现。 */
   FOREGROUND_SEND_INPUT: "foreground_send_input",
 });
@@ -73,10 +81,11 @@ export type InterferenceBudget = "quiet" | "balanced" | "unrestricted";
  */
 const ALLOWED_PATHS: Readonly<Record<InterferenceBudget, readonly DispatchPath[]>> = {
   quiet: [DISPATCH_PATH.POST_MESSAGE],
-  balanced: [DISPATCH_PATH.POST_MESSAGE, DISPATCH_PATH.AX],
+  balanced: [DISPATCH_PATH.POST_MESSAGE, DISPATCH_PATH.AX, DISPATCH_PATH.AX_TEXT],
   unrestricted: [
     DISPATCH_PATH.POST_MESSAGE,
     DISPATCH_PATH.AX,
+    DISPATCH_PATH.AX_TEXT,
     DISPATCH_PATH.FOREGROUND_SEND_INPUT,
   ],
 };

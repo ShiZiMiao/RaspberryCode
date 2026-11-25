@@ -104,6 +104,11 @@ export const P_SET_VALUE = koffi.proto(
   "long __stdcall ValuePatternSetValue(void *self, const char16_t *value)",
 );
 
+/** IUIAutomationValuePattern::get_CurrentValue —— 索引 4。 */
+export const P_GET_CURRENT_VALUE = koffi.proto(
+  "long __stdcall ValuePatternGetCurrentValue(void *self, _Out_ char16_t **value)",
+);
+
 // ---------------------------------------------------------------------------
 // TextPattern（文本选区，select_text 用）
 //

@@ -22,6 +22,27 @@ import {
   type HelperResponse,
 } from "../helper/protocol.ts";
 import type { HelperRequest } from "../helper/protocol.ts";
+import {
+  HelperUnavailableError,
+  type ActReceipt,
+  type HelperClientOptions,
+  type HelperState,
+  type PendingRequest,
+} from "./helper-client-types.ts";
+import {
+  capture as captureRequest,
+  isolatedDesktop as isolatedDesktopRequest,
+  listWindows as listWindowsRequest,
+  screenshot as screenshotRequest,
+  windowOffscreen as windowOffscreenRequest,
+} from "./helper-client-observation.ts";
+
+export { HelperUnavailableError } from "./helper-client-types.ts";
+export type {
+  ActReceipt,
+  HelperClientOptions,
+  HelperState,
+} from "./helper-client-types.ts";
 
 /** 探测超时。本地管道，300ms 足够；超时即判定无响应。 */
 const PING_TIMEOUT_MS = 300;
@@ -41,109 +62,6 @@ const STARTUP_TIMEOUT_MS = 15_000;
  */
 const MAX_START_ATTEMPTS = 2;
 
-export type HelperState = "stopped" | "starting" | "ready" | "unavailable";
-
-/**
- * 动作收据。
- *
- * `dispatchStatus` 决定能否重试，`path` 决定用户会不会被打扰，
- * `effect` 表达「是否确认生效」。三者都是模型与用户需要的事实。
- */
-export interface ActReceipt {
-  path: string;
-  dispatchStatus: "not_sent" | "sent" | "possibly_sent";
-  effect: "confirmed" | "unverifiable" | "suspected_noop" | "refused";
-  escalated: boolean;
-  budget: string;
-  stateId: string;
-  index: number;
-  elementKind: string;
-  elementName: string;
-  /** 二级路径专用的语义动作名。 */
-  semanticAction?: string;
-  /** 二级路径专用的 pattern 名。 */
-  pattern?: string;
-  /** 二级路径专用的原始 HRESULT。 */
-  hresult?: string;
-  /** 二级及以上会激活目标窗口，收据里明确标出。 */
-  activatesWindow?: boolean;
-  /** 三级路径专用：是否抢占了键鼠（恒为 true）。 */
-  grabInput?: boolean;
-  /** 三级路径专用：光标是否已回到动作前位置（实测）。 */
-  cursorRestored?: boolean;
-  /** 三级路径专用：前台窗口是否已还原（实测）。 */
-  foregroundRestored?: boolean;
-  /** 三级路径专用：实际注入的输入事件数。 */
-  injectedEvents?: number;
-  /** 失败原因（仅未抛错但未生效时出现）。 */
-  failureReason?: string;
-  /**
-   * 降级来源：原本想走的能力不可用，改用了另一条路径。
-   *
-   * 目前只有 `set_value` 会产生它——ValuePattern 在某些控件上不可用
-   * （只读或 provider 未实现），降级为物理注入。
-   * 这个字段是给用户的：写个文本框却抢了键盘，应该能查到原因。
-   */
-  degradedFrom?: string;
-  availableSemantic: string[];
-  screenPoint?: { x: number; y: number };
-  clientPoint?: { x: number; y: number };
-  targetDepth?: number;
-  hwndSource?: string;
-  messages: { name: string; ok: boolean }[];
-  elapsedMs: number;
-}
-
-export interface HelperClientOptions {
-  /** Helper 脚本路径。 */
-  entryPath: string;
-  /** 运行 Helper 的可执行文件（通常是 process.execPath，即 Electron）。 */
-  command: string;
-  /** 传给 Helper 的环境变量，例如 ELECTRON_RUN_AS_NODE=1。 */
-  commandEnv?: Record<string, string>;
-  /** Helper 工作目录。 */
-  cwd?: string;
-  /** 命名管道路径。未提供时自动生成。 */
-  socketPath?: string;
-  /**
-   * 经 creator 启动，而不是直接 spawn host。
-   *
-   * 传了这个就改用 creator 作为父进程：creator 负责拉起并**保持** host，
-   * 自己不做 UIA 调用。这样 host 崩溃可以重启而会话不丢。
-   *
-   * 管道地址由 host 自己生成、经 creator 的 stdout 回报——
-   * 这也是跨会话唯一可行的握手方式（句柄不能跨会话继承）。
-   * 因此指定本选项时 `socketPath` 会被忽略。
-   */
-  creatorPath?: string;
-  /** 期望 host 落在的会话。省略表示当前会话。 */
-  targetSessionId?: number;
-  /** 空闲超时，传给 Helper。 */
-  idleTimeoutMs?: number;
-  /** 用于测试注入。 */
-  logger?: {
-    debug: (message: string, meta?: unknown) => void;
-    warn: (message: string, meta?: unknown) => void;
-    error: (message: string, meta?: unknown) => void;
-  };
-}
-
-interface PendingRequest {
-  resolve: (value: unknown) => void;
-  reject: (error: Error) => void;
-  timer: NodeJS.Timeout;
-}
-
-export class HelperUnavailableError extends Error {
-  readonly code = "helper_unavailable";
-  constructor(
-    message: string,
-    readonly detail?: { reason?: string; attempts?: number },
-  ) {
-    super(message);
-    this.name = "HelperUnavailableError";
-  }
-}
 
 /**
  * Helper 客户端。
@@ -261,6 +179,7 @@ export class CuaHelperClient {
       this.tripped = true;
       this.state = "unavailable";
       throw new HelperUnavailableError("helper 重启失败，已熔断", {
+        reason: "restart",
         attempts: this.consecutiveStartFailures,
       });
     }
@@ -542,28 +461,26 @@ export class CuaHelperClient {
   }
 
   /** 枚举顶层窗口。 */
-  async listWindows(): Promise<{
+  async listWindows(params?: {
+    scope?: "running" | "all";
+    includeWindowIds?: boolean;
+    windowLimit?: number;
+  }): Promise<{
     windows: {
       runtimeId: string;
+      window_id?: string;
       title: string;
       className: string;
       processId: number | undefined;
       frameworkId: string;
       bounds: { left: number; top: number; width: number; height: number } | undefined;
     }[];
+    scope: string;
+    total: number;
+    truncated: boolean;
     elapsedMs: number;
   }> {
-    return (await this.request(HELPER_METHODS.LIST_WINDOWS, undefined, 10_000)) as {
-      windows: {
-        runtimeId: string;
-        title: string;
-        className: string;
-        processId: number | undefined;
-        frameworkId: string;
-        bounds: { left: number; top: number; width: number; height: number } | undefined;
-      }[];
-      elapsedMs: number;
-    };
+    return await listWindowsRequest(this, params);
   }
 
   /**
@@ -592,41 +509,30 @@ export class CuaHelperClient {
     truncated: boolean;
     truncationReason: string | undefined;
     brittleTree: boolean;
+    capacityExceeded: boolean;
+    coordinateRootId: string;
+    coordinateSpace: { width: number; height: number };
+    relatedWindows: {
+      window_id: string;
+      title: string;
+      class_name: string;
+      is_modal: boolean;
+    }[];
     /** 结构化元素表（SDK 的 appStateOf 强制要求）。 */
     elements: {
       index: number;
       kind: string;
       name: string;
       value: string;
+      value_known: boolean;
+      input_target: boolean;
       states: string[];
       bounds: { left: number; top: number; width: number; height: number } | undefined;
       actions: string[];
     }[];
     elapsedMs: number;
   }> {
-    return (await this.request(HELPER_METHODS.CAPTURE, params, 20_000)) as {
-      text: string;
-      mode: "full" | "delta";
-      stateId: string;
-      windowTitle: string;
-      processId: number | undefined;
-      frameworkId: string;
-      windowKey: string;
-      nodeCount: number;
-      truncated: boolean;
-      truncationReason: string | undefined;
-      brittleTree: boolean;
-      elements: {
-        index: number;
-        kind: string;
-        name: string;
-        value: string;
-        states: string[];
-        bounds: { left: number; top: number; width: number; height: number } | undefined;
-        actions: string[];
-      }[];
-      elapsedMs: number;
-    };
+    return await captureRequest(this, params);
   }
 
   /**
@@ -681,7 +587,9 @@ export class CuaHelperClient {
    */
   async act(params: {
     stateId: string;
-    index: number;
+    index?: number;
+    coordinate?: { x: number; y: number };
+    coordinate_space?: { width: number; height: number };
     budget?: "quiet" | "balanced" | "unrestricted";
     allowPhysicalInjection?: boolean;
     intent?: {
@@ -691,9 +599,83 @@ export class CuaHelperClient {
       semantic?: string;
       value?: string;
     };
-    preferPath?: "post_message" | "ax" | "foreground_send_input";
+    preferPath?: "post_message" | "ax" | "ax_text" | "foreground_send_input";
   }): Promise<ActReceipt> {
     return (await this.request(HELPER_METHODS.ACT, params, 30_000)) as ActReceipt;
+  }
+
+  /**
+   * 定向文本输入。
+   *
+   * 优先 ValuePattern / EM_REPLACESEL，不激活窗口；两条都不可用时抛
+   * `element_unavailable`，由 runtime 决定是否在授权后降级到物理注入。
+   */
+  async typeIntoElement(params: {
+    stateId: string;
+    index: number;
+    text: string;
+  }): Promise<ActReceipt> {
+    return (await this.request(HELPER_METHODS.TYPE_INTO_ELEMENT, params, 30_000)) as ActReceipt;
+  }
+
+  /** 显式启动应用。 */
+  async launchApp(params: { app: string }): Promise<{
+    ok: boolean;
+    pid: number | null;
+    dispatched: boolean;
+    mode: "spawn" | "shell_execute";
+    reason?: string;
+    message: string;
+    elapsedMs: number;
+  }> {
+    return (await this.request(HELPER_METHODS.LAUNCH_APP, params, 30_000)) as {
+      ok: boolean;
+      pid: number | null;
+      dispatched: boolean;
+      mode: "spawn" | "shell_execute";
+      reason?: string;
+      message: string;
+      elapsedMs: number;
+    };
+  }
+
+  /** 两阶段窗口恢复。 */
+  async restoreWindow(params: {
+    phase: "prepare" | "restore";
+    stateId?: string;
+    windowId?: string;
+    pid?: number;
+    hwnd?: string | number;
+    recovery_id?: string;
+    foreground?: boolean;
+  }): Promise<{
+    ok: boolean;
+    recovery_id?: string;
+    window_visual_state?: {
+      minimized: boolean;
+      visible: boolean;
+      offscreen: boolean;
+      rect: { x: number; y: number; width: number; height: number } | undefined;
+    };
+    restored?: boolean;
+    foreground?: boolean;
+    reason?: string;
+    message: string;
+  }> {
+    return (await this.request(HELPER_METHODS.RESTORE_WINDOW, params, 30_000)) as {
+      ok: boolean;
+      recovery_id?: string;
+      window_visual_state?: {
+        minimized: boolean;
+        visible: boolean;
+        offscreen: boolean;
+        rect: { x: number; y: number; width: number; height: number } | undefined;
+      };
+      restored?: boolean;
+      foreground?: boolean;
+      reason?: string;
+      message: string;
+    };
   }
 
   /** 键盘输入。恒为物理注入，调用方需先确认授权。 */
@@ -728,7 +710,9 @@ export class CuaHelperClient {
   /** 滚动。按预算选择消息投递或物理注入。 */
   async sendScroll(params: {
     stateId: string;
-    index: number;
+    index?: number;
+    coordinate?: { x: number; y: number };
+    coordinate_space?: { width: number; height: number };
     wheelCount: number;
     budget?: "quiet" | "balanced" | "unrestricted";
     allowPhysicalInjection?: boolean;
@@ -740,6 +724,8 @@ export class CuaHelperClient {
     grabInput: boolean;
     wheelCount: number;
     budget: string;
+    coordinate?: { x: number; y: number };
+    screenPoint?: { x: number; y: number };
     elapsedMs: number;
   }> {
     return (await this.request(HELPER_METHODS.SCROLL, params, 30_000)) as {
@@ -749,6 +735,8 @@ export class CuaHelperClient {
       grabInput: boolean;
       wheelCount: number;
       budget: string;
+      coordinate?: { x: number; y: number };
+      screenPoint?: { x: number; y: number };
       elapsedMs: number;
     };
   }
@@ -756,8 +744,11 @@ export class CuaHelperClient {
   /** 拖拽。恒为物理注入。 */
   async drag(params: {
     stateId: string;
-    fromIndex: number;
-    toIndex: number;
+    fromIndex?: number;
+    toIndex?: number;
+    fromCoordinate?: { x: number; y: number };
+    toCoordinate?: { x: number; y: number };
+    coordinate_space?: { width: number; height: number };
     button?: "left" | "right" | "middle";
     steps?: number;
   }): Promise<{
@@ -768,6 +759,8 @@ export class CuaHelperClient {
     cursorRestored: boolean;
     injectedEvents: number;
     failureReason?: string;
+    fromCoordinate?: { x: number; y: number };
+    toCoordinate?: { x: number; y: number };
     elapsedMs: number;
   }> {
     return (await this.request(HELPER_METHODS.DRAG, params, 60_000)) as {
@@ -778,6 +771,8 @@ export class CuaHelperClient {
       cursorRestored: boolean;
       injectedEvents: number;
       failureReason?: string;
+      fromCoordinate?: { x: number; y: number };
+      toCoordinate?: { x: number; y: number };
       elapsedMs: number;
     };
   }
@@ -880,15 +875,7 @@ export class CuaHelperClient {
     targetPosition?: { x: number; y: number };
     visibleWidth?: number;
   }> {
-    return (await this.request(HELPER_METHODS.WINDOW_OFFSCREEN, params, 10_000)) as {
-      ok: boolean;
-      mode?: string;
-      reason?: string;
-      message: string;
-      previousRect?: { x: number; y: number; width: number; height: number };
-      targetPosition?: { x: number; y: number };
-      visibleWidth?: number;
-    };
+    return await windowOffscreenRequest(this, params);
   }
 
   /** 独立桌面（子会话）能力判定。 */
@@ -908,22 +895,7 @@ export class CuaHelperClient {
     summary: string;
     next_step: string;
   }> {
-    return (await this.request(HELPER_METHODS.ISOLATED_DESKTOP, {}, 10_000)) as {
-      capability: "unsupported" | "supported" | "enabled" | "session_ready";
-      actionable: boolean;
-      current_session_id: number;
-      child_session_id: number | null;
-      can_spawn_into_child: boolean;
-      gates: {
-        id: string;
-        label: string;
-        passed: boolean;
-        detail: string;
-        resolvable: boolean;
-      }[];
-      summary: string;
-      next_step: string;
-    };
+    return await isolatedDesktopRequest(this);
   }
 
   /** 窗口截图，返回 base64 PNG。 */
@@ -936,27 +908,22 @@ export class CuaHelperClient {
     height: number;
     base64: string;
     byte_length: number;
+    frame_id: string;
+    coordinate_root_id: string;
+    coordinate_space: { width: number; height: number };
     blank: boolean;
     blank_reason?: string;
-    /** 画面可能已冻结（窗口完全在屏幕外）。见 helper/screenshot.ts 的说明。 */
     may_be_frozen: boolean;
     frozen_reason?: string;
     window_title: string;
     elapsedMs: number;
   }> {
-    return (await this.request(HELPER_METHODS.SCREENSHOT, params, 20_000)) as {
-      mime_type: string;
-      width: number;
-      height: number;
-      base64: string;
-      byte_length: number;
-      blank: boolean;
-      blank_reason?: string;
-      may_be_frozen: boolean;
-      frozen_reason?: string;
-      window_title: string;
-      elapsedMs: number;
-    };
+    return await screenshotRequest(this, params);
+  }
+
+  /** 观察模块的请求入口。只暴露 request，不暴露连接状态。 */
+  async requestRaw(method: string, params: unknown, timeoutMs: number): Promise<unknown> {
+    return await this.request(method, params, timeoutMs);
   }
 
   /** 停止并清理。可重复调用。 */
@@ -1016,7 +983,6 @@ export class CuaHelperClient {
 }
 
 /** 生成一个唯一的命名管道路径。 */
-export 
 /**
  * 取当前进程所在会话号。
  *

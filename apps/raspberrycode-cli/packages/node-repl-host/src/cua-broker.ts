@@ -182,6 +182,7 @@ function requestContext(meta: Readonly<NodeReplRequestMeta>): Record<string, unk
       ? { remoteSessionId: stringMeta("remote_session_id") }
       : {}),
     ...(stringMeta("turn_id") ? { turnId: stringMeta("turn_id") } : {}),
+    ...(meta.allow_window_restore === true ? { allowWindowRestore: true } : {}),
     clientMode,
     deliveryKind,
     ...(stringMeta("trace_id")
@@ -232,6 +233,9 @@ function parseContext(value: unknown): ComputerUseRuntimeContext {
       ? { deliveryKind: context.deliveryKind }
       : {}),
     ...(context.trace && typeof context.trace === "object" ? { trace: context.trace as ComputerUseRuntimeContext["trace"] } : {}),
+    ...(typeof context.allowWindowRestore === "boolean"
+      ? { allowWindowRestore: context.allowWindowRestore }
+      : {}),
   };
 }
 

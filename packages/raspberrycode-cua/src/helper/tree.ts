@@ -82,6 +82,21 @@ export interface UiaNode {
   states: string[];
   /** 是否可交互（决定是否给模型动作句柄）。 */
   interactive: boolean;
+  /**
+   * 是否可作为元素输入目标。
+   *
+   * 与 `interactive` 的区别：可交互只说明「有动作」，而输入目标还要求
+   * 元素没有 disabled / readonly 这类会拒绝输入的硬状态。模型看到
+   * `input_target=false` 时不应再拿这个索引做元素输入，应换目标或走坐标。
+   */
+  inputTarget: boolean;
+  /**
+   * `value` 是否真的读到了。
+   *
+   * UIA 对不支持的属性返回错误而不是空串；若把失败当成空值，模型会误判
+   * 「这个输入框是空的」。`valueKnown=false` 表示未知，不是空。
+   */
+  valueKnown: boolean;
   /** 是否离屏（IsOffscreen）。离屏元素仍保留在树里，但渲染时会标注。 */
   offscreen: boolean;
   /**
@@ -461,7 +476,24 @@ function buildNode(
   const controlType = readNumber(read, element, UIA_PROPERTY.CONTROL_TYPE);
   const kind = controlTypeToKind(controlType);
   const name = readString(read, element, UIA_PROPERTY.NAME);
-  const value = readString(read, element, UIA_PROPERTY.VALUE);
+  // 直接读一次 VALUE，保留「读失败」与「读到空串」的区别。
+  // readString 会把失败折叠成空串，那会让模型把未知值当成空值。
+  const valueResult = read(element, UIA_PROPERTY.VALUE);
+  const value = typeof valueResult?.value === "string" ? valueResult.value : "";
+  const valueKnown = valueResult !== undefined;
+  const states = collectStates(read, element, kind);
+  const interactive = isInteractiveKind(kind);
+  // 输入目标：可交互，且没有 disabled / readonly 这类会拒绝输入的硬状态。
+  // 只读文档/编辑框仍可被观察和选中，但不能作为 type/set_value 的目标。
+  //
+  // 修复原因：`document` 不在 INTERACTIVE_KINDS 里（那是给「无树应用」判定用的），
+  // 但记事本、Word 等应用的编辑区正是 Document 控件。若把 inputTarget 绑在
+  // interactive 上，这些应用永远没有可输入目标，定向输入只能退回物理注入。
+  // 因此这里单独放行 document，只读时仍由 readonly 状态排除。
+  const inputTarget =
+    (interactive || kind === "document") &&
+    !states.includes(STATE_FLAGS.DISABLED) &&
+    !(states.includes(STATE_FLAGS.READONLY) && (kind === "edit" || kind === "document"));
 
   const rectResult = read(element, UIA_PROPERTY.BOUNDING_RECTANGLE);
   let bounds: UiaNode["bounds"];
@@ -494,8 +526,10 @@ function buildNode(
     parentIndex,
     childIndexes: [],
     bounds,
-    states: collectStates(read, element, kind),
-    interactive: isInteractiveKind(kind),
+    states,
+    interactive,
+    inputTarget,
+    valueKnown,
     offscreen: readBoolean(read, element, UIA_PROPERTY.IS_OFFSCREEN) === true,
     element,
   };

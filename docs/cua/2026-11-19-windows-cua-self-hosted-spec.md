@@ -641,6 +641,12 @@ SDK 的 `appStateOf` 强制要求 `state_id` / `elements` / `app` / `window`，
 1. 有 `RASPBERRYCODE_CUA_PERMISSION_BROKER_SOCKET` → 走 broker（保留上游路径）
 2. 无 socket 且在 Windows → 直连自研 Helper（可用 `RASPBERRYCODE_CUA_SELF_HOSTED=0` 关闭）
 
+**插件门禁（2026-11-25 真机修复）**：自研路径还要求 `RASPBERRYCODE_CUA_PLUGIN_ROOT` 存在。
+该变量只在 `computer-use` 插件启用时由 `resolveBuiltInNodeReplMcpServers` 注入；插件关闭时
+`node_repl` 仍会因 Browser Use 启用而存在，但 CUA 工具不得注册。产品口径是「设置页总开关 =
+插件启用态」，插件关闭却仍能调用 CUA 工具属于越权。插件启用时该变量同时是 Skill bootstrap
+解析 `scripts/computer-use-client.mjs` 的权威根目录，避免回退到 Browser Use 根目录。
+
 平台判断放在入口而不是交给 runtime：非 Windows 若返回一个必然失败的 runtime，
 模型会看到「工具存在但每个都报错」，不如直接不注册。
 
@@ -2087,3 +2093,80 @@ P5 验收发现：`preferPath` 最初只做「偏好」处理——请求的路�
 | 越会话操作（含 RDP 子会话） | 本机缺 `SeTcbPrivilege`，无法改令牌会话 ID；见 §1.23 的边界说明 |
 
 上述情况一律**明确报告**，不重试。
+
+### 1.34 能力补全契约（2026-11-25）
+
+本节冻结 2026-11-25 路线图新增的能力面。实现必须与本节一致；未列出的行为保持原状。
+
+#### 1.34.1 观察契约扩展
+
+`get_app_state` 新增参数：
+
+| 参数 | 语义 |
+| --- | --- |
+| `max_depths` | 覆盖本次遍历的 `maxDepth`；变化可能替换树与元素索引 |
+| `disable_screenshot` | 跳过截图，保留 UIA 观察与差分；同时清除坐标上下文 |
+| `disable_diff` | 强制返回全量树（等价于现有 `disable_diffing`） |
+
+观察结果新增字段：
+
+| 字段 | 语义 |
+| --- | --- |
+| `input_target` | `false` 表示该节点只能观察、不能作为元素输入目标 |
+| `value_known` | `false` 表示 `value` 缺失/未读到，而不是空值 |
+| `coordinate_root_id` | 坐标动作绑定的窗口根元素索引 |
+| `coordinate_space` | 固定 `{ width: 1000, height: 1000 }` |
+| `frame_id` | 本次截图帧标识；坐标动作必须回传 |
+| `related_windows` | 同进程其他窗口（标题、是否 modal），用于弹窗发现 |
+
+#### 1.34.2 坐标动作
+
+- 坐标是 0-1000 窗口相对归一化坐标，必须配 `coordinate_space` 与 `frame_id`。
+- `left_click` 坐标路径优先 `post_message`；最小化/失败时按预算降级。
+- `left_click_drag` 坐标路径需要连续轨迹，物理注入需要 `unrestricted` + `allowPhysicalInjection`。
+- `scroll` 坐标路径优先 UIA ScrollPattern；坐标滚轮需要当前截图。
+- 窗口移动/缩放/遮挡变化、`disable_screenshot`、Helper 重启都会使 `frame_id` 失效；失效时返回 `stale_frame` 且**零输入**。
+
+#### 1.34.3 定向后台文本输入
+
+- Helper 新增 `type_into_element`：ValuePattern（整值替换）→ TextPattern/`EM_REPLACESEL`（插入）→ 物理注入兜底。
+- `type` 在提供元素目标时优先定向路径；`paste` 纯文本优先定向路径；`key` 仍走物理注入。
+- 定向路径允许 `balanced`；物理兜底需要 `unrestricted` + `allowPhysicalInjection`。
+- 收据标 `path=ax_text`、`degraded_from`、`receiver_focus`。
+
+#### 1.34.4 窗口恢复
+
+- 新增 `restore_window`：`phase: "prepare"` 只读校验并返回单次 `recovery_id`；`phase: "restore"` 需要同一 `recovery_id` + `foreground: true`。
+- `restore` 需要 `allowWindowRestore`（独立于 `allowPhysicalInjection`），并受预算约束。
+- 授权链路：设置页「允许恢复最小化窗口」→ `AppSettings.computerUseAllowWindowRestore` → desktop main 快照 → host 环境变量 `RASPBERRYCODE_CUA_ALLOW_WINDOW_RESTORE` → runtime。打开开关时同时把预算提到 `unrestricted`；修改后需重启 app 生效。
+- 恢复后清空 `stateId` 与坐标上下文，返回 `next_step: observe`。
+- 宿主可以只暴露 `prepare`，表示当前环境不允许恢复。
+
+#### 1.34.5 错误与收据
+
+新增错误码：`delivery_unknown`、`partial_dispatch`、`receiver_focus_unknown`、`screenshot_context_required`、`stale_frame`、`target_quarantined`、`cleanup_pending`、`session_capacity_exceeded`。
+
+收据新增字段：`delivery`（`not_sent`/`partial`/`unknown`）、`receiver_focus`、`next_step`、`queued_ms`、`waited_for_session`。
+
+`state_invalidated` 必须区分原因：快照淘汰、Helper 重启、元素消失。
+
+#### 1.34.6 确认策略
+
+- Skill 层定义四类确认：Hand-Off Required、Always Confirm、Pre-Approval Works、No Confirmation Needed。
+- Runtime 对高风险动作返回 `requires_confirmation` 标记；宿主复用全局 ConfirmDialog。
+- 用户输入的指令视为有效意图；第三方内容不得当作授权。
+
+#### 1.34.7 目标发现与并发
+
+- 新增 `launch_app`，返回 `pid`/`window_id`。
+- `list_windows` 支持 `scope`（`running`/`all`）、`include_window_ids`、`window_limit`。
+- 写动作始终按 `windowKey` 排队；收据带 `queued_ms`/`waited_for_session`。
+- Helper 重启/窗口关闭/快照满分别返回 `target_quarantined`/`cleanup_pending`/`session_capacity_exceeded`。
+
+#### 1.34.8 验收
+
+- 坐标点击/拖拽/滚动在画布、Electron、DPI 150%、多显示器场景通过。
+- 后台文本输入在 Notepad/Chromium/Electron 通过；不支持时明确降级。
+- 最小化窗口恢复后可操作；恢复后旧 `stateId` 失效。
+- 错误矩阵覆盖每个新错误码的 `next_step`。
+- 同窗口并发串行、跨窗口并行保持。

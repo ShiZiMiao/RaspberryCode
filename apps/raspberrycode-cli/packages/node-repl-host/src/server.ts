@@ -14,7 +14,11 @@ import {
   type NodeReplRequestMeta,
   type NodeReplRunResult,
 } from "@raspberrycode/core/repl";
-import { createComputerUseRuntime, type ComputerUseRuntime } from "@raspberrycode/raspberrycode-cua";
+import {
+  createComputerUseRuntime,
+  type ComputerUseRuntime,
+  type ComputerUseRuntimeOptions,
+} from "@raspberrycode/raspberrycode-cua";
 // 只加载 broker 协议常量；shared 总入口会初始化无关领域的 schema。
 import {
   NODE_REPL_BROWSER_BROKER_SOCKET_ENV,
@@ -192,8 +196,17 @@ export function createNodeReplMcpRuntime(
   const executeJs = input.executeJs ?? executeJsInWorker;
   const writeStderr = input.writeStderr ?? ((text: string) => void process.stderr.write(text));
   const noProgressGuard = createNoProgressGuard();
+  // Server 必须先于 runtime 创建：CUA 高风险动作的确认要借 MCP elicitation 通道
+  // 回到宿主（desktop 渲染层用 ElicitationDialog 展示）。
+  const server = new Server(
+    { name: "node_repl", version: NODE_REPL_SERVER_VERSION },
+    { capabilities: { tools: {} }, instructions: NODE_REPL_SERVER_INSTRUCTIONS },
+  );
   const cuaRuntime =
-    input.cuaRuntime ?? captureComputerUseRuntimeFromEnvironment();
+    input.cuaRuntime ??
+    captureComputerUseRuntimeFromEnvironment(process.env, {
+      requestConfirmation: (request) => requestCuaConfirmationViaElicitation(server, request),
+    });
   // 本次调用的可信事实只由主线程的两个 broker 记进账本（20-node-repl-call-ledger.md）。
   const ledger = createNodeReplCallLedger();
   const cuaBroker = cuaRuntime
@@ -227,11 +240,6 @@ export function createNodeReplMcpRuntime(
       if (queues.get(key) === next) queues.delete(key);
     }
   };
-
-  const server = new Server(
-    { name: "node_repl", version: NODE_REPL_SERVER_VERSION },
-    { capabilities: { tools: {} }, instructions: NODE_REPL_SERVER_INSTRUCTIONS },
-  );
 
   server.setRequestHandler("tools/list", async () => ({ tools }));
   server.setRequestHandler("tools/call", async (request, extra) => {
@@ -400,10 +408,22 @@ export async function main(): Promise<void> {
   // process.env，必然得到空值，导致 node_repl 永久把 Computer Use 判为 unavailable。
   // 这里在 main() 生命周期内先捕获 runtime；Worker 只收到二次 bridge token，
   // 不会接触 Helper 的原始 socket/token。
-  const computerUseRuntime = captureComputerUseRuntimeFromEnvironment();
+  //
+  // 确认通道必须延迟绑定：runtime 先于 server 创建（凭据捕获窗口），
+  // 而 elicitation 请求要等 server 连上 transport 后才能发。
+  let confirmationServer: CuaConfirmationElicitationRequester | undefined;
+  const computerUseRuntime = captureComputerUseRuntimeFromEnvironment(process.env, {
+    requestConfirmation: async (request) => {
+      if (!confirmationServer) {
+        throw new Error("node_repl server is not ready for confirmation");
+      }
+      return await requestCuaConfirmationViaElicitation(confirmationServer, request);
+    },
+  });
   const handle = serveStdio(
     () => {
       const runtime = createNodeReplMcpRuntime({ cuaRuntime: computerUseRuntime });
+      confirmationServer = runtime.server;
       runtimes.add(runtime);
       return runtime.server;
     },
@@ -473,19 +493,68 @@ if (!isMainThread && isWorkerCallData(workerData)) {
  */
 export function captureComputerUseRuntimeFromEnvironment(
   env: NodeJS.ProcessEnv = process.env,
+  options: Pick<ComputerUseRuntimeOptions, "requestConfirmation"> = {},
 ): ComputerUseRuntime | undefined {
   const socketPath = env.RASPBERRYCODE_CUA_PERMISSION_BROKER_SOCKET?.trim();
   if (socketPath) {
     return createComputerUseRuntime({
       brokerSocketPath: socketPath,
       refreshMarkerPath: env.RASPBERRYCODE_CUA_PERMISSION_BROKER_REFRESH_MARKER?.trim(),
+      ...options,
     });
   }
 
   // 自研路径：只要平台受支持就启用，Helper 是懒启动的。
   if ((env.RASPBERRYCODE_CUA_SELF_HOSTED ?? "").trim() === "0") return undefined;
   if (process.platform !== "win32") return undefined;
-  return createComputerUseRuntime({ env: env as Record<string, string | undefined> });
+  // 插件门禁（2026-11-25 真机修复）：computer-use 插件关闭时 node_repl 仍会因 Browser Use
+  // 启用而存在，但 CUA 工具不得注册。产品口径是「设置页总开关 = 插件启用态」；
+  // 该变量只在插件启用时由 resolveBuiltInNodeReplMcpServers 注入，同时是 Skill bootstrap
+  // 解析 scripts/computer-use-client.mjs 的权威根目录。
+  if (!(env.RASPBERRYCODE_CUA_PLUGIN_ROOT ?? "").trim()) return undefined;
+  return createComputerUseRuntime({
+    env: env as Record<string, string | undefined>,
+    ...options,
+  });
+}
+
+/**
+ * 把 CUA 高风险动作的确认请求转成 MCP elicitation。
+ *
+ * 复用现有 `elicitation/create` 通道：agent CLI 的 MCP 适配器把它交给宿主提问端口，
+ * desktop 渲染层用 ElicitationDialog 展示 Yes/No。客户端未声明 elicitation 能力时
+ * 请求会失败，runtime 捕获后退回 `confirmation_required` 两步协议。
+ */
+export interface CuaConfirmationElicitationRequester {
+  request(request: {
+    method: "elicitation/create";
+    params?: Record<string, unknown>;
+  }): Promise<{ action: string; content?: Record<string, unknown> }>;
+}
+
+export async function requestCuaConfirmationViaElicitation(
+  server: CuaConfirmationElicitationRequester,
+  request: { tool: string; action: string; summary: string },
+): Promise<boolean> {
+  const result = await server.request({
+    method: "elicitation/create",
+    params: {
+      mode: "form",
+      message: `电脑控制需要确认：${request.summary}`,
+      requestedSchema: {
+        type: "object",
+        properties: {
+          confirm: {
+            type: "boolean",
+            title: "确认执行",
+            description: `${request.tool}（${request.action}）可能产生不可撤销的副作用。`,
+          },
+        },
+        required: ["confirm"],
+      },
+    },
+  });
+  return result.action === "accept" && result.content?.confirm === true;
 }
 
 function isWorkerCallData(value: unknown): value is WorkerCallData {

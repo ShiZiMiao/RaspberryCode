@@ -41,7 +41,13 @@ import { captureWindow } from "./screenshot.ts";
 import { probeSessionTopology } from "./session.ts";
 import { probeIsolatedDesktop } from "./isolated-desktop.ts";
 import { reportAddressToBootstrap } from "./address-broker.ts";
-import { hideWindowOffscreen, restoreWindowPosition } from "./window-visibility.ts";
+import {
+  hideWindowOffscreen,
+  prepareWindowRestore,
+  restoreWindow,
+  restoreWindowPosition,
+} from "./window-visibility.ts";
+import { launchApplication } from "./launch.ts";
 
 const DEFAULT_IDLE_TIMEOUT_MS = 10 * 60 * 1000;
 /** 父进程存活检查间隔。太密会成为噪声，太疏会让孤儿多活一会儿。 */
@@ -218,18 +224,61 @@ function buildHandlers(): Record<string, MethodHandler> {
      * 返回扁平摘要而不含 element 句柄——句柄不能跨进程传输，
      * 后续 capture 时按 runtimeId 重新解析。
      */
-    [HELPER_METHODS.LIST_WINDOWS]: () => {
+    [HELPER_METHODS.LIST_WINDOWS]: (params) => {
       const runtime = ensureUia();
       const startedAt = Date.now();
-      const windows = listWindows(runtime).map((window) => ({
+      const record = params && typeof params === "object" ? (params as Record<string, unknown>) : {};
+      const includeWindowIds = record.includeWindowIds === true;
+      const rawLimit = record.windowLimit;
+      const windowLimit =
+        typeof rawLimit === "number" && Number.isInteger(rawLimit) && rawLimit > 0
+          ? Math.min(rawLimit, 200)
+          : undefined;
+      // scope 目前只区分 running/all：Windows 上没有可靠的「未运行应用」枚举，
+      // not_running 明确不支持，避免返回一份看起来完整但实际缺失的列表。
+      const scope = record.scope === "running" || record.scope === "all" ? record.scope : "all";
+      const all = listWindows(runtime);
+      const windows = (windowLimit ? all.slice(0, windowLimit) : all).map((window) => ({
         runtimeId: window.runtimeId,
+        ...(includeWindowIds ? { window_id: window.runtimeId } : {}),
         title: window.title,
         className: window.className,
         processId: window.processId,
         frameworkId: window.frameworkId,
         bounds: window.bounds,
       }));
-      return { windows, elapsedMs: Date.now() - startedAt };
+      return {
+        windows,
+        scope,
+        total: all.length,
+        truncated: windowLimit !== undefined && all.length > windowLimit,
+        elapsedMs: Date.now() - startedAt,
+      };
+    },
+
+    /**
+     * 显式启动应用。
+     *
+     * 参数：`app`（可执行文件名、绝对路径或 AUMID）。
+     *
+     * 返回 `pid` 只在能解析到子进程时给出；UWP/AUMID 走 ShellExecute，
+     * 拿不到 pid，返回 `dispatched: true` + `pid: null`，让调用方用
+     * `list_windows` 再确认。这与 macOS `open_application` 的三级信任
+     * 语义一致：dispatch-only 不等于进程已就绪。
+     */
+    [HELPER_METHODS.LAUNCH_APP]: (params) => {
+      const app = stringParam(params, "app");
+      if (!app) {
+        throw Object.assign(new Error("launch_app 需要 app（可执行文件名、路径或 AUMID）"), {
+          code: "bad_request",
+        });
+      }
+      const startedAt = Date.now();
+      const result = launchApplication(app);
+      return {
+        ...result,
+        elapsedMs: Date.now() - startedAt,
+      };
     },
 
     /**
@@ -333,7 +382,7 @@ function buildHandlers(): Record<string, MethodHandler> {
           : undefined,
       });
 
-      snapshots.record(windowKey, snapshot);
+      const recordResult = snapshots.record(windowKey, snapshot);
 
       const disableDiffing =
         params && typeof params === "object"
@@ -369,6 +418,28 @@ function buildHandlers(): Record<string, MethodHandler> {
         truncated: snapshot.truncated,
         truncationReason: snapshot.truncationReason,
         brittleTree: snapshot.brittleTree,
+        // 历史快照已满：旧 stateId 可能已被淘汰。调用方应提示模型重新观察。
+        capacityExceeded: recordResult.evicted,
+        // 坐标动作的根：窗口根元素在快照里的索引恒为 0。
+        // 坐标空间固定 0-1000 窗口相对，避免 DPI/分辨率变化导致漂移。
+        coordinateRootId: "0",
+        coordinateSpace: { width: 1000, height: 1000 },
+        // 同进程其他窗口：弹窗/对话框是「元素消失」的常见原因，
+        // 提前给模型一个提示，避免它把「读到了另一个窗口」误判为动作成功。
+        relatedWindows: listWindows(runtime)
+          .filter(
+            (window) =>
+              window.processId === snapshot.processId &&
+              window.runtimeId !== target.runtimeId &&
+              window.title,
+          )
+          .slice(0, 8)
+          .map((window) => ({
+            window_id: window.runtimeId,
+            title: window.title,
+            class_name: window.className,
+            is_modal: window.className === "#32770",
+          })),
         // 结构化元素表。SDK 的 appStateOf 强制要求这个字段——
         // 缺了它模型完全看不到树（STRUCTURED_STATE_UNAVAILABLE）。
         // 只给「可交互或带内容」的元素：把 800 个装饰性容器全发下去
@@ -387,6 +458,7 @@ function buildHandlers(): Record<string, MethodHandler> {
         CLICK: HELPER_METHODS.CLICK,
         ACT: HELPER_METHODS.ACT,
         KEY: HELPER_METHODS.KEY,
+        TYPE_INTO_ELEMENT: HELPER_METHODS.TYPE_INTO_ELEMENT,
         SCROLL: HELPER_METHODS.SCROLL,
         DRAG: HELPER_METHODS.DRAG,
         SELECT_TEXT: HELPER_METHODS.SELECT_TEXT,
@@ -485,6 +557,44 @@ function buildHandlers(): Record<string, MethodHandler> {
     },
 
     /**
+     * 两阶段窗口恢复。
+     *
+     * 参数：
+     *   phase: "prepare" | "restore"
+     *   stateId?: string      用快照定位窗口（优先）
+     *   windowId?: string     窗口 runtimeId
+     *   pid?: number          按进程找第一个有标题的窗口
+     *   hwnd?: string|number  直接句柄
+     *   recovery_id?: string  restore 阶段必需
+     *   foreground?: boolean  restore 阶段是否激活窗口
+     */
+    [HELPER_METHODS.RESTORE_WINDOW]: (params) => {
+      const record = params && typeof params === "object" ? (params as Record<string, unknown>) : {};
+      const phase = record.phase === "restore" ? "restore" : "prepare";
+      const hwnd = resolveWindowHwnd(record);
+      if (hwnd === undefined) {
+        throw Object.assign(
+          new Error("restore_window 需要 stateId、windowId、pid 或 hwnd 之一来定位窗口。"),
+          { code: "window_not_found" },
+        );
+      }
+      if (phase === "prepare") return prepareWindowRestore(hwnd);
+
+      const recoveryId =
+        typeof record.recovery_id === "string"
+          ? record.recovery_id
+          : typeof record.recoveryId === "string"
+            ? record.recoveryId
+            : undefined;
+      if (!recoveryId) {
+        throw Object.assign(new Error("restore 阶段需要 recovery_id（来自 prepare）。"), {
+          code: "bad_request",
+        });
+      }
+      return restoreWindow(hwnd, recoveryId, record.foreground === true);
+    },
+
+    /**
      * 窗口截图。
      *
      * 参数：
@@ -543,6 +653,12 @@ function buildHandlers(): Record<string, MethodHandler> {
         // 二进制会被 JSON.stringify 破坏。
         base64: capture.png.toString("base64"),
         byte_length: capture.png.length,
+        // 坐标动作必须绑定这一帧；窗口移动/缩放/Helper 重启后旧 frame 失效。
+        frame_id: stateId
+          ? `frame-${stateId}-${Date.now().toString(36)}`
+          : `frame-hwnd-${hwnd.toString(16)}-${Date.now().toString(36)}`,
+        coordinate_root_id: "0",
+        coordinate_space: { width: 1000, height: 1000 },
         // 纯色必须显式回报，理由见方法注释
         blank: capture.blank,
         blank_reason: capture.blank ? capture.reason : undefined,
@@ -695,6 +811,64 @@ function createHelperServer(options: HelperOptions, handlers: Record<string, Met
   state.parentTimer.unref();
 
   return state;
+}
+
+/**
+ * 从 restore_window 参数解析目标窗口句柄。
+ *
+ * 优先级：stateId（快照根）→ hwnd → windowId/runtimeId → pid。
+ * 与 capture 的窗口选择保持一致：pid 只取第一个有标题的窗口，
+ * 多窗口场景应显式给 windowId。
+ */
+function resolveWindowHwnd(record: Record<string, unknown>): bigint | undefined {
+  const stateId = typeof record.stateId === "string" ? record.stateId : undefined;
+  if (stateId) {
+    const snapshot = snapshots.findByStateId(stateId);
+    if (!snapshot) {
+      throw Object.assign(new Error(`stale stateId: ${stateId}`), { code: "state_invalidated" });
+    }
+    return normalizeHwnd(readNativeWindowHandle(snapshot.rootElement)) ?? undefined;
+  }
+
+  const rawHwnd = record.hwnd;
+  if (typeof rawHwnd === "number" || typeof rawHwnd === "string") {
+    const parsed =
+      typeof rawHwnd === "number"
+        ? rawHwnd
+        : Number.parseInt(rawHwnd, rawHwnd.startsWith("0x") ? 16 : 10);
+    if (Number.isFinite(parsed) && parsed !== 0) return BigInt(parsed >>> 0);
+  }
+
+  const runtime = ensureUia();
+  const windows = listWindows(runtime);
+  const wantedWindowId =
+    typeof record.windowId === "string"
+      ? record.windowId
+      : typeof record.runtimeId === "string"
+        ? record.runtimeId
+        : undefined;
+  if (wantedWindowId) {
+    const target = windows.find((window) => window.runtimeId === wantedWindowId);
+    if (!target) {
+      throw Object.assign(new Error(`window not found: windowId=${wantedWindowId}`), {
+        code: "window_not_found",
+      });
+    }
+    return normalizeHwnd(readNativeWindowHandle(target.element)) ?? undefined;
+  }
+
+  const pid = typeof record.pid === "number" ? record.pid : undefined;
+  if (pid !== undefined) {
+    const target = windows.find((window) => window.processId === pid && window.title);
+    if (!target) {
+      throw Object.assign(new Error(`no window found for pid=${pid}`), {
+        code: "window_not_found",
+      });
+    }
+    return normalizeHwnd(readNativeWindowHandle(target.element)) ?? undefined;
+  }
+
+  return undefined;
 }
 
 /** 用 signal 0 探测进程是否存活，不实际发送信号。 */

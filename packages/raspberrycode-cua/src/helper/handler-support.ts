@@ -58,6 +58,10 @@ export interface StructuredElement {
   kind: string;
   name: string;
   value: string;
+  /** `value` 是否真的读到；false 表示未知，不是空值。 */
+  value_known: boolean;
+  /** 是否可作为元素输入目标；false 时不要拿该索引做 type/set_value。 */
+  input_target: boolean;
   states: string[];
   bounds: { left: number; top: number; width: number; height: number } | undefined;
   actions: string[];
@@ -104,6 +108,8 @@ export function collectElements(snapshot: {
     kind: string;
     name: string;
     value: string;
+    valueKnown: boolean;
+    inputTarget: boolean;
     states: string[];
     interactive: boolean;
     bounds: { left: number; top: number; width: number; height: number } | undefined;
@@ -115,6 +121,8 @@ export function collectElements(snapshot: {
     kind: "none",
     name: "",
     value: "",
+    value_known: false,
+    input_target: false,
     states: [],
     bounds: undefined,
     actions: [],
@@ -136,6 +144,8 @@ export function collectElements(snapshot: {
       kind: node.kind,
       name: node.name,
       value: node.value,
+      value_known: node.valueKnown,
+      input_target: node.inputTarget,
       states: node.states,
       bounds: node.bounds,
       actions: inferActionsFor(node),
@@ -157,10 +167,15 @@ function inferActionsFor(node: {
   kind: string;
   states: string[];
   interactive: boolean;
+  inputTarget: boolean;
 }): string[] {
-  if (!node.interactive) return [];
+  // 可输入文档（如记事本编辑区）不是 interactive kind，但仍是有效动作目标。
+  if (!node.interactive && !node.inputTarget) return [];
   const actions: string[] = ["click"];
-  if (node.kind === "edit" || node.kind === "document" || node.kind === "combobox") {
+  if (
+    node.inputTarget &&
+    (node.kind === "edit" || node.kind === "document" || node.kind === "combobox")
+  ) {
     actions.push("set_value");
   }
   if (node.kind === "treeitem" || node.kind === "combobox" || node.kind === "menuitem") {

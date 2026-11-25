@@ -18,6 +18,7 @@ import {
   createInProcessNodeReplExecutor,
   createNodeReplMcpRuntime,
   main,
+  requestCuaConfirmationViaElicitation,
   type NodeReplMcpRuntime,
 } from "../src/server.js";
 import { toMcpRunResult } from "../src/result.js";
@@ -111,8 +112,67 @@ describe("node_repl MCP server", () => {
     }
   });
 
-  it("requires user-facing titles in the model schema while preserving legacy runtime input", async () => {
-    const { tools } = await client.listTools();
+  it.skipIf(process.platform !== "win32")(
+    "registers the self-hosted CUA runtime only when the computer-use plugin is enabled",
+    () => {
+      // 回归（2026-11-25 真机）：插件关闭时 node_repl 仍因 Browser Use 启用而存在，
+      // 但 CUA 工具不得注册。RASPBERRYCODE_CUA_PLUGIN_ROOT 只在插件启用时注入。
+      expect(
+        captureComputerUseRuntimeFromEnvironment({
+          RASPBERRYCODE_CUA_PLUGIN_ROOT: "C:/plugins/computer-use/0.6.6",
+        }),
+      ).toBeDefined();
+      expect(captureComputerUseRuntimeFromEnvironment({})).toBeUndefined();
+      expect(
+        captureComputerUseRuntimeFromEnvironment({
+          RASPBERRYCODE_CUA_SELF_HOSTED: "0",
+          RASPBERRYCODE_CUA_PLUGIN_ROOT: "C:/plugins/computer-use/0.6.6",
+        }),
+      ).toBeUndefined();
+    },
+  );
+
+  it("maps a CUA high-risk confirmation to a form-mode elicitation", async () => {
+    const requests: { method: string; params?: Record<string, unknown> }[] = [];
+    const requester = {
+      request: async (request: { method: string; params?: Record<string, unknown> }) => {
+        requests.push(request);
+        return { action: "accept", content: { confirm: true } };
+      },
+    };
+    await expect(
+      requestCuaConfirmationViaElicitation(requester, {
+        tool: "left_click",
+        action: "delete",
+        summary: "删除回收站中的文件",
+      }),
+    ).resolves.toBe(true);
+    expect(requests[0]?.method).toBe("elicitation/create");
+    expect(requests[0]?.params).toMatchObject({
+      mode: "form",
+      message: expect.stringContaining("删除回收站中的文件"),
+      requestedSchema: {
+        type: "object",
+        properties: { confirm: { type: "boolean" } },
+        required: ["confirm"],
+      },
+    });
+
+    await expect(
+      requestCuaConfirmationViaElicitation(
+        { request: async () => ({ action: "accept", content: { confirm: false } }) },
+        { tool: "left_click", action: "delete", summary: "删除" },
+      ),
+    ).resolves.toBe(false);
+    await expect(
+      requestCuaConfirmationViaElicitation(
+        { request: async () => ({ action: "decline" }) },
+        { tool: "left_click", action: "delete", summary: "删除" },
+      ),
+    ).resolves.toBe(false);
+  });
+
+  it("requires user-facing titles in the model schema while preserving legacy runtime input", async () => {    const { tools } = await client.listTools();
     expect(tools.map((tool) => tool.name).sort()).toEqual(["js"]);
 
     const js = tools.find((tool) => tool.name === "js");

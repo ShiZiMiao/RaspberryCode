@@ -13,6 +13,7 @@
  */
 
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import { randomUUID } from "node:crypto";
 import { CuaHelperClient, HelperUnavailableError } from "./helper-client.ts";
 import {
   DISPATCH_ERROR_CODES,
@@ -30,11 +31,13 @@ import {
   handleDrag,
   handleGetAppState,
   handleKey,
+  handleLaunchApp,
   handleLeftClick,
   handleListWindows,
   handlePaste,
   handlePerformAction,
   handleRequestAccess,
+  handleRestoreWindow,
   handleScroll,
   handleSelectText,
   handleSetValue,
@@ -71,6 +74,13 @@ export interface ComputerUseRuntimeContext {
    * 「我接受这个产品抢我的鼠标」。
    */
   allowPhysicalInjection?: boolean;
+  /**
+   * 用户是否允许窗口恢复（`restore_window` 的 restore 阶段）。
+   *
+   * 与 `allowPhysicalInjection` 分开：恢复窗口会激活窗口，但不抢键鼠。
+   * 未提供时按环境默认值处理，默认 false。
+   */
+  allowWindowRestore?: boolean;
 }
 
 export interface ComputerUseRuntimeExecuteInput {
@@ -98,6 +108,19 @@ export interface ComputerUseRuntimeOptions {
   refreshMarkerPath?: string;
   ensureBrokerAvailable?: () => Promise<void>;
   env?: Record<string, string | undefined>;
+  /**
+   * 宿主确认端口。
+   *
+   * 高风险动作（删除、安装、支付、CAPTCHA、上传等）在模型声明
+   * `requires_confirmation` 或 `risk` 时调用。返回 false 表示用户拒绝。
+   * 未注入时 runtime 返回 `confirmation_required` + 单次 `confirmation_id`，
+   * 由模型向用户确认后带 id 重试。
+   */
+  requestConfirmation?: (request: {
+    tool: string;
+    action: string;
+    summary: string;
+  }) => Promise<boolean>;
 }
 
 /** 内部选项：公共契约 + 测试注入。 */
@@ -141,6 +164,7 @@ const SUPPORTED_PLATFORM = "win32";
  */
 const BUDGET_ENV = "RASPBERRYCODE_CUA_INTERFERENCE_BUDGET";
 const ALLOW_PHYSICAL_ENV = "RASPBERRYCODE_CUA_ALLOW_PHYSICAL_INJECTION";
+const ALLOW_WINDOW_RESTORE_ENV = "RASPBERRYCODE_CUA_ALLOW_WINDOW_RESTORE";
 
 /** 解析环境里的预算默认值。非法取值一律忽略并按内置默认处理。 */
 function budgetFromEnv(env: Record<string, string | undefined>): DispatchPolicy["budget"] | undefined {
@@ -150,8 +174,11 @@ function budgetFromEnv(env: Record<string, string | undefined>): DispatchPolicy[
 }
 
 /** 解析环境里的物理注入授权默认值。只认显式的肯定写法。 */
-function allowPhysicalFromEnv(env: Record<string, string | undefined>): boolean | undefined {
-  const raw = env[ALLOW_PHYSICAL_ENV]?.trim().toLowerCase();
+function allowPhysicalFromEnv(
+  env: Record<string, string | undefined>,
+  key = ALLOW_PHYSICAL_ENV,
+): boolean | undefined {
+  const raw = env[key]?.trim().toLowerCase();
   if (raw === "1" || raw === "true" || raw === "yes" || raw === "on") return true;
   if (raw === "0" || raw === "false" || raw === "no" || raw === "off") return false;
   return undefined;
@@ -177,7 +204,11 @@ function resolveBudget(
     typeof context.allowPhysicalInjection === "boolean"
       ? context.allowPhysicalInjection
       : envDefaults.allowPhysicalInjection;
-  return { budget, allowPhysicalInjection };
+  const allowWindowRestore =
+    typeof context.allowWindowRestore === "boolean"
+      ? context.allowWindowRestore
+      : envDefaults.allowWindowRestore;
+  return { budget, allowPhysicalInjection, allowWindowRestore };
 }
 
 /**
@@ -208,6 +239,7 @@ export function createComputerUseRuntime(
   const envBudget: DispatchPolicy = {
     budget: budgetFromEnv(env) ?? "balanced",
     allowPhysicalInjection: allowPhysicalFromEnv(env) ?? false,
+    allowWindowRestore: allowPhysicalFromEnv(env, ALLOW_WINDOW_RESTORE_ENV) ?? false,
   };
 
   /**
@@ -278,6 +310,87 @@ export function createComputerUseRuntime(
     });
   };
 
+  /**
+   * 高风险动作确认。
+   *
+   * 模型通过 `requires_confirmation: true` 或 `risk: "delete" | "install" |
+   * "payment" | "captcha" | "upload" | "permission"` 声明。runtime 不猜语义，
+   * 只执行模型声明的确认。
+   *
+   * 两条路：
+   * - 宿主注入了 `requestConfirmation`：直接弹宿主确认框。
+   * - 未注入：返回 `confirmation_required` + 单次 `confirmation_id`，
+   *   模型向用户确认后带 id 重试。
+   */
+  const issuedConfirmations = new Set<string>();
+  const HIGH_RISK_ACTIONS = new Set([
+    "delete",
+    "install",
+    "payment",
+    "captcha",
+    "upload",
+    "permission",
+  ]);
+
+  const maybeRequireConfirmation = async (
+    toolName: string,
+    params: Record<string, unknown>,
+  ): Promise<CallToolResult | undefined> => {
+    const requires =
+      params.requires_confirmation === true || params.requiresConfirmation === true;
+    const risk = typeof params.risk === "string" ? params.risk : undefined;
+    if (!requires && !(risk && HIGH_RISK_ACTIONS.has(risk))) return undefined;
+
+    const confirmationId =
+      typeof params.confirmation_id === "string"
+        ? params.confirmation_id
+        : typeof params.confirmationId === "string"
+          ? params.confirmationId
+          : undefined;
+    if (confirmationId && issuedConfirmations.has(confirmationId)) {
+      issuedConfirmations.delete(confirmationId);
+      return undefined;
+    }
+
+    const summary =
+      typeof params.confirmation_summary === "string"
+        ? params.confirmation_summary
+        : `${toolName}${risk ? ` (${risk})` : ""}`;
+
+    if (options.requestConfirmation) {
+      try {
+        const approved = await options.requestConfirmation({
+          tool: toolName,
+          action: risk ?? "high-risk",
+          summary,
+        });
+        if (!approved) {
+          return buildErrorResult(
+            DISPATCH_ERROR_CODES.CONFIRMATION_DENIED,
+            "用户拒绝了该动作。不要重试，如实告知用户。",
+            { tool: toolName, actionSent: false },
+          );
+        }
+        return undefined;
+      } catch {
+        // 宿主确认通道不可用（客户端未声明 elicitation 能力、协议版本不支持等）：
+        // 退回 confirmation_required 两步协议，不能把通道故障当成用户拒绝。
+      }
+    }
+
+    const id = randomUUID();
+    issuedConfirmations.add(id);
+    return buildErrorResult(
+      DISPATCH_ERROR_CODES.CONFIRMATION_REQUIRED,
+      `该动作需要用户确认：${summary}。请向用户说明风险并取得同意后，带 confirmation_id 重试。`,
+      {
+        tool: toolName,
+        actionSent: false,
+        detail: { confirmation_id: id, summary, risk: risk ?? "high-risk" },
+      },
+    );
+  };
+
   const execute = async (input: ComputerUseRuntimeExecuteInput): Promise<CallToolResult> => {
     if (disposed) {
       return buildErrorResult(
@@ -301,6 +414,10 @@ export function createComputerUseRuntime(
       await client.ensureReady();
 
       const params = (input.arguments ?? {}) as Record<string, unknown>;
+
+      // 高风险动作确认：必须在任何 Helper 调用之前。
+      const confirmation = await maybeRequireConfirmation(input.toolName, params);
+      if (confirmation) return confirmation;
 
       // 预算来自会话上下文（用户设定），**不从 params 读**。
       // 这条是安全边界而非设计偏好：模型能自定预算，quiet 档就形同虚设。
@@ -329,6 +446,17 @@ export function createComputerUseRuntime(
       ): Promise<T> => {
         if (!windowKey) return action();
         const outcome = await windowLanes.run(windowKey, input.context?.sessionId, action);
+        // 把排队诊断挂到结果上：用户问「为什么 B 变慢了」时，
+        // 能直接指向「在等 A 的同窗口操作」，而不是含糊的「性能问题」。
+        const result = outcome.value as
+          | { structuredContent?: Record<string, unknown> }
+          | undefined;
+        if (result && typeof result === "object" && result.structuredContent) {
+          result.structuredContent.queued_ms = outcome.queuedMs;
+          if (outcome.waitedForSession) {
+            result.structuredContent.waited_for_session = outcome.waitedForSession;
+          }
+        }
         return outcome.value;
       };
 
@@ -378,7 +506,13 @@ export function createComputerUseRuntime(
       switch (input.toolName) {
         case SDK_METHODS.LIST_APPS:
         case SDK_METHODS.LIST_WINDOWS:
-          return await handleListWindows(client, input.toolName);
+          return await handleListWindows(client, input.toolName, params);
+
+        case SDK_METHODS.LAUNCH_APP:
+          return await handleLaunchApp(client, params);
+
+        case SDK_METHODS.RESTORE_WINDOW:
+          return await handleRestoreWindow(client, params, policy);
 
         case SDK_METHODS.GET_APP_STATE:
           {
@@ -386,10 +520,16 @@ export function createComputerUseRuntime(
             // 登记本次观察的窗口归属，供后续动作按 state_id 反查
             // （排队要按窗口分桶，见 window-lanes.ts）。
             const structured = result.structuredContent as
-              | { state_id?: string; windowKey?: string }
+              | { state_id?: string; window?: { key?: string }; windowKey?: string }
               | undefined;
             if (structured?.state_id) {
-              rememberStateWindow(structured.state_id, structured.windowKey);
+              // windowKey 在 structuredContent.window.key 里（SDK 的 appStateOf 形状），
+              // 不是顶层字段。读错位置会让 stateId→windowKey 映射永远为空，
+              // 后续只带 state_id 的动作就绕过了按窗口排队。
+              rememberStateWindow(
+                structured.state_id,
+                structured.window?.key ?? structured.windowKey,
+              );
             }
             return result;
           }

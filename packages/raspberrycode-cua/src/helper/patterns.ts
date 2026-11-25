@@ -27,6 +27,7 @@ import {
   P_EXPAND,
   P_COLLAPSE,
   P_SET_VALUE,
+  P_GET_CURRENT_VALUE,
   P_TEXT_GET_DOCUMENT_RANGE,
   P_TEXT_GET_SELECTION,
   P_RANGE_CLONE,
@@ -484,6 +485,42 @@ export interface SemanticActionResult {
   ok: boolean;
   /** 原始 HRESULT，诊断用。 */
   hresult: string;
+}
+
+/**
+ * 读取 ValuePattern 的当前值。
+ *
+ * 定向文本输入需要「读当前值 → 计算插入后的新值 → SetValue」。
+ * 读失败与读到空串必须区分：前者不能当成空值去覆盖。
+ */
+export interface ValuePatternReadResult {
+  ok: boolean;
+  value?: string;
+  reason?: string;
+  hresult?: string;
+}
+
+export function readValuePatternValue(element: unknown): ValuePatternReadResult {
+  const pattern = getPattern(element, UIA_PATTERN.VALUE);
+  if (!pattern) return { ok: false, reason: "该元素不支持 UIA ValuePattern。" };
+  const out: unknown[] = [null];
+  const hr = koffi.call(
+    vtableEntry(pattern, 4) as never,
+    P_GET_CURRENT_VALUE,
+    pattern,
+    out,
+  ) as number;
+  if (!isHresultOk(hr)) {
+    return { ok: false, reason: "读取 ValuePattern 当前值失败。", hresult: formatHr(hr) };
+  }
+  const raw = out[0];
+  if (typeof raw !== "bigint") {
+    return { ok: false, reason: "ValuePattern 返回了非 BSTR 值。" };
+  }
+  const bstr = readBstr(raw);
+  const value = bstr.value;
+  bstr.release();
+  return { ok: true, value };
 }
 
 /**

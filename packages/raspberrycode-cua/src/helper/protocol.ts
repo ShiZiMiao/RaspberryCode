@@ -31,6 +31,8 @@ export const HELPER_METHODS = Object.freeze({
   UIA_PROBE: "uia_probe",
   /** 枚举所有顶层窗口。 */
   LIST_WINDOWS: "list_windows",
+  /** 显式启动应用，返回 pid / window_id（能解析时）。 */
+  LAUNCH_APP: "launch_app",
   /** 采集指定窗口（或 pid）的无障碍树快照。 */
   CAPTURE: "capture",
   /** 用一级路径（消息投递）在元素中心执行点击。 */
@@ -51,6 +53,14 @@ export const HELPER_METHODS = Object.freeze({
    * 因此键盘**恒走物理注入**，需要授权的判断在 runtime 侧。
    */
   KEY: "key",
+  /**
+   * 定向文本输入：把文本插入指定元素的原生 Edit receiver。
+   *
+   * 与 `key` 的区别：`key` 是全局键盘注入，依赖前台焦点；
+   * 本方法优先走 ValuePattern / TextPattern / EM_REPLACESEL，
+   * 可以在后台把文本写进目标控件，不需要抢焦点。
+   */
+  TYPE_INTO_ELEMENT: "type_into_element",
   /** 滚动：滚轮消息或物理注入。 */
   SCROLL: "scroll",
   /** 拖拽：必须物理注入（需要连续轨迹）。 */
@@ -88,6 +98,14 @@ export const HELPER_METHODS = Object.freeze({
    * 两条采集路（PrintWindow / WGC）都失效。
    */
   WINDOW_OFFSCREEN: "window_offscreen",
+  /**
+   * 两阶段窗口恢复。
+   *
+   * `prepare` 只读校验并返回单次 `recovery_id`；`restore` 需要同一
+   * `recovery_id` + `foreground: true`。恢复会激活窗口，因此授权判断
+   * 在 runtime 侧，Helper 只执行。
+   */
+  RESTORE_WINDOW: "restore_window",
 } as const);
 
 export type HelperMethod = (typeof HELPER_METHODS)[keyof typeof HELPER_METHODS];

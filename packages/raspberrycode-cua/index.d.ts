@@ -23,6 +23,12 @@ export interface ComputerUseRuntimeContext {
    * 三级路径需要 `interferenceBudget === "unrestricted"` **且**本字段为 true。
    */
   allowPhysicalInjection?: boolean;
+  /**
+   * 用户是否允许窗口恢复（`restore_window` 的 restore 阶段）。
+   *
+   * 与 `allowPhysicalInjection` 分开：恢复窗口会激活窗口，但不抢键鼠。
+   */
+  allowWindowRestore?: boolean;
 }
 
 export interface ComputerUseRuntimeExecuteInput {
@@ -44,6 +50,16 @@ export interface ComputerUseRuntimeOptions {
   refreshMarkerPath?: string;
   ensureBrokerAvailable?: () => Promise<void>;
   env?: Record<string, string | undefined>;
+  /**
+   * 宿主确认端口。高风险动作在模型声明 `requires_confirmation` 或 `risk`
+   * 时调用；返回 false 表示用户拒绝。未注入时 runtime 返回
+   * `confirmation_required` + 单次 `confirmation_id`。
+   */
+  requestConfirmation?: (request: {
+    tool: string;
+    action: string;
+    summary: string;
+  }) => Promise<boolean>;
 }
 
 export declare function createComputerUseRuntime(

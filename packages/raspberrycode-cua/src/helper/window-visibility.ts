@@ -56,6 +56,7 @@
  */
 
 import koffi from "koffi";
+import { randomUUID } from "node:crypto";
 
 /** 结果里的模式。 */
 export type VisibilityMode = "edge_sliver";
@@ -135,6 +136,9 @@ interface VisibilityApi {
   setWindowPos: (hwnd: bigint, x: number, y: number) => boolean;
   isIconic: (hwnd: bigint) => boolean;
   isWindow: (hwnd: bigint) => boolean;
+  isVisible: (hwnd: bigint) => boolean;
+  showWindow: (hwnd: bigint, command: number) => boolean;
+  setForegroundWindow: (hwnd: bigint) => boolean;
   virtualScreen: () => { x: number; y: number; width: number; height: number };
 }
 
@@ -152,6 +156,9 @@ function getApi(): VisibilityApi | undefined {
     );
     const IsIconic = user32.func("int __stdcall IsIconic(void *h)");
     const IsWindow = user32.func("int __stdcall IsWindow(void *h)");
+    const IsWindowVisible = user32.func("int __stdcall IsWindowVisible(void *h)");
+    const ShowWindow = user32.func("int __stdcall ShowWindow(void *h, int command)");
+    const SetForegroundWindow = user32.func("int __stdcall SetForegroundWindow(void *h)");
     const GetSystemMetrics = user32.func("int __stdcall GetSystemMetrics(int index)");
 
     /** bigint 句柄 → koffi 指针。 */
@@ -187,6 +194,9 @@ function getApi(): VisibilityApi | undefined {
       },
       isIconic: (hwnd) => (IsIconic(toPtr(hwnd)) as number) !== 0,
       isWindow: (hwnd) => (IsWindow(toPtr(hwnd)) as number) !== 0,
+      isVisible: (hwnd) => (IsWindowVisible(toPtr(hwnd)) as number) !== 0,
+      showWindow: (hwnd, command) => (ShowWindow(toPtr(hwnd), command) as number) !== 0,
+      setForegroundWindow: (hwnd) => (SetForegroundWindow(toPtr(hwnd)) as number) !== 0,
       virtualScreen: () => ({
         x: GetSystemMetrics(SM_XVIRTUALSCREEN) as number,
         y: GetSystemMetrics(SM_YVIRTUALSCREEN) as number,
@@ -294,6 +304,39 @@ export function restoreWindowPosition(
 }
 
 /**
+ * 窗口句柄是否仍然有效。
+ *
+ * 用途：动作前判断目标窗口是否已关闭。窗口关闭后快照里的 HWND 变成悬空句柄，
+ * 继续投递消息会得到笼统的失败；提前判定可以返回 `window_closed`，
+ * 让 runtime 映射成 `cleanup_pending`，模型据此重新观察而不是盲目重试。
+ *
+ * 非 Windows 或 API 不可用时返回 true（不制造假阴性）。
+ */
+export function isWindowAlive(hwnd: bigint): boolean {
+  const fn = getApi();
+  if (!fn) return true;
+  return fn.isWindow(hwnd);
+}
+
+/**
+ * 从快照的 `windowKey` 解析窗口句柄（形如 `hwnd-0x1a2b3c`）。
+ *
+ * 为什么不用 `readNativeWindowHandle(snapshot.rootElement)`：
+ * 窗口关闭后根元素的 COM 指针可能已失效，再去读属性有崩溃风险。
+ * `windowKey` 是采集时记下的纯字符串，判定窗口存活不需要碰 COM。
+ * Chromium 等无 HWND 的窗口 key 形如 `pid-...`，此时返回 undefined，
+ * 由后续的元素重定位给出 `element_unavailable`。
+ */
+export function hwndFromWindowKey(windowKey: string | undefined): bigint | undefined {
+  if (!windowKey?.startsWith("hwnd-0x")) return undefined;
+  try {
+    return BigInt(windowKey.slice("hwnd-".length));
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * 判断窗口当前是否**完全**在屏幕外。
  *
  * 注意区分两个概念：
@@ -331,4 +374,159 @@ export function visibleWidthOf(hwnd: bigint): number {
   const left = Math.max(rect.x, vs.x);
   const right = Math.min(rect.x + rect.width, vs.x + vs.width);
   return Math.max(0, right - left);
+}
+
+/** 读窗口矩形（屏幕坐标）。坐标动作用它把 0-1000 归一化坐标换算成像素。 */
+export function windowRectOf(
+  hwnd: bigint,
+): { x: number; y: number; width: number; height: number } | undefined {
+  return getApi()?.getWindowRect(hwnd);
+}
+
+// ---------------------------------------------------------------------------
+// 两阶段窗口恢复
+// ---------------------------------------------------------------------------
+
+/** ShowWindow 命令。 */
+const SW_RESTORE = 9;
+
+/** recovery_id 的有效期。过期后必须重新 prepare。 */
+const RECOVERY_TTL_MS = 60_000;
+
+interface PreparedRecovery {
+  hwnd: bigint;
+  createdAt: number;
+}
+
+/**
+ * 已 prepare 的恢复凭据。
+ *
+ * 单次使用：restore 成功后立即删除；过期或窗口不匹配都拒绝。
+ * 这样模型不能拿一个旧凭据反复恢复窗口，也不能把 A 窗口的凭据用到 B 上。
+ */
+const preparedRecoveries = new Map<string, PreparedRecovery>();
+
+export interface WindowVisualState {
+  minimized: boolean;
+  visible: boolean;
+  offscreen: boolean;
+  rect: { x: number; y: number; width: number; height: number } | undefined;
+}
+
+export interface PrepareRestoreResult {
+  ok: boolean;
+  recovery_id?: string;
+  window_visual_state?: WindowVisualState;
+  reason?: "unsupported_platform" | "invalid_window";
+  message: string;
+}
+
+/**
+ * 恢复准备：只读校验，不改变窗口状态。
+ *
+ * 返回的 `recovery_id` 是单次凭据；`restore` 阶段必须原样带回。
+ */
+export function prepareWindowRestore(hwnd: bigint): PrepareRestoreResult {
+  const fn = getApi();
+  if (!fn) {
+    return { ok: false, reason: "unsupported_platform", message: "窗口恢复只在 Windows 上可用。" };
+  }
+  if (!fn.isWindow(hwnd)) {
+    return { ok: false, reason: "invalid_window", message: "窗口句柄无效（可能已销毁）。" };
+  }
+  const rect = fn.getWindowRect(hwnd);
+  const recoveryId = randomUUID();
+  preparedRecoveries.set(recoveryId, { hwnd, createdAt: Date.now() });
+  // 顺手清理过期凭据，避免 Map 无限增长。
+  const now = Date.now();
+  for (const [id, entry] of preparedRecoveries) {
+    if (now - entry.createdAt > RECOVERY_TTL_MS) preparedRecoveries.delete(id);
+  }
+  return {
+    ok: true,
+    recovery_id: recoveryId,
+    window_visual_state: {
+      minimized: fn.isIconic(hwnd),
+      visible: fn.isVisible(hwnd),
+      offscreen: isWindowOffscreen(hwnd),
+      rect,
+    },
+    message: "已准备恢复。restore 阶段需要同一 recovery_id 与 foreground=true。",
+  };
+}
+
+export interface RestoreWindowResult {
+  ok: boolean;
+  restored?: boolean;
+  foreground?: boolean;
+  reason?:
+    | "unsupported_platform"
+    | "invalid_window"
+    | "recovery_id_invalid"
+    | "recovery_id_expired"
+    | "restore_failed";
+  message: string;
+}
+
+/**
+ * 执行恢复。
+ *
+ * `foreground=true` 是显式授权：恢复会激活窗口，可能打断用户。
+ * 调用方（runtime）必须先确认预算与 `allowWindowRestore`。
+ */
+export function restoreWindow(
+  hwnd: bigint,
+  recoveryId: string,
+  foreground: boolean,
+): RestoreWindowResult {
+  const fn = getApi();
+  if (!fn) {
+    return { ok: false, reason: "unsupported_platform", message: "窗口恢复只在 Windows 上可用。" };
+  }
+  if (!fn.isWindow(hwnd)) {
+    return { ok: false, reason: "invalid_window", message: "窗口句柄无效（可能已销毁）。" };
+  }
+  const prepared = preparedRecoveries.get(recoveryId);
+  if (!prepared) {
+    return {
+      ok: false,
+      reason: "recovery_id_invalid",
+      message: "recovery_id 无效或已使用。请重新 prepare。",
+    };
+  }
+  if (prepared.hwnd !== hwnd) {
+    return {
+      ok: false,
+      reason: "recovery_id_invalid",
+      message: "recovery_id 不属于该窗口。请重新 prepare。",
+    };
+  }
+  if (Date.now() - prepared.createdAt > RECOVERY_TTL_MS) {
+    preparedRecoveries.delete(recoveryId);
+    return {
+      ok: false,
+      reason: "recovery_id_expired",
+      message: "recovery_id 已过期。请重新 prepare。",
+    };
+  }
+  // 单次使用：先删除，再执行。即使恢复失败也不能复用。
+  preparedRecoveries.delete(recoveryId);
+
+  const restored = fn.showWindow(hwnd, SW_RESTORE);
+  if (!restored) {
+    return {
+      ok: false,
+      reason: "restore_failed",
+      message: "ShowWindow(SW_RESTORE) 失败。可能该窗口属于更高权限的进程。",
+    };
+  }
+  const foregrounded = foreground ? fn.setForegroundWindow(hwnd) : false;
+  return {
+    ok: true,
+    restored: true,
+    foreground: foregrounded,
+    message: foreground
+      ? `窗口已恢复${foregrounded ? "并激活" : "，但激活失败（可能被系统前台锁阻止）"}。`
+      : "窗口已恢复（未激活）。",
+  };
 }

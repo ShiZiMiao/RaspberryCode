@@ -227,3 +227,28 @@ lanes remain mandatory and must not be inferred from the macOS pass.
 
 - darwin on-machine MC-1/2/3: pending manual run (dev:desktop checklist in delivery notes)
 - MC-4..7/9: pending Windows real-machine
+
+## Windows 自研实现能力补全用例（2026-11-25）
+
+以下用例只针对 `packages/raspberrycode-cua` 的 Windows 自研实现，与上游 macOS 用例分开编号。
+
+| ID | P | 断言 | 证据层级 |
+| --- | --: | --- | --- |
+| CU-W01 | P0 | 画布按钮坐标点击成功，截图验证；`quiet`/`balanced` 下走 `post_message` 不抢焦点 | live-windows |
+| CU-W02 | P0 | 窗口移动/缩放后旧 `frame_id` 坐标动作返回 `stale_frame` 且零输入 | mcp-e2e + live-windows |
+| CU-W03 | P0 | 坐标拖拽移动滑块/文件，物理注入路径披露 `grab_input`/`cursor_restored` | live-windows |
+| CU-W04 | P1 | 坐标滚动到达目标列表项；UIA ScrollPattern 优先 | live-windows |
+| CU-W05 | P0 | Notepad/Chromium/Electron 后台文本输入成功，焦点不变 | live-windows |
+| CU-W06 | P0 | 不支持定向输入的控件明确降级，收据带 `degraded_from` | live-windows |
+| CU-W07 | P0 | 最小化窗口 `restore_window` prepare/restore 成功；恢复后旧 `stateId` 失效 | live-windows |
+| CU-W08 | P0 | 未授权 `restore_window` restore 阶段拒绝且零输入 | mcp-e2e |
+| CU-W09 | P0 | `delivery_unknown`/`partial_dispatch` 不触发自动重试 | mcp-e2e fault lane |
+| CU-W10 | P0 | Helper 重启后旧 `stateId` 返回 `state_invalidated` + `next_step=reobserve` | mcp-e2e |
+| CU-W11 | P1 | 快照历史满返回 `session_capacity_exceeded`，提示重建 runtime | mcp-e2e |
+| CU-W12 | P1 | 同窗口并发串行、跨窗口并行；收据带 `queued_ms` | live-windows |
+| CU-W13 | P1 | `input_target=false` 节点拒绝元素输入 | mcp-e2e |
+| CU-W14 | P1 | `max_depths` 截断大树并标注 `truncated=depth` | live-windows |
+| CU-W15 | P1 | `disable_screenshot` 后坐标动作返回 `screenshot_context_required` | mcp-e2e |
+| CU-W16 | P1 | `related_windows` 提示弹窗；先读弹窗再操作 | live-windows |
+| CU-W17 | P1 | `launch_app` 返回可用 `pid`/`window_id`；`list_windows` 过滤生效 | live-windows |
+| CU-W18 | P0 | 高风险动作返回 `requires_confirmation`，宿主确认后执行 | desktop-e2e + live-windows |

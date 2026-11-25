@@ -78,6 +78,9 @@ export type ContextInterferenceBudget = Assert<
 export type ContextAllowPhysicalInjection = Assert<
   Exact<PublicContext["allowPhysicalInjection"], ImplContext["allowPhysicalInjection"]>
 >;
+export type ContextAllowWindowRestore = Assert<
+  Exact<PublicContext["allowWindowRestore"], ImplContext["allowWindowRestore"]>
+>;
 /**
  * 字段数量必须一致。
  *
@@ -148,6 +151,9 @@ export type OptionsEnsureBrokerAvailable = Assert<
   Exact<PublicOptions["ensureBrokerAvailable"], ImplOptions["ensureBrokerAvailable"]>
 >;
 export type OptionsEnv = Assert<Exact<PublicOptions["env"], ImplOptions["env"]>>;
+export type OptionsRequestConfirmation = Assert<
+  Exact<PublicOptions["requestConfirmation"], ImplOptions["requestConfirmation"]>
+>;
 export type OptionsKeyCount = Assert<
   Exact<CountKeys<PublicOptions>, CountKeys<ImplOptions>>
 >;

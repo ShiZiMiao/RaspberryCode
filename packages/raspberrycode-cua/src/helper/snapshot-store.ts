@@ -48,17 +48,24 @@ export class SnapshotStore {
     return this.sequence;
   }
 
-  /** 记录一次新采集的快照。不移动差分基线。 */
-  record(windowKey: string, snapshot: UiaSnapshot): void {
+  /**
+   * 记录一次新采集的快照。不移动差分基线。
+   *
+   * 返回 `evicted`：本次写入是否淘汰了旧快照。调用方据此提示
+   * 「历史已满，旧 stateId 可能失效」，而不是让模型在旧索引上反复失败。
+   */
+  record(windowKey: string, snapshot: UiaSnapshot): { evicted: boolean } {
     const existing = this.observations.get(windowKey);
     if (existing) {
       existing.history.unshift(snapshot);
-      if (existing.history.length > HISTORY_LIMIT) {
+      const evicted = existing.history.length > HISTORY_LIMIT;
+      if (evicted) {
         existing.history.length = HISTORY_LIMIT;
       }
-    } else {
-      this.observations.set(windowKey, { history: [snapshot], shown: undefined });
+      return { evicted };
     }
+    this.observations.set(windowKey, { history: [snapshot], shown: undefined });
+    return { evicted: false };
   }
 
   /** 把某次快照登记为「模型看过」，移动差分基线。 */

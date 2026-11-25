@@ -16,7 +16,7 @@ import {
   DISPATCH_ERROR_CODES,
   buildErrorResult,
   buildTextResult,
-  type DispatchErrorCode,
+  classifyError,
 } from "./receipts.ts";
 import {
   SDK_METHODS,
@@ -30,7 +30,20 @@ import {
   buildKeyResult,
   buildScrollResult,
 } from "./action-receipts.ts";
-import { lastStateIdForApp, rememberAppState } from "./window-lanes.ts";
+import { rememberAppState } from "./window-lanes.ts";
+import {
+  appRefObject,
+  coerceProcessId,
+  ensureObservation,
+  parseSdkTarget,
+  requireElementTarget,
+  requirePhysicalInjection,
+  resolveActionTarget,
+  resolveOptionalTarget,
+  resolvePreferPath,
+  titleTailKeys,
+  withRequestContext,
+} from "./handler-utils.ts";
 
 /** 内部诊断工具名（不属于模型面，仅供脚本与测试直接驱动）。 */
 export { handleRequestAccess, handleStopComputerControl } from "./session-diagnostics.ts";
@@ -66,8 +79,23 @@ export const TOOL_NAMES = Object.freeze({
 export async function handleListWindows(
   client: CuaHelperClient,
   method: string,
+  params: Record<string, unknown> = {},
 ): Promise<CallToolResult> {
-  const { windows, elapsedMs } = await client.listWindows();
+  const scopeRaw = params.scope;
+  const scope = scopeRaw === "running" || scopeRaw === "all" ? scopeRaw : undefined;
+  const includeWindowIds =
+    params.include_window_ids === true || params.includeWindowIds === true;
+  const windowLimitRaw = params.window_limit ?? params.windowLimit;
+  const windowLimit =
+    typeof windowLimitRaw === "number" && Number.isInteger(windowLimitRaw) && windowLimitRaw > 0
+      ? windowLimitRaw
+      : undefined;
+
+  const { windows, elapsedMs, total, truncated } = await client.listWindows({
+    ...(scope ? { scope } : {}),
+    ...(includeWindowIds ? { includeWindowIds } : {}),
+    ...(windowLimit ? { windowLimit } : {}),
+  });
   const lines = windows.map((window) => {
     const bounds = window.bounds
       ? `${Math.round(window.bounds.width)}x${Math.round(window.bounds.height)}@${Math.round(window.bounds.left)},${Math.round(window.bounds.top)}`
@@ -76,13 +104,16 @@ export async function handleListWindows(
     return `${window.processId ?? "?"} [${framework}] "${window.title}" ${bounds}`;
   });
   return buildTextResult(
-    `Top-level windows (${windows.length}, ${elapsedMs}ms):\n${lines.join("\n")}`,
+    `Top-level windows (${windows.length}${truncated ? ` of ${total}` : ""}, ${elapsedMs}ms):\n${lines.join("\n")}`,
     {
       method,
       window_count: windows.length,
+      total,
+      truncated,
       elapsed_ms: elapsedMs,
       windows: windows.map((w) => ({
         process_id: w.processId ?? null,
+        window_id: w.window_id ?? w.runtimeId,
         title: w.title,
         class_name: w.className,
         framework: w.frameworkId || "unknown",
@@ -92,6 +123,8 @@ export async function handleListWindows(
     },
   );
 }
+
+export { handleLaunchApp, handleRestoreWindow } from "./window-handlers.ts";
 
 /**
  * 观察应用状态。
@@ -128,6 +161,19 @@ export async function handleGetAppState(
     );
   }
 
+  const maxDepthRaw = params.max_depths ?? params.maxDepths;
+  const maxDepth =
+    typeof maxDepthRaw === "number" && Number.isInteger(maxDepthRaw) && maxDepthRaw > 0
+      ? maxDepthRaw
+      : undefined;
+  const disableScreenshot =
+    params.disable_screenshot === true || params.disableScreenshot === true;
+  const disableDiff =
+    params.disable_diff === true ||
+    params.disableDiff === true ||
+    params.disable_diffing === true ||
+    params.disableDiffing === true;
+
   const snapshot = await client.capture({
     runtimeId,
     processId,
@@ -135,11 +181,12 @@ export async function handleGetAppState(
     ...(objectRef ? { appName: objectRef } : {}),
     // SDK 传 disable_diffing / tree_shown_to_model（snake_case），
     // 这是它 .strict() 校验过的契约；内部用 camelCase。
-    disableDiffing: params.disable_diffing === true || params.disableDiffing === true,
+    disableDiffing: disableDiff,
     treeShownToModel: params.tree_shown_to_model === true || params.treeShownToModel === true,
+    ...(maxDepth ? { budget: { maxDepth } } : {}),
   });
 
-  const observation = buildObservationResult({
+  let observation = buildObservationResult({
     text: snapshot.text,
     stateId: snapshot.stateId,
     appName: snapshot.windowTitle,
@@ -150,10 +197,22 @@ export async function handleGetAppState(
     truncated: snapshot.truncated,
     truncationReason: snapshot.truncationReason,
     brittleTree: snapshot.brittleTree,
+    capacityExceeded: snapshot.capacityExceeded,
     elapsedMs: snapshot.elapsedMs,
     windowKey: snapshot.windowKey,
+    coordinateRootId: snapshot.coordinateRootId,
+    coordinateSpace: snapshot.coordinateSpace,
+    relatedWindows: snapshot.relatedWindows,
     elements: snapshot.elements,
   });
+
+  if (snapshot.capacityExceeded) {
+    // 历史快照已满：旧 stateId 可能已被淘汰。明确提示，避免模型拿旧索引反复失败。
+    observation = appendText(
+      observation,
+      "\n[capacity_exceeded: 快照历史已满，旧 stateId 可能失效；请使用本次 state_id。]",
+    );
+  }
 
   // 登记「这个应用最近一次观察」，供不带 state_id 的动作解析索引用。
   // SDK 的动作调用只发 app_ref，见 ensureObservation 的注释。
@@ -177,7 +236,10 @@ export async function handleGetAppState(
     snapshot.stateId,
   );
 
-  if (params.include_screenshot !== true && params.includeScreenshot !== true) {
+  if (
+    disableScreenshot ||
+    (params.include_screenshot !== true && params.includeScreenshot !== true)
+  ) {
     return observation;
   }
 
@@ -207,6 +269,9 @@ export async function handleGetAppState(
     width: capture.width,
     height: capture.height,
     byte_length: capture.byte_length,
+    frame_id: capture.frame_id,
+    coordinate_root_id: capture.coordinate_root_id,
+    coordinate_space: capture.coordinate_space,
     blank: false,
     ...(capture.may_be_frozen ? { may_be_frozen: true } : {}),
   };
@@ -283,7 +348,12 @@ export async function handleLeftClick(
   const receipt = await withRequestContext(
     client.act({
       stateId: resolved.stateId,
-      index: resolved.index,
+      ...("index" in resolved
+        ? { index: resolved.index }
+        : {
+            coordinate: resolved.coordinate,
+            ...(resolved.coordinateSpace ? { coordinate_space: resolved.coordinateSpace } : {}),
+          }),
       budget: policy.budget,
       allowPhysicalInjection: policy.allowPhysicalInjection,
       intent: { kind: "click", button, clickCount },
@@ -313,8 +383,33 @@ export async function handleType(
     });
   }
 
-  // 键盘恒走物理注入。预算不足时明确拒绝，不静默降级——
-  // 静默失败会让模型以为输入成功了。
+  const focus = await resolveOptionalTarget(client, params);
+  if ("error" in focus) return focus.error;
+
+  // 定向路径：有元素目标时先试 ValuePattern / EM_REPLACESEL。
+  // 它不激活窗口，允许在 balanced 预算下使用；失败才考虑物理注入。
+  if (focus.stateId !== undefined && focus.index !== undefined) {
+    try {
+      const receipt = await withRequestContext(
+        client.typeIntoElement({ stateId: focus.stateId, index: focus.index, text }),
+        { budget: policy.budget, method: SDK_METHODS.TYPE, path: "ax_text" },
+      );
+      return buildActionResult(receipt, SDK_METHODS.TYPE);
+    } catch (error) {
+      const classified = classifyError(error);
+      // 只有「元素不支持定向输入」才降级；state_invalidated 等错误直接返回，
+      // 否则会在错误的快照上继续输入。
+      if (classified.code !== DISPATCH_ERROR_CODES.ELEMENT_UNAVAILABLE) {
+        return buildErrorResult(classified.code, classified.message, {
+          tool: SDK_METHODS.TYPE,
+          actionSent: classified.actionSent,
+          detail: classified.detail,
+        });
+      }
+    }
+  }
+
+  // 物理注入兜底：预算不足时明确拒绝，不静默降级。
   const blocked = requirePhysicalInjection(policy, "键盘输入");
   if (blocked) {
     return buildErrorResult(blocked.code, blocked.message, {
@@ -323,9 +418,6 @@ export async function handleType(
       detail: { budget: policy.budget, allow_physical_injection: policy.allowPhysicalInjection },
     });
   }
-
-  const focus = await resolveOptionalTarget(client, params);
-  if ("error" in focus) return focus.error;
 
   const result = await withRequestContext(
     client.sendKey({ stateId: focus.stateId, targetIndex: focus.index, text }),
@@ -401,7 +493,12 @@ export async function handleScroll(
   const result = await withRequestContext(
     client.sendScroll({
       stateId: resolved.stateId,
-      index: resolved.index,
+      ...("index" in resolved
+        ? { index: resolved.index }
+        : {
+            coordinate: resolved.coordinate,
+            ...(resolved.coordinateSpace ? { coordinate_space: resolved.coordinateSpace } : {}),
+          }),
       wheelCount,
       budget: policy.budget,
       allowPhysicalInjection: policy.allowPhysicalInjection,
@@ -436,10 +533,56 @@ export async function handleDrag(
       { tool: SDK_METHODS.LEFT_CLICK_DRAG, actionSent: false },
     );
   }
+
+  const state = await ensureObservation(client, params);
+  if ("error" in state) return state.error;
+
+  const buttonRaw = params.mouse_button ?? params.button;
+  const button = buttonRaw === "right" || buttonRaw === "middle" ? buttonRaw : "left";
+
+  // 坐标拖拽：起点与终点都是 0-1000 归一化坐标。
+  if (fromTarget.kind === "coordinate" && toTarget.kind === "coordinate") {
+    if (
+      fromTarget.x === undefined ||
+      fromTarget.y === undefined ||
+      toTarget.x === undefined ||
+      toTarget.y === undefined
+    ) {
+      return buildErrorResult(DISPATCH_ERROR_CODES.BAD_REQUEST, "坐标拖拽缺少 x/y。", {
+        tool: SDK_METHODS.LEFT_CLICK_DRAG,
+        actionSent: false,
+      });
+    }
+    const rawSpace = params.coordinate_space ?? params.coordinateSpace;
+    const coordinateSpace =
+      rawSpace && typeof rawSpace === "object" && !Array.isArray(rawSpace)
+        ? (() => {
+            const record = rawSpace as Record<string, unknown>;
+            return typeof record.width === "number" &&
+              typeof record.height === "number" &&
+              record.width > 0 &&
+              record.height > 0
+              ? { width: record.width, height: record.height }
+              : undefined;
+          })()
+        : undefined;
+    const result = await withRequestContext(
+      client.drag({
+        stateId: state.stateId,
+        fromCoordinate: { x: fromTarget.x, y: fromTarget.y },
+        toCoordinate: { x: toTarget.x, y: toTarget.y },
+        ...(coordinateSpace ? { coordinate_space: coordinateSpace } : {}),
+        button,
+      }),
+      { budget: policy.budget, method: SDK_METHODS.LEFT_CLICK_DRAG },
+    );
+    return buildDragResult(result, SDK_METHODS.LEFT_CLICK_DRAG);
+  }
+
   if (fromTarget.kind !== "element" || toTarget.kind !== "element") {
     return buildErrorResult(
       DISPATCH_ERROR_CODES.BAD_REQUEST,
-      "拖拽的起点与终点必须是元素索引（坐标拖拽在 v1 未实现）。",
+      "拖拽的起点与终点必须同为元素索引或同为坐标。",
       { tool: SDK_METHODS.LEFT_CLICK_DRAG, actionSent: false },
     );
   }
@@ -452,16 +595,12 @@ export async function handleDrag(
     });
   }
 
-  const state = await ensureObservation(client, params);
-  if ("error" in state) return state.error;
-
-  const buttonRaw = params.mouse_button ?? params.button;
   const result = await withRequestContext(
     client.drag({
       stateId: state.stateId,
       fromIndex,
       toIndex,
-      button: buttonRaw === "right" || buttonRaw === "middle" ? buttonRaw : "left",
+      button,
     }),
     { budget: policy.budget, method: SDK_METHODS.LEFT_CLICK_DRAG },
   );
@@ -485,6 +624,8 @@ export async function handleSetValue(
 
   const resolved = await resolveActionTarget(client, params);
   if ("error" in resolved) return resolved.error;
+  const target = requireElementTarget(resolved, SDK_METHODS.SET_VALUE);
+  if ("error" in target) return target.error;
 
   // 不指定 preferPath：写值意图的路径排序由 `planDispatchPaths` 决定——
   // 它会把消息投递排除在外（那条路无法写值），首选 ValuePattern，
@@ -495,8 +636,8 @@ export async function handleSetValue(
   // 那是更糟的错误——动作会「成功」而内容不变。
   const receipt = await withRequestContext(
     client.act({
-      stateId: resolved.stateId,
-      index: resolved.index,
+      stateId: target.stateId,
+      index: target.index,
       budget: policy.budget,
       allowPhysicalInjection: policy.allowPhysicalInjection,
       intent: { kind: "set_value", value },
@@ -539,6 +680,29 @@ export async function handlePaste(
     });
   }
 
+  const focus = await resolveOptionalTarget(client, params);
+  if ("error" in focus) return focus.error;
+
+  // 纯文本优先走定向输入：不写系统剪贴板，也不抢焦点。
+  if (focus.stateId !== undefined && focus.index !== undefined) {
+    try {
+      const receipt = await withRequestContext(
+        client.typeIntoElement({ stateId: focus.stateId, index: focus.index, text }),
+        { budget: policy.budget, method: SDK_METHODS.PASTE, path: "ax_text" },
+      );
+      return buildActionResult(receipt, SDK_METHODS.PASTE);
+    } catch (error) {
+      const classified = classifyError(error);
+      if (classified.code !== DISPATCH_ERROR_CODES.ELEMENT_UNAVAILABLE) {
+        return buildErrorResult(classified.code, classified.message, {
+          tool: SDK_METHODS.PASTE,
+          actionSent: classified.actionSent,
+          detail: classified.detail,
+        });
+      }
+    }
+  }
+
   // 粘贴不写系统剪贴板——那会覆盖用户自己的剪贴板内容，是不可接受的副作用。
   // 这里用 Unicode 逐字符输入达到同样效果。
   const result = await withRequestContext(client.sendKey({ text }), {
@@ -566,11 +730,13 @@ export async function handlePerformAction(
 
   const resolved = await resolveActionTarget(client, params);
   if ("error" in resolved) return resolved.error;
+  const target = requireElementTarget(resolved, SDK_METHODS.PERFORM_ACTION);
+  if ("error" in target) return target.error;
 
   const receipt = await withRequestContext(
     client.act({
-      stateId: resolved.stateId,
-      index: resolved.index,
+      stateId: target.stateId,
+      index: target.index,
       budget: policy.budget,
       allowPhysicalInjection: policy.allowPhysicalInjection,
       intent: { kind: "click", semantic: action },
@@ -598,6 +764,8 @@ export async function handleSelectText(
 ): Promise<CallToolResult> {
   const resolved = await resolveActionTarget(client, params);
   if ("error" in resolved) return resolved.error;
+  const target = requireElementTarget(resolved, SDK_METHODS.SELECT_TEXT);
+  if ("error" in target) return target.error;
 
   // SDK 传 `text_range: [start, length]`；内部诊断入口也可以传 start/length。
   const range = Array.isArray(params.text_range)
@@ -622,7 +790,7 @@ export async function handleSelectText(
   }
 
   const result = await withRequestContext(
-    client.selectText({ stateId: resolved.stateId, index: resolved.index, start, length }),
+    client.selectText({ stateId: target.stateId, index: target.index, start, length }),
     { budget: _policy.budget, method: SDK_METHODS.SELECT_TEXT },
   );
 
@@ -647,16 +815,18 @@ export async function handleSelectText(
         selected_text: result.selection.selectedText ?? null,
         document_length: result.selection.documentLength ?? null,
       },
-      state_id: resolved.stateId,
-      element_index: resolved.index,
+      state_id: target.stateId,
+      element_index: target.index,
       elapsed_ms: result.elapsedMs,
       action_receipt: {
         schema_version: "raspberrycode-cua-action-receipt-v1",
         method: SDK_METHODS.SELECT_TEXT,
         action_sent: result.dispatchStatus === "sent",
         dispatch_status: result.dispatchStatus,
+        delivery: result.dispatchStatus === "not_sent" ? "not_sent" : "sent",
         effect: result.effect,
         retry_action: result.dispatchStatus === "not_sent",
+        next_step: result.dispatchStatus === "not_sent" ? "correct_argument" : "verify",
       },
     },
   );
@@ -717,291 +887,4 @@ export async function handleActInternal(
   );
 
   return buildActionResult(receipt, TOOL_NAMES.ACT);
-}
-
-// ---------------------------------------------------------------------------
-// 参数与目标解析
-// ---------------------------------------------------------------------------
-
-/**
- * 把动作请求上下文挂到错误上，让收据能解释「我按哪条路走的」。
- *
- * 不扩展 Helper 协议的理由：Helper 只报「为什么失败」，
- * 「原本想走哪条路、当前预算是什么」是 runtime 侧的事实。
- * 让信息留在知道它的那一层，协议就不会因为审计需求而膨胀。
- */
-function withRequestContext<T>(
-  promise: Promise<T>,
-  context: Record<string, unknown>,
-): Promise<T> {
-  return promise.catch((error: unknown) => {
-    const target = error as { detail?: Record<string, unknown> };
-    // 展开 undefined 是安全的（无属性可加），所以不需要空对象兜底
-    target.detail = { ...context, ...target.detail };
-    throw error;
-  });
-}
-
-/** 从参数取进程号。SDK 用 `app_ref`，可能是数字字符串，也可能是 `{pid}` 对象。 */
-function coerceProcessId(params: Record<string, unknown>): number | undefined {
-  // `{pid: 1234}` 对象形式（SDK 的 appRefFor 会这么传）
-  const rawAppRef = params.app_ref ?? params.appRef;
-  if (rawAppRef && typeof rawAppRef === "object" && !Array.isArray(rawAppRef)) {
-    const pid = (rawAppRef as Record<string, unknown>).pid;
-    if (typeof pid === "number" && Number.isInteger(pid)) return pid;
-    if (typeof pid === "string" && /^\d+$/.test(pid)) return Number.parseInt(pid, 10);
-  }
-  for (const candidate of [params.processId, params.process_id, params.app_ref]) {
-    if (typeof candidate === "number" && Number.isInteger(candidate)) return candidate;
-    if (typeof candidate === "string" && /^\d+$/.test(candidate)) {
-      return Number.parseInt(candidate, 10);
-    }
-  }
-  return undefined;
-}
-
-/** 解析 SDK 的 target 结构。 */
-function parseSdkTarget(
-  raw: unknown,
-): { kind: "element" | "coordinate"; index?: number; x?: number; y?: number } | undefined {
-  if (typeof raw === "number" && Number.isInteger(raw) && raw >= 0) {
-    return { kind: "element", index: raw };
-  }
-  if (Array.isArray(raw) && raw.length === 2) {
-    const [x, y] = raw;
-    if (Number.isInteger(x) && Number.isInteger(y)) {
-      return { kind: "coordinate", x, y };
-    }
-    return undefined;
-  }
-  if (raw && typeof raw === "object") {
-    const record = raw as Record<string, unknown>;
-    if (record.type === "element" && typeof record.index === "number") {
-      return { kind: "element", index: record.index };
-    }
-    if (record.type === "coordinate") {
-      const x = record.x;
-      const y = record.y;
-      if (typeof x === "number" && typeof y === "number") {
-        return { kind: "coordinate", x, y };
-      }
-    }
-  }
-  return undefined;
-}
-
-/**
- * 确保有一次可用的观察，返回 stateId。
- *
- * 三种来源，按优先级：
- * 1. 显式 `state_id`（内部诊断入口、脚本会传）
- * 2. 按 `app_ref` 找到**该应用最近一次**观察（SDK 的真实调用方式）
- * 3. 都没有则报错
- *
- * **为什么必须有第 2 条**（2026-11-19 实测纠正）：SDK 的动作调用
- * （`left_click` / `set_value` / `select_text` …）**从不发送 `state_id`**——
- * 它发的是 `target: {type:"element", index}` 加 `app_ref`，并在注释里写明
- * 「app_ref 说明按哪个 app 的最新观察解析」（见 computer-use-client.mjs 的
- * `act()` 调用点）。只认 `state_id` 会让**所有元素类动作在真实链路上全部失败**，
- * 报「该动作需要先观察」，而模型明明刚观察完。
- *
- * 这不是放宽校验：`app_ref` 仍然把索引限定在某个应用的观察范围内，
- * 比「用全局最近一次观察」更严格；索引本身仍由 Helper 侧按 stateId 校验。
- *
- * 不做隐式观察（不自动 capture）：那会让「观察 A → 动作 → 观察 B」的
- * 差分基线错位，模型看到的变化就不再是它以为的那些。
- */
-async function ensureObservation(
-  _client: CuaHelperClient,
-  params: Record<string, unknown>,
-): Promise<{ stateId: string } | { error: CallToolResult }> {
-  const stateId =
-    typeof params.state_id === "string"
-      ? params.state_id
-      : typeof params.stateId === "string"
-        ? params.stateId
-        : undefined;
-  if (stateId) return { stateId };
-
-  // 回退：按 app_ref 找该应用最近一次观察的 stateId。
-  const appRef = appRefOf(params);
-  if (appRef) {
-    const remembered = lastStateIdForApp(appRef);
-    if (remembered) return { stateId: remembered };
-  }
-
-  return {
-    error: buildErrorResult(
-      DISPATCH_ERROR_CODES.STATE_INVALIDATED,
-      appRef
-        ? `应用 ${appRef} 还没有可用的观察结果：请先对它调用 get_app_state（同一会话内），再执行动作。`
-        : "该动作需要先观察：调用 get_app_state 拿到 state_id，或用 app_ref 指明目标应用。",
-      { actionSent: false, detail: { need: "get_app_state" } },
-    ),
-  };
-}
-
-/**
- * 从窗口标题里抽出「应用名」候选键。
- *
- * 例：`"*p - Notepad"` → `["Notepad", "*p"]`；`"无标题 - 记事本"` → `["记事本", "无标题"]`。
- *
- * 为什么需要：SDK 侧的应用名常来自 `listApps()` 的显示名或进程名（`Notepad`），
- * 而窗口标题是「文档名 - 应用名」。不抽末段，`getApp("Notepad")` 观察完
- * 再用 `getApp("Notepad")` 操作就会找不到那次观察。
- *
- * 只按 ` - ` 分隔（Windows 标题栏的标准格式），不做模糊切分——
- * 猜错会让 A 应用的观察被 B 应用的键命中。
- */
-function titleTailKeys(title: string | undefined): string[] {
-  if (!title) return [];
-  const parts = title
-    .split(" - ")
-    .map((part) => part.trim())
-    .filter(Boolean);
-  if (parts.length < 2) return [];
-  return [parts[parts.length - 1], parts[0]];
-}
-
-/**
- * 从参数里取 `app_ref` 的**对象形式**的应用名。
- *
- * SDK 会把裸字符串统一转成 `{name}` 或 `{bundle_id}`（见 computer-use-client.mjs
- * 的 `appRefFor`），所以这是模型最常触发的形态。`{pid}` 走进程号路径，
- * 不在这里返回。
- */
-function appRefObject(params: Record<string, unknown>): string | undefined {
-  const raw = params.app_ref ?? params.appRef;
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
-  const record = raw as Record<string, unknown>;
-  // bundle_id 在 Windows 上不是窗口标识，但沿用同一字段名时按名字匹配更有用：
-  // 用户/模型写的 "notepad.exe" 之类仍能对上标题。
-  for (const key of ["name", "bundle_id", "bundleId", "displayName"]) {
-    const value = record[key];
-    if (typeof value === "string" && value.trim()) return value.trim();
-  }
-  return undefined;
-}
-
-/**
- * 从参数里取 `app_ref`（字符串形式）。
- *
- * SDK 的 `app_ref` 是进程号的字符串形式或窗口标识；这里统一转成字符串
- * 作为「应用最近观察」的键。
- */
-function appRefOf(params: Record<string, unknown>): string | undefined {
-  const raw = params.app_ref ?? params.appRef;
-  if (typeof raw === "string" && raw.trim()) return raw.trim();
-  if (typeof raw === "number" && Number.isInteger(raw)) return String(raw);
-  // app_ref 也可能是对象（`{pid}` / `{name}`），取其中可用于匹配的标识。
-  if (raw && typeof raw === "object") {
-    const record = raw as Record<string, unknown>;
-    if (typeof record.pid === "number") return String(record.pid);
-    const named = appRefObject(params);
-    if (named) return named;
-  }
-  // 没有 app_ref 时退回进程号字段，让只传 pid 的调用方也能工作。
-  const pidCandidates = [params.processId, params.process_id];
-  for (const candidate of pidCandidates) {
-    if (typeof candidate === "number" && Number.isInteger(candidate)) return String(candidate);
-    if (typeof candidate === "string" && /^\d+$/.test(candidate)) return candidate;
-  }
-  return undefined;
-}
-
-/**
- * 解析动作目标为 `(stateId, index)`。
- *
- * 支持元素索引与坐标两种。坐标需要换算成元素——但换算目标必须是**当前观察里
- * 包含该坐标的元素**。找不到就明确报错，不猜一个最近似的元素：
- * 点错控件的后果（比如误点「删除」）远大于报错。
- */
-async function resolveActionTarget(
-  client: CuaHelperClient,
-  params: Record<string, unknown>,
-): Promise<{ stateId: string; index: number } | { error: CallToolResult }> {
-  const state = await ensureObservation(client, params);
-  if ("error" in state) return state;
-
-  const target = parseSdkTarget(params.target ?? params.index);
-  if (target?.kind === "element" && target.index !== undefined) {
-    return { stateId: state.stateId, index: target.index };
-  }
-
-  if (target?.kind === "coordinate") {
-    // 坐标目标需要在当前快照里找到覆盖该点的元素。
-    // 这里没有快照数据可查（快照在 Helper 侧），因此明确不支持——
-    // 而不是拿坐标去猜元素。
-    return {
-      error: buildErrorResult(
-        DISPATCH_ERROR_CODES.BAD_REQUEST,
-        "坐标目标在 v1 未实现：请改用元素索引（先 get_app_state 取 elements[*].index）。" +
-          "按坐标操作需要截图定位，属后续版本。",
-        { actionSent: false, detail: { need: "element index" } },
-      ),
-    };
-  }
-
-  return {
-    error: buildErrorResult(
-      DISPATCH_ERROR_CODES.BAD_REQUEST,
-      "缺少目标：请提供 target（元素索引）。",
-      { actionSent: false },
-    ),
-  };
-}
-
-/** 解析可选目标（仅当调用方提供了 target 时才聚焦）。 */
-async function resolveOptionalTarget(
-  client: CuaHelperClient,
-  params: Record<string, unknown>,
-): Promise<{ stateId?: string; index?: number } | { error: CallToolResult }> {
-  const hasTarget = params.target !== undefined || params.index !== undefined;
-  if (!hasTarget) return {};
-
-  const resolved = await resolveActionTarget(client, params);
-  if ("error" in resolved) return resolved;
-  return { stateId: resolved.stateId, index: resolved.index };
-}
-
-/** 从参数解析 preferPath。仅诊断用途。 */
-function resolvePreferPath(
-  params: Record<string, unknown>,
-  policy: DispatchPolicy,
-): "post_message" | "ax" | "foreground_send_input" | undefined {
-  const forced = params.strategy ?? params.preferPath;
-  if (forced === "event" || forced === "foreground_send_input") {
-    return "foreground_send_input";
-  }
-  if (forced === "ax" || forced === "accessibility") return "ax";
-  if (forced === "post_message" || forced === "background") return "post_message";
-  // quiet 预算下优先消息投递（唯一的非抢键鼠路径）
-  return policy.budget === "quiet" ? "post_message" : undefined;
-}
-
-/**
- * 检查物理注入是否可用。
- *
- * 三个条件全部满足才算可用：预算 `unrestricted`、用户已授权、平台支持。
- * 缺任何一个都返回明确的错误，让模型知道换什么方式而不是盲目重试。
- */
-function requirePhysicalInjection(
-  policy: DispatchPolicy,
-  what: string,
-): { code: DispatchErrorCode; message: string } | undefined {
-  if (policy.budget !== "unrestricted") {
-    return {
-      code: DISPATCH_ERROR_CODES.FOREGROUND_REQUIRED,
-      message:
-        `${what}需要物理注入（会抢占鼠标键盘），但当前预算为 ${policy.budget}。` +
-        "这是用户的设定，不能由调用方修改。请改用不依赖键盘的方式（如 set_value），或如实告知用户需要放宽预算。",
-    };
-  }
-  if (!policy.allowPhysicalInjection) {
-    return {
-      code: DISPATCH_ERROR_CODES.AUTHORIZATION_REQUIRED,
-      message: `${what}需要用户在设置中显式授权物理注入（抢鼠标键盘），当前未授权。不要重试，如实告知用户。`,
-    };
-  }
-  return undefined;
 }

@@ -161,12 +161,26 @@ function renderNode(node: UiaNode, index: number): string | undefined {
   const parts: string[] = [`${indent}${index} ${node.kind}`];
 
   if (nameClipped.text) parts.push(`"${nameClipped.text}"`);
-  if (valueClipped.text) parts.push(`value="${valueClipped.text}"`);
+  // 值语义：读到空串是「空值」，读失败是「未知」。
+  // 两者混在一起会让模型把未知输入框当成空输入框。
+  if (node.valueKnown) {
+    if (valueClipped.text) parts.push(`value="${valueClipped.text}"`);
+    else if (node.interactive) parts.push('value=""');
+  } else if (node.interactive) {
+    parts.push("value=unknown");
+  }
 
   const states = node.states.filter((state) => state !== STATE_FLAGS.DISABLED);
   if (states.length > 0) parts.push(...states);
   if (node.offscreen) parts.push("offscreen");
   if (node.states.includes(STATE_FLAGS.DISABLED)) parts.push("disabled");
+  // 明确标记「只能观察、不能作为元素输入目标」。
+  // 模型看到这个标记就不应再拿该索引做 type/set_value，应换目标或走坐标。
+  // document 不是 interactive kind，但同样可能是输入目标（如记事本编辑区），
+  // 只读时也要让模型看到这个标记。
+  if (!node.inputTarget && (node.interactive || node.kind === "document")) {
+    parts.push("input_target=false");
+  }
 
   const actions = inferActions(node);
   if (actions.length > 0) parts.push(`[${actions.join(",")}]`);

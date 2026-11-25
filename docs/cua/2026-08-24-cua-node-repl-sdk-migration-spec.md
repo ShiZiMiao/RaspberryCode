@@ -187,3 +187,24 @@ envelope。skill 必须将“动作 cell 末尾显式观察并写出 AX 文本�
    已删除的工具名不得出现在任何模型可见文档里（contract test 钉死）。
 3. 同一 shared host 多次 Worker 调用不会创建独立 CUA MCP 进程，也不会线性增长 runtime 内存。
 4. Browser Use、桌面 continuous、手机 replayable、subagent 隔离和旧 transcript 回放均通过回归。
+
+## 2026-11-25 能力补全扩展
+
+在原有 14 个方法基础上新增：
+
+| 方法 | 用途 |
+| --- | --- |
+| `launch_app` | 显式启动应用，返回 `pid`/`window_id` |
+| `restore_window` | 两阶段窗口恢复（`prepare`/`restore`） |
+
+`get_app_state` 新增参数：`max_depths`、`disable_screenshot`、`disable_diff`。
+`list_windows` 新增参数：`scope`、`include_window_ids`、`window_limit`。
+`left_click`/`left_click_drag`/`scroll` 接受 `{type:"coordinate", x, y}` 目标，坐标必须配 `coordinate_space` 与 `frame_id`。
+
+收据新增：`delivery`、`receiver_focus`、`next_step`、`queued_ms`、`waited_for_session`。
+错误码新增：`delivery_unknown`、`partial_dispatch`、`receiver_focus_unknown`、`screenshot_context_required`、`stale_frame`、`target_quarantined`、`cleanup_pending`、`session_capacity_exceeded`。
+
+新增能力必须保持：
+- 模型面仍是 `agent.computerUse`，不新增独立 MCP server；
+- 坐标/恢复/定向输入都通过 runtime 的预算与授权判断；
+- 新字段进入 `index.d.ts` 与 `contract-check.ts`，编译期对齐。

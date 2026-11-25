@@ -21,6 +21,7 @@ import type { ActReceipt } from "./helper-client.ts";
 export const SDK_METHODS = Object.freeze({
   LIST_APPS: "list_apps",
   LIST_WINDOWS: "list_windows",
+  LAUNCH_APP: "launch_app",
   GET_APP_STATE: "get_app_state",
   LEFT_CLICK: "left_click",
   SCROLL: "scroll",
@@ -33,6 +34,7 @@ export const SDK_METHODS = Object.freeze({
   PASTE: "paste",
   REQUEST_ACCESS: "request_access",
   STOP_COMPUTER_CONTROL: "stop_computer_control",
+  RESTORE_WINDOW: "restore_window",
 } as const);
 
 export type SdkMethod = (typeof SDK_METHODS)[keyof typeof SDK_METHODS];
@@ -55,6 +57,13 @@ export const MUTATING_METHODS: ReadonlySet<string> = new Set([
 export interface DispatchPolicy {
   budget: "quiet" | "balanced" | "unrestricted";
   allowPhysicalInjection: boolean;
+  /**
+   * 是否允许窗口恢复（`restore_window` 的 restore 阶段）。
+   *
+   * 与 `allowPhysicalInjection` 分开：恢复窗口会激活窗口，但不需要抢键鼠。
+   * 用户可能愿意恢复窗口，却不愿意让产品接管鼠标键盘。
+   */
+  allowWindowRestore: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -82,13 +91,24 @@ export interface ObservationInput {
   truncated: boolean;
   truncationReason: string | undefined;
   brittleTree: boolean;
+  capacityExceeded?: boolean;
   elapsedMs: number;
   windowKey: string;
+  coordinateRootId: string;
+  coordinateSpace: { width: number; height: number };
+  relatedWindows: {
+    window_id: string;
+    title: string;
+    class_name: string;
+    is_modal: boolean;
+  }[];
   elements: {
     index: number;
     kind: string;
     name: string;
     value: string;
+    value_known: boolean;
+    input_target: boolean;
     states: string[];
     bounds: { left: number; top: number; width: number; height: number } | undefined;
     actions: string[];
@@ -118,6 +138,11 @@ export function buildObservationResult(input: ObservationInput): CallToolResult 
       elements: input.elements,
       text: input.text,
       snapshot_mode: input.mode,
+      // 坐标动作的绑定信息：模型必须把 frame_id 原样回传。
+      coordinate_root_id: input.coordinateRootId,
+      coordinate_space: input.coordinateSpace,
+      related_windows: input.relatedWindows,
+      ...(input.capacityExceeded ? { capacity_exceeded: true } : {}),
       ...(input.baseStateId ? { base_state_id: input.baseStateId } : {}),
       // 诊断字段
       node_count: input.nodeCount,
@@ -172,8 +197,21 @@ export function buildActionResult(
         action_sent:
           receipt.dispatchStatus === "sent" || receipt.dispatchStatus === "possibly_sent",
         dispatch_status: receipt.dispatchStatus,
+        delivery:
+          receipt.delivery ??
+          (receipt.dispatchStatus === "not_sent"
+            ? "not_sent"
+            : receipt.dispatchStatus === "possibly_sent"
+              ? "unknown"
+              : "sent"),
         effect: receipt.effect,
         retry_action: receipt.dispatchStatus === "not_sent",
+        next_step:
+          receipt.dispatchStatus === "not_sent"
+            ? "correct_argument"
+            : receipt.dispatchStatus === "possibly_sent"
+              ? "reobserve"
+              : "verify",
       },
       path: receipt.path,
       budget: receipt.budget,
@@ -184,6 +222,9 @@ export function buildActionResult(
       activates_window: receipt.activatesWindow ?? false,
       grabbed_input: receipt.path === "foreground_send_input",
       cursor_restored: receipt.cursorRestored,
+      receiver_focus: receipt.receiverFocus ?? "not_applicable",
+      ...(receipt.coordinate ? { coordinate: receipt.coordinate } : {}),
+      ...(receipt.frameId ? { frame_id: receipt.frameId } : {}),
       // 降级来源：让用户能查到「为什么这个动作走了更重的那条路」
       ...(receipt.degradedFrom ? { degraded_from: receipt.degradedFrom } : {}),
       elapsed_ms: receipt.elapsedMs,

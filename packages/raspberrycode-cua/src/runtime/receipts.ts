@@ -55,6 +55,26 @@ export const DISPATCH_ERROR_CODES = Object.freeze({
   UNSUPPORTED_PLATFORM: "unsupported_platform",
   /** 内部错误。未分类的异常兜底。 */
   INTERNAL: "internal",
+  /** 动作可能已发出，但无法确认。禁止自动重放。 */
+  DELIVERY_UNKNOWN: "delivery_unknown",
+  /** 动作部分发出（例如拖拽中途失败）。禁止自动重放。 */
+  PARTIAL_DISPATCH: "partial_dispatch",
+  /** 无法判定键盘焦点是否在目标控件。 */
+  RECEIVER_FOCUS_UNKNOWN: "receiver_focus_unknown",
+  /** 坐标动作缺少当前截图上下文。 */
+  SCREENSHOT_CONTEXT_REQUIRED: "screenshot_context_required",
+  /** 坐标绑定的截图帧已失效（窗口移动/缩放/遮挡变化）。 */
+  STALE_FRAME: "stale_frame",
+  /** 目标被隔离（Helper 重启/窗口关闭/清理中）。 */
+  TARGET_QUARANTINED: "target_quarantined",
+  /** 目标正在清理，稍后重试或重新观察。 */
+  CLEANUP_PENDING: "cleanup_pending",
+  /** 快照/会话容量已满，需要重建 runtime 或关闭会话。 */
+  SESSION_CAPACITY_EXCEEDED: "session_capacity_exceeded",
+  /** 高风险动作需要用户确认。带 confirmation_id 重试。 */
+  CONFIRMATION_REQUIRED: "confirmation_required",
+  /** 用户拒绝了高风险动作。不要重试。 */
+  CONFIRMATION_DENIED: "confirmation_denied",
 });
 
 export type DispatchErrorCode =
@@ -79,6 +99,26 @@ const RECOVERY_HINT: Readonly<Record<string, string>> = {
   [DISPATCH_ERROR_CODES.UNKNOWN_TOOL]: "这是实现缺陷，不要重试。",
   [DISPATCH_ERROR_CODES.UNSUPPORTED_PLATFORM]: "当前平台不支持该能力，不要重试。",
   [DISPATCH_ERROR_CODES.INTERNAL]: "先重新观察；若仍失败，如实报告无法完成。",
+  [DISPATCH_ERROR_CODES.DELIVERY_UNKNOWN]:
+    "动作可能已发出。先重新观察确认结果，不要自动重放。",
+  [DISPATCH_ERROR_CODES.PARTIAL_DISPATCH]:
+    "动作只完成了一部分。先重新观察，确认已发生的部分，再决定下一步。",
+  [DISPATCH_ERROR_CODES.RECEIVER_FOCUS_UNKNOWN]:
+    "无法确认键盘焦点是否在目标控件。先重新观察，或改用 set_value/定向输入。",
+  [DISPATCH_ERROR_CODES.SCREENSHOT_CONTEXT_REQUIRED]:
+    "坐标动作需要当前截图。先调用 get_app_state(include_screenshot=true) 再重试。",
+  [DISPATCH_ERROR_CODES.STALE_FRAME]:
+    "截图帧已失效（窗口移动/缩放/遮挡变化）。重新观察后再用新坐标。",
+  [DISPATCH_ERROR_CODES.TARGET_QUARANTINED]:
+    "目标被隔离（Helper 重启/窗口关闭/清理中）。不要重试，等清理完成或重新观察。",
+  [DISPATCH_ERROR_CODES.CLEANUP_PENDING]:
+    "目标正在清理。稍后重新观察，不要连续重试。",
+  [DISPATCH_ERROR_CODES.SESSION_CAPACITY_EXCEEDED]:
+    "快照/会话容量已满。关闭会话或重建 runtime 后再试。",
+  [DISPATCH_ERROR_CODES.CONFIRMATION_REQUIRED]:
+    "先向用户说明风险并取得同意，然后带 confirmation_id 重试。",
+  [DISPATCH_ERROR_CODES.CONFIRMATION_DENIED]:
+    "用户拒绝了该动作。不要重试，如实告知用户。",
 };
 
 /** 分类后的错误。 */
@@ -87,7 +127,45 @@ export interface ClassifiedError {
   message: string;
   /** 动作是否可能已经发出。对重试决策至关重要。 */
   actionSent: boolean;
+  /** 模型下一步该做什么。 */
+  nextStep: "correct_argument" | "reobserve" | "retry" | "stop";
   detail?: Record<string, unknown>;
+}
+
+/** 错误码 + 发送状态 → 下一步建议。 */
+function nextStepFor(
+  code: DispatchErrorCode,
+  actionSent: boolean,
+): ClassifiedError["nextStep"] {
+  if (actionSent) return "reobserve";
+  switch (code) {
+    case DISPATCH_ERROR_CODES.BAD_REQUEST:
+    case DISPATCH_ERROR_CODES.WINDOW_NOT_FOUND:
+      return "correct_argument";
+    case DISPATCH_ERROR_CODES.ELEMENT_UNAVAILABLE:
+    case DISPATCH_ERROR_CODES.STATE_INVALIDATED:
+    case DISPATCH_ERROR_CODES.STALE_FRAME:
+    case DISPATCH_ERROR_CODES.SCREENSHOT_CONTEXT_REQUIRED:
+    case DISPATCH_ERROR_CODES.RECEIVER_FOCUS_UNKNOWN:
+      return "reobserve";
+    case DISPATCH_ERROR_CODES.HELPER_UNAVAILABLE:
+    case DISPATCH_ERROR_CODES.UNSUPPORTED_PLATFORM:
+    case DISPATCH_ERROR_CODES.UNKNOWN_TOOL:
+    case DISPATCH_ERROR_CODES.AUTHORIZATION_REQUIRED:
+    case DISPATCH_ERROR_CODES.TARGET_QUARANTINED:
+    case DISPATCH_ERROR_CODES.CLEANUP_PENDING:
+    case DISPATCH_ERROR_CODES.SESSION_CAPACITY_EXCEEDED:
+    case DISPATCH_ERROR_CODES.CONFIRMATION_DENIED:
+      return "stop";
+    case DISPATCH_ERROR_CODES.FOREGROUND_REQUIRED:
+    case DISPATCH_ERROR_CODES.CONFIRMATION_REQUIRED:
+      return "correct_argument";
+    case DISPATCH_ERROR_CODES.DELIVERY_UNKNOWN:
+    case DISPATCH_ERROR_CODES.PARTIAL_DISPATCH:
+      return "reobserve";
+    default:
+      return "reobserve";
+  }
 }
 
 /**
@@ -101,6 +179,11 @@ export interface ClassifiedError {
  * 就属于 possibly_sent，必须标记为可能已发送。
  */
 export function classifyError(error: unknown): ClassifiedError {
+  const classified = classifyErrorInner(error);
+  return { ...classified, nextStep: nextStepFor(classified.code, classified.actionSent) };
+}
+
+function classifyErrorInner(error: unknown): Omit<ClassifiedError, "nextStep"> {
   const record = error as
     | { code?: string; message?: string; detail?: Record<string, unknown> }
     | undefined;
@@ -122,6 +205,15 @@ export function classifyError(error: unknown): ClassifiedError {
     case "element_unavailable":
       return {
         code: DISPATCH_ERROR_CODES.ELEMENT_UNAVAILABLE,
+        message,
+        actionSent: false,
+        detail: passthroughDetail,
+      };
+    case "window_closed":
+      // 窗口已关闭：目标正在消失，不是参数错误。映射成 cleanup_pending，
+      // 让模型等待清理并重新观察，而不是在悬空句柄上反复重试。
+      return {
+        code: DISPATCH_ERROR_CODES.CLEANUP_PENDING,
         message,
         actionSent: false,
         detail: passthroughDetail,
@@ -162,6 +254,23 @@ export function classifyError(error: unknown): ClassifiedError {
         detail: passthroughDetail,
       };
     case "helper_unavailable":
+      // 重启中/清理中不是普通不可用：目标被隔离，模型应等待而不是重建。
+      if (record.detail?.reason === "restart") {
+        return {
+          code: DISPATCH_ERROR_CODES.TARGET_QUARANTINED,
+          message,
+          actionSent: false,
+          detail: passthroughDetail,
+        };
+      }
+      if (record.detail?.reason === "cleanup") {
+        return {
+          code: DISPATCH_ERROR_CODES.CLEANUP_PENDING,
+          message,
+          actionSent: false,
+          detail: passthroughDetail,
+        };
+      }
       // 超时属于「可能已发送」——请求可能到了对端但响应丢了
       return {
         code: DISPATCH_ERROR_CODES.HELPER_UNAVAILABLE,
@@ -261,10 +370,13 @@ export function buildErrorResult(
         schema_version: ACTION_RECEIPT_SCHEMA,
         action_sent: options.actionSent === true,
         dispatch_status: options.actionSent ? "possibly_sent" : "not_sent",
+        delivery: options.actionSent ? "unknown" : "not_sent",
         retry_action: options.actionSent !== true && isRetryable(code),
+        next_step: nextStepFor(code, options.actionSent === true),
       },
       code,
       tool: options.tool,
+      next_step: nextStepFor(code, options.actionSent === true),
       ...(options.detail ? { detail: options.detail } : {}),
     },
   };

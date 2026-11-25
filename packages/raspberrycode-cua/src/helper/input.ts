@@ -344,6 +344,35 @@ export function sendText(text: string): KeySendResult {
 }
 
 // ---------------------------------------------------------------------------
+// 定向文本输入（原生 Edit 控件）
+// ---------------------------------------------------------------------------
+
+/** EM_REPLACESEL：把文本插入当前选区（无选区时插入插入点）。 */
+const EM_REPLACESEL = 0x00c2;
+
+let fnSendMessage: RawFn | undefined;
+
+function sendMessageFn(): RawFn {
+  if (!fnSendMessage) {
+    fnSendMessage = user().func(
+      "intptr __stdcall SendMessageW(void *hwnd, uint32 msg, uintptr wParam, const char16_t *lParam)",
+    ) as unknown as RawFn;
+  }
+  return fnSendMessage;
+}
+
+/**
+ * 向原生 Edit 控件定向插入文本。
+ *
+ * 不依赖前台焦点：消息直接投给控件自己的 HWND。只对真正实现了
+ * `EM_REPLACESEL` 的原生 Edit 有效；Chromium/Electron 的网页输入框
+ * 需要走 ValuePattern 路径（见 `typeIntoElement`）。
+ */
+export function sendEmReplaceSel(hwnd: bigint, text: string): boolean {
+  return sendMessageFn()(hwndToPointer(hwnd), EM_REPLACESEL, 1, text) !== 0;
+}
+
+// ---------------------------------------------------------------------------
 // 滚动
 // ---------------------------------------------------------------------------
 

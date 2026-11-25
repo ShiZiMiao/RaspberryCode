@@ -30,6 +30,7 @@ const BRIDGE_SYMBOL = Symbol.for("raspberrycode.node-repl.computer-use-bridge");
 const COMPUTER_METHOD_NAMES = Object.freeze([
   "list_apps",
   "list_windows",
+  "launch_app",
   "get_app_state",
   "left_click",
   "scroll",
@@ -42,6 +43,7 @@ const COMPUTER_METHOD_NAMES = Object.freeze([
   "paste",
   "request_access",
   "stop_computer_control",
+  "restore_window",
 ]);
 
 /**
@@ -68,6 +70,8 @@ const MUTATING_METHODS = new Set([
   "perform_action",
   "paste",
   "stop_computer_control",
+  "launch_app",
+  "restore_window",
 ]);
 
 // ─────────────────────────────────────────────────────────── 错误
@@ -363,6 +367,28 @@ function bindTarget(binding, target, what) {
     `${what} target must be an element index (number) or a raster pixel ([x, y])`,
     { code: "INTERNAL" },
   );
+}
+
+/**
+ * 高风险动作的确认参数透传。
+ *
+ * runtime 的 maybeRequireConfirmation 读 `requires_confirmation` / `risk` /
+ * `confirmation_id`。高层方法必须把它们原样带到 wire args —— 否则模型按 Skill
+ * 在第三个参数里传了确认字段，也会被静默忽略，动作直接执行（2026-11-25 真机）。
+ */
+function confirmationArgs(options) {
+  if (!options || typeof options !== "object") return {};
+  return {
+    ...(options.requires_confirmation === true || options.requiresConfirmation === true
+      ? { requires_confirmation: true }
+      : {}),
+    ...(typeof options.risk === "string" && options.risk.trim()
+      ? { risk: options.risk.trim() }
+      : {}),
+    ...(typeof options.confirmation_id === "string" && options.confirmation_id.trim()
+      ? { confirmation_id: options.confirmation_id.trim() }
+      : {}),
+  };
 }
 
 /**
@@ -700,6 +726,7 @@ function createTarget(ctx, binding) {
         app_ref: binding.appRef,
         text,
         format: options?.format ?? "text",
+        ...confirmationArgs(options),
       });
     },
 
@@ -721,6 +748,7 @@ function createTarget(ctx, binding) {
         click_count: options?.clickCount ?? 1,
         ...(options?.modifiers ? { modifiers: options.modifiers } : {}),
         ...(options?.strategy ? { strategy: options.strategy } : {}),
+        ...confirmationArgs(options),
       });
     },
 
@@ -735,6 +763,7 @@ function createTarget(ctx, binding) {
         // 此前 SDK 只透传 modifiers —— 调用方显式选 event 被静默吞成 auto，前台
         // 拖拽从 SDK 层不可达。与 click/pressKey/scroll 同形透传。
         ...(options?.strategy ? { strategy: options.strategy } : {}),
+        ...confirmationArgs(options),
       });
     },
 
@@ -747,6 +776,7 @@ function createTarget(ctx, binding) {
         app_ref: binding.appRef,
         ...(options?.holdSeconds !== undefined ? { hold_seconds: options.holdSeconds } : {}),
         ...(options?.strategy ? { strategy: options.strategy } : {}),
+        ...confirmationArgs(options),
       });
     },
 
@@ -764,6 +794,7 @@ function createTarget(ctx, binding) {
         scroll_direction: LONG_DIRECTION[dir] ?? dir,
         scroll_amount: pages === undefined ? 1 : pages,
         ...(options?.strategy ? { strategy: options.strategy } : {}),
+        ...confirmationArgs(options),
       });
     },
 
@@ -772,10 +803,15 @@ function createTarget(ctx, binding) {
       // 签名按内容匹配（传要选中的文本）。range 由 SDK 在**已观察到的元素 value** 上本地算出，
       // 不需要额外的 broker 往返：value 就在上一次 getAXState 的结构化结果里。
       const range = resolveTextRange(binding, elementIndex, text, options);
-      await act("select_text", { target: bound, app_ref: binding.appRef, text_range: range });
+      await act("select_text", {
+        target: bound,
+        app_ref: binding.appRef,
+        text_range: range,
+        ...confirmationArgs(options),
+      });
     },
 
-    async setValue(elementIndex, value) {
+    async setValue(elementIndex, value, options) {
       if (typeof value !== "string") {
         throw new ComputerUseError("setValue requires a string value", { code: "INTERNAL" });
       }
@@ -783,14 +819,15 @@ function createTarget(ctx, binding) {
         target: bindTarget(binding, elementIndex, "setValue"),
         app_ref: binding.appRef,
         value,
+        ...confirmationArgs(options),
       });
     },
 
-    async typeText(text) {
+    async typeText(text, options) {
       if (typeof text !== "string") {
         throw new ComputerUseError("typeText requires text", { code: "INTERNAL" });
       }
-      await act("type", { text, app_ref: binding.appRef });
+      await act("type", { text, app_ref: binding.appRef, ...confirmationArgs(options) });
     },
 
     async performSecondaryAction(elementIndex, action) {
@@ -804,6 +841,7 @@ function createTarget(ctx, binding) {
         target: bindTarget(binding, elementIndex, "performSecondaryAction"),
         app_ref: binding.appRef,
         action,
+        ...confirmationArgs(options),
       });
     },
   };

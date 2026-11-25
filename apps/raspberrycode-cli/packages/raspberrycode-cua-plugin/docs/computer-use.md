@@ -158,8 +158,10 @@ await agent.computerUse.computer.get_app_state({
 
 ```
 list_apps({})
-list_windows({app_ref})
-get_app_state({app_ref, include_screenshot?=false, disable_diffing?=false})
+list_windows({scope?, include_window_ids?, window_limit?})
+launch_app({app})
+get_app_state({app_ref, include_screenshot?=false, disable_diffing?=false,
+               max_depths?, disable_screenshot?, disable_diff?})
 
 left_click({target, mouse_button?="left", click_count?=1, modifiers?="",
            strategy?="auto", app_ref?, return_state?="none"})
@@ -177,6 +179,7 @@ perform_action({target, action, app_ref?, return_state?="none"})
 
 request_access({capabilities?})
 stop_computer_control({reason?})
+restore_window({phase: "prepare"|"restore", pid?, window_id?, state_id?, recovery_id?, foreground?})
 ```
 
 - `app_ref` — `{name: "Notes"}` for a display name, `{bundle_id:
@@ -208,6 +211,59 @@ stop_computer_control({reason?})
 - `repeat` — how many times `key` re-sends the chord. Use it instead of a loop of
   `pressKey` calls.
 
+## New in 2026-11-25
+
+### Observation controls
+
+`get_app_state` accepts:
+
+- `max_depths` — override the traversal depth for this observation. Changing it
+  may replace the tree and element indices.
+- `disable_screenshot` — skip the raster but keep the UIA tree and diff. This
+  also clears coordinate context.
+- `disable_diff` — force a full tree (same as `disable_diffing`).
+
+Observation results add:
+
+- `input_target` — `false` means observation-only; do not use the index for
+  `type` / `set_value` / `select_text`.
+- `value_known` — `false` means the value is unknown, not empty.
+- `coordinate_root_id` / `coordinate_space` — bind coordinate actions.
+- `related_windows` — other windows of the same process, including modal hints.
+
+### Coordinates
+
+`left_click`, `left_click_drag`, and `scroll` accept
+`{ type: "coordinate", x, y }`. Without `coordinate_space`, `x`/`y` are pixels
+of the current window client area. With `coordinate_space: { width, height }`,
+they are pixels in that space and are scaled to the window. Coordinate actions
+must be based on the latest observation; after the window moves, resizes, or is
+occluded, re-observe instead of reusing old coordinates.
+
+### Targeted text input
+
+`type` and `paste` try a targeted path first when an element target is given:
+ValuePattern (read current value, append, set) → `EM_REPLACESEL` → physical
+injection fallback. The targeted path works under `balanced`; the physical
+fallback needs `unrestricted` + `allowPhysicalInjection`. The receipt reports
+`path=ax_text`, `receiver_focus`, and `degraded_from` when applicable.
+
+### Launch and window recovery
+
+- `launch_app({ app })` starts an app. It returns `pid` when a child process is
+  resolvable; a ShellExecute launch returns `dispatched: true` and `pid: null`.
+- `restore_window` is two-phase. `prepare` is read-only and returns a single-use
+  `recovery_id`; `restore` needs that id plus `foreground: true`, and requires
+  `allowWindowRestore` + `unrestricted`. After a successful restore, the old
+  `stateId` and coordinate context are invalid.
+
+### Receipts and errors
+
+Action receipts add `delivery` (`not_sent` / `sent` / `partial` / `unknown`),
+`receiver_focus`, and `next_step`. New error codes:
+`delivery_unknown`, `partial_dispatch`, `receiver_focus_unknown`,
+`screenshot_context_required`, `stale_frame`, `target_quarantined`,
+`cleanup_pending`, `session_capacity_exceeded`.
 
 ## Tool results
 
@@ -345,6 +401,20 @@ plainly that the current budget does not permit the action.
 picked up by hosts started afterwards, so the value in effect changes only after
 the user fully restarts the app. A newly opened task in the same session still
 runs under the old budget.
+
+
+## Confirmation
+
+High-risk actions (delete, install, payment, captcha, upload, permission) must be
+confirmed at action time. Pass `requires_confirmation: true` on the action call,
+plus `risk` with the matching category. The host shows its own confirmation
+dialog when available.
+
+If the result is `confirmation_required`, the host has no dialog: explain the risk
+to the user, wait for explicit agreement, then retry the same call with the
+returned `confirmation_id`. `confirmation_denied` means the user refused — do not
+retry. A confirmation channel failure falls back to `confirmation_required`; it is
+not a refusal.
 
 
 ## Workflow
