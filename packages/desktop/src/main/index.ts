@@ -833,7 +833,8 @@ app.on("browser-window-created", (_event, win) => {
 const remoteSessionManager = createRemoteWorkspaceSessionManager({
   logger,
   windowHostProcessMap,
-  resolveRemoteAssetDirs: () => resolveRemoteAssetDirs({}, hostProcessLocalEnv),
+  resolveRemoteAssetDirs: () =>
+    resolveRemoteAssetDirs({}, hostProcessLocalEnv, { warn: (message) => logger.warn(message) }),
   resolveWslTarget: resolveCanonicalWslTarget,
   reportRemoteConnectionStateChanged: reportRemoteConnectionStateChangedToArms,
   reportRemoteDisconnect: reportRemoteDisconnectToArms,
@@ -1580,7 +1581,9 @@ function createWindowInstance(startupBootstrap: StartupWindowBootstrap = {}) {
     // 已恢复 workspace 建立后台索引。始终注入 canonical fallback，才能覆盖非 active 历史目录已删除的情况。
     agentSpawnFallbackCwd: getConversationWorkspaceDir(),
     deviceMid,
-    remoteAssets: resolveRemoteAssetDirs({}, hostProcessLocalEnv),
+    remoteAssets: resolveRemoteAssetDirs({}, hostProcessLocalEnv, {
+      warn: (message) => logger.warn(message),
+    }),
     runtimeProcessEnvPatchPromise: runtimeProcessEnvPreparation.patchPromise,
     runtimeProcessEnvFallbackPatch: runtimeProcessEnvPreparation.fallbackPatch,
     initialDesktopZoomLevel: currentDesktopZoomLevel,

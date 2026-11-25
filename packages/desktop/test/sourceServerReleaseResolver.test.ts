@@ -259,3 +259,79 @@ describe("Source Server release resolver", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * 回归组：发布根被钉在**旧版本**时必须立刻报版本不匹配。
+ *
+ * 事故（0.2.8，用户先发现）：用户机器上遗留了 0.2.5 事故期的人工绕过变量
+ * `RASPBERRYCODE_REMOTE_ASSET_CDN_BASE_URL=.../releases/download/v0.2.5`。
+ * override 分支不拼版本，于是派生两个候选：
+ *   .../download/v0.2.5/0.2.8  → 404
+ *   .../download/v0.2.5        → 200，但 descriptor.version=0.2.5 ≠ 0.2.8
+ * 两条都拿不到可用 descriptor，最终只报一句「HTTP release roots unreachable」，
+ * 且 URL 已被脱敏成 [redacted-url]，完全看不出真因。
+ *
+ * 该链路此前从未调用过 `assertRemoteCdnBaseVersionMatches`（只有 remoteAssetCache 调），
+ * 而且那个函数的版本提取竟然认不出 `v` 前缀 —— 偏偏 GitHub tag 根就是 `v` 前缀，
+ * 也就是「最该被拦下的形态恰好是唯一逃过校验的形态」。以下用例锁死这两点。
+ */
+describe("Source Server release resolver 发布根钉在旧版本", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("GitHub tag 根钉在旧版本时报版本不匹配，而不是静默报 unreachable", async () => {
+    const fetch = vi.fn<typeof fetch>();
+    await expect(
+      resolveSourceServerReleaseAsset(
+        probe,
+        { remoteCdnBaseUrl: "https://github.com/ShiZiMiao/RaspberryCode/releases/download/v0.2.5" },
+        target,
+        { fetch },
+      ),
+    ).rejects.toThrow(/版本不匹配|不匹配/u);
+    // 必须在发请求之前就 fail-fast，不能让用户等一轮 404。
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("纯版本号形态的旧根同样被拦下", async () => {
+    const fetch = vi.fn<typeof fetch>();
+    await expect(
+      resolveSourceServerReleaseAsset(
+        probe,
+        { remoteCdnBaseUrl: "https://cdn.example.test/raspberrycode/electron/releases/0.2.5" },
+        target,
+        { fetch },
+      ),
+    ).rejects.toThrow(/版本不匹配|不匹配/u);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("根里的版本等于当前版本时正常放行（不得误杀正确配置）", async () => {
+    const fetch = vi.fn<typeof fetch>(async () => {
+      throw new Error("stop after version check passed");
+    });
+    await expect(
+      resolveSourceServerReleaseAsset(
+        probe,
+        { remoteCdnBaseUrl: `https://cdn.example.test/releases/${RASPBERRYCODE_VERSION}` },
+        target,
+        { fetch },
+      ),
+    ).rejects.not.toThrow(/版本不匹配|不匹配/u);
+    expect(fetch).toHaveBeenCalled();
+  });
+
+  it("不带版本段的根不触发版本校验（自建 CDN 注入形态）", async () => {
+    const fetch = vi.fn<typeof fetch>(async () => {
+      throw new Error("stop after version check passed");
+    });
+    await expect(
+      resolveSourceServerReleaseAsset(
+        probe,
+        { remoteCdnBaseUrl: "https://cdn.example.test/raspberrycode/electron/releases" },
+        target,
+        { fetch },
+      ),
+    ).rejects.not.toThrow(/版本不匹配|不匹配/u);
+    expect(fetch).toHaveBeenCalled();
+  });
+});

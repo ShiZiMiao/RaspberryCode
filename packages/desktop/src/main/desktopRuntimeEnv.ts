@@ -253,11 +253,50 @@ function shouldUseRemoteCdnInDevelopment(localEnv: LocalRuntimeEnv = {}): boolea
   return isTruthyEnvFlag(resolveEnvValue("RASPBERRYCODE_DEV_REMOTE_ASSET_USE_CDN", localEnv));
 }
 
+/**
+ * 诊断出口。由调用方（main/index.ts）注入真实 logger，避免本模块直接依赖 logger：
+ * `logger.ts` 会在建模块时 mkdir 并写日志文件，单测里加载它会产生副作用；
+ * 而 logger 又经 shared 转手引入，容易与本模块形成环。
+ */
+export interface RemoteAssetDirDiagnostics {
+  warn?: (message: string) => void;
+}
+
+// 同一进程内对同一个覆盖值只告警一次：resolveRemoteAssetDirs 每次建立远程连接都会被调用，
+// 不去重会把日志刷满。值变了（用户改了环境变量重启）则重新告警。
+let lastWarnedCdnBaseUrlOverride: string | undefined;
+
+/**
+ * `RASPBERRYCODE_REMOTE_ASSET_CDN_BASE_URL` 一旦有值，构建期注入的发布根就会被**整体旁路**
+ * （见 remoteCdn.ts 的 override 分支：直接 return，不拼版本、不与注入根合并）。
+ *
+ * 事故（0.2.8，用户先发现）：这个变量是 0.2.5 事故期人工绕过方案留下的，钉在
+ * `.../releases/download/v0.2.5`。0.2.5 上它恰好自洽（tag 版本 == 客户端版本所以能用），
+ * 升到 0.2.8 后 tag 仍钉在 v0.2.5，descriptor 版本校验必然失败，远程连接全挂。
+ * 此前这里**一行日志都没有**，导致用户、支持者、开发三方都看不到根被换掉了，
+ * 只能对着脱敏后的两个 [redacted-url] 猜。这条告警就是为了让这种情况一眼可见。
+ */
+function warnOnRemoteCdnOverride(
+  overrideBaseUrl: string | undefined,
+  diagnostics: RemoteAssetDirDiagnostics,
+): void {
+  if (!overrideBaseUrl || overrideBaseUrl === lastWarnedCdnBaseUrlOverride) return;
+  lastWarnedCdnBaseUrlOverride = overrideBaseUrl;
+  diagnostics.warn?.(
+    `[remote-assets] RASPBERRYCODE_REMOTE_ASSET_CDN_BASE_URL 覆盖了构建期发布根：${overrideBaseUrl}` +
+      `（安装包内注入的发布根已被整体旁路，远程资产只会从这个地址下载）。` +
+      `若该地址固定在旧版本，远程连接会因 Source Server descriptor 版本不匹配而失败；` +
+      `若不是有意配置，请删除该系统环境变量并重启应用。`,
+  );
+}
+
 function resolveRemoteCdnBaseUrls(
   options: ResolveRemoteCdnOptions = {},
   localEnv: LocalRuntimeEnv = {},
+  diagnostics: RemoteAssetDirDiagnostics = {},
 ): string[] {
   const raw = resolveEnvValue("RASPBERRYCODE_REMOTE_ASSET_CDN_BASE_URL", localEnv);
+  warnOnRemoteCdnOverride(raw, diagnostics);
   return resolveOrderedRemoteCdnBaseUrls({
     ...options,
     env: RASPBERRYCODE_ENV,
@@ -335,8 +374,9 @@ function resolveConfiguredLocalReleaseDir(localEnv: LocalRuntimeEnv = {}): strin
 export function resolveRemoteAssetDirs(
   options: ResolveRemoteCdnOptions = {},
   localEnv: LocalRuntimeEnv = {},
+  diagnostics: RemoteAssetDirDiagnostics = {},
 ): RemoteAssetDirs {
-  const remoteCdnBaseUrls = resolveRemoteCdnBaseUrls(options, localEnv);
+  const remoteCdnBaseUrls = resolveRemoteCdnBaseUrls(options, localEnv, diagnostics);
   const remoteCdnBaseUrl = remoteCdnBaseUrls[0];
 
   // remote 资源之前和 desktop 本地 provider 资源共用安装包内路径，

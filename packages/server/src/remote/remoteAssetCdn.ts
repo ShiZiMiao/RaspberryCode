@@ -279,7 +279,23 @@ function extractPinnedReleaseVersionFromCdnBaseUrl(remoteCdnBaseUrl: string): st
     return null;
   }
 
-  return isSemverLike(lastSegment) ? lastSegment : null;
+  const pinnedVersion = normalizePinnedReleaseVersion(lastSegment);
+  return isSemverLike(pinnedVersion) ? pinnedVersion : null;
+}
+
+/**
+ * 去掉版本段可能带的 `v` 前缀，归一成可与 `RASPBERRYCODE_VERSION` 直接比较的裸版本号。
+ *
+ * 为什么必须归一（0.2.8 用户反馈的缺陷）：GitHub Release 的根是
+ * `.../releases/download/v0.2.5`，语义版本却写作 `0.2.5`。此前 `isSemverLike`
+ * 的锚定正则以数字开头，`v0.2.5` 提取结果为 `null`，而 `null` 在
+ * `assertRemoteCdnBaseVersionMatches` 里的语义是「这个根没钉版本」→ **直接放行**。
+ * 于是最该被拦下的形态（GitHub tag 根钉死在旧版本）恰好是唯一逃过校验的形态。
+ *
+ * 口径必须与 `isReleaseRootAlreadyVersioned` 一致：它同时认 `/0.2.5` 与 `/v0.2.5`。
+ */
+function normalizePinnedReleaseVersion(value: string): string {
+  return value.startsWith("v") ? value.slice(1) : value;
 }
 
 function tryParseUrlPathname(urlOrPath: string): string | null {

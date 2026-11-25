@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  assertRemoteCdnBaseVersionMatches,
   buildComponentArtifactUrlCandidates,
   buildReleaseAssetUrlCandidates,
   buildReleaseBaseCandidates,
@@ -222,5 +223,85 @@ describe("withGithubMirrorCandidates 与客户端共用候选", () => {
   it("非 GitHub 资产（自建 CDN）不加镜像前缀", () => {
     const cdn = "https://cdn.example.com/releases/0.2.8/pkg.tar.gz";
     expect(withGithubMirrorCandidates([cdn])).toEqual([cdn]);
+  });
+});
+
+/**
+ * 回归组：版本锁校验必须认得出 `v` 前缀。
+ *
+ * 事故（0.2.8，用户先发现）：用户机器遗留的覆盖变量是
+ * `https://github.com/.../releases/download/v0.2.5`。旧实现的版本提取用
+ * 数字开头的锚定正则，`v0.2.5` 提取结果为 `null`，而 `null` 在这个校验里
+ * 的语义是「根没钉版本」→ **直接放行**。
+ * 于是「GitHub tag 根钉在旧版本」这个最该被拦下的形态，恰好成了唯一逃过校验的形态。
+ * 判定口径必须与 `isReleaseRootAlreadyVersioned` 一致（它同时认 /0.2.5 与 /v0.2.5）。
+ */
+describe("assertRemoteCdnBaseVersionMatches", () => {
+  it("GitHub tag 根钉在旧版本时抛出（v 前缀必须被识别）", () => {
+    expect(() =>
+      assertRemoteCdnBaseVersionMatches(
+        ["https://github.com/ShiZiMiao/RaspberryCode/releases/download/v0.2.5"],
+        "0.2.8",
+      ),
+    ).toThrow(/0\.2\.5/u);
+  });
+
+  it("GitHub tag 根与当前版本一致时放行", () => {
+    expect(() =>
+      assertRemoteCdnBaseVersionMatches(
+        ["https://github.com/ShiZiMiao/RaspberryCode/releases/download/v0.2.8"],
+        "0.2.8",
+      ),
+    ).not.toThrow();
+  });
+
+  it("预发布版本（-rc.N）按完整版本号比较，不做前段匹配", () => {
+    expect(() =>
+      assertRemoteCdnBaseVersionMatches(
+        ["https://github.com/ShiZiMiao/RaspberryCode/releases/download/v0.2.8-rc.2"],
+        "0.2.8-rc.3",
+      ),
+    ).toThrow(/0\.2\.8-rc\.2/u);
+    expect(() =>
+      assertRemoteCdnBaseVersionMatches(
+        ["https://github.com/ShiZiMiao/RaspberryCode/releases/download/v0.2.8-rc.3"],
+        "0.2.8-rc.3",
+      ),
+    ).not.toThrow();
+  });
+
+  it("纯版本号形态的旧根同样被拦下", () => {
+    expect(() =>
+      assertRemoteCdnBaseVersionMatches(
+        ["https://cdn.example.com/raspberrycode/electron/releases/0.2.5"],
+        "0.2.8",
+      ),
+    ).toThrow(/0\.2\.5/u);
+  });
+
+  it("不带版本段的根不参与校验（自建 CDN 兜底形态，仍由候选派生拼版本）", () => {
+    expect(() =>
+      assertRemoteCdnBaseVersionMatches(
+        ["https://cdn.example.com/raspberrycode/electron/releases"],
+        "0.2.8",
+      ),
+    ).not.toThrow();
+  });
+
+  it("路径段看起来像版本但语义不是版本时不误报（如 /v2/assets）", () => {
+    expect(() => assertRemoteCdnBaseVersionMatches(["https://cdn.example.com/v2/assets"], "0.2.8")).not.toThrow();
+    expect(() => assertRemoteCdnBaseVersionMatches(["https://cdn.example.com/releases"], "0.2.8")).not.toThrow();
+  });
+
+  it("多根里只要有一个钉错就报错，并逐个列出（便于定位是哪个源）", () => {
+    expect(() =>
+      assertRemoteCdnBaseVersionMatches(
+        [
+          "https://github.com/ShiZiMiao/RaspberryCode/releases/download/v0.2.5",
+          "https://cdn.example.com/raspberrycode/electron/releases",
+        ],
+        "0.2.8",
+      ),
+    ).toThrow(/0\.2\.5/u);
   });
 });

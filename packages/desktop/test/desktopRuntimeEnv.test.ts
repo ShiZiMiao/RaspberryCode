@@ -423,6 +423,69 @@ describe("desktopRuntimeEnv resolveRemoteAssetDirs", () => {
     expect(dirs.remoteCdnBaseUrls).toEqual(["https://cdn.example.com/releases"]);
     expect(dirs.remoteCacheDir).toBe(overrideCacheDir);
   });
+
+  /**
+   * 回归组：覆盖变量生效时必须留下可见痕迹。
+   *
+   * 事故（0.2.8，用户先发现）：`RASPBERRYCODE_REMOTE_ASSET_CDN_BASE_URL` 是 0.2.5
+   * 事故期人工绕过方案的遗留，钉在 `.../releases/download/v0.2.5`。它一旦有值，
+   * 构建期注入的发布根会被**整体旁路**，而此前这里**一行日志都没有** ——
+   * 用户、支持者、开发三方都看不到根被换掉了，只能对着脱敏后的两个 [redacted-url] 猜。
+   */
+  describe("覆盖构建期发布根时的诊断告警", () => {
+    it("覆盖生效时输出 WARN，并写明变量名、实际取值与旁路事实", async () => {
+      const { resolveRemoteAssetDirs } = await import("../src/main/desktopRuntimeEnv.js");
+      const warn = vi.fn();
+      const override = "https://github.com/ShiZiMiao/RaspberryCode/releases/download/v0.2.5";
+
+      resolveRemoteAssetDirs({}, { RASPBERRYCODE_REMOTE_ASSET_CDN_BASE_URL: override }, { warn });
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      const message = String(warn.mock.calls[0]?.[0]);
+      expect(message).toContain("RASPBERRYCODE_REMOTE_ASSET_CDN_BASE_URL");
+      // 必须带上实际取值：只说「被覆盖了」而不说是哪个地址，排查时仍然要靠猜。
+      expect(message).toContain(override);
+      expect(message).toMatch(/旁路/u);
+    });
+
+    it("未配置覆盖时不告警（正常路径不该刷日志）", async () => {
+      const { resolveRemoteAssetDirs } = await import("../src/main/desktopRuntimeEnv.js");
+      const warn = vi.fn();
+      resolveRemoteAssetDirs({}, {}, { warn });
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it("同一覆盖值重复调用只告警一次（resolveRemoteAssetDirs 每次连接都会被调用）", async () => {
+      const { resolveRemoteAssetDirs } = await import("../src/main/desktopRuntimeEnv.js");
+      const warn = vi.fn();
+      const override = "https://cdn.example.com/dedup-check/releases";
+
+      resolveRemoteAssetDirs({}, { RASPBERRYCODE_REMOTE_ASSET_CDN_BASE_URL: override }, { warn });
+      resolveRemoteAssetDirs({}, { RASPBERRYCODE_REMOTE_ASSET_CDN_BASE_URL: override }, { warn });
+      resolveRemoteAssetDirs({}, { RASPBERRYCODE_REMOTE_ASSET_CDN_BASE_URL: override }, { warn });
+
+      expect(warn).toHaveBeenCalledTimes(1);
+    });
+
+    it("覆盖值变化时重新告警（用户改了环境变量重启后必须能看到新值）", async () => {
+      const { resolveRemoteAssetDirs } = await import("../src/main/desktopRuntimeEnv.js");
+      const warn = vi.fn();
+
+      resolveRemoteAssetDirs(
+        {},
+        { RASPBERRYCODE_REMOTE_ASSET_CDN_BASE_URL: "https://cdn.example.com/first/releases" },
+        { warn },
+      );
+      resolveRemoteAssetDirs(
+        {},
+        { RASPBERRYCODE_REMOTE_ASSET_CDN_BASE_URL: "https://cdn.example.com/second/releases" },
+        { warn },
+      );
+
+      expect(warn).toHaveBeenCalledTimes(2);
+      expect(String(warn.mock.calls[1]?.[0])).toContain("https://cdn.example.com/second/releases");
+    });
+  });
 });
 
 describe("desktopRuntimeEnv buildHostProcessEnv", () => {

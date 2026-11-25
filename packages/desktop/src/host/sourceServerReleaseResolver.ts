@@ -15,6 +15,7 @@ import {
   type SourceServerReleaseDescriptor,
 } from "@raspberrycode/shared";
 import {
+  assertRemoteCdnBaseVersionMatches,
   buildReleaseAssetUrlCandidates,
   buildReleaseBaseCandidates,
   withGithubMirrorCandidates,
@@ -112,11 +113,21 @@ async function resolveRemoteDescriptor(
   remoteAssetNetwork?: RemoteAssetNetworkPort,
   triedLocalReleaseDirs: readonly string[] = [],
 ): Promise<ResolvedDescriptor> {
-  const releaseBases = buildReleaseBaseCandidates(
+  // 版本锁校验必须在这里做，不能只靠「最后报 unreachable」。
+  //
+  // 事故（0.2.8，用户先发现）：`RASPBERRYCODE_REMOTE_ASSET_CDN_BASE_URL` 被钉在
+  // `.../releases/download/v0.2.5`（0.2.5 事故期的人工绕过方案遗留）。override 分支
+  // 不拼版本，于是 buildReleaseBaseCandidates 派生两个候选：
+  //   .../download/v0.2.5/0.2.8  → 404
+  //   .../download/v0.2.5        → 200，但 descriptor.version=0.2.5 ≠ 0.2.8
+  // 两条都拿不到可用 descriptor，最终只抛一句「HTTP release roots unreachable」，
+  // 且 URL 被脱敏成 [redacted-url]，用户和支持者都无从判断真实原因。
+  // 这个函数在 remoteAssetCache 那条链路早已存在，只有本链路一直漏调。
+  const configuredReleaseRoots =
     remoteAssets.remoteCdnBaseUrls ??
-      (remoteAssets.remoteCdnBaseUrl ? [remoteAssets.remoteCdnBaseUrl] : []),
-    RASPBERRYCODE_VERSION,
-  );
+    (remoteAssets.remoteCdnBaseUrl ? [remoteAssets.remoteCdnBaseUrl] : []);
+  assertRemoteCdnBaseVersionMatches(configuredReleaseRoots, RASPBERRYCODE_VERSION);
+  const releaseBases = buildReleaseBaseCandidates(configuredReleaseRoots, RASPBERRYCODE_VERSION);
   const descriptorUrls = withGithubMirrorCandidates(
     buildReleaseAssetUrlCandidates(releaseBases, [SOURCE_SERVER_RELEASE_DESCRIPTOR_FILE_NAME]),
   );
