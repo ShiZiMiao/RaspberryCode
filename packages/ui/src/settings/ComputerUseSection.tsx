@@ -692,6 +692,47 @@ export function ComputerUseSection({
     [intl, updateAppSettings],
   );
 
+  // 窗口恢复授权：restore 阶段会把最小化窗口拉回前台，属于可见干扰，
+  // 与物理注入分开授权。打开时同样把预算提到 unrestricted，
+  // 否则用户点了开关却仍然被预算拒绝，会被当成坏了。
+  const persistedAllowWindowRestore = appSettings?.computerUseAllowWindowRestore === true;
+  const [allowWindowRestoreOverride, setAllowWindowRestoreOverride] = useState<boolean | null>(
+    null,
+  );
+  const [allowWindowRestoreSaving, setAllowWindowRestoreSaving] = useState(false);
+  const allowWindowRestore = allowWindowRestoreOverride ?? persistedAllowWindowRestore;
+  useEffect(() => {
+    if (allowWindowRestoreOverride === null) return;
+    if (persistedAllowWindowRestore === allowWindowRestoreOverride) {
+      setAllowWindowRestoreOverride(null);
+    }
+  }, [allowWindowRestoreOverride, persistedAllowWindowRestore]);
+  const onToggleAllowWindowRestore = useCallback(
+    async (next: boolean) => {
+      setAllowWindowRestoreOverride(next);
+      setAllowWindowRestoreSaving(true);
+      try {
+        await updateAppSettings({
+          computerUseAllowWindowRestore: next,
+          ...(next ? { computerUseInterferenceBudget: "unrestricted" as const } : {}),
+        });
+      } catch (error) {
+        if (mountedRef.current) {
+          setAllowWindowRestoreOverride(null);
+          toast(
+            intl.formatMessage(
+              { id: "settings.computerUse.windowRestore.saveFailed" },
+              { error: error instanceof Error ? error.message : String(error) },
+            ),
+          );
+        }
+      } finally {
+        if (mountedRef.current) setAllowWindowRestoreSaving(false);
+      }
+    },
+    [intl, updateAppSettings],
+  );
+
   // 产品需求：denied（未授权）时右侧状态徽章本身可点击，
   // 效果同「打开系统设置」授权按钮；granted/stale/unknown 保持纯展示。
   const renderPermissionBadge = (
@@ -801,6 +842,26 @@ export function ComputerUseSection({
               checked={allowPhysical}
               disabled={allowPhysicalSaving || !cuaEnabled}
               onCheckedChange={(checked) => void onToggleAllowPhysical(checked)}
+            />
+          }
+        />
+        {/* 窗口恢复授权：restore 阶段会把最小化窗口拉回前台。
+            与物理注入分开授权，因为它不抢键鼠但会改变可见窗口状态。 */}
+        <SettingsRow
+          label={intl.formatMessage({ id: "settings.computerUse.windowRestore.label" })}
+          description={intl.formatMessage({
+            id: cuaEnabled
+              ? "settings.computerUse.windowRestore.description"
+              : "settings.computerUse.composerEntry.requiresEnabled",
+          })}
+          control={
+            <Switch
+              aria-label={intl.formatMessage({
+                id: "settings.computerUse.windowRestore.label",
+              })}
+              checked={allowWindowRestore}
+              disabled={allowWindowRestoreSaving || !cuaEnabled}
+              onCheckedChange={(checked) => void onToggleAllowWindowRestore(checked)}
             />
           }
         />

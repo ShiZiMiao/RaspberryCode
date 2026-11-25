@@ -27,6 +27,7 @@ import {
   RASPBERRYCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV,
   RASPBERRYCODE_CUA_INTERFERENCE_BUDGET_ENV,
   RASPBERRYCODE_CUA_ALLOW_PHYSICAL_INJECTION_ENV,
+  RASPBERRYCODE_CUA_ALLOW_WINDOW_RESTORE_ENV,
   RASPBERRYCODE_CUA_HELPER_ENTRY_ENV,
 } from "@raspberrycode/shared";
 import type {
@@ -184,6 +185,7 @@ export function spawnHostProcess(
      */
     computerUseInterferenceBudget?: () => "quiet" | "balanced" | "unrestricted" | undefined;
     computerUseAllowPhysicalInjection?: () => boolean | undefined;
+    computerUseAllowWindowRestore?: () => boolean | undefined;
     /**
      * 自研 Windows CUA Helper 入口脚本的绝对路径。
      * 缺省不下发 → runtime 退回「相对自身模块 ../helper/」解析（打包态会失败）。
@@ -301,6 +303,12 @@ export function spawnHostProcess(
         const allow = dependencies.computerUseAllowPhysicalInjection?.();
         return typeof allow === "boolean"
           ? { [RASPBERRYCODE_CUA_ALLOW_PHYSICAL_INJECTION_ENV]: allow ? "1" : "0" }
+          : {};
+      })(),
+      ...(() => {
+        const allow = dependencies.computerUseAllowWindowRestore?.();
+        return typeof allow === "boolean"
+          ? { [RASPBERRYCODE_CUA_ALLOW_WINDOW_RESTORE_ENV]: allow ? "1" : "0" }
           : {};
       })(),
       // 自研 Windows CUA Helper 的入口脚本路径。

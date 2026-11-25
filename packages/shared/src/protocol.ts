@@ -310,6 +310,13 @@ export interface AppSettings {
    * 预算说「这次任务可以打扰我」，授权说「我接受这个产品抢我的键鼠」。
    */
   computerUseAllowPhysicalInjection?: boolean;
+  /**
+   * 用户是否允许电脑控制恢复最小化窗口（restore_window 的 restore 阶段）。
+   *
+   * 与预算的关系同样是**与门**：只有预算为 `unrestricted` 且本项为 true，
+   * restore 才会执行。与物理注入分开是因为它不抢键鼠，但会把窗口拉回前台。
+   */
+  computerUseAllowWindowRestore?: boolean;
   /** 自动归档旧会话的总开关 */
   taskAutoArchiveEnabled?: boolean;
   /** 自动归档修复后的一次性关闭标记；只用于设置迁移，不参与归档判断。 */

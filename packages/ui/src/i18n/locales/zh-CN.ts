@@ -6601,6 +6601,10 @@ const zhCN: Record<string, string> = {
   "settings.computerUse.physicalInjection.description":
     "键盘输入、粘贴与拖拽需要模拟真实的鼠标键盘事件，操作期间会短暂占用输入焦点。关闭时这些操作会被拒绝（不会静默失败）。修改后需重启 RaspberryCode 生效。",
   "settings.computerUse.physicalInjection.saveFailed": "保存失败：{error}",
+  "settings.computerUse.windowRestore.label": "允许恢复最小化窗口",
+  "settings.computerUse.windowRestore.description":
+    "恢复窗口会把最小化窗口拉回前台并切换焦点，属于可见干扰。关闭时 restore 阶段会被拒绝（prepare 仍可用）。修改后需重启 RaspberryCode 生效。",
+  "settings.computerUse.windowRestore.saveFailed": "保存失败：{error}",
   "settings.computerUse.unsupported.title": "当前环境暂不支持电脑控制",
   "settings.computerUse.unsupported.remoteDescription":
     "Computer Use 暂不支持 SSH、WSL、Docker 或其他远端环境。请切换到本机 macOS 或 Windows 工作区。",

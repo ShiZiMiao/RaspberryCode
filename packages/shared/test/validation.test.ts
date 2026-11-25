@@ -643,6 +643,17 @@ describe("hostResponseMessageSchema", () => {
     expect(patch.computerUseComposerEntryHidden).toBe(false);
   });
 
+  it("defaults window restore authorization to off and accepts patches", () => {
+    const parsed = appSettingsSchema.parse({});
+    const enabled = appSettingsSchema.parse({ computerUseAllowWindowRestore: true });
+    const patch = appSettingsPatchSchema.parse({ computerUseAllowWindowRestore: true });
+
+    // 窗口恢复会把最小化窗口拉回前台，属于可见干扰；默认必须关闭。
+    expect(parsed.computerUseAllowWindowRestore).toBe(false);
+    expect(enabled.computerUseAllowWindowRestore).toBe(true);
+    expect(patch.computerUseAllowWindowRestore).toBe(true);
+  });
+
   it("defaults RaspberryCode interaction behavior to queue and accepts guide patches", () => {
     const parsed = appSettingsSchema.parse({});
     const patch = appSettingsPatchSchema.parse({

@@ -36,6 +36,14 @@ export const RASPBERRYCODE_CUA_DEV_MODE_ENV_KEY = "RASPBERRYCODE_CUA_DEV_MODE";
 export const RASPBERRYCODE_CUA_INTERFERENCE_BUDGET_ENV = "RASPBERRYCODE_CUA_INTERFERENCE_BUDGET";
 export const RASPBERRYCODE_CUA_ALLOW_PHYSICAL_INJECTION_ENV =
   "RASPBERRYCODE_CUA_ALLOW_PHYSICAL_INJECTION";
+/**
+ * 窗口恢复授权（用户设置 → host → node_repl → runtime）。
+ *
+ * restore 阶段会把最小化窗口拉回前台，属于可见干扰，因此与物理注入分开授权。
+ * 与预算同样是**与门**：只有预算为 unrestricted 且本项为 true 才执行。
+ */
+export const RASPBERRYCODE_CUA_ALLOW_WINDOW_RESTORE_ENV =
+  "RASPBERRYCODE_CUA_ALLOW_WINDOW_RESTORE";
 
 /**
  * 自研（self-hosted）CUA Helper 的入口脚本绝对路径。

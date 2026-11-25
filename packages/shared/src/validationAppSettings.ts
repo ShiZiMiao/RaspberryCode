@@ -556,6 +556,9 @@ const appSettingsObjectSchema = z.object({
     .enum(["quiet", "balanced", "unrestricted"])
     .default("balanced"),
   computerUseAllowPhysicalInjection: z.boolean().default(false),
+  // 窗口恢复授权：restore 阶段会把最小化窗口拉回前台，属于可见干扰，
+  // 与物理注入分开授权。默认关闭；打开时同样把预算提到 unrestricted。
+  computerUseAllowWindowRestore: z.boolean().default(false),
   taskAutoArchiveEnabled: z.boolean().default(false),
   taskAutoArchiveResetVersion: z.literal(1).default(1),
   taskAutoArchiveOlderThanDays: z.number().int().positive().max(365).default(30),
@@ -683,6 +686,7 @@ export const appSettingsPatchSchema = z.object({
   computerUseComposerEntryHidden: z.boolean().optional(),
   computerUseInterferenceBudget: z.enum(["quiet", "balanced", "unrestricted"]).optional(),
   computerUseAllowPhysicalInjection: z.boolean().optional(),
+  computerUseAllowWindowRestore: z.boolean().optional(),
   taskAutoArchiveEnabled: z.boolean().optional(),
   taskAutoArchiveOlderThanDays: z.number().int().positive().max(365).optional(),
   startupShowHome: z.boolean().optional(),

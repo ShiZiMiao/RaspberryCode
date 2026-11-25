@@ -6912,6 +6912,10 @@ const enUS: Record<string, string> = {
   "settings.computerUse.physicalInjection.description":
     "Typing, pasting and dragging need real mouse/keyboard events, so they briefly take over input focus. When off, those actions are refused rather than silently failing. Restart RaspberryCode for changes to take effect.",
   "settings.computerUse.physicalInjection.saveFailed": "Failed to save: {error}",
+  "settings.computerUse.windowRestore.label": "Allow restoring minimized windows",
+  "settings.computerUse.windowRestore.description":
+    "Restoring a window brings it back to the foreground and moves focus, which is visible interference. When off, the restore phase is refused (prepare still works). Restart RaspberryCode for changes to take effect.",
+  "settings.computerUse.windowRestore.saveFailed": "Failed to save: {error}",
   "settings.computerUse.unsupported.title": "Computer Use is unavailable here",
   "settings.computerUse.unsupported.remoteDescription":
     "Computer Use is not yet supported for SSH, WSL, Docker, or other remote environments. Switch to a local macOS or Windows workspace.",

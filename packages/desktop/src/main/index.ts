@@ -713,7 +713,8 @@ let desktopContextPromptRollout: ReturnType<typeof createDesktopContextPromptRol
 let computerUsePolicySnapshot: {
   budget: "quiet" | "balanced" | "unrestricted" | undefined;
   allowPhysicalInjection: boolean | undefined;
-} = { budget: undefined, allowPhysicalInjection: undefined };
+  allowWindowRestore: boolean | undefined;
+} = { budget: undefined, allowPhysicalInjection: undefined, allowWindowRestore: undefined };
 
 function resolveComputerUseBudgetForHost(): "quiet" | "balanced" | "unrestricted" | undefined {
   return computerUsePolicySnapshot.budget;
@@ -721,6 +722,10 @@ function resolveComputerUseBudgetForHost(): "quiet" | "balanced" | "unrestricted
 
 function resolveComputerUseAllowPhysicalInjectionForHost(): boolean | undefined {
   return computerUsePolicySnapshot.allowPhysicalInjection;
+}
+
+function resolveComputerUseAllowWindowRestoreForHost(): boolean | undefined {
+  return computerUsePolicySnapshot.allowWindowRestore;
 }
 function resolveDesktopContextPromptEnabledForHost(): boolean {
   const rollout = desktopContextPromptRollout;
@@ -981,7 +986,8 @@ function syncImmediateAppSettings(patch: ReturnType<typeof appSettingsPatchSchem
   // 而且已起的 Host 仍用旧值，符合「设置改动不影响进行中的操作」的既有语义。
   if (
     patch.computerUseInterferenceBudget !== undefined ||
-    patch.computerUseAllowPhysicalInjection !== undefined
+    patch.computerUseAllowPhysicalInjection !== undefined ||
+    patch.computerUseAllowWindowRestore !== undefined
   ) {
     if (patch.computerUseInterferenceBudget !== undefined) {
       computerUsePolicySnapshot = {
@@ -993,6 +999,12 @@ function syncImmediateAppSettings(patch: ReturnType<typeof appSettingsPatchSchem
       computerUsePolicySnapshot = {
         ...computerUsePolicySnapshot,
         allowPhysicalInjection: patch.computerUseAllowPhysicalInjection,
+      };
+    }
+    if (patch.computerUseAllowWindowRestore !== undefined) {
+      computerUsePolicySnapshot = {
+        ...computerUsePolicySnapshot,
+        allowWindowRestore: patch.computerUseAllowWindowRestore,
       };
     }
   }
@@ -1503,6 +1515,7 @@ function createWindowInstance(startupBootstrap: StartupWindowBootstrap = {}) {
           desktopContextPromptEnabled: resolveDesktopContextPromptEnabledForHost,
           computerUseInterferenceBudget: resolveComputerUseBudgetForHost,
           computerUseAllowPhysicalInjection: resolveComputerUseAllowPhysicalInjectionForHost,
+          computerUseAllowWindowRestore: resolveComputerUseAllowWindowRestoreForHost,
           // 自研 Windows CUA Helper 入口。打包态必须显式下发真实文件路径，
           // 否则 runtime 的相对路径回退找不到 helper（安装版实测 code=1）。
           cuaHelperEntryPath: resolveBundledCuaHelperEntryPath,
@@ -1698,6 +1711,7 @@ app.whenReady().then(async () => {
     computerUsePolicySnapshot = {
       budget: bootstrapSettings.computerUseInterferenceBudget,
       allowPhysicalInjection: bootstrapSettings.computerUseAllowPhysicalInjection,
+      allowWindowRestore: bootstrapSettings.computerUseAllowWindowRestore,
     };
     if (bootstrapSettings.dataBaseDir) {
       setDataBaseDir(bootstrapSettings.dataBaseDir);
