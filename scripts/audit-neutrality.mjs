@@ -143,6 +143,15 @@ function* walk(dir, relBase = "") {
       // 其中 dist-release/<platform>/runtime/ 是 stage:remote-assets 解包出来的上游运行时代码，
       // 会带上游品牌串 `.__zcode`。审计它等于审计第三方产物，会产出无法修复的 P0 误报
       // （0.2.6 发版时实测 6 个 P0 全部落在这里）。产物层的品牌检查由 `productP0` 单独负责。
+      //
+      // 2026-11-24 补充：E2E 运行时目录也必须整体排除。`.e2e-artifacts/<runId>/network-capture/`
+      // 存的是 E2E 抓下来的上游请求/响应原文（内含完整 system-reminder 与技能清单），
+      // 审计它等于审计**抓包内容**而非我们的源码，会产出修不掉的 P0 假失败
+      // （0.2.8 发版前实测 8 个 P0 全落在这里，源码层 0 违规）。
+      // 原来只写了精确名 `.e2e-home`，而 .gitignore 用的是通配 `.e2e-home-*/`，
+      // 于是带 runId 后缀的目录（如 .e2e-home-desktop-e2e-...）全部漏了进来。
+      // 改为前缀匹配 `.e2e-`，覆盖 .gitignore 里的 .e2e-home / .e2e-home-* /
+      // .e2e-artifacts / .e2e-cache / .e2e-network-capture 五类。
       if (
         [
           ".git",
@@ -150,10 +159,10 @@ function* walk(dir, relBase = "") {
           ".turbo",
           "coverage",
           "mock-cdn",
-          ".e2e-home",
           "dist",
           "dist-release",
-        ].includes(entry.name)
+        ].includes(entry.name) ||
+        entry.name.startsWith(".e2e-")
       )
         continue;
       yield* walk(join(dir, entry.name), rel);
