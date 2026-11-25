@@ -96,3 +96,7 @@ __pycache__/
 .tmp-verify/
 .cua-verify-backup/
 launch-rc.bat
+# 根目录下的 .tmp-* 文件（截图 / 启动脚本 / release notes 草稿 / 临时探针）。
+# 上面的 `.tmp-verify/` 只匹配那个具体目录，带 `-` 后缀的其他临时文件会漏网，
+# 导致 pre-push 的「工作区不干净」误拦（0.2.8 发版时实测）。
+/.tmp-*
