@@ -267,8 +267,9 @@ export function ProjectComposerMenu({
     (availability.get(projectKey(currentProject))?.online ?? true) &&
     Boolean(service);
   const isConversationWorkspace = !currentProject;
+  // 远程项目也提供 ×：显式关闭后由 Root 解析到本机 conversation workspace，
+  // 不进入远程无项目聊天，也不复用远端 tab 的路径。
   const canDetachProject =
-    !hostId &&
     allowConversationWorkspaceSelection &&
     allowConversationWorkspaceDetach &&
     !isConversationWorkspace;

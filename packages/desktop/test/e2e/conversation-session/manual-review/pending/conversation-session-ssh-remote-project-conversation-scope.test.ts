@@ -22,7 +22,7 @@ describe(`${CASE_MARKER}: 远程项目隔离与无项目入口停用`, () => {
     await browser.electron.restoreAllMocks();
     await clearAppData();
   });
-  it("CWP13/CWP15→RPN-03/07 项目 A/B 使用独立 session，远程项目不能退出到无项目聊天", async function () {
+  it("CWP13/CWP15→RPN-03/07/11 项目 A/B 使用独立 session，远程项目保留 × 关闭入口", async function () {
     this.timeout(10 * 60_000);
     const config = readSSHRuntimeConfig(CASE_MARKER);
     await prepareV4ConversationE2E({ skipProvider: true });
@@ -73,7 +73,8 @@ describe(`${CASE_MARKER}: 远程项目隔离与无项目入口停用`, () => {
     expect(await $(`[data-testid="${TID_COMPOSER_WORK_OUTSIDE_PROJECT}"]`).isExisting()).toBe(
       false,
     );
-    expect(await $(`[data-testid="${TID_COMPOSER_PROJECT_DETACH}"]`).isExisting()).toBe(false);
+    // 远程项目保留 ×：显式关闭后回到本机无项目聊天；「不在项目中工作」仍不可见。
+    expect(await $(`[data-testid="${TID_COMPOSER_PROJECT_DETACH}"]`).isExisting()).toBe(true);
     await browser.keys("Escape");
     expect((await readRemoteTabSnapshot()).activeWorkspaceIdentity).toBe(b.workspaceIdentity);
     const remote =

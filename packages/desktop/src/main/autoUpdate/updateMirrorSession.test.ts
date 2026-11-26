@@ -80,7 +80,7 @@ describe("installUpdateMirrorRedirect", () => {
     });
 
     expect(fake.dispatch(DOWNLOAD_URL).redirectURL).toBe(`https://first.example/${DOWNLOAD_URL}`);
-    // 运行期切换（模拟候选轮换或用户改配置）：下一次请求立即生效
+    // 运行期切换（模拟用户改配置）：下一次请求立即生效
     prefix = "https://second.example/";
     expect(fake.dispatch(DOWNLOAD_URL).redirectURL).toBe(`https://second.example/${DOWNLOAD_URL}`);
     // 空串表示禁用镜像 → 不改写，等价直连

@@ -398,97 +398,7 @@ if (!existsSync(unpackedAsar)) {
 }
 
 // ---------------------------------------------------------------------------
-// 3. 更新镜像可用性（用户要求：每次发版前重新测试并选最优镜像）
-// ---------------------------------------------------------------------------
-section("更新镜像可用性");
-
-// 背景（2026-11-23）：更新链路依赖第三方公益镜像，而这类镜像存活率极低——
-// hiwiki 榜单 66 家里 34 家已超时，同一天内速度还能从 9.6MB/s 掉到 0.11MB/s。
-// 0.2.7 之前发出去的包因为镜像只覆盖 /releases/download/、未覆盖 releases.atom，
-// 导致无代理用户点「检查更新」必现 ERR_CONNECTION_TIMED_OUT。
-// 因此把「发版前探测镜像」固化成门禁，而不是靠每次记得手动跑。
-//
-// 判定：至少要有一家镜像同时通过 atom 内容校验 + Range 206 + latest.yml。
-// 全挂时不直接 fail —— 允许用户显式选择「只走直连」发版，但必须留下痕迹。
-//
-// --quick 跳过：quick 是「查产物一致性」的快速通道（几十秒），
-// 而完整探测 30+ 家镜像要几分钟。把探测塞进 quick 会让它失去「快」的价值，
-// 最终被绕过。因此 quick 明确提示「未探测」，由真正发版时的完整门禁兜住。
-if (quick) {
-  warn("--quick 跳过了镜像探测；正式发版必须无 --quick 跑一次（会实测 30+ 家镜像）");
-} else {
-  const probeScript = join(repoRoot, "scripts/probe-update-mirrors.mjs");
-  if (!existsSync(probeScript)) {
-    warn("缺少 scripts/probe-update-mirrors.mjs，跳过镜像探测");
-  } else {
-    try {
-      const out = execFileSync(process.execPath, [probeScript, "--json"], {
-        cwd: repoRoot,
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "pipe"],
-        timeout: 300_000,
-      });
-      const report = JSON.parse(out);
-      const eligible = report.eligible ?? [];
-      // 探测脚本已经按「速度排序 + 取前 3」选好了，这里直接用，避免两处算法漂移。
-      const selected = report.selected ?? eligible.slice(0, 3);
-      if (eligible.length === 0) {
-        // 不 fail：镜像全挂时更新并非不可用，回退状态机会降到 direct（GitHub 直连），
-        // 最终还有 manual（手动下载）。但无代理用户走直连通常很慢，必须显式告知。
-        warn(
-          "所有候选镜像均不合格：本次发版将只能走 GitHub 直连（无代理用户可能很慢）。建议把 updateMirrorPrefix 显式设为空串并在发版说明中提示",
-        );
-      } else {
-        const top = selected
-          .map((r) => r.prefix.replace(/^https:\/\//, "").replace(/\/$/, ""))
-          .join(", ");
-        // 只在不等于上限时才提「共几家」：等于时「6 家取 3」已经由前缀表达过，
-        // 重复一遍会让这行变得难读。
-        const suffix =
-          eligible.length > selected.length ? `（全通 ${eligible.length} 家，取前 ${selected.length}）` : "";
-        ok(`合格镜像 ${eligible.length} 家${suffix}，候选按速度取：${top}`);
-        if (eligible.length < 3) {
-          ok(`合格数不足 3 家，按实际 ${eligible.length} 家写入（有几个算几个）`);
-        }
-        ok("兜底：候选全挂 → GitHub 直连（direct）→ 手动下载（manual）");
-        // 只有当「当前候选里已经没有任何一家合格」时才提醒改代码。
-        //
-        // 为什么不按名次提醒：镜像速度波动极大（同一天内 0.05–14MB/s 都出现过），
-        // 按名次比较会让每次发版都产生「建议更换」的噪音，久而久之被当成无用告警忽略。
-        // 真正需要人工介入的只有一种情况：候选全军覆没。
-        const current = readFileSync(
-          // 候选的事实源在 shared（客户端自更新与远程资产下载共用一份）。
-          // 曾经读的是 updateMirror.ts——候选上移后如果不改这里，正则永远匹配不到，
-          // declaredPrefixes 恒为空 → 「候选全军覆没」的告警彻底失效，变成静默通过。
-          join(repoRoot, "packages/shared/src/client-update/contract.ts"),
-          "utf8",
-        );
-        const declared = current.match(/DEFAULT_UPDATE_MIRROR_CANDIDATES[^=]*=\s*\[([\s\S]*?)\]/)?.[1] ?? "";
-        const declaredPrefixes = [...declared.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
-        const eligibleSet = new Set(eligible.map((r) => r.prefix));
-        const stillGood = declaredPrefixes.filter((p) => eligibleSet.has(p));
-        if (stillGood.length === 0) {
-          warn(
-            `当前代码声明的 ${declaredPrefixes.length} 家候选本次全部不合格，建议更换为：${selected
-              .map((r) => r.prefix)
-              .join(", ")}`,
-          );
-        } else {
-          ok(`当前候选仍有 ${stillGood.length}/${declaredPrefixes.length} 家可用`);
-        }
-      }
-    } catch (error) {
-      // 探测本身失败（无 curl / 全超时）不应阻止发版，但要让发版人知道没测到。
-      const out = `${error.stdout ?? ""}${error.stderr ?? ""}`.toString();
-      warn(
-        `镜像探测未完成：${out.split("\n").filter(Boolean).slice(0, 3).join(" / ") || String(error.message ?? error)}`,
-      );
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// 4. 自动门禁
+// 3. 自动门禁
 // ---------------------------------------------------------------------------
 if (quick) {
   console.log("\n== 自动门禁（--quick 跳过） ==");
@@ -531,7 +441,7 @@ if (quick) {
 }
 
 // ---------------------------------------------------------------------------
-// 5. 必须人工确认的项（脚本无法替代）
+// 4. 必须人工确认的项（脚本无法替代）
 // ---------------------------------------------------------------------------
 section("必须人工确认（脚本无法替代）");
 need("卸载旧版 → 安装本产物 → 版本号显示为新版");

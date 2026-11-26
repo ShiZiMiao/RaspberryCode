@@ -18,7 +18,7 @@ import {
   assertRemoteCdnBaseVersionMatches,
   buildReleaseAssetUrlCandidates,
   buildReleaseBaseCandidates,
-  withGithubMirrorCandidates,
+  withGithubMirror,
 } from "@raspberrycode/server/remote/remoteAssetCdn.js";
 import {
   resolveRemoteAssetFetch,
@@ -74,9 +74,9 @@ function findArchive(
 function resolveArchiveUrls(releaseBases: string[], archive: SourceServerReleaseArchive): string[] {
   const absolute = archive.urls.filter((url) => /^https?:\/\//u.test(url));
   const relative = archive.urls.filter((url) => !/^https?:\/\//u.test(url));
-  // 镜像候选只对 GitHub release 资产生效（自建 CDN 不加），由 withGithubMirrorCandidates 判定。
+  // 镜像只对 GitHub release 资产生效（自建 CDN 不加），由 withGithubMirror 判定。
   // archive 约 90MB/平台，是这条链路里最耗时的一步：直连实测 390KB/s，镜像 835KB/s。
-  return withGithubMirrorCandidates(
+  return withGithubMirror(
     Array.from(new Set([...absolute, ...buildReleaseAssetUrlCandidates(releaseBases, relative)])),
   );
 }
@@ -128,7 +128,7 @@ async function resolveRemoteDescriptor(
     (remoteAssets.remoteCdnBaseUrl ? [remoteAssets.remoteCdnBaseUrl] : []);
   assertRemoteCdnBaseVersionMatches(configuredReleaseRoots, RASPBERRYCODE_VERSION);
   const releaseBases = buildReleaseBaseCandidates(configuredReleaseRoots, RASPBERRYCODE_VERSION);
-  const descriptorUrls = withGithubMirrorCandidates(
+  const descriptorUrls = withGithubMirror(
     buildReleaseAssetUrlCandidates(releaseBases, [SOURCE_SERVER_RELEASE_DESCRIPTOR_FILE_NAME]),
   );
   const cachedDescriptorPath = cacheRoot

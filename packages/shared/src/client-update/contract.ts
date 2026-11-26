@@ -87,45 +87,26 @@ export const DEFAULT_UPDATE_FEED_GITHUB = {
 } as const;
 
 /**
- * GitHub 下载镜像候选前缀（按速度排序，最多 3 个）——**两条下载链路的唯一事实源**。
+ * 默认更新镜像前缀——**两条下载链路的唯一事实源**。
+ *
+ * 形态是「前缀 + 完整原 URL」：`https://gh-proxy.org/https://github.com/...`。
+ * 只对 GitHub 的 release 资产与元数据请求有效，自建 CDN 不加。
  *
  * 为什么放在 shared 而不是各自的包里：客户端自更新（`desktop/.../updateMirror.ts`）
  * 与远程资产下载（`server/src/remote/remoteAssetCdn.ts`）是两个包、两个进程、两套网络栈
  * （前者走 Electron `webRequest`，后者走 Host 子进程 undici，`Session.setProxy` 影响不到它），
  * 代码无法复用，但它们面对的是**同一个网络问题**（GitHub release 下载在部分网络下不可用）。
- * 若各自维护一份，必然出现「一边已切换到新镜像、另一边还在用已失效的旧镜像」。
+ * 若各自维护一份，必然出现「一边已切换到新镜像、另一边还在用旧镜像」的错位。
  *
- * 取值由 `node scripts/probe-update-mirrors.mjs` 在**每次发版前**实测 30+ 家公开镜像生成：
- * 三条硬条件全过 → 按速度排序 → 取前 3（不足 3 个有几个算几个）。
- * GitHub 直连不占名额，它是候选全挂后的下一级兜底。
- *
- * 入选三条硬条件（缺一不可，全部来自实测踩坑）：
- *   1. 能代理 `releases.atom`，且**响应体是真实 Atom XML**（≥2000 字节、含 `<feed>`）。
- *      只回 200 不算：`gh.acmsz.top` 曾返回 200 但 body 只有 2–3 字节 `ok`，
- *      electron-updater 会在 parseXml 阶段抛 `ERR_UPDATER_INVALID_RELEASE_FEED`。
- *   2. 支持单 Range（206 且长度等于请求区间）。回 200 全量会让差量静默退化为整包。
+ * 为什么固定一家：维护「发版前探测 30+ 家 → 按速度取前 3 → 运行时候选轮换」的
+ * 成本高于收益。2026-11-26 实测 `https://gh-proxy.org/` 通过三项硬条件：
+ *   1. 能代理 `releases.atom`，且响应体是真实 Atom XML（含 `<feed>`）；
+ *   2. 支持单 Range（206 且长度等于请求区间）；
  *   3. 能正确返回含 `version` + `sha512` 的 `latest.yml`。
+ * 同次实测下载速度约为 GitHub 直连的 2.6 倍，因此固定为默认镜像。
  *
- * ⚠️ 这是**快照**，不是长期结论。实测同一天内镜像速度可在 0.05–14MB/s 间波动，
- * 数十家「正常」站里常只有 5 家左右能通过上述判据。因此：
- *   - 排序只代表「最近一次探测时谁快」，不要据此推断长期可用性；
- *   - 发版必须重跑探测（已接进 `release-gate.mjs`），否则候选可能已全部失效；
- *   - 真正保证下载可用的是「候选轮换 → 直连 → 手动下载」这级联回退，不是候选本身。
- *
- * 第 1 条对远程资产链路是**冗余**的（它只下 `releases/download/...`，不请求 atom），
- * 但两条链路共用一份列表，取交集可以避免「一边能用一边不能用」的判定分歧。
+ * 失败链路固定为 `mirror → direct → manual`：镜像失败直接走 GitHub 直连，
+ * 直连也失败才进入手动下载。镜像失效时可通过 setting.json 的
+ * `updateMirrorPrefix` 覆盖或设为空串（只走直连），无需发版。
  */
-export const DEFAULT_UPDATE_MIRROR_CANDIDATES: readonly string[] = [
-  "https://xsadwsd.kdns.fr/",
-  "https://gitproxy.127731.xyz/",
-  "https://cdn.akaere.online/",
-];
-
-/**
- * 默认镜像前缀 = 候选首项，仅作为「没有候选信息时的起点」。
- *
- * 空数组兜底：`CANDIDATES[0]` 的类型是 `string | undefined`（TS 不做非空推断）。
- * 列表为空只可能发生在有人误删内容时——那时返回空串，语义是「禁用镜像、只走直连」，
- * 正好是这种情况最安全的降级，而不是留 undefined 让请求拼出 `undefinedhttps://...`。
- */
-export const DEFAULT_UPDATE_MIRROR_PREFIX: string = DEFAULT_UPDATE_MIRROR_CANDIDATES[0] ?? "";
+export const DEFAULT_UPDATE_MIRROR_PREFIX = "https://gh-proxy.org/";

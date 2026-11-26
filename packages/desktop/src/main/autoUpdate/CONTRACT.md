@@ -19,17 +19,13 @@
   与状态机，`updateMirrorSession.ts` 负责 webRequest 接线。**mirror 阶段重写 github.com
   全站**（不只 /releases/download/），因为检查阶段第一条是 `releases.atom`，只拦下载会让
   无代理用户在第一条就超时。
-- **镜像前缀不写死**：由 `AppSettings.updateMirrorPrefix` 提供，`updateMirrorSession` 通过
-  `getMirrorPrefix()` 每次请求动态读取。三态语义：undefined = 用内置候选列表；
-  `""` = 禁用镜像只走直连；非空 = 只用指定的一家。第三方公益镜像不稳定，
-  改配置即可切换而无需发版。
-- **候选列表的事实源已上移到 shared**（2026-11-23）：
-  `packages/shared/src/client-update/contract.ts` 的 `DEFAULT_UPDATE_MIRROR_CANDIDATES`。
-  `updateMirror.ts` 只是 `export ... from "@raspberrycode/shared/client-update"` 重新导出，
-  **不要在这里重新定义一份**。原因：远程资产下载
-  （`packages/server/src/remote/remoteAssetCdn.ts`）面对同一个网络问题但代码不能复用，
-  各写一份必然错位（历史上它固定写着 `ghfast.top`，早已失效）。
-  发版前重跑探测时只改 shared 那一处。
+- **默认镜像固定为 `https://gh-proxy.org/`**（2026-11-26 实测通过 atom / Range /
+  latest.yml 三项判据），事实源是 `packages/shared/src/client-update/contract.ts` 的
+  `DEFAULT_UPDATE_MIRROR_PREFIX`。`updateMirror.ts` 只是重新导出，**不要在这里重新定义**。
+  远程资产下载（`packages/server/src/remote/remoteAssetCdn.ts`）共用同一常量。
+- **镜像前缀可配置**：由 `AppSettings.updateMirrorPrefix` 提供，`updateMirrorSession` 通过
+  `getMirrorPrefix()` 每次请求动态读取。三态语义：undefined = 用默认镜像；
+  `""` = 禁用镜像只走直连；非空 = 只用指定的一家。镜像失效时改配置即可切换而无需发版。
 - 备用分发通道（CNB）的设计约束见 `docs/update-distribution-platform-evaluation.md`
   第 3.1.1 节与 spec 产品规则 11，当前未实现。
 - **手动检查在自动下载空窗期返回 `downloading` 而非 `available`**（2026-11-23 对齐上游）：

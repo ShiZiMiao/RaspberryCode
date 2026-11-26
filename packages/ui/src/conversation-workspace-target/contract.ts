@@ -26,8 +26,8 @@ export interface ConversationWorkspaceTargetParams {
 }
 
 /**
- * 已在本地 conversation 时直接返回；远端拒绝解除项目绑定。
- * 端口失败、Source 未知或目标缺失时 reject，不回落本地。重试由打开端口承接；
+ * 已在本地 conversation 时直接返回；远程项目显式关闭时回到本机 conversation workspace。
+ * 端口失败或目标缺失时 reject，不回落本地。重试由打开端口承接；
  * 解析器不发事件、不写持久化、不保存任何请求状态。
  */
 export type ResolveConversationWorkspaceTarget = (

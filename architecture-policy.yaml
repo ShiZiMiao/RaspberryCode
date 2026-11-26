@@ -765,7 +765,7 @@ modules:
       - desktop
       - shared
       # client-update-contract：updateMirror.ts 从
-      # `@raspberrycode/shared/client-update` 取 DEFAULT_UPDATE_MIRROR_CANDIDATES，
+      # `@raspberrycode/shared/client-update` 取默认镜像前缀（DEFAULT_UPDATE_MIRROR_PREFIX），
       # 该入口属于 client-update-contract 模块，必须显式声明依赖。
       - client-update-contract
     publicEntrypoints:
@@ -1134,7 +1134,7 @@ exceptions:
     paths: [ packages/desktop/src/main/autoUpdate/autoUpdateService.ts ]
     reason: >-
       0.2.8 已把纯函数部分（isVersionSkipped / buildReleaseNotesPayload /
-      deriveManualCheckResultFromState / resolveMirrorConfig）拆到 updatePayloads.ts，
+      deriveManualCheckResultFromState / resolveMirrorPrefix）拆到 updatePayloads.ts，
       从 859 行降到 821 行。剩余部分是**同一个下载回退状态机**的闭包：
       updater / state / downloadFallback / quittingInstallState / 代理注入点
       全部是模块级可变状态，按行数强行再切会把状态机拆成两处各自持有半个真相，

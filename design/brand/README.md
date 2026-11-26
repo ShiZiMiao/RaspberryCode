@@ -17,12 +17,14 @@
 design/brand/
 ├── brand-sheet.png              # 当前版（粉彩）品牌总览 2304×1536
 ├── brand-sheet-pastel.png       # 同上（源目录内的副本，保留以备对照）
-├── readme-icon.png              # 仓库 README 头部图标 512×512（裁边后撑满，勿直接当应用图标用）
-├── icon-set/                    # 当前生效：粉彩版
+├── readme-icon.png              # 仓库 README 头部图标 512×512（新 1:1 标记）
+├── icon-set-v1/                 # 当前生效：粉彩版（1:1 标记）
 │   ├── apple-touch-icon.png     # 180×180
-│   ├── favicon.ico              # 内含 16/32/48/64 四档
-│   ├── png/                     # 45 个分档导出的位图
-│   └── svg/                     # 11 个矢量源
+│   ├── favicon.ico              # 内含 16/32/48 四档
+│   ├── png/                     # 分档导出的位图
+│   └── svg/                     # 矢量源
+├── icon-set-v2/                 # 树莓小狗版（备选）
+├── icon-set/                    # 上一版粉彩归档（410×361 标记）
 └── icon-set-navy-v1/            # 历史版本：深蓝底板版（2026-11-17 之前）
     ├── apple-touch-icon.png
     ├── favicon.ico
@@ -45,29 +47,29 @@ design/brand/
 | `logo-horizontal-light` | 600/1200/2400                 | 横向组合标，浅底版                                    |
 | `logo-primary`          | 600/1200/2400                 | 主组合标                                              |
 
-`mark-color` 原始画布**不是正方形**（1024×902，宽高比 1.135），归档时保持原样未改。
+`mark-color` 画布为 **1:1 正方形**（410×410 / 1024×1024），标记宽度撑满画布、上下居中。
 
 ## 与打包资源的关系
 
 | 本目录文件                          | 项目内对应位置                                                                                                                       | 当前状态                         |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
-| `svg/mark-mono-white.svg`           | `packages/ui/src/assets/brand-mark-white.svg`                                                                                        | 字节完全相同                     |
-| `svg/mark-mono-dark.svg`            | `packages/ui/src/assets/brand-mark-black.svg`                                                                                        | 字节完全相同（文件名保留 black） |
+| `svg/mark-mono-white.svg`           | `packages/ui/src/assets/brand-mark-white.svg`                                                                                        | 字节完全相同（新 1:1）           |
+| `svg/mark-mono-dark.svg`            | `packages/ui/src/assets/brand-mark-black.svg`                                                                                        | 字节完全相同（新 1:1）           |
 | `svg/logo-horizontal-light.svg`     | `packages/ui/src/assets/brand-wordmark.svg`                                                                                          | 字节完全相同                     |
 | `svg/mark-color.svg`                | `packages/ui/src/assets/app-logo.svg`<br>`packages/desktop/build/brand-mark-color.svg`                                               | 两处**字节完全相同**             |
 | `png/mark-color-{256,512,1024}.png` | `packages/desktop/build/icon.png`<br>`icon_windows.png`<br>`icon_installer.png`<br>`icons/1024x1024.png`<br>`public/icon_512@2x.png` | 由它裁边后撑满正方形生成         |
 | `png/mark-color-1024.png`           | `packages/desktop/build/icons/{16..512}.png`、两个 `.ico`、两个 `.icns`                                                              | 同上（缺失档位从 1024 缩放）     |
-| `png/mark-mono-dark-1024.png`       | `packages/desktop/src/renderer/startup-logo.png`                                                                                     | 裁边后缩到 336×293（2x）         |
+| `png/mark-color-1024.png`           | `packages/desktop/src/renderer/startup-logo.png`                                                                                     | 缩到 336×336（2x）               |
 
 ### UI 内各处品牌标记的用法（2026-11-17 晚更新）
 
 | 位置                     | 文件                                                                                 | 形态                                                  |
 | ------------------------ | ------------------------------------------------------------------------------------ | ----------------------------------------------------- |
 | 标题栏左上角（Windows）  | `packages/ui/src/assets/app-logo.svg`（= `mark-color.svg`）                          | **透明粉彩**，无背板，13px                            |
-| HTML 启动壳              | `packages/desktop/src/renderer/startup-logo.png`（= `mark-mono-dark-1024.png` 裁边） | **透明深紫单色**，深色主题下 CSS `invert(1)` 自动反白 |
+| HTML 启动壳              | `packages/desktop/src/renderer/startup-logo.png`（= `mark-color-1024.png`）          | **透明粉彩**，深浅主题通用，无需反色                  |
 | 启动动画（数据库启动态） | `packages/ui/src/assets/app-logo.svg`（`bare` 分支）                                 | **透明粉彩**，无背板，56px + 脉冲动画                 |
 | 引导页（onboarding）     | `packages/ui/src/assets/brand-mark-white.svg`（= `mark-mono-white.svg`）             | 白色单色 + 深色圆角底板（叠在渐变背景上，有意保留）   |
-| 空状态（对话草稿）       | `brand-mark-black.svg` / `brand-mark-white.svg`                                      | 按主题二选一（`dark:hidden` / `dark:block`）          |
+| 空状态（对话草稿）       | `brand-mark-black.svg` / `brand-mark-white.svg`（均为新 1:1）                        | 按主题二选一：浅色用深紫、深色用白色（`dark:hidden` / `dark:block`） |
 | About 弹窗               | `packages/desktop/build/brand-mark-color.svg`（= `mark-color.svg`）                  | **透明粉彩**，30px，无底板                            |
 
 ## 打包图标的实际形态
@@ -104,7 +106,7 @@ PNG 里画出来的字不在其覆盖范围。换品牌时务必单独核对这�
    `packages/ui/src/components/client-update/UpdateStatusDialog.tsx` 直接引用）。
 3. 若图形本身变了，同步 UI 内三处标记：`packages/ui/src/assets/` 的四个 SVG、
    标题栏用的 `app-logo.svg`，以及启动页的 `packages/desktop/src/renderer/startup-logo.png`
-   （从 `mark-mono-dark-1024.png` 裁边后缩到 336×293）。
+   （从 `mark-color-1024.png` 缩到 336×336）。
 4. 必须重打完整安装包验证；只编译不重打包看不到图标变化。
 
 ### 生成细节（下次改图标可直接复用）

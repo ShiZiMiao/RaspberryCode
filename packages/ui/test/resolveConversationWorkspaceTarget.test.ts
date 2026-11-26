@@ -4,14 +4,14 @@ import { createTabStore } from "@/store/tabStore.js";
 
 describe("RPN-11 conversation target", () => {
   it.each(["project", "conversation"] as const)(
-    "rejects a remote %s even when a local conversation has the same path",
+    "resolves a remote %s to the local conversation workspace even when a local conversation has the same path",
     async (workspacePurpose) => {
       const store = createTabStore();
       const path = "/home/dev/.raspberrycode/workspace/default";
       const identity = `remote:server:source-a:${path}`;
       store.getState().addTab(path, { workspacePurpose: "conversation" });
       store.getState().addTab(path, { workspacePurpose, workspaceIdentity: identity });
-      const resolveLocalConversationWorkspacePath = vi.fn(async () => path);
+      const resolveLocalConversationWorkspacePath = vi.fn(async () => "/local/conversation");
       await expect(
         resolveConversationWorkspaceTarget({
           getTabs: () => store.getState().tabs,
@@ -19,8 +19,8 @@ describe("RPN-11 conversation target", () => {
           activeWorkspaceIdentity: identity,
           resolveLocalConversationWorkspacePath,
         }),
-      ).rejects.toThrow("Remote projects require a project workspace");
-      expect(resolveLocalConversationWorkspacePath).not.toHaveBeenCalled();
+      ).resolves.toEqual({ workspacePath: "/local/conversation" });
+      expect(resolveLocalConversationWorkspacePath).toHaveBeenCalledOnce();
     },
   );
   it("resolves local project detachment locally", async () => {

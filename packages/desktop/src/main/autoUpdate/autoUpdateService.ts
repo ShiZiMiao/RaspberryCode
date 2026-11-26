@@ -79,7 +79,6 @@ import type {
 } from "./contract.js";
 import {
   buildManualDownloadUrl,
-  DEFAULT_UPDATE_MIRROR_CANDIDATES,
   DEFAULT_UPDATE_MIRROR_PREFIX,
   UpdateDownloadFallback,
   type UpdateDownloadRoute,
@@ -152,21 +151,16 @@ let feedRepo: string = DEFAULT_UPDATE_FEED_GITHUB.repo;
  * 把前缀留在配置里，镜像失效时用户/构建期可切换而无需发版。
  * 空串表示禁用镜像、只走直连。
  *
- * 注意：这里存的是**配置值**，不是「当前正在用的那一家」。
- * 实际生效的候选由 downloadFallback 持有（mirror 级内部会轮换），
  * 供 updateMirrorSession 读取的是 getUpdateMirrorPrefix() 的返回值。
  */
 let mirrorPrefix: string = DEFAULT_UPDATE_MIRROR_PREFIX;
 
 /**
  * 供 updateMirrorSession 的 getMirrorPrefix 回调读取（每次请求取最新值）。
- *
- * 优先返回回退状态机当前选中的候选，其次才是配置值：
- * mirror 级内部可能有多个候选，轮换后必须让下一批请求打到新的那一家，
- * 否则重试仍会走同一个失败的镜像。
+ * 镜像前缀由 setting.json 的 updateMirrorPrefix 决定，运行期可切换。
  */
 export function getUpdateMirrorPrefix(): string {
-  return downloadFallback.currentMirrorPrefix(mirrorPrefix);
+  return mirrorPrefix;
 }
 
 /** 下载阶段的回退状态查询入口（updateMirrorSession 接线时注入）。 */
@@ -223,7 +217,7 @@ import {
   buildReleaseNotesPayload,
   deriveManualCheckResultFromState,
   isVersionSkipped,
-  resolveMirrorConfig,
+  resolveMirrorPrefix,
 } from "./updatePayloads.js";
 export {
   buildReleaseNotesPayload,
@@ -257,27 +251,21 @@ async function readPreferences(): Promise<{
   owner: string;
   repo: string;
   mirrorPrefix: string;
-  mirrorCandidates: readonly string[];
 }> {
   const settings = (await settingService?.get()) ?? ({} as AppSettings);
   // 偏好事实的唯一所有者是 setting.json；这里顺带刷新同步缓存供菜单投影使用。
   autoUpdateMode = settings.autoDownloadAndInstallUpdates === true;
 
-  // 镜像语义（undefined / "" / 非空串）由 resolveMirrorConfig 统一裁决，
+  // 镜像语义（undefined / "" / 非空串）由 resolveMirrorPrefix 统一裁决，
   // 避免调用处各自判断导致「显式禁用镜像」被误当成「未配置」。
-  const resolved = resolveMirrorConfig(settings.updateMirrorPrefix, {
-    prefix: DEFAULT_UPDATE_MIRROR_PREFIX,
-    candidates: DEFAULT_UPDATE_MIRROR_CANDIDATES,
-  });
-  mirrorPrefix = resolved.mirrorPrefix;
+  mirrorPrefix = resolveMirrorPrefix(settings.updateMirrorPrefix, DEFAULT_UPDATE_MIRROR_PREFIX);
 
   return {
     autoDownloadAndInstallUpdates: autoUpdateMode,
     skippedVersion: settings.skippedElectronUpdateVersions?.[SKIP_VERSION_CHANNEL]?.trim() ?? null,
     owner: settings.updateFeedGithubOwner ?? "",
     repo: settings.updateFeedGithubRepo ?? "",
-    mirrorPrefix: resolved.mirrorPrefix,
-    mirrorCandidates: resolved.mirrorCandidates,
+    mirrorPrefix,
   };
 }
 
@@ -482,9 +470,6 @@ async function runCheck(reason: "startup" | "manual"): Promise<void> {
   }
   const preferences = await readPreferences();
   applyFeed(preferences.owner, preferences.repo);
-  // 每次检查前把配置里的镜像候选同步给回退状态机：
-  // 候选用于 mirror 级内部轮换（单家镜像失效先换候选，全用尽才降级到直连）。
-  downloadFallback.setMirrorCandidates(preferences.mirrorCandidates);
   // 一次全新的检查（非降级重试）开始前清空上一轮的失败记录，
   // 否则上次失败原因会残留，让本次成功的检查被误判为失败。
   if (!checkRetryInFlight) {
@@ -707,16 +692,12 @@ export function downloadAvailableUpdate(reason = "renderer"): void {
   // 检查阶段若已降级（镜像取 latest.yml 失败），下载要沿用该路线，
   // 否则会把路线重置回 mirror、在同一处再失败一次。只有「还在 mirror 起步态」
   // 或用户显式重试时才重置。
-  //
-  // 关键：mirror 级内部还可能有多个候选。检查阶段若已从第 1 家轮换到第 2 家并成功，
-  // 下载必须继续用第 2 家——用 beginAttempt 会把候选下标清零，让下载重新撞同一面墙。
-  // 因此这里用 beginAttemptKeepingMirror 保留候选选择。
   if (downloadFallback.currentRoute === "mirror") {
-    downloadFallback.beginAttemptKeepingMirror(state.version);
+    downloadFallback.beginAttempt(state.version);
   } else {
     downloadFallback.resetAttemptKey(state.version);
   }
-  logger.info(`[auto-update] download started (${reason}) version=${state.version} route=${downloadFallback.currentRoute} mirror=${downloadFallback.currentMirrorIndex}`);
+  logger.info(`[auto-update] download started (${reason}) version=${state.version} route=${downloadFallback.currentRoute}`);
   void updater.downloadUpdate(downloadCancellationToken).catch((error: unknown) => {
     // 真实失败由 error 事件统一收口；这里只防空拒绝未处理。
     if (!isCancellationError(error)) {

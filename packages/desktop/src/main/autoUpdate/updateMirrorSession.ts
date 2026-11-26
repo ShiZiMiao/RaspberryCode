@@ -28,7 +28,7 @@ export interface UpdateMirrorInstallOptions {
   /**
    * 当前生效的镜像前缀；空字符串表示禁用镜像（等价于只走直连）。
    *
-   * 以函数形式提供而非字符串：镜像可能被用户配置覆盖或在运行期轮换，
+   * 以函数形式提供而非字符串：镜像可能被用户配置覆盖或在设置变更后切换，
    * 每次请求都取最新值，避免启动时固化。
    */
   getMirrorPrefix?: () => string;
@@ -71,7 +71,7 @@ export const UPDATER_SESSION_PARTITION = "electron-updater";
  */
 export function installUpdateMirrorRedirect(options: UpdateMirrorInstallOptions): () => void {
   const { getRoute, resolveSession } = options;
-  // 每次请求都重新取前缀：镜像可被配置覆盖或运行期轮换。
+  // 每次请求都重新取前缀：镜像可被配置覆盖或在设置变更后切换。
   const readMirrorPrefix = (): string =>
     options.getMirrorPrefix?.() ?? options.mirrorPrefix ?? DEFAULT_UPDATE_MIRROR_PREFIX;
   const session = options.session ?? resolveSession?.();

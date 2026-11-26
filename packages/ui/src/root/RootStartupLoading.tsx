@@ -96,7 +96,7 @@ export function RaspberryCodeStartupLogo({
  * 标题栏专用的粉彩标记：透明无背板，直接用彩色原件（app-logo.svg 即设计源 mark-color.svg）。
  *
  * 不复用 RaspberryCodeAboutLogo：那个组件绑死了 brand-mark-white（单色白），
- * 而标题栏现在需要彩色。viewBox 与单色版同为 410x361，所以视觉尺寸与改造前一致。
+ * 而标题栏现在需要彩色。viewBox 与单色版同为 410x410（1:1），视觉尺寸与改造前基本一致。
  */
 export function RaspberryCodeTitlebarLogo({
   className,

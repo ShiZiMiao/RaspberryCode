@@ -7,12 +7,9 @@ import {
   DEFAULT_REMOTE_ASSET_MIRROR_PREFIX,
   isGithubReleaseDownloadUrl,
   toRemoteAssetMirrorUrl,
-  withGithubMirrorCandidates,
+  withGithubMirror,
 } from "@raspberrycode/server/remote/remoteAssetCdn.js";
-import {
-  DEFAULT_UPDATE_MIRROR_CANDIDATES,
-  DEFAULT_UPDATE_MIRROR_PREFIX,
-} from "@raspberrycode/shared/client-update";
+import { DEFAULT_UPDATE_MIRROR_PREFIX } from "@raspberrycode/shared/client-update";
 
 describe("remoteAssetCdn URL encoding", () => {
   it("组件路径包含 '+' 时应编码为 %2B", () => {
@@ -88,11 +85,11 @@ describe("remoteAssetCdn GitHub 镜像候选", () => {
 
   it("空前缀等于不镜像", () => {
     expect(toRemoteAssetMirrorUrl(GITHUB_ASSET, "   ")).toBe(GITHUB_ASSET);
-    expect(withGithubMirrorCandidates([GITHUB_ASSET], "")).toEqual([GITHUB_ASSET]);
+    expect(withGithubMirror([GITHUB_ASSET], "")).toEqual([GITHUB_ASSET]);
   });
 
   it("镜像候选应排在直连之前，并保留直连兜底", () => {
-    const urls = withGithubMirrorCandidates([GITHUB_ASSET], "https://ghfast.top/");
+    const urls = withGithubMirror([GITHUB_ASSET], "https://ghfast.top/");
     expect(urls).toEqual([`https://ghfast.top/${GITHUB_ASSET}`, GITHUB_ASSET]);
     // 关键不变量：直连必须仍在候选里。镜像服务稳定性不受我们控制，
     // 缺兜底会让镜像挂掉时远端升级直接失败。
@@ -101,7 +98,7 @@ describe("remoteAssetCdn GitHub 镜像候选", () => {
 
   it("混入自建 CDN 时只给 GitHub 那几条加镜像", () => {
     const cdn = "https://cdn.example.com/raspberrycode/electron/releases/0.2.5/x.tar.gz";
-    const urls = withGithubMirrorCandidates([GITHUB_ASSET, cdn], "https://ghfast.top/");
+    const urls = withGithubMirror([GITHUB_ASSET, cdn], "https://ghfast.top/");
     expect(urls.filter((url) => url.startsWith("https://ghfast.top/"))).toEqual([
       `https://ghfast.top/${GITHUB_ASSET}`,
     ]);
@@ -111,7 +108,7 @@ describe("remoteAssetCdn GitHub 镜像候选", () => {
   it("多个 GitHub 文件时镜像集中在前、直连集中在后", () => {
     const second =
       "https://github.com/ShiZiMiao/RaspberryCode/releases/download/v0.2.5/raspberrycode-server-linux-arm64.tar.gz";
-    const urls = withGithubMirrorCandidates([GITHUB_ASSET, second], "https://ghfast.top/");
+    const urls = withGithubMirror([GITHUB_ASSET, second], "https://ghfast.top/");
     // 逐个文件交错会让每个文件都先吃一次镜像失败，这里要求整体分段。
     expect(urls.slice(0, 2)).toEqual([
       `https://ghfast.top/${GITHUB_ASSET}`,
@@ -121,7 +118,7 @@ describe("remoteAssetCdn GitHub 镜像候选", () => {
   });
 
   it("同一 URL 重复传入不产生重复候选", () => {
-    const urls = withGithubMirrorCandidates([GITHUB_ASSET, GITHUB_ASSET], "https://ghfast.top/");
+    const urls = withGithubMirror([GITHUB_ASSET, GITHUB_ASSET], "https://ghfast.top/");
     expect(urls).toEqual([`https://ghfast.top/${GITHUB_ASSET}`, GITHUB_ASSET]);
   });
 });
@@ -173,56 +170,42 @@ describe("remoteAssetCdn 带版本段的发布根", () => {
 });
 
 /**
- * 与客户端自更新共用镜像候选（2026-11-23）。
+ * 与客户端自更新共用默认镜像（2026-11-26）。
  *
  * 背景：这里原本固定写着 `https://ghfast.top/`，而它早已对 atom 返回 403、
- * 下载速度也大幅劣化。客户端那边已经改成「发版前实测、按速度取前 3」的候选列表，
- * 若远程资产仍用旧的写死值，就会出现「客户端已切到新镜像、远程升级还在用失效镜像」。
+ * 下载速度也大幅劣化。客户端那边已固定为 `https://gh-proxy.org/`，
+ * 若远程资产仍用旧的写死值，就会出现「客户端已切到新镜像、远程升级还在用旧镜像」。
  *
- * 因此候选的事实源上移到 `@raspberrycode/shared/client-update`，两边共用一份。
- * 这些用例锁住三件事：默认用候选列表、候选顺序即优先级、直连始终兜底在末尾。
+ * 因此默认前缀的事实源上移到 `@raspberrycode/shared/client-update`，两边共用一份。
+ * 这些用例锁住三件事：默认用 shared 的单一镜像、镜像排在直连之前、直连始终兜底在末尾。
  */
-describe("withGithubMirrorCandidates 与客户端共用候选", () => {
+describe("withGithubMirror 与客户端共用默认镜像", () => {
   const ASSET =
     "https://github.com/ShiZiMiao/RaspberryCode/releases/download/v0.2.8/pkg-linux-x64.tar.gz";
 
-  it("默认使用 shared 的候选列表，而不是写死一家", () => {
-    const out = withGithubMirrorCandidates([ASSET]);
-    expect(out).toHaveLength(DEFAULT_UPDATE_MIRROR_CANDIDATES.length + 1);
-    for (let i = 0; i < DEFAULT_UPDATE_MIRROR_CANDIDATES.length; i += 1) {
-      // 镜像地址形态是「前缀 + 完整原 URL」
-      expect(out[i]).toBe(`${DEFAULT_UPDATE_MIRROR_CANDIDATES[i]}${ASSET}`);
-    }
+  it("默认使用 shared 的单一镜像前缀", () => {
+    const out = withGithubMirror([ASSET]);
+    expect(out).toEqual([`${DEFAULT_UPDATE_MIRROR_PREFIX}${ASSET}`, ASSET]);
   });
 
   it("直连永远排在最后，不会被镜像挤掉（镜像挂了仍能升级）", () => {
-    const out = withGithubMirrorCandidates([ASSET]);
+    const out = withGithubMirror([ASSET]);
     expect(out[out.length - 1]).toBe(ASSET);
     expect(out.filter((u) => u === ASSET)).toHaveLength(1);
   });
 
-  it("默认前缀与候选首项一致（避免两个常量脱节）", () => {
+  it("默认前缀与 shared 常量一致（避免两个常量脱节）", () => {
     expect(DEFAULT_REMOTE_ASSET_MIRROR_PREFIX).toBe(DEFAULT_UPDATE_MIRROR_PREFIX);
-    expect(DEFAULT_REMOTE_ASSET_MIRROR_PREFIX).toBe(DEFAULT_UPDATE_MIRROR_CANDIDATES[0]);
   });
 
-  it("显式传数组时按顺序展开，且同一家内部不交错", () => {
-    const out = withGithubMirrorCandidates([ASSET], ["https://a.example/", "https://b.example/"]);
-    expect(out).toEqual([
-      `https://a.example/${ASSET}`,
-      `https://b.example/${ASSET}`,
-      ASSET,
-    ]);
-  });
-
-  it("传空数组等价于禁用镜像（只走直连）", () => {
-    expect(withGithubMirrorCandidates([ASSET], [])).toEqual([ASSET]);
-    expect(withGithubMirrorCandidates([ASSET], ["", "   "])).toEqual([ASSET]);
+  it("空前缀等价于禁用镜像（只走直连）", () => {
+    expect(withGithubMirror([ASSET], "")).toEqual([ASSET]);
+    expect(withGithubMirror([ASSET], "   ")).toEqual([ASSET]);
   });
 
   it("非 GitHub 资产（自建 CDN）不加镜像前缀", () => {
     const cdn = "https://cdn.example.com/releases/0.2.8/pkg.tar.gz";
-    expect(withGithubMirrorCandidates([cdn])).toEqual([cdn]);
+    expect(withGithubMirror([cdn])).toEqual([cdn]);
   });
 });
 

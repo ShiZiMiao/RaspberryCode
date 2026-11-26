@@ -62,31 +62,15 @@ export function deriveManualCheckResultFromState(
   }
 }
 
-/** 从设置解析出的镜像判定结果（纯数据，无 IO）。 */
-export interface ResolvedMirrorConfig {
-  mirrorPrefix: string;
-  mirrorCandidates: readonly string[];
-}
-
 /**
- * 解析镜像前缀与候选列表。**语义区分是协议的一部分**，不要在调用处重新判断：
- *   undefined → 用户没配置过，采用内置候选列表（便于未来追加候选而无需改代码）
+ * 解析镜像前缀。**语义区分是协议的一部分**，不要在调用处重新判断：
+ *   undefined → 用户没配置过，采用内置默认镜像
  *   ""        → 用户/构建期显式禁用镜像，只走直连
  *   非空串     → 用户指定，只尊重这一家
- *
- * 第三方公益镜像存活率极低（同一天 0.05–14MB/s 都出现过），
- * 因此候选必须由配置/探测决定，不能写死在代码里。
  */
-export function resolveMirrorConfig(
+export function resolveMirrorPrefix(
   configuredMirror: string | undefined,
-  defaults: { prefix: string; candidates: readonly string[] },
-): ResolvedMirrorConfig {
-  const hasExplicitMirror = typeof configuredMirror === "string";
-  const mirrorPrefix = hasExplicitMirror ? configuredMirror.trim() : defaults.prefix;
-  const mirrorCandidates: readonly string[] = hasExplicitMirror
-    ? mirrorPrefix
-      ? [mirrorPrefix]
-      : []
-    : defaults.candidates;
-  return { mirrorPrefix, mirrorCandidates };
+  defaultPrefix: string,
+): string {
+  return typeof configuredMirror === "string" ? configuredMirror.trim() : defaultPrefix;
 }

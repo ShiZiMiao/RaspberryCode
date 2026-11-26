@@ -4,8 +4,8 @@
  */
 export const clientUpdateRuntimeModule = {
   id: "client-update-runtime",
-  // client-update-contract：cf474f32 起 updateMirror.ts 从
-  // `@raspberrycode/shared/client-update` 取镜像候选（DEFAULT_UPDATE_MIRROR_CANDIDATES），
+  // client-update-contract：updateMirror.ts 从
+  // `@raspberrycode/shared/client-update` 取默认镜像前缀（DEFAULT_UPDATE_MIRROR_PREFIX），
   // 这是 client-update-contract 的公共入口，不是 shared 的默认入口，必须显式声明。
   requires: ["desktop", "shared", "client-update-contract"],
   provides: ["client-update-runtime"],

@@ -5,7 +5,7 @@ import type {
   ConversationWorkspaceTargetParams,
 } from "@/conversation-workspace-target/contract.js";
 
-/** 解析本地“在项目外工作”的目标，远程项目不提供该操作。 */
+/** 解析“在项目外工作”的目标；远程项目显式关闭时固定回到本机 conversation workspace。 */
 export async function resolveConversationWorkspaceTarget(
   params: ConversationWorkspaceTargetParams,
 ): Promise<ConversationWorkspaceTarget> {
@@ -20,14 +20,13 @@ export async function resolveConversationWorkspaceTarget(
       (tab): tab is ConversationWorkspaceTab =>
         tab.kind === "workspace" && resolveWorkspaceKey(tab) === activeWorkspaceKey,
     );
-  // 远程项目不允许解除项目绑定；入口已隐藏，这里拦住陈旧回调，不能静默切换执行设备。
-  if (
+  // 远程项目允许通过输入框项目标签的 × 显式关闭，但目标只能是本机 conversation workspace：
+  // 不能复用远端 tab 的路径，否则“关闭项目”会变成留在远程设备；远程无项目聊天仍停用。
+  const isRemoteTab = Boolean(
     activeTab &&
-    (activeTab.remoteTarget || activeTab.remoteSessionId || activeTab.workspaceIdentity)
-  ) {
-    throw new Error("Remote projects require a project workspace");
-  }
-  if (activeTab?.workspacePurpose === "conversation")
+    (activeTab.remoteTarget || activeTab.remoteSessionId || activeTab.workspaceIdentity),
+  );
+  if (!isRemoteTab && activeTab?.workspacePurpose === "conversation")
     return { workspacePath: activeTab.workspacePath };
   return { workspacePath: await params.resolveLocalConversationWorkspacePath() };
 }
