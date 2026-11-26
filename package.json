@@ -1,6 +1,6 @@
 {
   "name": "raspberrycode",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "private": true,
   "type": "module",
   "scripts": {
@@ -76,10 +76,9 @@
     "provider:regression": "pnpm --filter @raspberrycode/bootstrap... build && tsx apps/raspberrycode-cli/tools/provider-regression/src/cli.ts",
     "test:engineering": "vitest run --project engineering",
     "test:engineering:affected": "node scripts/run-affected-engineering-tests.mjs",
-    "test:engineering-tools": "node --test scripts/test/affected-engineering-test-cli.test.mjs scripts/test/pre-push-worktree.test.mjs scripts/test/retired-app-unit-evidence.test.mjs scripts/test/e2e-remote-targets-check.test.mjs scripts/test/probe-update-mirrors.test.mjs",
+    "test:engineering-tools": "node --test scripts/test/affected-engineering-test-cli.test.mjs scripts/test/pre-push-worktree.test.mjs scripts/test/retired-app-unit-evidence.test.mjs scripts/test/e2e-remote-targets-check.test.mjs",
     "release:gate": "node scripts/release-gate.mjs",
     "release:gate:quick": "node scripts/release-gate.mjs --quick",
-    "probe:update-mirrors": "node scripts/probe-update-mirrors.mjs",
     "release:raw": "release-it"
   },
   "dependencies": {
