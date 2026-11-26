@@ -389,6 +389,8 @@ export interface AppSettings {
   /** 已完成过引导（老用户免等待记录判定用）；引导不再采集职业。 */
   onboardingCompleted?: boolean;
   proactiveSuggestionsEnabled?: boolean;
+  /** Agent 回复结束后预测用户下一步输入；默认开启（spec：specs/next-input-suggestions.md）。 */
+  nextInputPredictionEnabled?: boolean;
   /** 新版只保存活动执行目录；不表达项目/连接成员，null 表示明确清空。 */
   lastActiveWorkspace?: PersistedWorkspaceSessionEntry | null;
   /** Host 从项目/本机入口派生，供旧版降级读取；新版不作为入口真相。 */

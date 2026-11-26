@@ -926,6 +926,21 @@ modules:
       ui: .
     owner: conversation
 
+  # next-input-suggestions：Agent 回复结束后的下一步输入预测（specs/next-input-suggestions.md）
+  - id: next-input-suggestions
+    roots:
+      - packages/ui/src/next-input-suggestions
+    managed: true
+    requires:
+      - shared
+      - ui
+    publicEntrypoints:
+      - packages/ui/src/next-input-suggestions/index.ts
+      - packages/ui/src/next-input-suggestions/contract.ts
+    layers:
+      ui: .
+    owner: conversation
+
 global:
   # 临时时间戳（2026-09-10）：unmanaged-new-file 只约束此日期之后首次入库的文件。
   # 基于领先 staging 很多的分支开工时，merge-base 之前的"新增"文件不应被追溯。

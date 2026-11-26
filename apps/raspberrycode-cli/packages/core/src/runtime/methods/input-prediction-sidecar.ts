@@ -18,8 +18,12 @@ export const INPUT_PREDICTION_CONTEXT_TURNS = 6;
 export const INPUT_PREDICTION_ASSISTANT_MAX_CHARS = 800;
 /** 上下文总预算（字符），超出时从最旧处截断。 */
 export const INPUT_PREDICTION_CONTEXT_MAX_CHARS = 6_000;
-/** 决策门槛：top 候选 confidence ≥ 0.80 才展示（宁缺毋滥）。 */
-export const INPUT_PREDICTION_CONFIDENCE_THRESHOLD = 0.8;
+/**
+ * 决策门槛：top 候选 confidence ≥ 0.60 才展示（宁缺毋滥）。
+ * 2026-11-26 手工验收：真实模型（DeepSeek-V4.1-Flash-1017）对清晰模式的 top 置信度约 0.62，
+ * 原 0.80 门槛会让桌面下一步输入建议几乎不出现；0.60 仍能过滤 0.35 这类模糊预测。
+ */
+export const INPUT_PREDICTION_CONFIDENCE_THRESHOLD = 0.6;
 /** 草稿为空时预测「下一条输入」，至少要有 2 轮真实用户输入。 */
 export const INPUT_PREDICTION_NEXT_INPUT_MIN_TURNS = 2;
 /** 草稿非空时预测续写，至少要有 1 轮真实用户输入。 */
@@ -204,7 +208,8 @@ export function toInputPredictionSuffix(rawText: string, draft: string): string 
  * - 收敛为续写文本，空白丢弃；
  * - 与最近 2 条真实用户输入相同（按完整文本，大小写/空白不敏感）丢弃；
  * - 候选间同文本只留置信度高者；
- * - 按置信度降序取前 3；top ≥ 门槛 → show，否则 suppress_below_threshold。
+ * - 按置信度降序，逐条过滤掉低于门槛的候选，再取前 3；
+ * - 过滤后仍有候选 → show，否则 suppress_below_threshold。
  */
 export function decideInputPrediction(input: {
   rawCandidates: readonly InputPredictionCandidate[];
@@ -231,13 +236,14 @@ export function decideInputPrediction(input: {
     const existing = byKey.get(key);
     if (!existing || existing.confidence < confidence) byKey.set(key, { text, confidence });
   }
-  const candidates = Array.from(byKey.values())
-    .sort((a, b) => b.confidence - a.confidence)
+  const ranked = Array.from(byKey.values()).sort((a, b) => b.confidence - a.confidence);
+  const topConfidence = ranked[0]?.confidence ?? 0;
+  // 逐条过滤：低于门槛的候选即使 top 达标也不展示（宁缺毋滥）。
+  const candidates = ranked
+    .filter((candidate) => candidate.confidence >= threshold)
     .slice(0, INPUT_PREDICTION_MAX_CANDIDATES);
-  const topConfidence = candidates[0]?.confidence ?? 0;
   return {
-    decision:
-      candidates.length > 0 && topConfidence >= threshold ? "show" : "suppress_below_threshold",
+    decision: candidates.length > 0 ? "show" : "suppress_below_threshold",
     candidates,
     topConfidence,
   };

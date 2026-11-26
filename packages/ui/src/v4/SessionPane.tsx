@@ -132,6 +132,7 @@ import { PendingCommandRecoveryBanner } from "@/v4/PendingCommandRecoveryBanner.
 import { ConversationStatusPanel } from "@/v4/ConversationStatusPanel.js";
 import { SessionSubscriptionErrorPanel } from "@/v4/SessionSubscriptionErrorPanel.js";
 import { ConversationTimeline } from "@/v4/ConversationTimeline.js";
+import type { NextInputPredictionConfig } from "@/next-input-suggestions/index.js";
 import type { ConversationLatestTurnSummary } from "@/v4/conversationTimelineLiveTail.js";
 import { ConversationBottomDockTransition } from "@/v4/ConversationBottomDockTransition.js";
 import { buildConversationTurnRenderUnits } from "@/v4/conversationTurnRenderUnits.js";
@@ -3058,6 +3059,42 @@ export function SessionPane({
     },
     [],
   );
+  // 下一步输入预测（spec：specs/next-input-suggestions.md）：点击建议条直接发送，
+  // 悬浮按钮把文本追加到输入框。两个回调保持稳定引用，避免整条时间线重渲染。
+  const handleNextInputSuggestionSend = useCallback(
+    (text: string) => {
+      void handleSendText(text);
+    },
+    [handleSendText],
+  );
+  const handleNextInputSuggestionInsert = useCallback(
+    (text: string) => {
+      useRaspberryCodeSessionStore
+        .getState()
+        .requestComposerTextInsert(workspacePath, text, workspaceIdentity, undefined, "append");
+    },
+    [workspaceIdentity, workspacePath],
+  );
+  const nextInputPredictionConfig = useMemo<NextInputPredictionConfig | null>(() => {
+    if (readOnly || selectionSideChat || compactForOverlay) return null;
+    return {
+      // === true 而非 !== false：设置未加载完成时不发起模型调用；schema 默认值保证加载后为 true。
+      enabled: sharedSettings?.nextInputPredictionEnabled === true,
+      focused,
+      revision: snapshot?.revision ?? 0,
+      onSend: handleNextInputSuggestionSend,
+      onInsertToComposer: handleNextInputSuggestionInsert,
+    };
+  }, [
+    compactForOverlay,
+    focused,
+    handleNextInputSuggestionInsert,
+    handleNextInputSuggestionSend,
+    readOnly,
+    selectionSideChat,
+    sharedSettings?.nextInputPredictionEnabled,
+    snapshot?.revision,
+  ]);
   const clearQueueEditOperation = useCallback(() => {
     queueEditOperationRef.current = null;
     setQueueEditOperation(null);
@@ -4187,7 +4224,13 @@ export function SessionPane({
       }
       blockingRequestId={blockingInteractionId}
       listenAddToChatEvents={focused}
-      externalTextInsertRequest={focused && sessionId === null ? composerTextInsertRequest : null}
+      // 草稿态消费全部插入请求；已有会话只消费 append（下一步输入建议「添加到对话框」），
+      // 避免顺带改变其它插入路径在已有会话的行为。
+      externalTextInsertRequest={
+        focused && (sessionId === null || composerTextInsertRequest?.mode === "append")
+          ? composerTextInsertRequest
+          : null
+      }
       onExternalTextInsertApplied={handleExternalTextInsertApplied}
       autoFocusEnabled={focused}
       disabled={
@@ -4533,6 +4576,7 @@ export function SessionPane({
                   onLoadAllOlder={handleLoadAllOlder}
                   turnNavigatorDirectoryRevision={state.turnNavigatorDirectoryRevision}
                   bottomDock={conversationBottomDock}
+                  nextInputPrediction={nextInputPredictionConfig}
                   backgroundScrollLocked={false}
                   emptyState={
                     !remoteAvailable ? (

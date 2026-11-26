@@ -1457,6 +1457,8 @@ const zhCN: Record<string, string> = {
   "chat.initialization.retry": "重试",
   "chat.officeSuggestions.setting": "主动任务推荐",
   "chat.officeSuggestions.settingDescription": "仅在办公模式下支持。",
+  "chat.nextInputSuggestions.addToComposer": "添加到对话框",
+  "chat.nextInputSuggestions.send": "发送这条建议",
   "chat.plugins.browseMarketplace": "浏览插件市场",
   "chat.plugins.loadError": "插件加载失败，请重新打开菜单",
   "chat.officeSuggestions.saveError": "保存失败，请重试",
@@ -3177,6 +3179,9 @@ const zhCN: Record<string, string> = {
   "settings.interfaceMode.coding": "编程模式",
   "settings.interfaceMode.description":
     "办公模式侧重操作摘要与结果；编程模式显示命令、输出和代码变更详情。",
+  "settings.nextInputPrediction": "下一步输入预测",
+  "settings.nextInputPredictionDescription":
+    "在 Agent 回复结束后，预测你接下来可能发送的内容。",
   "chat.toolCall.execute.conciseCompleted": "已运行命令",
   "settings.themeMode": "界面主题",
   "settings.themeModeDescription": "选择浅色、深色或跟随系统主题。",

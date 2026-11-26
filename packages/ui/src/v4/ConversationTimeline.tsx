@@ -35,6 +35,7 @@ import { Button } from "@/components/ui/button.js";
 import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { logger } from "@/logger.js";
 import { ConversationTurnGroup } from "@/v4/ConversationTurnGroup.js";
+import type { NextInputPredictionConfig } from "@/next-input-suggestions/index.js";
 import {
   createLogicalUiInstancesSelector,
   getPluginUiDisclosureSnapshot,
@@ -310,6 +311,11 @@ export interface ConversationTimelineProps {
   turnNavigatorDirectoryRevision?: number;
   /** 与旧 ChatView 对齐：composer dock 属于同一个滚动视口，sticky 到滚动容器底部。 */
   bottomDock?: ReactNode;
+  /**
+   * 下一步输入预测：仅聚焦、可写、非草稿会话由宿主注入。
+   * 只传给末轮，非末轮保持 null 稳定引用。
+   */
+  nextInputPrediction?: NextInputPredictionConfig | null;
   /** 分享选择面板所在的共享父容器；用于把 dock 的真实位置写入同一坐标系。 */
   /**
    * 锁定背景滚动。
@@ -396,6 +402,7 @@ function ConversationTimelineImpl({
   onLoadAllOlder,
   turnNavigatorDirectoryRevision = 0,
   bottomDock,
+  nextInputPrediction = null,
   backgroundScrollLocked = false,
   emptyState,
   headerSlot,
@@ -2170,6 +2177,7 @@ function ConversationTimelineImpl({
                         onEdit={onEdit}
                         onRevert={onRevert}
                         topClearedByTimeline={clearsStatusPanel}
+                        nextInputPrediction={unit.isLastTurn ? nextInputPrediction : null}
                       />
                     </div>
                   );
@@ -2205,6 +2213,7 @@ function ConversationTimelineImpl({
                     onEdit={onEdit}
                     onRevert={onRevert}
                     topClearedByTimeline={sessionStartAtTop && liveUnitIndex === 0}
+                    nextInputPrediction={liveUnit.isLastTurn ? nextInputPrediction : null}
                   />
                 </div>
               ) : null}

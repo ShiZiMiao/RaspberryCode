@@ -266,7 +266,8 @@ export interface ExternalTextInsertRequest {
   requestId: number;
   text: string;
   mention?: ComposerMentionPrefill;
-  mode?: "replace" | "prepend-if-missing";
+  /** append：追加到现有草稿末尾（下一步输入建议「添加到对话框」）。 */
+  mode?: "replace" | "prepend-if-missing" | "append";
 }
 
 export function restorePersistedComposerDraftIntoInput({
@@ -310,6 +311,7 @@ export function applyExternalTextInsertRequestToComposer({
   appliedRequestId: number | null;
   inputApi: Pick<
     LexicalChatInputHandle,
+    | "appendText"
     | "getMarkdown"
     | "prependMentionIfMissing"
     | "setMention"
@@ -333,6 +335,14 @@ export function applyExternalTextInsertRequestToComposer({
     }
     // Bug 原因：安装完成后若回放点击时保存的旧 prompt，会覆盖用户安装期间的编辑。
     // 节点级前置保留编辑器当前的 mention 与段落结构，再从编辑器读取 canonical 草稿。
+    updateText(inputApi.getMarkdown());
+    scheduleDraftPersist();
+    requestFocus();
+    return request.requestId;
+  }
+  if (request.mode === "append") {
+    // 下一步输入建议的「添加到对话框」：追加而不是覆盖，已有草稿时由编辑器补空格。
+    inputApi.appendText(request.text);
     updateText(inputApi.getMarkdown());
     scheduleDraftPersist();
     requestFocus();

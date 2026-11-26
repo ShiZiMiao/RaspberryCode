@@ -1580,6 +1580,8 @@ const enUS: Record<string, string> = {
   "chat.initialization.retry": "Retry",
   "chat.officeSuggestions.setting": "Proactive task suggestions",
   "chat.officeSuggestions.settingDescription": "Available only in Office mode.",
+  "chat.nextInputSuggestions.addToComposer": "Add to composer",
+  "chat.nextInputSuggestions.send": "Send this suggestion",
   "chat.plugins.browseMarketplace": "Browse plugin marketplace",
   "chat.plugins.loadError": "Could not load plugins. Reopen the menu to try again.",
   "chat.officeSuggestions.saveError": "Could not save suggestions settings. Please try again.",
@@ -3386,6 +3388,9 @@ const enUS: Record<string, string> = {
   "settings.interfaceMode.coding": "Coding mode",
   "settings.interfaceMode.description":
     "Office mode focuses on summaries and results. Coding mode shows commands, output, and code changes.",
+  "settings.nextInputPrediction": "Predict next input",
+  "settings.nextInputPredictionDescription":
+    "Suggest what you might send after the agent replies.",
   "chat.toolCall.execute.conciseCompleted": "Ran a command",
   "settings.themeMode": "App theme",
   "settings.themeModeDescription": "Choose light, dark, or follow the system theme.",

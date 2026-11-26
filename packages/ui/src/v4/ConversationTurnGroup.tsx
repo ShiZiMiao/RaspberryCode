@@ -41,6 +41,10 @@ import {
   type CronCreateAutomationSummary,
 } from "@/ToolCallBlocks/renderers/cron-create.js";
 import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
+import {
+  ConversationNextInputSuggestions,
+  type NextInputPredictionConfig,
+} from "@/next-input-suggestions/index.js";
 import type { AssistantPreviewCard } from "@/lib/assistantPreviewCards.js";
 import { useAssistantCodeCommentFeatureEnabled } from "@/AssistantCodeCommentFeatureProvider.js";
 import {
@@ -111,6 +115,8 @@ interface ConversationTurnGroupProps {
   onRevert?: (target: ConversationRowTarget) => Promise<CommandAck | boolean | void> | CommandAck | boolean | void;
   /** 会话首轮：顶部留白由 Timeline 的状态胶囊 inset 提供，本轮不再留顶部 padding。 */
   topClearedByTimeline?: boolean;
+  /** 下一步输入预测：仅末轮由 Timeline 注入，其余轮为 null。 */
+  nextInputPrediction?: NextInputPredictionConfig | null;
 }
 
 interface CronAutomationTurnCard {
@@ -1125,6 +1131,7 @@ function ConversationTurnGroupImpl({
   onEdit,
   onRevert,
   topClearedByTimeline = false,
+  nextInputPrediction = null,
 }: ConversationTurnGroupProps) {
   const isOfficeMode = useIsOfficeMode();
   const { intl } = useRaspberryCodeIntl();
@@ -1424,6 +1431,26 @@ function ConversationTurnGroupImpl({
                 sourceCommandIds={deliverySourceCommandIds}
               />
             </MessageActions>
+          ) : null}
+          {/* 下一步输入预测：只在末轮、回复完成且未运行时出现；放在轮组内让虚拟列表
+              把建议条高度计入测量，避免出现后内容被裁或滚动位置漂移。 */}
+          {nextInputPrediction &&
+          unit.isLastTurn &&
+          !unit.isRunning &&
+          latestAssistantTextRow?.state === "complete" ? (
+            <ConversationNextInputSuggestions
+              sessionId={context.sessionId ?? null}
+              workspacePath={context.workspacePath}
+              workspaceIdentity={context.workspaceIdentity}
+              remoteSessionId={context.workspaceRemoteSessionId}
+              revision={nextInputPrediction.revision}
+              turnKey={unit.key}
+              turnCompleted
+              enabled={nextInputPrediction.enabled}
+              focused={nextInputPrediction.focused}
+              onSend={nextInputPrediction.onSend}
+              onInsertToComposer={nextInputPrediction.onInsertToComposer}
+            />
           ) : null}
           {unit.assistantTailRows.length > 0 ? (
             // turnTailBoundary 之前虽然从工作历史中拆出，却仍在 flow 内渲染，

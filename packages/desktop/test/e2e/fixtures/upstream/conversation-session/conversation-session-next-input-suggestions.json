@@ -1,0 +1,131 @@
+{
+  "version": 1,
+  "caseName": "conversation-session-next-input-suggestions",
+  "spec": "./test/e2e/conversation-session/conversation-session-next-input-suggestions.test.ts",
+  "fixtures": [
+    {
+      "id": "next-input-suggestions-title",
+      "description": "首轮标题生成固定响应。",
+      "metadata": {
+        "kind": "common",
+        "timingPolicy": "fast-text",
+        "source": "synthetic",
+        "syntheticReason": "标题不是本 case 的产品语义；固定响应避免标题请求误命中主对话 fixture。"
+      },
+      "match": {
+        "method": "POST",
+        "pathIncludes": "/messages",
+        "bodyIncludes": ["Generate a concise title", "E2E_NEXT_INPUT_PROMPT_ONE"]
+      },
+      "response": {
+        "statusCode": 200,
+        "text": {
+          "id": "next-input-suggestions-title",
+          "inputTokens": 64,
+          "outputTokens": 8,
+          "text": "{\"title\":\"Next Input Suggestions E2E\"}"
+        }
+      }
+    },
+    {
+      "id": "next-input-suggestions-prediction",
+      "description": "输入预测固定候选：验证建议条渲染、添加到对话框与直接发送。",
+      "metadata": {
+        "kind": "common",
+        "timingPolicy": "fast-text",
+        "source": "synthetic",
+        "syntheticReason": "预测候选需要稳定文本；真实模型输出不可控。"
+      },
+      "match": {
+        "method": "POST",
+        "pathIncludes": "/messages",
+        "bodyIncludes": ["你是输入预测器", "E2E_NEXT_INPUT_PROMPT_TWO"]
+      },
+      "response": {
+        "statusCode": 200,
+        "text": {
+          "id": "next-input-suggestions-prediction",
+          "inputTokens": 128,
+          "outputTokens": 32,
+          "text": "{\"candidates\":[{\"text\":\"E2E_NEXT_INPUT_ONE\",\"confidence\":0.95},{\"text\":\"E2E_NEXT_INPUT_TWO\",\"confidence\":0.9},{\"text\":\"E2E_NEXT_INPUT_THREE\",\"confidence\":0.85}]}"
+        }
+      }
+    },
+    {
+      "id": "next-input-suggestions-turn-one",
+      "description": "第一轮主对话固定回复。",
+      "metadata": {
+        "kind": "main",
+        "timingPolicy": "fast-text",
+        "source": "synthetic",
+        "syntheticReason": "主对话只用于构造 ≥2 轮真实用户输入；固定回复避免依赖真实模型。"
+      },
+      "match": {
+        "method": "POST",
+        "pathIncludes": "/messages",
+        "lastUserMessageIncludes": ["E2E_NEXT_INPUT_PROMPT_ONE"],
+        "bodyExcludes": ["Generate a concise title", "你是输入预测器"]
+      },
+      "response": {
+        "statusCode": 200,
+        "text": {
+          "id": "next-input-suggestions-turn-one",
+          "inputTokens": 64,
+          "outputTokens": 16,
+          "text": "NEXT_INPUT_REPLY_ONE"
+        }
+      }
+    },
+    {
+      "id": "next-input-suggestions-turn-two",
+      "description": "第二轮主对话固定回复；完成后触发输入预测。",
+      "metadata": {
+        "kind": "main",
+        "timingPolicy": "fast-text",
+        "source": "synthetic",
+        "syntheticReason": "主对话只用于构造 ≥2 轮真实用户输入；固定回复避免依赖真实模型。"
+      },
+      "match": {
+        "method": "POST",
+        "pathIncludes": "/messages",
+        "lastUserMessageIncludes": ["E2E_NEXT_INPUT_PROMPT_TWO"],
+        "bodyExcludes": ["Generate a concise title", "你是输入预测器"]
+      },
+      "response": {
+        "statusCode": 200,
+        "text": {
+          "id": "next-input-suggestions-turn-two",
+          "inputTokens": 64,
+          "outputTokens": 16,
+          "text": "NEXT_INPUT_REPLY_TWO"
+        }
+      }
+    },
+    {
+      "id": "next-input-suggestions-suggestion-send",
+      "description": "点击建议条直接发送后的固定回复；延迟 3s 让运行态可断言建议条已消失。",
+      "metadata": {
+        "kind": "main",
+        "timingPolicy": "fast-text",
+        "source": "synthetic",
+        "syntheticReason": "建议条发送只验证发送语义；固定回复并延迟，避免运行态窗口过短。"
+      },
+      "match": {
+        "method": "POST",
+        "pathIncludes": "/messages",
+        "lastUserMessageIncludes": ["E2E_NEXT_INPUT_ONE"],
+        "bodyExcludes": ["Generate a concise title", "你是输入预测器"]
+      },
+      "response": {
+        "statusCode": 200,
+        "delayMs": 3000,
+        "text": {
+          "id": "next-input-suggestions-suggestion-send",
+          "inputTokens": 64,
+          "outputTokens": 16,
+          "text": "NEXT_INPUT_REPLY_THREE"
+        }
+      }
+    }
+  ]
+}

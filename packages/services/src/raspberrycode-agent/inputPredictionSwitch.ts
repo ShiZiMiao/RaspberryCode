@@ -1,5 +1,6 @@
-// 手机远控输入预测（ghost hint）的 Host 侧总开关。
-// 规格：docs/web-remote-control/mobile-input-prediction.md「开关」。
+// 输入预测（手机 ghost hint + 桌面下一步输入建议）的 Host 侧总开关。
+// 规格：docs/archive/web-remote-control/mobile-input-prediction.md「开关」、
+// specs/next-input-suggestions.md。
 //
 // 同一个判定同时决定两件事，二者必须一致：
 // - v4 hello.capabilities.inputPrediction（手机据此决定是否发起预测）；

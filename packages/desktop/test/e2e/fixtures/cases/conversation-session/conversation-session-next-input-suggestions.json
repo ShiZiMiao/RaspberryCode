@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "caseName": "conversation-session-next-input-suggestions",
+  "spec": "./test/e2e/conversation-session/conversation-session-next-input-suggestions.test.ts",
+  "providerFixtures": [
+    "./test/e2e/fixtures/upstream/common.json",
+    "./test/e2e/fixtures/upstream/conversation-session/conversation-session-next-input-suggestions.json"
+  ],
+  "fileFixtures": [],
+  "requests": [
+    {
+      "id": "next-input-suggestions-title",
+      "description": "首轮标题生成固定响应。",
+      "kind": "common",
+      "source": "synthetic",
+      "timingPolicy": "fast-text",
+      "syntheticReason": "标题不是本 case 的产品语义；固定响应避免标题请求误命中主对话 fixture。"
+    },
+    {
+      "id": "next-input-suggestions-prediction",
+      "description": "输入预测固定候选：验证建议条渲染、添加到对话框与直接发送。",
+      "kind": "common",
+      "source": "synthetic",
+      "timingPolicy": "fast-text",
+      "syntheticReason": "预测候选需要稳定文本；真实模型输出不可控。"
+    },
+    {
+      "id": "next-input-suggestions-turn-one",
+      "description": "第一轮主对话固定回复。",
+      "kind": "main",
+      "source": "synthetic",
+      "timingPolicy": "fast-text",
+      "syntheticReason": "主对话只用于构造 ≥2 轮真实用户输入；固定回复避免依赖真实模型。"
+    },
+    {
+      "id": "next-input-suggestions-turn-two",
+      "description": "第二轮主对话固定回复；完成后触发输入预测。",
+      "kind": "main",
+      "source": "synthetic",
+      "timingPolicy": "fast-text",
+      "syntheticReason": "主对话只用于构造 ≥2 轮真实用户输入；固定回复避免依赖真实模型。"
+    },
+    {
+      "id": "next-input-suggestions-suggestion-send",
+      "description": "点击建议条直接发送后的固定回复；延迟 3s 让运行态可断言建议条已消失。",
+      "kind": "main",
+      "source": "synthetic",
+      "timingPolicy": "fast-text",
+      "syntheticReason": "建议条发送只验证发送语义；固定回复并延迟，避免运行态窗口过短。"
+    }
+  ]
+}

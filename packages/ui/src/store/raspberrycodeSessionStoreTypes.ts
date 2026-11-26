@@ -129,7 +129,8 @@ export interface ComposerTextInsertRequest {
   requestId: number;
   text: string;
   mention?: ComposerMentionPrefill;
-  mode?: "replace" | "prepend-if-missing";
+  /** append：追加到现有草稿末尾（下一步输入建议「添加到对话框」）。 */
+  mode?: "replace" | "prepend-if-missing" | "append";
 }
 
 export interface TimelineBottomRequest {
@@ -247,7 +248,7 @@ export interface RaspberryCodeSessionStoreState {
     text: string,
     workspaceIdentity?: string,
     mention?: ComposerMentionPrefill,
-    mode?: "replace" | "prepend-if-missing",
+    mode?: "replace" | "prepend-if-missing" | "append",
   ) => number;
   clearComposerTextInsertRequest: (
     workspacePath: string,

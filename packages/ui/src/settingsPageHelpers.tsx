@@ -35,6 +35,7 @@ import { DataBaseDirControl } from "@/settings/DataBaseDirControl.js";
 import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { useOptionalServices } from "@/hooks/useServices.js";
 import { ProactiveSuggestionsSetting } from "@/settings/ProactiveSuggestionsSetting.js";
+import { NextInputPredictionSetting } from "@/next-input-suggestions/index.js";
 import { DynamicWorkflowModeSetting } from "@/settings/DynamicWorkflowModeSetting.js";
 import { EndpointOriginSetting } from "@/settings/EndpointOriginSetting.js";
 import { UpdateSettingsSection } from "@/client-update/index.js";
@@ -438,6 +439,7 @@ export function GeneralSectionContent({
           }
         />
         {hasServices ? <ProactiveSuggestionsSetting /> : null}
+        {hasServices ? <NextInputPredictionSetting /> : null}
       </SettingsGroupCard>
 
       <SettingsGroupCard>

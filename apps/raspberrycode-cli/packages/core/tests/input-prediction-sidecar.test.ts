@@ -84,7 +84,7 @@ describe("decideInputPrediction", () => {
     expect(inputPredictionMinTurns("")).toBe(2);
   });
 
-  it("去掉与最近用户输入重复的、候选间重复的，按置信度降序取前 3", () => {
+  it("去掉与最近用户输入重复的、候选间重复的，逐条过滤低于门槛的，按置信度降序取前 3", () => {
     const outcome = decideInputPrediction({
       rawCandidates: [
         { text: "再跑一遍 单测", confidence: 0.99 },
@@ -99,12 +99,12 @@ describe("decideInputPrediction", () => {
       recentUserInputs: turns.map((turn) => turn.userText),
       turnCount: 2,
     });
+    // 0.5 / 0.4 低于 0.6 门槛，不返回；topConfidence 仍记录模型原始最高分。
     expect(outcome).toEqual({
       decision: "show",
       candidates: [
         { text: "提交 代码", confidence: 0.85 },
         { text: "推送", confidence: 0.6 },
-        { text: "看下覆盖率", confidence: 0.5 },
       ],
       topConfidence: 0.85,
     });
@@ -113,10 +113,29 @@ describe("decideInputPrediction", () => {
     ).toBe(true);
   });
 
+  it("top 达标但其余候选低于门槛时只返回达标的那条", () => {
+    expect(
+      decideInputPrediction({
+        rawCandidates: [
+          { text: "请只回复数字 3", confidence: 0.62 },
+          { text: "请只回复数字 4", confidence: 0.18 },
+          { text: "请用一句话总结你刚才的三点回答", confidence: 0.07 },
+        ],
+        draft: "",
+        recentUserInputs: [],
+        turnCount: 3,
+      }),
+    ).toEqual({
+      decision: "show",
+      candidates: [{ text: "请只回复数字 3", confidence: 0.62 }],
+      topConfidence: 0.62,
+    });
+  });
+
   it("top 置信度不到门槛时 suppress_below_threshold；置信度被夹到 0..1", () => {
     expect(
       decideInputPrediction({
-        rawCandidates: [{ text: "提交", confidence: 0.79 }],
+        rawCandidates: [{ text: "提交", confidence: 0.59 }],
         draft: "",
         recentUserInputs: [],
         turnCount: 3,
