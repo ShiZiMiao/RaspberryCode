@@ -49,6 +49,8 @@ openclaw/
 packages/stream-animate/dist-server/
 packages/stream-animate/.stream-animate-data/
 .claude/worktrees/
+# Trae 本地计划/会话产物，不入库。
+.trae/
 .codegraph
 .mimosa/
 # 2026-08-20：集成分支曾混入 node-gyp 构建产物与 .playwright-mcp 临时快照；
