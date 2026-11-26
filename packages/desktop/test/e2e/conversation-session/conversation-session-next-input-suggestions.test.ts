@@ -46,6 +46,41 @@ describe("下一步输入预测建议条", () => {
     expect(suggestions.length).toBeLessThanOrEqual(3);
     expect(suggestions[0]).toBe(SUGGESTION_ONE);
 
+    // 多于 1 条时纵向排列：每条独占一行、左对齐。
+    if (suggestions.length > 1) {
+      const boxes = (await browser.execute(
+        (containerTestId, chipTestId) => {
+          const container = document.querySelector<HTMLElement>(
+            `[data-testid="${containerTestId}"]`,
+          );
+          if (!container) return [];
+          return Array.from(
+            container.querySelectorAll<HTMLElement>(`[data-testid^="${chipTestId}-"]`),
+          )
+            .filter(
+              (element) =>
+                !element.getAttribute("data-testid")?.startsWith(`${chipTestId}-add-`),
+            )
+            .map((element) => {
+              const rect = element.getBoundingClientRect();
+              return { top: Math.round(rect.top), left: Math.round(rect.left) };
+            });
+        },
+        TID_V4_NEXT_INPUT_SUGGESTIONS,
+        TID_V4_NEXT_INPUT_SUGGESTION,
+      )) as Array<{ top: number; left: number }>;
+      expect(boxes.length).toBe(suggestions.length);
+      const first = boxes[0];
+      if (!first) throw new Error("建议条没有渲染");
+      for (let index = 1; index < boxes.length; index += 1) {
+        const previous = boxes[index - 1];
+        const current = boxes[index];
+        if (!previous || !current) throw new Error("建议条布局数据缺失");
+        expect(current.top).toBeGreaterThan(previous.top);
+        expect(current.left).toBe(first.left);
+      }
+    }
+
     // 添加到对话框：追加而不是覆盖。
     await clickTestIdByDom(testId(TID_V4_NEXT_INPUT_SUGGESTION_ADD, "0"), {
       timeout: 15_000,

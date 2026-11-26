@@ -11,6 +11,7 @@ import {
   TID_V4_NEXT_INPUT_SUGGESTIONS,
   testId,
 } from "@raspberrycode/shared/test-ids";
+import { cn } from "@/components/lib/utils.js";
 import { Button } from "@/components/ui/button.js";
 import {
   Tooltip,
@@ -45,7 +46,11 @@ export function ConversationNextInputSuggestions({
       <div
         data-v4-next-input-suggestions="true"
         data-testid={TID_V4_NEXT_INPUT_SUGGESTIONS}
-        className="flex flex-wrap items-center gap-2"
+        className={cn(
+          "flex gap-2",
+          // 多条候选纵向排列，避免长文本横向挤压；单条保持行内。
+          candidates.length > 1 ? "flex-col items-start" : "flex-row items-center",
+        )}
       >
         {candidates.map((text, index) => (
           <div key={text} className="group/suggestion flex items-center gap-1">
