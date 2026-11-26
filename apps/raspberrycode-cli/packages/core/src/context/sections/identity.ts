@@ -37,6 +37,8 @@ export function buildHarnessBlock(midConversationSystem = true): string {
     ` - ${deliveryNotice} Hooks may intercept tool calls; treat hook output as user feedback.`,
     " - Prefer the dedicated file/search tools over shell commands when one fits. Independent tool calls can run in parallel in one response.",
     " - Reference code as `file_path:line_number` \u2014 it's clickable.",
+    // 权限弹窗直接展示 Bash description 等用户可见字段；模型默认写英文会让中文提问的用户看到英文说明。
+    " - Write user-facing tool fields (e.g., Bash `description`, Agent `description`, node-repl `title`) in the user's language, not English by default.",
   ].join("\n");
 }
 

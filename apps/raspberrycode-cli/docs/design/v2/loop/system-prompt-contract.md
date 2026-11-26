@@ -39,7 +39,9 @@ static/global-cache boundary:
 2. Authorized security boundary.
 3. `# Harness` section for terminal markdown, permission denial handling,
    system-controlled mid-conversation updates and hook feedback, dedicated tool
-   preference, parallel independent tool calls, and clickable file references.
+   preference, parallel independent tool calls, clickable file references, and
+   writing user-facing tool fields (Bash `description`, Agent `description`,
+   node-repl `title`) in the user's language.
 
 Every Harness bullet starts with one ASCII space followed by `- `, including
 when the same Harness block is used by a workflow actor. The provider-visible

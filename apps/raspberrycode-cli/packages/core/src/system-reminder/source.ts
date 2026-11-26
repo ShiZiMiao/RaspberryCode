@@ -58,6 +58,7 @@ export const SYSTEM_REMINDER_PER_REQUEST_SOURCES = [
   "referenced_session_context",
   "model_anomaly",
   "prompt_attachment",
+  "language_hint",
   "diagnostics",
 ] as const;
 
@@ -196,6 +197,9 @@ const SYSTEM_REMINDER_DESCRIPTORS: Record<SystemReminderSource, DescriptorShape>
     "sr.selection_side_chat",
   ),
   prompt_attachment: descriptor("current_turn", "per_current_turn", true, "sr.prompt_attachment"),
+  // 用户提问语言提示：权限弹窗直接展示 Bash description 等用户可见字段，
+  // 模型默认写英文会让中文提问的用户看到英文说明；每轮按用户输入重新生成。
+  language_hint: descriptor("current_turn", "per_current_turn", true, "sr.language_hint"),
   queued_system_notification: descriptor(
     "mid_turn_event",
     "mid_turn_event",

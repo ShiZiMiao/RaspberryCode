@@ -88,6 +88,191 @@ describe("PermissionDialog", () => {
     expect(withFeedback).toContain('maxLength="4096"');
   });
 
+  it("states what permission is requested and what it is used for", () => {
+    const html = renderPermissionDialog({
+      type: "permission_request",
+      taskId: "task-summary",
+      traceId: "trace-summary",
+      requestId: "request-summary",
+      description: "Run ls",
+      kind: "Bash",
+      title: "Bash",
+      options: [
+        {
+          optionId: "allow",
+          kind: "allow_once",
+          name: "Allow",
+        },
+      ],
+      raw: {
+        rawInput: { command: "ls", description: "List files in current directory" },
+      },
+    });
+
+    expect(html).toContain("允许本次操作使用「运行命令」权限：List files in current directory");
+    expect(html).toContain("ls");
+  });
+
+  it("keeps the permission clause when the request has no user-facing purpose", () => {
+    const html = renderPermissionDialog({
+      type: "permission_request",
+      taskId: "task-summary-no-purpose",
+      traceId: "trace-summary-no-purpose",
+      requestId: "request-summary-no-purpose",
+      description: "Tool has side effects and requires approval",
+      kind: "Write",
+      title: "Write",
+      options: [
+        {
+          optionId: "allow",
+          kind: "allow_once",
+          name: "Allow",
+        },
+      ],
+      raw: {
+        requestId: "request-summary-no-purpose",
+        toolName: "Write",
+        input: {
+          file_path: "/Users/dev/RaspberryCodeProject/demo/quicksort.js",
+          content: "export function quicksort(items) {\n  return items;\n}\n",
+        },
+      },
+    });
+
+    expect(html).toContain("允许本次操作使用「修改文件」权限：修改当前任务所需的文件");
+    expect(html).not.toContain("Tool has side effects and requires approval");
+  });
+
+  it("shows the model description from the V4 permission detail", () => {
+    const html = renderPermissionDialog({
+      type: "permission_request",
+      taskId: "task-v4-detail",
+      traceId: "trace-v4-detail",
+      requestId: "request-v4-detail",
+      description: "High risk tools require explicit approval",
+      kind: "Bash",
+      title: "Bash",
+      options: [
+        {
+          optionId: "allow",
+          kind: "allow_once",
+          name: "Allow",
+        },
+      ],
+      raw: {
+        command: "echo hello > permission-test.txt",
+        description: "Create a test file with hello",
+      },
+    });
+
+    expect(html).toContain("允许本次操作使用「运行命令」权限：Create a test file with hello");
+  });
+
+  it("falls back to a tool-family purpose when the model omits the description", () => {
+    const html = renderPermissionDialog({
+      type: "permission_request",
+      taskId: "task-summary-bash-fallback",
+      traceId: "trace-summary-bash-fallback",
+      requestId: "request-summary-bash-fallback",
+      description: "High risk tools require explicit approval",
+      kind: "Bash",
+      title: "Bash",
+      options: [
+        {
+          optionId: "allow",
+          kind: "allow_once",
+          name: "Allow",
+        },
+      ],
+      raw: {
+        rawInput: { command: "echo hello > permission-test.txt" },
+      },
+    });
+
+    expect(html).toContain("允许本次操作使用「运行命令」权限：执行当前任务所需的命令");
+    expect(html).not.toContain("High risk tools require explicit approval");
+  });
+
+  it("labels WebFetch permission requests with the web page permission and a fallback purpose", () => {
+    const html = renderPermissionDialog({
+      type: "permission_request",
+      taskId: "task-webfetch-summary",
+      traceId: "trace-webfetch-summary",
+      requestId: "request-webfetch-summary",
+      description: "Tool has side effects and requires approval",
+      kind: "WebFetch",
+      title: "WebFetch",
+      options: [
+        {
+          optionId: "allow",
+          kind: "allow_once",
+          name: "允许",
+        },
+      ],
+      raw: {
+        requestId: "request-webfetch-summary",
+        toolName: "WebFetch",
+        input: { url: "https://example.com", prompt: "Summarize the page" },
+      },
+    });
+
+    expect(html).toContain("允许本次操作使用「访问网页」权限：获取当前任务所需的网页内容");
+    expect(html).toContain("https://example.com");
+  });
+
+  it("labels MCP permission requests with the MCP permission and the server reason", () => {
+    const toolName = "mcp__ios-simulator__ios_preflight";
+    const reason = "模拟器需要先启动才能安装应用";
+    const html = renderPermissionDialog({
+      type: "permission_request",
+      taskId: "task-mcp-summary",
+      traceId: "trace-mcp-summary",
+      requestId: "request-mcp-summary",
+      description: reason,
+      kind: toolName,
+      title: toolName,
+      options: [
+        {
+          optionId: "allow",
+          kind: "allow_once",
+          name: "允许",
+        },
+      ],
+      raw: {
+        requestId: "request-mcp-summary",
+        toolCallId: "call-mcp-summary",
+        toolName,
+        reason,
+        riskLevel: "medium",
+        input: {},
+      },
+    });
+
+    expect(html).toContain("允许本次操作使用「调用 MCP 工具」权限：模拟器需要先启动才能安装应用");
+  });
+
+  it("labels Skill permission requests with the skill permission and a fallback purpose", () => {
+    const html = renderPermissionDialog({
+      type: "permission_request",
+      taskId: "task-skill-summary",
+      traceId: "trace-skill-summary",
+      requestId: "request-skill-summary",
+      description: "Tool has side effects and requires approval",
+      kind: "Skill",
+      title: "Skill",
+      options: [
+        {
+          optionId: "allow",
+          kind: "allow_once",
+          name: "允许",
+        },
+      ],
+      raw: { skill: "pdf", args: "extract text" },
+    });
+
+    expect(html).toContain("允许本次操作使用「运行技能」权限：运行当前任务所需的技能");
+  });
+
   it("labels an authority-verified Computer Use project grant explicitly", () => {
     const html = renderPermissionDialog({
       type: "permission_request",

@@ -5910,6 +5910,23 @@ const zhCN: Record<string, string> = {
   // 权限请求
   "chat.permission.title": "需要权限",
   "chat.permission.awaitingApproval": "等待确认",
+  // 权限说明句：回答「申请什么权限、用来做什么」；具体命令/文件变更由下方工具块展示。
+  "chat.permission.request.summary": "允许本次操作使用「{permission}」权限：{purpose}",
+  "chat.permission.name.command": "运行命令",
+  "chat.permission.name.file": "修改文件",
+  "chat.permission.name.webFetch": "访问网页",
+  "chat.permission.name.search": "搜索网络",
+  "chat.permission.name.skill": "运行技能",
+  "chat.permission.name.mcp": "调用 MCP 工具",
+  "chat.permission.name.generic": "执行操作",
+  // 模型没有给出 description 时的兜底用途（旧会话、回放或不遵守 required 的 provider）。
+  "chat.permission.purpose.command": "执行当前任务所需的命令",
+  "chat.permission.purpose.file": "修改当前任务所需的文件",
+  "chat.permission.purpose.webFetch": "获取当前任务所需的网页内容",
+  "chat.permission.purpose.search": "搜索当前任务所需的信息",
+  "chat.permission.purpose.skill": "运行当前任务所需的技能",
+  "chat.permission.purpose.mcp": "调用当前任务所需的 MCP 工具",
+  "chat.permission.purpose.generic": "执行当前任务所需的操作",
   "chat.permission.approve": "允许",
   "chat.permission.approveAlways": "始终允许",
   "chat.permission.responseFailed": "审批未完成，请重试。",

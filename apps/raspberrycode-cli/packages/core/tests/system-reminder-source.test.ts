@@ -50,6 +50,7 @@ const EXPECTED_SOURCES = [
   "referenced_session_context",
   "model_anomaly",
   "prompt_attachment",
+  "language_hint",
   "diagnostics",
 ] as const satisfies readonly SystemReminderSource[];
 
@@ -106,6 +107,7 @@ describe("system reminder source descriptors", () => {
       "referenced_session_context",
       "model_anomaly",
       "prompt_attachment",
+      "language_hint",
       "diagnostics",
     ]);
 

@@ -6182,6 +6182,26 @@ const enUS: Record<string, string> = {
   // Permissions
   "chat.permission.title": "Permission required",
   "chat.permission.awaitingApproval": "Awaiting approval",
+  // Permission summary: what permission is requested and what it is used for; the concrete
+  // command/file changes are rendered by the tool block below.
+  "chat.permission.request.summary":
+    'Allow this operation to use the "{permission}" permission: {purpose}',
+  "chat.permission.name.command": "command execution",
+  "chat.permission.name.file": "file modification",
+  "chat.permission.name.webFetch": "web page access",
+  "chat.permission.name.search": "web search",
+  "chat.permission.name.skill": "skill execution",
+  "chat.permission.name.mcp": "MCP tool calls",
+  "chat.permission.name.generic": "action execution",
+  // Fallback purpose when the model omits `description` (old sessions, replays, or providers
+  // that ignore the required field).
+  "chat.permission.purpose.command": "run the command needed for the current task",
+  "chat.permission.purpose.file": "modify the files needed for the current task",
+  "chat.permission.purpose.webFetch": "fetch the web content needed for the current task",
+  "chat.permission.purpose.search": "search for the information needed for the current task",
+  "chat.permission.purpose.skill": "run the skill needed for the current task",
+  "chat.permission.purpose.mcp": "call the MCP tool needed for the current task",
+  "chat.permission.purpose.generic": "perform the action needed for the current task",
   "chat.permission.approve": "Allow",
   "chat.permission.approveAlways": "Always allow",
   "chat.permission.responseFailed": "Approval did not complete. Please retry.",

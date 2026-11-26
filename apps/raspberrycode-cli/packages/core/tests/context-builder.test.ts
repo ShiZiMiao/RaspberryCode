@@ -110,7 +110,7 @@ describe("ContextBuilder meta user context", () => {
     expect(stableBody).not.toContain("You are RaspberryCode, an interactive agent");
     expect(stableBody).toContain("# Harness");
     const harnessBullets = stableBody.split("# Harness\n")[1]?.split("\n") ?? [];
-    expect(harnessBullets).toHaveLength(5);
+    expect(harnessBullets).toHaveLength(6);
     expect(harnessBullets.every((line) => line.startsWith(" - "))).toBe(true);
     expect(stableBody).not.toContain(EXPECTED_PRONOUNS_PROMPT);
     expect(stableBody).not.toContain("# Session-specific guidance");

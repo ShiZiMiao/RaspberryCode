@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { createTestModelSelection } from "./test-model-selection.js";
-import { MessageHistoryImpl, countContextPrefixMessages } from "../src/agent/message-history.js";
+import {
+  MessageHistoryImpl,
+  buildUserMessageEntries,
+  countContextPrefixMessages,
+} from "../src/agent/message-history.js";
 import { buildProviderRequestMessages } from "../src/runtime/helpers/provider-request-messages.js";
 import type { ContextBuildResult, ContextSection } from "../src/context/types.js";
 import { estimateTokens } from "../src/context/utils.js";
@@ -221,6 +225,25 @@ describe("message history metadata", () => {
     expect(buildContextHistoryEntries(contextResult)).toEqual([
       { message: { role: "system", content: "system prompt" } },
     ]);
+  });
+});
+
+describe("user message language hint", () => {
+  it("adds a Chinese language hint after a Chinese user message", () => {
+    const [userEntry, ...attachments] = buildUserMessageEntries("用 Bash 运行 echo hello", []);
+
+    expect(userEntry.message).toEqual({ role: "user", content: "用 Bash 运行 echo hello" });
+    expect(attachments).toHaveLength(1);
+    expect(attachments[0]?.metadata).toMatchObject({ source: "language_hint" });
+    expect(attachments[0]?.content).toContain("The user is writing in Chinese");
+    expect(attachments[0]?.content).toContain("Bash `description`");
+  });
+
+  it("does not add a language hint for an English user message", () => {
+    const [userEntry, ...attachments] = buildUserMessageEntries("Run echo hello with Bash", []);
+
+    expect(userEntry.message).toEqual({ role: "user", content: "Run echo hello with Bash" });
+    expect(attachments).toEqual([]);
   });
 });
 

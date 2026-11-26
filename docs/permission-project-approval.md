@@ -61,6 +61,18 @@ UI focus (fullAccess): [1 Allow once] <-> [2 Allow project] <-> [3 Full access]
 
 ## 弹窗展示语义
 
+- 弹窗标题固定为「需要权限」；标题下方用一句话回答**申请什么权限、用来做什么**：
+  `允许本次操作使用「{权限名}」权限：{用途}`。权限名按工具族本地化（运行命令 / 修改文件 /
+  访问网页 / 搜索网络 / 运行技能 / 调用 MCP 工具；未知工具回退到工具名），用途取工具输入里的
+  `description` / `reason` / `summary`。模型没有给出用途时（旧会话、回放或未填写该字段的
+  provider）按工具族补一句兜底用途，不能只剩权限名和命令。
+- Bash 的 `description` 字段说明要求模型同时写清「做什么」和「为什么需要运行」，且**使用用户
+  提问的语言**（中文提问就写中文），不默认写英文。字段说明和 system prompt 都不足以稳定约束
+  模型，CLI 在用户消息后追加一条 per-request `language_hint` system reminder（检测到中文提问时
+  明确要求用户可见工具字段用中文），权限弹窗据此展示中文用途。运行时 Zod 仍允许旧调用省略
+  `description`，避免历史会话、回放和第三方 provider 因缺字段直接失败。
+- 具体命令、文件变更、URL 等可操作详情继续由下方工具块展示；命令块在权限弹窗中强制展开，
+  用户不需要额外点击就能看到将要执行的内容。
 - `reason` 继续随权限请求保留，供策略诊断、日志和恢复链路使用；UI 不应把所有策略原因都当成用户提示。
 - `High risk tools require explicit approval` 和 `Tool has side effects and requires approval` 是内部策略说明，不在权限弹窗中展示。弹窗已经通过“等待确认”、工具详情和操作选项表达审批状态，重复展示这些说明不会帮助用户决策。
 - 工具输入中的具体 `description`、命令、文件变更、URL 和其他可操作详情仍按现有规则展示。

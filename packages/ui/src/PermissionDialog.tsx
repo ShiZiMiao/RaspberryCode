@@ -354,6 +354,52 @@ function getPermissionBlockInteraction(blockKind: PermissionBlockKind): Permissi
   }
 }
 
+/**
+ * 权限说明句里的「申请什么权限」：按工具族给出用户能理解的权限名。
+ * 未知工具回退到工具名（见调用处），不把内部 kind 直接当权限名展示。
+ */
+function getPermissionNameMessageId(blockKind: PermissionBlockKind): string {
+  switch (blockKind) {
+    case "execute":
+      return "chat.permission.name.command";
+    case "edit":
+      return "chat.permission.name.file";
+    case "web-fetch":
+      return "chat.permission.name.webFetch";
+    case "search":
+      return "chat.permission.name.search";
+    case "skill":
+      return "chat.permission.name.skill";
+    case "mcp":
+      return "chat.permission.name.mcp";
+    default:
+      return "chat.permission.name.generic";
+  }
+}
+
+/**
+ * 权限说明句里的「用来做什么」兜底：模型没有给出 description 时（旧会话、回放或
+ * 未填写该字段的 provider），仍要回答用途，不能只剩权限名和命令。
+ */
+function getPermissionPurposeMessageId(blockKind: PermissionBlockKind): string {
+  switch (blockKind) {
+    case "execute":
+      return "chat.permission.purpose.command";
+    case "edit":
+      return "chat.permission.purpose.file";
+    case "web-fetch":
+      return "chat.permission.purpose.webFetch";
+    case "search":
+      return "chat.permission.purpose.search";
+    case "skill":
+      return "chat.permission.purpose.skill";
+    case "mcp":
+      return "chat.permission.purpose.mcp";
+    default:
+      return "chat.permission.purpose.generic";
+  }
+}
+
 function buildPermissionToolCall(
   request: RaspberryCodePermissionRequest,
   preview: ReturnType<typeof getPermissionRequestPreview>,
@@ -566,6 +612,22 @@ export function PermissionDialog({
     [blockKind, codePreviewSettings, intl, rawFileSummaries, theme, toolCall, workspacePath],
   );
   const displayReason = useMemo(() => getPermissionDisplayReason(request), [request]);
+  // 权限说明句的「申请什么权限」：已知工具族用本地化权限名，未知工具回退到工具名。
+  const permissionName = useMemo(() => {
+    if (blockKind === "fallback") {
+      return (
+        readNonEmptyString(request.kind) ??
+        readNonEmptyString(request.title) ??
+        intl.formatMessage({ id: "chat.permission.name.generic" })
+      );
+    }
+    return intl.formatMessage({ id: getPermissionNameMessageId(blockKind) });
+  }, [blockKind, intl, request.kind, request.title]);
+  // 「用来做什么」优先用模型给出的 description；缺失时用工具族兜底用途，保证说明句完整。
+  const permissionPurpose = useMemo(
+    () => displayReason ?? intl.formatMessage({ id: getPermissionPurposeMessageId(blockKind) }),
+    [blockKind, displayReason, intl],
+  );
   // 工作流确认窗的两项 run 设置（WorkflowPermissionBlock 画，这里只存改过的值与「模型不可用」）。
   const isWorkflowAsk = blockKind === "workflow";
   const workflowSettings = usePermissionWorkflowSettings(request.requestId);
@@ -872,9 +934,15 @@ export function PermissionDialog({
             </div>
             {!shouldUseSwitchModePlaceholder &&
             !shouldUseWorkflowBlock &&
-            !shouldUseSaveWorkflowBlock &&
-            displayReason ? (
-              <p className="text-ui-base leading-5 text-foreground">{displayReason}</p>
+            !shouldUseSaveWorkflowBlock ? (
+              // 说明句回答「申请什么权限、用来做什么」；具体命令/文件变更由下方工具块展示。
+              // 用途缺失时用工具族兜底，不能只剩权限名和命令。
+              <p className="text-ui-base leading-5 text-foreground">
+                {intl.formatMessage(
+                  { id: "chat.permission.request.summary" },
+                  { permission: permissionName, purpose: permissionPurpose },
+                )}
+              </p>
             ) : null}
             {shouldUseSwitchModePlaceholder ? (
               <div className="flex items-center gap-2 text-ui-base text-foreground">

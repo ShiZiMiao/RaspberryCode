@@ -606,6 +606,30 @@ export type UserMessageAttachment = Pick<FilePart, "filename" | "mime" | "source
   contentBlock: ModelMessageContentBlock;
 };
 
+// 仅用于判断用户提问语言：CJK 统一表意文字覆盖中文（含扩展 A 与兼容区）。
+const CJK_TEXT_PATTERN = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/u;
+
+/**
+ * 用户提问语言提示：权限弹窗直接展示 Bash `description` 等用户可见字段，
+ * 模型默认写英文会让中文提问的用户看到英文说明。字段说明和 system prompt 都不足以稳定约束，
+ * 这里在用户消息后追加一条 per-request reminder，紧贴提问给出明确语言要求。
+ */
+function buildUserLanguageHint(input: ModelMessageContent): string | null {
+  const text =
+    typeof input === "string"
+      ? input
+      : input
+          .filter((block): block is Extract<ModelMessageContentBlock, { type: "text" }> =>
+            block.type === "text",
+          )
+          .map((block) => block.text)
+          .join("\n");
+  if (!CJK_TEXT_PATTERN.test(text)) {
+    return null;
+  }
+  return "The user is writing in Chinese. Write user-facing tool fields (e.g., Bash `description`) in Chinese.";
+}
+
 // 首发、队列消费和恢复曾分别组装，导致正文、PDF、路径引用顺序及文本附件语义漂移。
 // 统一在消息历史边界组装；调用方只负责解析内容，不再各自分组。
 export function buildUserMessageEntries(
@@ -636,6 +660,11 @@ export function buildUserMessageEntries(
     }
 
     realUserBlocks.push(attachment.contentBlock);
+  }
+
+  const languageHint = buildUserLanguageHint(input);
+  if (languageHint) {
+    promptAttachmentEntries.push(systemReminderAttachmentEntry("language_hint", languageHint));
   }
 
   const blocks: ModelMessageContentBlock[] = [];

@@ -97,7 +97,13 @@ export function readRawToolCallInput(raw: unknown): unknown {
 
   // RaspberryCode protocol 的 permission/request payload 按 schema 把工具参数放在 input，
   // 旧 UI 只读兼容输入字段 rawInput，Write/Edit 会退化成整段 JSON 展示而不是文件 diff。
-  return "input" in raw ? raw.input : null;
+  if ("input" in raw) {
+    return raw.input;
+  }
+
+  // V4 permission 的 detail 直接就是工具参数（如 Bash 的 {command, description}），
+  // 没有 rawInput/input 包装；返回 null 会让权限弹窗丢掉模型写的用途说明。
+  return raw;
 }
 
 export function readStructuredDiffBlock(

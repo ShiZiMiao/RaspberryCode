@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { AgentInputSchema, BashInputJsonSchema, BashOutputJsonSchema } from "@raspberrycode/contracts";
+import {
+  AgentInputSchema,
+  BashInputJsonSchema,
+  BashOutputJsonSchema,
+} from "@raspberrycode/contracts";
 import { agentToolEntry } from "../src/tool/handlers/agent.js";
 import { bashToolEntry } from "../src/tool/handlers/bash.js";
 import { editToolEntry } from "../src/tool/handlers/edit.js";
@@ -1244,19 +1248,20 @@ describe("tool contract declarations", () => {
     );
     expect(bashInput.properties.description.description).toBe(
       [
-        'Clear, concise description of what this command does in active voice. Never use words like "complex" or "risk" in the description - just describe what it does.',
+        'Clear, concise description of what this command does and why you need to run it, in active voice. This text is shown to the user in the permission dialog, so it must let them decide whether to approve. Write it in the user\'s language (the language the user is using in the conversation), not in English by default. Never use words like "complex" or "risk" in the description - just describe what it does and why.',
         "",
-        "Say what the command does in plain words: do not echo the command's text, its flags, or file paths - the user reads this description, often without seeing the command.",
+        "Say what the command does in plain words and, when it is not obvious, why it is needed: do not echo the command's text, its flags, or file paths - the user reads this description, often without seeing the command.",
         "",
         "For simple commands (git, npm, standard CLI tools), keep it brief (5-10 words):",
         '- ls → "List files in current directory"',
         '- git status → "Show working tree status"',
         '- npm install → "Install package dependencies"',
         "",
-        "For commands that are harder to parse at a glance (piped commands, obscure flags, etc.), add enough context to clarify what it does:",
+        "For commands that are harder to parse at a glance (piped commands, obscure flags, etc.), add enough context to clarify what it does and why:",
         '- find . -name "*.tmp" -exec rm {} \\; → "Find and delete all .tmp files recursively"',
         '- git reset --hard origin/main → "Discard all local changes and match remote main"',
         "- curl -s url | jq '.data[]' → \"Fetch JSON from URL and extract data array elements\"",
+        '- python -m cProfile -s cumtime -m conda --version → "Profile conda startup to find where the 1.5s goes"',
       ].join("\n"),
     );
     expect(bashInput.properties.run_in_background.description).toBe(
