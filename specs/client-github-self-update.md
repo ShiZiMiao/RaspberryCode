@@ -78,11 +78,14 @@
       **检查阶段同样需要镜像**：electron-updater 的 github provider 每次检查要发三条请求
       （`releases.atom`、`releases/latest`、`releases/download/<tag>/latest.yml`），
       只拦下载会让无代理用户在第一条就超时。
-    - **路线顺序**：`mirror`（默认 `https://gh-proxy.org/`，前缀 + 完整原 URL 形态）
+    - **路线顺序**：`mirror`（默认 `https://cdn.akaere.online/`，前缀 + 完整原 URL 形态）
       → `direct`（原站直连，等同改造前行为）→ `manual`（不再自动下载，UI 给「手动下载」）。
-    - **默认镜像固定为 `https://gh-proxy.org/`**（2026-11-26 实测）：三项硬条件全部通过
-      （atom 返回真实 XML、单 Range 206、latest.yml 含 version + sha512），
-      下载速度约为 GitHub 直连的 2.6 倍。不再维护发版前探测与候选列表。
+    - **默认镜像固定为 `https://cdn.akaere.online/`**（2026-11-26 实测）：四项硬条件全部通过
+      （atom 返回真实 XML、`releases/latest` 带 `Accept: application/json` 返回含 `tag_name`
+      的 JSON、单 Range 206、latest.yml 含 version + sha512）。不再维护发版前探测与候选列表。
+      > 0.2.9 回归教训：`gh-proxy.org` 对 `releases/latest` 返回镜像首页 HTML，
+      > GitHubProvider 解析 JSON 失败，检查更新直接报错。选镜像必须实测这一条，
+      > 只看状态码 200 不够。
     - **重写范围**：`mirror` 阶段拦截 **`github.com` 全站**请求（不再只限
       `/releases/download/`），以同时覆盖 `releases.atom` 与 `releases/latest`。
       安全性依据：`GitHubProvider` 只用 `github.com` 域（atom / latest / download），

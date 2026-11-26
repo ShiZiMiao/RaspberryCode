@@ -16,9 +16,9 @@
  *  2. 镜像失败 → 直连（空前缀，行为与改造前一致）
  *  3. 直连也失败 → 进入 manual-required，UI 提供「手动下载」把 release 页交给浏览器
  *
- * 默认镜像固定为 `https://gh-proxy.org/`（2026-11-26 实测通过 atom / Range /
- * latest.yml 三项判据）。镜像前缀仍可由 setting.json 的 `updateMirrorPrefix`
- * 覆盖或设为空串（只走直连），无需发版。
+ * 默认镜像固定为 `https://cdn.akaere.online/`（2026-11-26 实测通过 atom /
+ * releases/latest JSON / Range / latest.yml 四项判据）。镜像前缀仍可由
+ * setting.json 的 `updateMirrorPrefix` 覆盖或设为空串（只走直连），无需发版。
  *
  * 实现方式：不改 electron-updater 内部（其 provider 的下载 URL 由 baseUrl 拼装，
  * 且 resolveFiles 为私有方法、createClient 不可注入，无法靠配置接入路径前缀式镜像）。

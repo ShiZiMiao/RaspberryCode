@@ -79,8 +79,8 @@ describe("toMirrorUrl", () => {
     expect(toMirrorUrl(DOWNLOAD_URL, "   ")).toBe(DOWNLOAD_URL);
   });
 
-  it("默认镜像固定为 gh-proxy.org，且形状合法", () => {
-    expect(DEFAULT_UPDATE_MIRROR_PREFIX).toBe("https://gh-proxy.org/");
+  it("默认镜像固定为 cdn.akaere.online，且形状合法", () => {
+    expect(DEFAULT_UPDATE_MIRROR_PREFIX).toBe("https://cdn.akaere.online/");
     const url = new URL(DEFAULT_UPDATE_MIRROR_PREFIX);
     // 必须是 https：http 前缀会被 Electron 当作不安全重定向拒绝。
     expect(url.protocol).toBe("https:");

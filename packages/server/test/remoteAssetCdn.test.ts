@@ -173,7 +173,7 @@ describe("remoteAssetCdn 带版本段的发布根", () => {
  * 与客户端自更新共用默认镜像（2026-11-26）。
  *
  * 背景：这里原本固定写着 `https://ghfast.top/`，而它早已对 atom 返回 403、
- * 下载速度也大幅劣化。客户端那边已固定为 `https://gh-proxy.org/`，
+ * 下载速度也大幅劣化。客户端那边已固定为 `https://cdn.akaere.online/`，
  * 若远程资产仍用旧的写死值，就会出现「客户端已切到新镜像、远程升级还在用旧镜像」。
  *
  * 因此默认前缀的事实源上移到 `@raspberrycode/shared/client-update`，两边共用一份。

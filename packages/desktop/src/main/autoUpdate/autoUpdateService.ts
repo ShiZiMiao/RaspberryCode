@@ -602,7 +602,20 @@ export function initAutoUpdateService(options: InitAutoUpdateServiceOptions): vo
   });
   updater.on("download-progress", handleDownloadProgress);
   updater.on("update-downloaded", handleUpdateDownloaded);
-  updater.on("error", handleUpdaterError);
+  updater.on("error", (error: Error) => {
+    // 检查阶段的错误必须交给 runCheck 的 catch 统一处理。
+    //
+    // electron-updater 对同一次检查失败会先发 error 事件、再让 checkForUpdates reject。
+    // 若这里也调用 handleUpdaterError，事件会先把路线推进到 direct 并置 checkRetryInFlight，
+    // 随后 catch 因「同一次失败」命中去重（dup=true）而不再安排重试，循环直接退出——
+    // 结果就是 mirror 失败后永远退不到 direct（0.2.9 实测：gh-proxy.org 的
+    // releases/latest 返回 HTML，检查失败且没有直连重试）。
+    if (state.kind === "checking") {
+      logger.info(`[auto-update] updater error during check (deferred to runCheck): ${error.message}`);
+      return;
+    }
+    handleUpdaterError(error);
+  });
 
   nextState({ kind: "idle", enabled });
   const delayMs = options.silentCheckDelayMs ?? 10_000;
