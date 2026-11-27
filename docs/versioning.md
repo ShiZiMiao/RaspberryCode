@@ -230,3 +230,4 @@ gh release upload v<version> --repo ShiZiMiao/RaspberryCode \
 | 2026-11-17 | `0.2.3` | PATCH（自有修复） | 修复 Windows 无符号链接权限时无法出包；「检查更新」加超时兜底与失败反馈；回收未完成握手的任务占位行；renderer 跨 HMR 复用单一 React root；任务右键菜单新增删除；上下文来源占比与模型用时统计 |
 | 2026-11-17 | `0.2.4` | PATCH（品牌） | 产品图标更换为粉彩透明版（树莓 + 绿叶 + 星环）：全部槽位透明无背板；启动动画、标题栏、关于弹窗、DMG 安装背景同步 |
 | 2026-11-18 | `0.2.5` | PATCH（自有功能） | 输入框「增强提示词」（三态 idle/pending/undo，走 workspace/generateText）；轮尾「重新生成」入口与本轮用量 chip（`turnHeader.usage`，live/cold 双路径归约，缺席不落 0） |
+| 2026-11-27 | `0.2.10` | PATCH（自有修复） | 默认更新镜像切换为自建 `https://ghm.shizimiao.cc.cd/`，并改为路径式拼接（`https://<mirror>/<owner>/<repo>/...`）；客户端自更新与远程资产下载同步生效，直连兜底不变 |
