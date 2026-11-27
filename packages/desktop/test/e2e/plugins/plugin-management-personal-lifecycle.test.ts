@@ -1,16 +1,16 @@
 import { type RaspberryCodePluginComponentKind } from "@raspberrycode/shared";
 import { TID_V4_COMPOSER_INPUT } from "@raspberrycode/shared/test-ids";
-import { clearAppData, waitForTestIdByDom } from "../helpers/desktop-app.js";
+import { clearAppData, waitForTestIdByDom } from "#e2e/helpers/desktop-app";
 import { waitForUpstreamRequestContaining } from "#e2e/helpers/conversation-session-network";
 import {
   getV4ComposerText,
   prepareV4ConversationE2E,
   sendV4Prompt,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 import {
   captureArtifactAdvertisesToolName,
   findUpstreamRequestContaining,
-} from "../helpers/plugin-mcp-skill.js";
+} from "#e2e/helpers/plugin-mcp-skill";
 import {
   PLUGIN_LIFECYCLE_CONFIG_VALUE,
   PLUGIN_LIFECYCLE_EXAMPLE_PROMPT,
@@ -40,7 +40,7 @@ import {
   updatePluginLifecycleFixture,
   waitForPluginControl,
   waitUntilPluginOverview,
-} from "../helpers/plugin-management-lifecycle.js";
+} from "#e2e/helpers/plugin-management-lifecycle";
 
 const LIFECYCLE_TIMEOUT_MS = 300000;
 

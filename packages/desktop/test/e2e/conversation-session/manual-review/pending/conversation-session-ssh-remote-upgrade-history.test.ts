@@ -67,7 +67,7 @@ const artifactDir = resolve(
 );
 
 async function replaceRunApplication(base: string) {
-  const desktopRoot = resolve(import.meta.dirname, "../../../../..");
+  const desktopRoot = resolve(import.meta.dirname, "../../../../../../..");
   const runId = process.env.RASPBERRYCODE_E2E_RUN_ID;
   if (!runId) throw new Error("缺少隔离应用路径");
   const cache = join(desktopRoot, ".e2e-cache", runId);
@@ -390,7 +390,7 @@ describe(`${MARKER}: staging 自然历史升级与回退`, () => {
     await readFile(join(stagingBase, "packages/desktop/out/main/index.js"));
     const prepared = await prepareSSHLifecycle(MARKER, { tunnelUsername: "tunnel" });
     provider = prepared.provider;
-    const currentBase = resolve(import.meta.dirname, "../../../../../../..");
+    const currentBase = resolve(import.meta.dirname, "../../../../../../../../..");
     await reloadElectronSessionPreservingBrowserProfile(browser, {
       afterElectronProcessExit: () => replaceRunApplication(stagingBase),
     });

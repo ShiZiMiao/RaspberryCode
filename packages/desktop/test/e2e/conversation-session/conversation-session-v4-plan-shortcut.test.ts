@@ -1,5 +1,5 @@
 // 计划模式列表操作：真实 Tab / Enter / 点击只修改 Composer，发送复用标准 Plan。
-import { clearAppData, setInputValueByTestIdDom } from "../helpers/desktop-app.js";
+import { clearAppData, setInputValueByTestIdDom } from "#e2e/helpers/desktop-app";
 import { TID_V4_COMPOSER_INPUT } from "@raspberrycode/shared/test-ids";
 import {
   clickV4Send,
@@ -13,13 +13,13 @@ import {
   waitForV4ComposerText,
   waitForV4Pane,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
-import { selectUpstreamModel } from "../helpers/upstream-provider.js";
+} from "#e2e/helpers/v4-conversation";
+import { selectUpstreamModel } from "#e2e/helpers/upstream-provider";
 import {
   countUpstreamTitleRequestsContaining,
   getUpstreamRequestRecordCount,
   waitForUpstreamRequest,
-} from "../helpers/conversation-session-network.js";
+} from "#e2e/helpers/conversation-session-network";
 
 const SEED_PROMPT = "E2E_V4_PLAN_SHORTCUT_SEED 建立已有会话";
 const TASK_ONE = "E2E_V4_PLAN_SHORTCUT_TASK_ONE 列出实现步骤";
@@ -44,8 +44,11 @@ async function enterSearch(text = "/plan") {
     timeoutMsg: "未写入 Plan 搜索词",
   });
   await $(PLAN_OPTION).waitForDisplayed({ timeout: 15000 });
-  expect(await $(PLAN_OPTION).getText()).toMatch(/计划模式|Plan mode/);
-  expect(await $(PLAN_OPTION).getText()).not.toContain("/plan");
+  const optionText = await $(PLAN_OPTION).getText();
+  expect(optionText).toMatch(/计划模式|Plan mode/);
+  // 面板选项展示本地化名称与描述；`/plan` 只是搜索词，不作为命令名展示
+  // （见 docs/plan-slash-command.md，8f13cd8415 已恢复本地化 label）。
+  expect(optionText).not.toContain("/plan");
 }
 
 async function assertSelected(expectedText: string) {

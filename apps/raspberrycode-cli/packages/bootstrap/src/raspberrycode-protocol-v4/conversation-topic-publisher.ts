@@ -34,6 +34,7 @@ import {
   coalesceConversationDeltas,
   filterConversationDeltasForProfile,
   filterConversationRowsForProfile,
+  isWireConversationRow,
   utf8JsonByteLength,
 } from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import { Buffer } from "node:buffer";
@@ -705,6 +706,8 @@ export class ConversationTopicPublisher {
         { op: "state.updated", patch: statePatchSchema.parse(current) },
       ];
       current.rows.window.forEach((row, index) => {
+        // 占位行只服务 snapshot 展示，deltas 只承载 wire 行（shared 的封闭规则 13）。
+        if (!isWireConversationRow(row)) return;
         if (JSON.stringify(row) !== JSON.stringify(previous.rows.window[index]))
           deltas.push({ op: "row.upserted", row });
       });

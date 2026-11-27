@@ -1,6 +1,7 @@
 import { writeFile } from "node:fs/promises";
 import { startProjectPointerDrag } from "#e2e/helpers/project-sidebar";
-import { join, basename } from "node:path";
+import { join } from "node:path";
+import { isIsolatedE2EHomeDir } from "#e2e/helpers/e2e-runtime-paths";
 import { DatabaseSync } from "node:sqlite";
 import {
   loginWithApiKey,
@@ -417,6 +418,11 @@ describe("任务分组独立视图", () => {
     this.timeout(45_000);
     await $('[data-testid="sidebar-view-menu"]').click();
     await $('[data-testid="sidebar-view-grouped"]').click();
+    // 失败原因：视图菜单是 modal DropdownMenu，选中后在 Portal 里还有约 100ms 的退场动画，
+    // 期间 Radix 给 body 设 pointer-events:none。日志里选中菜单项到 pointerDown 只隔 68ms
+    // （wdio.log 27.959 → 28.027），按下事件落在不可交互的页面上，dnd-kit 没有激活，
+    // aria-pressed 一直是 null。等菜单项卸载（可观察结果）后再开始拖拽。
+    await $('[data-testid="sidebar-view-grouped"]').waitForExist({ reverse: true });
     await installHandoffRpcProbe();
     const first = await callHandoffHost<{ id: string }>(ServiceChannels.TaskGroups, "save", [
       { title: "E2E_ORDER_A" },
@@ -497,9 +503,8 @@ describe("任务分组独立视图", () => {
     );
     const cwd = tree.tasks[0]?.workspacePath;
     const home = process.env.RASPBERRYCODE_E2E_HOME_DIR;
-    // 批量 runner 的 runId 可以自定义；仍只允许写入隔离 E2E HOME。
-    if (!home || !basename(home).startsWith(".e2e-home-") || !cwd)
-      throw new Error("隔离 HOME 和真实任务目录 required");
+    // 批量 runner 的 HOME 可能是 .e2e-home、带 runId 或显式根下的 shard 目录；仍只允许写入隔离 E2E HOME。
+    if (!isIsolatedE2EHomeDir(home) || !cwd) throw new Error("隔离 HOME 和真实任务目录 required");
     const db = new DatabaseSync(join(home, ".raspberrycode/v2/tasks-index.sqlite"));
     try {
       db.exec("BEGIN IMMEDIATE");

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // 品牌中立性审计（棘轮）：把 2026-11-03 终检的扫描口径固化为可复跑的机器判据。
-// 动机：人工逐轮扫描反复漏掉变体（RaspberryCode 空格、ZCODE 全大写、z-code 连字符、codegeex 第二品牌），
+// 动机：人工逐轮扫描反复漏掉变体（RaspberryCode 空格、RASPBERRYCODE 全大写、raspberrycode 连字符、codegeex 第二品牌），
 // "每次检查都发现新遗漏"说明口径没有收敛；本脚本用穷举变体 + 显式豁免清单收敛到可验证状态。
 //
 // 三档判据：
@@ -31,7 +31,7 @@ const textExtensions = new Set([
 ]);
 
 // P0：产品自名全变体。前边界排除误报子串（bizCode、TikZ code、tz code 等）；
-// 字符类枚举 z[-_ ]?code，-i 覆盖 RaspberryCode/ZCODE/z_Code 等大小写组合。
+// 字符类枚举 z[-_ ]?code，-i 覆盖 RaspberryCode/RASPBERRYCODE/z_Code 等大小写组合。
 // 历史教训：「RaspberryCode」带空格变体曾躲过所有 raspberrycode 词扫描（退出确认框残留）。
 const productSelfName = /(?<![a-z0-9])z[-_ ]?code\b/iu;
 
@@ -119,7 +119,7 @@ const binaryArtifactP0 = /(?<![a-z0-9])z[-_ ]?code/iu;
 const binaryArtifactP1 = /Z\.ai|codegeex/iu;
 // 法务声明文件（上游技能 LICENSE、自动生成的第三方许可证清单等）：Apache-2.0/MIT 版权行
 // 与「第三方作品源码来源路径」都是许可证归属必需内容，产物中合法保留。
-// THIRD-PARTY-NOTICES.md 由 scripts/licenses.mjs 生成，正文含 apps/zcode-cli/... 这类
+// THIRD-PARTY-NOTICES.md 由 scripts/licenses.mjs 生成，正文含 apps/raspberrycode-cli/... 这类
 // 原始来源路径记录（归属声明，不是品牌自称），必须与 LICENSE/NOTICE 同口径豁免。
 const artifactLegalFiles =
   /(?:^|\/)(?:LICENSE|LICENSE\.txt|LICENSES\.[^/]*\.html|NOTICE[^/]*|THIRD-PARTY-NOTICES\.[^/]*)$/iu;

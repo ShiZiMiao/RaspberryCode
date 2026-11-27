@@ -1,9 +1,9 @@
 import { DatabaseSync } from "node:sqlite";
 import { join } from "node:path";
 import { readFile } from "node:fs/promises";
-import { createBotWorkerIntegration } from "../helpers/bot-worker-integration.js";
-import { installBotPlatformFixture } from "../helpers/bot-platform-fixture.js";
-import { startConversationModelProviderReplayServer } from "../helpers/model-provider-replay.js";
+import { createBotWorkerIntegration } from "#e2e/helpers/bot-worker-integration";
+import { installBotPlatformFixture } from "#e2e/helpers/bot-platform-fixture";
+import { startConversationModelProviderReplayServer } from "#e2e/helpers/model-provider-replay";
 import type { BotInboundMessage } from "@raspberrycode/shared";
 
 const actor = {
@@ -304,7 +304,7 @@ describe("BOT-E2E-TP-04/05 real topic worker", () => {
     }
   });
 
-  it("downloads admitted historical resources through the actual ReadSessionContext tool", async function () {
+  it("downloads admitted historical resources through the actual ReadTopicResource tool", async function () {
     this.timeout(180000);
     const replay = await startConversationModelProviderReplayServer(
       "conversation-session-bot-topic-worker",
@@ -348,12 +348,12 @@ describe("BOT-E2E-TP-04/05 real topic worker", () => {
           .all(taskId) as Array<{ data: string }>;
         const tool = records
           .map((row) => JSON.parse(row.data))
-          .find((part) => part.type === "tool" && part.tool === "ReadSessionContext");
+          .find((part) => part.type === "tool" && part.tool === "ReadTopicResource");
         expect(tool?.state.status).toBe("completed");
-        expect(tool.state.output).toContain(
-          `ReadSessionContext returned local context for ${taskId}.`,
-        );
-        resource = JSON.parse(tool.state.output.split("\n").slice(1).join("\n"));
+        // 会话工具设计 0.8：资源下载从 ReadSessionContext(topic, attachment) 拆成专用工具，结果只含路径与元数据。
+        resource =
+          typeof tool.state.output === "string" ? JSON.parse(tool.state.output) : tool.state.output;
+        expect(resource).toMatchObject({ status: "success", messageId: "om_archive", index: 0 });
       } finally {
         database.close();
       }

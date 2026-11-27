@@ -5,11 +5,11 @@ import {
   parseRemoteWorkspaceIdentity,
   providerProvisioningResultSchema,
 } from "@raspberrycode/shared";
-import { clearAppData, DEFAULT_WORKSPACE } from "../../../helpers/desktop-app.js";
+import { clearAppData, DEFAULT_WORKSPACE } from "#e2e/helpers/desktop-app";
 import { disconnectRemoteSource } from "#e2e/helpers/remote-project-actions";
 import { openWorkspaceDraftFromSidebar } from "#e2e/helpers/workspace-agent-warmup";
-import { prepareV4ConversationE2E } from "../../../helpers/v4-conversation.js";
-import { UPSTREAM_PROVIDER_NAME } from "../../../helpers/upstream-provider.js";
+import { prepareV4ConversationE2E } from "#e2e/helpers/v4-conversation";
+import { UPSTREAM_PROVIDER_NAME } from "#e2e/helpers/upstream-provider";
 import {
   clickLastEnabledSSHDialogButton,
   connectSSHWorkspace,
@@ -23,7 +23,7 @@ import {
   selectSSHRemoteDirectory,
   waitForRemoteTab,
   waitForSSHDirectoryStep,
-} from "../../../helpers/ssh-remote-p0.js";
+} from "#e2e/helpers/ssh-remote-p0";
 
 const CASE_MARKER = "E2E_R3_SOURCE_LINES";
 const artifactDir = resolve(process.env.RASPBERRYCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/r3-source-lines");

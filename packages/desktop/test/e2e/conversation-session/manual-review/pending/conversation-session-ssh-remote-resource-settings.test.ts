@@ -8,7 +8,12 @@ import {
   TID_TASK_SETTINGS_BUTTON,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData, clickTestIdByDom, getE2EAppDataPaths } from "#e2e/helpers/desktop-app";
+import {
+  clearAppData,
+  clickTestIdByDom,
+  getE2EAppDataPaths,
+  pinE2ELocale,
+} from "#e2e/helpers/desktop-app";
 import {
   connectSSHWorkspace,
   readDualSSHRuntimeConfig,
@@ -69,6 +74,8 @@ describe(`${MARKER}: 同名同路径设备上的设置隔离`, () => {
     const config = readDualSSHRuntimeConfig(MARKER);
     const [a, b] = config.targets;
     await prepareV4ConversationE2E({ skipProvider: true });
+    // 宿主可能默认英文；下方按中文按钮操作，先固定测试语言再连接远端。
+    await pinE2ELocale("zh-CN");
     await mkdir(artifactDir, { recursive: true });
     if (resource === "skill") {
       for (const [target, actor] of [

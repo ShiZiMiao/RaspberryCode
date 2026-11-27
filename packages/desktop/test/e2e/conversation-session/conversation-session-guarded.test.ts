@@ -8,11 +8,11 @@ import {
   TID_CHAT_MODE_SELECT_TRIGGER,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData, getE2EAppDataPaths } from "../helpers/desktop-app.js";
-import { resolveE2ERuntimePath } from "../helpers/e2e-runtime-paths.js";
-import { skipOccupationOnboardingIfPresent } from "../helpers/occupation-onboarding.js";
+import { clearAppData, getE2EAppDataPaths } from "#e2e/helpers/desktop-app";
+import { resolveE2ERuntimePath } from "#e2e/helpers/e2e-runtime-paths";
+import { skipOccupationOnboardingIfPresent } from "#e2e/helpers/occupation-onboarding";
 import {
-  approveV4Permission,
+  getV4ModelConfig,
   clickV4Stop,
   getV4PaneSnapshot,
   denyV4PermissionWithFeedback,
@@ -21,8 +21,8 @@ import {
   switchV4Mode,
   waitForV4PermissionDialogInComposerDock,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
-import { getLatestUpstreamToolResultByToolCallId } from "../helpers/conversation-session-network.js";
+} from "#e2e/helpers/v4-conversation";
+import { getLatestUpstreamToolResultByToolCallId } from "#e2e/helpers/conversation-session-network";
 
 const CASE = "conversation-session-guarded";
 const ROOT = resolveE2ERuntimePath(CASE);
@@ -132,22 +132,33 @@ describe("Guarded dangerous command once approval", () => {
       const color = mode === "guarded" ? "icon-blue" : "warning";
       expect(await trigger.$(`svg.lucide-${icon}`).isExisting()).toBe(true);
       await browser.waitUntil(
-        () => browser.execute((triggerId, token) => {
-          const element = document.querySelector<HTMLElement>(`[data-testid="${triggerId}"]`)!;
-          const probe = document.createElement("span");
-          probe.style.color = `var(--color-${token})`;
-          element.append(probe);
-          const expected = getComputedStyle(probe).color;
-          probe.remove();
-          return getComputedStyle(element).color === expected;
-        }, TID_CHAT_MODE_SELECT_TRIGGER, color),
+        () =>
+          browser.execute(
+            (triggerId, token) => {
+              const element = document.querySelector<HTMLElement>(`[data-testid="${triggerId}"]`)!;
+              const probe = document.createElement("span");
+              probe.style.color = `var(--color-${token})`;
+              element.append(probe);
+              const expected = getComputedStyle(probe).color;
+              probe.remove();
+              return getComputedStyle(element).color === expected;
+            },
+            TID_CHAT_MODE_SELECT_TRIGGER,
+            color,
+          ),
         { timeout: 5000, timeoutMsg: `${mode} trigger color` },
       );
       await sendV4Prompt(marker + " Run the isolated cleanup command once.");
       if (mode === "guarded") {
         await waitForV4PermissionDialogInComposerDock();
         expect(await exists(target)).toBe(true);
-        expect(await approveV4Permission()).toBe(true);
+        const changeMode = $('[data-testid="permission-allow-switch"]');
+        await changeMode.waitForDisplayed();
+        expect(await $('[data-testid="permission-target-picker"]').isExisting()).toBe(false);
+        await changeMode.click();
+        await $('[data-testid="yolo-confirmation-risk"]').click();
+        await $('[data-testid="yolo-confirmation-confirm"]').click();
+        await browser.waitUntil(async () => (await getV4ModelConfig()).mode === "yolo");
       }
       await waitForV4TimelineContaining(marker + "_DONE", 60000);
       expect(await exists(target)).toBe(false);
@@ -200,6 +211,7 @@ describe("Guarded dangerous command once approval", () => {
     await waitForV4PermissionDialogInComposerDock();
     expect(await $('[data-interaction-origin-badge="subagent"]').isExisting()).toBe(true);
     expect(await exists(executedPath("E2E_GUARDED_CHILD"))).toBe(false);
+    expect(await $('[data-testid="permission-allow-switch"]').isExisting()).toBe(false);
     expect(await denyV4PermissionWithFeedback("Guarded child refused")).toBe(true);
     await waitForV4TimelineContaining("E2E_GUARDED_PARENT_DONE", 60000);
     const result = await getLatestUpstreamToolResultByToolCallId("toolu_E2E_GUARDED_CHILD");

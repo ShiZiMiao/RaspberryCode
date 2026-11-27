@@ -4,6 +4,13 @@ import {
   TID_TASK_SETTINGS_BUTTON,
   testId,
 } from "@raspberrycode/shared/test-ids";
+import { ServiceChannels } from "@raspberrycode/shared";
+import type { ProviderSettingsView } from "@raspberrycode/provider";
+import {
+  callHandoffHost,
+  installHandoffRpcProbe,
+  restoreHandoffProbes,
+} from "#e2e/helpers/remote-project-handoff-probe";
 import { clearAppData, clickTestIdByDom, waitForTestIdByDom } from "#e2e/helpers/desktop-app";
 import { createAndConfigurePersonalProvider } from "#e2e/helpers/personal-provider-settings";
 import {
@@ -59,6 +66,7 @@ async function readRemoteProviderConfig(container: string): Promise<string> {
 
 describe(`${CASE_MARKER}: 数据同步页模型提供商失败重试`, () => {
   after(async () => {
+    await restoreHandoffProbes();
     await browser.electron.restoreAllMocks();
     await clearAppData();
   });
@@ -73,6 +81,7 @@ describe(`${CASE_MARKER}: 数据同步页模型提供商失败重试`, () => {
     await prepareV4ConversationE2E({ skipProvider: true });
     // 打开该设备上的项目：lane 在这里注册，首次下发是连接发布屏障，成功后才进入项目。
     await connectSSHWorkspace({ caseMarker: CASE_MARKER, config, workspacePath });
+    await installHandoffRpcProbe();
     expect(await readRemoteProviderConfig(container)).not.toContain(PROVIDER_NAME);
 
     // 以 dev 身份执行才对远端 server 生效（root 无视权限位）；用例结束前一定恢复。
@@ -90,6 +99,20 @@ describe(`${CASE_MARKER}: 数据同步页模型提供商失败重试`, () => {
         baseURL: PROVIDER_BASE_URL,
         providerName: PROVIDER_NAME,
       });
+      // 落盘先于保存命令后的 registry 刷新；只等文件会让分类页读到旧的无 Key 快照。
+      // 以界面同源的只读服务快照作为夹具就绪条件，不强制刷新或修改产品状态。
+      await browser.waitUntil(
+        async () => {
+          const view = await callHandoffHost<ProviderSettingsView>(
+            ServiceChannels.ProviderSettings,
+            "getView",
+          );
+          const access = view.providers.find((provider) => provider.providerName === PROVIDER_NAME)
+            ?.effectiveConfig.access;
+          return Boolean(access && "apiKey" in access && access.apiKey === PROVIDER_API_KEY);
+        },
+        { timeout: 15_000, timeoutMsg: "新供应商尚未发布包含 API Key 的有效配置" },
+      );
 
       await clickTestIdByDom(testId(TID_SETTINGS_SECTION_NAV, "dataSync"), {
         timeout: 30_000,

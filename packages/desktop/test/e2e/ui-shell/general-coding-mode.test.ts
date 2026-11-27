@@ -10,13 +10,17 @@ import {
   TID_TERMINAL_TOGGLE,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData, clickTestIdByDom } from "../helpers/desktop-app.js";
-import { prepareV4ConversationE2E } from "../helpers/v4-conversation.js";
+import { clearAppData, clickTestIdByDom } from "#e2e/helpers/desktop-app";
+import { prepareV4ConversationE2E } from "#e2e/helpers/v4-conversation";
 
 // MODE-01/02/03：只操作应用 UI 和本地 PTY，不发送模型请求。
 describe("办公与编程模式 M1", () => {
+  let telemetryFetch: Awaited<ReturnType<typeof browser.electron.mock>>;
   before(async () => {
     await prepareV4ConversationE2E({ skipProvider: true });
+    await switchMode("coding");
+    telemetryFetch = await browser.electron.mock("net", "fetch");
+    await telemetryFetch.mockResolvedValue({ ok: true, status: 204 });
   });
 
   after(async () => {
@@ -34,12 +38,65 @@ describe("办公与编程模式 M1", () => {
     await $(select).click();
     await clickText('[role="option"]', "办公模式");
     await waitForMode("office");
+    await assertSwitches([
+      { event_region: "app.setting", previous_ui_mode: "code", ui_mode: "work" },
+    ]);
     await clickTestIdByDom(TID_SETTINGS_BACK_BUTTON);
     await switchMode("coding");
+    await switchMode("coding"); // 重选同值不产生切换事件。
     await browser.refresh();
     await $(`[data-testid="${TID_LOGIN_TRIGGER}"]`).waitForDisplayed({ timeout: 30000 });
     await waitForMode("coding");
     expect(await $(`[data-testid="${TID_TERMINAL_TOGGLE}"]`).isExisting()).toBe(true);
+    const switches = [
+      { event_region: "app.setting", previous_ui_mode: "code", ui_mode: "work" },
+      { event_region: "app.profile", previous_ui_mode: "work", ui_mode: "code" },
+    ];
+    await assertSwitches(switches); // 刷新恢复偏好不补报。
+
+    const openModePage = async () => {
+      await browser.keys([process.platform === "darwin" ? "Meta" : "Control", "Shift", "o"]);
+      await $('[data-testid="onboarding-page"]').waitForDisplayed();
+      await clickText('[data-testid="onboarding-page"] button', "下一步");
+      await clickText('[data-testid="onboarding-page"] button[aria-pressed] span', "办公模式");
+    };
+    await openModePage();
+    await browser.keys("Escape");
+    await $('[data-testid="onboarding-page"]').waitForExist({ reverse: true });
+    await waitForMode("coding");
+    await assertSwitches(switches); // 卡片草稿及关闭不改变实际界面模式。
+
+    await openModePage();
+    await clickText('[data-testid="onboarding-page"] button', "下一步");
+    await assertSwitches(switches);
+    // 偏好页的跳过沿用既有语义：仍应用上一页已选择的界面模式。
+    await clickText('[data-testid="onboarding-page"] button', "跳过");
+    await $('[data-testid="onboarding-page"]').waitForExist({ reverse: true });
+    await waitForMode("office");
+    const appliedSwitches = [
+      ...switches,
+      { event_region: "app.onboarding", previous_ui_mode: "code", ui_mode: "work" },
+    ];
+    await assertSwitches(appliedSwitches);
+
+    const toggleByShortcut = () =>
+      browser.keys([process.platform === "darwin" ? "Meta" : "Control", "Shift", "u"]);
+    // 快捷键虽由常驻引导组件处理，但不是这三个 UI 入口，不能误归到 app.onboarding。
+    await toggleByShortcut();
+    await waitForMode("coding");
+    await assertSwitches(appliedSwitches);
+    await openModePage();
+    await toggleByShortcut();
+    await waitForMode("office");
+    await clickText('[data-testid="onboarding-page"] button', "下一步");
+    await clickText('[data-testid="onboarding-page"] button', "跳过");
+    await $('[data-testid="onboarding-page"]').waitForExist({ reverse: true });
+    await assertSwitches(appliedSwitches); // 快捷键已应用模式，提交同值不补报。
+    await switchMode("coding");
+    await assertSwitches([
+      ...appliedSwitches,
+      { event_region: "app.profile", previous_ui_mode: "work", ui_mode: "code" },
+    ]);
   });
 
   it("MODE-02/03 隐藏新建入口，保留已打开审查、终端和 PTY", async () => {
@@ -75,6 +132,14 @@ describe("办公与编程模式 M1", () => {
 
     const terminalInput = $("[data-workspace-side-frame] .xterm-helper-textarea");
     await terminalInput.waitForExist();
+    // 冷启动时 textarea 先于 terminal.create 完成出现；等 shell 提示符后再输入，避免命令被丢弃。
+    await browser.waitUntil(async () =>
+      browser.execute(() =>
+        [...document.querySelectorAll("[data-workspace-side-frame] .xterm-rows > div")].some(
+          (row) => /[%$#>]\s*$/.test(row.textContent ?? ""),
+        ),
+      ),
+    );
     // xterm 的输入 textarea 位于负 z-index，不能作为真实点击目标；点击可见终端后校验焦点。
     await $("[data-workspace-side-frame] .xterm-screen").click();
     await browser.waitUntil(async () => terminalInput.isFocused());
@@ -114,6 +179,31 @@ describe("办公与编程模式 M1", () => {
     await browser.waitUntil(async () => !(await readTabs()).some((tab) => tab.id === terminalId));
     expect((await readTabs()).find((tab) => tab.id === "git")?.active).toBe(true);
   });
+
+  async function readSwitches(): Promise<Array<Record<string, string>>> {
+    await telemetryFetch.update();
+    return telemetryFetch.mock.calls.flatMap((call) => {
+      const [url, init] = call as [unknown, { body?: string } | undefined];
+      if (!String(url).includes("/event/report") || !init?.body) return [];
+      const event = JSON.parse(init.body);
+      if (event.element_name !== "ui_mode_switch") return [];
+      return [
+        {
+          ...event.event_extra_detail,
+          event_region: event.event_region,
+          event_type: event.event_type,
+        },
+      ];
+    });
+  }
+
+  async function assertSwitches(expected: Array<Record<string, string>>) {
+    await browser.waitUntil(async () => (await readSwitches()).length >= expected.length, {
+      timeout: 15000,
+      timeoutMsg: "ui_mode_switch 未到达最终上报边界",
+    });
+    expect(await readSwitches()).toEqual(expected.map((event) => ({ ...event, event_type: "ck" })));
+  }
 });
 
 async function switchMode(mode: "office" | "coding") {

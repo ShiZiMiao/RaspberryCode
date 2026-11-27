@@ -411,7 +411,11 @@ class BackendSourceServerTransportAdapter implements SourceServerTransportAdapte
       status?.state === "ready" && Number.isInteger(status.port) && (status.port as number) > 0;
     if (!observedReady) {
       context.onLog?.({ phase: "daemon", message: "Starting Source Server" });
-      const result = await this.exec(target, ["serve", "--daemon", "--json"], context);
+      const result = await this.exec(
+        target,
+        ["serve", "--daemon", "--json", "--prepare-credentials"],
+        context,
+      );
       if (result.exitCode !== 0) {
         // Bug 原因：Server CLI 的 --json 错误写在 stdout，Node 运行时 warning 写在 stderr。
         // 旧逻辑只取 stderr，最终把 SQLite warning 当成连接根因展示给用户。

@@ -4,13 +4,13 @@ import { resolve } from "node:path";
 import { promisify } from "node:util";
 import { ApiKeyAccessConfig, ProviderApiConfig, ProviderConfig } from "@raspberrycode/provider";
 import { NodePersonalProviderConfigRepository } from "@raspberrycode/provider-node";
-import { clearAppData, getE2EAppDataPaths } from "../../../helpers/desktop-app.js";
-import { refreshSeededOpenAIProvidersThroughSettings } from "../../../helpers/custom-openai-provider.js";
+import { clearAppData, getE2EAppDataPaths } from "#e2e/helpers/desktop-app";
+import { refreshSeededOpenAIProvidersThroughSettings } from "#e2e/helpers/custom-openai-provider";
 import {
   selectUpstreamProviderModelById,
   selectUpstreamThoughtLevelValue,
-} from "../../../helpers/upstream-provider.js";
-import { getUpstreamRequestRecordCount } from "../../../helpers/conversation-session-network.js";
+} from "#e2e/helpers/upstream-provider";
+import { getUpstreamRequestRecordCount } from "#e2e/helpers/conversation-session-network";
 import {
   connectSSHWorkspace,
   readHostProcesses,
@@ -18,14 +18,14 @@ import {
   readSSHRuntimeConfig,
   runSSHCommand,
   type SSHConnectionConfig,
-} from "../../../helpers/ssh-remote-p0.js";
+} from "#e2e/helpers/ssh-remote-p0";
 import {
   getV4Messages,
   prepareV4ConversationE2E,
   selectV4TaskById,
   sendV4PromptAndWaitAccepted,
   waitForV4ConversationState,
-} from "../../../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_MARKER = "E2E_R3_LIVE_ZAPI";
 const artifactDir = resolve(process.env.RASPBERRYCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/r3-live-zapi");

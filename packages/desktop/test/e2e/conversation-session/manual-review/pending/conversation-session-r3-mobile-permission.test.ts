@@ -10,22 +10,22 @@ import {
 import { resolve } from "node:path";
 import { promisify } from "node:util";
 import { TID_TASK_ITEM, testId } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../../../helpers/desktop-app.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
 import {
   getUpstreamRequestRecordCount,
   waitForUpstreamRequest,
-} from "../../../helpers/conversation-session-network.js";
+} from "#e2e/helpers/conversation-session-network";
 import {
   connectSSHWorkspaceAndSendFirstTurn,
   listRemoteAgentProcesses,
   prepareSSHLifecycle,
   type SSHLifecycleProvider,
-} from "../../../helpers/ssh-remote-lifecycle.js";
+} from "#e2e/helpers/ssh-remote-lifecycle";
 import {
   readHostProcesses,
   readRemoteTabSnapshot,
   runSSHCommand,
-} from "../../../helpers/ssh-remote-p0.js";
+} from "#e2e/helpers/ssh-remote-p0";
 import {
   getV4ConversationState,
   hasV4PermissionDialog,
@@ -33,7 +33,7 @@ import {
   waitForV4AssistantMessageContaining,
   waitForV4ConversationState,
   waitForV4PermissionDialogInComposerDock,
-} from "../../../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_MARKER = "E2E_R3_MOBILE_PERMISSION";
 const artifactDir = resolve(

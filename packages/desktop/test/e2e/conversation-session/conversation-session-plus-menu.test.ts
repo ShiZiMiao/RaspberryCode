@@ -1,12 +1,12 @@
 import { readFile } from "node:fs/promises";
 import { TID_CHAT_ATTACHMENT_BUTTON, TID_V4_COMPOSER_INPUT } from "@raspberrycode/shared/test-ids";
-import { clearAppData, setInputValueByTestIdDom } from "../helpers/desktop-app.js";
+import { clearAppData, setInputValueByTestIdDom } from "#e2e/helpers/desktop-app";
 import {
   getV4ComposerText,
   getV4SlashOptionIds,
   prepareV4ConversationE2E,
   waitForV4SlashOption,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const panel = '[data-trigger="+"]';
 async function openMenu() {

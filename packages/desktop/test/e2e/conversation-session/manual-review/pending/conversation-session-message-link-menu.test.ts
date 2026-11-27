@@ -1,14 +1,11 @@
 import { join } from "node:path";
 import { TID_BROWSER_ADDRESS_INPUT } from "@raspberrycode/shared/test-ids";
-import {
-  clearAppData,
-  setCurrentElectronRendererContentSize,
-} from "../../../helpers/desktop-app.js";
+import { clearAppData, setCurrentElectronRendererContentSize } from "#e2e/helpers/desktop-app";
 import {
   prepareV4ConversationE2E,
   sendV4Prompt,
   waitForV4Pane,
-} from "../../../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const MARKER = "E2E_MESSAGE_LINK_MENU";
 const URL = "https://example.com/page?q=a%20b&lang=zh#section";
@@ -67,8 +64,8 @@ describe("消息正文链接菜单", () => {
     );
 
     for (const width of [1200, 390]) {
-      for (const theme of ["zai-light", "zai-dark"] as const) {
-        const locale = theme === "zai-dark" ? "zh-CN" : "en-US";
+      for (const theme of ["light", "dark"] as const) {
+        const locale = theme === "dark" ? "zh-CN" : "en-US";
         await setCurrentElectronRendererContentSize(width, 800);
         await browser.execute(
           (next) => {

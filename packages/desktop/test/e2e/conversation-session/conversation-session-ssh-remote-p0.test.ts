@@ -2,31 +2,32 @@ import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { releaseControlledReplay } from "#e2e/helpers/controlled-replay";
 import { parseRemoteWorkspaceIdentity } from "@raspberrycode/shared";
-import { clearAppData, waitForWorkspaceApp } from "../helpers/desktop-app.js";
+import { TID_V4_COMPOSER_INPUT } from "@raspberrycode/shared/test-ids";
+import { clearAppData, waitForWorkspaceApp } from "#e2e/helpers/desktop-app";
 import {
   refreshSeededOpenAIProvidersThroughSettings,
   seedCustomOpenAIChatCompletionsProvider,
-} from "../helpers/custom-openai-provider.js";
-import { resolveSeededReplayBaseUrl } from "../helpers/custom-openai-provider-store.js";
+} from "#e2e/helpers/custom-openai-provider";
+import { resolveSeededReplayBaseUrl } from "#e2e/helpers/custom-openai-provider-store";
 import {
   selectUpstreamProviderModelById,
   selectUpstreamThoughtLevelValue,
-} from "../helpers/upstream-provider.js";
+} from "#e2e/helpers/upstream-provider";
 import {
   getUpstreamRequestRecordCount,
   waitForUpstreamRequest,
-} from "../helpers/conversation-session-network.js";
+} from "#e2e/helpers/conversation-session-network";
 import {
   prepareV4ConversationE2E,
   selectV4TaskById,
   sendV4PromptAndWaitAccepted,
   waitForV4AssistantMessageContaining,
   waitForV4ConversationState,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 import {
   beginConversationTelemetryCapture,
   waitForConversationReportInventory,
-} from "../helpers/conversation-telemetry-parity-capture.js";
+} from "#e2e/helpers/conversation-telemetry-parity-capture";
 import {
   clickLastEnabledSSHDialogButton,
   createSSHReplayTunnel,
@@ -37,8 +38,8 @@ import {
   runSSHCommand,
   selectSSHRemoteDirectory,
   waitForSSHDirectoryStep,
-} from "../helpers/ssh-remote-p0.js";
-import { readProjectTaskRowState, type ProjectTaskRowState } from "../helpers/project-sidebar.js";
+} from "#e2e/helpers/ssh-remote-p0";
+import { readProjectTaskRowState, type ProjectTaskRowState } from "#e2e/helpers/project-sidebar";
 
 const CASE_MARKER = "R1_SSH_P0_01";
 const PROMPT_MARKER = "E2E_SSH_REMOTE_P0";
@@ -163,10 +164,14 @@ describe(`${CASE_MARKER}: SSH remote workspace P0`, () => {
     expect(await readHostProcesses()).toEqual(initialHosts);
     // Bug 回归（3.16.2 远程发送卡顿）：远程 workspace 曾把高速卡与闲时任务请求发到远端，
     // 远端没有这两个频道，每次发送先等满 Host ChannelServer 的 1000ms 未知频道超时。
-    // 两者只在本地生效后，四次远程发送与期间的闲时轮询都不得再出现这两条超时。
+    // 三者只在本地生效：worktree 创建记录也必须读 base Host，不能因切到远程任务而误发订阅。
+    // 四次远程发送与期间的后台查询不得出现这些未知频道超时。
     expect(
-      await runtimeLogCursor.newLines(/Unknown channel: (?:highspeed-card|off-peak-task)\b/u),
+      await runtimeLogCursor.newLines(
+        /Unknown channel: (?:highspeed-card|off-peak-task|managed-worktrees)\b/u,
+      ),
     ).toEqual([]);
+    expect(await runtimeLogCursor.newLines(/getCurrentOwnerKey.*is not a function/u)).toEqual([]);
 
     const reports = await waitForConversationReportInventory(telemetryCapture, {
       agent_step: 4,
@@ -338,6 +343,7 @@ async function connectWorkspaceAndSendFirstTurn(options: {
   if (!tab.workspaceIdentity) {
     throw new Error(`${CASE_MARKER}: workspace ${options.label} 缺少稳定 workspaceIdentity`);
   }
+  await assertRemoteComposerMounted();
 
   await selectUpstreamProviderModelById(MODEL_ID, {
     includePlainModelFallback: false,
@@ -411,6 +417,7 @@ async function switchTaskAndSendFollowTurn(
     expectedPath: task.workspacePath,
     expectedRemoteSessionId: task.remoteSessionId,
   });
+  await assertRemoteComposerMounted();
   await assertTaskRow(task, { active: true, running: false });
   const requestStart = await getUpstreamRequestRecordCount();
   await sendV4PromptAndWaitAccepted(
@@ -440,6 +447,15 @@ async function switchTaskAndSendFollowTurn(
   await assertTaskRow(task, { active: true, running: false });
 }
 
+async function assertRemoteComposerMounted(): Promise<void> {
+  // Bug 回归：远程 Highspeed 占位实现漏掉 owner 查询，SessionPane 挂载即同步抛错。
+  // 草稿和历史任务都必须实际渲染输入框，不能只凭远程 tab 注册成功判断聊天可用。
+  await expect($(`[data-testid="${TID_V4_COMPOSER_INPUT}"]`)).toBeDisplayed();
+  expect(await browser.execute(() => document.body.innerText)).not.toContain(
+    "getCurrentOwnerKey is not a function",
+  );
+}
+
 async function assertTaskRow(
   task: TaskCase,
   expected: { active: boolean; running: boolean },
@@ -449,7 +465,7 @@ async function assertTaskRow(
     .waitUntil(
       async () => {
         // 虚拟项目侧栏：task 行必须落在其 workspace 对应的项目 section 内。
-        latest = await readProjectTaskRowState(task.taskId, task.workspacePath);
+        latest = await readProjectTaskRowState(task.taskId, task.workspacePath, task.identity);
         return (
           latest.exists &&
           latest.inProject &&

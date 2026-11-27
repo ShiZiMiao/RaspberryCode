@@ -17,6 +17,12 @@ export function createE2EStartupCredentialSeed(
     const fileName = spec.replaceAll("\\", "/").split("/").at(-1);
     return (
       fileName === "conversation-session-share-popover.test.ts" ||
+      fileName === "marketing-touch-entitlement.test.ts" ||
+      // Rewards 专项走本地控制面，需要同时验证 OAuth 与 JWT 注入。
+      fileName === "marketing-touch-rewards.test.ts" ||
+      fileName === "jwt-401-auto-logout.test.ts" ||
+      // 语音输入只对已登录用户显示，ticket 请求带 raspberrycodejwttoken。
+      fileName === "composer-voice-input.test.ts" ||
       isRequestSecuritySpec(fileName) ||
 
       fileName === "start-plan-manual-claim-experience.test.ts" ||

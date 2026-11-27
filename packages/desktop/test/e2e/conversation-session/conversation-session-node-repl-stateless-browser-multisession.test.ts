@@ -1,23 +1,35 @@
 import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
-import { clearAppData, DEFAULT_WORKSPACE, getE2EAppDataPaths } from "../helpers/desktop-app.js";
+import { clearAppData, DEFAULT_WORKSPACE, getE2EAppDataPaths } from "#e2e/helpers/desktop-app";
 import { openWorkspaceDraftFromSidebar } from "#e2e/helpers/workspace-agent-warmup";
-import { listToolCallBlocks } from "../helpers/conversation-session-tool.js";
+import { listToolCallBlocks } from "#e2e/helpers/conversation-session-tool";
 import {
   collectProcessTreeByRootPids,
   listSystemProcesses,
-} from "../helpers/e2e-process-cleanup.js";
+} from "#e2e/helpers/e2e-process-cleanup";
 import {
   prepareV4ConversationE2E,
   selectV4TaskById,
   sendV4Prompt,
   waitForV4Pane,
-} from "../helpers/v4-conversation.js";
-import { isV4TurnCompleted } from "../helpers/v4-turn-completion.js";
+} from "#e2e/helpers/v4-conversation";
+import { isV4TurnCompleted } from "#e2e/helpers/v4-turn-completion";
 
 const NODE_REPL_TOOL = "mcp__node_repl__js";
 const NODE_REPL_SERVER = "node_repl";
 const NODE_REPL_PROCESS_TITLE = "raspberrycode-node-repl-mcp";
+
+// 修复原因：Windows 不会把 process.title 写回 WMI 命令行，Node REPL 子进程在那里只表现为
+// `__raspberrycode-plugin-host` 加载 node-repl-host 的 dist/mcp/server.js；只按标题匹配会得到空列表。
+function isNodeReplProcessCommand(command: string): boolean {
+  const normalized = command.trim().replaceAll("\\", "/");
+  return (
+    normalized === NODE_REPL_PROCESS_TITLE ||
+    (normalized.includes(" __raspberrycode-plugin-host ") &&
+      normalized.includes("/node-repl-host/") &&
+      normalized.includes("/dist/mcp/server.js"))
+  );
+}
 const SESSION_A_MARKER = "E2E_NODE_REPL_BROWSER_STATELESS_A";
 const SESSION_B_MARKER = "E2E_NODE_REPL_BROWSER_STATELESS_B";
 const SESSION_A_DONE = "E2E_NODE_REPL_BROWSER_STATELESS_A_DONE";
@@ -251,7 +263,7 @@ async function expectSingleNodeReplProcess(expectedPid: number): Promise<void> {
   await browser.waitUntil(
     async () => {
       const tree = collectProcessTreeByRootPids(await listSystemProcesses(), [electron.pid]);
-      latest = tree.filter((entry) => entry.command.trim() === NODE_REPL_PROCESS_TITLE);
+      latest = tree.filter((entry) => isNodeReplProcessCommand(entry.command));
       return latest.length === 1 && latest[0]?.pid === expectedPid;
     },
     {

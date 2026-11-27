@@ -1,6 +1,6 @@
 // 通过侧栏现有入口操作，验证真实标题投影或归档后的永久删除。
 import { TID_TASK_ITEM } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../helpers/desktop-app.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
 import {
   clickV4DeleteSession,
   getV4PaneSnapshot,
@@ -10,7 +10,7 @@ import {
   sendV4Prompt,
   waitForV4Pane,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 async function sidebarTaskItemText(sessionId: string): Promise<string | null> {
   return browser.execute(

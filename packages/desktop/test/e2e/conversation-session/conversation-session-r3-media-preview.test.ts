@@ -1,4 +1,4 @@
-import { selectTaskOrganizeMode } from "../helpers/workspace-agent-warmup.js";
+import { selectTaskOrganizeMode } from "#e2e/helpers/workspace-agent-warmup";
 import {
   disconnectRemoteSource,
   reconnectRemoteProject,
@@ -8,18 +8,18 @@ import { createHash } from "node:crypto";
 import { resolve } from "node:path";
 import { parseRemoteWorkspaceIdentity } from "@raspberrycode/shared";
 import { TID_V4_SESSION_PANE, testId } from "@raspberrycode/shared/test-ids";
-import { clearAppData, waitForWorkspaceApp } from "../helpers/desktop-app.js";
+import { clearAppData, waitForWorkspaceApp } from "#e2e/helpers/desktop-app";
 import {
   getUpstreamRequestRecordCount,
   getUpstreamRequestEvidence,
   waitForUpstreamRequest,
-} from "../helpers/conversation-session-network.js";
+} from "#e2e/helpers/conversation-session-network";
 import {
   connectSSHWorkspaceAndSendFirstTurn,
   prepareSSHLifecycle,
   type SSHLifecycleProvider,
-} from "../helpers/ssh-remote-lifecycle.js";
-import { readRemoteTabSnapshot, runSSHCommand } from "../helpers/ssh-remote-p0.js";
+} from "#e2e/helpers/ssh-remote-lifecycle";
+import { readRemoteTabSnapshot, runSSHCommand } from "#e2e/helpers/ssh-remote-p0";
 import {
   clickV4Send,
   pasteV4ComposerFileAttachment,
@@ -28,7 +28,7 @@ import {
   waitForV4AssistantMessageContaining,
   waitForV4ConversationState,
   waitForV4RowAttachments,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_MARKER = "E2E_R3_MEDIA_PREVIEW";
 const artifactDir = resolve(

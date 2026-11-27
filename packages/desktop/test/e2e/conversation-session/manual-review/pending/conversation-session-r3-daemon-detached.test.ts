@@ -1,4 +1,4 @@
-import { selectTaskOrganizeMode } from "../../../helpers/workspace-agent-warmup.js";
+import { selectTaskOrganizeMode } from "#e2e/helpers/workspace-agent-warmup";
 import {
   disconnectRemoteSource,
   reconnectRemoteProject,
@@ -6,7 +6,7 @@ import {
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parseRemoteWorkspaceIdentity } from "@raspberrycode/shared";
-import { clearAppData } from "../../../helpers/desktop-app.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
 import {
   connectSSHWorkspaceAndSendFirstTurn,
   prepareSSHLifecycle,
@@ -16,13 +16,13 @@ import {
   terminateRemoteProcess,
   type SSHLifecycleProvider,
   type SSHLifecycleTask,
-} from "../../../helpers/ssh-remote-lifecycle.js";
+} from "#e2e/helpers/ssh-remote-lifecycle";
 import {
   readHostProcesses,
   readRemoteTabSnapshot,
   runSSHCommand,
   waitForRemoteTab,
-} from "../../../helpers/ssh-remote-p0.js";
+} from "#e2e/helpers/ssh-remote-p0";
 
 const CASE_MARKER = "E2E_R3_DAEMON_DETACHED";
 const artifactDir = resolve(

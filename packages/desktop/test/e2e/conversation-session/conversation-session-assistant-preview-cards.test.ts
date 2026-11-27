@@ -26,9 +26,9 @@ import {
   readFileLocateProbe,
   readFileManagerRevealProbe,
   restoreFileApplicationMenuProbe,
-} from "../helpers/file-application-menu-probe.js";
-import { clearAppData, DEFAULT_WORKSPACE } from "../helpers/desktop-app.js";
-import { restartIntoWorkspacePreservingProfile } from "../helpers/model-provider-restart.js";
+} from "#e2e/helpers/file-application-menu-probe";
+import { clearAppData, DEFAULT_WORKSPACE } from "#e2e/helpers/desktop-app";
+import { restartIntoWorkspacePreservingProfile } from "#e2e/helpers/model-provider-restart";
 import {
   clickV4Stop,
   prepareV4ConversationE2E,
@@ -38,14 +38,14 @@ import {
   switchV4Mode,
   waitForV4AssistantMessageContaining,
   waitForV4Pane,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_MARKER = "E2E_ASSISTANT_PREVIEW_CARDS";
 const CASE_RELATIVE_ROOT = "assistant-preview-e2e";
 const CASE_ROOT = join(DEFAULT_WORKSPACE, CASE_RELATIVE_ROOT);
 const OFFICE_FIXTURE_ROOT = fileURLToPath(
   new URL(
-    "../fixtures/fs/conversation-session/conversation-session-assistant-preview-cards/",
+    "../../fixtures/fs/conversation-session/conversation-session-assistant-preview-cards/",
     import.meta.url,
   ),
 );
@@ -159,6 +159,15 @@ describe("Assistant Preview Cards E2E", () => {
     await materializeStaleSourceFiles();
     const marker = `${CASE_MARKER}_OFFICE`;
     await sendV4Prompt(`${marker}_PPTX: report the prepared Office files and one missing PDF.`);
+    // 失败原因：PPTX 自动打开只在本 renderer 观察到 running 边沿后武装（冷恢复直接落在
+    // completedSuccess 不应自动打开）。fixture 整轮仅几十毫秒，running 与 completedSuccess
+    // 会被合并到同一次渲染，门控没武装，Preview Pane 始终不出现。
+    // fixture 延迟回复，这里先确认 UI 已渲染出运行态（可停止）再等完成，边沿才可观察。
+    await waitForV4Pane(
+      (snapshot) => snapshot.canStop,
+      "Office PPTX 轮次没有进入可观察的 running 态",
+      30_000,
+    );
     await waitForCompleted(`${marker}_PPTX_DONE`);
 
     const officeTitles = [...OFFICE_FILES].reverse().map((item) => item.name);
@@ -196,7 +205,9 @@ describe("Assistant Preview Cards E2E", () => {
         await row.click({ button: "right" });
         const menu = await browser.$('[data-slot="context-menu-content"][data-state="open"]');
         await menu.waitForDisplayed();
-        await assertApplicationMenu(menu, applications);
+        // 修复原因：候选超过 3 个时 assertApplicationMenu 会打开 More 子菜单并按 Escape；
+        // Radix 子菜单的 Escape 会关闭整棵菜单，之后再读主菜单项会命中已卸载的节点。
+        // 主菜单标签必须在进入子菜单前读取。
         const labels = await menu.$$('[role="menuitem"]').map((item) => item.getText());
         expect(labels[0]).toMatch(/^(Preview|预览)$/);
         expect(labels.some((label) => /Open containing folder|打开所在目录/.test(label))).toBe(
@@ -204,6 +215,7 @@ describe("Assistant Preview Cards E2E", () => {
         );
         // 卡片右键与 Open 下拉提供同一个定位项（右键行为由 APC15 覆盖）。
         expect(labels.filter((label) => FILE_MANAGER_LABEL.test(label))).toHaveLength(1);
+        await assertApplicationMenu(menu, applications);
         await browser.keys("Escape");
         await assertRevealInFileManager(row, targetPath);
         // 点击真实预览动作后核对 renderer，而不是直接调用产品回调。
@@ -217,6 +229,11 @@ describe("Assistant Preview Cards E2E", () => {
           const dropdown = await browser.$(
             '[data-slot="dropdown-menu-content"][data-state="open"]',
           );
+          await dropdown.waitForDisplayed();
+          // 修复原因：下拉刚显示时候选仍在加载，约 8ms 就 moveTo 到 More，菜单随后按候选重排，
+          // 单次 hover 丢失后 [data-file-application-list] 不再出现（死等 5s）。
+          // 复用 assertApplicationMenu 的就绪条件，候选落定后再 hover。
+          await waitForApplicationMenuReady(dropdown, applications);
           await dropdown.$(".file-application-more-trigger").moveTo();
           const list = await browser.$("[data-file-application-list]");
           await list.waitForDisplayed();
@@ -229,7 +246,10 @@ describe("Assistant Preview Cards E2E", () => {
           });
           const [call] = await readFileApplicationMenuProbe();
           expect(call?.applicationId).toBe("apc-app-8");
-          expect(call?.target.path).toBe(targetPath);
+          // 修复原因：Windows 路径大小写不敏感，应用实际路径目录大小写可能与 realpath 不同，Windows 上按小写比较。
+          expect(
+            process.platform === "win32" ? call?.target.path.toLowerCase() : call?.target.path,
+          ).toBe(process.platform === "win32" ? targetPath.toLowerCase() : targetPath);
           expect(call?.target.pathKind).toBe("file");
         }
       } finally {
@@ -632,7 +652,8 @@ async function clickPreviewCardBody(title: string) {
   expect(result.disabled).toBe(false);
 }
 
-async function assertApplicationMenu(
+/** 候选列表按绑定目标加载完成（直接项与预期一致、不再 Loading）后，返回排好序的候选。 */
+async function waitForApplicationMenuReady(
   menu: ChainablePromiseElement,
   applications: FileApplicationInfo[],
 ) {
@@ -654,6 +675,14 @@ async function assertApplicationMenu(
     },
     { timeout: 10_000, timeoutMsg: "File applications did not match the bound target" },
   );
+  return ordered;
+}
+
+async function assertApplicationMenu(
+  menu: ChainablePromiseElement,
+  applications: FileApplicationInfo[],
+) {
+  const ordered = await waitForApplicationMenuReady(menu, applications);
   const direct = await menu.$$("[data-file-application-direct]");
   for (let index = 0; index < (await direct.length); index++) {
     const label = await direct[index]!.getText();
@@ -738,9 +767,12 @@ async function assertRevealInFileManager(row: ChainablePromiseElement, targetPat
   const locatorId =
     process.platform === "darwin" ? "finder" : process.platform === "win32" ? "explorer" : null;
   if (locatorId) {
-    expect(await readFileLocateProbe()).toEqual([
-      { editorId: locatorId, path: targetPath, pathKind: "file" },
-    ]);
+    // 修复原因：Windows 路径大小写不敏感，realpath 返回的目录大小写（Code）可能与应用实际使用的（code）不同；
+    // Windows 上按小写比较路径，其他平台保持精确比较。
+    const fold = (value: string) => (process.platform === "win32" ? value.toLowerCase() : value);
+    expect(
+      (await readFileLocateProbe()).map((call) => ({ ...call, path: fold(call.path) })),
+    ).toEqual([{ editorId: locatorId, path: fold(targetPath), pathKind: "file" }]);
     expect(await readFileManagerRevealProbe()).toEqual([]);
   } else {
     expect(await readFileLocateProbe()).toEqual([]);
@@ -778,8 +810,16 @@ async function assertFileOpenApps(filename: string, fixture?: FileApplicationInf
   const menu = await browser.$('[data-slot="dropdown-menu-content"][data-state="open"]');
   await menu.waitForDisplayed();
   try {
+    // 修复原因：候选超过 3 个时 assertApplicationMenu 会打开 More 子菜单并按 Escape，Radix 子菜单的
+    // Escape 会关闭整棵菜单，之后 menu.getText() 命中已卸载节点（本机应用多于 CI 时必现）。
+    // 须先等应用列表加载完，再在进入子菜单前读取主菜单文本。
+    await browser.waitUntil(async () => !/^(Loading|加载中)[….]*$/m.test(await menu.getText()), {
+      timeout: 10_000,
+      timeoutMsg: "File application menu stayed in loading state",
+    });
+    const menuText = await menu.getText();
     await assertApplicationMenu(menu, expected);
-    expect(await menu.getText()).toMatch(/Copy relative path|复制相对路径/);
+    expect(menuText).toMatch(/Copy relative path|复制相对路径/);
   } finally {
     await browser.keys("Escape");
   }
@@ -1016,7 +1056,12 @@ async function assertPreviewVideoSurvivesResizeAndFullscreen() {
       const video = document.querySelector<HTMLVideoElement>("video[controls][playsinline]");
       return video === probeWindow.__raspberrycodePreviewVideo && document.fullscreenElement === video;
     });
-    expect(sameVideoInFullscreen).toBe(true);
+    expect({ sameVideo: fullscreenState.sameVideo, state: fullscreenState }).toMatchObject({
+      sameVideo: true,
+    });
+    if (fullscreenState.fullscreenElement !== null) {
+      expect(fullscreenState).toMatchObject({ fullscreenIsVideo: true });
+    }
     await browser.execute(() => {
       if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
     });
@@ -1052,7 +1097,7 @@ async function materializeMediaFixtures() {
   const mediaRoot = join(CASE_ROOT, "media");
   await mkdir(mediaRoot, { recursive: true });
   const videoFixture = await readFile(
-    new URL("../fixtures/media/sample-video.mp4", import.meta.url),
+    new URL("../../fixtures/media/sample-video.mp4", import.meta.url),
   );
   const largeVideo = Buffer.concat([
     videoFixture,

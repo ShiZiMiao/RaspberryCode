@@ -1,10 +1,10 @@
-import { createBotProjectFixture } from "./helpers/bots-service-harness.js";
+import { createBotProjectFixture } from "#e2e/bots/helpers/bots-service-harness";
 import { readFile } from "node:fs/promises";
 
 import type { BotsConfigFile, BotsStateFile, RaspberryCodeStreamEvent } from "@raspberrycode/shared";
 import { createBotsService } from "@raspberrycode/services/node";
-import { createBotModelSelectionView } from "./helpers/bots-service-harness.js";
-import { resolveE2ERuntimePath } from "../helpers/e2e-runtime-paths.js";
+import { createBotModelSelectionView } from "#e2e/bots/helpers/bots-service-harness";
+import { resolveE2ERuntimePath } from "#e2e/helpers/e2e-runtime-paths";
 
 const E2E_BOT_WORKSPACE = resolveE2ERuntimePath("bots", "e2e-bot-workspace");
 
@@ -25,7 +25,7 @@ type RecordedRequest = {
 };
 
 const FIXTURE_URL = new URL(
-  "../fixtures/bots/feishu-streaming-card-lifecycle.json",
+  "../../fixtures/bots/feishu-streaming-card-lifecycle.json",
   import.meta.url,
 );
 

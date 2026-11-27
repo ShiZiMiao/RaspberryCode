@@ -1,7 +1,7 @@
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { TID_BROWSER_WEBVIEW } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../helpers/desktop-app.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
 import {
   prepareV4ConversationE2E,
   sendV4Prompt,

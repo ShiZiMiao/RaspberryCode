@@ -13,11 +13,12 @@ import {
 import {
   DEFAULT_WORKSPACE,
   clickTestIdByWebDriver,
+  pinE2ELocale,
   waitForWorkspaceApp,
   seedSettings,
   readSettings,
-} from "./helpers/desktop-app.js";
-import { startHelpConfigFixture } from "./helpers/help-client-config-fixture.js";
+} from "#e2e/helpers/desktop-app";
+import { startHelpConfigFixture } from "#e2e/helpers/help-client-config-fixture";
 
 // Node 侧 shared 常量没有 renderer 的编译 define，不能据此跳过 production 分支。
 // 默认正式套件构建 Preview；production 用显式参数独立验证，不能静默跳过。
@@ -152,6 +153,8 @@ describe(`问号菜单应用入口（${expectedFlavor}）`, () => {
     });
     await browser.refresh();
     await enterWorkspace();
+    // 写 setting.json 不会改已加载的 renderer 语言；菜单文案断言必须走真实 setLocale。
+    await pinE2ELocale("en-US");
   });
   afterEach(async () => {
     if (await $('[role="menu"]').isDisplayed()) await closeMenu();

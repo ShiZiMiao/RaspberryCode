@@ -1,18 +1,22 @@
+import designIconUrl from "@/assets/plugin-icons/design.png";
 import documentsIconUrl from "@/assets/plugin-icons/documents.png";
 import imageSearchIconUrl from "@/assets/plugin-icons/image-search.png";
 import pdfIconUrl from "@/assets/plugin-icons/pdf.png";
 import pluginCreatorIconUrl from "@/assets/plugin-icons/plugin-creator.png";
 import presentationsIconUrl from "@/assets/plugin-icons/presentations.png";
 import spreadsheetsIconUrl from "@/assets/plugin-icons/spreadsheets.png";
+import visualizeIconUrl from "@/assets/plugin-icons/visualize.png";
 import { isTrustedImageUrl } from "@/lib/trustedImageUrl.js";
 
 const OFFICIAL_PLUGIN_ICON_BY_ID: Readonly<Record<string, string>> = {
+  "design@raspberrycode-plugins-official": designIconUrl,
   "documents@raspberrycode-plugins-official": documentsIconUrl,
   "image-search@raspberrycode-plugins-official": imageSearchIconUrl,
   "pdf@raspberrycode-plugins-official": pdfIconUrl,
   "plugin-creator@raspberrycode-plugins-official": pluginCreatorIconUrl,
   "presentations@raspberrycode-plugins-official": presentationsIconUrl,
   "spreadsheets@raspberrycode-plugins-official": spreadsheetsIconUrl,
+  "visualize@raspberrycode-plugins-official": visualizeIconUrl,
 };
 
 const TRUSTED_BUNDLED_PLUGIN_ICONS = new Set(Object.values(OFFICIAL_PLUGIN_ICON_BY_ID));

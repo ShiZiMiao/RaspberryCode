@@ -1,23 +1,24 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ESTIMATED_TOKEN_CHAR_DIVISOR } from "@raspberrycode/shared";
-import { clearAppData, getE2EAppDataPaths } from "../helpers/desktop-app.js";
-import { selectUpstreamProviderModelById } from "../helpers/upstream-provider.js";
-import { waitForSelectedModel } from "../helpers/model-provider-restart.js";
+import { clearAppData, getE2EAppDataPaths } from "#e2e/helpers/desktop-app";
+import { selectUpstreamProviderModelById } from "#e2e/helpers/upstream-provider";
+import { waitForSelectedModel } from "#e2e/helpers/model-provider-restart";
 import type {
   E2ENetworkCaptureArtifact,
   E2ENetworkCaptureRecord,
-} from "../helpers/network-capture-proxy.js";
+} from "#e2e/helpers/network-capture-proxy";
 import {
   prepareV4ConversationE2E,
   sendV4Prompt,
   waitForV4AssistantMessageContaining,
   waitForV4Pane,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const PROVIDER_ID = "output-token-preflight-e2e";
 const PROVIDER_NAME = "Output Token Preflight E2E";
-const COMPACT_SUMMARY_MAX_OUTPUT_TOKENS = 20_000;
+// 摘要上限等于 Auto Compact reserve：64K/48K 与 200K/128K 两个场景都是 21K。
+const COMPACT_SUMMARY_MAX_OUTPUT_TOKENS = 21_000;
 const PREFLIGHT_BUFFER = 1_000;
 type MessageLengthRange = readonly [minimum: number, maximum: number];
 const BASE_MESSAGE_LENGTH_RANGES = [
@@ -139,7 +140,7 @@ async function runSmokeScenario(scenario: SmokeScenario): Promise<void> {
     });
     assertCommonDecision(decision, "below_threshold", scenario);
     // provider fixture 给出已覆盖上一轮 assistant 的精确 context usage；生产 estimator
-    // 只叠加本轮 user。日志中的 tokenCount 会被归档脱敏，
+    // 只叠加本轮 user（token 预算提醒默认关闭，同轮没有提醒行）。日志中的 tokenCount 会被归档脱敏，
     // 因此 wire cap 应从这组同源输入独立计算，不能依赖脱敏日志反推。
     const estimatedCurrentUsage = estimateUsageBeforeTurn(scenario, turn, messageLengths[index]!);
     const expectedMaxTokens = Math.min(
@@ -215,9 +216,9 @@ async function runSmokeScenario(scenario: SmokeScenario): Promise<void> {
   const resumedMessages = await readPostCompactModelMessages(sessionId, finalMarker);
   let postCompactUsage = 0;
   for (const message of resumedMessages) {
-    const content = parseJsonObject(message)?.content;
-    expect(typeof content).toBe("string");
-    postCompactUsage += estimateTextTokens(content as string);
+    postCompactUsage += estimateTextTokens(
+      readTokenEstimateText(parseJsonObject(message)?.content),
+    );
   }
   expect(readMaxTokens(resumedMainRequest.record)).toBe(
     Math.min(
@@ -324,6 +325,26 @@ function estimateUsageBeforeTurn(
 
 function estimateTextTokens(value: string): number {
   return Math.ceil(value.length / ESTIMATED_TOKEN_CHAR_DIVISOR);
+}
+
+/**
+ * 按 CLI estimateMessageTokens 的规则取一条消息参与估算的正文。
+ * 修复原因：assistant 回复改为按块保存后，compact 保留的 assistant content 是
+ * `[{ type: "text", text, blockIndex }]` 数组，不再是字符串；CLI 估算只取 text 与
+ * reasoning 块的正文并用空行连接，块序号不计入。其他块类型不在本场景内，直接报错。
+ */
+function readTokenEstimateText(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (!Array.isArray(content)) throw new Error(`消息 content 形态未知: ${JSON.stringify(content)}`);
+  return content
+    .map((block) => {
+      const value = parseJsonObject(block);
+      if ((value?.type === "text" || value?.type === "reasoning") && typeof value.text === "string")
+        return value.text;
+      throw new Error(`消息 content 含未覆盖的块: ${JSON.stringify(block)}`);
+    })
+    .filter(Boolean)
+    .join("\n\n");
 }
 
 async function waitForCompletedAssistant(expectedResponse: string, label: string): Promise<string> {

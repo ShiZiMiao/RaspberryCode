@@ -1,17 +1,18 @@
+import { openStatusCapsule } from "#e2e/helpers/status-capsule";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { TID_CHAT_SUMMARY_PANEL, TID_V4_COMPOSER_INPUT } from "@raspberrycode/shared/test-ids";
-import { clearAppData, setInputValueByTestIdDom } from "../helpers/desktop-app.js";
+import { TID_V4_COMPOSER_INPUT } from "@raspberrycode/shared/test-ids";
+import { clearAppData, setInputValueByTestIdDom } from "#e2e/helpers/desktop-app";
 import {
   getUpstreamRequestRecordCount,
   waitForUpstreamRequest,
-} from "../helpers/conversation-session-network.js";
+} from "#e2e/helpers/conversation-session-network";
 import {
   connectSSHWorkspaceAndSendFirstTurn,
   prepareSSHLifecycle,
   type SSHLifecycleProvider,
-} from "../helpers/ssh-remote-lifecycle.js";
-import { readRemoteTabSnapshot, runSSHCommand } from "../helpers/ssh-remote-p0.js";
+} from "#e2e/helpers/ssh-remote-lifecycle";
+import { readRemoteTabSnapshot, runSSHCommand } from "#e2e/helpers/ssh-remote-p0";
 import {
   clickV4Send,
   getV4ConversationState,
@@ -22,25 +23,14 @@ import {
   waitForV4CompactMarker,
   waitForV4ConversationState,
   waitForV4Pane,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_MARKER = "E2E_R3_COMPACT_GOAL";
 const artifactDir = resolve(process.env.RASPBERRYCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/r3-compact-goal");
 
 async function clickGoalAction(action: "pause" | "resume"): Promise<boolean> {
-  await browser.waitUntil(
-    () =>
-      browser.execute((panelTestId) => {
-        const panel = document.querySelector<HTMLElement>(`[data-testid="${panelTestId}"]`);
-        if (!panel) return false;
-        if (panel.dataset.state === "collapsed") {
-          panel.querySelector<HTMLButtonElement>("button")?.click();
-          return false;
-        }
-        return panel.dataset.state === "expanded";
-      }, TID_CHAT_SUMMARY_PANEL),
-    { timeout: 15_000, timeoutMsg: `${CASE_MARKER}: goal 状态面板没有展开` },
-  );
+  await openStatusCapsule("goal", 15000);
+
   await browser.waitUntil(
     () =>
       browser.execute(

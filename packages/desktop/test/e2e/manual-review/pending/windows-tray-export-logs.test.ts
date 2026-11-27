@@ -1,7 +1,8 @@
+import type { Locale } from "@raspberrycode/shared";
 import { readFile } from "node:fs/promises";
 import type { Menu } from "electron";
-import { readSettings, waitForDefaultWorkspaceReady } from "../../helpers/desktop-app.js";
-import { skipOccupationOnboardingIfPresent } from "../../helpers/occupation-onboarding.js";
+import { readSettings, waitForDefaultWorkspaceReady } from "#e2e/helpers/desktop-app";
+import { skipOccupationOnboardingIfPresent } from "#e2e/helpers/occupation-onboarding";
 
 type TrayCapture = {
   menu?: Menu;
@@ -9,7 +10,7 @@ type TrayCapture = {
 };
 type TrayTestGlobal = typeof globalThis & { __trayExportCapture?: TrayCapture };
 type DesktopBridge = {
-  raspberrycode: { setApplicationLocale: (locale: "en-US" | "zh-CN") => Promise<void> };
+  raspberrycode: { setApplicationLocale: (locale: Locale) => Promise<void> };
 };
 
 describe("Windows 托盘导出日志", () => {

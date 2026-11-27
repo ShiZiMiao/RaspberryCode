@@ -10,13 +10,18 @@ import {
   TID_BROWSER_RESPONSIVE_ZOOM_OPTION,
   TID_BROWSER_RESPONSIVE_ZOOM_SELECT,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData, clickTestIdByWebDriver } from "../helpers/desktop-app.js";
+import {
+  clearAppData,
+  clickTestIdByWebDriver,
+  restoreElectronRendererContentSize,
+  setCurrentElectronRendererContentSize,
+} from "#e2e/helpers/desktop-app";
 import {
   prepareV4ConversationE2E,
   sendV4Prompt,
   waitForV4AssistantMessageContaining,
   waitForV4Pane,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 interface RoundResult {
   png: string;
@@ -54,6 +59,9 @@ let naturalResult: NaturalResult | undefined;
 let recoveryPrepared: Pick<NaturalResult, "png" | "tabId" | "before"> | undefined;
 let recoveryResult: Pick<NaturalResult, "tabId" | "after" | "events"> | undefined;
 let releaseRecoveryPrepare: (() => void) | undefined;
+let originalContentSize:
+  | Awaited<ReturnType<typeof setCurrentElectronRendererContentSize>>
+  | undefined;
 
 let server: Server;
 let fixtureUrl: string;
@@ -133,6 +141,7 @@ describe("ZCT-2096856609784438784：缩放后的截图坐标与真实点击一�
 
   after(async () => {
     releaseRecoveryPrepare?.();
+    if (originalContentSize) await restoreElectronRendererContentSize(originalContentSize);
     await browser.electron
       .execute((electron, channel) => {
         const state = globalThis as unknown as { zoomReadyListener?: (...args: unknown[]) => void };
@@ -152,6 +161,11 @@ describe("ZCT-2096856609784438784：缩放后的截图坐标与真实点击一�
   it("同一 guest 在 100% / 110% / reset / 缩小 / 放大以及 Fit / 100% / 200% / 50% 下均命中", async function () {
     this.timeout(300_000);
     await prepareV4ConversationE2E();
+    // 修复原因：Windows CI runner 显示器只有 1024×768，默认窗口被夹到工作区宽度；+1/+2 应用放大
+    // 触发 resize 后对话列不足 480 CSS px，产品按设计自动收起右侧面板，后续轮次找不到
+    // 浏览器响应式工具栏；崩溃重建 case 的换代前 dpr 也随之退化为 1。固定足够宽的内容区，
+    // 使各轮放大后面板仍保持展开（Windows 允许内容区大于显示器）。
+    originalContentSize = await setCurrentElectronRendererContentSize(1600, 900);
     // 只观察产品回执取得真实 tab scope，供后续普通模式 native surface 回归使用。
     await browser.electron.execute((electron, channel) => {
       const state = globalThis as unknown as {
@@ -378,7 +392,7 @@ describe("ZCT-2096856609784438784：缩放后的截图坐标与真实点击一�
         .getAttribute("aria-pressed"),
     ).toBe("false");
     await desktopCommand("zoomIn");
-    await clickTestIdByWebDriver(TID_SIDE_PANE_TOGGLE);
+    await setSidePaneOpen(false);
     await browser.waitUntil(
       () =>
         browser.execute(() => {
@@ -616,7 +630,19 @@ describe("ZCT-2096856609784438784：缩放后的截图坐标与真实点击一�
       { timeout: 10_000, timeoutMsg: "普通模式截图 release 后仍残留临时 responsive 布局" },
     );
     await desktopCommand("resetZoom");
-    await clickTestIdByWebDriver(TID_SIDE_PANE_TOGGLE);
+    // 修复原因：这里原先无条件 toggle，默认「此刻面板是隐藏的」。verify 日志显示 case 3 开头
+    // browser-responsive-button 存在却一直不可点击，case 4 点 toggle 后 webview 宽度始终不为 0，
+    // 说明本 case 结束时面板其实是收起的（toggle 的方向与假设相反）。
+    // 以 toggle 按钮自身的展开态（isSidePaneOpen 的唯一来源）为准，把面板确定地恢复为展开，
+    // 并等 webview 回到可见布局，case 3 才有可点击的 Browser 工具栏。
+    await setSidePaneOpen(true);
+    await browser.waitUntil(
+      () =>
+        browser.execute(
+          () => (document.querySelector("webview")?.getBoundingClientRect().width ?? 0) > 0,
+        ),
+      { timeout: 10_000, timeoutMsg: "恢复展开右侧面板后 Browser webview 仍不可见" },
+    );
     expect(
       await browser
         .$(`[data-testid="${TID_BROWSER_RESPONSIVE_BUTTON}"]`)
@@ -737,7 +763,8 @@ describe("ZCT-2096856609784438784：缩放后的截图坐标与真实点击一�
     this.timeout(120_000);
     await desktopCommand("resetZoom");
     await desktopCommand("zoomIn");
-    await clickTestIdByWebDriver(TID_SIDE_PANE_TOGGLE);
+    // 同上：按面板实际展开态收起，不假设上一个 case 留下的状态。
+    await setSidePaneOpen(false);
     await browser.waitUntil(
       () =>
         browser.execute(
@@ -774,7 +801,7 @@ describe("ZCT-2096856609784438784：缩放后的截图坐标与真实点击一�
       // 原生 E2E 验证重建后的真实点击；fallback 倍率残留由 manager 红绿单测定向覆盖。
       // 只注入 renderer 崩溃，销毁、重建和 URL 恢复由生产链路完成。
       await crashGuestAndWaitForReplacement();
-      await clickTestIdByWebDriver(TID_SIDE_PANE_TOGGLE);
+      await setSidePaneOpen(true);
       await browser.waitUntil(
         () =>
           browser.execute(async () => {
@@ -826,6 +853,26 @@ describe("ZCT-2096856609784438784：缩放后的截图坐标与真实点击一�
     }
   });
 });
+
+/**
+ * 按右侧面板 toggle 按钮的展开态（isSidePaneOpen 渲染出的 bg-selected）设置面板显隐。
+ * 只在与目标不一致时点击，避免 toggle 方向取决于上一个 case 的残留状态。
+ */
+async function setSidePaneOpen(open: boolean): Promise<void> {
+  const readOpen = () =>
+    browser.execute(
+      (toggleTestId) =>
+        document
+          .querySelector(`[data-testid="${toggleTestId}"]`)
+          ?.className.includes("bg-selected") ?? false,
+      TID_SIDE_PANE_TOGGLE,
+    );
+  if ((await readOpen()) !== open) await clickTestIdByWebDriver(TID_SIDE_PANE_TOGGLE);
+  await browser.waitUntil(async () => (await readOpen()) === open, {
+    timeout: 10_000,
+    timeoutMsg: `右侧面板没有${open ? "展开" : "收起"}`,
+  });
+}
 
 async function desktopCommand(command: string): Promise<void> {
   await browser.execute(async (value) => {

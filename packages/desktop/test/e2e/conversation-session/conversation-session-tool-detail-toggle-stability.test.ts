@@ -1,15 +1,15 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { TID_TOOL_SUMMARY_TRIGGER } from "@raspberrycode/shared/test-ids";
-import { clearAppData, seedSettings } from "../helpers/desktop-app.js";
-import { waitForUpstreamRequestContaining } from "../helpers/conversation-session-network.js";
-import { waitForToolCallBlockByToolName } from "../helpers/conversation-session-tool.js";
-import { expandAssistantHistoriesWithContent } from "../helpers/conversation-session-tool-diagnostics.js";
+import { clearAppData, seedSettings } from "#e2e/helpers/desktop-app";
+import { waitForUpstreamRequestContaining } from "#e2e/helpers/conversation-session-network";
+import { waitForToolCallBlockByToolName } from "#e2e/helpers/conversation-session-tool";
+import { expandAssistantHistoriesWithContent } from "#e2e/helpers/conversation-session-tool-diagnostics";
 import {
   ensureToolCrossProductFullAccessMode,
   respondToToolCrossProductBlockers,
-} from "../helpers/conversation-session-tool-cross-product.js";
-import { resolveE2ERuntimePath } from "../helpers/e2e-runtime-paths.js";
+} from "#e2e/helpers/conversation-session-tool-cross-product";
+import { resolveE2ERuntimePath } from "#e2e/helpers/e2e-runtime-paths";
 import {
   E2E_REPLY_TOKEN,
   clickV4Stop,
@@ -19,7 +19,7 @@ import {
   waitForV4AssistantMessageContaining,
   waitForV4Pane,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_MARKER = "E2E_TOOL_DETAIL_TOGGLE_READ";
 const TOOL_TURN_TIMEOUT_MS = 150000;
@@ -48,7 +48,7 @@ interface ToolDetailToggleProbe {
   targetOpen: boolean;
 }
 
-describe("P08 Explore 工具详情折叠稳定性", () => {
+describe("P08 摘要组折叠与 Read 行稳定性", () => {
   before(async function () {
     this.timeout(TOOL_TURN_TIMEOUT_MS);
     await seedSettings({ messageStreamShowTodos: true });
@@ -66,7 +66,7 @@ describe("P08 Explore 工具详情折叠稳定性", () => {
     await clearAppData();
   });
 
-  it("连续两次 Read 聚合 Explore 的详情展开与收起高度连续归零", async function () {
+  it("连续 Read 摘要组展开收起高度连续归零且 Read 不创建详情", async function () {
     this.timeout(TOOL_TURN_TIMEOUT_MS);
 
     await prepareReadFixture();
@@ -82,13 +82,25 @@ describe("P08 Explore 工具详情折叠稳定性", () => {
     await waitForUpstreamRequestContaining(CASE_MARKER);
     await waitForToolTurnIdle();
     // 修复原因：正式 v4 replay 可能在下一条 DOM 断言前已完成整轮，工具块此时
-    // 已进入折叠历史；先展开完成态历史，再判断 Explore，避免只在慢响应下通过。
+    // 已进入折叠历史；先展开完成态历史，再访问真实 Read，避免只在慢响应下通过。
     await expandAssistantHistoriesWithContent();
 
-    const block = await waitForToolCallBlockByToolName("Explore", 30000);
+    const groupTrigger = await $("[data-summary-group-trigger]");
+    await groupTrigger.waitForDisplayed();
+    await expect(groupTrigger).toHaveAttribute("aria-expanded", "false");
+    assertExploreToolDetailToggleProbe(
+      await probeLatestExploreToolDetailToggle(true, "[data-summary-group-trigger]"),
+    );
+    assertExploreToolDetailToggleProbe(
+      await probeLatestExploreToolDetailToggle(false, "[data-summary-group-trigger]"),
+    );
+    const block = await waitForToolCallBlockByToolName("Read", 30000);
     expect(block.exists).toBe(true);
-    expect(block.toolName).toBe("Explore");
-    await assertExploreToolDetailToggleStability();
+    expect(block.toolName).toBe("Read");
+    // Read 当前仅显示文件摘要（canToggle=false）；不应沿用旧 Explore 的详情折叠断言。
+    const readTrigger = await $('[data-tool-name="Read"] [data-testid^="tool-summary-trigger-"]');
+    await expect(readTrigger).not.toHaveAttribute("aria-expanded");
+    expect((await $$('[data-tool-name="Read"]')).length).toBe(2);
   });
 });
 
@@ -134,33 +146,13 @@ async function waitForToolTurnIdle(): Promise<void> {
   await waitForV4AssistantMessageContaining(E2E_REPLY_TOKEN);
 }
 
-async function assertExploreToolDetailToggleStability(): Promise<void> {
-  await expandAssistantHistoriesWithContent();
-  await browser.waitUntil(
-    () =>
-      browser.execute(
-        (summaryTriggerPrefix) =>
-          Boolean(document.querySelector(`[data-testid^="${summaryTriggerPrefix}-explore:"]`)),
-        TID_TOOL_SUMMARY_TRIGGER,
-      ),
-    {
-      timeout: 10000,
-      timeoutMsg: "P08 连续 Read 工具没有聚合为可展开的 Explore 详情",
-    },
-  );
-
-  const opening = await probeLatestExploreToolDetailToggle(true);
-  assertExploreToolDetailToggleProbe(opening);
-  const closing = await probeLatestExploreToolDetailToggle(false);
-  assertExploreToolDetailToggleProbe(closing);
-}
-
-function probeLatestExploreToolDetailToggle(targetOpen: boolean): Promise<ToolDetailToggleProbe> {
+function probeLatestExploreToolDetailToggle(
+  targetOpen: boolean,
+  selector = `[data-tool-name="Read"] [data-testid^="${TID_TOOL_SUMMARY_TRIGGER}-"]`,
+): Promise<ToolDetailToggleProbe> {
   return browser.executeAsync(
-    (summaryTriggerPrefix, shouldOpen, done) => {
-      const trigger = Array.from(
-        document.querySelectorAll<HTMLElement>(`[data-testid^="${summaryTriggerPrefix}-explore:"]`),
-      ).at(-1);
+    (triggerSelector, shouldOpen, done) => {
+      const trigger = Array.from(document.querySelectorAll<HTMLElement>(triggerSelector)).at(-1);
       const shell = trigger?.closest<HTMLElement>('[data-slot="collapsible"]');
       if (!trigger || !shell) {
         done({
@@ -228,7 +220,7 @@ function probeLatestExploreToolDetailToggle(targetOpen: boolean): Promise<ToolDe
       };
       requestAnimationFrame(sampleAnimation);
     },
-    TID_TOOL_SUMMARY_TRIGGER,
+    selector,
     targetOpen,
   ) as Promise<ToolDetailToggleProbe>;
 }

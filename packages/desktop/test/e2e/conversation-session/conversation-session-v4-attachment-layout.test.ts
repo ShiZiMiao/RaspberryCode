@@ -1,5 +1,10 @@
-import { TID_V4_EDIT_SUBMIT, TID_V4_ROW_ATTACHMENTS, testId } from "@raspberrycode/shared/test-ids";
-import { clearAppData, clickTestIdByDom } from "../helpers/desktop-app.js";
+import {
+  TID_V4_ATTACHMENT,
+  TID_V4_COMPOSER,
+  TID_V4_COMPOSER_INPUT,
+  TID_V4_ROW_ATTACHMENTS,
+} from "@raspberrycode/shared/test-ids";
+import { clearAppData } from "#e2e/helpers/desktop-app";
 import {
   beginFirstV4UserQueryEdit,
   clickV4Send,
@@ -8,7 +13,7 @@ import {
   setV4ComposerText,
   waitForV4Pane,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const MARKER = "E2E_ATTACHMENT_LAYOUT_VISIBLE";
 const LONG_FILE = "e2e-attachment-layout-a-very-long-filename-for-truncation.txt";
@@ -85,8 +90,9 @@ describe("AL01-AL20：附件界面改版", () => {
     await assertNarrowSentWrap();
     await assertDesktopAndTouchActions();
 
-    const rowId = await beginFirstV4UserQueryEdit(MARKER);
-    const edit = await waitForEditLayout(rowId);
+    // composer 编辑态载入原附件与上下文 chip，复用 composer 的 48px 卡片（AL13）。
+    await beginFirstV4UserQueryEdit(MARKER);
+    const edit = await waitForEditLayout();
     expect(edit.attachmentKinds).toEqual(["image", "file", "file"]);
     expect(edit.attachmentHeights.every((height) => height === 48)).toBe(true);
     expect(edit.contextCount).toBe(4);
@@ -94,10 +100,7 @@ describe("AL01-AL20：附件界面改版", () => {
     expect(edit.containsProtocolText).toBe(false);
 
     await removeEditWebContext();
-    await clickTestIdByDom(testId(TID_V4_EDIT_SUBMIT, rowId), {
-      timeout: 15_000,
-      timeoutMsg: "附件布局 edit 提交按钮不可点击",
-    });
+    await clickV4Send();
     await waitForV4TimelineContaining("V4_ATTACHMENT_LAYOUT_EDIT_OK", 45_000);
     const edited = await waitForSentLayout();
     expect(edited.pillOrder).toEqual(["file", "file", "comment", "pptx", "selection"]);
@@ -395,7 +398,8 @@ function readSentLayout() {
         if (/comment|评论/iu.test(label)) return "comment";
         if (/web|网页/iu.test(label)) return "web";
         if (/slide|幻灯片/iu.test(label)) return "pptx";
-        if (/conversation|对话/iu.test(label)) return "selection";
+        // f6e0c28998：选区 chip 文案由「N 条对话引用」改为「N 条注释」/ "N annotations"。
+        if (/annotation|注释/iu.test(label)) return "selection";
         return "unknown";
       };
       const filePills = pillChildren.filter((item) => classify(item) === "file");
@@ -519,47 +523,52 @@ async function assertDesktopAndTouchActions() {
   );
 }
 
-async function waitForEditLayout(rowId: number) {
-  let snapshot = await readEditLayout(rowId);
+async function waitForEditLayout() {
+  let snapshot = await readEditLayout();
   await browser.waitUntil(
     async () => {
-      snapshot = await readEditLayout(rowId);
+      snapshot = await readEditLayout();
       return snapshot.contextCount === 4 && snapshot.attachmentKinds.length === 3;
     },
-    { timeout: 15_000, timeoutMsg: "edit 附件/context 布局没有收敛" },
+    { timeout: 15_000, timeoutMsg: "composer 编辑态附件/context 布局没有收敛" },
   );
   return snapshot;
 }
 
-function readEditLayout(rowId: number) {
+function readEditLayout() {
   return browser.execute(
-    (id, inputTestId) => {
-      const group = document.querySelector<HTMLElement>(`[data-testid="v4-row-attachments-${id}"]`);
+    (composerTestId, attachmentPrefix, inputTestId) => {
+      const composer = document.querySelector<HTMLElement>(`[data-testid="${composerTestId}"]`);
       const cards = Array.from(
-        group?.querySelectorAll<HTMLElement>("[data-v4-user-edit-attachment-kind]") ?? [],
+        composer?.querySelectorAll<HTMLElement>(
+          `[data-testid^="${attachmentPrefix}-"][data-upload-status]`,
+        ) ?? [],
       );
-      const contextRow = document.querySelector<HTMLElement>(
-        "[data-v4-user-edit-context-attachments-row]",
+      const contextRow = composer?.querySelector<HTMLElement>(
+        "[data-composer-context-attachments-row]",
       );
       const input = document.querySelector<HTMLElement>(`[data-testid="${inputTestId}"]`);
       const visibleText = input?.innerText?.trim() ?? input?.textContent?.trim() ?? "";
       return {
         attachmentHeights: cards.map((card) => Math.round(card.getBoundingClientRect().height)),
-        attachmentKinds: cards.map((card) => card.dataset.v4UserEditAttachmentKind ?? ""),
+        attachmentKinds: cards.map(
+          (card) => card.getAttribute("data-composer-attachment-kind") ?? "",
+        ),
         containsProtocolText:
           /# userselect:|# Code comments:|# Web page elements:|# Presentation/iu.test(visibleText),
         contextCount: contextRow?.children.length ?? 0,
         visibleText,
       };
     },
-    rowId,
-    `v4-edit-input-${rowId}`,
+    TID_V4_COMPOSER,
+    TID_V4_ATTACHMENT,
+    TID_V4_COMPOSER_INPUT,
   );
 }
 
 async function removeEditWebContext() {
   const removed = await browser.execute(() => {
-    const row = document.querySelector<HTMLElement>("[data-v4-user-edit-context-attachments-row]");
+    const row = document.querySelector<HTMLElement>("[data-composer-context-attachments-row]");
     const pill = Array.from(row?.children ?? []).find((item) =>
       /web|网页/iu.test(item.getAttribute("aria-label") ?? ""),
     );

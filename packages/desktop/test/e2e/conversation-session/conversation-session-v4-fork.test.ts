@@ -4,17 +4,17 @@
 // forkStableConversation → ACK.result.sessionId → pane 原地切到 child session（新
 // sessionId，但历史含父会话内容）。证明稳定边界解析与 conversation-only fork 打通。
 import { TID_V4_MODEL_CONFIG } from "@raspberrycode/shared/test-ids";
-import { DEFAULT_WORKSPACE, clearAppData, waitForWorkspaceApp } from "../helpers/desktop-app.js";
+import { DEFAULT_WORKSPACE, clearAppData, waitForWorkspaceApp } from "#e2e/helpers/desktop-app";
 import {
   selectUpstreamProviderModelById,
   selectUpstreamThoughtLevelValue,
   waitForUpstreamModelSelected,
-} from "../helpers/upstream-provider.js";
-import { restartWithSeededOpenAIProviders } from "../helpers/custom-openai-provider.js";
+} from "#e2e/helpers/upstream-provider";
+import { restartWithSeededOpenAIProviders } from "#e2e/helpers/custom-openai-provider";
 import {
   assertUpstreamRequestCapture,
   waitForUpstreamNetworkCapture,
-} from "../helpers/upstream-capture.js";
+} from "#e2e/helpers/upstream-capture";
 import {
   clickFirstV4Fork,
   getV4ModelConfig,
@@ -24,7 +24,7 @@ import {
   waitForV4Fork,
   waitForV4Pane,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 describe("v4 M4 门禁：forkAssistant", () => {
   after(async () => {

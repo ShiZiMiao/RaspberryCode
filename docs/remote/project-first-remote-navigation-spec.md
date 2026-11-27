@@ -40,6 +40,11 @@
 已有本地 conversation tab 直接复用；远端项目通过输入框项目标签的 × 显式关闭，
 目标固定为本机 conversation workspace，不进入远程无项目聊天，也不复用远端 tab 的路径。
 
+侧栏点击本地任务同样按完整 `workspaceKey` 激活 tab：不带 identity 的激活只命中本地 tab，
+同路径远端 tab 排在前面也不能被激活（RPN-25）。Header 读取当前 tab 的设备与用途时用同一规则。
+修复前只按路径取第一个 tab：任务写进本地 workspace，主区仍显示远端 workspace 原来的任务；
+Header 也会给本地任务显示远程设备标记（2026-11-09 修复）。
+
 同名、同路径、不同设备的项目仍是不同条目。设备名仅用于展示，不能参与身份判等、排序 key 或持久化隔离。
 
 ## 2. 入口与连接顺序
@@ -299,6 +304,37 @@ Source online
 
 该边界不新增 accepted queue、Host owner 或连接缓存，只让 UI 既有两条入口服从同一显式用户意图。RPN-04、RPN-08 单测先证明了重复 admission 和收起后意外重试，再验证修复。
 
+### 导航遇到在途的连接（RPN-19、RPN-20、RPN-24）
+
+项目重连（启动恢复、设备上线恢复、项目菜单连接）与 Source 可恢复断连（重启、更新、retrying）期间，该目录的 workspace key 在 Root 的 `reconnectingRemoteWorkspaceKeys` 中；侧栏“连接中”也读同一事实。侧栏任务、项目打开与“查看文件”进入远程目录时，先观察这一事实：
+
+- key 在集合中时等待它离开，再按当时的 owner 继续：tab 已有在线 owner 就复用；没有就按普通点击自建连接（例如恢复失败、重连失败）。不新增状态、超时或重试。
+- 等待放在发起设备连接之前：恢复期间导航不能先调用 `connectHost`，否则会抢先扩大同一恢复 flight。`connectHost` 之后、自建连接之前再观察一次，因为设备刚上线时可能触发项目重连。
+- 等待期间用户切到其他任务、草稿或目录时，旧导航在醒来后静默取消，沿用现有 `isCurrent` 语义。
+- “查看文件”以最近一次查看为准：等待期间又查看了其他目录，或侧栏卸载，旧请求就失效。旧请求在调用 `connectHost`、接管同设备在途连接和写 tab 之前退出，不切换 tab、不新建草稿、不提示错误；如果它是同设备在途连接的最后一个等待者，就释放这条连接。修复前文件树只在最后挡住文件面板，旧请求仍会连接并绑定目录，把当前 tab 切回旧目录；同设备首连时它还会先接管连接，使最新查看报 `project.navigation-cancelled`（2026-11-03 修复，RPN-24）。
+- Source 可恢复断连之后必须收到换代事件或终止断连之一。Host 恢复成功但 Main 把换代 session 交给窗口失败时，Main 回收换代 session 并发布旧 session 的终止断连；否则 tab 留着旧 id、key 不离开，导航一直等待，重连入口也因 tab 仍有 id 而跳过（2026-11-03 修复）。
+- 交付失败也包括 ready 超时：Renderer 可能晚于超时才处理 port，已登记换代 session，但 Main 已回收它。导航按目录查找 session，会找到这条失效 session：点击任务报“未找到远程 workspace session”，查看文件读已关闭的连接。Renderer 登记后的迟到 ACK 让 Main 通知窗口释放这次登记（见 [Renderer 重挂](./desktop-remote-session-renderer-reattach.md)），之后导航按普通点击自建连接（2026-11-03 修复）。
+- key 只由各自的 owner 移除。关闭 tab 的事件只处理一次：重新订阅 tab store 时从当前序号开始，不能重放订阅前的 user-close；否则同目录重新打开后的“连接中”会被清掉，在途重连被取消，远程历史被删除（2026-11-02 修复）。
+
+```text
+重连在途：  重连 ───────────── 写 tab=S1，key 离开
+            点击任务 → 等待 ─────────────────────┘→ 复用 S1 → 打开任务（只有一条连接）
+恢复在途：  tab 保留旧 id，key 在集合中 → 恢复换代 tab=S2，key 离开
+            点击任务 → 等待（不调 connectHost）─────┘→ 复用 S2 → 打开任务
+```
+
+导航已经开始自建连接后重连才开始时（窗口很窄），两条连接仍按目录 owner 规则仲裁：
+
+- 目录 owner 是该 tab 的 `remoteSessionId`，且该 session 仍在窗口的 session store 中。先写入 tab 的连接拥有目录。
+- 后到的入口在写入 tab 前复核 owner：已有在线 owner 时让出，回收本次连接，不覆盖 tab。
+- 导航让出时仍算成功：继续打开任务（桌面按 tab owner 打开），不报 `project.workspace-identity-mismatch`。只有目录没有落到任何 session（Host 绑定到其他 identity）时才报该错误并回收本次连接。
+
+```text
+重连先写：重连 → tab=S1 │ 导航 bind 发现 owner=S1 → 回收 S2 → 打开任务（S1）
+导航先写：导航 → tab=S2 → 打开任务 │ 重连写入前发现 owner=S2 → 回收 S1
+两种顺序最终都只剩一个 logical session，tab 与身份索引指向同一 owner
+```
+
 ## 9. 验证记录与限制
 
 ### 设置页最近项目恢复（2026-10-16）
@@ -339,7 +375,7 @@ Root 仅持有当前项目的恢复互斥；取消项目意图后立即释放。
 - `pnpm typecheck`、`pnpm --filter @raspberrycode/desktop typecheck:e2e` 通过；`pnpm lint` 0 错误，57 条存量警告，没有新增警告。
 - `pnpm architecture:check --changed`：0 违规。Feature graph 节点唯一，新增悬空边为 0；全图存在 4 条相同的基线悬空边，本轮未处理无关图谱数据。
 - 全局 `audit:conversation-session-coverage` 未通过：37 项既有问题（27 个旧 pending fixture 元数据、旧矩阵统计/引用和生成文档）。在审计输入与 HEAD 一致的原型 worktree 上对照运行，37 项完全相同，新增问题为 0；未改写无关基线数据。
-- 新增本地 Electron E2E：`packages/desktop/test/e2e/conversation-session/conversation-session-rpn-project-navigation.test.ts`，已通过。
+- 新增本地 Electron E2E：`packages/desktop/test/e2e/conversation-session/projects/conversation-session-rpn-project-navigation.test.ts`，已通过。
 - E2E run：`desktop-e2e-20260916060143354-p74119-7eab82eb8a75775c`。隔离 HOME 中预置两个设备的同路径离线项目及一个历史远程 conversation；确认平铺、单一项目/任务分组、设备详情隔离、查看详情无连接副作用、Escape 不重开 tooltip、旧 conversation 不恢复、canonical 数据保留、项目名点击进入唯一连接向导。截图 `rpn-project-sidebar.png` 保存在该 run artifact 下。
 - E2E 未发 prompt、未连接真实远端；复用未改动的已构建 CLI（`RASPBERRYCODE_E2E_SKIP_AGENT_BUILD=1`），Desktop/UI 从当前工作树重新构建。
 - SSH helper 的普通连接流程已要求进入目录步骤，不再把向导关闭当作新建远程无项目聊天成功。
@@ -388,18 +424,20 @@ Host 连接管线 → SourceServerOperationLogs（唯一日志 owner）
 
 ## 远程身份悬停详情（2026-10-13）
 
-聊天框项目菜单和侧栏远程项目行共用只读详情浮层。侧栏会话行（项目内、置顶区和最近更新）在 hover 或 focus 时不显示远程身份详情，仍保留原有会话操作。展示项目、完整设备名、连接类型、地址、目录与现有五态；同名项目按 Host + 项目 ID 区分，名称来自既有 Source 名称投影，地址和状态来自对应 Host，不能用当前活动设备代替。离线项目仍可查看，选择和导航权限不变。
+聊天框项目菜单和侧栏项目行共用只读详情浮层，本地项目也适用（通用规则见[虚拟项目规格](../superpowers/specs/2026-09-09-virtual-project-design.md#项目行快捷入口补充)）。项目名只在顶部显示一次，不再重复「项目名称」字段；本地正文仅列出所有 roots 的完整目录。远程项目额外展示完整设备名、连接类型、地址与现有五态；同名项目按 Host + 项目 ID 区分，名称来自既有 Source 名称投影，地址和状态来自对应 Host，不能用当前活动设备代替。离线项目仍可查看，选择和导航权限不变。侧栏会话行（项目内、置顶区和最近更新）在 hover 或 focus 时不显示项目身份详情；它们显示任务卡（任务目录、最近活动、分支、变更统计，远程任务额外显示设备徽标），不显示地址、连接类型、状态详情或设置入口。原有会话操作保留。
 
-采用已确认的「紧凑同一行」原型。浮层没有关闭叉和点击锁定；鼠标离开触发区域与浮层后自动关闭，键盘移出焦点或按 Escape 关闭。详情文字可以选择和复制，但选区不锁定浮层；选中文字后直接移出、返回触发区再移出或键盘移出，均须关闭。触发区与详情区之间移动保留原有关闭缓冲。移入浮层可以读取完整文字，不遮断原有项目展开、选择、拖拽和任务操作。触屏保留可见设备名，详情不改变原有选择语义。中英文、长名称/路径、深浅主题、桌面与手机共享视图均适用。
+采用已确认的「紧凑同一行」原型。浮层没有关闭叉和点击锁定；鼠标离开触发区域与浮层后自动关闭，键盘移出焦点或按 Escape 关闭。详情文字可以选择和复制，但选区不锁定浮层；选中文字后直接移出、返回触发区再移出或键盘移出，均须关闭。触发区与详情区之间的 4px 间隙保持连续命中；离开两区后立即关闭，不保留关闭延时或退场动画，已排队的打开任务同时撤销。移入浮层可以读取完整文字，不遮断原有项目展开、选择、拖拽和任务操作。触屏保留可见设备名，详情不改变原有选择语义。中英文、长名称/路径、深浅主题、桌面与手机共享视图均适用。
 
 聊天框项目菜单中的详情使用菜单所属浮层层级，不能被菜单裁切或盖住。详情以菜单外边缘为横向锚点，外沿间距统一为 4px，有无滚动条、搜索过滤后及左右避让时均保持一致；空间不足时沿用既有左右避让，并按实际可用宽度收缩。详情与菜单不重叠，菜单选项仍可操作。菜单在鼠标离开项目项时将焦点收回容器，不代表离开详情，不能关闭已移入的详情；真正离开触发区与详情区、键盘切换或 Escape 仍按既有规则关闭。在线和离线项目均适用；验收须检查详情边缘的实际命中元素，不能只检查 DOM 存在或文字内容。
 
 ```text
 既有 Host 目录 + Source 名称投影 → 项目身份 → 侧栏项目行/聊天项目菜单共用只读浮层
-侧栏会话行 hover/focus → 原有会话操作，不挂载远程身份浮层
+侧栏会话行 hover/focus → 任务卡（任务 cwd/活动/分支，远程仅设备徽标），不挂载项目身份详情
 鼠标进入/键盘聚焦 → 展示 → 离开区域/移出焦点/Escape → 关闭
 ```
 
 历史验证（包含旧任务详情合同）：远程侧栏与真实任务 E2E 3/3 PASS（`r3-server-ui-identity-20261013-r6`），手机 shared-host 与项目菜单 PASS（`r3-server-ui-identity-20261013-r5`）；中英文、深浅主题、在线/离线及宽窄布局已检查。运行环境与历史失败记录见 case catalog 的 2026-10-13 修复节。
 
 2026-10-14 会话 hover 范围调整：移除会话行身份浮层，项目行与聊天项目菜单保留。组件回归先复现三种会话视图弹层，再验证 hover/focus 不再展示。macOS Desktop + 独立 Linux SSH 容器 E2E `task-hover-20261014-r2` 2/2 PASS，验证项目详情仍可打开、会话 hover 无详情。首轮测试因 DOM 选任务后鼠标未离开项目行而未产生新的进入事件，修正测试动作后通过；没有修改产品浮层时序。本轮未重跑 Windows/Linux Desktop 或手机 shared-host，候选仍为 pending。
+
+2026-11-10 会话行任务卡：会话行恢复悬停卡片，但内容改为任务自己的 cwd、最近活动、分支和变更统计；远程任务只显示设备徽标，不显示地址、连接类型、状态详情或设置入口。项目身份详情仍只由项目行和聊天项目菜单承载。远程已连接时按远端 home 缩写路径并查询远端 HEAD；未连接时不发 `system.info` 或 Git 请求，显示原始路径并隐藏分支；Web remote、触屏和分组拖拽不挂载。守卫用例 `conversation-session-project-device-selection.test.ts` 改为断言远程会话行出现 `task-row-details`，且不出现 `remote-identity-details`。行为规格见 [会话行悬浮卡片](../ui/task-row-hover-details.md)。

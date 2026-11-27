@@ -1,18 +1,18 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { TID_V4_TIMELINE } from "@raspberrycode/shared/test-ids";
-import { clearAppData, DEFAULT_WORKSPACE } from "../helpers/desktop-app.js";
+import { clearAppData, DEFAULT_WORKSPACE } from "#e2e/helpers/desktop-app";
 import {
   countUpstreamRequests,
   getUpstreamRequestEvidence,
-} from "../helpers/conversation-session-network.js";
+} from "#e2e/helpers/conversation-session-network";
 import {
   getV4CompactMarkers,
   prepareV4ConversationE2E,
   sendV4Prompt,
   waitForV4AssistantMessageContaining,
   waitForV4ConversationState,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_MARKER = "E2E_OUTPUT_LIMIT_CONTINUE_MARKDOWN_BOUNDARIES";
 const FINAL_ANCHOR = "自动链接";

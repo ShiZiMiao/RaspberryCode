@@ -124,6 +124,45 @@ fact 只从当前进程的 live ingest 产生：
 - hydration 期间新到达并暂存在 live buffer 的事件：产生一次。
 - CLI/runtime 重启后不根据 orphan 或历史终态补造 completion。
 
+### 模型请求指标（`model.request.metrics`）
+
+供扩展进程算生成速率（[扩展进程](../plugins/extension-host.md) §10）。每个成功完成的模型请求一条，
+由 `ModelNetworkStatus` 的 `model_request_completed` 产生，与 `model.request.status` 同源、同 live 规则。
+
+```ts
+interface ModelRequestMetricsFact {
+  version: 1;
+  kind: "model.request.metrics";
+  eventId: string;
+  eventSeq: number;
+  occurredAt: number;
+  sessionId: string;
+  turnId?: string;
+  sourceCommandId?: string;
+  requestId: string;
+  providerId: string;
+  modelId: string;
+  querySource?: string; // main_turn / session_title / compact / subagent …，来自请求 trace 属性
+  queryId?: string;
+  durationMs: number;
+  timeToFirstContentMs?: number;
+  inputTokens?: number;
+  outputTokens?: number;
+  reasoningTokens?: number;
+  cacheReadTokens?: number;
+  cacheWriteTokens?: number;
+  totalTokens?: number;
+}
+```
+
+- 只带 id、模型身份、耗时和 token 数，不带正文、header、URL 或 finish reason。schema 是 strict。
+- 走独立通知 `v4/telemetry/model-request-metrics`，**不进** `ConversationTelemetryFact` union，也不改
+  `model.request.status`。原因：上面每个分支都是 strict，旧 App 解析到未知字段会丢掉整条事实；
+  加新 `kind` 会让旧 App 每个请求记一条 warn。旧 App 对未知通知方法不做处理，新通知对它无影响。
+- 区分用途看 `querySource`：消费方只取 `main_turn` 才算主轮速率。
+- App 侧经 `IZCodeAgentService.onDynamicModelRequestMetrics(target)` 订阅；不接 renderer reporter，
+  不产生网络上报。
+
 ## 界面模式归属
 
 `send_btn`、`message_completion`、`agent_step` 增加 `ui_mode`，发送时冻结并沿既有 seed/父子
@@ -267,11 +306,20 @@ CLI 更新 assistant row 并持久化。UI 乐观更新、command 失败时回�
   eventType: "ck";
   eventRegion: "chat";
   elementName: "assistant_message_feedback";
-  eventExtraDetail: { reaction: "like" | "dislike" | "none" };
+  eventExtraDetail: {
+    reaction: "like" | "dislike" | "none";
+    // 2026-11-18 起：所在轮轮头 sourceCommandId（CLI intent.sourceCommandId ?? inputId）；轮头无归因为 ""
+    source_message_id: string;
+  };
 }
 ```
 
-相同 reaction 再点一次写 `null` 并上报 `none`。
+相同 reaction 再点一次写 `null` 并上报 `none`（同样带 `source_message_id`）。`message_id` 仍是 assistant 行
+entityId，关联到轮靠 `source_message_id`。completion 的 `message_id` 取 `inputId`，与轮头来源不同：已验证同值的
+只有普通发送与编辑重发（E2E PV4-21：普通轮核对 `send_btn`、`message_completion` 与 Read / Write 两个工具
+`agent_step`；编辑重发轮的 fixture 只回文本，核对 `send_btn`、`message_completion` 与取消反馈），其余轮类型
+未逐一验证，消费方不得假设必然能关联，「字段非空」与「关联命中」要分开统计。详见
+[业务质量监控](./business-monitoring.md)「点赞点踩关联到轮」。
 
 ### Session quota entry
 

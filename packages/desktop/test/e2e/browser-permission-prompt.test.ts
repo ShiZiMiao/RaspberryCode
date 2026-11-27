@@ -7,9 +7,9 @@ import {
   TID_BROWSER_REFRESH_BUTTON,
   TID_BROWSER_WEBVIEW,
 } from "@raspberrycode/shared/test-ids";
-import { clickTestIdByWebDriver } from "./helpers/desktop-app.js";
-import { openFirstBrowserTab } from "./helpers/browser-side-pane.js";
-import { prepareConversationE2E } from "./helpers/conversation-session.js";
+import { clickTestIdByWebDriver } from "#e2e/helpers/desktop-app";
+import { openFirstBrowserTab } from "#e2e/helpers/browser-side-pane";
+import { prepareConversationE2E } from "#e2e/helpers/conversation-session";
 
 /**
  * CNVD「内置浏览器未授权访问」修复回归：

@@ -73,7 +73,10 @@ export interface SystemInfo {
 }
 
 /** 支持的语言 */
-export type Locale = "zh-CN" | "en-US";
+export const SUPPORTED_LOCALES = ["zh-CN", "en-US", "ja-JP", "ru-RU", "ko-KR"] as const;
+
+/** 支持的语言 */
+export type Locale = (typeof SUPPORTED_LOCALES)[number];
 
 /** 界面语言偏好；system 表示跟随当前运行端系统语言。 */
 export type LocalePreference = "system" | Locale;
@@ -278,6 +281,10 @@ export interface AppSettings {
   httpProxyNoProxy?: string;
   /** 自定义 PEM 根证书路径；下次启动 app/agent 时用于 renderer 校验与 agent NODE_EXTRA_CA_CERTS。 */
   httpProxyCaCertPath?: string;
+  /** 预装文档工具是否自动安装；未设置时按默认策略。 */
+  preinstalledToolsAutoInstall?: boolean;
+  /** Agent 不可使用的预装工具 ID 列表。 */
+  preinstalledToolsAgentDisabled?: string[];
   /**
    * 内置浏览器忽略 HTTPS 证书校验错误（自签名、过期、域名不匹配等），用于访问内网测试站点。
    * 只影响内置浏览器出口，不影响 RaspberryCode 自身对后端与模型 API 的请求。默认关闭，重启后生效。
@@ -386,6 +393,12 @@ export interface AppSettings {
   toolSearchMode?: AppToolSearchMode;
   /** 新建或冷恢复 Session 是否启用 Memory；默认关闭。 */
   memoryEnabled?: boolean;
+  /** Agent 是否始终在后台运行；默认开启。 */
+  agentAlwaysBackgroundEnabled?: boolean;
+  /** 新建或冷恢复 Session 是否启用总 token 提醒；默认关闭。 */
+  totalTokensReminderEnabled?: boolean;
+  /** Agent 回复语言；未设置表示跟随界面语言。 */
+  replyLanguage?: string;
   /** 已完成过引导（老用户免等待记录判定用）；引导不再采集职业。 */
   onboardingCompleted?: boolean;
   proactiveSuggestionsEnabled?: boolean;

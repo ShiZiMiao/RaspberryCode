@@ -1,4 +1,4 @@
-import { selectTaskOrganizeMode } from "../../../helpers/workspace-agent-warmup.js";
+import { selectTaskOrganizeMode } from "#e2e/helpers/workspace-agent-warmup";
 import {
   openRemoteProjectSelection,
   waitForRemoteTab,
@@ -15,11 +15,11 @@ import { resolve } from "node:path";
 import { promisify } from "node:util";
 import { parseRemoteWorkspaceIdentity } from "@raspberrycode/shared";
 import { TID_DOCKER_CONTAINER_INPUT, TID_REMOTE_KIND_DOCKER } from "@raspberrycode/shared/test-ids";
-import { clearAppData, clickTestIdByDom } from "../../../helpers/desktop-app.js";
+import { clearAppData, clickTestIdByDom } from "#e2e/helpers/desktop-app";
 import {
   selectUpstreamProviderModelById,
   selectUpstreamThoughtLevelValue,
-} from "../../../helpers/upstream-provider.js";
+} from "#e2e/helpers/upstream-provider";
 import {
   getUpstreamRequestRecordCount,
   countUpstreamRequests,
@@ -36,13 +36,13 @@ import {
   readHostProcesses,
   readSSHRuntimeConfig,
   readRemoteTabSnapshot,
-} from "../../../helpers/ssh-remote-p0.js";
+} from "#e2e/helpers/ssh-remote-p0";
 import {
   getV4Messages,
   prepareV4ConversationE2E,
   sendV4PromptAndWaitAccepted,
   waitForV4ConversationState,
-} from "../../../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_MARKER = "E2E_R3_DOCKER_TRANSPORT";
 const artifactDir = resolve(

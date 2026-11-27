@@ -3,12 +3,12 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { ServiceChannels } from "@raspberrycode/shared";
 import type { ProjectTree } from "@raspberrycode/services";
-import { clearAppData } from "../helpers/desktop-app.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
 import {
   callHandoffHost,
   installHandoffRpcProbe,
   restoreHandoffProbes,
-} from "../helpers/remote-project-handoff-probe.js";
+} from "#e2e/helpers/remote-project-handoff-probe";
 import {
   E2E_REPLY_TOKEN,
   clickV4Stop,

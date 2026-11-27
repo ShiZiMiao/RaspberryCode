@@ -2,8 +2,8 @@ import { reloadElectronSessionPreservingBrowserProfile } from "#e2e/helpers/e2e-
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { sourceServerReleaseDescriptorSchema } from "@raspberrycode/shared";
-import { clearAppData, seedSettings } from "../helpers/desktop-app.js";
-import { prepareV4ConversationE2E } from "../helpers/v4-conversation.js";
+import { clearAppData, seedSettings } from "#e2e/helpers/desktop-app";
+import { prepareV4ConversationE2E } from "#e2e/helpers/v4-conversation";
 import {
   clickLastEnabledSSHDialogButton,
   fillSSHPasswordSettings,
@@ -14,17 +14,17 @@ import {
   selectSSHRemoteDirectory,
   waitForRemoteTab,
   waitForSSHDirectoryStep,
-} from "../helpers/ssh-remote-p0.js";
-import { resolveE2ERuntimePath } from "../helpers/e2e-runtime-paths.js";
+} from "#e2e/helpers/ssh-remote-p0";
+import { resolveE2ERuntimePath } from "#e2e/helpers/e2e-runtime-paths";
 import {
   startRemoteAssetHttpProxy,
   type RemoteAssetHttpProxy,
-} from "../helpers/remote-asset-http-proxy.js";
+} from "#e2e/helpers/remote-asset-http-proxy";
 
 const CASE_MARKER = "E2E_SSH_LOCAL_DOWNLOAD_PROXY";
 const FAKE_CDN_HOST = "remote-assets.e2e.invalid";
 // 从当前 spec 回到 desktop，避免把 mock-cdn 定位到仓库根目录。
-const DESKTOP_ROOT = resolve(import.meta.dirname, "../../..");
+const DESKTOP_ROOT = resolve(import.meta.dirname, "../../../../..");
 const MOCK_CDN_ROOT = join(DESKTOP_ROOT, "mock-cdn");
 const PROXY_NO_PROXY = [
   "localhost",

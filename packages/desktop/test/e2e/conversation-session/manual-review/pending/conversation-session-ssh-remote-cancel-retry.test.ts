@@ -1,6 +1,6 @@
 import { parseRemoteWorkspaceIdentity } from "@raspberrycode/shared";
-import { clearAppData, waitForWorkspaceApp } from "../../../helpers/desktop-app.js";
-import { prepareV4ConversationE2E } from "../../../helpers/v4-conversation.js";
+import { clearAppData, waitForWorkspaceApp } from "#e2e/helpers/desktop-app";
+import { prepareV4ConversationE2E } from "#e2e/helpers/v4-conversation";
 import {
   clickLastEnabledSSHDialogButton,
   createFirstConnectionStallingSSHProxy,
@@ -15,7 +15,7 @@ import {
   waitForSSHDirectoryStep,
   type FirstConnectionStallingSSHProxy,
   SSH_WORKSPACE_READY_TIMEOUT_MS,
-} from "../../../helpers/ssh-remote-p0.js";
+} from "#e2e/helpers/ssh-remote-p0";
 
 const CASE_MARKER = "E2E_SSH_P0_CANCEL_RETRY";
 const CONNECTION_CLOSE_TIMEOUT_MS = 30_000;

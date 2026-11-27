@@ -1,29 +1,29 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { TID_CHAT_ATTACHMENT_BUTTON, TID_CHAT_ATTACHMENT_MENU_ITEM } from "@raspberrycode/shared/test-ids";
 import {
   clearAppData,
   DEFAULT_WORKSPACE,
   waitForDefaultWorkspaceReady,
-} from "../helpers/desktop-app.js";
+} from "#e2e/helpers/desktop-app";
 import {
   restartIntoWorkspacePreservingProfile,
   seedTurboAgentStartupModel,
-} from "../helpers/model-provider-restart.js";
+} from "#e2e/helpers/model-provider-restart";
 import {
   ensureUpstreamProviderForE2E,
   UPSTREAM_MODEL,
   UPSTREAM_PROVIDER_ID,
-} from "../helpers/upstream-provider.js";
-import { waitForUpstreamNetworkCapture } from "../helpers/upstream-capture.js";
-import { reloadElectronSessionSafely } from "../helpers/e2e-electron-reload.js";
+} from "#e2e/helpers/upstream-provider";
+import { waitForUpstreamNetworkCapture } from "#e2e/helpers/upstream-capture";
+import { reloadElectronSessionSafely } from "#e2e/helpers/e2e-electron-reload";
 import {
   resolveSeededReplayBaseUrl,
   seedCustomAnthropicMessagesProvider,
-} from "../helpers/custom-openai-provider-store.js";
+} from "#e2e/helpers/custom-openai-provider-store";
 import {
   clickV4Send,
   getV4ComposerAttachments,
+  pickV4ComposerFiles,
   prepareV4ConversationE2E,
   selectV4TaskById,
   sendV4Prompt,
@@ -31,7 +31,7 @@ import {
   waitForV4Pane,
   waitForV4RowAttachments,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const ROOT = join(DEFAULT_WORKSPACE, ".raspberrycode-e2e", "conversation-session-attachment-resume");
 const FIRST = "E2E_ATTACHMENT_RESUME_FIRST";
@@ -72,10 +72,7 @@ describe("AR01 attachment cold resume", () => {
     await mkdir(ROOT, { recursive: true });
     const path = join(ROOT, "resume-bundle.zip");
     await writeFile(path, "binary fixture");
-    const dialog = await browser.electron.mock("dialog", "showOpenDialog");
-    await dialog.mockResolvedValueOnce({ canceled: false, filePaths: [path] });
-    await $(`[data-testid="${TID_CHAT_ATTACHMENT_BUTTON}"]`).click();
-    await $(`[data-testid="${TID_CHAT_ATTACHMENT_MENU_ITEM}"]`).click();
+    await pickV4ComposerFiles([path]);
     await browser.waitUntil(
       async () => {
         const attachments = await getV4ComposerAttachments();

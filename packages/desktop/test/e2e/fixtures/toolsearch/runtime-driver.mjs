@@ -27,8 +27,8 @@ const app = await createRaspberryCodeApp({
     toolAllowlist: [
       "Read",
       "ToolSearch",
-      "WebFetch",
-      "TodoWrite",
+      "TaskOutput",
+      "TodoRead",
       "DeferredToolCall",
       ...(options.recording ? [recordingTool] : []),
     ],

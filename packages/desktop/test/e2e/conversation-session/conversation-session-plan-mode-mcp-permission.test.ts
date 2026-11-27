@@ -1,6 +1,6 @@
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
-import { clearAppData, DEFAULT_WORKSPACE } from "../helpers/desktop-app.js";
+import { clearAppData, DEFAULT_WORKSPACE, getE2EAppDataPaths } from "#e2e/helpers/desktop-app";
 import {
   E2E_REPLY_TOKEN,
   approveV4Permission,
@@ -30,13 +30,7 @@ const RESET_TOOL_CALL_ID = "toolu_e2e_plan_mcp_reset";
 const LOOKUP_TOOL_NAME = "mcp__plan_mode_e2e__lookup";
 const RESET_TOOL_NAME = "mcp__plan_mode_e2e__reset";
 const CASE_ROOT = join(DEFAULT_WORKSPACE, "plan-mode-mcp-permission-e2e");
-// 修复原因：工作区 MCP 自 2026-10-23 起需逐条信任才会连接，写在工作区 `.raspberrycode/config.json`
-// 的 fixture server 停在 untrusted，lookup 报“工具未注册”，走不到 Plan 权限判定。
-// 本例只验证 Plan 权限边界，改用隔离 E2E HOME 下的用户级配置注入 server，结束时还原。
-const MCP_CONFIG_DIR = join(dirname(DEFAULT_WORKSPACE), ".raspberrycode", "cli");
-const MCP_CONFIG_FILE = join(MCP_CONFIG_DIR, "config.json");
-// undefined 表示本例尚未写入用户配置；null 表示写入前没有用户配置。
-let originalUserConfig: string | null | undefined;
+const USER_CONFIG_FILE = join(getE2EAppDataPaths().storageRoot, "cli", "config.json");
 const MCP_CALL_LOG = join(CASE_ROOT, "mcp-calls.ndjson");
 const MCP_SERVER_SCRIPT = resolve(
   process.cwd(),
@@ -57,8 +51,9 @@ describe("会话区 Plan mode MCP 权限边界 E2E", () => {
   it("Y01/Y02: Plan mode 对非 destructive MCP 单次询问，并拒绝 destructive MCP", async function () {
     this.timeout(180000);
 
-    await prepareV4ConversationE2E();
+    // 用户级 MCP 只在会话启动时加载，必须在 prepare 创建会话前写入。
     await writePlanModeMcpConfig();
+    await prepareV4ConversationE2E();
 
     const prompt = [
       `${PROMPT_MARKER}: Enter plan mode first.`,
@@ -145,51 +140,45 @@ describe("会话区 Plan mode MCP 权限边界 E2E", () => {
   });
 });
 
+// 修复原因：工作区级 MCP 现在需要用户信任（docs/settings-mcp-list.md），未信任时工具不注册，
+// lookup 永远不会执行。本用例验证 Plan mode 权限边界而非信任流程，因此改用用户级配置声明
+// server，并在结束时恢复原用户配置。
+let originalUserConfigText: string | null | undefined;
+
 async function writePlanModeMcpConfig() {
   await mkdir(CASE_ROOT, { recursive: true });
-  await mkdir(MCP_CONFIG_DIR, { recursive: true });
-  originalUserConfig = await readFile(MCP_CONFIG_FILE, "utf-8").catch((error: unknown) => {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT") return null;
-    throw error;
-  });
-  const existing = originalUserConfig
-    ? (JSON.parse(originalUserConfig) as Record<string, unknown>)
-    : {};
-  await writeFile(
-    MCP_CONFIG_FILE,
-    `${JSON.stringify(
-      {
-        ...existing,
-        mcp: {
-          servers: {
-            plan_mode_e2e: {
-              type: "stdio",
-              command: process.execPath,
-              args: [MCP_SERVER_SCRIPT],
-              env: {
-                E2E_PLAN_MCP_CALL_LOG: MCP_CALL_LOG,
-              },
-              timeoutMs: 30000,
-            },
-          },
+  await mkdir(dirname(USER_CONFIG_FILE), { recursive: true });
+  originalUserConfigText = await readFile(USER_CONFIG_FILE, "utf-8").catch(() => null);
+  const userConfig = (originalUserConfigText ? JSON.parse(originalUserConfigText) : {}) as {
+    mcp?: { servers?: Record<string, unknown> };
+  };
+  userConfig.mcp = {
+    ...userConfig.mcp,
+    servers: {
+      ...userConfig.mcp?.servers,
+      plan_mode_e2e: {
+        type: "stdio",
+        command: process.execPath,
+        args: [MCP_SERVER_SCRIPT],
+        env: {
+          E2E_PLAN_MCP_CALL_LOG: MCP_CALL_LOG,
         },
+        timeoutMs: 30000,
       },
-      null,
-      2,
-    )}\n`,
-    "utf-8",
-  );
+    },
+  };
+  await writeFile(USER_CONFIG_FILE, `${JSON.stringify(userConfig, null, 2)}\n`, "utf-8");
 }
 
 async function cleanupPlanModeMcpFixture() {
   await rm(CASE_ROOT, { recursive: true, force: true });
-  if (originalUserConfig === undefined) return;
-  if (originalUserConfig === null) {
-    await rm(MCP_CONFIG_FILE, { force: true });
+  if (originalUserConfigText === undefined) return;
+  if (originalUserConfigText === null) {
+    await rm(USER_CONFIG_FILE, { force: true });
   } else {
-    await writeFile(MCP_CONFIG_FILE, originalUserConfig, "utf-8");
+    await writeFile(USER_CONFIG_FILE, originalUserConfigText, "utf-8");
   }
-  originalUserConfig = undefined;
+  originalUserConfigText = undefined;
 }
 
 interface McpCallLogEntry {

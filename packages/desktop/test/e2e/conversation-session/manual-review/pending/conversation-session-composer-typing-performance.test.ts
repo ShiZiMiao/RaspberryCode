@@ -2,18 +2,18 @@ import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ServiceChannels } from "@raspberrycode/shared";
 import { TID_V4_COMPOSER_INPUT, TID_V4_COMPOSER_SEND } from "@raspberrycode/shared/test-ids";
-import { DEFAULT_WORKSPACE, setInputValueByTestIdDom } from "../../../helpers/desktop-app.js";
-import { getV4ComposerDraftScopeSnapshot } from "../../../helpers/conversation-session-store.js";
+import { DEFAULT_WORKSPACE, setInputValueByTestIdDom } from "#e2e/helpers/desktop-app";
+import { getV4ComposerDraftScopeSnapshot } from "#e2e/helpers/conversation-session-store";
 import {
   getV4ComposerText,
   prepareV4ConversationE2E,
   selectV4TaskById,
-} from "../../../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 import {
   callHandoffHost,
   installHandoffRpcProbe,
   restoreHandoffProbes,
-} from "../../../helpers/remote-project-handoff-probe.js";
+} from "#e2e/helpers/remote-project-handoff-probe";
 
 interface TypingBatchMetrics {
   initialText: string;

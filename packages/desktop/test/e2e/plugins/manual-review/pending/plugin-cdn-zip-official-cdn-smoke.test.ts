@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { RaspberryCodePluginInfo } from "@raspberrycode/shared";
-import { clearAppData, getE2EAppDataPaths } from "../../../helpers/desktop-app.js";
+import { clearAppData, getE2EAppDataPaths } from "#e2e/helpers/desktop-app";
 import {
   capturePluginManualReview,
   clickPluginControl,
@@ -12,7 +12,7 @@ import {
   openPluginSettings,
   requirePluginManualReview,
   waitForPluginCard,
-} from "../../../helpers/plugin-management-lifecycle.js";
+} from "#e2e/helpers/plugin-management-lifecycle";
 
 const OFFICIAL_CDN_MARKETPLACE_ID = "raspberrycode-plugins-official";
 const OFFICIAL_CDN_PLUGIN_NAME = "example-plugin";

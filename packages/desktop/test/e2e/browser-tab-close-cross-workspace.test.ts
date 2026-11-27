@@ -1,21 +1,21 @@
 import { dirname } from "node:path";
 import { PlatformChannels } from "@raspberrycode/shared";
 import type { BrowserViewCloseTabNotification } from "@raspberrycode/shared";
-import { DEFAULT_WORKSPACE, clearAppData, waitForWorkspaceApp } from "./helpers/desktop-app.js";
+import { DEFAULT_WORKSPACE, clearAppData, waitForWorkspaceApp } from "#e2e/helpers/desktop-app";
 import {
   SMALL_AGENT_WARMUP_SCENARIO,
   getPassiveAgentStartupWorkspacePaths,
-} from "./helpers/passive-agent-startup-fixture.js";
+} from "#e2e/helpers/passive-agent-startup-fixture";
 import {
   openWorkspaceDraftFromSidebar,
   waitForActiveWorkspacePath,
   waitForRestoredProjects,
-} from "./helpers/workspace-agent-warmup.js";
+} from "#e2e/helpers/workspace-agent-warmup";
 import {
   openFirstBrowserTab,
   readBrowserTabIds,
   waitForTabCount,
-} from "./helpers/browser-side-pane.js";
+} from "#e2e/helpers/browser-side-pane";
 
 /**
  * 本 spec 守的是修复承诺对应的端到端场景：main 关闭逻辑 tab 时用户已经切到别的 workspace，

@@ -8,9 +8,9 @@ import {
   TID_BROWSER_OPEN_EXTERNAL_ITEM,
   TID_BROWSER_REFRESH_BUTTON,
 } from "@raspberrycode/shared/test-ids";
-import { clickTestIdByWebDriver } from "./helpers/desktop-app.js";
-import { openFirstBrowserTab } from "./helpers/browser-side-pane.js";
-import { prepareConversationE2E } from "./helpers/conversation-session.js";
+import { clickTestIdByWebDriver } from "#e2e/helpers/desktop-app";
+import { openFirstBrowserTab } from "#e2e/helpers/browser-side-pane";
+import { prepareConversationE2E } from "#e2e/helpers/conversation-session";
 
 type ElectronMock = Awaited<ReturnType<typeof browser.electron.mock>>;
 

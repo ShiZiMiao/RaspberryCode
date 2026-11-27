@@ -7,7 +7,7 @@
 // 合并/游标语义的完整覆盖在 L1（v4SessionDataLayer.test.ts loadOlder 组 +
 // bootstrap conversation-topic-publisher rows/range 黄金组）。
 import { TID_V4_TIMELINE, TID_V4_TIMELINE_LOAD_OLDER } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../helpers/desktop-app.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
 import {
   getV4PaneSnapshot,
   getV4TimelineScrollState,
@@ -20,7 +20,7 @@ import {
   waitForV4ConversationState,
   waitForV4Pane,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 /** E2E build 的 SessionDataLayer keep-warm 窗口（1s）+ 余量。 */
 const KEEP_WARM_EXPIRY_MS = 2_000;

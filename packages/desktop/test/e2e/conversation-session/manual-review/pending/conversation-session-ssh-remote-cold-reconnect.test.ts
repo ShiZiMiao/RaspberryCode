@@ -4,8 +4,8 @@ import {
   requestRemoteProjectConnection,
 } from "#e2e/helpers/remote-project-actions";
 import { parseRemoteWorkspaceIdentity } from "@raspberrycode/shared";
-import { clearAppData, readSettings, seedSettings } from "../../../helpers/desktop-app.js";
-import { selectUpstreamProviderModelById } from "../../../helpers/upstream-provider.js";
+import { clearAppData, readSettings, seedSettings } from "#e2e/helpers/desktop-app";
+import { selectUpstreamProviderModelById } from "#e2e/helpers/upstream-provider";
 import {
   connectSSHWorkspaceAndSendFirstTurn,
   prepareSSHLifecycle,
@@ -15,18 +15,18 @@ import {
   type SSHLifecycleProvider,
   type SSHLifecycleTask,
   SSH_LIFECYCLE_MODEL_ID,
-} from "../../../helpers/ssh-remote-lifecycle.js";
+} from "#e2e/helpers/ssh-remote-lifecycle";
 import {
   prepareSSHConnectionPage,
   readHostProcesses,
   readRemoteTabSnapshot,
   waitForRemoteTab,
-} from "../../../helpers/ssh-remote-p0.js";
+} from "#e2e/helpers/ssh-remote-p0";
 
 import {
   selectTaskOrganizeMode,
   openWorkspaceDraftFromSidebar,
-} from "../../../helpers/workspace-agent-warmup.js";
+} from "#e2e/helpers/workspace-agent-warmup";
 
 import {
   getV4PaneSnapshot,
@@ -34,7 +34,7 @@ import {
   waitForV4ConversationState,
   waitForV4AssistantMessageContaining,
   waitForV4Pane,
-} from "../../../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_MARKER = "E2E_SSH_P0_COLD_RECONNECT";
 

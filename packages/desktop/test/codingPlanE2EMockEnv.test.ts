@@ -6,6 +6,8 @@ import {
   applyCodingPlanTeamMockEnv,
   clearCodingPlanTeamMockEnv,
   shouldPrepareCodingPlanTeamMock,
+  isOffPeakTeamPlanSpec,
+  applyZaiBusinessTeamMockEnv,
 } from "./e2e/helpers/coding-plan-mock-env.js";
 
 describe("Coding Plan E2E mock env", () => {
@@ -15,15 +17,17 @@ describe("Coding Plan E2E mock env", () => {
     expect(shouldReuseDesktopE2EBuild({ RASPBERRYCODE_E2E_SKIP_BUILD: "0" })).toBe(false);
   });
   it.each([
-    "settings/settings-ui-polish.test.ts",
-    "ui-shell/side-pane-tabs-responsive-interactions.test.ts",
-  ])("Logo 外观回归隔离模拟账号控制面：%s", (spec) => {
+    "settings/general/settings-ui-polish.test.ts",
+    "settings/general/settings-ui-polish-ssh.test.ts",
+    "ui-shell/panels/side-pane-tabs-responsive-interactions.test.ts",
+    "conversation-session/plugins/manual-review/pending/conversation-session-mcp-async-startup-wait.test.ts",
+  ])("所选回归用例隔离模拟账号控制面：%s", (spec) => {
     expect(shouldPrepareCodingPlanTeamMock([`./test/e2e/${spec}`])).toBe(true);
   });
   it("定时任务创建遥测回归隔离账号控制面", () => {
     expect(
       shouldPrepareCodingPlanTeamMock([
-        "./test/e2e/conversation-session/conversation-session-automation-run-title-stable.test.ts",
+        "./test/e2e/conversation-session/automations/conversation-session-automation-run-title-stable.test.ts",
       ]),
     ).toBe(true);
   });
@@ -35,6 +39,9 @@ describe("Coding Plan E2E mock env", () => {
     "./test/e2e/**/*.test.ts",
     "test/e2e/**/*.test.ts",
     ".\\test\\e2e\\**\\*.test.ts",
+    "./test/e2e/conversation-session/queue/**/*.test.ts",
+    "./test/e2e/settings/providers/*.test.ts",
+    ".\\test\\e2e\\automations\\off-peak\\*.test.ts",
   ])("prepares the mock before workers expand the suite glob %s", (spec) => {
     expect(shouldPrepareCodingPlanTeamMock([spec])).toBe(true);
   });
@@ -42,8 +49,8 @@ describe("Coding Plan E2E mock env", () => {
   it("prepares the mock for the formal CI suite without opting unrelated workers in", () => {
     const unrelatedSpecs = [
       "./test/e2e/plugins/*.test.ts",
-      "./test/e2e/workspace-file-tree-refresh.test.ts",
-      "./test/e2e/conversation-session/conversation-session-background.test.ts",
+      "./test/e2e/workspace/files/workspace-file-tree-refresh.test.ts",
+      "./test/e2e/conversation-session/background/conversation-session-background.test.ts",
     ];
     expect(
       shouldPrepareCodingPlanTeamMock([
@@ -81,9 +88,11 @@ describe("Coding Plan E2E mock env", () => {
     ).toBe(true);
   });
   it("prepares account APIs for the formal real-app provider responsive case", () => {
-    expect(shouldPrepareCodingPlanTeamMock(["./test/e2e/provider-family-responsive.test.ts"])).toBe(
-      true,
-    );
+    expect(
+      shouldPrepareCodingPlanTeamMock([
+        "./test/e2e/settings/providers/provider-family-responsive.test.ts",
+      ]),
+    ).toBe(true);
   });
   it("prepares the team mock for targeted login and provider transition cases", () => {
     expect(
@@ -93,7 +102,12 @@ describe("Coding Plan E2E mock env", () => {
     ).toBe(true);
     expect(
       shouldPrepareCodingPlanTeamMock([
-        "./test/e2e/conversation-session/conversation-session-model-provider-settings-transition.test.ts",
+        "./test/e2e/conversation-session/models/conversation-session-model-provider-settings-transition.test.ts",
+      ]),
+    ).toBe(true);
+    expect(
+      shouldPrepareCodingPlanTeamMock([
+        "./test/e2e/conversation-session/automations/conversation-session-off-peak-team-plan.test.ts",
       ]),
     ).toBe(true);
   });

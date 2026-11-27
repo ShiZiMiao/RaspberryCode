@@ -1,31 +1,31 @@
 import {
   INCOMING_MESSAGE_MODES,
   prepareIncomingMessageCapability,
-} from "../helpers/incoming-message-capability.js";
+} from "#e2e/helpers/incoming-message-capability";
 import {
   readBackgroundContextUsage,
   assertBackgroundUsageInV4,
-} from "../helpers/background-notification-usage.js";
-import { assertIncomingMessage } from "../helpers/incoming-message-evidence.js";
+} from "#e2e/helpers/background-notification-usage";
+import { assertIncomingMessage } from "#e2e/helpers/incoming-message-evidence";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { TID_CHAT_BACKGROUND_RESULT_TITLE, TID_V4_TIMELINE } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../helpers/desktop-app.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
 import {
   countUpstreamRequests,
   findFirstUpstreamRequestIndex,
   getUpstreamRequestRecordCount,
   waitForUpstreamRequest,
-} from "../helpers/conversation-session-network.js";
-import { waitForToolCallBlockByToolCallId } from "../helpers/conversation-session-tool.js";
-import { respondToToolCrossProductBlockers } from "../helpers/conversation-session-tool-cross-product.js";
+} from "#e2e/helpers/conversation-session-network";
+import { waitForToolCallBlockByToolCallId } from "#e2e/helpers/conversation-session-tool";
+import { respondToToolCrossProductBlockers } from "#e2e/helpers/conversation-session-tool-cross-product";
 import {
   clickV4Stop,
   getV4PaneSnapshot,
   sendV4Prompt,
   waitForV4Pane,
   waitForV4QueueCount,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const BACKGROUND_NOTIFICATION_BATCH_TIMEOUT_MS = 180000;
 const CASE_MARKER = "E2E_BACKGROUND_NOTIFICATION_BATCH";
@@ -137,10 +137,14 @@ describe("会话区 Background Notification Batch E2E", () => {
       // 两条通知是同一条 user 消息的两个 text block。
       const batchBlocks = await readLatestUserTextBlocksAt(batchNotificationIndex);
       expect(batchBlocks).toHaveLength(2);
-      expect(batchInput.indexOf(CHILD_TWO_RESULT)).toBeGreaterThanOrEqual(0);
-      expect(batchInput.indexOf(CHILD_THREE_RESULT)).toBeGreaterThan(
-        batchInput.indexOf(CHILD_TWO_RESULT),
+      // 修复原因：两个 child 的 fixture 延迟只差 500ms（8000/8500），Windows 上子代理
+      // 启动开销差异超过该间隔，完成顺序会互换（本地两种模式都是 THREE 先到）。本用例证明的是
+      // "其余 Agent 在下一次 drain 合为一轮、各占一个 text block"，与两者先后无关，按集合校验。
+      const blockResults = batchBlocks.map((block) =>
+        [CHILD_TWO_RESULT, CHILD_THREE_RESULT].filter((result) => block.text.includes(result)),
       );
+      expect(blockResults.map((results) => results.length)).toEqual([1, 1]);
+      expect(blockResults.flat().sort()).toEqual([CHILD_THREE_RESULT, CHILD_TWO_RESULT].sort());
 
       await waitForVisibleV4MessageContaining(
         "assistant",
@@ -160,11 +164,20 @@ describe("会话区 Background Notification Batch E2E", () => {
       const firstNotificationInput = await readLatestUserMessageAt(firstNotificationIndex);
       // 根因：通知加 wrapper 后曾被 Messages 当成已计入 sections 的上下文跳过。
       // 两次请求之间只新增两个 assistant 和两条通知，直接对账 CLI 实际统计的字符增量。
+      // 修复原因：assistant 回复改为按块保存后，content 是带块序号的文本块数组；Messages
+      // 按历史里保存的形态估算，块序号不发给 provider，但计入估算，旧的字符串期望因此少算。
+      const assistantBlocks = (text: string) => [{ type: "text", text, blockIndex: 0 }];
       const addedMessages = [
-        { role: "assistant", content: "background-notification-batch-agents-launched-ok" },
+        {
+          role: "assistant",
+          content: assistantBlocks("background-notification-batch-agents-launched-ok"),
+        },
         { role: "user", content: firstNotificationInput },
-        { role: "assistant", content: "background-notification-batch-first-consumed-ok" },
-        // CLI 按它发出的 content 估算字符数：整批是 text block 数组，单条是字符串。
+        {
+          role: "assistant",
+          content: assistantBlocks("background-notification-batch-first-consumed-ok"),
+        },
+        // 通知按历史形态估算：单条是字符串，整批是 text block 数组。
         { role: "user", content: batchBlocks },
       ];
       const expectedIncrease = addedMessages.reduce(
@@ -182,9 +195,12 @@ describe("会话区 Background Notification Batch E2E", () => {
         batchUsage.find((item) => item.source === "messages")!.chars -
           launchUsage.find((item) => item.source === "messages")!.chars,
       ).toBe(expectedIncrease);
-      expect(batchUsage.filter((item) => item.source !== "messages")).toEqual(
-        launchUsage.filter((item) => item.source !== "messages"),
-      );
+      // 修复原因：MCP 改为异步启动后，server 可能晚于 launch 请求连上，其工具在下一 step 才计入
+      // mcp_tool_schemas（docs/mcp-async-tool-catalog-cache.md）。Windows CI 日志显示 launch 快照时
+      // 6 个 server 只连上 3 个（16487 → 35372），与通知统计无关。这里只核对通知不会混入其他固定段。
+      const stableSections = (usage: typeof launchUsage) =>
+        usage.filter((item) => item.source !== "messages" && item.source !== "mcp_tool_schemas");
+      expect(stableSections(batchUsage)).toEqual(stableSections(launchUsage));
       await assertBackgroundUsageInV4(batchUsage);
       await browser.pause(1000);
 

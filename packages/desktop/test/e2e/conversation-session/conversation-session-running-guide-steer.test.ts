@@ -1,27 +1,23 @@
-import { assertIncomingMessage, wireText } from "../helpers/incoming-message-evidence.js";
+import { assertIncomingMessage, wireText } from "#e2e/helpers/incoming-message-evidence";
 import {
   INCOMING_MESSAGE_MODES,
   prepareIncomingMessageCapability,
   switchIncomingMessageCapability,
-} from "../helpers/incoming-message-capability.js";
+} from "#e2e/helpers/incoming-message-capability";
 import { TID_CHAT_ASSISTANT_HISTORY_TRIGGER, TID_V4_TIMELINE } from "@raspberrycode/shared/test-ids";
-import {
-  clearAppData,
-  readSettings,
-  waitForDefaultWorkspaceReady,
-} from "../helpers/desktop-app.js";
+import { clearAppData, readSettings, waitForDefaultWorkspaceReady } from "#e2e/helpers/desktop-app";
 import {
   E2E_READONLY_TOOL_FILE_CONTENT,
   ensureReadonlyToolFixtureFile,
-} from "../helpers/conversation-session-readonly-tool.js";
+} from "#e2e/helpers/conversation-session-readonly-tool";
 import {
   getUpstreamRequestRecordCount,
   getUpstreamRequestEvidence,
   waitForUpstreamRequest,
   waitForUpstreamRequestContaining,
-} from "../helpers/conversation-session-network.js";
-import { getQueueItems } from "../helpers/conversation-session-queue.js";
-import { waitForTaskStoreSnapshot } from "../helpers/conversation-session-store.js";
+} from "#e2e/helpers/conversation-session-network";
+import { getQueueItems } from "#e2e/helpers/conversation-session-queue";
+import { waitForTaskStoreSnapshot } from "#e2e/helpers/conversation-session-store";
 import {
   E2E_REPLY_TOKEN,
   clickV4Stop,
@@ -35,7 +31,7 @@ import {
   waitForV4ComposerText,
   waitForV4ConversationState,
   waitForV4UserMessageContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const GUIDE_GOAL_SEED_REPLY = "running-guide-goal-seed-ok";
 

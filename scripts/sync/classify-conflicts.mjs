@@ -29,7 +29,9 @@ const detail = process.argv.includes("--detail");
 const applySimple = process.argv.includes("--apply-simple");
 
 function conflictedFiles() {
-  return git(["diff", "--name-only", "--diff-filter=U"]).split("\n").filter(Boolean);
+  // 冲突文件可能已被 git add（例如三方融合后仍残留标记），此时 diff --diff-filter=U
+  // 看不到它们；直接扫描工作区里仍带冲突标记的已跟踪文件。
+  return git(["grep", "-l", "^<<<<<<< "]).split("\n").filter(Boolean);
 }
 
 // 解析出所有冲突块，返回 { blocks, lines }

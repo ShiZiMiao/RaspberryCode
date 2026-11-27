@@ -1,4 +1,5 @@
-import { DEFAULT_WORKSPACE, clearAppData, waitForWorkspaceApp } from "./helpers/desktop-app.js";
+import { join } from "node:path";
+import { DEFAULT_WORKSPACE, clearAppData, waitForWorkspaceApp } from "#e2e/helpers/desktop-app";
 import {
   activateResourceManagerTab,
   closeResourceManagerWindow,
@@ -10,7 +11,7 @@ import {
   readResourceUsageSnapshot,
   switchToElectronRendererTarget,
   waitForResourceManagerReady,
-} from "./helpers/resource-manager.js";
+} from "#e2e/helpers/resource-manager";
 
 describe("资源管理器", () => {
   after(async () => {
@@ -33,7 +34,7 @@ describe("资源管理器", () => {
     await closeResourceManagerWindow();
   });
 
-  it("从 Help 菜单打开后展示三类分组，Agent 进程会在 Host 采样后拿到真实内存", async function () {
+  it("从 Help 菜单打开后展示四类分组，Agent 进程会在 Host 采样后拿到真实内存", async function () {
     this.timeout(120_000);
     await waitForWorkspaceApp(DEFAULT_WORKSPACE, 30_000);
 
@@ -41,8 +42,8 @@ describe("资源管理器", () => {
     await switchToElectronRendererTarget(isResourceManagerUrl);
     await waitForResourceManagerReady();
 
-    // 默认 CPU tab：三类分组固定存在（空组也要显示），CPU 指标卡带 RaspberryCode / 整机两个读数。
-    for (const category of ["base", "builtin-plugin", "community-plugin"]) {
+    // 默认 CPU tab：四类分组固定存在（空组也要显示），CPU 指标卡带 RaspberryCode / 整机两个读数。
+    for (const category of ["base", "task", "builtin-plugin", "community-plugin"]) {
       await expect($(`[data-testid="resource-manager-group-${category}"]`)).toBeDisplayed();
     }
     await expect($('[data-testid="resource-manager-cpu-app"]')).toBeDisplayed();
@@ -51,6 +52,7 @@ describe("资源管理器", () => {
     await activateResourceManagerTab("memory");
     await expect($('[data-testid="resource-manager-memory-system"]')).toBeDisplayed();
     await expect($('[data-testid="resource-manager-group-base"]')).toBeDisplayed();
+    await expect($('[data-testid="resource-manager-group-task"]')).toBeDisplayed();
     await activateResourceManagerTab("cpu");
     await expect($('[data-testid="resource-manager-cpu-app"]')).toBeDisplayed();
 
@@ -111,6 +113,65 @@ describe("资源管理器", () => {
       ).map((element) => element.dataset.processName ?? ""),
     );
     expect(rowNames.some((name) => name.startsWith("raspberrycode-agent-"))).toBe(true);
+
+    const preferences = await browser.execute(() => ({
+      theme: localStorage.getItem("raspberrycode-theme"),
+      locale: localStorage.getItem("raspberrycode-locale-preference"),
+    }));
+    try {
+      for (const theme of ["light", "dark"]) {
+        for (const [width, locale, title] of [
+          [640, "zh-CN", "任务进程"],
+          [1200, "en-US", "Task processes"],
+        ] as const) {
+          await browser.electron.execute((electron, nextWidth) => {
+            const window = electron.BrowserWindow.getAllWindows().find((candidate) =>
+              candidate.webContents.getURL().includes("resource-manager.html"),
+            );
+            window?.setSize(nextWidth, 700);
+          }, width);
+          await browser.execute(
+            (nextTheme, nextLocale) => {
+              localStorage.setItem("raspberrycode-theme", nextTheme);
+              localStorage.setItem("raspberrycode-locale-preference", nextLocale);
+            },
+            theme,
+            locale,
+          );
+          await browser.refresh();
+          await waitForResourceManagerReady();
+          const taskGroup = $('[data-testid="resource-manager-group-task"]');
+          await expect(taskGroup).toHaveText(expect.stringContaining(title));
+          await $('[data-process-name="raspberrycode-main"]').waitForExist({ timeout: 10_000 });
+          await browser.execute(() => {
+            document
+              .querySelector('[data-testid="resource-manager-group-task"]')
+              ?.scrollIntoView({ block: "center", behavior: "instant" });
+          });
+          expect(
+            await browser.execute(
+              () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+            ),
+          ).toBe(true);
+          await browser.saveScreenshot(
+            join(
+              process.env.RASPBERRYCODE_E2E_ARTIFACT_DIR!,
+              `resource-manager-${theme}-${locale}-${width}.png`,
+            ),
+          );
+        }
+      }
+    } finally {
+      await browser.execute((previous) => {
+        for (const [key, value] of Object.entries({
+          "raspberrycode-theme": previous.theme,
+          "raspberrycode-locale-preference": previous.locale,
+        })) {
+          if (value === null) localStorage.removeItem(key);
+          else localStorage.setItem(key, value);
+        }
+      }, preferences);
+    }
 
     await switchToElectronRendererTarget(isMainRendererUrl);
   });

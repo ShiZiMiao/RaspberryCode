@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import {
   PATCH_MARKER,
+  patchNsisInstallUtilSource,
   patchNsisInstallSectionFile,
   patchNsisInstallSectionSource,
   restoreNsisInstallSectionFileSync,

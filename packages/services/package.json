@@ -22,6 +22,7 @@
     "@raspberrycode/provider": "workspace:*",
     "@raspberrycode/provider-node": "workspace:*",
     "@raspberrycode/rpc": "workspace:*",
+    "@raspberrycode/session-control": "workspace:*",
     "@raspberrycode/shared": "workspace:*",
     "@raspberrycode/raspberrycode-cua": "workspace:*",
     "chokidar": "4.0.3",

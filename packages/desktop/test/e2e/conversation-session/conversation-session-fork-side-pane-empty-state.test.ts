@@ -1,5 +1,5 @@
 import { TID_V4_COMPOSER_INPUT, TID_V4_SESSION_PANE } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../helpers/desktop-app.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
 import {
   clickFirstV4Fork,
   prepareV4ConversationE2E,
@@ -8,7 +8,7 @@ import {
   waitForV4Fork,
   waitForV4Pane,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const PARENT_MARKER = "E2E_SSC_FORK_SIDE_PANE_PARENT";
 const PARENT_REPLY = "SSC_FORK_SIDE_PANE_REPLY";

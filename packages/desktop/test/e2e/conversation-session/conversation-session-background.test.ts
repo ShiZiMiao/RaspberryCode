@@ -1,7 +1,7 @@
 import {
   assertIncomingMessage,
   assertTaskNotificationContents,
-} from "../helpers/incoming-message-evidence.js";
+} from "#e2e/helpers/incoming-message-evidence";
 import { execFile } from "node:child_process";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import {
@@ -16,11 +16,13 @@ import {
   TID_V4_TURN_NAVIGATOR_ITEM,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData, seedSettings } from "../helpers/desktop-app.js";
+import { releaseControlledReplay } from "#e2e/helpers/controlled-replay";
+import { assertForkAfterBackgroundNotification } from "#e2e/helpers/fork-background-history";
+import { clearAppData, seedSettings } from "#e2e/helpers/desktop-app";
 import {
   waitForCompactMarkerStatus,
   waitForCompactMarkerStatuses,
-} from "../helpers/conversation-session-compact.js";
+} from "#e2e/helpers/conversation-session-compact";
 import {
   countUpstreamRequests,
   findFirstUpstreamRequestIndex,
@@ -28,17 +30,18 @@ import {
   getUpstreamRequestRecordCount,
   getLatestUpstreamToolResultByToolCallId,
   waitForUpstreamRequest,
-} from "../helpers/conversation-session-network.js";
+} from "#e2e/helpers/conversation-session-network";
 import {
   clickFirstQueueSendNow,
   waitForQueueOrderContaining,
-} from "../helpers/conversation-session-queue.js";
+} from "#e2e/helpers/conversation-session-queue";
 import {
+  expandToolCallDetails,
   listToolCallBlocks,
   waitForToolCallBlockByToolCallId,
   waitForToolCallBlockByToolName,
-} from "../helpers/conversation-session-tool.js";
-import { resolveE2ERuntimePath } from "../helpers/e2e-runtime-paths.js";
+} from "#e2e/helpers/conversation-session-tool";
+import { resolveE2ERuntimePath } from "#e2e/helpers/e2e-runtime-paths";
 import {
   assertVisibleV4UserMessagesNotContaining,
   clickV4Stop,
@@ -56,17 +59,17 @@ import {
   waitForV4TimelineContaining,
   waitForV4UserMessageContaining,
   V4_MAIN_PANE_ID,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 import {
   ensureToolCrossProductFullAccessMode,
   respondToToolCrossProductBlockers,
-} from "../helpers/conversation-session-tool-cross-product.js";
+} from "#e2e/helpers/conversation-session-tool-cross-product";
 import {
   beginConversationTelemetryCapture,
   checkpointConversationTelemetryCase,
   waitForConversationReportDelta,
   type ConversationTelemetryReport,
-} from "../helpers/conversation-telemetry-parity-capture.js";
+} from "#e2e/helpers/conversation-telemetry-parity-capture";
 
 const BACKGROUND_E2E_TIMEOUT_MS = 240000;
 const BACKGROUND_RUNTIME_ROOT = resolveE2ERuntimePath("conversation-session-background");
@@ -193,24 +196,40 @@ async function waitForBackgroundResultPresentation(options: {
   failureLabel: string;
 }): Promise<void> {
   let snapshot: BackgroundResultPresentationSnapshot | null = null;
-  await browser.waitUntil(
-    async () => {
-      snapshot = await getBackgroundResultPresentation(options.expectedTitle);
-      return Boolean(
-        snapshot &&
-        snapshot.assistantText.includes(options.assistantMarker) &&
-        snapshot.historyTriggerCount === 1 &&
-        snapshot.historyExpanded === "false" &&
-        snapshot.titleOutsideHistory &&
-        snapshot.visibleHistoryContentCount === 0 &&
-        snapshot.navigatorItemCount === 0,
-      );
-    },
-    {
-      timeout: 60000,
-      timeoutMsg: `${options.failureLabel} 没有显示结构化标题、完成态折叠入口缺失，或被计入 turn navigator`,
-    },
-  );
+  let titles: string[] = [];
+  try {
+    await browser.waitUntil(
+      async () => {
+        snapshot = await getBackgroundResultPresentation(options.expectedTitle);
+        // 失败时带上页面里实际出现的结果轮标题，区分“标题不同”与“折叠状态不对”。
+        titles = await browser.execute(
+          (titleTestId) =>
+            Array.from(
+              document.querySelectorAll<HTMLElement>(`[data-testid^="${titleTestId}-"]`),
+            ).map((node) => node.textContent?.trim() ?? ""),
+          TID_CHAT_BACKGROUND_RESULT_TITLE,
+        );
+        return Boolean(
+          snapshot &&
+          snapshot.assistantText.includes(options.assistantMarker) &&
+          snapshot.historyTriggerCount === 1 &&
+          snapshot.historyExpanded === "false" &&
+          snapshot.titleOutsideHistory &&
+          snapshot.visibleHistoryContentCount === 0 &&
+          snapshot.navigatorItemCount === 0,
+        );
+      },
+      {
+        timeout: 60000,
+        timeoutMsg: `${options.failureLabel} 结果轮等待超时`,
+      },
+    );
+  } catch (error) {
+    throw new Error(
+      `${options.failureLabel} 没有显示结构化标题、完成态折叠入口缺失，或被计入 turn navigator; titles=${JSON.stringify(titles)}; snapshot=${JSON.stringify(snapshot)}`,
+      { cause: error },
+    );
+  }
   expect(snapshot).toMatchObject({
     visibleHistoryContentCount: 0,
     historyTriggerCount: 1,
@@ -376,14 +395,17 @@ describe("会话区 Background Runtime Task E2E", () => {
 
     expect(notificationIndex).toBeGreaterThan(launchIndex);
     await waitForV4AssistantMessageContaining("background-bash-notification-consumed-ok");
-    const block = await waitForToolCallBlockByToolName("Bash", 30000);
-    expect(block.status).not.toBe("running");
     await waitForIdle("background Bash notification 后会话没有回到 idle");
     await waitForBackgroundResultPresentation({
       assistantMarker: "background-bash-notification-consumed-ok",
       expectedTitle: "Print background marker",
       failureLabel: "background Bash 独立结果轮",
     });
+    // 失败原因：完成后的 Bash 块收在 assistant history 里，waitForToolCallBlock 找不到时会
+    // 主动展开 history；放在“结果轮默认收起”断言之前，就是测试自己把它展开了。
+    // 必须先验证默认收起，再读块状态。
+    const block = await waitForToolCallBlockByToolName("Bash", 30000);
+    expect(block.status).not.toBe("running");
     await assertNoVisibleTaskNotification();
     const reports = await waitForConversationReportDelta(capture, {
       message_completion: 2,
@@ -774,15 +796,18 @@ describe("会话区 Background Runtime Task E2E", () => {
 
     const completionIndex = await waitForFirstRequestIndex(
       {
-        includes: [
-          "E2E_BG39_SLEEP_HARD_TIMEOUT",
-          "<error>Command was aborted before completion</error>",
-        ],
+        includes: ["E2E_BG39_SLEEP_HARD_TIMEOUT", "Command timed out after 0s"],
         excludes: ["Command running in background"],
       },
       requestCountBefore,
       "BG39 sleep Bash 没有返回 foreground timeout 结果",
     );
+    // 硬超时按失败结果投影：Exit code 143 与超时行，不带中断标记；50ms 向下取整为 0s。
+    const timeoutResult = await getLatestUpstreamToolResultByToolCallId(
+      "toolu_e2e_bg39_sleep_timeout",
+    );
+    expect(timeoutResult?.isError).toBe(true);
+    expect(timeoutResult?.content).toBe("Exit code 143\nCommand timed out after 0s");
     await waitForV4AssistantMessageContaining("bg39-sleep-hard-timeout-ok");
     await browser.pause(500);
     expect(
@@ -866,12 +891,8 @@ describe("会话区 Background Runtime Task E2E", () => {
     await waitForV4AssistantMessageContaining("foreground-long-bash-loading-completed-ok");
     await waitForIdle("foreground long Bash 完成后会话没有回到 idle");
     expect(await $('[data-testid="bash-output-preview-full"]').isExisting()).toBe(false);
-    // turn 完成后工具进入已折叠的 assistant history；先按产品入口重新展开历史。
-    await waitForToolCallBlockByToolCallId("toolu_e2e_foreground_long_bash_loading");
-    const resultTrigger = await $(
-      '[data-testid="tool-summary-trigger-toolu_e2e_foreground_long_bash_loading"]',
-    );
-    if ((await resultTrigger.getAttribute("aria-expanded")) !== "true") await resultTrigger.click();
+    // turn 完成后工具进入已折叠的 assistant history；先按产品入口重新展开历史，再展开工具卡。
+    await expandToolCallDetails("toolu_e2e_foreground_long_bash_loading");
     // 历史展开动画会先挂载节点再显示正文，等待实际输出，前台不再展示文件入口。
     const result = await $('[data-testid="bash-result-output"]');
     await browser.waitUntil(
@@ -1141,6 +1162,7 @@ describe("会话区 Background Runtime Task E2E", () => {
     await waitForV4AssistantMessageContaining("background-active-loop-notification-consumed-ok");
     await waitForIdle("active-loop background notification 后会话没有回到 idle");
     await assertNoVisibleTaskNotification();
+    await assertForkAfterBackgroundNotification("background-active-loop-notification-consumed-ok");
   });
 
   it("goal verifier 会等 background notification 被消费后再验证", async function () {
@@ -2021,6 +2043,10 @@ describe("会话区 Background Runtime Task E2E", () => {
       "E2E_BACKGROUND_QUEUE_DRAIN_AFTER_MAIN_END_Q4",
     ]);
     await waitForV4AssistantMessageContaining("background-queue-drain-third-ok");
+    // 失败原因：child 回复原来是固定 30s 延迟，赌主线 launch ack/Q2/Q3/Q4 先跑完；慢机器上
+    // Q3→Q4 的 drain 间隔（session snapshot 慢 3.8s）让 child 先完成，notification 排到 Q4 之前。
+    // 改为受控流：Q4 回复完成后才放行 child，notification 必然在 Q4 之后，断言不再依赖时钟。
+    await releaseControlledReplay("upstream-background-queue-drain-child-delayed-result");
 
     const notificationIndex = await waitForFirstRequestIndex(
       {
@@ -2679,9 +2705,9 @@ async function assertNoMainToolCallById(toolCallId: string, failureMessage: stri
 async function beginBackgroundTelemetryCapture() {
   // 跨 case 复用采集器会混入中间用例的 completion，失败后游标也可能只推进一半。
   // 每条 case 从空 HTTP 调用记录和 ARMS 缓冲开始，保留精确数量断言。
-  const capture = await beginConversationTelemetryCapture();
-  await capture.telemetryFetch.mockClear();
-  return capture;
+  // 本文件中途会重启 Main（fork 冷恢复）；begin 按当前进程重装并清空 net.fetch 记录器，
+  // 不能复用重启前登记的 wdio mock（见 helper 注释）。
+  return beginConversationTelemetryCapture();
 }
 
 async function startNewBackgroundDraft() {
@@ -2891,7 +2917,7 @@ async function startBackgroundTaskControlPresenceProbe(
             atMs: Math.round(performance.now() - state.startedAt),
             panelState:
               document
-                .querySelector<HTMLElement>('[data-testid="chat-summary-panel"]')
+                .querySelector<HTMLElement>('[data-status-capsule="activity"]')
                 ?.getAttribute("data-state") ?? null,
             rows: rows.map((row) => row.innerText.replace(/\u00a0/g, " ").trim()),
             storeJobs: (taskRuntime?.backgroundTaskControls ?? []).map(
@@ -2964,8 +2990,10 @@ async function clickStopBackgroundTaskControlRow(
           );
           // Bug 根因：V4 Agent 行的第一个 button 是透明的 child session 下钻入口，
           // 旧 helper 会误点详情而没有发出 stop。取消动作必须按专用 test id 定位。
+          // Agent 行的停止按钮改为按 taskId/executionId 停止后，testid 是
+          // `v4-running-subagent-stop`；终端行仍是 `v4-background-work-cancel-<workId>`。
           const button = row?.querySelector<HTMLButtonElement>(
-            `[data-testid^="${cancelButtonPrefix}-"]`,
+            `[data-testid^="${cancelButtonPrefix}-"], [data-testid="v4-running-subagent-stop"]`,
           );
           if (!row || !button || button.disabled || !isElementVisible(button)) {
             return {

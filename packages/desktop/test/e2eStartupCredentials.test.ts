@@ -15,8 +15,8 @@ describe("desktop e2e startup credentials", () => {
     ["./test/e2e/**/*.test.ts"],
     ["/repo/packages/desktop/test/e2e/new-unregistered-feature.test.ts"],
     ["C:\\repo\\packages\\desktop\\test\\e2e\\new-unregistered-feature.test.ts"],
-    ["/repo/packages/desktop/test/e2e/browser-human-viewport-preference.test.ts"],
-    ["/repo/packages/desktop/test/e2e/browser-permission-prompt.test.ts"],
+    ["/repo/packages/desktop/test/e2e/browser/design/browser-human-viewport-preference.test.ts"],
+    ["/repo/packages/desktop/test/e2e/browser/permissions/browser-permission-prompt.test.ts"],
   ])("未声明账号 fixture 时默认无账号：%j", (specs) => {
     expect(
       createE2EStartupCredentialSeed({
@@ -73,7 +73,7 @@ describe("desktop e2e startup credentials", () => {
   it("侧栏关闭与恢复不播种会遮挡交互的假账号身份", () => {
     expect(
       createE2EStartupCredentialSeed({
-        specs: ["/repo/packages/desktop/test/e2e/side-pane-scope.test.ts"],
+        specs: ["/repo/packages/desktop/test/e2e/ui-shell/panels/side-pane-scope.test.ts"],
         legacyAuthToken: "fake-auth-token",
         restoredOAuthCredentials,
       }),
@@ -105,7 +105,9 @@ describe("desktop e2e startup credentials", () => {
   it("供应商响应式 spec 保留本地 balance mock 所需的 JWT", () => {
     expect(
       createE2EStartupCredentialSeed({
-        specs: ["/repo/packages/desktop/test/e2e/provider-family-responsive.test.ts"],
+        specs: [
+          "/repo/packages/desktop/test/e2e/settings/providers/provider-family-responsive.test.ts",
+        ],
         legacyAuthToken: "fake-auth-token",
         restoredOAuthCredentials,
       }).raspberrycodejwttoken,
@@ -115,7 +117,7 @@ describe("desktop e2e startup credentials", () => {
     expect(
       createE2EStartupCredentialSeed({
         specs: [
-          "/repo/packages/desktop/test/e2e/conversation-session/conversation-session-unbound-resume.test.ts",
+          "/repo/packages/desktop/test/e2e/conversation-session/runtime/conversation-session-unbound-resume.test.ts",
         ],
         legacyAuthToken: "fake-auth-token",
         restoredOAuthCredentials,
@@ -175,12 +177,25 @@ describe("desktop e2e startup credentials", () => {
     expect(
       createE2EStartupCredentialSeed({
         specs: [
-          "/repo/packages/desktop/test/e2e/conversation-session/conversation-session-v4-sendnow.test.ts",
+          "/repo/packages/desktop/test/e2e/conversation-session/queue/conversation-session-v4-sendnow.test.ts",
         ],
         legacyAuthToken: "fake-auth-token",
         restoredOAuthCredentials,
       }),
     ).toEqual({});
+  });
+
+  it("JWT 401 自动退出专项 spec 保留完整 restored OAuth fixture", () => {
+    expect(
+      createE2EStartupCredentialSeed({
+        specs: ["/repo/packages/desktop/test/e2e/auth-config/session/jwt-401-auto-logout.test.ts"],
+        legacyAuthToken: "fake-auth-token",
+        restoredOAuthCredentials,
+      }),
+    ).toEqual({
+      auth_token: "fake-auth-token",
+      ...restoredOAuthCredentials,
+    });
   });
 
   it("Start Plan 手动领取 spec 保留调用 claim API 所需的 raspberrycode JWT", () => {
@@ -194,5 +209,17 @@ describe("desktop e2e startup credentials", () => {
       auth_token: "fake-auth-token",
       ...restoredOAuthCredentials,
     });
+  });
+
+  it("分享浮窗交互具备本地 mock 账号态", () => {
+    expect(
+      createE2EStartupCredentialSeed({
+        specs: [
+          "./test/e2e/conversation-session/sharing/conversation-session-share-popover.test.ts",
+        ],
+        legacyAuthToken: "legacy",
+        restoredOAuthCredentials: { raspberrycodejwttoken: "local-only" },
+      }).raspberrycodejwttoken,
+    ).toBe("local-only");
   });
 });

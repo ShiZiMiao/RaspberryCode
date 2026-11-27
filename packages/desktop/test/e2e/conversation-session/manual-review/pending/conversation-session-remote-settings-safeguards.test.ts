@@ -8,12 +8,8 @@ import {
   TID_TASK_SETTINGS_BUTTON,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import {
-  clearAppData,
-  clickTestIdByDom,
-  waitForWorkspaceApp,
-} from "../../../helpers/desktop-app.js";
-import { prepareV4ConversationE2E } from "../../../helpers/v4-conversation.js";
+import { clearAppData, clickTestIdByDom, waitForWorkspaceApp } from "#e2e/helpers/desktop-app";
+import { prepareV4ConversationE2E } from "#e2e/helpers/v4-conversation";
 import {
   clickLastEnabledSSHDialogButton,
   fillSSHPasswordSettings,
@@ -23,7 +19,7 @@ import {
   selectSSHRemoteDirectory,
   waitForSSHDirectoryStep,
   waitForRemoteTab,
-} from "../../../helpers/ssh-remote-p0.js";
+} from "#e2e/helpers/ssh-remote-p0";
 
 const CASE_MARKER = "E2E_REMOTE_SETTINGS_SAFEGUARDS";
 const deviceName = "RDUX-05 device";
@@ -117,7 +113,7 @@ describe(`${CASE_MARKER}: 设置防护、连接编辑与机器标注`, () => {
     this.timeout(15 * 60_000);
     const config = readSSHRuntimeConfig(CASE_MARKER);
     const path = config.workspacePaths[0];
-    // 前项截图停在窄屏设置页，项目侧栏处于响应式隐藏态；独立操作场景恢复桌面视口。
+    // SSH 入口独立运行，先固定桌面视口，确保连接向导从可见的项目侧栏打开。
     await browser.electron.execute((electron) =>
       electron.BrowserWindow.getAllWindows()
         .find((window) => !window.isDestroyed())
@@ -128,7 +124,7 @@ describe(`${CASE_MARKER}: 设置防护、连接编辑与机器标注`, () => {
     await prepareV4ConversationE2E({ skipProvider: true });
     if (await $(`[data-testid="${TID_SETTINGS_PAGE}"]`).isDisplayed())
       await clickTestIdByDom(TID_SETTINGS_BACK_BUTTON);
-    // 失败录像确认扩宽窗口后仍保留窄屏的侧栏折叠选择；仅恢复尺寸不会自动展开。
+    // 侧栏有独立的折叠状态，恢复尺寸后仍需检查连接入口是否可见。
     if (!(await $('[data-testid="project-section"]').isDisplayed())) {
       const toggles = await $$(
         'button[aria-label="切换侧边栏"], button[aria-label="Toggle sidebar"]',
@@ -158,8 +154,14 @@ describe(`${CASE_MARKER}: 设置防护、连接编辑与机器标注`, () => {
     // RDUX-13：编辑在设备行「更多」菜单里。
     await more();
     await clickButton("编辑", '[role="menu"]');
+    // 菜单退场期间立即发送按键曾丢失连接名前缀；先按真实操作聚焦字段，再校验完整输入。
+    await $("#edit-connection-name").waitForClickable();
+    await $("#edit-connection-name").click();
     await $("#edit-connection-name").setValue(connectionName);
+    expect(await $("#edit-connection-name").getValue()).toBe(connectionName);
+    await $("#edit-device-name").click();
     await $("#edit-device-name").setValue(deviceName);
+    expect(await $("#edit-device-name").getValue()).toBe(deviceName);
     expect(await $('[role="dialog"]').getText()).toContain("下次连接时生效");
     await clickButton("保存更改", '[role="dialog"]');
     await $('[role="dialog"]').waitForDisplayed({ reverse: true });
@@ -239,16 +241,9 @@ describe(`${CASE_MARKER}: 设置防护、连接编辑与机器标注`, () => {
     await section("remoteDevices");
     await more();
     await clickButton("在侧边栏中显示", '[role="menu"]');
-    await browser.waitUntil(
-      async () =>
-        await browser.execute(
-          (identity) =>
-            document.activeElement?.closest<HTMLElement>("[data-project-workspace-identity]")
-              ?.dataset.projectWorkspaceIdentity === identity,
-          tab.workspaceIdentity,
-        ),
-      { timeout: 10_000 },
-    );
+    // 按远程设备设置规格的「菜单和收起」合同验收工作区返回，不依赖侧栏展开、滚动或焦点。
+    await $(`[data-testid="${TID_SETTINGS_PAGE}"]`).waitForDisplayed({ reverse: true });
+    await waitForWorkspaceApp(path, 30_000);
     await section("remoteDevices");
     await more();
     await clickButton("移除设备", '[role="menu"]');

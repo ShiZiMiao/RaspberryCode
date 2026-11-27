@@ -5,9 +5,9 @@ import {
   TID_SETTINGS_PAGE,
   TID_TASK_SETTINGS_BUTTON,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData, clickTestIdByDom, waitForWorkspaceApp } from "../helpers/desktop-app.js";
-import { prepareV4ConversationE2E } from "../helpers/v4-conversation.js";
-import { selectRemoteDeviceMenuItem } from "../helpers/remote-project-actions.js";
+import { clearAppData, clickTestIdByDom, waitForWorkspaceApp } from "#e2e/helpers/desktop-app";
+import { prepareV4ConversationE2E } from "#e2e/helpers/v4-conversation";
+import { selectRemoteDeviceMenuItem } from "#e2e/helpers/remote-project-actions";
 import {
   clickLastEnabledSSHDialogButton,
   fillSSHPasswordSettings,
@@ -17,7 +17,7 @@ import {
   selectSSHRemoteDirectory,
   waitForSSHDirectoryStep,
   waitForRemoteTab,
-} from "../helpers/ssh-remote-p0.js";
+} from "#e2e/helpers/ssh-remote-p0";
 
 const CASE_MARKER = "E2E_REMOTE_PRESENTATION_STATES";
 

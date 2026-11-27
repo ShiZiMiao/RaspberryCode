@@ -1,6 +1,6 @@
 import { TID_V4_COMPOSER_INPUT } from "@raspberrycode/shared/test-ids";
-import { clearAppData, readSettings } from "../helpers/desktop-app.js";
-import { waitForUpstreamNetworkRequestStarted } from "../helpers/upstream-capture.js";
+import { clearAppData, readSettings } from "#e2e/helpers/desktop-app";
+import { waitForUpstreamNetworkRequestStarted } from "#e2e/helpers/upstream-capture";
 import {
   clickV4Stop,
   clickV4Send,
@@ -21,7 +21,7 @@ import {
 } from "#e2e/helpers/conversation-session-network";
 import { getQueueItems } from "#e2e/helpers/conversation-session-queue";
 import { waitForToolCallBlockByToolCallId } from "#e2e/helpers/conversation-session-tool";
-import { respondToToolCrossProductBlockers } from "../helpers/conversation-session-tool-cross-product.js";
+import { respondToToolCrossProductBlockers } from "#e2e/helpers/conversation-session-tool-cross-product";
 
 const BACKGROUND_GUIDE_STEER_TIMEOUT_MS = 180000;
 

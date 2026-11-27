@@ -4,14 +4,14 @@ import {
   TID_V4_SESSION_PANE,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../helpers/desktop-app.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
 import {
   clickV4Stop,
   getV4PaneSnapshot,
   prepareV4ConversationE2E,
   waitForV4Pane,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const MAIN_PANE_TEST_ID = testId(TID_V4_SESSION_PANE, "workspace-main");
 const PARENT_SEED = "E2E_SLASH_PARENT_SEED";

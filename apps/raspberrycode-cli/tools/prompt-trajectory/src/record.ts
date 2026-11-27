@@ -141,7 +141,6 @@ export async function recordPromptTrajectoryFromFixture(input: {
   }
 
   await writeDerivedTrajectories({
-    ccRequestPath: input.ccRequestPath,
     inputPath: jsonlPath,
     outDir: input.outDir,
   });
@@ -254,11 +253,16 @@ async function loadRaspberryCodeModules(): Promise<{
   const bootstrapPath = pathToFileURL(
     join(import.meta.dirname, "../../../packages/bootstrap/dist/index.js"),
   ).href;
+  const contractsPath = pathToFileURL(
+    join(import.meta.dirname, "../../../packages/contracts/dist/index.js"),
+  ).href;
   // @raspberrycode/provider 只发布 src 入口，bootstrap dist 运行时也加载这份 src。
   // 修复原因：读旧的 provider dist 会得到另一份配置类，Registry 的 instanceof 校验对不上。
   const providerPath = pathToFileURL(
     join(import.meta.dirname, "../../../../../packages/provider/src/index.ts"),
   ).href;
+  const providerConfigPath = providerPath;
+  const providerRegistryPath = providerPath;
   try {
     const [bootstrap, contracts, providerConfig, providerRegistry] = await Promise.all([
       import(bootstrapPath) as Promise<RaspberryCodeBootstrapModule>,
@@ -266,7 +270,11 @@ async function loadRaspberryCodeModules(): Promise<{
       import(providerConfigPath) as Promise<Omit<RaspberryCodeProviderModule, "ProviderRegistry">>,
       import(providerRegistryPath) as Promise<Pick<RaspberryCodeProviderModule, "ProviderRegistry">>,
     ]);
-    return { bootstrap, provider };
+    const provider: RaspberryCodeProviderModule = {
+      ...providerConfig,
+      ProviderRegistry: providerRegistry.ProviderRegistry,
+    };
+    return { bootstrap, contracts, provider };
   } catch (error) {
     throw new Error(
       "Missing built raspberrycode-cli packages. Run `pnpm --filter @raspberrycode/bootstrap^... build && pnpm --filter @raspberrycode/bootstrap build` before `record`.",

@@ -2,6 +2,7 @@
 import { z } from "zod";
 import { appToolSearchModeSchema } from "./app-runtime-preferences.js";
 import type { AppSettings } from "./protocol.js";
+import { SUPPORTED_LOCALES } from "./protocol.js";
 import { REMOTE_ASSET_INSTALL_MODES } from "./remoteAssetInstallMode.js";
 import { isKnownRemoteResourcePackageId } from "./remoteResourcePackages.js";
 import { wslUserSchema } from "./wslUserValidation.js";
@@ -21,8 +22,10 @@ import {
 
 const nonEmptyStringSchema = z.string().trim().min(1);
 
-export const localeSchema = z.enum(["zh-CN", "en-US"]);
-export const localePreferenceSchema = z.enum(["system", "zh-CN", "en-US"]);
+export const localeSchema = z.enum(SUPPORTED_LOCALES);
+export const localePreferenceSchema = z.enum(["system", ...SUPPORTED_LOCALES]);
+export const REPLY_LANGUAGE_MAX_LENGTH = 256;
+export const replyLanguageSchema = z.string().trim().min(1).max(REPLY_LANGUAGE_MAX_LENGTH);
 const raspberrycodeInteractionBehaviorSchema = z.enum(["queue", "guide"]);
 // launch.md「The user's choice」：读文件时未知取值（降级后读到新版本写的值）按「跟随」处理，
 // 不能让一个偏好字段把整份设置读坏。
@@ -536,6 +539,8 @@ const appSettingsObjectSchema = z.object({
   httpProxy: nonEmptyStringSchema.optional(),
   httpProxyNoProxy: nonEmptyStringSchema.optional(),
   httpProxyCaCertPath: nonEmptyStringSchema.optional(),
+  preinstalledToolsAutoInstall: z.boolean().optional(),
+  preinstalledToolsAgentDisabled: z.array(z.string().min(1)).optional(),
   embeddedBrowserAllowInsecureCertificates: z.boolean().default(false),
   embeddedBrowserViewportPreference: embeddedBrowserViewportPreferenceSchema.default(
     DEFAULT_EMBEDDED_BROWSER_VIEWPORT_PREFERENCE,
@@ -596,6 +601,9 @@ const appSettingsObjectSchema = z.object({
   // 下一步输入预测（spec：specs/next-input-suggestions.md）：默认开启。
   nextInputPredictionEnabled: z.boolean().default(true),
   memoryEnabled: z.boolean().default(false),
+  totalTokensReminderEnabled: z.boolean().default(false),
+  agentAlwaysBackgroundEnabled: z.boolean().default(true),
+  replyLanguage: replyLanguageSchema.optional().catch(undefined),
   lastWorkspaceSession: z.array(appWorkspaceSessionEntrySchema).default([]),
   lastActiveWorkspace: appWorkspaceSessionEntrySchema.nullable().optional(),
   remoteConversationWorkspaceBySourceServerId: z
@@ -683,6 +691,8 @@ export const appSettingsPatchSchema = z.object({
   httpProxy: nonEmptyStringSchema.optional(),
   httpProxyNoProxy: nonEmptyStringSchema.optional(),
   httpProxyCaCertPath: nonEmptyStringSchema.optional(),
+  preinstalledToolsAutoInstall: z.boolean().optional(),
+  preinstalledToolsAgentDisabled: z.array(z.string().min(1)).optional(),
   embeddedBrowserAllowInsecureCertificates: z.boolean().optional(),
   embeddedBrowserViewportPreference: embeddedBrowserViewportPreferenceSchema.optional(),
   computerUseComposerEntryHidden: z.boolean().optional(),
@@ -719,6 +729,8 @@ export const appSettingsPatchSchema = z.object({
   proactiveSuggestionsEnabled: z.boolean().optional(),
   nextInputPredictionEnabled: z.boolean().optional(),
   memoryEnabled: z.boolean().optional(),
+  agentAlwaysBackgroundEnabled: z.boolean().optional(),
+  replyLanguage: replyLanguageSchema.optional(),
   lastWorkspaceSession: z.array(appWorkspaceSessionEntrySchema).optional(),
   lastActiveWorkspace: appWorkspaceSessionEntrySchema.nullable().optional(),
   remoteConversationWorkspaceBySourceServerId: z

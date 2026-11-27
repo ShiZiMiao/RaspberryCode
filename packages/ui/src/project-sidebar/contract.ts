@@ -58,6 +58,8 @@ export type {
   RemoteProjectDirectory,
   RemoteProjectEntry,
   RemoteProjectHost,
+  IManagedWorktreeService,
+  ManagedWorktreeGroup,
 } from "@raspberrycode/services";
 export interface ProjectAvailability {
   entryId?: string;

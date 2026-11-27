@@ -1,7 +1,7 @@
 // T11：Excel 多表示剪贴板中的 TSV 文本优先于同 payload 的合成 PNG。
 // 证据层 L3：真实 ClipboardEvent → Lexical 默认 paste → composer → provider request。
 import { TID_V4_COMPOSER_INPUT, TID_V4_ROW_ATTACHMENTS } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../helpers/desktop-app.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
 import {
   clickV4Send,
   getV4ComposerAttachments,
@@ -9,7 +9,7 @@ import {
   prepareV4ConversationE2E,
   waitForV4Pane,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_TIMEOUT_MS = 120_000;
 const SYNTHETIC_IMAGE = "e2e-spreadsheet-synthetic.png";

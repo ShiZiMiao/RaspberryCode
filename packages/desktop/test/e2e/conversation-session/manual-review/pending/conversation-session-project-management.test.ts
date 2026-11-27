@@ -1,12 +1,18 @@
 import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { DatabaseSync } from "node:sqlite";
+import { chromium } from "playwright-core";
+import { TID_TASK_SETTINGS_BUTTON } from "@raspberrycode/shared/test-ids";
 import { join, basename } from "node:path";
+import { isE2EHomeDirName } from "#e2e/helpers/e2e-runtime-paths";
+import { e2eMobileBrowserLaunchOptions } from "#e2e/helpers/e2e-mobile-browser-executable";
+import { obtainUnreadPairingUrl } from "#e2e/helpers/web-remote-unread";
+import { openMobilePairingPage, seedMobileFixtureLogin } from "#e2e/helpers/mobile-pairing";
 import { restartIntoWorkspacePreservingProfile } from "#e2e/helpers/model-provider-restart-runtime";
-import { waitForWorkspaceApp, DEFAULT_WORKSPACE } from "../../../helpers/desktop-app.js";
+import { waitForWorkspaceApp, DEFAULT_WORKSPACE } from "#e2e/helpers/desktop-app";
 
 /**
- * 设置 › 项目（docs/superpowers/specs/2026-10-24-project-management.md）。
+ * 设置 › 项目管理（docs/superpowers/specs/2026-10-24-project-management.md）。
  * 夹具在 Host 停止时直接写 tasks-index 与 CLI 库：一个活跃项目、四个疑似不再使用的候选
  * （文件夹不存在 / 没有会话 / 两个超过 90 天）、一个置顶的久未使用项目和一个已软删除且目录不存在的项目；
  * 另有一个独占目录、带会话文件的活跃项目，供 PJM07 彻底删除数据。
@@ -26,6 +32,7 @@ const PROJECTS = [
 const PURGE_SESSION = "pjm-purge-task";
 const purgeArtifacts = () => join(home, ".raspberrycode/cli/artifacts", PURGE_SESSION);
 const CANDIDATES = ["pjm-missing", "pjm-idle", "pjm-keep", "pjm-empty"];
+const editRoot = () => join(DEFAULT_WORKSPACE, ".raspberrycode-e2e/project-management/extra");
 
 const row = (id: string) => $(`[data-testid="project-management-row"][data-project-id="${id}"]`);
 function readProjects() {
@@ -75,10 +82,28 @@ async function setLocaleAndTheme(locale: string, theme: string) {
   );
 }
 
+async function openProjectEditor(id: string) {
+  const target = row(id);
+  await target.scrollIntoView();
+  await target.moveTo();
+  await target.$('[data-testid="project-management-row-menu"]').click();
+  await $('[data-testid="project-management-row-edit"]').click();
+  await $('[data-testid="virtual-project-name"]').waitForDisplayed();
+}
+
 describe("项目管理", () => {
+  let pairingUrl: string;
   before(async function () {
     this.timeout(60000);
-    if (!home || !/^(?:raspberrycode-project-management-e2e-|\.e2e-home-)/u.test(basename(home)))
+    // 修复原因：旧守卫只认 `.e2e-home-` 前缀，Windows CI 未设 RASPBERRYCODE_E2E_HOME_DIR 时默认 HOME 是
+    // `.e2e-home`，before 直接抛错。统一用 isE2EHomeDirName，只接受 `.e2e-home` 与 `.e2e-home-*`。
+    if (
+      !home ||
+      !(
+        isE2EHomeDirName(basename(home)) ||
+        basename(home).startsWith("raspberrycode-project-management-e2e-")
+      )
+    )
       throw new Error("isolated project management HOME required");
     await waitForWorkspaceApp(DEFAULT_WORKSPACE, 45000);
     await restartIntoWorkspacePreservingProfile(DEFAULT_WORKSPACE, {
@@ -147,6 +172,10 @@ describe("项目管理", () => {
               }),
             );
           }
+          await mkdir(editRoot(), { recursive: true });
+          db.prepare(
+            "INSERT INTO project_roots(project_id,root_path,position,is_primary) VALUES('pjm-active',?,1,0)",
+          ).run(editRoot());
           // 会话文件：彻底删除后必须从磁盘消失。
           await mkdir(purgeArtifacts(), { recursive: true });
           await writeFile(join(purgeArtifacts(), "output.txt"), "x".repeat(4096));
@@ -157,10 +186,14 @@ describe("项目管理", () => {
       },
     });
     await waitForWorkspaceApp(DEFAULT_WORKSPACE, 45000);
-    await setLocaleAndTheme("zh-CN", "zai-light");
+    await setLocaleAndTheme("zh-CN", "light");
+    // 在进入设置前从首页配对；设置页和首页各有 footer，不能用全局定位器猜测当前入口。
+    pairingUrl = await obtainUnreadPairingUrl(
+      new URL(process.env.RASPBERRYCODE_WEB_REMOTE_CONTROL_URL!).origin,
+    );
   });
 
-  it("PJM01：侧栏更多菜单与设置导航都进入项目页，页头说明移除后果", async () => {
+  it("PJM01：侧栏更多菜单与设置导航都进入项目管理页，页头说明移除后果", async () => {
     const sidebarRow = $('[data-project-name="PJM 活跃"]');
     await sidebarRow.waitForDisplayed();
     await sidebarRow.moveTo();
@@ -176,7 +209,8 @@ describe("项目管理", () => {
     expect(await $('[role="menu"] [role="separator"]').isExisting()).toBe(true);
     await $('[data-testid="virtual-project-manage-projects"]').click();
     await $('[data-testid="project-management"]').waitForDisplayed();
-    await expect($("h2=项目")).toBeDisplayed();
+    await expect($("h2=项目管理")).toBeDisplayed();
+    await expect($('[data-testid="settings-section-nav-projects"]')).toHaveText("项目管理");
     const main = $('main:has([data-testid="project-management"])');
     expect(await main.getText()).toContain("会话仍保留在最近和搜索中");
     // 设置导航入口位于归档管理之前。
@@ -193,6 +227,46 @@ describe("项目管理", () => {
     await $('[data-testid="settings-section-nav-archives"]').click();
     await $('[data-testid="settings-section-nav-projects"]').click();
     await $('[data-testid="project-management"]').waitForDisplayed();
+  });
+
+  it("PJM08：行菜单复用首页编辑器，取消不落盘，保存只修改选中项目", async () => {
+    await openProjectEditor("pjm-active");
+    await expect($('[data-testid="virtual-project-name"]')).toHaveValue("PJM 活跃");
+    await $('[data-testid="virtual-project-name"]').setValue("PJM 取消草稿");
+    await browser.keys("Escape");
+    await $('[data-testid="virtual-project-name"]').waitForExist({ reverse: true });
+    await expect(row("pjm-active")).toHaveText(expect.stringContaining("PJM 活跃"));
+    await openProjectEditor("pjm-active");
+    await expect($('[data-testid="virtual-project-name"]')).toHaveValue("PJM 活跃");
+    await $('[data-testid="virtual-project-name"]').setValue("PJM 编辑完成");
+    await $('[data-testid="virtual-project-set-primary"]').click();
+    await $('[data-testid="virtual-project-save"]').click();
+    await $('[data-testid="virtual-project-name"]').waitForExist({ reverse: true });
+    await expect(row("pjm-active")).toHaveText(expect.stringContaining("PJM 编辑完成"));
+    await expect(row("pjm-active").$("span[title]")).toHaveAttribute("title", "PJM 编辑完成");
+    // 修复原因：Windows 下 editRoot 是 `C:\...` 路径，CSS 属性字符串里的 `\` 会被当作转义，
+    // 选择器永远不匹配（PJM08 Windows CI 失败）；按 CSS 字符串规则转义 `\` 与 `"`。
+    const editRootTitle = editRoot().replace(/[\\"]/g, "\\$&");
+    await expect(row("pjm-active").$(`span[title="${editRootTitle}"]`)).toBeDisplayed();
+    await $('[data-project-name="PJM 编辑完成"]').waitForExist();
+    await expect(row("pjm-keep")).toHaveText(expect.stringContaining("PJM 保留"));
+    expect(readTaskProject("pjm-active-task")).toBe("pjm-active");
+    const db = new DatabaseSync(join(home, ".raspberrycode/v2/tasks-index.sqlite"), { readOnly: true });
+    try {
+      expect(
+        db.prepare("SELECT root_path FROM tasks WHERE task_id='pjm-active-task'").get(),
+      ).toMatchObject({
+        root_path: DEFAULT_WORKSPACE,
+      });
+      expect(
+        db.prepare("SELECT name FROM projects WHERE project_id='pjm-keep'").get(),
+      ).toMatchObject({
+        name: "PJM 保留",
+      });
+    } finally {
+      db.close();
+    }
+    await expect($('[data-testid="project-management"]')).toBeDisplayed();
   });
 
   it("PJM02：复核建议预选全部候选，取消一项后只剩三项待移除", async () => {
@@ -304,10 +378,10 @@ describe("项目管理", () => {
           });
         }, width);
         for (const [locale, theme] of [
-          ["zh-CN", "zai-light"],
-          ["zh-CN", "zai-dark"],
-          ["en-US", "zai-light"],
-          ["en-US", "zai-dark"],
+          ["zh-CN", "light"],
+          ["zh-CN", "dark"],
+          ["en-US", "light"],
+          ["en-US", "dark"],
         ] as const) {
           await setLocaleAndTheme(locale, theme);
           await expect($('[data-testid="project-management-sort"]')).toHaveText(
@@ -322,6 +396,33 @@ describe("项目管理", () => {
               box.left >= 0 && box.right <= innerWidth && page.scrollWidth <= page.clientWidth + 1
             );
           });
+          if (!fits) {
+            const layout = await browser.execute(() => {
+              const page = document.querySelector<HTMLElement>(
+                '[data-testid="project-management"]',
+              )!;
+              return {
+                width: innerWidth,
+                page: page.getBoundingClientRect().toJSON(),
+                scrollWidth: page.scrollWidth,
+                overflow: [...page.querySelectorAll<HTMLElement>("*")]
+                  .filter((el) => el.scrollWidth > el.clientWidth + 1)
+                  .map((el) => ({
+                    testId: el.dataset.testid,
+                    className: el.className,
+                    width: el.clientWidth,
+                    scrollWidth: el.scrollWidth,
+                  })),
+              };
+            });
+            await writeFile(
+              join(process.env.RASPBERRYCODE_E2E_ARTIFACT_DIR!, "PJM06-layout.json"),
+              JSON.stringify(layout, null, 2),
+            );
+            await browser.saveScreenshot(
+              join(process.env.RASPBERRYCODE_E2E_ARTIFACT_DIR!, "PJM06-layout.png"),
+            );
+          }
           expect(fits).toBe(true);
           await browser.saveScreenshot(
             join(
@@ -330,6 +431,28 @@ describe("项目管理", () => {
             ),
           );
           await row("pjm-keep").$('[data-testid="project-management-row-checkbox"]').click();
+          await openProjectEditor("pjm-active");
+          await expect($('[role="dialog"] h2')).toHaveText(
+            locale === "zh-CN" ? "编辑项目" : "Edit project",
+          );
+          const editorFits = await browser.execute(() => {
+            const dialog = document.querySelector<HTMLElement>('[role="dialog"]')!;
+            const box = dialog.getBoundingClientRect();
+            return (
+              box.left >= 0 &&
+              box.right <= innerWidth &&
+              dialog.scrollWidth <= dialog.clientWidth + 1
+            );
+          });
+          expect(editorFits).toBe(true);
+          await browser.saveScreenshot(
+            join(
+              process.env.RASPBERRYCODE_E2E_ARTIFACT_DIR!,
+              `project-editor-${width}-${locale}-${theme}.png`,
+            ),
+          );
+          await browser.keys("Escape");
+          await $('[data-testid="virtual-project-name"]').waitForExist({ reverse: true });
         }
       }
     } finally {
@@ -339,7 +462,7 @@ describe("项目管理", () => {
         )!;
         await target.webContents.debugger.sendCommand("Emulation.clearDeviceMetricsOverride");
       });
-      await setLocaleAndTheme("zh-CN", "zai-light");
+      await setLocaleAndTheme("zh-CN", "light");
     }
   });
 
@@ -363,7 +486,8 @@ describe("项目管理", () => {
     await confirm.click();
     await dialog.waitForExist({ reverse: true });
     // 结果 toast 不带撤销；项目行在无引用后删除，不进入「已移除的项目」。
-    await $("*=已移除 1 个项目 · 释放").waitForDisplayed({ timeout: 30000 });
+    // 裸 *= 被 WebDriver 解析成链接文本；结果 toast 不是链接，按实际文本节点定位。
+    await $('//*[contains(text(), "已移除 1 个项目 · 释放")]').waitForDisplayed({ timeout: 30000 });
     await browser.waitUntil(() => !("pjm-purge" in readProjects()), { timeout: 30000 });
     expect(readTaskProject(PURGE_SESSION)).toBeUndefined();
     expect(existsSync(purgeArtifacts())).toBe(false);
@@ -378,5 +502,76 @@ describe("项目管理", () => {
         '[data-testid="project-management-removed-row"][data-project-id="pjm-purge"]',
       ).isExisting(),
     ).toBe(false);
+  });
+
+  it("PJM09：手机远控从项目管理编辑，共享 Host 保存后桌面同步", async function () {
+    this.timeout(120_000);
+    // 修复原因：浏览器子进程继承 wdio 改写的 USERPROFILE，Windows 版 Chrome 启动即报
+    // "DevTools remote debugging requires a non-default data directory"（PJM09 Windows CI）；
+    // 复用共享启动选项还原真实用户目录。
+    const mobile = await chromium.launch({
+      ...e2eMobileBrowserLaunchOptions(),
+      headless: true,
+    });
+    try {
+      const context = await mobile.newContext({
+        viewport: { width: 390, height: 844 },
+        isMobile: true,
+        hasTouch: true,
+        locale: "zh-CN",
+      });
+      await seedMobileFixtureLogin(context);
+      const page = await context.newPage();
+      await openMobilePairingPage(page, pairingUrl, {
+        artifactDir: process.env.RASPBERRYCODE_E2E_ARTIFACT_DIR!,
+        caseMarker: "PJM09",
+        phase: "project-edit",
+        readySelector: '[data-project-name="PJM 编辑完成"]',
+      });
+      await page.getByTestId(TID_TASK_SETTINGS_BUTTON).tap();
+      await page.getByTestId("settings-section-nav-projects").tap();
+      const mobileRow = page.locator(
+        '[data-testid="project-management-row"][data-project-id="pjm-active"]',
+      );
+      for (const theme of ["light", "dark"]) {
+        await page.evaluate((value) => {
+          (
+            window as Window & { __testActions?: { setTheme(value: string): void } }
+          ).__testActions!.setTheme(value);
+        }, theme);
+        await mobileRow.getByTestId("project-management-row-menu").tap();
+        await page.getByTestId("project-management-row-edit").tap();
+        const name = page.getByTestId("virtual-project-name");
+        await name.waitFor();
+        // 等菜单退出和弹窗淡入完成再留截图，不把透明过渡帧当成最终视觉。
+        await page.getByRole("menu").waitFor({ state: "hidden" });
+        await page.waitForFunction(() => {
+          const dialog = document.querySelector('[role="dialog"]');
+          return (
+            dialog &&
+            dialog
+              .getAnimations({ subtree: true })
+              .every((animation) => animation.playState === "finished")
+          );
+        });
+        expect(await name.inputValue()).toBe(
+          theme === "light" ? "PJM 编辑完成" : "PJM 手机编辑",
+        );
+        await page.screenshot({
+          path: join(process.env.RASPBERRYCODE_E2E_ARTIFACT_DIR!, `PJM09-mobile-${theme}.png`),
+        });
+        if (theme === "light") {
+          await name.fill("PJM 手机编辑");
+          await page.getByTestId("virtual-project-save").tap();
+          await page.getByTestId("virtual-project-name").waitFor({ state: "hidden" });
+          await expect(row("pjm-active")).toHaveText(expect.stringContaining("PJM 手机编辑"));
+          await $('[data-project-name="PJM 手机编辑"]').waitForExist();
+        } else {
+          await page.getByRole("button", { name: /^(取消|Cancel)$/u }).tap();
+        }
+      }
+    } finally {
+      await mobile.close();
+    }
   });
 });

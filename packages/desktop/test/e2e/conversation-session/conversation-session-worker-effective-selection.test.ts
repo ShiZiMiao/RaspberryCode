@@ -1,29 +1,29 @@
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { BUILTIN_MODEL_PROVIDER_IDS, encodeCustomModelValue, generateTraceId } from "@raspberrycode/shared";
-import { createWorkerSelectionIntegration } from "../helpers/worker-selection-integration.js";
+import { createWorkerSelectionIntegration } from "#e2e/helpers/worker-selection-integration";
 import {
   createBotsServiceHarness,
   createFeishuConfig,
 } from "#e2e/bots/helpers/bots-service-harness";
-import { clearAppData, getE2EAppDataPaths } from "../helpers/desktop-app.js";
+import { clearAppData, getE2EAppDataPaths } from "#e2e/helpers/desktop-app";
 import {
   restartIntoWorkspace,
   seedBigModelConnectionSelection,
   seedBigModelOAuthCredential,
   E2E_PLAN_NON_DEFAULT_MODEL,
-} from "../helpers/model-provider-restart.js";
+} from "#e2e/helpers/model-provider-restart";
 import {
   UPSTREAM_MODEL,
   UPSTREAM_PROVIDER_ID,
   UPSTREAM_THOUGHT_LEVEL,
-} from "../helpers/upstream-provider.js";
+} from "#e2e/helpers/upstream-provider";
 import {
   prepareV4ConversationE2E,
   sendV4PromptAndWaitAccepted,
   switchV4Model,
   waitForV4AssistantMessageContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const profileName = "e2e-worker-account-reviewer";
 const parentMarker = "E2E_W99_EXPLICIT_PARENT";

@@ -1,16 +1,16 @@
 import { TID_V4_TIMELINE } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../helpers/desktop-app.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
 import {
   countUpstreamRequests,
   getUpstreamRequestEvidence,
-} from "../helpers/conversation-session-network.js";
+} from "#e2e/helpers/conversation-session-network";
 import {
   prepareV4ConversationE2E,
   sendV4Prompt,
   waitForV4AssistantMessageContaining,
   getV4CompactMarkers,
   waitForV4ConversationState,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_MARKER = "E2E_OUTPUT_LIMIT_CONTINUE_UI";
 const PARTIAL_ONE_ANCHOR = "即使底层已经";

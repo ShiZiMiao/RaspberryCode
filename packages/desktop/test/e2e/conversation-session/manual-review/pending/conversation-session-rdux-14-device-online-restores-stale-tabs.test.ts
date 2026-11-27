@@ -4,8 +4,8 @@ import { disconnectRemoteSource } from "#e2e/helpers/remote-project-actions";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parseRemoteWorkspaceIdentity } from "@raspberrycode/shared";
-import { clearAppData, readSettings, seedSettings } from "../../../helpers/desktop-app.js";
-import { waitForRendererAfterColdRestart } from "../../../helpers/ssh-remote-lifecycle.js";
+import { clearAppData, readSettings, seedSettings } from "#e2e/helpers/desktop-app";
+import { waitForRendererAfterColdRestart } from "#e2e/helpers/ssh-remote-lifecycle";
 import {
   connectSSHWorkspace,
   openSSHSourceDirectory,
@@ -14,8 +14,8 @@ import {
   selectSSHRemoteDirectory,
   waitForRemoteTab,
   waitForSSHDirectoryStep,
-} from "../../../helpers/ssh-remote-p0.js";
-import { prepareV4ConversationE2E } from "../../../helpers/v4-conversation.js";
+} from "#e2e/helpers/ssh-remote-p0";
+import { prepareV4ConversationE2E } from "#e2e/helpers/v4-conversation";
 
 const CASE_MARKER = "E2E_RDUX_14_DEVICE_ONLINE_RESTORES_STALE_TABS";
 const STALE_AGE_MS = 20 * 24 * 60 * 60_000;

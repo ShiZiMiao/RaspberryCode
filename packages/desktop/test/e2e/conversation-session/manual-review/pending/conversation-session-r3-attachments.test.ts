@@ -1,31 +1,28 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { dirname, resolve } from "node:path";
-import {
-  TID_V4_COMPOSER_INPUT,
-  TID_CHAT_ATTACHMENT_BUTTON,
-  TID_CHAT_ATTACHMENT_MENU_ITEM,
-} from "@raspberrycode/shared/test-ids";
-import { clearAppData, DEFAULT_WORKSPACE } from "../../../helpers/desktop-app.js";
+import { TID_V4_COMPOSER_INPUT } from "@raspberrycode/shared/test-ids";
+import { clearAppData, DEFAULT_WORKSPACE } from "#e2e/helpers/desktop-app";
 import {
   getUpstreamRequestRecordCount,
   getUpstreamRequestEvidence,
   waitForUpstreamRequest,
-} from "../../../helpers/conversation-session-network.js";
+} from "#e2e/helpers/conversation-session-network";
 import {
   connectSSHWorkspaceAndSendFirstTurn,
   prepareSSHLifecycle,
   type SSHLifecycleProvider,
-} from "../../../helpers/ssh-remote-lifecycle.js";
-import { readRemoteTabSnapshot, runSSHCommand } from "../../../helpers/ssh-remote-p0.js";
+} from "#e2e/helpers/ssh-remote-lifecycle";
+import { readRemoteTabSnapshot, runSSHCommand } from "#e2e/helpers/ssh-remote-p0";
 import {
   clickV4Send,
   pasteV4ComposerFileAttachment,
+  pickV4ComposerFiles,
   setV4ComposerText,
   waitForV4AssistantMessageContaining,
   waitForV4ConversationState,
   waitForV4RowAttachments,
-} from "../../../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_MARKER = "E2E_R3_ATTACHMENTS";
 const E2E_HOME_DIR = dirname(DEFAULT_WORKSPACE);
@@ -120,16 +117,10 @@ describe(`${CASE_MARKER}: 远端 workspace 附件上传、远端工具读取与 
       base64: Buffer.from(MINIMAL_PDF, "latin1").toString("base64"),
       mimeType: "application/pdf",
     });
-    // 回归：inline 粘贴不会覆盖 desktop localPath。只 mock OS 选择器返回值，真实走 Host upload。
+    // 回归：inline 粘贴不会覆盖 desktop localPath。真实 input File 仍走 Host upload。
     await mkdir(dirname(nativePath), { recursive: true });
     await writeFile(nativePath, `${NATIVE_MARKER}\n`, "utf8");
-    const picker = await browser.electron.mock("dialog", "showOpenDialog");
-    await picker.mockResolvedValue({ canceled: false, filePaths: [nativePath] });
-    const attachmentButton = $(`[data-testid="${TID_CHAT_ATTACHMENT_BUTTON}"]`);
-    await attachmentButton.click();
-    const attachmentMenu = $(`[data-testid="${TID_CHAT_ATTACHMENT_MENU_ITEM}"]`);
-    await attachmentMenu.waitForDisplayed({ timeout: 15_000 });
-    await attachmentMenu.click();
+    await pickV4ComposerFiles([nativePath]);
     let statuses = await readComposerAttachmentStatuses();
     await browser.waitUntil(
       async () => {

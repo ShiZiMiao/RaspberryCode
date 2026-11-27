@@ -1,8 +1,8 @@
 import { withCredentialFault } from "#e2e/helpers/credential-fault";
 import { NodePersonalProviderConfigRepository } from "@raspberrycode/provider-node";
 import { parseRemoteWorkspaceIdentity } from "@raspberrycode/shared";
-import { clearAppData, getE2EAppDataPaths, waitForWorkspaceApp } from "../helpers/desktop-app.js";
-import { prepareV4ConversationE2E } from "../helpers/v4-conversation.js";
+import { clearAppData, getE2EAppDataPaths, waitForWorkspaceApp } from "#e2e/helpers/desktop-app";
+import { prepareV4ConversationE2E } from "#e2e/helpers/v4-conversation";
 import {
   clickLastEnabledSSHDialogButton,
   fillSSHPasswordSettings,
@@ -15,7 +15,7 @@ import {
   waitForSSHDirectoryStep,
   waitForSSHError,
   SSH_WORKSPACE_READY_TIMEOUT_MS,
-} from "../helpers/ssh-remote-p0.js";
+} from "#e2e/helpers/ssh-remote-p0";
 
 const CASE_MARKER = "SSH_PROVISIONING_FAILURE";
 

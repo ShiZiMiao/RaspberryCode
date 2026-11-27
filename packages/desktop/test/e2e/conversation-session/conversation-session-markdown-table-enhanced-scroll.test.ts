@@ -1,11 +1,11 @@
 import { TID_V4_TIMELINE } from "@raspberrycode/shared/test-ids";
-import { DEFAULT_WORKSPACE, waitForWorkspaceApp } from "../helpers/desktop-app.js";
-import { restartWithSeededOpenAIProviders } from "../helpers/custom-openai-provider.js";
+import { DEFAULT_WORKSPACE, waitForWorkspaceApp } from "#e2e/helpers/desktop-app";
+import { restartWithSeededOpenAIProviders } from "#e2e/helpers/custom-openai-provider";
 import {
   selectUpstreamProviderModelById,
   waitForUpstreamModelSelected,
-} from "../helpers/upstream-provider.js";
-import { startConversationModelProviderReplayServer } from "../helpers/model-provider-replay.js";
+} from "#e2e/helpers/upstream-provider";
+import { startConversationModelProviderReplayServer } from "#e2e/helpers/model-provider-replay";
 import {
   clickV4TimelineBackToBottom,
   getV4TimelineScrollState,
@@ -16,7 +16,7 @@ import {
   waitForV4ComposerText,
   waitForV4ConversationState,
   waitForV4UserMessageContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_NAME = "conversation-session-markdown-table-enhanced-scroll";
 const MODEL_ID = "e2e-markdown-table-enhanced-scroll-model";

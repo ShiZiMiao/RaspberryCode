@@ -15,11 +15,23 @@ export async function skipOccupationOnboardingIfPresent() {
     step < 2 && (await $('[data-testid="onboarding-page"]').isExisting());
     step++
   ) {
+    if (!options.keepCloudDialog) {
+      await closeCloudContentDialogIfPresent();
+    }
     const skip = $('//button[normalize-space(.)="Skip" or normalize-space(.)="跳过"]');
     await skip.waitForClickable({ timeout: 15000 });
     await skip.click();
   }
   await $('[data-testid="onboarding-page"]').waitForExist({ reverse: true, timeout: 15000 });
+}
+
+// 测试后端的真实营销投放（如 2026-11 的版本介绍弹窗）会盖住引导页，「跳过」一直不可点，
+// 整条用例开局就失败。弹窗是真实流程的一部分：出现就按用户操作点关闭，不出现不等待。
+async function closeCloudContentDialogIfPresent() {
+  const dialog = $('[data-testid="cloud-content-dialog"]');
+  if (!(await dialog.isDisplayed())) return;
+  await dialog.$('[data-slot="dialog-close"]').click();
+  await dialog.waitForExist({ reverse: true, timeout: 15000 });
 }
 
 // 用产品支持的 Escape 退出引导（与“退出引导”按钮同一 closeOnboarding 路径，且不依赖界面语言）：

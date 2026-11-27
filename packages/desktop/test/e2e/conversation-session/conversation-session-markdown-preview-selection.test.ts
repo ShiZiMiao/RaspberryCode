@@ -1,4 +1,4 @@
-import { getUpstreamRequestEvidence } from "../helpers/conversation-session-network.js";
+import { getUpstreamRequestEvidence } from "#e2e/helpers/conversation-session-network";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import {
@@ -7,17 +7,26 @@ import {
   TID_V4_SESSION_PANE,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData, DEFAULT_WORKSPACE } from "../helpers/desktop-app.js";
-import { resolveE2ERuntimePath } from "../helpers/e2e-runtime-paths.js";
+import { clearAppData, DEFAULT_WORKSPACE } from "#e2e/helpers/desktop-app";
+import { resolveE2ERuntimePath } from "#e2e/helpers/e2e-runtime-paths";
 import {
   prepareV4ConversationE2E,
   sendV4Prompt,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
-import { openProjectFileTree } from "../helpers/project-sidebar.js";
+} from "#e2e/helpers/v4-conversation";
+import { openProjectFileTree } from "#e2e/helpers/project-sidebar";
 
 const filePath = resolveE2ERuntimePath("markdown-preview-selection", "selection.md");
 const marker = "E2E_MARKDOWN_PREVIEW_SELECTED_PARAGRAPH";
+
+// 修复原因：文件树行 test id 含绝对路径；Windows 反斜杠在 CSS 属性值里是转义符，
+// 未转义时 `\U`、`\.` 等被吞掉，选择器匹配不到真实存在的行。
+function fileTreeRowSelector(path: string) {
+  const value = testId(TID_WORKSPACE_FILE_TREE_ROW, path)
+    .replaceAll("\\", "\\\\")
+    .replaceAll('"', '\\"');
+  return `[data-testid="${value}"]`;
+}
 describe("Markdown preview selection", () => {
   after(async () => {
     await rm(dirname(filePath), { recursive: true, force: true });
@@ -34,7 +43,7 @@ describe("Markdown preview selection", () => {
     });
     // 文件树会将单子目录链压缩为一行，入口使用压缩后的最深目录。
     for (const path of [dirname(filePath), filePath]) {
-      const row = await $(`[data-testid="${testId(TID_WORKSPACE_FILE_TREE_ROW, path)}"]`);
+      const row = await $(fileTreeRowSelector(path));
       await row.waitForDisplayed({ timeout: 15000 });
       await row.click();
     }
@@ -117,8 +126,9 @@ describe("Markdown preview selection", () => {
       TID_V4_COMPOSER_INPUT,
     );
     expect(state).toEqual({ session: "draft", text: "E2E_MARKDOWN_DRAFT_KEEP" });
+    // f6e0c28998：选区 chip 的移除按钮文案统一为 chat.selections.removeAll「移除全部注释」。
     const remove = await $(
-      `[data-testid="${paneId}"] button[aria-label="移除对话引用"], [data-testid="${paneId}"] button[aria-label="Remove conversation selection"]`,
+      `[data-testid="${paneId}"] button[aria-label="移除全部注释"], [data-testid="${paneId}"] button[aria-label="Remove all annotations"]`,
     );
     await remove.click();
     await chip.waitForExist({ reverse: true });
@@ -172,11 +182,9 @@ describe("Markdown preview selection", () => {
     expect(await historyChip.getText()).toContain("selection.md");
     // 草稿提升为任务会切换 task-owned 侧栏；重新打开文件标签并按实际展开状态定位。
     await openProjectFileTree(DEFAULT_WORKSPACE);
-    const fileRow = $(`[data-testid="${testId(TID_WORKSPACE_FILE_TREE_ROW, filePath)}"]`);
+    const fileRow = $(fileTreeRowSelector(filePath));
     if (!(await fileRow.isDisplayed())) {
-      const directory = $(
-        `[data-testid="${testId(TID_WORKSPACE_FILE_TREE_ROW, dirname(filePath))}"]`,
-      );
+      const directory = $(fileTreeRowSelector(dirname(filePath)));
       await directory.waitForDisplayed();
       await directory.click();
     }

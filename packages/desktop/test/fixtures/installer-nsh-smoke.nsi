@@ -41,11 +41,12 @@ Var newDesktopLink
 Var keepShortcuts
 
 !include "${RASPBERRYCODE_INSTALLER_NSH}"
+; 与正式构建保持顺序：common.nsh 的常量在自定义 include 之后才可用。
+!define UNINSTALL_FILENAME "uninstaller.exe"
 ; 回归原因：electron-builder 异步生成 header 时，自定义 include 可能先于插件目录注册。
 ; 普通场景使用真实 UAC 判据，避免恒假替身掩盖插件尚未可用的编译错误。
 !addplugindir /x86-unicode "${NSIS_PLUGIN_DIR}"
 !ifndef BUILD_UNINSTALLER
-  ; electron-builder inserts customHeader after assistedInstaller.nsh generated the directory page.
   !insertmacro customHeader
   !ifdef allowToChangeInstallationDirectory
     !error "customHeader must enable shortcut preservation for manual overwrite"
@@ -107,5 +108,9 @@ Section
   !ifdef BUILD_UNINSTALLER
     !insertmacro customRemoveFiles
   !endif
+
+  ; customInstall 会向夹具专属注册表键写入 InstallLocation，运行后必须清理，
+  ; 不能在测试机上留下残留（spec：夹具不得写入真实注册表）。
+  DeleteRegKey HKCU "Software\RaspberryCodeInstallerSmoke"
 
 SectionEnd

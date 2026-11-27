@@ -1,26 +1,18 @@
 // PV4-06 × C07 pending：provider 在首 token 前失败后，必须从持久 transcript
 // cold hydration 出可寻址的 latest user row；编辑提交要命中同一 transcript messageId。
+import { TID_V4_EDIT, TID_V4_ROW } from "@raspberrycode/shared/test-ids";
+import { clearAppData, waitForDefaultWorkspaceReady } from "#e2e/helpers/desktop-app";
+import { waitForUpstreamNetworkCapture } from "#e2e/helpers/upstream-capture";
+import { openV4UserQueryEditInComposer } from "#e2e/helpers/v4-composer-edit";
 import {
-  TID_V4_EDIT,
-  TID_V4_EDIT_INPUT,
-  TID_V4_EDIT_SUBMIT,
-  TID_V4_ROW,
-  testId,
-} from "@raspberrycode/shared/test-ids";
-import {
-  clearAppData,
-  clickTestIdByDom,
-  setInputValueByTestIdDom,
-  waitForDefaultWorkspaceReady,
-} from "../helpers/desktop-app.js";
-import { waitForUpstreamNetworkCapture } from "../helpers/upstream-capture.js";
-import {
+  clickV4Send,
   prepareV4ConversationE2E,
   selectV4TaskById,
   sendV4Prompt,
+  setV4ComposerText,
   waitForV4Pane,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const FAIL_MARKER = "E2E_V4_COLD_FAILED_EDIT_SOURCE";
 const RERUN_MARKER = "E2E_V4_COLD_FAILED_EDIT_RERUN";
@@ -65,20 +57,10 @@ describe("PV4-06 cold hydration：首 token 前失败后编辑 latest user", () 
     // 入口来自 cold projection 的 row.actions.canEdit；提交成功同时证明 command target
     // 能从该 row 原子解析回持久 transcript messageId。
     const rowId = await waitForEditableV4Row(FAIL_MARKER);
-    await clickTestIdByDom(testId(TID_V4_EDIT, rowId), {
-      timeout: 15000,
-      timeoutMsg: "cold hydrated latest user row 的 edit 按钮不可点击",
-    });
+    await openV4UserQueryEditInComposer(rowId);
     const rerunPrompt = `${RERUN_MARKER}_${runId}: reply with ${RERUN_REPLY}.`;
-    await setInputValueByTestIdDom(testId(TID_V4_EDIT_INPUT, rowId), rerunPrompt, {
-      timeout: 15000,
-      timeoutMsg: "cold hydrated user row 没有进入编辑态",
-    });
-    await waitForEnabledButton(testId(TID_V4_EDIT_SUBMIT, rowId));
-    await clickTestIdByDom(testId(TID_V4_EDIT_SUBMIT, rowId), {
-      timeout: 15000,
-      timeoutMsg: "cold hydrated user edit 提交按钮不可点击",
-    });
+    await setV4ComposerText(rerunPrompt);
+    await clickV4Send();
 
     const rerunRequest = await waitForUpstreamNetworkCapture(RERUN_MARKER);
     expect(rerunRequest.statusCode).toBe(200);
@@ -129,22 +111,6 @@ async function waitForEditableV4Row(marker: string) {
   );
   if (!rowId) throw new Error(`无法解析 editable v4 rowId: ${marker}`);
   return rowId;
-}
-
-async function waitForEnabledButton(buttonTestId: string) {
-  await browser.waitUntil(
-    async () =>
-      browser.execute((currentTestId) => {
-        const button = document.querySelector<HTMLButtonElement>(
-          `[data-testid="${currentTestId}"]`,
-        );
-        return Boolean(button && !button.disabled);
-      }, buttonTestId),
-    {
-      timeout: 15000,
-      timeoutMsg: `按钮没有变为可用: ${buttonTestId}`,
-    },
-  );
 }
 
 async function reloadAppAndRestoreV4Session(sessionId: string) {

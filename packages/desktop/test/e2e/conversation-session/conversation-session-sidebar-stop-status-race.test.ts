@@ -2,20 +2,20 @@ import { BufferReader, BufferWriter, deserialize, serialize, VSBuffer } from "@r
 import type { ProjectTree } from "@raspberrycode/services";
 import { ServiceChannels } from "@raspberrycode/shared";
 import { TID_TASK_ITEM, testId } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../helpers/desktop-app.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
 import {
   callHandoffHost,
   installHandoffRpcProbe,
   restoreHandoffProbes,
-} from "../helpers/remote-project-handoff-probe.js";
-import { ensureUpstreamProviderForE2E } from "../helpers/upstream-provider.js";
+} from "#e2e/helpers/remote-project-handoff-probe";
+import { ensureUpstreamProviderForE2E } from "#e2e/helpers/upstream-provider";
 import {
   clickV4Stop,
   getV4PaneSnapshot,
   prepareV4ConversationE2E,
   sendV4Prompt,
   waitForV4Pane,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_TIMEOUT_MS = 120_000;
 const PROMPT_MARKER = "E2E_SIDEBAR_STOP_STATUS_RACE";

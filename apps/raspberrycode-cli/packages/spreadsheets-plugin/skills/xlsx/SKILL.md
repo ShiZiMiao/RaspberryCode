@@ -1,13 +1,20 @@
 ---
 name: xlsx
 metadata:
-  author: RaspberryCode
+  author: Z.AI
   version: "1.1"
 description: "Use this skill any time a spreadsheet file is the primary input or output. This means any task where the user wants to: open, read, edit, or fix an existing .xlsx, .xlsm, .csv, or .tsv file; create a new spreadsheet from scratch or from other data sources; analyze data and output results as an Excel file with charts; convert between tabular file formats (CSV/TSV/JSON/PDF-table → XLSX, or XLSX → CSV/JSON); clean, merge, pivot, or transform tabular data. Trigger especially when the user references a spreadsheet file by name or path, says 'make a table/report/model', mentions Excel/CSV/数据分析/报表/汇总, asks to convert or export a spreadsheet (e.g. 'csv转excel', 'json转表格', 'export as CSV'), or wants data visualization inside a spreadsheet."
 license: Proprietary. LICENSE.txt has complete terms
 ---
 
 # XLSX — Scene-Driven Spreadsheet Workbench
+
+## LibreOffice preflight
+
+Before the first Python command, if neither `raspberrycode-python` nor a system Python is available, follow [Python setup](env_setup/setup.md#python-interpreter-selection). On desktop, report that preinstalled Python is not ready or is disabled and let the user choose waiting, enabling it, or system installation. The same setup guide covers a selected preinstalled interpreter or package installation failure.
+
+Set `XLSX_SKILL_DIR` to this Skill's returned base directory. Run `"$(command -v raspberrycode-python || command -v python3)" "$XLSX_SKILL_DIR/../../scripts/raspberrycode_libreoffice.py" check` before a conversion or recalculation.
+The [launcher contract](../../scripts/README.md) defines managed/system lookup, isolated profiles and failure handling. Report a managed failure and use any available system version. If neither is usable on desktop, preserve completed files and let the user choose waiting or Agent installation using [setup guidance](env_setup/libreoffice-unmanaged.md). The launcher discovers the preinstalled entry on PATH; desktop availability only selects the installation guidance. Keep using the unified launcher after installation so later managed readiness takes priority. Other dependency setup remains unchanged.
 
 ## Environment Setup
 
@@ -21,11 +28,7 @@ This auto-detects and exports `XLSX_SKILL_DIR` and `FONT_DIR`. No manual variabl
 
 **Only if the check fails**, read [`env_setup/setup.md`](env_setup/setup.md) for full platform-specific installation instructions (dependencies, fonts, China mirrors).
 
-> 🔴 **LibreOffice is install-on-demand and NOT substitutable.** `env_check.sh` reports it as
-> `on-demand MISSING` without failing, so a passing check does **not** mean it is present. The moment
-> a task needs `recalc`, `.xlsx`→PDF, or `.csv`→`.xlsx`, you **MUST install it** — using the user's
-> Excel/WPS/Numbers instead is forbidden, and a large download is not a reason to skip.
-> See [HARD REQUIREMENT](#-hard-requirement--libreoffice-is-missing) under Quality Gate.
+> **LibreOffice:** use the unified launcher whenever recalculation or Office conversion is required. Report managed failures and use any working system version. If none is available on desktop, let the user choose waiting or Agent installation; then continue through the launcher and perform required validation.
 
 | Variable | Auto-set by env_check.sh | Description |
 |----------|--------------------------|-------------|
@@ -185,9 +188,9 @@ All CLI tools live relative to this skill's directory. Before calling any script
 XLSX_SKILL_DIR="<skill_directory>"   # ← parent directory of this SKILL.md
 
 # Then all commands use absolute paths:
-python3 "$XLSX_SKILL_DIR/xlsx.py" inspect data.xlsx --pretty
-python3 "$XLSX_SKILL_DIR/xlsx.py" pivot data.xlsx output.xlsx --rows Region --values Revenue
-python3 "$XLSX_SKILL_DIR/xlsx.py" validate output.xlsx
+"$(command -v raspberrycode-python || command -v python3)" "$XLSX_SKILL_DIR/xlsx.py" inspect data.xlsx --pretty
+"$(command -v raspberrycode-python || command -v python3)" "$XLSX_SKILL_DIR/xlsx.py" pivot data.xlsx output.xlsx --rows Region --values Revenue
+"$(command -v raspberrycode-python || command -v python3)" "$XLSX_SKILL_DIR/xlsx.py" validate output.xlsx
 ```
 
 **For Python imports** (when generation code needs to import skill modules):
@@ -200,7 +203,7 @@ for sub in [XLSX_SKILL_DIR, os.path.join(XLSX_SKILL_DIR, "templates")]:
         sys.path.insert(0, sub)
 ```
 
-**⚠️ NEVER use bare `python3 xlsx.py ...`** — it only works if cwd happens to be the skill directory. Always use the absolute path.
+**⚠️ NEVER use bare `"$(command -v raspberrycode-python || command -v python3)" xlsx.py ...`** — it only works if cwd happens to be the skill directory. Always use the absolute path.
 
 ### Tool Reference
 
@@ -213,7 +216,7 @@ for sub in [XLSX_SKILL_DIR, os.path.join(XLSX_SKILL_DIR, "templates")]:
 | **templates/base.py** | Design tokens, font resolution, style factories, utilities (single source of truth) |
 | **xlsx.py** | QA commands (see `quality/pipeline.md`) |
 
-Workbook metadata: `wb.properties.creator = "RaspberryCode"`
+Workbook metadata: `wb.properties.creator = "Z.ai"`
 
 > **All code MUST import from `templates/base.py`** for colors, fonts, and style helpers. Never hardcode hex values or font names.
 
@@ -230,55 +233,11 @@ Quick reference:
 Blueprint → Build & Self-check (per-sheet) → Inspect → Pivot (if needed) → Release
 ```
 
-### 🔴 HARD REQUIREMENT — LibreOffice is missing
+### LibreOffice execution
 
-`recalc` (formula recalculation), `.xlsx` → PDF, and `.csv` → `.xlsx` all run through
-LibreOffice/`soffice`. It is *install-on-demand* only in the sense that it is installed the moment a
-task needs it.
-
-**If LibreOffice is not installed, you MUST install it. This is not a choice.**
-
-**FORBIDDEN — do not do any of these:**
-- ❌ Using Microsoft Excel, WPS Office, Numbers, or any other program already on the user's machine
-  *instead of* installing LibreOffice.
-- ❌ Deciding on the user's behalf that the download is "too large", "too slow", or "not worth it".
-  **The package being large is NOT a reason to skip the install.** It is expected to be large.
-- ❌ Asking the user "should I just use Excel instead to save time?" — that is the same violation
-  dressed up as a question. Do not offer the substitution.
-- ❌ Skipping recalculation or the release gate altogether to avoid installing.
-
-**REQUIRED sequence — no steps skipped, in this order:**
-
-1. **Explain the necessity to the user.** LibreOffice is what actually recalculates the formulas so
-   errors (`#REF!`, `#DIV/0!`, `#VALUE!`) surface before delivery — without it, formula results are
-   unverified and the Live Formula Guarantee cannot be honored.
-2. **Tell them the download is large** (roughly several hundred MB) and may take a while. This is
-   information for the user, **not** a decision point for you — state it and proceed to install.
-3. **Install it now.** **Preferred source — Tsinghua TUNA mirror:**
-   `https://mirrors.tuna.tsinghua.edu.cn/libreoffice/libreoffice/stable/26.8.0/` — pick the
-   subdirectory for the platform/arch (`deb/x86_64`, `deb/aarch64`, `rpm/x86_64`, `mac/aarch64`,
-   `mac/x86_64`, `win/x86_64`, `win/aarch64`) and install the main package from it. If 26.8.0 is
-   gone, use the newest version under `.../libreoffice/stable/`. Full per-platform commands:
-   [`env_setup/setup.md`](env_setup/setup.md) → *"LibreOffice — Recommended Download Source"*.
-   Package-manager fallback, only if the mirror is unreachable: macOS
-   `brew install --cask libreoffice`; Linux (Debian/Ubuntu) `sudo apt install libreoffice-core`;
-   Windows `winget install TheDocumentFoundation.LibreOffice`.
-4. **Register the binary on `PATH`, then re-verify.** An install that leaves `soffice` off the
-   executable search path looks identical to "not installed" on the next probe — that is what causes
-   the same several-hundred-MB package to be downloaded twice. **The mechanism differs per OS**
-   (Linux/macOS: symlink into `/usr/local/bin`; Windows: append the program dir to the user `PATH`
-   with `setx`). Full per-OS commands: [`env_setup/setup.md`](env_setup/setup.md) → *"Register the
-   binary on PATH"*. Re-run `soffice --version` and only continue once it prints a version.
-   Corollary: **probe before installing** — if the binary already exists on disk but off-`PATH`,
-   register it instead of reinstalling.
-5. **Only after that install has actually been attempted AND failed** may you use software already
-   on the user's machine (Excel, WPS, Numbers). Report the install failure and which verification
-   steps were skipped.
-
-> **The gate is simple: no install attempt = no substitute program.** If you have not run the
-> install command and seen it fail, using Excel/WPS/Numbers is a violation of this skill.
-
----
+Use the [unified launcher](../../scripts/README.md) for all LibreOffice steps. Its lookup order is the managed installation, then any system version (including older and development builds). Report its version and why the managed program was not used. A managed execution failure retries once on the system program after cleanup; cancellation never retries.
+If neither program is usable, keep existing files and report the reason. On desktop, first explain that preparation is unavailable, point to Help → Preinstalled Tools, and let the user choose waiting or Agent installation. Do not skip required validation.
+When installation is chosen, follow [installation guidance](env_setup/libreoffice-unmanaged.md), then retry the unified launcher. Remote workspaces, standalone CLI and containers keep their existing installation flow. Always use the launcher after installation; it rechecks for a managed program on every call.
 
 ## Capability Matrix
 

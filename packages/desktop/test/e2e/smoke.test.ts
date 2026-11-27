@@ -1,7 +1,7 @@
 import { TID_V4_COMPOSER_INPUT, TID_V4_SESSION_PANE, testId } from "@raspberrycode/shared/test-ids";
-import { clearAppData, waitForDefaultWorkspaceReady } from "./helpers/desktop-app.js";
-import { V4_MAIN_PANE_ID } from "./helpers/v4-conversation.js";
-import { sel } from "./helpers/selectors.js";
+import { clearAppData, waitForDefaultWorkspaceReady } from "#e2e/helpers/desktop-app";
+import { V4_MAIN_PANE_ID } from "#e2e/helpers/v4-conversation";
+import { sel } from "#e2e/helpers/selectors";
 
 describe("桌面端 E2E smoke", () => {
   after(async () => {

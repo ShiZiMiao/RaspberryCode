@@ -5,9 +5,14 @@ import {
   TID_TASK_SETTINGS_BUTTON,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData, seedSettings, clickTestIdByDom } from "../helpers/desktop-app.js";
-import { prepareV4ConversationE2E } from "../helpers/v4-conversation.js";
-import { waitForRendererAfterColdRestart } from "../helpers/ssh-remote-lifecycle.js";
+import {
+  clearAppData,
+  seedSettings,
+  clickTestIdByDom,
+  pinE2ELocale,
+} from "#e2e/helpers/desktop-app";
+import { prepareV4ConversationE2E } from "#e2e/helpers/v4-conversation";
+import { waitForRendererAfterColdRestart } from "#e2e/helpers/ssh-remote-lifecycle";
 
 const CASE_MARKER = "E2E_REMOTE_OFFLINE_ICONS";
 const SOURCE_ID = "b2d3aeee-9c83-4d03-b62b-40dbed84d389";
@@ -95,6 +100,8 @@ describe(`${CASE_MARKER}: 离线设备连接按钮`, () => {
     });
     await reloadElectronSessionPreservingBrowserProfile(browser);
     await waitForRendererAfterColdRestart(CASE_MARKER);
+    // 首帧跟随宿主语言，mac runner 上是英文，按钮文案为 Connect；本 case 断言中文，须固定语言。
+    await pinE2ELocale("zh-CN");
     await clickTestIdByDom(TID_TASK_SETTINGS_BUTTON, { timeout: 15_000 });
     await clickTestIdByDom(testId(TID_SETTINGS_SECTION_NAV, "remoteDevices"), { timeout: 15_000 });
     // 未连通记录现在默认折叠且用连接行展示，旧 case 按设备卡的 p 标题读取会漏掉它们。

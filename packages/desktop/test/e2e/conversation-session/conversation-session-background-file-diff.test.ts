@@ -5,13 +5,13 @@
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { TID_PREVIEW_PANE } from "@raspberrycode/shared/test-ids";
-import { clearAppData, DEFAULT_WORKSPACE } from "../helpers/desktop-app.js";
+import { clearAppData, DEFAULT_WORKSPACE } from "#e2e/helpers/desktop-app";
 import {
   findFirstUpstreamRequestIndex,
   getUpstreamRequestRecordCount,
   waitForUpstreamRequest,
-} from "../helpers/conversation-session-network.js";
-import { waitForToolCallBlockByToolCallId } from "../helpers/conversation-session-tool.js";
+} from "#e2e/helpers/conversation-session-network";
+import { waitForToolCallBlockByToolCallId } from "#e2e/helpers/conversation-session-tool";
 import {
   assertVisibleV4UserMessagesNotContaining,
   clickV4Stop,
@@ -21,7 +21,7 @@ import {
   switchV4Mode,
   waitForV4Pane,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_ROOT = join(DEFAULT_WORKSPACE, "background-file-diff-e2e");
 const RELATIVE_PATH = "background-file-diff-e2e/result.md";

@@ -208,7 +208,7 @@ After Playwright renders the PDF, extract text and scan for `?` or `\ufffd`. If 
 ### HTML Pre-Render Validation (MANDATORY)
 Before calling `html2pdf-next.js`, run the validator:
 ```bash
-python3 "$PDF_SKILL_DIR/scripts/poster_validate.py" check-html <file>.html
+"$(command -v raspberrycode-python || command -v python3)" "$PDF_SKILL_DIR/scripts/poster_validate.py" check-html <file>.html
 ```
 - **ERROR** → must fix before PDF generation. Use `--fix --output <file>.html` for auto-repair.
 - **WARNING** → review and fix where appropriate.
@@ -251,5 +251,5 @@ python3 "$PDF_SKILL_DIR/scripts/poster_validate.py" check-html <file>.html
 ### Output
 - [ ] **Vector PDF** via `html2pdf-next.js` (not screenshot)
 - [ ] **HTML source file** delivered alongside PDF
-- [ ] **PDF metadata** set via `pdf.py meta.stamp`
+- [ ] **PDF metadata** set via `pdf.py meta.brand`
 - [ ] **QA passed** via `pdf_qa.py --no-tables`

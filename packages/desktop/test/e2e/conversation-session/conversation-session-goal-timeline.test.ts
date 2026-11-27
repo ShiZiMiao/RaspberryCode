@@ -1,5 +1,5 @@
 import { TID_V4_SESSION_PANE, testId } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../helpers/desktop-app.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
 import {
   clickV4Stop,
   prepareV4ConversationE2E,

@@ -250,6 +250,11 @@ export function createTerminalScope(
       if (!active || !terminals.has(id)) return;
       await release(id);
     },
+    async listTerminalIdsUnderPath(params) {
+      // owner 作用域只暴露自己创建的终端，避免跨窗口看到别人的 PTY。
+      const ids = await base.listTerminalIdsUnderPath(params);
+      return ids.filter((id) => terminals.has(id));
+    },
     onDynamicData(id) {
       assertActive(id);
       return base.onDynamicData(id);

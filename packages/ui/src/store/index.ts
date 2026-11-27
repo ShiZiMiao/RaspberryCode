@@ -39,6 +39,13 @@ export type { CodePreviewSettings } from "@/lib/codePreviewSettings.js";
 export { DEFAULT_CODE_PREVIEW_SETTINGS } from "@/lib/codePreviewSettings.js";
 
 const CODE_PREVIEW_SETTINGS_KEY = "raspberrycode-code-preview-settings";
+const FONT_SMOOTHING_STORAGE_KEY = "raspberrycode-macos-font-smoothing";
+
+function applyFontSmoothing(enabled: boolean): void {
+  // 仅设置展示标记；CSS 以本机 macOS desktop 为边界，远端设备与 Web 不受影响。
+  document.documentElement.classList.toggle("font-smoothing-enabled", enabled);
+}
+
 const PERFORMANCE_MODE_STORAGE_KEY = "raspberrycode-performance-mode";
 const HIDE_PROJECT_DEVICE_NAMES_STORAGE_KEY = "raspberrycode-hide-project-device-names";
 export const FILE_MANAGER_NAVIGATION_PREFERENCES_STORAGE_KEY =
@@ -112,7 +119,10 @@ export interface RaspberryCodeState {
   fileManagerNavigationOpenByWorkspace: Record<string, boolean>;
   setFileManagerNavigationOpen: (workspaceKey: string, open: boolean) => void;
 
-  /** UI 根 rem 字号（px） */
+  /** 本机 macOS 灰度字体平滑偏好。 */
+  fontSmoothingEnabled: boolean;
+  setFontSmoothingEnabled: (enabled: boolean) => void;
+  /** UI 字号 token 的基准值（px），不改变根 rem。 */
   uiFontSizePx: number;
   setUiFontSizePx: (fontSizePx: number) => void;
 
@@ -167,6 +177,7 @@ const BROADCAST_FIELDS = new Set([
   "theme",
   "locale",
   "uiFontSizePx",
+  "fontSmoothingEnabled",
   "interfaceMode",
   "notificationEnabled",
   "hideProjectDeviceNames",
@@ -176,6 +187,7 @@ type BroadcastField =
   | "theme"
   | "locale"
   | "uiFontSizePx"
+  | "fontSmoothingEnabled"
   | "interfaceMode"
   | "hideProjectDeviceNames"
   // 任务通知开关跨窗口同步：角标是应用级表面，A 窗口关通知而 B 窗口仍上报未读时，
@@ -266,6 +278,13 @@ export function createRaspberryCodeStore(
         );
         return { fileManagerNavigationOpenByWorkspace: next };
       });
+    },
+
+    fontSmoothingEnabled: readSafeLocalStorage(FONT_SMOOTHING_STORAGE_KEY) !== "false",
+    setFontSmoothingEnabled: (enabled) => {
+      writeSafeLocalStorage(FONT_SMOOTHING_STORAGE_KEY, String(enabled));
+      applyFontSmoothing(enabled);
+      set({ fontSmoothingEnabled: enabled });
     },
 
     uiFontSizePx: loadUiFontSizePx(),
@@ -403,6 +422,8 @@ export function createRaspberryCodeStore(
         (msg.payload === "office" || msg.payload === "coding")
       ) {
         state.setInterfaceMode(normalizeInterfaceMode(msg.payload));
+      } else if (field === "fontSmoothingEnabled" && typeof msg.payload === "boolean") {
+        state.setFontSmoothingEnabled(msg.payload);
       } else if (field === "uiFontSizePx" && typeof msg.payload === "number") {
         state.setUiFontSizePx(msg.payload);
       } else if (field === "notificationEnabled" && typeof msg.payload === "boolean") {
@@ -418,6 +439,7 @@ export function createRaspberryCodeStore(
   syncSystemThemeListener(useStore.getState().theme);
   applyTheme(useStore.getState().theme);
   applyUiFontSizePx(useStore.getState().uiFontSizePx);
+  applyFontSmoothing(useStore.getState().fontSmoothingEnabled);
   document.documentElement.classList.toggle(
     "dark",
     resolveTheme(useStore.getState().theme) === "dark",

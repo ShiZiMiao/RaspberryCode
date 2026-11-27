@@ -1,6 +1,6 @@
 {
   "name": "@raspberrycode/raspberrycode-cua",
-  "version": "0.6.5",
+  "version": "0.6.6",
   "private": true,
   "description": "Self-hosted Windows Computer Use runtime. Falls back to a fail-closed placeholder when the build artifact is missing.",
   "license": "Apache-2.0",
@@ -37,6 +37,10 @@
     "./broker/server": {
       "types": "./broker-server.d.ts",
       "import": "./broker-server.js"
+    },
+    "./broker/in-process": {
+      "types": "./broker-in-process.d.ts",
+      "import": "./broker-in-process.js"
     },
     "./broker/ports": {
       "types": "./broker-ports.d.ts",

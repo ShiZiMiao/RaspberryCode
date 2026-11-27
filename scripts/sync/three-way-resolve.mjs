@@ -42,17 +42,36 @@ function git(args, opts = {}) {
 // 保守口径——只处理能明确判定为「产品自名」的形态。
 const BRAND_REPLACEMENTS = [
   // 路径与包名
+  [/@zcode-dev\//gu, "@raspberrycode-dev/"],
+  [/@zcode\//gu, "@raspberrycode/"],
   [/\bzcode-cli\b/gu, "raspberrycode-cli"],
   [/\bzcode-server-cli\b/gu, "raspberrycode-server-cli"],
   [/\bzcode-cua\b/gu, "raspberrycode-cua"],
+  [/\bzcode-protocol-v4\b/gu, "raspberrycode-protocol-v4"],
   [/\bzcode-protocol\b/gu, "raspberrycode-protocol"],
+  [/\bzcode-site-plugin\b/gu, "raspberrycode-site-plugin"],
+  [/\bzcode-agent\b/gu, "raspberrycode-agent"],
+  [/\bzcode-session\b/gu, "raspberrycode-session"],
   // 数据目录与运行时路径
   [/\.raspberrycode\b/gu, ".raspberrycode"],
   [/\bZCODE_([A-Z0-9_]+)\b/gu, "RASPBERRYCODE_$1"],
+  [/\bZCODE\b/gu, "RASPBERRYCODE"],
+  // 连字符/下划线/空格变体
+  [/\bZ-Code\b/gu, "RaspberryCode"],
+  [/\bZ_Code\b/gu, "RaspberryCode"],
+  [/\bZ Code\b/gu, "RaspberryCode"],
+  [/\bz-code\b/gu, "raspberrycode"],
+  [/\bz_code\b/gu, "raspberrycode"],
+  [/\bz code\b/gu, "raspberrycode"],
   // 标识符（驼峰/小驼峰/大驼峰）
   [/\bzcode([A-Z][A-Za-z0-9]*)/gu, "raspberrycode$1"],
   [/\bZcode([A-Z][A-Za-z0-9]*)/gu, "Raspberrycode$1"],
-  [/\bZCode(?![a-z])/gu, "RaspberryCode"],
+  [/\buseZCode([A-Z][A-Za-z0-9]*)/gu, "useRaspberryCode$1"],
+  [/\bZCode([A-Z][A-Za-z0-9]*)/gu, "RaspberryCode$1"],
+  [/\bZCode([a-z][A-Za-z0-9]*)/gu, "RaspberryCode$1"],
+  [/([a-z0-9])ZCode([A-Za-z0-9]*)/gu, "$1RaspberryCode$2"],
+  [/([a-z0-9])ZCODE([A-Za-z0-9]*)/gu, "$1RASPBERRYCODE$2"],
+  [/\bZCode\b/gu, "RaspberryCode"],
   // 纯小写标识符
   [/\bzcode(?![A-Za-z0-9])/gu, "raspberrycode"],
 ];

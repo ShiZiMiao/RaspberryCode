@@ -370,18 +370,22 @@ export function V4InteractionDialogs({
     );
   }
 
-  const projectedElicitationRequest = pendingUserInputToElicitationRequest(sessionId, {
-    ...pending,
-    payload: pending.payload,
-  });
+  const projectedElicitationRequest =
+    pending.payload.kind === "userInput"
+      ? pendingUserInputToElicitationRequest(
+          sessionId,
+          pending as Parameters<typeof pendingUserInputToElicitationRequest>[1],
+        )
+      : null;
   const elicitationRequest = resolveV4ElicitationRequest(
     projectedElicitationRequest,
     botElicitationProgress,
   );
   if (elicitationRequest) {
-    const isExitPlanMode = pending.payload.toolName?.trim().toLowerCase() === "exitplanmode";
+    const pendingToolName = (pending.payload as { toolName?: string }).toolName;
+    const isExitPlanMode = pendingToolName?.trim().toLowerCase() === "exitplanmode";
     const isAskUserQuestion =
-      pending.payload.toolName?.trim().toLowerCase() === "askuserquestion" ||
+      pendingToolName?.trim().toLowerCase() === "askuserquestion" ||
       pending.autoResolution !== undefined;
     return (
       <ElicitationDialog
@@ -427,10 +431,9 @@ export function V4InteractionDialogs({
     );
   }
 
-  const model = pendingUserInputToViewModel({
-    ...pending,
-    payload: pending.payload,
-  });
+  const model = pendingUserInputToViewModel(
+    pending as Parameters<typeof pendingUserInputToViewModel>[0],
+  );
   return (
     <V4UserInputDialog
       model={model}

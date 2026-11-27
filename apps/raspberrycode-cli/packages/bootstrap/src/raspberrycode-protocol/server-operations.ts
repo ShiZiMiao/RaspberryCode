@@ -3399,11 +3399,13 @@ async function requestSessionRuntimePreferences(
       // 兼容旧 Host 或无 Host 的纯 CLI 创建路径；Memory 服从产品默认关闭，
       // 增强搜索维持原有默认开启，其他协议/传输错误仍阻止 runtime 创建。
       return {
+        agentAlwaysBackgroundEnabled: true,
         askUserQuestionAutoResolutionEnabled: true,
         memoryEnabled: false,
         modelContextBudgetStrategy: DEFAULT_RASPBERRYCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
         nativeSearchEnhancementsEnabled: true,
         toolSearchMode: "off",
+        totalTokensReminderEnabled: false,
       };
     }
     throw error;

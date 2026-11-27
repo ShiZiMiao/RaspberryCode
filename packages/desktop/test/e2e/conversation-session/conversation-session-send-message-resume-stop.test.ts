@@ -1,30 +1,28 @@
 import { readFile } from "node:fs/promises";
-import {
-  TID_CHAT_SUMMARY_PANEL,
-  TID_V4_BACKGROUND_WORK_CANCEL,
-  TID_V4_BACKGROUND_WORK_ITEM,
-  TID_V4_SUBAGENT_OPEN_SIDE_PANE,
-} from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../helpers/desktop-app.js";
-import { waitForToolCallBlockByToolName } from "../helpers/conversation-session-tool.js";
+import { TID_V4_SUBAGENT_OPEN_SIDE_PANE } from "@raspberrycode/shared/test-ids";
+import { clearAppData } from "#e2e/helpers/desktop-app";
+import { waitForToolCallBlockByToolName } from "#e2e/helpers/conversation-session-tool";
 import {
   getUpstreamRequestRecordCount,
   waitForUpstreamRequest,
-} from "../helpers/conversation-session-network.js";
-import type { E2ENetworkCaptureArtifact } from "../helpers/network-capture-proxy.js";
-import { ensureToolCrossProductFullAccessMode } from "../helpers/conversation-session-tool-cross-product.js";
+} from "#e2e/helpers/conversation-session-network";
+import type { E2ENetworkCaptureArtifact } from "#e2e/helpers/network-capture-proxy";
+import { ensureToolCrossProductFullAccessMode } from "#e2e/helpers/conversation-session-tool-cross-product";
 import {
-  clickV4BackgroundWorkCancel,
-  getV4BackgroundWorks,
   getV4ComposerBackgroundWorkCounts,
-  openV4RunningBackgroundWorks,
   prepareV4ConversationE2E,
-  sendV4Prompt,
-  waitForLatestV4CommandAck,
+  sendV4PromptAndWaitAccepted,
   waitForV4AssistantMessageContaining,
   waitForV4ComposerText,
   waitForV4ConversationState,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
+import {
+  clickRunningSubagentStop,
+  countVisibleSubagentTabs,
+  openRunningSubagentCapsule,
+  readRunningSubagentControls,
+  type RunningSubagentControl,
+} from "#e2e/helpers/subagent-capsule-stop";
 
 const PARENT_MARKER = "E2E_SEND_MESSAGE_RESUME_STOP_PARENT";
 const FOREGROUND_DONE = "E2E_SEND_MESSAGE_RESUME_STOP_FOREGROUND_DONE";
@@ -47,14 +45,16 @@ describe("SendMessage resume Stop", () => {
 
     const runId = Date.now();
     const parentRunMarker = `${PARENT_MARKER}_${runId}`;
-    await sendV4Prompt(
+    await sendV4PromptAndWaitAccepted(
       [
         `${parentRunMarker}: call Agent exactly once with run_in_background false and subagent_type "general-purpose".`,
         `Tell the child to reply with exactly ${FOREGROUND_DONE}_${runId} and do nothing else.`,
         "After that foreground Agent completes, call no more tools and finish this turn.",
       ].join(" "),
+      parentRunMarker,
+      "foreground Agent 首发后用户消息没有进入 timeline",
+      90000,
     );
-    await waitForV4ComposerText("", "foreground Agent 首发后输入框没有清空");
     await waitForToolCallBlockByToolName("Agent", 90000);
     await waitForV4AssistantMessageContaining(FOREGROUND_PARENT_IDLE, 90000);
     await waitForV4ConversationState(
@@ -78,15 +78,17 @@ describe("SendMessage resume Stop", () => {
     const foregroundChildSessionId = await waitForSingleSubagentSummaryChildSessionId(30000);
 
     const resumeRunMarker = `${RESUME_MARKER}_${runId}`;
-    await sendV4Prompt(
+    await sendV4PromptAndWaitAccepted(
       [
         `${resumeRunMarker}: read the agentId from the completed Agent result and call SendMessage exactly once for that same agent.`,
         "Omit the optional summary.",
-        `Use this exact message verbatim: You MUST invoke the Bash tool with command "sleep 120". Do not send any text before the Bash tool finishes. After it finishes, reply with exactly ${CHILD_DONE}_${runId}.`,
+        `Use this exact message verbatim: You MUST invoke the Bash tool with command "sh -c 'sleep 120'". Do not send any text before the Bash tool finishes. After it finishes, reply with exactly ${CHILD_DONE}_${runId}.`,
         "After SendMessage returns, call no more tools and finish this turn without waiting for the resumed agent.",
       ].join(" "),
+      resumeRunMarker,
+      "SendMessage resume 首发后用户消息没有进入 timeline",
+      90000,
     );
-    await waitForV4ComposerText("", "SendMessage resume 首发后输入框没有清空");
     await waitForToolCallBlockByToolName("SendMessage", 90000);
     await waitForV4ConversationState(
       (snapshot) => snapshot.state !== "streaming" && !snapshot.stopRequested,
@@ -97,26 +99,21 @@ describe("SendMessage resume Stop", () => {
     expect(sendMessageBlock.status).toBe("completed");
     // SendMessage 的 summary 可选：省略时卡片标题显示 message 的第一行。
     expect(sendMessageBlock.text).toContain(
-      'You MUST invoke the Bash tool with command "sleep 120".',
+      `You MUST invoke the Bash tool with command "sh -c 'sleep 120'".`,
     );
-    expect(await waitForSingleSubagentSummaryChildSessionId(30000)).toBe(
-      foregroundChildSessionId,
-    );
-
-    await openV4RunningBackgroundWorks(90000);
-    const runningWork = await waitForSingleRunningBackgroundWork(30000);
-    expect(runningWork.workId).toBe(foregroundAgentId);
-    const control = await readRunningSubagentControl(runningWork.workId);
-    expect(control).not.toBeNull();
-    expect(control?.kind).toBe("agent");
-    expect(control?.childSessionId).toBe(foregroundChildSessionId);
-    expect(control?.stopVisible).toBe(true);
+    // 第二轮会把首轮工具卡片移出虚拟列表；身份由真实 Activity 行核对，不能要求旧 DOM 常驻。
+    await openRunningSubagentCapsule(90000);
+    const control = await waitForSingleRunningSubagent(30000);
+    expect(control.taskId).toBe(foregroundAgentId);
+    expect(control.childSessionId).toBe(foregroundChildSessionId);
+    expect(control.executionId).not.toBe("");
+    expect(control.stopDisabled).toBe(false);
     expect((await getV4ComposerBackgroundWorkCounts())?.subagentCount).toBe(1);
     expect(await countVisibleSubagentTabs()).toBe(0);
 
     const requestCountBeforeStop = await getUpstreamRequestRecordCount();
-    expect(await clickV4BackgroundWorkCancel(runningWork.workId)).toBe(true);
-    const ack = await waitForLatestV4CommandAck("cancelBackgroundWork", 30000);
+    // Stop 必须携带本次执行 token；不能再从 backgroundWorks 猜测控制身份。
+    const ack = await clickRunningSubagentStop(control);
     expect(ack.status).toBe("accepted");
 
     // 测试修复原因：running row 会早于后台 completion notification turn 收口；只等
@@ -143,7 +140,7 @@ describe("SendMessage resume Stop", () => {
       "Stop completion notification turn 没有回到 idle",
       60000,
     );
-    await waitForResumedSubagentStopped(runningWork.workId, 60000);
+    await waitForResumedSubagentStopped(control.childSessionId, 60000);
     expect(await countVisibleSubagentTabs()).toBe(0);
   });
 });
@@ -153,9 +150,7 @@ async function readForegroundAgentId(runMarker: string): Promise<string> {
   if (!capturePath) {
     throw new Error("E2E_PROVIDER_CAPTURE_PATH 未配置，无法读取 foreground agentId");
   }
-  const artifact = JSON.parse(
-    await readFile(capturePath, "utf8"),
-  ) as E2ENetworkCaptureArtifact;
+  const artifact = JSON.parse(await readFile(capturePath, "utf8")) as E2ENetworkCaptureArtifact;
   for (const record of artifact.records) {
     const requestText = JSON.stringify(record.requestJson ?? null);
     if (!requestText.includes(runMarker) || !requestText.includes(FOREGROUND_DONE)) continue;
@@ -165,18 +160,16 @@ async function readForegroundAgentId(runMarker: string): Promise<string> {
   throw new Error(`没有从 foreground Agent tool result 读取到 agentId: ${runMarker}`);
 }
 
-async function waitForSingleRunningBackgroundWork(
-  timeout: number,
-): Promise<{ workId: string; status: string | null }> {
-  let running: Array<{ workId: string; status: string | null }> = [];
+async function waitForSingleRunningSubagent(timeout: number): Promise<RunningSubagentControl> {
+  let running: RunningSubagentControl[] = [];
   await browser.waitUntil(
     async () => {
-      running = (await getV4BackgroundWorks()).filter((work) => work.status === "running");
-      return running.length === 1 && Boolean(running[0]?.workId);
+      running = await readRunningSubagentControls();
+      return running.length === 1 && Boolean(running[0]?.executionId);
     },
     {
       timeout,
-      timeoutMsg: "没有等到唯一的 resumed subagent background work",
+      timeoutMsg: "没有等到唯一且带 execution token 的 resumed subagent",
     },
   );
   return running[0]!;
@@ -203,58 +196,27 @@ async function waitForSingleSubagentSummaryChildSessionId(timeout: number): Prom
   return childSessionIds[0]!;
 }
 
-async function readRunningSubagentControl(workId: string): Promise<{
-  kind: string | null;
-  childSessionId: string | null;
-  stopVisible: boolean;
-} | null> {
-  return browser.execute(
-    (itemPrefix, cancelPrefix, id) => {
-      const row = document.querySelector<HTMLElement>(`[data-testid="${itemPrefix}-${id}"]`);
-      if (!row) return null;
-      const stop = row.querySelector<HTMLElement>(`[data-testid="${cancelPrefix}-${id}"]`);
-      return {
-        kind: row.dataset.backgroundTaskKind ?? null,
-        childSessionId: row.dataset.childSessionId ?? null,
-        stopVisible: Boolean(stop && getComputedStyle(stop).display !== "none"),
-      };
-    },
-    TID_V4_BACKGROUND_WORK_ITEM,
-    TID_V4_BACKGROUND_WORK_CANCEL,
-    workId,
-  );
-}
-
-async function waitForResumedSubagentStopped(workId: string, timeout: number): Promise<void> {
+async function waitForResumedSubagentStopped(
+  childSessionId: string,
+  timeout: number,
+): Promise<void> {
   await browser.waitUntil(
     async () => {
-      const [works, composerCounts, runningAgentCount] = await Promise.all([
-        getV4BackgroundWorks(),
+      const [running, composerCounts] = await Promise.all([
+        readRunningSubagentControls(),
         getV4ComposerBackgroundWorkCounts(),
-        readStatusPanelRunningAgentCount(),
       ]);
       return (
-        !works.some((work) => work.workId === workId) &&
+        !running.some((item) => item.childSessionId === childSessionId) &&
         composerCounts === null &&
-        runningAgentCount === 0
+        (await $(
+          '[data-status-capsule-content="activity"] [data-activity-result="stopped"]',
+        ).isDisplayed())
       );
     },
     {
       timeout,
-      timeoutMsg: "点击 Stop 后 resumed subagent 的 work、右上角入口或 running row 没有收口",
+      timeoutMsg: "点击 Stop 后 resumed subagent 的运行计数、停止结果或 running row 没有收口",
     },
-  );
-}
-
-async function readStatusPanelRunningAgentCount(): Promise<number> {
-  return browser.execute((panelTestId) => {
-    const panel = document.querySelector<HTMLElement>(`[data-testid="${panelTestId}"]`);
-    return Number(panel?.dataset.runningAgentCount ?? "0");
-  }, TID_CHAT_SUMMARY_PANEL);
-}
-
-async function countVisibleSubagentTabs(): Promise<number> {
-  return browser.execute(
-    () => document.querySelectorAll('[data-side-pane-tab-id^="subagent-session:"]').length,
   );
 }

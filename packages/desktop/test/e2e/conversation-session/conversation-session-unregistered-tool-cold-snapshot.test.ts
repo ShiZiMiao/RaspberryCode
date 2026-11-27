@@ -4,14 +4,14 @@ import {
   TID_V4_COMPOSER_SEND,
   TID_V4_TIMELINE_LOAD_OLDER,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../helpers/desktop-app.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
 import {
   getV4TimelineScrollState,
   prepareV4ConversationE2E,
   sendV4Prompt,
   waitForV4Pane,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const PROMPT_MARKER = "E2E_UNREGISTERED_TOOL_COLD_SNAPSHOT";
 const FINAL_MARKER = `${PROMPT_MARKER}_DONE`;
@@ -66,14 +66,12 @@ describe("O17/CHL09 未注册工具终态冷快照", () => {
       async () => {
         const rows = await getV4TimelineScrollState();
         return (
-          rows.totalRowCount > SNAPSHOT_TAIL_ROW_COUNT &&
-          rows.windowRowCount === rows.totalRowCount
+          rows.totalRowCount > SNAPSHOT_TAIL_ROW_COUNT && rows.windowRowCount === rows.totalRowCount
         );
       },
       {
         timeout: 15000,
-        timeoutMsg:
-          "refresh 后同一 turn 的 60-row cold tail 没有自动补齐，仍需要手动或反向滚动",
+        timeoutMsg: "refresh 后同一 turn 的 60-row cold tail 没有自动补齐，仍需要手动或反向滚动",
       },
     );
     expect(

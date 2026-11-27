@@ -5,7 +5,7 @@ import {
 } from "@raspberrycode/shared";
 import { ConversationTelemetryEngine } from "@raspberrycode/shared/conversation-telemetry";
 import { buildPromptTelemetryExtraDetail } from "@raspberrycode/shared/conversation-telemetry/messageTelemetry";
-import type { ConversationTelemetryFact } from "@raspberrycode/shared/raspberrycode-protocol-v4";
+import type { ConversationTelemetryInput } from "@raspberrycode/shared/raspberrycode-protocol-v4";
 
 /** 只消费执行服务的 live facts，不依赖手机 attachment 或桌面 pane 的寿命。 */
 export class RemoteConversationTelemetry {
@@ -55,7 +55,7 @@ export class RemoteConversationTelemetry {
   }
 
   /** 返回 true 的事实由执行侧独占，不能再交给 renderer reporter。 */
-  acceptFact(fact: ConversationTelemetryFact): boolean {
+  acceptFact(fact: ConversationTelemetryInput): boolean {
     const key = `${fact.sessionId}\0${fact.sourceCommandId ?? ""}`;
     if (
       fact.kind === "turn.started" &&

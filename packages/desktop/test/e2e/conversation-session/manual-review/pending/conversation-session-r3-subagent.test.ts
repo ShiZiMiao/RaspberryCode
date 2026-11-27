@@ -11,13 +11,13 @@ import {
   TID_V4_COMPOSER_INPUT,
   TID_V4_COMPOSER_SEND,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData, switchToWorkspaceRendererWindow } from "../../../helpers/desktop-app.js";
-import { reloadElectronSessionPreservingBrowserProfile } from "../../../helpers/e2e-electron-reload.js";
+import { clearAppData, switchToWorkspaceRendererWindow } from "#e2e/helpers/desktop-app";
+import { reloadElectronSessionPreservingBrowserProfile } from "#e2e/helpers/e2e-electron-reload";
 import {
   getUpstreamRequestRecordCount,
   getUpstreamRequestEvidence,
   waitForUpstreamRequest,
-} from "../../../helpers/conversation-session-network.js";
+} from "#e2e/helpers/conversation-session-network";
 import {
   connectSSHWorkspaceAndSendFirstTurn,
   listRemoteAgentProcesses,
@@ -25,11 +25,11 @@ import {
   terminateRemoteProcess,
   SSH_LIFECYCLE_MODEL_ID,
   type SSHLifecycleProvider,
-} from "../../../helpers/ssh-remote-lifecycle.js";
+} from "#e2e/helpers/ssh-remote-lifecycle";
 import {
   seedCustomAnthropicMessagesProvider,
   refreshSeededOpenAIProvidersThroughSettings,
-} from "../../../helpers/custom-openai-provider.js";
+} from "#e2e/helpers/custom-openai-provider";
 import {
   createSSHReplayTunnel,
   readHostProcesses,
@@ -37,7 +37,7 @@ import {
   waitForRemoteTab,
   readSSHRuntimeConfig,
   runSSHCommand,
-} from "../../../helpers/ssh-remote-p0.js";
+} from "#e2e/helpers/ssh-remote-p0";
 import {
   approveV4Permission,
   clickFirstV4Fork,
@@ -54,7 +54,7 @@ import {
   waitForV4ConversationState,
   waitForV4Pane,
   waitForV4TimelineContaining,
-} from "../../../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_MARKER = "E2E_R3_SUBAGENT";
 // 远端用例前置：Server 启动时设置 RASPBERRYCODE_DYNAMIC_WORKFLOW_MODE=alwaysOn；WDIO 也为本文件开启。

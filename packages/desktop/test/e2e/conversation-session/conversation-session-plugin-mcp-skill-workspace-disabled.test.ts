@@ -1,21 +1,21 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { TID_SETTINGS_BACK_BUTTON } from "@raspberrycode/shared/test-ids";
-import { clearAppData, clickTestIdByDom, getE2EAppDataPaths } from "../helpers/desktop-app.js";
+import { clearAppData, clickTestIdByDom, getE2EAppDataPaths } from "#e2e/helpers/desktop-app";
 import {
   getPluginList,
   openPluginManagementSettings,
   selectPluginSettingsScope,
   waitUntilPluginList,
   waitForPluginControl,
-} from "../helpers/plugin-management-lifecycle.js";
-import { PLUGIN_MCP_PLUGIN_ID } from "../helpers/plugin-mcp-skill.js";
+} from "#e2e/helpers/plugin-management-lifecycle";
+import { PLUGIN_MCP_PLUGIN_ID } from "#e2e/helpers/plugin-mcp-skill";
 import {
   assertWorkspacePluginUnavailable,
   pluginConfigEnabled,
   readUserPluginConfig,
   readWorkspacePluginConfig,
-} from "../helpers/workspace-plugin-runtime.js";
+} from "#e2e/helpers/workspace-plugin-runtime";
 
 describe("WPL-002 Workspace Plugin explicit false precedence E2E", () => {
   after(async () => {

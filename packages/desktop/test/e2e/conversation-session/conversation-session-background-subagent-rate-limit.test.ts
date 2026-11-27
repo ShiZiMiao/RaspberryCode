@@ -1,14 +1,14 @@
 import { TID_V4_SUBAGENT_OPEN_SIDE_PANE } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../helpers/desktop-app.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
 import {
   getUpstreamRequestEvidence,
   waitForUpstreamRequest,
-} from "../helpers/conversation-session-network.js";
+} from "#e2e/helpers/conversation-session-network";
 import {
   expandAssistantHistoriesWithContent,
   waitForToolCallBlockByToolCallId,
-} from "../helpers/conversation-session-tool.js";
-import { getToolCallDiagnostics } from "../helpers/conversation-session-tool-diagnostics.js";
+} from "#e2e/helpers/conversation-session-tool";
+import { getToolCallDiagnostics } from "#e2e/helpers/conversation-session-tool-diagnostics";
 import {
   getV4PaneSnapshot,
   prepareV4ConversationE2E,
@@ -17,12 +17,12 @@ import {
   startNewV4Draft,
   waitForV4Pane,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 import {
   beginConversationTelemetryCapture,
   readConversationReportRequests,
   waitForConversationReportInventory,
-} from "../helpers/conversation-telemetry-parity-capture.js";
+} from "#e2e/helpers/conversation-telemetry-parity-capture";
 
 const BG26_TIMEOUT_MS = 240000;
 const PARENT_MARKER = "E2E_BACKGROUND_SUBAGENT_RATE_LIMIT_PARENT";
@@ -44,11 +44,13 @@ const MERGED_LAST_FAILED_AGENT = {
   toolCallId: "toolu_e2e_bg26_merged_last_failing_agent",
   providerError: `${RATE_LIMIT_ERROR_PREFIX}e2e-bg26-merged-last-failure`,
 };
+/** 第一个失败 child 在 429 之前写出的正文，失败通知把它作为部分报告放进 `<result>`。 */
+const MERGED_FIRST_PARTIAL_REPORT = "E2E_BG26_MERGED_FIRST_PARTIAL_REPORT";
 
 interface FailedAgentExpectation {
   toolCallId: string;
   providerError: string;
-  /** 同批其他通知的结果或原因，不能出现在这张卡的失败 hover 里。 */
+  /** 不能出现在这张卡失败 hover 里的文字：同批其他通知的结果或原因，以及本任务只给模型的部分报告。 */
   foreignTexts?: readonly string[];
   /** 单条通知的轮次：hover 只显示 provider 原文，不带 `Agent "…" failed:` 前缀。 */
   exactTooltip?: boolean;
@@ -196,6 +198,23 @@ describe("会话区 background subagent 429 错误展示 E2E", () => {
       "三条 background Agent notification 没有合并到同一个 provider request",
       90000,
     );
+    // 第一个失败 child 在 429 前写过正文：它的失败通知带部分报告，父模型可以据此续接；
+    // 最后一个失败 child 没写过正文，不带 <result>。
+    const [mergedNotificationRequest] = await getUpstreamRequestEvidence({
+      lastUserMessageIncludes: [
+        `<tool-use-id>${MERGED_FIRST_FAILED_AGENT.toolCallId}</tool-use-id>`,
+        `<tool-use-id>${MERGED_LAST_FAILED_AGENT.toolCallId}</tool-use-id>`,
+      ],
+    });
+    const mergedBlocks = taskNotificationBlocks(mergedNotificationRequest!.requestJson);
+    const firstFailedBlock = mergedBlocks.find((block) =>
+      block.includes(`<tool-use-id>${MERGED_FIRST_FAILED_AGENT.toolCallId}</tool-use-id>`),
+    );
+    const lastFailedBlock = mergedBlocks.find((block) =>
+      block.includes(`<tool-use-id>${MERGED_LAST_FAILED_AGENT.toolCallId}</tool-use-id>`),
+    );
+    expect(firstFailedBlock).toContain(`<result>${MERGED_FIRST_PARTIAL_REPORT}</result>`);
+    expect(lastFailedBlock).not.toContain("<result>");
     await waitForV4TimelineContaining(MERGED_PARENT_DONE, 90000);
     const idleSnapshot = await waitForV4Pane(
       (snapshot) =>
@@ -230,9 +249,15 @@ async function switchAwayAndBack(sourceTaskId: string, doneMarker: string) {
 async function assertMergedAgentSurfaces(stage: string) {
   // Bug 原因：合并通知曾跨块读取标签。第一张失败卡的原因取到同批完成任务的 <result>；
   // 后面的通知块不更新卡片，最后一张失败卡停在 launch ACK 的 completed。
+  // 失败通知的 <result> 是只给模型的部分报告；合并轮没有结构化原因，App 不丢弃它时
+  // 失败原因会退到这段正文，hover 就不再是失败原因。
   await assertFailedAgentSurface(stage, {
     ...MERGED_FIRST_FAILED_AGENT,
-    foreignTexts: [MERGED_COMPLETED_RESULT, MERGED_LAST_FAILED_AGENT.providerError],
+    foreignTexts: [
+      MERGED_COMPLETED_RESULT,
+      MERGED_LAST_FAILED_AGENT.providerError,
+      MERGED_FIRST_PARTIAL_REPORT,
+    ],
   });
   await assertFailedAgentSurface(stage, {
     ...MERGED_LAST_FAILED_AGENT,

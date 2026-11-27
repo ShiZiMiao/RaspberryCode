@@ -45,7 +45,7 @@ function isRemovePayload(payload: unknown): payload is WebElementContextRemovePa
 
 function toComposerAttachment(
   payload: Parameters<typeof isWebElementContextPayload>[0],
-): WebElementContextComposerAttachment | null {
+): Omit<WebElementContextComposerAttachment, "ordinal"> | null {
   if (!isWebElementContextPayload(payload)) {
     return null;
   }
@@ -98,11 +98,14 @@ export function useWebElementContexts({
       }
       event.preventDefault();
       setContexts((items) => {
-        const existingIndex = items.findIndex((item) => item.id === attachment.id);
-        if (existingIndex < 0) {
-          return [...items, attachment];
+        const existing = items.find((item) => item.id === attachment.id);
+        if (existing) {
+          return items.map((item) =>
+            item.id === attachment.id ? { ...attachment, ordinal: existing.ordinal } : item,
+          );
         }
-        return items.map((item) => (item.id === attachment.id ? attachment : item));
+        const ordinal = items.reduce((max, item) => Math.max(max, item.ordinal), 0) + 1;
+        return [...items, { ...attachment, ordinal }];
       });
     };
 

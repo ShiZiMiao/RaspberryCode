@@ -24,6 +24,7 @@ import {
   REMOTE_ENTRY_DELETED_CACHE_SQL,
   SESSION_CREATION_COMMANDS_SQL,
   TASK_PROJECT_COLUMNS,
+  TASK_WORKTREE_ROOT_SQL,
 } from "#src/project-storage/schema.js";
 
 export type {

@@ -3,20 +3,20 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { promisify } from "node:util";
 import { TID_TERMINAL, TID_TERMINAL_TOGGLE } from "@raspberrycode/shared/test-ids";
-import { clearAppData, clickTestIdByDom, waitForTestIdByDom } from "../helpers/desktop-app.js";
+import { clearAppData, clickTestIdByDom, waitForTestIdByDom } from "#e2e/helpers/desktop-app";
 import {
   connectSSHWorkspaceAndSendFirstTurn,
   prepareSSHLifecycle,
   type SSHLifecycleProvider,
-} from "../helpers/ssh-remote-lifecycle.js";
+} from "#e2e/helpers/ssh-remote-lifecycle";
 import {
   readHostProcesses,
   readRemoteTabSnapshot,
   runSSHCommand,
   waitForRemoteTab,
   type SSHConnectionConfig,
-} from "../helpers/ssh-remote-p0.js";
-import { selectV4TaskById } from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/ssh-remote-p0";
+import { selectV4TaskById } from "#e2e/helpers/v4-conversation";
 
 const CASE_MARKER = "E2E_R3_TERMINAL";
 const artifactDir = resolve(process.env.RASPBERRYCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/r3-terminal");

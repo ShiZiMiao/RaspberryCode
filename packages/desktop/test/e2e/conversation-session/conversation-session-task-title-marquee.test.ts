@@ -5,13 +5,13 @@ import {
   TID_WORKSPACE_TITLE,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { DEFAULT_WORKSPACE, clearAppData, waitForWorkspaceApp } from "../helpers/desktop-app.js";
-import { ensureProjectExpanded } from "../helpers/project-sidebar.js";
+import { DEFAULT_WORKSPACE, clearAppData, waitForWorkspaceApp } from "#e2e/helpers/desktop-app";
+import { ensureProjectExpanded } from "#e2e/helpers/project-sidebar";
 import {
   TASK_TITLE_MARQUEE_LONG_ID,
   TASK_TITLE_MARQUEE_PINNED_ID,
   TASK_TITLE_MARQUEE_SHORT_ID,
-} from "../helpers/task-title-marquee-fixture.js";
+} from "#e2e/helpers/task-title-marquee-fixture";
 
 const CASE_TIMEOUT_MS = 180_000;
 

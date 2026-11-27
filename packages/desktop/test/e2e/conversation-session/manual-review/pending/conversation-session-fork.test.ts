@@ -3,7 +3,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { TID_V4_FORK } from "@raspberrycode/shared/test-ids";
-import { clearAppData, DEFAULT_WORKSPACE, clickTestIdByDom } from "../../../helpers/desktop-app.js";
+import { clearAppData, DEFAULT_WORKSPACE, clickTestIdByDom } from "#e2e/helpers/desktop-app";
 import {
   waitForUpstreamNetworkCapture,
   waitForUpstreamNetworkRequestStarted,

@@ -1,7 +1,7 @@
 import { generateTraceId, type BotActor } from "@raspberrycode/shared";
-import { createBotWorkerIntegration } from "../helpers/bot-worker-integration.js";
-import { installBotPlatformFixture } from "../helpers/bot-platform-fixture.js";
-import { startConversationModelProviderReplayServer } from "../helpers/model-provider-replay.js";
+import { createBotWorkerIntegration } from "#e2e/helpers/bot-worker-integration";
+import { installBotPlatformFixture } from "#e2e/helpers/bot-platform-fixture";
+import { startConversationModelProviderReplayServer } from "#e2e/helpers/model-provider-replay";
 
 const groupActor: BotActor = {
   botId: "bot-worker",
@@ -17,6 +17,7 @@ describe("BOT-E2E-GR-02/PS-01 actual worker lifecycle", () => {
     const replay = await startConversationModelProviderReplayServer(
       "conversation-session-bot-continuous-worker",
     );
+    const replayFetch = globalThis.fetch;
     const platform = installBotPlatformFixture();
     let cleanup: Awaited<ReturnType<typeof createBotWorkerIntegration>> | undefined;
     try {
@@ -41,6 +42,12 @@ describe("BOT-E2E-GR-02/PS-01 actual worker lifecycle", () => {
         text: "E2E_BOT_GROUP_QUEUED",
       });
       expect(queued.map((reply) => reply.text).join("\n")).toMatch(/等待执行|Waiting to run/);
+      // 固定延迟会在慢机器上提前结束首轮；确认入队后才释放模型响应。
+      const released = await replayFetch(`${replay.baseUrl}/__e2e__/release/queue-running`, {
+        method: "POST",
+        signal: AbortSignal.timeout(5000),
+      });
+      expect(released.status).toBe(204);
       const key = JSON.stringify(["bot-worker", "oc_worker"]);
       await browser.waitUntil(
         async () =>

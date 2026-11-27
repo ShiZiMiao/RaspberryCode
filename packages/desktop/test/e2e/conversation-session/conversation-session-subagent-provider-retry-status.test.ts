@@ -4,15 +4,15 @@ import {
   TID_V4_SUBAGENT_OPEN_SIDE_PANE,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../helpers/desktop-app.js";
-import { waitForUpstreamRequest } from "../helpers/conversation-session-network.js";
-import { waitForToolCallBlockByToolCallId } from "../helpers/conversation-session-tool.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
+import { waitForUpstreamRequest } from "#e2e/helpers/conversation-session-network";
+import { waitForToolCallBlockByToolCallId } from "#e2e/helpers/conversation-session-tool";
 import {
   prepareV4ConversationE2E,
   sendV4Prompt,
   waitForV4AssistantMessageContaining,
   waitForV4Pane,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const PARENT_MARKER = "E2E_SUBAGENT_PROVIDER_RETRY_PARENT";
 const PARENT_DONE = "E2E_SUBAGENT_PROVIDER_RETRY_PARENT_DONE";

@@ -1,5 +1,5 @@
-import { DEFAULT_WORKSPACE } from "../helpers/desktop-app.js";
-import { openWorkspaceDraftFromSidebar } from "../helpers/workspace-agent-warmup.js";
+import { DEFAULT_WORKSPACE } from "#e2e/helpers/desktop-app";
+import { openWorkspaceDraftFromSidebar } from "#e2e/helpers/workspace-agent-warmup";
 // NSE01-NSE04/NSE09：增强 Find/Grep 只在根 Session runtime 物化时读取全局设置。
 import {
   TID_SETTINGS_BACK_BUTTON,
@@ -10,13 +10,13 @@ import {
   TID_TOOL_SUMMARY_TRIGGER,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData, clickTestIdByDom, readSettings } from "../helpers/desktop-app.js";
+import { clearAppData, clickTestIdByDom, readSettings } from "#e2e/helpers/desktop-app";
 import {
   expandAssistantHistoriesWithContent,
-  expandVisibleToolCallGroups,
+  expandVisibleSummaryGroups,
   getToolCallDiagnostics,
-} from "../helpers/conversation-session-tool-diagnostics.js";
-import { restartIntoWorkspace } from "../helpers/model-provider-restart.js";
+} from "#e2e/helpers/conversation-session-tool-diagnostics";
+import { restartIntoWorkspace } from "#e2e/helpers/model-provider-restart";
 import {
   approveV4Permission,
   getV4PaneSnapshot,
@@ -25,7 +25,7 @@ import {
   sendV4Prompt,
   waitForV4Pane,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const INITIAL_TOOL_CALL_ID = "toolu_e2e_nse_enabled_initial";
 const ACTIVE_TOOL_CALL_ID = "toolu_e2e_nse_enabled_active";
@@ -122,13 +122,13 @@ async function openNativeSearchSettings(): Promise<void> {
       ),
     { timeout: 15_000, timeoutMsg: "设置页没有打开" },
   );
-  await clickTestIdByDom(testId(TID_SETTINGS_SECTION_NAV, "general"), {
+  await clickTestIdByDom(testId(TID_SETTINGS_SECTION_NAV, "agentBehavior"), {
     timeout: 15_000,
-    timeoutMsg: "设置页没有常规分区入口",
+    timeoutMsg: "设置页没有行为与工具分区入口",
   });
   await browser.waitUntil(async () => (await readNativeSearchSwitch()) !== null, {
     timeout: 15_000,
-    timeoutMsg: "常规设置没有增强 Find 与 Grep 开关",
+    timeoutMsg: "行为与工具设置没有增强 Find 与 Grep 开关",
   });
 }
 
@@ -196,7 +196,7 @@ async function waitForBashOutput(toolCallId: string): Promise<string> {
   await browser.waitUntil(
     async () => {
       await expandAssistantHistoriesWithContent();
-      await expandVisibleToolCallGroups();
+      await expandVisibleSummaryGroups();
       await browser.execute(
         (id, summaryTriggerPrefix) => {
           const block = document.querySelector<HTMLElement>(`[data-tool-call-id="${id}"]`);

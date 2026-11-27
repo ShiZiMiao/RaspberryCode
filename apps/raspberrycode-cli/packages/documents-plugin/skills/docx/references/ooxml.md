@@ -18,7 +18,7 @@ find /mnt/skills -name "document.py" -path "*/docx/scripts/*" 2>/dev/null | head
 # Skill root = parent of scripts/
 
 # Run with PYTHONPATH
-PYTHONPATH=/mnt/skills/docx python your_script.py
+PYTHONPATH=/mnt/skills/docx "$(command -v raspberrycode-python || command -v python3)" your_script.py
 ```
 
 ```python
@@ -117,7 +117,7 @@ doc["word/document.xml"].revert_deletion(del_elem)
 ### Comments
 
 ```python
-doc = Document('unpacked', author="RaspberryCode", initials="R")
+doc = Document('unpacked', author="Z.ai", initials="Z")
 
 # Comment on a range
 start = doc["word/document.xml"].get_node(tag="w:del", attrs={"w:id": "1"})
@@ -223,7 +223,7 @@ nodes = doc["word/document.xml"].insert_after(nodes[-1], "<w:r><w:t>B</w:t></w:r
 
 ## Validation Rules
 
-The validator ensures document text matches the original after reverting the Agent's changes:
+The validator ensures document text matches the original after reverting GLM's changes:
 - **Never modify text inside another author's `<w:ins>` or `<w:del>` tags**
 - **Use nested deletions** to remove another author's insertions
 - **Every edit must be tracked** with `<w:ins>` or `<w:del>` tags

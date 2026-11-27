@@ -1,33 +1,29 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
-import type { ElectronMock } from "@wdio/electron-types";
-import {
-  TID_CHAT_ATTACHMENT_BUTTON,
-  TID_CHAT_ATTACHMENT_MENU_ITEM,
-  TID_V4_ROW_ATTACHMENTS,
-} from "@raspberrycode/shared/test-ids";
-import { clearAppData, DEFAULT_WORKSPACE } from "../helpers/desktop-app.js";
+import { TID_V4_ROW_ATTACHMENTS } from "@raspberrycode/shared/test-ids";
+import { clearAppData, DEFAULT_WORKSPACE } from "#e2e/helpers/desktop-app";
 import {
   assertUpstreamRequestCapture,
   waitForUpstreamNetworkCapture,
-} from "../helpers/upstream-capture.js";
+} from "#e2e/helpers/upstream-capture";
 import {
   selectUpstreamProviderModelById,
   UPSTREAM_MODEL,
   waitForUpstreamModelSelected,
-} from "../helpers/upstream-provider.js";
-import { restartWithSeededOpenAIProviders } from "../helpers/custom-openai-provider.js";
-import { startConversationModelProviderReplayServer } from "../helpers/model-provider-replay.js";
+} from "#e2e/helpers/upstream-provider";
+import { restartWithSeededOpenAIProviders } from "#e2e/helpers/custom-openai-provider";
+import { startConversationModelProviderReplayServer } from "#e2e/helpers/model-provider-replay";
 import {
   clickV4Send,
   getV4ComposerAttachments,
+  pickV4ComposerFiles,
   prepareV4ConversationE2E,
   sendV4Prompt,
   setV4ComposerText,
   waitForV4AssistantMessageContaining,
   waitForV4Pane,
   waitForV4RowAttachments,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_NAME = "conversation-session-mixed-media-path-strip";
 const MEDIA_MODEL = "e2e-mixed-media-model";
@@ -96,9 +92,20 @@ describe("mixed-media path 与 strip 共享投影 E2E", () => {
     await prepareV4ConversationE2E({ skipProvider: true });
     await selectProviderModel(mediaProvider.id, mediaProvider.name, MEDIA_MODEL);
 
-    const showOpenDialogMock = await browser.electron.mock("dialog", "showOpenDialog");
-    await pickNativeFiles([imagePath, videoPath], showOpenDialogMock);
+    await pickV4ComposerFiles([imagePath, videoPath]);
     await waitForReadyAttachments();
+    await browser.waitUntil(
+      () =>
+        browser.execute((filename) => {
+          const image = Array.from(
+            document.querySelectorAll<HTMLImageElement>(
+              '[data-composer-attachment-kind="image"] img[alt]',
+            ),
+          ).find((candidate) => candidate.alt === filename);
+          return Boolean(image?.src.startsWith("blob:"));
+        }, imageFilename),
+      { timeout: 15_000, timeoutMsg: "VI05 文件输入图片没有显示 Composer 缩略图" },
+    );
 
     const mediaMarker = `E2E_MIXED_MEDIA_PATH_SUPPORTED_${runId}`;
     const mediaPrompt = `${mediaMarker}: inspect the image and video.`;
@@ -167,25 +174,12 @@ async function selectProviderModel(providerId: string, providerName: string, mod
   });
 }
 
-async function pickNativeFiles(paths: string[], showOpenDialogMock: ElectronMock) {
-  await showOpenDialogMock.mockResolvedValueOnce({ canceled: false, filePaths: paths });
-  const trigger = await $(`[data-testid="${TID_CHAT_ATTACHMENT_BUTTON}"]`);
-  await trigger.waitForClickable({ timeout: 15_000, timeoutMsg: "VI05 附件菜单按钮没有出现" });
-  await trigger.click();
-  const menuItem = await $(`[data-testid="${TID_CHAT_ATTACHMENT_MENU_ITEM}"]`);
-  await menuItem.waitForClickable({ timeout: 10_000, timeoutMsg: "VI05 附件菜单项没有出现" });
-  await menuItem.click();
-  await expect(showOpenDialogMock).toHaveBeenCalledWith({
-    properties: ["openFile", "multiSelections"],
-  });
-}
-
 async function waitForReadyAttachments() {
   await browser.waitUntil(
     async () => {
       const attachments = await getV4ComposerAttachments();
       return (
-        // 零拷贝路径卡片只显示图标；文件名和路径由下方真实 Provider 请求及消息附件核对。
+        // image input File 生成媒体预览；video 仍按本机路径显示图标，由 Provider 请求核对路径。
         attachments.length === 2 &&
         attachments[0]?.kind === "image" &&
         attachments[1]?.kind === "video" &&

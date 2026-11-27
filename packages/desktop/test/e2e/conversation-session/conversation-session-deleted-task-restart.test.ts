@@ -13,28 +13,28 @@ import {
   clearAppData,
   clickTestIdByDom,
   setInputValueByTestIdDom,
-} from "../helpers/desktop-app.js";
-import { restartIntoWorkspacePreservingProfile } from "../helpers/model-provider-restart.js";
+} from "#e2e/helpers/desktop-app";
+import { restartIntoWorkspacePreservingProfile } from "#e2e/helpers/model-provider-restart";
 import {
   prepareV4ConversationE2E,
   sendV4Prompt,
   waitForV4Pane,
   waitForV4MentionOptionPrefix,
   waitForV4AssistantMessageContaining,
-} from "../helpers/v4-conversation.js";
-import { ensureProjectExpanded, startDraftFromProject } from "../helpers/project-sidebar.js";
+} from "#e2e/helpers/v4-conversation";
+import { ensureProjectExpanded, startDraftFromProject } from "#e2e/helpers/project-sidebar";
 
 const CASE_TIMEOUT_MS = 180_000;
 const PROMPT_MARKER = "E2E_DELETED_TASK_RESTART";
 const REPLY_MARKER = "DELETED_TASK_RESTART_OK";
 
-describe("TSL20：CLI 软删除阻止冷启动复活", () => {
+describe("TSL20：永久删除后冷启动不复活", () => {
   after(async () => {
     await browser.electron.restoreAllMocks();
     await clearAppData();
   });
 
-  it("真实归档/永久删除后 CLI session 保留但重启不进入任何任务列表", async function () {
+  it("真实归档/永久删除清除持久数据且重启不进入任何任务列表", async function () {
     this.timeout(CASE_TIMEOUT_MS);
 
     await prepareV4ConversationE2E();
@@ -61,13 +61,9 @@ describe("TSL20：CLI 软删除阻止冷启动复活", () => {
     await deleteArchivedTask(taskId);
     await waitForArchivedRow(taskId, false, "永久删除后 Archived 仍显示任务");
 
-    // 当前删除由 CLI time_deleted 统一拥有，Host 只读 cli_deleted 镜像；不再检查旧 App deleted 字段。
-    expect(readTaskIndexState(taskId)).toMatchObject({
-      archived: 1,
-      cli_deleted: 1,
-    });
-    expect(readCliSessionState(taskId)).toMatchObject({ count: 1 });
-    expect(readCliSessionState(taskId).deletedAt).toBeGreaterThan(0);
+    // 归档永久删除已改为物理删除；同时核对索引和正文，避免只删列表行也通过。
+    expect(readTaskIndexState(taskId)).toBeNull();
+    expect(readCliSessionState(taskId)).toEqual({ session: 0, message: 0, part: 0 });
 
     await $('[data-testid="settings-back-button"]').click();
     await startDraftFromProject(DEFAULT_WORKSPACE);
@@ -89,8 +85,7 @@ describe("TSL20：CLI 软删除阻止冷启动复活", () => {
     );
 
     // 先核对持久事实，再展开列表做负向检查；删除的 CLI session 不再作为 # 候选展示。
-    expect(readCliSessionState(taskId)).toMatchObject({ count: 1 });
-    expect(readCliSessionState(taskId).deletedAt).toBeGreaterThan(0);
+    expect(readCliSessionState(taskId)).toEqual({ session: 0, message: 0, part: 0 });
 
     await setInputValueByTestIdDom(TID_V4_COMPOSER_INPUT, "#", {
       stabilizeLexicalCaretAtEnd: true,
@@ -101,18 +96,14 @@ describe("TSL20：CLI 软删除阻止冷启动复活", () => {
     await setInputValueByTestIdDom(TID_V4_COMPOSER_INPUT, "");
 
     // 冷启动可能恢复 workspace 折叠态；负向断言前必须展开，
-    // 否则所有 task row 都未渲染会制造 deleted tombstone 的假阳性。
+    // 否则所有 task row 都未渲染会制造删除不复活的假阳性。
     await ensureProjectExpanded(DEFAULT_WORKSPACE);
     await waitForProjectRow(controlId, true, "TSL20 冷启动未恢复普通对照任务");
     await waitForProjectRow(taskId, false, "CLI summary 已恢复后 deleted task 在 Project 复活");
     await toggleArchivedView();
     await waitForArchivedRow(taskId, false, "CLI summary 已恢复后 deleted task 在 Archived 复活");
-    expect(readTaskIndexState(taskId)).toMatchObject({
-      archived: 1,
-      cli_deleted: 1,
-    });
-    expect(readCliSessionState(taskId)).toMatchObject({ count: 1 });
-    expect(readCliSessionState(taskId).deletedAt).toBeGreaterThan(0);
+    expect(readTaskIndexState(taskId)).toBeNull();
+    expect(readCliSessionState(taskId)).toEqual({ session: 0, message: 0, part: 0 });
   });
 });
 
@@ -210,15 +201,20 @@ function readTaskIndexState(taskId: string): {
   }
 }
 
-function readCliSessionState(taskId: string): { count: number; deletedAt: number | null } {
+function readCliSessionState(taskId: string) {
   const database = new DatabaseSync(join(homedir(), ".raspberrycode", "cli", "db", "db.sqlite"), {
     readOnly: true,
   });
   try {
-    const row = database
-      .prepare("select count(*) as count, max(time_deleted) as deletedAt from session where id = ?")
-      .get(taskId) as { count: number; deletedAt: number | null };
-    return row;
+    return {
+      session: database.prepare("SELECT count(*) AS count FROM session WHERE id = ?").get(taskId)
+        ?.count,
+      message: database
+        .prepare("SELECT count(*) AS count FROM message WHERE session_id = ?")
+        .get(taskId)?.count,
+      part: database.prepare("SELECT count(*) AS count FROM part WHERE session_id = ?").get(taskId)
+        ?.count,
+    };
   } finally {
     database.close();
   }

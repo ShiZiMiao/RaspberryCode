@@ -33,27 +33,51 @@ if (!file) {
 }
 
 const RULES = [
+  [/@zcode-dev\//gu, "@raspberrycode-dev/"],
+  [/@zcode\//gu, "@raspberrycode/"],
   [/\bzcode-cli\b/gu, "raspberrycode-cli"],
   [/\bzcode-server-cli\b/gu, "raspberrycode-server-cli"],
   [/\bzcode-cua\b/gu, "raspberrycode-cua"],
   [/\bzcode-protocol-v4\b/gu, "raspberrycode-protocol-v4"],
   [/\bzcode-protocol\b/gu, "raspberrycode-protocol"],
+  [/\bzcode-site-plugin\b/gu, "raspberrycode-site-plugin"],
+  [/\bzcode-agent\b/gu, "raspberrycode-agent"],
+  [/\bzcode-session\b/gu, "raspberrycode-session"],
   [/\bzcode_([a-z0-9_]+)\b/gu, "raspberrycode_$1"],
   [/\bZCODE_([A-Z0-9_]+)\b/gu, "RASPBERRYCODE_$1"],
+  [/\bZCODE\b/gu, "RASPBERRYCODE"],
+  [/\bZ-Code\b/gu, "RaspberryCode"],
+  [/\bZ_Code\b/gu, "RaspberryCode"],
+  [/\bZ Code\b/gu, "RaspberryCode"],
+  [/\bz-code\b/gu, "raspberrycode"],
+  [/\bz_code\b/gu, "raspberrycode"],
+  [/\bz code\b/gu, "raspberrycode"],
   [/\bzcode([A-Z][A-Za-z0-9]*)/gu, "raspberrycode$1"],
   [/\bZcode([A-Z][A-Za-z0-9]*)/gu, "Raspberrycode$1"],
   [/\buseZCode([A-Z][A-Za-z0-9]*)/gu, "useRaspberryCode$1"],
   [/\bZCode([A-Z][A-Za-z0-9]*)/gu, "RaspberryCode$1"],
+  [/\bZCode([a-z][A-Za-z0-9]*)/gu, "RaspberryCode$1"],
+  [/([a-z0-9])ZCode([A-Za-z0-9]*)/gu, "$1RaspberryCode$2"],
+  [/([a-z0-9])ZCODE([A-Za-z0-9]*)/gu, "$1RASPBERRYCODE$2"],
   [/([a-z0-9])RaspberryCode([A-Z][A-Za-z0-9]*)/gu, "$1RaspberryCode$2"],
   [/\bZCode\b/gu, "RaspberryCode"],
   [/\bZ Code\b/gu, "RaspberryCode"],
   [/\bzcode(?![A-Za-z0-9])/gu, "raspberrycode"],
 ];
 
+const PROTECTED_LINE =
+  /raspberrycode\.error\.|X-Bigmodel|Bigmodel-Organization|X-Zcode-Plan|\.__zcode\/|OFF_PEAK_SCHEMA|offPeakTaskId|provisioning-v1/iu;
+
 function norm(text) {
-  let out = text;
-  for (const [re, to] of RULES) out = out.replace(re, to);
-  return out;
+  return text
+    .split("\n")
+    .map((line) => {
+      if (PROTECTED_LINE.test(line)) return line;
+      let out = line;
+      for (const [re, to] of RULES) out = out.replace(re, to);
+      return out;
+    })
+    .join("\n");
 }
 
 const lines = readFileSync(file, "utf8").split("\n");

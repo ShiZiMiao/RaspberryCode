@@ -6,14 +6,14 @@ import {
 } from "#e2e/helpers/remote-project-actions";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { clearAppData, switchToNewestWindow } from "../helpers/desktop-app.js";
+import { clearAppData, switchToNewestWindow } from "#e2e/helpers/desktop-app";
 import {
   connectSSHWorkspace,
   runSSHCommand,
   readSingleSSHWorkspaceRuntimeConfig,
   waitForSSHDirectoryStep,
-} from "../helpers/ssh-remote-p0.js";
-import { prepareV4ConversationE2E } from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/ssh-remote-p0";
+import { prepareV4ConversationE2E } from "#e2e/helpers/v4-conversation";
 
 const CASE_MARKER = "E2E_REMOTE_INSTALL_PROGRESS";
 const artifactDir = resolve(
@@ -53,9 +53,11 @@ describe(`${CASE_MARKER}: 远端安装真实阶段`, () => {
   it("RDUX-16 自动更新时显示实时校验与重启，随后留在设备管理", async function () {
     this.timeout(10 * 60_000);
     // harness 的目标 suffix 支持命名批次，不限十六进制；仍只允许其独立容器命名空间。
+    // 本机 Docker runner 每次新建 raspberrycode-local-remote-* 容器，同样是独立命名空间；过去漏掉它，
+    // 本机运行时第一行断言就失败。
     // 在本 case 内真实首装，再制造同版本新 SHA 验证更新。
     expect(process.env.RASPBERRYCODE_E2E_SSH_CONTAINER).toMatch(
-      /^raspberrycode-(?:progress-e2e-|r3-server-)[a-z0-9-]+$/u,
+      /^raspberrycode-(?:progress-e2e-|r3-server-|local-remote-)[a-z0-9-]+$/u,
     );
     const config = readSingleSSHWorkspaceRuntimeConfig(CASE_MARKER);
     // 隔离 HOME 首次进入职业引导；先退出引导，再使用已有 workspace 准备链。

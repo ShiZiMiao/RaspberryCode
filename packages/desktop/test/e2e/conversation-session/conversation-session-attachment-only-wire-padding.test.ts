@@ -1,15 +1,15 @@
 // T06W：附件-only query 的 UI/session 事实保持空正文，只在 provider wire 边界补固定 (no content)。
 // 证据层 L3：真实 paste → begin/chunk/commit → draft firstInput → Anthropic Messages request matcher。
 import { TID_V4_COMPOSER_INPUT, TID_V4_ROW_ATTACHMENTS } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../helpers/desktop-app.js";
-import { waitForUpstreamNetworkCapture } from "../helpers/upstream-capture.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
+import { waitForUpstreamNetworkCapture } from "#e2e/helpers/upstream-capture";
 import {
   clickV4Send,
   prepareV4ConversationE2E,
   waitForV4Pane,
   waitForV4RowAttachments,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_TIMEOUT_MS = 120_000;
 const FILENAME = "e2e-attachment-wire-padding.txt";

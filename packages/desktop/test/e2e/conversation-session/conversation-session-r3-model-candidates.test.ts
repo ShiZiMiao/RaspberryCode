@@ -1,5 +1,5 @@
 import { startDraftFromProject } from "#e2e/helpers/project-sidebar";
-import { selectTaskOrganizeMode } from "../helpers/workspace-agent-warmup.js";
+import { selectTaskOrganizeMode } from "#e2e/helpers/workspace-agent-warmup";
 import {
   disconnectRemoteSource,
   reconnectRemoteProject,
@@ -18,17 +18,17 @@ import {
   TID_V4_COMPOSER_INPUT,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData, clickTestIdByDom, DEFAULT_WORKSPACE } from "../helpers/desktop-app.js";
-import { refreshSeededOpenAIProvidersThroughSettings } from "../helpers/custom-openai-provider.js";
-import { seedCustomOpenAIChatCompletionsProvider } from "../helpers/custom-openai-provider-store.js";
+import { clearAppData, clickTestIdByDom, DEFAULT_WORKSPACE } from "#e2e/helpers/desktop-app";
+import { refreshSeededOpenAIProvidersThroughSettings } from "#e2e/helpers/custom-openai-provider";
+import { seedCustomOpenAIChatCompletionsProvider } from "#e2e/helpers/custom-openai-provider-store";
 import {
   connectSSHWorkspaceAndSendFirstTurn,
   prepareSSHLifecycle,
   type SSHLifecycleProvider,
-} from "../helpers/ssh-remote-lifecycle.js";
-import { readRemoteTabSnapshot, runSSHCommand } from "../helpers/ssh-remote-p0.js";
-import { selectV4TaskById } from "../helpers/v4-conversation.js";
-import { openWorkspaceDraftFromSidebar } from "../helpers/workspace-agent-warmup.js";
+} from "#e2e/helpers/ssh-remote-lifecycle";
+import { readRemoteTabSnapshot, runSSHCommand } from "#e2e/helpers/ssh-remote-p0";
+import { selectV4TaskById } from "#e2e/helpers/v4-conversation";
+import { openWorkspaceDraftFromSidebar } from "#e2e/helpers/workspace-agent-warmup";
 
 const CASE_MARKER = "E2E_R3_MODEL_CANDIDATES";
 const artifactDir = resolve(

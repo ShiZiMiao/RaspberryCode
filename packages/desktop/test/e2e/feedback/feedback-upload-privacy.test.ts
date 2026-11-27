@@ -2,7 +2,12 @@ import { mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { build } from "esbuild";
 import { TID_FEEDBACK_LOGS_OPT_IN } from "@raspberrycode/shared/test-ids";
-import { readSettings, seedSettings, waitForDefaultWorkspaceReady } from "#e2e/helpers/desktop-app";
+import {
+  pinE2ELocale,
+  readSettings,
+  seedSettings,
+  waitForDefaultWorkspaceReady,
+} from "#e2e/helpers/desktop-app";
 import { startHelpConfigFixture } from "#e2e/helpers/help-client-config-fixture";
 
 async function dismissInitialOnboarding() {
@@ -79,6 +84,8 @@ describe("反馈上传授权（manual review）", () => {
       await browser.refresh();
       await dismissInitialOnboarding();
       await waitForDefaultWorkspaceReady(30000);
+      // 帮助按钮的 aria-label 跟随 renderer 语言；settings 写入不会改已加载的 renderer。
+      await pinE2ELocale(locale);
       const help = $(`button[aria-label="${helpLabel}"]`);
       await help.waitForDisplayed({ timeout: 10000 });
       await help.click();
@@ -186,7 +193,7 @@ describe("FB-PRIV-02: 反馈表单到日志服务边界", () => {
 
   before(async () => {
     // 按当前 spec 定位仓库根目录，否则测试页面会从仓库外查找入口与 tsconfig。
-    const root = resolve(import.meta.dirname, "../../../../..");
+    const root = resolve(import.meta.dirname, "../../../../../..");
     const bundle = await build({
       entryPoints: [resolve(root, "packages/desktop/test/e2e/helpers/feedback-submit-fixture.js")],
       bundle: true,

@@ -1,5 +1,5 @@
 import type { ArmsCustomEventPayload } from "@raspberrycode/shared";
-import { clearAppData } from "../helpers/desktop-app.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
 import {
   prepareV4ConversationE2E,
   selectV4TaskById,
@@ -8,7 +8,7 @@ import {
   waitForV4AssistantMessageContaining,
   waitForV4ComposerSelectionReady,
   waitForV4Pane,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const PROMPT_MARKER = "E2E_SESSION_OPEN_EXISTING_ONLY";
 const REPLY_MARKER = "session-open-existing-only-ok";

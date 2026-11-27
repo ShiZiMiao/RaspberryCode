@@ -21,7 +21,7 @@ import {
   TID_TASK_SETTINGS_BUTTON,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import type { E2ENetworkCaptureArtifact } from "../helpers/network-capture-proxy.js";
+import type { E2ENetworkCaptureArtifact } from "#e2e/helpers/network-capture-proxy";
 import {
   clearAppData,
   clickTestIdByDom,
@@ -29,9 +29,9 @@ import {
   getE2EAppDataPaths,
   readSettings,
   seedCliConfig,
-} from "../helpers/desktop-app.js";
-import { waitForUpstreamRequest } from "../helpers/conversation-session-network.js";
-import { ensureToolCrossProductFullAccessMode } from "../helpers/conversation-session-tool-cross-product.js";
+} from "#e2e/helpers/desktop-app";
+import { waitForUpstreamRequest } from "#e2e/helpers/conversation-session-network";
+import { ensureToolCrossProductFullAccessMode } from "#e2e/helpers/conversation-session-tool-cross-product";
 import {
   getV4PaneSnapshot,
   prepareV4ConversationE2E,
@@ -40,7 +40,7 @@ import {
   startNewV4Draft,
   waitForV4Pane,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const E2E_TIMEOUT_MS = 240_000;
 const DEFAULT_BRANCH_PROMPT = "E2E_MEMORY_WDIO_DEFAULT_BRANCH check";
@@ -199,7 +199,7 @@ describe("Desktop Memory continuous 链路 WDIO", () => {
     await waitForV4TimelineContaining(EXTRACTED_DEFAULT_DONE, 90_000);
     await waitForUpstreamRequest(
       {
-        includes: [EXTRACTED_DEFAULT_PROMPT, "# Memory"],
+        includes: [EXTRACTED_DEFAULT_PROMPT, "# Memory\n"],
       },
       "新 session 的 default Memory Main request 未进入 provider capture",
       60_000,
@@ -243,7 +243,7 @@ describe("Desktop Memory continuous 链路 WDIO", () => {
     await sendV4Prompt(ACTIVE_AFTER_DISABLE_PROMPT);
     await waitForV4TimelineContaining(ACTIVE_AFTER_DISABLE_DONE, 90_000);
     await waitForUpstreamRequest(
-      { includes: [ACTIVE_AFTER_DISABLE_PROMPT, "# Memory"] },
+      { includes: [ACTIVE_AFTER_DISABLE_PROMPT, "# Memory\n"] },
       "Settings 关闭后当前 Session 不应热更新 Memory",
       60_000,
     );
@@ -306,7 +306,8 @@ describe("Desktop Memory continuous 链路 WDIO", () => {
       ),
     ).toHaveLength(2);
     for (const request of disabledRequests) {
-      expect(captureContains(request.requestJson, "# Memory")).toBe(false);
+      // 只看 Memory 段标题；默认 prompt 总带 `# Memory, notes and feedback`，那一段不算 Memory 注入。
+      expect(captureContains(request.requestJson, "# Memory\n")).toBe(false);
       expect(captureContains(request.requestJson, MAIN_MEMORY_INDEX_SOURCE)).toBe(false);
       expect(captureContains(request.requestJson, SELECTOR_MARKER)).toBe(false);
       expect(captureContains(request.requestJson, EXTRACTION_MARKER)).toBe(false);
@@ -746,7 +747,7 @@ async function readMainMemoryFixture(): Promise<string> {
   const content = normalizeTextFixtureLineEndings(
     await readFile(
       new URL(
-        "../../../../../apps/raspberrycode-cli/packages/core/tests/fixtures/memory/main-memory-default-index.md",
+        "../../../../../../apps/raspberrycode-cli/packages/core/tests/fixtures/memory/main-memory-default-index.md",
         import.meta.url,
       ),
       "utf8",
@@ -759,7 +760,7 @@ async function readMainMemoryIndexFixture(): Promise<string> {
   const content = normalizeTextFixtureLineEndings(
     await readFile(
       new URL(
-        "../../../../../apps/raspberrycode-cli/packages/core/tests/fixtures/memory/main-memory-index.md",
+        "../../../../../../apps/raspberrycode-cli/packages/core/tests/fixtures/memory/main-memory-index.md",
         import.meta.url,
       ),
       "utf8",

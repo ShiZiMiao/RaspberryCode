@@ -1,27 +1,26 @@
 import { writeFile } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
-import type { ElectronMock } from "@wdio/electron-types";
-import { TID_CHAT_ATTACHMENT_BUTTON, TID_CHAT_ATTACHMENT_MENU_ITEM } from "@raspberrycode/shared/test-ids";
-import { DEFAULT_WORKSPACE, clearAppData, waitForWorkspaceApp } from "../helpers/desktop-app.js";
+import { DEFAULT_WORKSPACE, clearAppData, waitForWorkspaceApp } from "#e2e/helpers/desktop-app";
 import {
   assertUpstreamRequestCapture,
   waitForUpstreamNetworkCapture,
-} from "../helpers/upstream-capture.js";
+} from "#e2e/helpers/upstream-capture";
 import {
   selectUpstreamProviderModelById,
   waitForUpstreamModelSelected,
-} from "../helpers/upstream-provider.js";
-import { restartWithSeededOpenAIProviders } from "../helpers/custom-openai-provider.js";
-import { startConversationModelProviderReplayServer } from "../helpers/model-provider-replay.js";
+} from "#e2e/helpers/upstream-provider";
+import { restartWithSeededOpenAIProviders } from "#e2e/helpers/custom-openai-provider";
+import { startConversationModelProviderReplayServer } from "#e2e/helpers/model-provider-replay";
 import {
   clickV4Send,
   prepareV4ConversationE2E,
+  pickV4ComposerFiles,
   sendV4Prompt,
   setV4ComposerText,
   waitForV4AssistantMessageContaining,
   waitForV4Pane,
   waitForV4RowAttachments,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const VISION_SEED_MODEL = "e2e-vision-seed-model";
 const GLM52_MODEL = "GLM-5.2";
@@ -100,8 +99,7 @@ describe("会话区模型切换图片输入 strip E2E", () => {
     const seedMarker = `E2E_MODEL_SWITCH_IMAGE_SEED_${runId}`;
     const seedPrompt = `${seedMarker}: Reply with exactly "${E2E_REPLY_TOKEN}" and no other text.`;
 
-    const showOpenDialogMock = await browser.electron.mock("dialog", "showOpenDialog");
-    await pickLocalImage(imageLocalPath, showOpenDialogMock);
+    await pickV4ComposerFiles([imageLocalPath]);
     await setV4ComposerText(seedPrompt);
     await clickV4Send();
 
@@ -156,29 +154,6 @@ describe("会话区模型切换图片输入 strip E2E", () => {
     );
   }).timeout(260_000);
 });
-
-async function pickLocalImage(imageLocalPath: string, showOpenDialogMock: ElectronMock) {
-  await showOpenDialogMock.mockResolvedValueOnce({
-    canceled: false,
-    filePaths: [imageLocalPath],
-  });
-  const trigger = await $(`[data-testid="${TID_CHAT_ATTACHMENT_BUTTON}"]`);
-  await trigger.waitForClickable({
-    timeout: 15_000,
-    timeoutMsg: "图片 strip case 附件菜单按钮没有出现",
-  });
-  // Radix DropdownMenu 依赖真实 pointer/click 序列；DOM element.click() 不会打开菜单。
-  await trigger.click();
-  const menuItem = await $(`[data-testid="${TID_CHAT_ATTACHMENT_MENU_ITEM}"]`);
-  await menuItem.waitForClickable({
-    timeout: 10_000,
-    timeoutMsg: "图片 strip case 附件菜单项没有出现",
-  });
-  await menuItem.click();
-  await expect(showOpenDialogMock).toHaveBeenCalledWith({
-    properties: ["openFile", "multiSelections"],
-  });
-}
 
 function assertHistoricalImageStripped(
   requestJson: unknown,

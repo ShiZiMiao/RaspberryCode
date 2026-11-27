@@ -467,7 +467,7 @@ export function spawnHostProcess(
         return;
       }
       void Promise.resolve()
-        .then(() => register(request))
+        .then(() => register(request as PluginSandboxRegisterRequestPayload))
         .then((handle) => reply({ requestId: request.requestId, ok: true, ...handle }))
         .catch((error: unknown) =>
           reply({

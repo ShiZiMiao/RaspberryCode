@@ -6,13 +6,14 @@ import {
   TID_V4_SESSION_PANE,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "./helpers/desktop-app.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
+import { seedArchiveAutomations } from "#e2e/helpers/archive-automations";
 import {
   E2E_REPLY_TOKEN,
   buildReadonlyToolPrompt,
   ensureReadonlyToolFixtureFile,
-} from "./helpers/conversation-session.js";
-import { sel } from "./helpers/selectors.js";
+} from "#e2e/helpers/conversation-session";
+import { sel } from "#e2e/helpers/selectors";
 import {
   V4_MAIN_PANE_ID,
   getV4PaneSnapshot,
@@ -20,7 +21,7 @@ import {
   sendV4Prompt,
   waitForV4Pane,
   waitForV4TimelineContaining,
-} from "./helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 describe("任务列表归档二次确认 E2E", () => {
   after(async () => {
@@ -52,6 +53,10 @@ describe("任务列表归档二次确认 E2E", () => {
     const taskId = completed.sessionId ?? (await getV4PaneSnapshot()).sessionId;
     expect(taskId).toBeTruthy();
 
+    const automations = await seedArchiveAutomations({
+      taskId: taskId as string,
+    });
+
     await hoverConversationTaskRow(taskId as string);
     await waitForArchiveButtonState(taskId as string, (state) => state.visible);
 
@@ -76,6 +81,7 @@ describe("任务列表归档二次确认 E2E", () => {
     await waitForArchiveButtonState(taskId as string, (state) => state.confirming && state.visible);
     await $(sel(testId(TID_TASK_ARCHIVE, taskId as string))).click();
     await waitForConversationTaskRowAbsent(taskId as string);
+    await automations.assertPaused();
   });
 });
 

@@ -41,6 +41,8 @@ import type { IPluginManagementService } from "./plugins/pluginManagement.js";
 import type { ISubagentsService } from "./subagents/subagents.js";
 import type { ICommandsService } from "./commands/commands.js";
 import type { IHooksService } from "./hooks/hooks.js";
+import type { IManagedWorktreeService } from "./managed-worktree-tasks/contract.js";
+import type { IVoiceInputService } from "./voice-input/contract.js";
 import type { IMemoryService } from "./memory/memory.js";
 import type { IOutputStyleService } from "./output-style/outputStyle.js";
 import type { ISettingsSyncService } from "./settings-sync/settingsSync.js";
@@ -113,6 +115,10 @@ export interface IServiceAccessor {
   readonly subagentsService: ISubagentsService;
   readonly commandsService: ICommandsService;
   readonly hooksService: IHooksService;
+  /** 托管 worktree；旧 Host 可不提供，UI 据此隐藏入口。 */
+  readonly managedWorktreeService?: IManagedWorktreeService;
+  /** 语音输入；旧 Host 可不提供，UI 据此隐藏入口。 */
+  readonly voiceInputService?: IVoiceInputService;
   readonly memoryService: IMemoryService;
   readonly outputStyleService: IOutputStyleService;
   readonly settingsSyncService: ISettingsSyncService;

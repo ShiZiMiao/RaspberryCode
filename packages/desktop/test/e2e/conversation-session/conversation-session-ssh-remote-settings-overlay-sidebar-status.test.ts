@@ -6,27 +6,27 @@ import {
   TID_TASK_SETTINGS_BUTTON,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData, clickTestIdByDom, waitForWorkspaceApp } from "../helpers/desktop-app.js";
+import { clearAppData, clickTestIdByDom, waitForWorkspaceApp } from "#e2e/helpers/desktop-app";
 import {
   getUpstreamRequestRecordCount,
   waitForUpstreamRequest,
-} from "../helpers/conversation-session-network.js";
-import { sel } from "../helpers/selectors.js";
+} from "#e2e/helpers/conversation-session-network";
+import { sel } from "#e2e/helpers/selectors";
 import {
   connectSSHWorkspaceAndSendFirstTurn,
   prepareSSHLifecycle,
   SSH_LIFECYCLE_TURN_TIMEOUT_MS,
   type SSHLifecycleProvider,
   type SSHLifecycleTask,
-} from "../helpers/ssh-remote-lifecycle.js";
-import { waitForRemoteTab } from "../helpers/ssh-remote-p0.js";
+} from "#e2e/helpers/ssh-remote-lifecycle";
+import { waitForRemoteTab } from "#e2e/helpers/ssh-remote-p0";
 import {
   selectV4TaskById,
   sendV4PromptAndWaitAccepted,
   waitForV4AssistantMessageContaining,
   waitForV4ConversationState,
-} from "../helpers/v4-conversation.js";
-import { projectSectionSelector } from "../helpers/project-sidebar.js";
+} from "#e2e/helpers/v4-conversation";
+import { projectSectionSelector } from "#e2e/helpers/project-sidebar";
 
 const CASE_MARKER = "E2E_SSH_P0_SETTINGS_OVERLAY_SIDEBAR";
 

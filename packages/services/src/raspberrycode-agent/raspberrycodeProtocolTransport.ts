@@ -14,5 +14,5 @@ export interface RaspberryCodeProtocolTransport extends IDisposable {
   readonly onMessage: Event<RaspberryCodeProtocolMessage>;
   readonly onClose: Event<RaspberryCodeProtocolTransportClosedEvent>;
   send(message: RaspberryCodeProtocolMessage): Promise<void>;
-  disposeAndWait?(): Promise<void>;
+  disposeAndWait?(options?: { deadlineAtMs?: number }): Promise<void>;
 }

@@ -1,17 +1,17 @@
 import { TID_SETTINGS_BACK_BUTTON } from "@raspberrycode/shared/test-ids";
-import { clearAppData, clickTestIdByDom } from "../helpers/desktop-app.js";
+import { clearAppData, clickTestIdByDom } from "#e2e/helpers/desktop-app";
 import {
   getPluginList,
   openPluginManagementSettings,
   selectPluginSettingsScope,
   waitForPluginControl,
-} from "../helpers/plugin-management-lifecycle.js";
-import { PLUGIN_MCP_PLUGIN_ID } from "../helpers/plugin-mcp-skill.js";
+} from "#e2e/helpers/plugin-management-lifecycle";
+import { PLUGIN_MCP_PLUGIN_ID } from "#e2e/helpers/plugin-mcp-skill";
 import {
   assertWorkspacePluginRuntime,
   pluginConfigEnabled,
   readWorkspacePluginConfig,
-} from "../helpers/workspace-plugin-runtime.js";
+} from "#e2e/helpers/workspace-plugin-runtime";
 
 describe("WPL-002 Workspace Plugin User inheritance and cold-start reload E2E", () => {
   after(async () => {
@@ -45,7 +45,8 @@ describe("WPL-002 Workspace Plugin User inheritance and cold-start reload E2E", 
           checked:
             row?.querySelector<HTMLElement>('[data-testid="plugin-settings-enabled-switch"]')
               ?.dataset.state === "checked",
-          source: row?.querySelector<HTMLElement>("[data-settings-scope]")?.dataset.settingsScope ?? null,
+          source:
+            row?.querySelector<HTMLElement>("[data-settings-scope]")?.dataset.settingsScope ?? null,
         };
       }, PLUGIN_MCP_PLUGIN_ID),
     ).toEqual({ checked: true, source: null });

@@ -7,17 +7,17 @@ import {
   TID_CHAT_MODEL_SELECT_ITEM,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { DEFAULT_WORKSPACE, clearAppData, getE2EAppDataPaths } from "../helpers/desktop-app.js";
-import { startConversationModelProviderReplayServer } from "../helpers/model-provider-replay.js";
-import { restartIntoWorkspacePreservingProfile } from "../helpers/model-provider-restart-runtime.js";
-import { seedReplayProvider } from "../helpers/model-provider-restart.js";
+import { DEFAULT_WORKSPACE, clearAppData, getE2EAppDataPaths } from "#e2e/helpers/desktop-app";
+import { startConversationModelProviderReplayServer } from "#e2e/helpers/model-provider-replay";
+import { restartIntoWorkspacePreservingProfile } from "#e2e/helpers/model-provider-restart-runtime";
+import { seedReplayProvider } from "#e2e/helpers/model-provider-restart";
 import {
   UPSTREAM_MODEL,
   UPSTREAM_PROVIDER_ID,
   UPSTREAM_PROVIDER_NAME,
   selectRegistryProviderModelById,
   selectUpstreamThoughtLevelValue,
-} from "../helpers/upstream-provider.js";
+} from "#e2e/helpers/upstream-provider";
 import {
   prepareV4ConversationE2E,
   sendV4Prompt,
@@ -26,7 +26,7 @@ import {
   selectV4TaskById,
 } from "#e2e/helpers/v4-conversation";
 
-import { waitForUpstreamNetworkCapture } from "../helpers/upstream-capture.js";
+import { waitForUpstreamNetworkCapture } from "#e2e/helpers/upstream-capture";
 
 const CASE_NAME = "conversation-session-unbound-resume";
 let replay: Awaited<ReturnType<typeof startConversationModelProviderReplayServer>>;

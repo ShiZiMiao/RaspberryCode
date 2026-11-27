@@ -4,13 +4,13 @@ import {
   TID_V4_COMPOSER_INPUT,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../helpers/desktop-app.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
 import {
   prepareV4ConversationE2E,
   switchV4Mode,
   getV4ModelConfig,
-} from "../helpers/v4-conversation.js";
-import { getUpstreamRequestRecordCount } from "../helpers/conversation-session-network.js";
+} from "#e2e/helpers/v4-conversation";
+import { getUpstreamRequestRecordCount } from "#e2e/helpers/conversation-session-network";
 
 describe("Todo151 独立 Plan 草稿", () => {
   after(async () => {

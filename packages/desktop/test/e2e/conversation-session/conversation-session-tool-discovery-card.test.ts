@@ -1,26 +1,21 @@
-import {
-  TID_SETTINGS_BACK_BUTTON,
-  TID_SETTINGS_SECTION_NAV,
-  TID_SETTINGS_TOOL_SEARCH_OPTION,
-  TID_SETTINGS_TOOL_SEARCH_SELECT,
-  TID_TASK_SETTINGS_BUTTON,
-  TID_TOOL_SUMMARY_TRIGGER,
-  testId,
-} from "@raspberrycode/shared/test-ids";
+import { TID_TOOL_SUMMARY_TRIGGER, testId } from "@raspberrycode/shared/test-ids";
 import { releaseControlledReplay } from "#e2e/helpers/controlled-replay";
 import { seedCustomAnthropicMessagesProvider } from "#e2e/helpers/custom-openai-provider";
 import { restartIntoWorkspace } from "#e2e/helpers/model-provider-restart";
 import {
   DEFAULT_WORKSPACE,
-  clickTestIdByDom,
   readSettings,
+  seedSettings,
   waitForWorkspaceApp,
 } from "#e2e/helpers/desktop-app";
 import {
   getLatestUpstreamToolResultByToolCallId,
   getUpstreamRequestToolNames,
 } from "#e2e/helpers/conversation-session-network";
-import { waitForToolCallBlockByToolCallId } from "#e2e/helpers/conversation-session-tool";
+import {
+  waitForFoldedToolCallBlockByToolCallId,
+  waitForToolCallBlockByToolCallId,
+} from "#e2e/helpers/conversation-session-tool";
 import { startConversationModelProviderReplayServer } from "#e2e/helpers/model-provider-replay";
 import {
   selectUpstreamProviderModelById,
@@ -55,21 +50,11 @@ describe("LocalToolSearch 与 ToolSearch 共用不可展开卡片", () => {
           providerId,
           providerName,
         });
+        // 在 Electron 启动前写入 Local：设置页切换只对新建/冷恢复生效，预创建草稿仍按旧值请求。
+        await seedSettings({ toolSearchMode: "local" });
       },
     });
     await prepareV4ConversationE2E({ skipProvider: true });
-    await clickTestIdByDom(TID_TASK_SETTINGS_BUTTON);
-    await clickTestIdByDom(testId(TID_SETTINGS_SECTION_NAV, "general"));
-    const select = await browser.$(`[data-testid="${TID_SETTINGS_TOOL_SEARCH_SELECT}"]`);
-    await select.scrollIntoView();
-    await select.click();
-    await clickTestIdByDom(testId(TID_SETTINGS_TOOL_SEARCH_OPTION, "local"));
-    await browser.waitUntil(async () => (await readSettings()).toolSearchMode === "local", {
-      timeout: 15_000,
-      timeoutMsg: "Local 模式未保存",
-    });
-    await clickTestIdByDom(TID_SETTINGS_BACK_BUTTON);
-    await prepareV4ConversationE2E({ skipProvider: true, skipShellReady: true });
     // 新草稿有独立模型偏好；在最终草稿上选模型，避免后续初始化重新采用默认模型。
     await selectUpstreamProviderModelById(MODEL_ID, {
       includePlainModelFallback: false,
@@ -105,11 +90,11 @@ describe("LocalToolSearch 与 ToolSearch 共用不可展开卡片", () => {
     expect(toolNames).not.toContain("ToolSearch");
 
     for (const [id, query] of [
-      ["card_single", "TodoWrite"],
-      ["card_multi", "Read, TodoWrite, WebFetch"],
-      ["card_keyword", "checklist"],
+      ["card_single", "TodoRead"],
+      ["card_multi", "Read, TodoRead, TaskOutput"],
+      ["card_keyword", "background"],
       ["card_none", "zztoolcardnomatch987654321"],
-      ["card_invalid", "TodoWrite"],
+      ["card_invalid", "TodoRead"],
     ] as const) {
       await expectCard(
         id,
@@ -120,11 +105,11 @@ describe("LocalToolSearch 与 ToolSearch 共用不可展开卡片", () => {
       expect(result).not.toBeNull();
       expect(result!.isError).toBe(id === "card_invalid");
       if (id === "card_invalid") expect(result!.content).toContain("max_results");
-      else if (id === "card_none")
-        expect(result!.content).toContain(
-          "No matching deferred tools found. Loaded tools are not searchable here and need no loading. Check your loaded tool list and query; try corrected spelling, alternative names, or broader keywords before concluding a tool is missing.",
-        );
-      else expect(result!.content).toContain("<functions>");
+      else if (id === "card_none") {
+        // 异步 MCP 可附连接诊断；本例验证无匹配和摘要卡，不绑定旧版诊断长句。
+        expect(result!.content).toMatch(/^No matching deferred tools found(?:\.|$)/u);
+        expect(result!.content).not.toContain("<functions>");
+      } else expect(result!.content).toContain("<functions>");
     }
 
     for (const locale of ["zh-CN", "en-US"] as const) {
@@ -133,10 +118,10 @@ describe("LocalToolSearch 与 ToolSearch 共用不可展开卡片", () => {
         const label = locale === "zh-CN" ? "搜索工具：" : "Search tools: ";
         await expectCard(
           "card_multi",
-          new RegExp(`${label}Read, TodoWrite, WebFetch`),
+          new RegExp(`${label}Read, TodoRead, TaskOutput`),
           "completed",
         );
-        await expectCard("card_invalid", new RegExp(`${label}TodoWrite`), "failed");
+        await expectCard("card_invalid", new RegExp(`${label}TodoRead`), "failed");
       }
     }
   });
@@ -156,7 +141,7 @@ describe("LocalToolSearch 与 ToolSearch 共用不可展开卡片", () => {
     this.timeout(90_000);
     expect((await readSettings()).messageStreamShowTodos ?? false).toBe(false);
     const before = await getV4TimelineScrollState();
-    await sendV4Prompt("E2E_TOOL_DISCOVERY_CARD_DEFERRED 更新待办并检查包装错误。");
+    await sendV4Prompt("E2E_TOOL_DISCOVERY_CARD_DEFERRED 读取待办并检查包装错误。");
     try {
       await browser.waitUntil(
         async () => {
@@ -180,9 +165,8 @@ describe("LocalToolSearch 与 ToolSearch 共用不可展开卡片", () => {
     await waitForV4Pane((pane) => !pane.canStop, "包装调用轮次未结束", 30_000);
     const result = await getLatestUpstreamToolResultByToolCallId("card_deferred_todo");
     expect(result?.isError).toBe(false);
-    expect(JSON.parse(result!.content)).toMatchObject({
-      todos: [{ content: "Deferred visibility verified", status: "completed" }],
-    });
+    // TodoWrite 已常驻，包装目标改为同属 todo 家族的 deferred 工具 TodoRead；新会话读到空清单。
+    expect(JSON.parse(result!.content)).toEqual({ todos: [] });
     expect(await browser.$('[data-tool-call-id="card_deferred_todo"]').isExisting()).toBe(false);
     const failed = await waitForToolCallBlockByToolCallId("card_deferred_invalid");
     expect(failed.toolName).toBe("DeferredToolCall");
@@ -191,7 +175,12 @@ describe("LocalToolSearch 与 ToolSearch 共用不可展开卡片", () => {
 });
 
 async function expectCard(callId: string, label: RegExp, status: string) {
-  const snapshot = await waitForToolCallBlockByToolCallId(callId, 30_000);
+  // 已完成/失败的卡片属于以正文结束的轮次，会在轮次结束后收进工作记录并重新挂载；
+  // 先等收起完成再断言。进行中和已停止的卡片沿用原等待。
+  const snapshot =
+    status === "completed" || status === "failed"
+      ? await waitForFoldedToolCallBlockByToolCallId(callId, 30_000)
+      : await waitForToolCallBlockByToolCallId(callId, 30_000);
   const block = await browser.$(`[data-testid="${snapshot.testId}"]`);
   await browser.waitUntil(async () => (await block.getAttribute("data-status")) === status, {
     timeout: 15_000,

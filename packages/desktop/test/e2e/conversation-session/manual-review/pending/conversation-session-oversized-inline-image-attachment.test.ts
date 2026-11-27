@@ -1,22 +1,18 @@
 import { join } from "node:path";
-import {
-  TID_V4_COMPOSER_INPUT,
-  TID_V4_COMPOSER_SEND,
-  TID_CHAT_ATTACHMENT_BUTTON,
-  TID_CHAT_ATTACHMENT_MENU_ITEM,
-} from "@raspberrycode/shared/test-ids";
-import { DEFAULT_WORKSPACE, clearAppData } from "../../../helpers/desktop-app.js";
+import { TID_V4_COMPOSER_INPUT, TID_V4_COMPOSER_SEND } from "@raspberrycode/shared/test-ids";
+import { DEFAULT_WORKSPACE, clearAppData } from "#e2e/helpers/desktop-app";
 import {
   assertUpstreamRequestCapture,
   waitForUpstreamNetworkCapture,
-} from "../../../helpers/upstream-capture.js";
-import { UPSTREAM_MODEL } from "../../../helpers/upstream-provider.js";
+} from "#e2e/helpers/upstream-capture";
+import { UPSTREAM_MODEL } from "#e2e/helpers/upstream-provider";
 import {
   E2E_REPLY_TOKEN,
   clickV4Send,
   getV4Messages,
   setV4ComposerText,
   getV4ComposerAttachments,
+  pickV4ComposerFiles,
   prepareV4ConversationE2E,
   waitForV4AssistantMessageContaining,
   waitForV4ConversationState,
@@ -87,10 +83,7 @@ describe("会话区超大图片附件边界 E2E", () => {
     // 修复验证原因：agent 会按磁盘 stat.size 判断本地图片是否内联。
     // 因此 T05 必须使用真实超过 20MiB 的文件，才能证明 provider 请求不会携带 data URL。
     await setV4ComposerText(prompt);
-    const picker = await browser.electron.mock("dialog", "showOpenDialog");
-    await picker.mockResolvedValueOnce({ canceled: false, filePaths: [localPath] });
-    await $(`[data-testid="${TID_CHAT_ATTACHMENT_BUTTON}"]`).click();
-    await $(`[data-testid="${TID_CHAT_ATTACHMENT_MENU_ITEM}"]`).click();
+    await pickV4ComposerFiles([localPath]);
     await waitForAttachment(filename, "ready");
 
     await clickV4Send();

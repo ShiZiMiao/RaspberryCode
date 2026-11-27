@@ -1,17 +1,17 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { TID_V4_RETRY } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../../../helpers/desktop-app.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
 import {
   getUpstreamRequestRecordCount,
   getUpstreamRequestEvidence,
   waitForUpstreamRequest,
-} from "../../../helpers/conversation-session-network.js";
+} from "#e2e/helpers/conversation-session-network";
 import {
   connectSSHWorkspaceAndSendFirstTurn,
   prepareSSHLifecycle,
   type SSHLifecycleProvider,
-} from "../../../helpers/ssh-remote-lifecycle.js";
+} from "#e2e/helpers/ssh-remote-lifecycle";
 import {
   getV4ConversationState,
   getV4Messages,
@@ -21,7 +21,7 @@ import {
   waitForV4ConversationState,
   waitForV4Pane,
   waitForV4UserMessageContaining,
-} from "../../../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_MARKER = "E2E_R3_TASK_FAULTS";
 const artifactDir = resolve(process.env.RASPBERRYCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/r3-task-faults");

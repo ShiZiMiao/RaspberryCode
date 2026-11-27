@@ -11,7 +11,7 @@ import {
   TID_WORKSPACE_MORE_BUTTON,
   TID_WORKSPACE_PATH,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData, getE2EAppDataPaths } from "../../../helpers/desktop-app.js";
+import { clearAppData, getE2EAppDataPaths } from "#e2e/helpers/desktop-app";
 import {
   addMarketplaceSourceThroughAgent,
   createPluginLifecycleFixture,
@@ -24,25 +24,25 @@ import {
   PLUGIN_LIFECYCLE_NAME,
   PLUGIN_LIFECYCLE_RUNTIME_MARKER,
   pluginStoragePath,
-} from "../../../helpers/plugin-management-lifecycle.js";
+} from "#e2e/helpers/plugin-management-lifecycle";
 import {
   getUpstreamRequestRecordCount,
   getUpstreamRequestToolNames,
   getLatestUpstreamToolResultByToolCallId,
   waitForUpstreamRequest,
-} from "../../../helpers/conversation-session-network.js";
-import { waitForToolCallBlockByToolName } from "../../../helpers/conversation-session-tool.js";
+} from "#e2e/helpers/conversation-session-network";
+import { waitForToolCallBlockByToolName } from "#e2e/helpers/conversation-session-tool";
 import {
   connectSSHWorkspaceAndSendFirstTurn,
   createSSHLifecycleProvider,
   SSH_LIFECYCLE_MODEL_ID,
   type SSHLifecycleProvider,
-} from "../../../helpers/ssh-remote-lifecycle.js";
+} from "#e2e/helpers/ssh-remote-lifecycle";
 import {
   readSingleSSHWorkspaceRuntimeConfig,
   runSSHCommand,
   type SSHConnectionConfig,
-} from "../../../helpers/ssh-remote-p0.js";
+} from "#e2e/helpers/ssh-remote-p0";
 import {
   prepareV4ConversationE2E,
   approveV4Permission,
@@ -51,7 +51,7 @@ import {
   switchV4Mode,
   sendV4PromptAndWaitAccepted,
   waitForV4AssistantMessageContaining,
-} from "../../../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_MARKER = "E2E_WPL_011_REMOTE_EXPLICIT_SYNC";
 const RUNTIME_MARKER = `${PLUGIN_LIFECYCLE_RUNTIME_MARKER}_1.0.0`;

@@ -6,16 +6,16 @@ import {
   TID_V4_SESSION_PANE,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData, getE2EAppDataPaths } from "../helpers/desktop-app.js";
+import { clearAppData, getE2EAppDataPaths } from "#e2e/helpers/desktop-app";
 import {
   getUpstreamRequestEvidence,
   waitForUpstreamRequest,
-} from "../helpers/conversation-session-network.js";
+} from "#e2e/helpers/conversation-session-network";
 import {
   buildReadonlyToolPrompt,
   ensureReadonlyToolFixtureFile,
   E2E_READONLY_TOOL_FILE_CONTENT,
-} from "../helpers/conversation-session-readonly-tool.js";
+} from "#e2e/helpers/conversation-session-readonly-tool";
 import {
   getV4PaneSnapshot,
   prepareV4ConversationE2E,
@@ -23,12 +23,12 @@ import {
   switchV4Model,
   waitForV4AssistantMessageContaining,
   waitForV4Pane,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 import {
   UPSTREAM_MODEL,
   UPSTREAM_PROVIDER_ID,
   ensureUpstreamModelForE2E,
-} from "../helpers/upstream-provider.js";
+} from "#e2e/helpers/upstream-provider";
 
 const SCENARIOS = [
   { name: "non-mcs", model: UPSTREAM_MODEL, useMidConversationSystem: false },
@@ -174,7 +174,9 @@ describe("Side chat reminder E2E", () => {
       expect(hasOtherSystemMessages).toBe(useMidConversationSystem);
       expect(boundaryMessage.role).toBe("user");
       expect(boundaryIndex).toBe(questionIndex);
-      expect(boundaryMessage.content).toMatchObject([
+      // 修复原因：non-MCS 下 Windows 会在同一条 user message 前部追加 Git Bash 平台提醒，
+      // 整体按位置比对会误判。本用例只约束 side chat 边界紧贴首条问题，因此比对末尾两段。
+      expect((boundaryMessage.content as unknown[]).slice(-2)).toMatchObject([
         { type: "text", text: expect.stringContaining(`<system-reminder>\n${BOUNDARY_TEXT}`) },
         { type: "text", text: childPrompt },
       ]);
@@ -198,18 +200,36 @@ async function openEmptySideChat(): Promise<void> {
   await $(inputSelector).click();
   await browser.keys(["/", "b", "t", "w"]);
   // App slash 选项在 mousedown 触发；不直接调用创建 session 的内部方法。
-  await browser.waitUntil(
-    async () =>
-      browser.execute(() => {
-        const option = document.querySelector<HTMLElement>('[data-option-id="app-slash:btw"]');
-        if (!option) return false;
-        option.dispatchEvent(
-          new MouseEvent("mousedown", { bubbles: true, cancelable: true, button: 0 }),
-        );
-        return true;
-      }),
-    { timeout: 15000, timeoutMsg: "裸 /btw 没有出现辅助对话选项" },
-  );
+  try {
+    await browser.waitUntil(
+      async () =>
+        browser.execute(() => {
+          const option = document.querySelector<HTMLElement>('[data-option-id="app-slash:btw"]');
+          if (!option) return false;
+          option.dispatchEvent(
+            new MouseEvent("mousedown", { bubbles: true, cancelable: true, button: 0 }),
+          );
+          return true;
+        }),
+      { timeout: 15000, timeoutMsg: "裸 /btw 没有出现辅助对话选项" },
+    );
+  } catch (error) {
+    // 失败时带回 composer 文本、焦点与当前可见选项，区分按键丢失与选项未注册。
+    const diagnostics = await browser.execute((selector) => {
+      const input = document.querySelector<HTMLElement>(selector);
+      const active = document.activeElement as HTMLElement | null;
+      return {
+        activeTestId: active?.getAttribute("data-testid") ?? active?.tagName ?? null,
+        inputText: input?.innerText ?? null,
+        optionIds: Array.from(document.querySelectorAll<HTMLElement>("[data-option-id]")).map(
+          (option) => option.dataset.optionId,
+        ),
+      };
+    }, inputSelector);
+    throw new Error(`裸 /btw 没有出现辅助对话选项; diagnostics=${JSON.stringify(diagnostics)}`, {
+      cause: error,
+    });
+  }
 }
 
 function readMessages(sessionId: string): unknown[] {

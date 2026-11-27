@@ -2,7 +2,7 @@ import { startDraftFromProject } from "#e2e/helpers/project-sidebar";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { RaspberryCodePluginInfo } from "@raspberrycode/shared";
-import { clearAppData, getE2EAppDataPaths, waitForWorkspaceApp } from "../helpers/desktop-app.js";
+import { clearAppData, getE2EAppDataPaths, waitForWorkspaceApp } from "#e2e/helpers/desktop-app";
 import {
   addMarketplaceSourceThroughAgent,
   getPluginList,
@@ -10,7 +10,7 @@ import {
   installMarketplacePluginThroughAgent,
   requirePluginManualReview,
   updateMarketplaceThroughAgent,
-} from "../helpers/plugin-management-lifecycle.js";
+} from "#e2e/helpers/plugin-management-lifecycle";
 
 const CLAUDE_MARKETPLACE_ID = "claude-plugins-official";
 const CLAUDE_HTTP_PLUGIN_NAME = "aikido";

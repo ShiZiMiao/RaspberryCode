@@ -7,7 +7,7 @@ import {
   buildServerRemoteWorkspaceIdentity,
   type BotsConfigFile,
 } from "@raspberrycode/shared";
-import { createBotProjectRuntime } from "../../../../services/src/bot-project-runtime/index.js";
+import { createBotProjectRuntime } from "../../../../../services/src/bot-project-runtime/index.js";
 import { SourceServerDirectory } from "#src/host/sourceServerDirectory.js";
 import { resolveBotRemoteWorkspace } from "#src/host/botRemoteWorkspaceResolver.js";
 import { createWindowRemoteConnectionRegistry } from "#src/host/windowRemoteConnectionRegistry.js";
@@ -67,7 +67,13 @@ it("BOT-E2E-RW-02 legacy 与 stable Bot 通过同一 Source 身份完成任务�
     getUserInstructions: async () => ({ content: "", filePath: "" }),
     saveUserInstructions: async () => ({ filePath: "" }),
   };
-  const credentials = { load: async () => null, save: async () => {}, delete: async () => {} };
+  const credentials = {
+    load: async () => null,
+    save: async () => {},
+    delete: async () => {},
+    inspectStore: async () => ({ status: "healthy" as const }),
+    recoverStore: async () => ({ status: "changed" as const }),
+  };
   const directory = new SourceServerDirectory({ settingService, credentialService: credentials });
   let connections = 0;
   const registry = createWindowRemoteConnectionRegistry({

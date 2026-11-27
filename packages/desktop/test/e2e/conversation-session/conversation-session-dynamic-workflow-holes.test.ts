@@ -1,13 +1,14 @@
 import { TID_CHAT_WORKFLOW_RUN_DIGEST } from "@raspberrycode/shared";
-import { clearAppData } from "../helpers/desktop-app.js";
+import { clearAppData, pinE2ELocale } from "#e2e/helpers/desktop-app";
 import {
   approveV4Permission,
   prepareV4ConversationE2E,
   waitForV4Pane,
   sendV4Prompt,
   waitForV4AssistantMessageContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 import { getLatestUpstreamToolResultByToolCallId } from "#e2e/helpers/conversation-session-network";
+import { isOutsideClosedHistory, openClosedHistoryFolds } from "#e2e/helpers/v4-history-folds";
 
 // 留白（docs/dynamic-workflow/presentation.md「Holes on the timeline」、docs/dynamic-workflow/launch.md
 // 「The `FillWorkflowHole` tool」、docs/dynamic-workflow/transcript-and-notifications.md「The hole row's live state」）
@@ -22,6 +23,8 @@ const DECIDE_HOLE_ID = "hole#21b40fca";
 describe("动态工作流 · 留白", () => {
   before(async () => {
     await prepareV4ConversationE2E();
+    // 断言中文文案：固定界面语言，不跟随宿主系统语言（容器里默认英文）。
+    await pinE2ELocale("zh-CN");
   });
   after(async () => {
     await browser.electron.restoreAllMocks();
@@ -119,11 +122,20 @@ describe("动态工作流 · 留白", () => {
       { timeout: 60_000, timeoutMsg: "FillWorkflowHole 未执行成功" },
     );
     await waitForV4AssistantMessageContaining("补全", 180000);
-    const fillRow = await $(
-      '[data-testid="workflow-tool-summary"][data-tool-call-id]:has([data-testid="workflow-summary-hole-name"])',
+    const fillRowSelector =
+      '[data-testid="workflow-tool-summary"][data-tool-call-id]:has([data-testid="workflow-summary-hole-name"])';
+    const fillRow = await $(fillRowSelector);
+    // 回复文字出现时这一轮可能已结束，补全行随之收进「已处理」折叠、不在 DOM 中：先展开再等它。
+    // 折叠原地收起的动画里行还在 DOM（见 helpers/v4-history-folds.ts），收起中的行不算出现。
+    await browser.waitUntil(
+      async () => {
+        await openClosedHistoryFolds();
+        if (!(await isOutsideClosedHistory(fillRowSelector))) return false;
+        // 折叠展开的动画里行已算显示、文字还读不到，所以等到文字才算出现。
+        return (await fillRow.isDisplayed()) && (await fillRow.getText()).includes("留白已补全");
+      },
+      { timeout: 60000, timeoutMsg: "补全行没有写出「留白已补全」" },
     );
-    await fillRow.waitForDisplayed({ timeout: 60000 });
-    expect(await fillRow.getText()).toContain("留白已补全");
     expect(await fillRow.$('[data-testid="workflow-summary-hole-phases"]').getText()).toContain(
       "个阶段",
     );

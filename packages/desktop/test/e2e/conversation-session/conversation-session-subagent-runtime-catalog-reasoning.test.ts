@@ -21,7 +21,7 @@ import {
   TID_V4_MODEL_CONFIG,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { selectCombinedComposerThoughtLevel } from "../helpers/composer-model-picker.js";
+import { selectCombinedComposerThoughtLevel } from "#e2e/helpers/composer-model-picker";
 import {
   DEFAULT_WORKSPACE,
   clearAppData,
@@ -29,23 +29,23 @@ import {
   readAgentsState,
   waitForTestIdByDom,
   waitForWorkspaceApp,
-} from "../helpers/desktop-app.js";
+} from "#e2e/helpers/desktop-app";
 import type {
   E2ENetworkCaptureArtifact,
   E2ENetworkCaptureRecord,
-} from "../helpers/network-capture-proxy.js";
+} from "#e2e/helpers/network-capture-proxy";
 import {
   UPSTREAM_MODEL,
   UPSTREAM_PROVIDER_ID,
   selectUpstreamProviderModelById,
-} from "../helpers/upstream-provider.js";
-import { resolveE2EStorageRoot } from "../helpers/e2e-runtime-paths.js";
+} from "#e2e/helpers/upstream-provider";
+import { resolveE2EStorageRoot } from "#e2e/helpers/e2e-runtime-paths";
 import {
   restartIntoWorkspacePreservingProfile,
   seedPersistedModelSelection,
-} from "../helpers/model-provider-restart.js";
-import { sel } from "../helpers/selectors.js";
-import { waitForToolCallBlockByToolName } from "../helpers/conversation-session-tool.js";
+} from "#e2e/helpers/model-provider-restart";
+import { sel } from "#e2e/helpers/selectors";
+import { waitForToolCallBlockByToolName } from "#e2e/helpers/conversation-session-tool";
 import {
   getV4PaneSnapshot,
   prepareV4ConversationE2E,
@@ -54,7 +54,7 @@ import {
   waitForV4ComposerText,
   waitForV4ConversationState,
   waitForV4UserMessageContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const PROVIDER_ID = "e2e-claude-runtime-catalog";
 const PROVIDER_NAME = "Claude Runtime Catalog E2E";
@@ -205,6 +205,17 @@ async function configureSubagentReasoningOverrides() {
   await waitForTestIdByDom(testId(TID_SUBAGENT_ROW, "general-purpose"));
   await assertThoughtOptionsAndSelectInScope(generalScope, THOUGHT_LEVELS, GENERAL_EFFORT);
   await assertNoGenericModelTooltip(generalScope);
+  // 等 general-purpose 本行保存完整结束：先落盘，再等本行控件恢复可用。
+  // 本行的写操作标记在写盘前设置、写后刷新结束的 finally 才移除，所以控件可用即保存与刷新都已完成；
+  // 之后再操作 Explore，两行的写操作与刷新不重叠，不用固定等待。
+  await waitForAgentsState(
+    (state) => readBuiltInReasoningLevel(state, "general-purpose") === GENERAL_EFFORT,
+    "general-purpose high effort 没有写入 agents-state.json",
+  );
+  await $(generalScope).$(sel(TID_CHAT_THOUGHT_LEVEL_SELECT_TRIGGER)).waitForEnabled({
+    timeout: 15000,
+    timeoutMsg: "general-purpose 保存后的列表刷新没有结束",
+  });
 
   const exploreScope = sel(testId(TID_SUBAGENT_ROW, "Explore"));
   await waitForTestIdByDom(testId(TID_SUBAGENT_ROW, "Explore"));
@@ -462,6 +473,8 @@ async function assertCurrentThoughtLabel(scope: string, thoughtLevel: string) {
     medium: ["medium", "中"],
     high: ["high", "高"],
     xhigh: ["extra high", "极高"],
+    // 修复原因：中文界面下 max 的 aria-label 是「最高」，旧表缺这一档只能匹配英文 max。
+    max: ["max", "最高"],
   };
   await browser.waitUntil(
     async () => {

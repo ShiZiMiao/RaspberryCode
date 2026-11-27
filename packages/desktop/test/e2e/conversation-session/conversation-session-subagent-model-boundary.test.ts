@@ -12,7 +12,7 @@ import {
   TID_V4_STOP,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData, clickTestIdByDom } from "../helpers/desktop-app.js";
+import { clearAppData, clickTestIdByDom } from "#e2e/helpers/desktop-app";
 import {
   getV4PaneSnapshot,
   prepareV4ConversationE2E,
@@ -20,13 +20,13 @@ import {
   waitForV4AssistantMessageContaining,
   waitForV4ConversationState,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
-import { waitForToolCallBlockByToolName } from "../helpers/conversation-session-tool.js";
+} from "#e2e/helpers/v4-conversation";
+import { waitForToolCallBlockByToolName } from "#e2e/helpers/conversation-session-tool";
 import {
   restartIntoWorkspacePreservingProfile,
   seedReplayProvider,
-} from "../helpers/model-provider-restart.js";
-import { sel } from "../helpers/selectors.js";
+} from "#e2e/helpers/model-provider-restart";
+import { sel } from "#e2e/helpers/selectors";
 import { openComposerProviderList } from "#e2e/helpers/upstream-provider";
 
 const START_PROVIDER_ID = "e2e-start-subagent-boundary";

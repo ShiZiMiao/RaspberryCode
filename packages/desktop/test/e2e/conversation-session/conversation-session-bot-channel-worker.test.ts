@@ -1,9 +1,9 @@
-import { createBotWorkerIntegration } from "../helpers/bot-worker-integration.js";
-import { startConversationModelProviderReplayServer } from "../helpers/model-provider-replay.js";
+import { createBotWorkerIntegration } from "#e2e/helpers/bot-worker-integration";
+import { startConversationModelProviderReplayServer } from "#e2e/helpers/model-provider-replay";
 import {
   createRecordingFeishuFetch,
   type RecordedRequest,
-} from "../bots/helpers/bots-service-harness.js";
+} from "#e2e/bots/helpers/bots-service-harness";
 import { generateTraceId, type BotInboundMessage } from "@raspberrycode/shared";
 
 // 默认工具注册与发送接线暂停；保留原用例及 fixture，待插件入口接入后恢复。

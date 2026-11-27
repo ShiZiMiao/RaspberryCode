@@ -9,16 +9,16 @@ import {
   TID_WORKSPACE_FILE_TREE_ROW,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData, clickTestIdByDom, waitForTestIdByDom } from "../helpers/desktop-app.js";
-import { prepareV4ConversationE2E } from "../helpers/v4-conversation.js";
+import { clearAppData, clickTestIdByDom, waitForTestIdByDom } from "#e2e/helpers/desktop-app";
+import { prepareV4ConversationE2E } from "#e2e/helpers/v4-conversation";
 import {
   connectSSHWorkspace,
   readHostProcesses,
   readSSHRuntimeConfig,
   runSSHCommand,
   type SSHRuntimeConfig,
-} from "../helpers/ssh-remote-p0.js";
-import { openProjectFileTree } from "../helpers/project-sidebar.js";
+} from "#e2e/helpers/ssh-remote-p0";
+import { openProjectFileTree } from "#e2e/helpers/project-sidebar";
 
 const CASE_MARKER = "SSH_P0_DEVELOPMENT";
 const FILE_MARKER = "SSH_P0_REMOTE_FILE_MARKER";

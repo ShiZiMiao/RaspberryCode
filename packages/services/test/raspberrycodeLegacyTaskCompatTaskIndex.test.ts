@@ -80,7 +80,7 @@ afterEach(async () => {
   }
 });
 
-function useTempDataBaseDir(): string {
+function setupTempDataBaseDir(): string {
   const dir = mkdtempSync(join(tmpdir(), "raspberrycode-task-index-"));
   tempDirs.push(dir);
   setDataBaseDir(dir);
@@ -457,7 +457,7 @@ function createService(options?: {
   settings?: Partial<AppSettings>;
   cuaProductMcpServerResolver?: CuaProductMcpServerResolver;
 }) {
-  useTempDataBaseDir();
+  setupTempDataBaseDir();
   const { agent, eventEmitter, indexFrameEmitter } = createAgentMock();
   const settingService = options?.settings
     ? {

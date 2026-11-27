@@ -6,9 +6,9 @@ import {
   TID_WORKSPACE_HEADER,
   TID_WORKSPACE_TITLE,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../helpers/desktop-app.js";
-import { listSystemProcesses } from "../helpers/e2e-process-cleanup.js";
-import { prepareV4ConversationE2E } from "../helpers/v4-conversation.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
+import { listSystemProcesses } from "#e2e/helpers/e2e-process-cleanup";
+import { prepareV4ConversationE2E } from "#e2e/helpers/v4-conversation";
 
 const TAB_SELECTOR = "[data-side-pane-tab-id]";
 const VIEWPORT_SELECTOR = "[data-side-pane-tabs-viewport]";
@@ -68,12 +68,43 @@ interface TabStripMetrics {
 describe("Side Pane Tab responsive interactions", () => {
   before(async () => {
     await prepareV4ConversationE2E({ skipProvider: true });
+    // 运行日志确认冷启预热回填会重新同步面板 scope；布局用例先等待投影就绪。
+    await browser.waitUntil(
+      () =>
+        browser.execute(() => {
+          const pane = document.querySelector('[data-session-id="draft"]');
+          return (
+            pane?.getAttribute("data-session-lifecycle") === "ready" &&
+            Boolean(pane.getAttribute("data-projection-seq"))
+          );
+        }),
+      { timeout: 30_000, timeoutMsg: "布局用例的草稿投影尚未就绪" },
+    );
   });
 
   after(async () => {
     await browser.electron.restoreAllMocks();
     await clearAppData();
   });
+
+  async function expectSidePaneIndicatorCentered() {
+    const offset = await browser.execute(() => {
+      const handle = document.querySelector('[data-workspace-side-pane-resize-handle="true"]')!;
+      const left = document
+        .querySelector('[data-workspace-conversation-frame="true"]')!
+        .getBoundingClientRect();
+      const right = document
+        .querySelector('[data-workspace-side-frame="true"]')!
+        .getBoundingClientRect();
+      const indicator = getComputedStyle(handle, "::after");
+      const center =
+        handle.getBoundingClientRect().left +
+        parseFloat(indicator.left) +
+        parseFloat(indicator.width) / 2;
+      return Math.abs(center - (left.right + right.left) / 2);
+    });
+    expect(offset).toBeLessThan(0.1);
+  }
 
   it("SPT-E2E-000 renders the shared header skeleton for a new task draft", async () => {
     const header = await $(`[data-testid="${TID_WORKSPACE_HEADER}"]`);
@@ -317,6 +348,7 @@ describe("Side Pane Tab responsive interactions", () => {
       indicatorOpacity: "0",
       handleWidth: 3,
     });
+    await expectSidePaneIndicatorCentered();
     await hoverResizeHandle('[data-workspace-side-pane-resize-handle="true"]');
     await assertResizeHandleVisible('[data-workspace-side-pane-resize-handle="true"]');
     if (process.platform === "win32" || process.platform === "linux") {
@@ -423,6 +455,7 @@ describe("Side Pane Tab responsive interactions", () => {
       ]) {
         expect((await readResizeHandleStyle(selector)).hasExtendedIndicatorLine).toBe(true);
       }
+      await expectSidePaneIndicatorCentered();
       const colors = await browser.execute(() => {
         const left = document.querySelector('[data-workspace-conversation-frame="true"]')!;
         const right = document.querySelector('[data-workspace-side-frame="true"]')!;
@@ -854,7 +887,9 @@ describe("Side Pane Tab responsive interactions", () => {
                   style.borderTopRightRadius,
                   style.borderBottomLeftRadius,
                   style.borderBottomRightRadius,
-                ].every((value) => value === "5px") &&
+                  // 修复原因：2026-10 起 Windows 面板圆角改用设计 token rounded-md（6px），
+                  // 旧断言沿用 09-04 的 5px 规则；以 workspace-independent-panels 规格为准。
+                ].every((value) => value === "6px") &&
                 [
                   style.borderTopWidth,
                   style.borderRightWidth,
@@ -863,7 +898,7 @@ describe("Side Pane Tab responsive interactions", () => {
                 ].every((value) => value === "1px")
               );
             }),
-          { timeout: 5000, timeoutMsg: "最大化后的 Side Pane 必须保持四角 5px 和完整边框" },
+          { timeout: 5000, timeoutMsg: "最大化后的 Side Pane 必须保持四角 6px 和完整边框" },
         );
       } finally {
         await maximize.click();
@@ -912,26 +947,40 @@ describe("Side Pane Tab responsive interactions", () => {
         win.show();
       });
     }
-    // 验证真实 close 事件，但阻止测试窗口退出，避免销毁 WDIO 会话。
+    // 修复原因：Windows 关闭最后一个窗口已改为直接 markForceQuit + app.quit()（不再只靠 close 事件），
+    // 旧写法在 close 事件里 preventDefault 拦不住退出，WDIO 会话被销毁、后续用例全部 window closed。
+    // 本用例验证自绘按钮经 DesktopCommand 路由到窗口 close；在窗口实例上临时记录 close 调用，
+    // renderer → IPC → command 链路仍是真实的，退出流程不在本用例范围。
     await browser.electron.execute((electron) => {
       const win = electron.BrowserWindow.getAllWindows()[0]! as Electron.BrowserWindow & {
         testCloseReceived?: boolean;
       };
       win.testCloseReceived = false;
-      win.once("close", (event) => {
-        event.preventDefault();
+      win.close = () => {
         win.testCloseReceived = true;
-      });
+      };
     });
-    await $('[data-testid="window-control-close"]').click();
-    expect(
+    try {
+      await $('[data-testid="window-control-close"]').click();
+      await browser.waitUntil(async () =>
+        browser.electron.execute(
+          (electron) =>
+            (
+              electron.BrowserWindow.getAllWindows()[0]! as Electron.BrowserWindow & {
+                testCloseReceived?: boolean;
+              }
+            ).testCloseReceived === true,
+        ),
+      );
+    } finally {
       await browser.electron.execute((electron) => {
         const win = electron.BrowserWindow.getAllWindows()[0]! as Electron.BrowserWindow & {
-          testCloseReceived?: boolean;
+          close: unknown;
         };
-        return win.testCloseReceived;
-      }),
-    ).toBe(true);
+        // 删除实例属性，恢复原型上的真实 close。
+        delete (win as { close?: unknown }).close;
+      });
+    }
   });
   it("SPT-E2E-009 opens a real new tab and replaces it with a tool", async () => {
     await ensureSidePaneExpanded();
@@ -1066,6 +1115,15 @@ async function dragResizeHandle(selector: string, deltaX: number, deltaY: number
   ]);
   try {
     await assertResizeHandleVisible(selector);
+    // 开关有尺寸动画，真实拖拽仍必须跟手；按下期间不能继续做 width / flex-grow 过渡。
+    const sizeMotion = await browser.execute(() => ({
+      left: getComputedStyle(document.querySelector('[data-workspace-sidebar-panel="true"]')!)
+        .transitionProperty,
+      right: getComputedStyle(document.querySelector("#browser")!).transitionDuration,
+    }));
+    if (selector === '[data-testid="resizable-handle"]')
+      expect(sizeMotion.left).not.toContain("width");
+    expect(sizeMotion.right).toBe("0s");
   } finally {
     await browser.performActions([
       {
@@ -1191,6 +1249,9 @@ async function readTabCount(): Promise<number> {
 }
 
 async function ensureSidePaneExpanded(): Promise<void> {
+  // 运行时记录确认标题栏按钮会随收起动画移动；功能用例先等布局稳定再点坐标。
+  // 动画中的快速反向另由 STF02 采样验证，这里不以可见/可点击代替动画完成。
+  await waitForSidePaneMotion();
   // Side Pane 收起后仍保留 DOM，不能把标签栏存在当作已展开；等待实际面板显示后再操作。
   const isExpanded = () =>
     browser.execute(() => {
@@ -1211,6 +1272,26 @@ async function ensureSidePaneExpanded(): Promise<void> {
     await toggle.click();
   }
   await browser.waitUntil(isExpanded, { timeout: 10_000, timeoutMsg: "Side Pane 未实际展开" });
+  await waitForSidePaneMotion();
+}
+
+async function waitForSidePaneMotion(): Promise<void> {
+  // Panel 尺寸命令和目标布局各在后续帧提交，先跨过提交帧再检查真实 CSS 过渡。
+  await browser.executeAsync((done) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(() => done())));
+  });
+  await browser.waitUntil(() =>
+    browser.execute(
+      () =>
+        !document
+          .querySelector("#browser")
+          ?.getAnimations()
+          .some(
+            (animation) =>
+              animation instanceof CSSTransition && animation.transitionProperty === "flex-grow",
+          ),
+    ),
+  );
 }
 
 async function setTabsViewportWidth(widthPx: number): Promise<void> {

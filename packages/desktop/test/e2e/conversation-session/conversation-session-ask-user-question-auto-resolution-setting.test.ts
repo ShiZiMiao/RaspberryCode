@@ -7,7 +7,7 @@ import {
   TID_TASK_SETTINGS_BUTTON,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData, clickTestIdByDom, readSettings } from "../helpers/desktop-app.js";
+import { clearAppData, clickTestIdByDom, readSettings } from "#e2e/helpers/desktop-app";
 import {
   prepareV4ConversationE2E,
   sendV4Prompt,
@@ -82,7 +82,7 @@ function requireInjectedClockScale(): number {
 }
 
 async function setAutoResolutionEnabled(enabled: boolean): Promise<void> {
-  await openGeneralSettings();
+  await openAgentBehaviorSettings();
   if ((await readAutoResolutionSwitch()) !== enabled) {
     await clickTestIdByDom(TID_SETTINGS_ASK_USER_QUESTION_AUTO_RESOLUTION_SWITCH, {
       timeout: 15_000,
@@ -106,7 +106,7 @@ async function setAutoResolutionEnabled(enabled: boolean): Promise<void> {
   });
 }
 
-async function openGeneralSettings(): Promise<void> {
+async function openAgentBehaviorSettings(): Promise<void> {
   await clickTestIdByDom(TID_TASK_SETTINGS_BUTTON, {
     timeout: 15_000,
     timeoutMsg: "没有找到设置入口按钮",
@@ -120,13 +120,13 @@ async function openGeneralSettings(): Promise<void> {
       ),
     { timeout: 15_000, timeoutMsg: "设置页没有打开" },
   );
-  await clickTestIdByDom(testId(TID_SETTINGS_SECTION_NAV, "general"), {
+  await clickTestIdByDom(testId(TID_SETTINGS_SECTION_NAV, "agentBehavior"), {
     timeout: 15_000,
-    timeoutMsg: "设置页没有常规分区入口",
+    timeoutMsg: "设置页没有行为与工具分区入口",
   });
   await browser.waitUntil(async () => (await readAutoResolutionSwitch()) !== null, {
     timeout: 15_000,
-    timeoutMsg: "常规设置没有提问自动继续开关",
+    timeoutMsg: "行为与工具设置没有提问自动继续开关",
   });
 }
 

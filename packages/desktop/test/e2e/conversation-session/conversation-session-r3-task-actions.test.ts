@@ -9,19 +9,19 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parseRemoteWorkspaceIdentity } from "@raspberrycode/shared";
 import { TID_TASK_ARCHIVE, TID_TASK_ITEM, testId } from "@raspberrycode/shared/test-ids";
-import { clearAppData, clickTestIdByDom } from "../helpers/desktop-app.js";
+import { clearAppData, clickTestIdByDom } from "#e2e/helpers/desktop-app";
 import {
   connectSSHWorkspaceAndSendFirstTurn,
   prepareSSHLifecycle,
   type SSHLifecycleProvider,
-} from "../helpers/ssh-remote-lifecycle.js";
-import { readRemoteTabSnapshot, runSSHCommand } from "../helpers/ssh-remote-p0.js";
+} from "#e2e/helpers/ssh-remote-lifecycle";
+import { readRemoteTabSnapshot, runSSHCommand } from "#e2e/helpers/ssh-remote-p0";
 import {
   selectV4TaskById,
   waitForV4ConversationState,
   sendV4PromptAndWaitAccepted,
   waitForV4AssistantMessageContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_MARKER = "E2E_R3_TASK_ACTIONS";
 const artifactDir = resolve(process.env.RASPBERRYCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/r3-task-actions");

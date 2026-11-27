@@ -14,7 +14,7 @@ import {
   TID_SSH_CONNECT_TRIGGER,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData, DEFAULT_WORKSPACE } from "../../../helpers/desktop-app.js";
+import { clearAppData, DEFAULT_WORKSPACE } from "#e2e/helpers/desktop-app";
 import { openWorkspaceDraftFromSidebar } from "#e2e/helpers/workspace-agent-warmup";
 import { disconnectRemoteSource } from "#e2e/helpers/remote-project-actions";
 import {
@@ -22,13 +22,13 @@ import {
   getUpstreamRequestEvidence,
   getUpstreamRequestRecordCount,
   waitForUpstreamRequest,
-} from "../../../helpers/conversation-session-network.js";
+} from "#e2e/helpers/conversation-session-network";
 import {
   connectSSHWorkspaceAndSendFirstTurn,
   listRemoteAgentProcesses,
   prepareSSHLifecycle,
   type SSHLifecycleProvider,
-} from "../../../helpers/ssh-remote-lifecycle.js";
+} from "#e2e/helpers/ssh-remote-lifecycle";
 import {
   connectSSHWorkspace,
   prepareSSHConnectionPage,
@@ -36,7 +36,7 @@ import {
   readHostProcesses,
   readRemoteTabSnapshot,
   runSSHCommand,
-} from "../../../helpers/ssh-remote-p0.js";
+} from "#e2e/helpers/ssh-remote-p0";
 import {
   prepareV4ConversationE2E,
   getV4ConversationState,
@@ -48,7 +48,7 @@ import {
   waitForV4Pane,
   waitForV4QueueCount,
   waitForV4TimelineContaining,
-} from "../../../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_MARKER = "E2E_R3_MOBILE";
 const artifactDir = resolve(process.env.RASPBERRYCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/r3-mobile");

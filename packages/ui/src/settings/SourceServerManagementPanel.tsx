@@ -22,7 +22,7 @@ import {
   FileWarning,
   Folder,
   ListTree,
-  Loader2,
+  LoaderCircle,
   Pencil,
   Plus,
   Power,
@@ -780,7 +780,7 @@ export function SourceServerManagementPanel({
       }
     >
       {busyOperations.has(`identity:${profile.profileId}`) ? (
-        <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+        <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" />
       ) : null}
       {intl.formatMessage({ id: "settings.source.identityChangeConfirm" })}
     </Button>
@@ -1001,7 +1001,7 @@ export function SourceServerManagementPanel({
           role="status"
           className="flex items-center gap-2 text-ui-base text-remote-foreground-muted"
         >
-          <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+          <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
           {intl.formatMessage({ id: "common.loading" })}
         </p>
       ) : null}
@@ -1319,7 +1319,7 @@ export function SourceServerManagementPanel({
                           }}
                         >
                           {actionBusy ? (
-                            <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+                            <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" />
                           ) : null}
                           {intl.formatMessage({
                             id:
@@ -1348,7 +1348,7 @@ export function SourceServerManagementPanel({
                           }
                         >
                           {busyOperations.has(`connect:${preferredProfile.profileId}`) ? (
-                            <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+                            <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" />
                           ) : null}
                           {intl.formatMessage({ id: "remote.action.connect" })}
                         </Button>

@@ -2,21 +2,21 @@ import { startDraftFromProject } from "#e2e/helpers/project-sidebar";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parseRemoteWorkspaceIdentity, providerProvisioningResultSchema } from "@raspberrycode/shared";
-import { clearAppData } from "../helpers/desktop-app.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
 import {
   getUpstreamRequestRecordCount,
   waitForUpstreamRequest,
-} from "../helpers/conversation-session-network.js";
+} from "#e2e/helpers/conversation-session-network";
 import {
   selectUpstreamProviderModelById,
   selectUpstreamThoughtLevelValue,
-} from "../helpers/upstream-provider.js";
+} from "#e2e/helpers/upstream-provider";
 import {
   connectSSHWorkspaceAndSendFirstTurn,
   createSSHLifecycleProvider,
   SSH_LIFECYCLE_MODEL_ID,
   type SSHLifecycleProvider,
-} from "../helpers/ssh-remote-lifecycle.js";
+} from "#e2e/helpers/ssh-remote-lifecycle";
 import {
   clickLastEnabledSSHDialogButton,
   fillSSHPasswordSettings,
@@ -32,7 +32,7 @@ import {
   completeSSHProjectConnection,
   waitForSSHDirectoryStep,
   type SSHConnectionConfig,
-} from "../helpers/ssh-remote-p0.js";
+} from "#e2e/helpers/ssh-remote-p0";
 import {
   getV4ConversationState,
   prepareV4ConversationE2E,
@@ -40,7 +40,7 @@ import {
   sendV4PromptAndWaitAccepted,
   waitForV4AssistantMessageContaining,
   waitForV4ConversationState,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_MARKER = "E2E_R3_ENTRY_ATTRIBUTION";
 const REPLY = "R3_ENTRY_ATTRIBUTION_REPLY";

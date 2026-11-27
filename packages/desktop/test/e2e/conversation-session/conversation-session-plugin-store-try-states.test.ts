@@ -1,16 +1,17 @@
 import { cp, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { TID_V4_COMPOSER_INPUT } from "@raspberrycode/shared/test-ids";
-import { clearAppData, setInputValueByTestIdDom } from "../helpers/desktop-app.js";
+import { clearAppData, setInputValueByTestIdDom } from "#e2e/helpers/desktop-app";
 import {
   ELECTRON_WINDOW_RECORDING_CAPTURE_MODE,
+  isElectronRecordingEncoderAvailable,
   startElectronWindowRecording,
-} from "../helpers/electron-window-recorder.js";
+} from "#e2e/helpers/electron-window-recorder";
 import {
   getV4ComposerText,
   waitForV4MentionOptionPrefix,
   waitForV4Pane,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 import {
   PLUGIN_LIFECYCLE_EXAMPLE_PROMPT,
   PLUGIN_LIFECYCLE_ID,
@@ -25,7 +26,7 @@ import {
   getPluginList,
   waitUntilPluginList,
   waitForPluginControl,
-} from "../helpers/plugin-management-lifecycle.js";
+} from "#e2e/helpers/plugin-management-lifecycle";
 
 const CASE_TIMEOUT_MS = 300_000;
 const CASE_ID = "PLG12-TRY-STATES";
@@ -57,11 +58,18 @@ describe("PLG12 Plugin 商店试用状态视觉验收", () => {
       pluginId: PLUGIN_LIFECYCLE_ID,
     });
 
-    const recording = await startElectronWindowRecording({
-      frameIntervalMs: 250,
-      outputPath: VIDEO_PATH,
-      preRollDurationMs: 500,
-    });
+    // 修复原因：录屏只是视觉复核证据，runner 缺 ffmpeg 时 stop() 编码会报 spawn ENOENT，
+    // 把证据通道失败记成行为失败。编码器不可用时跳过录屏，行为断言与截图保持不变。
+    const recording = (await isElectronRecordingEncoderAvailable())
+      ? await startElectronWindowRecording({
+          frameIntervalMs: 250,
+          outputPath: VIDEO_PATH,
+          preRollDurationMs: 500,
+        })
+      : null;
+    if (!recording) {
+      console.warn(`[${CASE_ID}] ffmpeg unavailable; skip window recording evidence`);
+    }
 
     try {
       await capturePluginManualReview(CASE_ID, "01-uninstalled-detail");
@@ -112,33 +120,36 @@ describe("PLG12 Plugin 商店试用状态视觉验收", () => {
       expect(optionId.startsWith("plugin:")).toBe(true);
       await capturePluginManualReview(CASE_ID, "06-at-plugin-picker-retained");
     } finally {
-      const recordingResult = await recording.stop({
-        tailDurationMs: 1_000,
-        timeoutMs: 60_000,
-      });
-      expect(recordingResult.captureMode).toBe(ELECTRON_WINDOW_RECORDING_CAPTURE_MODE);
-      expect(recordingResult.frameCount).toBeGreaterThan(1);
-      expect(recordingResult.captureError).toBeUndefined();
-      await writeFile(
-        VIDEO_MANIFEST_PATH,
-        `${JSON.stringify(
-          {
-            caseId: CASE_ID,
-            frameCount: recordingResult.frameCount,
-            states: [
-              "uninstalled-install-only",
-              "installed-enabled-canonical-draft",
-              "installed-disabled-canonical-draft",
-              "composer-at-plugin-picker-retained",
-            ],
-            video_capture_mode: recordingResult.captureMode,
-            videoPath: recordingResult.videoPath,
-          },
-          null,
-          2,
-        )}\n`,
-        "utf-8",
-      );
+      // 不能在 finally 里 return：会吞掉 try 中的断言错误。
+      if (recording) {
+        const recordingResult = await recording.stop({
+          tailDurationMs: 1_000,
+          timeoutMs: 60_000,
+        });
+        expect(recordingResult.captureMode).toBe(ELECTRON_WINDOW_RECORDING_CAPTURE_MODE);
+        expect(recordingResult.frameCount).toBeGreaterThan(1);
+        expect(recordingResult.captureError).toBeUndefined();
+        await writeFile(
+          VIDEO_MANIFEST_PATH,
+          `${JSON.stringify(
+            {
+              caseId: CASE_ID,
+              frameCount: recordingResult.frameCount,
+              states: [
+                "uninstalled-install-only",
+                "installed-enabled-canonical-draft",
+                "installed-disabled-canonical-draft",
+                "composer-at-plugin-picker-retained",
+              ],
+              video_capture_mode: recordingResult.captureMode,
+              videoPath: recordingResult.videoPath,
+            },
+            null,
+            2,
+          )}\n`,
+          "utf-8",
+        );
+      }
     }
   });
 });

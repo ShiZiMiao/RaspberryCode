@@ -1,15 +1,15 @@
-import { skipOccupationOnboardingIfPresent } from "../helpers/occupation-onboarding.js";
+import { skipOccupationOnboardingIfPresent } from "#e2e/helpers/occupation-onboarding";
 import { ModelConfig, ProviderConfig } from "@raspberrycode/provider";
 import { NodePersonalProviderConfigRepository } from "@raspberrycode/provider-node";
-import { clearAppData, getE2EAppDataPaths } from "../helpers/desktop-app.js";
-import { refreshSeededOpenAIProvidersThroughSettings } from "../helpers/custom-openai-provider.js";
+import { clearAppData, getE2EAppDataPaths } from "#e2e/helpers/desktop-app";
+import { refreshSeededOpenAIProvidersThroughSettings } from "#e2e/helpers/custom-openai-provider";
 import {
   UPSTREAM_MODEL,
   UPSTREAM_SECONDARY_MODEL,
   UPSTREAM_PROVIDER_ID,
   selectUpstreamProviderModelById,
   selectUpstreamThoughtLevelValue,
-} from "../helpers/upstream-provider.js";
+} from "#e2e/helpers/upstream-provider";
 import {
   E2E_BIGMODEL_PLAN_PROVIDER_ID,
   E2E_PLAN_TURBO_MODEL,
@@ -24,13 +24,13 @@ import {
   waitForLastSelectedAgentConfig,
   waitForPlanModelIoRequest,
   waitForSelectedModel,
-} from "../helpers/model-provider-restart.js";
+} from "#e2e/helpers/model-provider-restart";
 import {
   E2E_REPLY_TOKEN,
   prepareV4ConversationE2E,
   sendV4Prompt,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 describe("模型 Provider Turbo 重启恢复 E2E", () => {
   after(async () => {

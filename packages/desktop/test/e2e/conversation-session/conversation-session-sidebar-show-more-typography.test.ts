@@ -1,8 +1,9 @@
 import { restartIntoWorkspacePreservingProfile } from "#e2e/helpers/model-provider-restart-runtime";
 import { mkdir, writeFile } from "node:fs/promises";
-import { basename, join } from "node:path";
+import { join } from "node:path";
+import { isIsolatedE2EHomeDir } from "#e2e/helpers/e2e-runtime-paths";
 import { DatabaseSync } from "node:sqlite";
-import { DEFAULT_WORKSPACE, waitForWorkspaceApp } from "../helpers/desktop-app.js";
+import { DEFAULT_WORKSPACE, waitForWorkspaceApp } from "#e2e/helpers/desktop-app";
 
 const projectId = "E2E_SHOW_MORE";
 const project = `[data-project-id="${projectId}"]`;
@@ -13,8 +14,8 @@ const title = `${project} [data-task-title-copy="original"]`;
 // 合成 Host 索引仅用于样式和分页，不恢复任务或请求模型；node:sqlite 仅提供同步 API。
 async function seedRows() {
   const home = process.env.RASPBERRYCODE_E2E_HOME_DIR;
-  // 原因：正式批量 runner 按 runId 隔离 HOME，不再使用早期人工回放的固定前缀。
-  if (!home || !basename(home).startsWith(".e2e-home-")) throw new Error("需要本 case 的隔离 HOME");
+  // 原因：runner 的隔离 HOME 可能是 .e2e-home、.e2e-home-<runId> 或显式根下的 shard 目录。
+  if (!isIsolatedE2EHomeDir(home)) throw new Error("需要本 case 的隔离 HOME");
   const root = join(DEFAULT_WORKSPACE, ".raspberrycode-e2e", "show-more");
   await mkdir(root, { recursive: true });
   const db = new DatabaseSync(join(home, ".raspberrycode/v2/tasks-index.sqlite"));

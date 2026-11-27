@@ -68,7 +68,7 @@ registerFontFamily('FreeSerif', normal='FreeSerif', bold='FreeSerif-Bold', itali
 
 # ── Styles ──
 # ACCENT must come from palette.generate (Step 2)
-# Run: python3 "$PDF_SKILL_DIR/scripts/pdf.py" palette.generate --title "Resume" --mode minimal
+# Run: "$(command -v raspberrycode-python || command -v python3)" "$PDF_SKILL_DIR/scripts/pdf.py" palette.generate --title "Resume" --mode minimal
 ACCENT = colors.HexColor('<accent from palette>')  # Replace with palette output
 
 name_style = ParagraphStyle(
@@ -150,7 +150,7 @@ doc = SimpleDocTemplate(
     leftMargin=1.5*cm, rightMargin=1.5*cm,
     topMargin=1.5*cm, bottomMargin=1.5*cm,
     title='Resume - Your Name',
-    author='RaspberryCode', creator='RaspberryCode'
+    author='Z.ai', creator='Z.ai'
 )
 
 story = []

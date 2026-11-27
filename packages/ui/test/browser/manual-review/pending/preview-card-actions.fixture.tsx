@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import type { IServiceAccessor } from "@raspberrycode/services";
 import type { IPlatformService } from "@raspberrycode/shared";
 import { AssistantPreviewCards } from "@/AssistantPreviewCards.js";
+import { MessageChangeSummaryPanel } from "@/MessageChangeSummaryPanel.js";
 import { PlatformProvider } from "@/hooks/usePlatform.js";
 import { ServiceProvider } from "@/hooks/useServices.js";
 import { TabStoreProvider } from "@/store/TabStoreProvider.js";
@@ -12,6 +13,7 @@ import "@/styles.css";
 const params = new URLSearchParams(location.search);
 const locale = params.get("locale") === "en-US" ? "en-US" : "zh-CN";
 localStorage.setItem("raspberrycode-locale-preference", locale);
+const theme = params.get("theme");
 document.documentElement.className =
   params.get("theme") === "light" ? "theme-light" : "theme-dark dark";
 
@@ -57,6 +59,17 @@ function Fixture() {
           onOpenCodeViewer={(source) => record(`codeViewer:${source.title}`)}
           onOpenBrowserUrl={(url) => record(`browserUrl:${url}`)}
         />
+        <div data-testid="hover-summary">
+          <MessageChangeSummaryPanel
+            workspacePath="/workspace"
+            summary={{
+              fileCount: 1,
+              added: 3,
+              removed: 0,
+              files: [],
+            }}
+          />
+        </div>
       </div>
       <ol data-testid="preview-events" aria-label="preview events">
         {events.map((event, index) => (

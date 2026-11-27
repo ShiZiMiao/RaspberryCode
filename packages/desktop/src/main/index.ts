@@ -121,6 +121,7 @@ import {
   resolveExplicitStartupWorkspaceBootstrap,
 } from "./startupWorkspaceDeepLinkGate.js";
 import { executeDesktopCommand } from "./desktopCommandHandlers.js";
+import { createExecutableFileOpenConfirmer } from "./file-open-apps/executableOpenGuard.js";
 import { clampDesktopZoomLevel, resolveDesktopZoomLevelFromFactor } from "./desktopZoom.js";
 import {
   getDesktopMenuLabel as getDesktopMenuLabelByLocale,
@@ -315,6 +316,12 @@ const linuxDesktopIntegrationIconPath =
       : join(import.meta.dirname, "../../build/icons/512x512.png")
     : iconPath;
 let currentApplicationLocale: Locale = DEFAULT_LOCALE;
+/** Agent 回复语言；null 表示跟随界面语言。 */
+let currentReplyLanguage: string | null = null;
+/** 交给系统打开前的可执行类文件确认；语言跟随当前界面语言。 */
+const confirmExecutableFileOpen = createExecutableFileOpenConfirmer(
+  () => currentApplicationLocale,
+);
 let closeToTrayOnWindows = true;
 // CR-01：托盘实例创建结果（模块级，关窗分支读取）。DBus 能力探测通过不等于 Electron
 // Tray 创建成功；隐藏窗口前必须确认最终用户入口真实存在，否则隐藏即失联。
@@ -1028,6 +1035,16 @@ function syncImmediateAppSettings(patch: ReturnType<typeof appSettingsPatchSchem
   }
 }
 
+async function applyReplyLanguage(raw: string): Promise<void> {
+  const language = raw.trim() || null;
+  // 进程内调用不经 RPC，undefined 不会被吞掉：合并后该字段为空，setting.json 里删除。
+  await mainSettingService.update({ replyLanguage: language ?? undefined });
+  currentReplyLanguage = language;
+  for (const child of windowHostProcessMap.values()) {
+    child.postMessage({ type: HostMessageTypes.ReplyLanguageChanged, replyLanguage: language });
+  }
+}
+
 async function prepareAppQuit(reason: string, kind: AppShutdownKind = "normal"): Promise<void> {
   const selection = selectAppShutdownPolicy(activeAppShutdownKind, kind, process.platform);
   activeAppShutdownKind = selection.kind;
@@ -1400,6 +1417,7 @@ async function executeDesktopCommandForApp(
     },
     credentialsDir: getCredentialsDir(),
     currentApplicationLocale,
+    beforeClearAllData: () => prepareAppQuit("desktop-command-clear-all-data"),
   });
 }
 
@@ -1962,6 +1980,8 @@ app.whenReady().then(async () => {
   registerPlatformIpcHandlers({
     fetchHelpConfig: readHelpConfig,
     logger,
+    confirmExecutableFileOpen,
+    applyReplyLanguage,
     // CDP-on-guest pivot：renderer `<webview>` dom-ready 上报 guest webContentsId → attach。
     attachBrowserGuest: (key, webContentsId, options) => {
       const result = browserGuestManager.attachGuest(key, webContentsId, options);
@@ -2083,6 +2103,7 @@ app.whenReady().then(async () => {
 
   registerRemoteIpcHandlers({
     logger,
+    confirmExecutableFileOpen,
     appTelemetryRuntime,
     onOAuthCallbackHandledSideEffect: () => {
       void armsUserIdentitySync.refresh();

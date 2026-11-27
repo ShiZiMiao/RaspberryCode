@@ -2,14 +2,10 @@
 // 证据层 L3：
 // 1) 两个 PNG 经真实 paste + eager begin/chunk/commit，正文保持空字符串；
 // 2) 首发允许仅 AttachmentRef[]，user row 保留两个有序 ref；
-// 3) edit 删除第一个并提交，UI active branch 与 provider-visible request 都仅含第二个 ref。
-import {
-  TID_V4_EDIT_ATTACHMENT_REMOVE,
-  TID_V4_EDIT_SUBMIT,
-  TID_V4_ROW_ATTACHMENTS,
-  testId,
-} from "@raspberrycode/shared/test-ids";
-import { clearAppData, clickTestIdByDom } from "../helpers/desktop-app.js";
+// 3) composer 编辑态删除第一个并提交，UI active branch 与 provider-visible request 都仅含第二个 ref。
+import { TID_V4_ROW_ATTACHMENTS } from "@raspberrycode/shared/test-ids";
+import { clearAppData } from "#e2e/helpers/desktop-app";
+import { removeV4ComposerAttachmentAt } from "#e2e/helpers/v4-composer-edit";
 import {
   beginFirstV4UserQueryEdit,
   clickV4Send,
@@ -17,7 +13,7 @@ import {
   prepareV4ConversationE2E,
   waitForV4Pane,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 describe("v4 T06 + D12：仅附件发送与 edit 删除附件", () => {
   after(async () => {
@@ -74,16 +70,10 @@ describe("v4 T06 + D12：仅附件发送与 edit 删除附件", () => {
     );
     await browser.keys(["Escape"]);
 
-    // 3) 行内 edit 不接上传状态机，只删除局部 refs；索引 0 对应第一个附件。
-    const rowId = await beginFirstV4UserQueryEdit("");
-    await clickTestIdByDom(testId(TID_V4_EDIT_ATTACHMENT_REMOVE, `${rowId}-0`), {
-      timeout: 15000,
-      timeoutMsg: `v4 edit 第一个附件删除按钮没有出现: rowId=${rowId}`,
-    });
-    await clickTestIdByDom(testId(TID_V4_EDIT_SUBMIT, rowId), {
-      timeout: 15000,
-      timeoutMsg: `v4 仅附件 edit 提交按钮不可点击: rowId=${rowId}`,
-    });
+    // 3) composer 编辑态载入原有序 refs；删除索引 0（第一个附件）后用原发送按钮提交。
+    await beginFirstV4UserQueryEdit("");
+    await removeV4ComposerAttachmentAt(0);
+    await clickV4Send();
 
     // fixture 以 provider placeholder 同时证明：新请求含 kept、不含 removed。
     await waitForV4TimelineContaining("V4_ATTACHMENT_EDIT_ONE_OK", 45000);

@@ -11,9 +11,9 @@ import {
   TID_SETTINGS_SECTION_NAV,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData, clickTestIdByDom, waitForWorkspaceApp } from "../helpers/desktop-app.js";
-import { prepareV4ConversationE2E } from "../helpers/v4-conversation.js";
-import { selectTaskOrganizeMode } from "../helpers/workspace-agent-warmup.js";
+import { clearAppData, clickTestIdByDom, waitForWorkspaceApp } from "#e2e/helpers/desktop-app";
+import { prepareV4ConversationE2E } from "#e2e/helpers/v4-conversation";
+import { selectTaskOrganizeMode } from "#e2e/helpers/workspace-agent-warmup";
 import {
   clickLastEnabledSSHDialogButton,
   fillSSHPasswordSettings,
@@ -24,7 +24,7 @@ import {
   waitForSSHDirectoryStep,
   waitForSSHError,
   waitForRemoteTab,
-} from "../helpers/ssh-remote-p0.js";
+} from "#e2e/helpers/ssh-remote-p0";
 
 const CASE_MARKER = "E2E_REMOTE_DEVICE_CARDS";
 async function button(text: string, selector = "[data-settings-content-frame]") {
@@ -279,6 +279,16 @@ describe(`${CASE_MARKER}: 设置设备列表与未完成连接`, () => {
     await fillSSHPasswordSettings({ ...config, host: "localhost", port: address.port });
     await clickLastEnabledSSHDialogButton(CASE_MARKER);
     expect(await waitForSSHError(CASE_MARKER)).toMatch(/无法连接到主机|Unable to connect to host/u);
+    const unusedPort = address.port;
+    const reservedHosts = async () =>
+      (
+        await callHandoffHost<RemoteProjectDirectory>(
+          ServiceChannels.RemoteProjects,
+          "readDirectory",
+        )
+      ).hosts.filter((host) => host.target?.kind === "ssh" && host.target.port === unusedPort);
+    // 首次连接在 probe 前按地址写入本机成员预留；握手前失败时它只属于这条未完成连接。
+    expect(await reservedHosts()).toHaveLength(1);
     // 默认折叠针对历史记录；收起会保留后台 owner 并主动展开，须先关闭失败的当前流程。
     await button("关闭", '[data-testid="ssh-dialog"]');
     await $('[data-testid="ssh-dialog"]').waitForDisplayed({ reverse: true });
@@ -311,9 +321,44 @@ describe(`${CASE_MARKER}: 设置设备列表与未完成连接`, () => {
         await browser.saveScreenshot(resolve(artifact, `device-cards-${theme}-${width}.png`));
       }
     }
+    // Bug 原因：IPv6 主机不能构成地址成员 ID，释放预留时对剩余线路逐条计算并抛错，
+    // 只要列表里有这样一条线路，清理任何未完成连接都会失败。
+    await browser.electron.execute((electron) =>
+      electron.BrowserWindow.getAllWindows()
+        .find((window) => !window.isDestroyed())
+        ?.setSize(1440, 1000),
+    );
+    await button("新建连接");
+    await clickTestIdByDom(TID_REMOTE_KIND_SSH);
+    await fillSSHPasswordSettings({ ...config, host: "::1", port: unusedPort });
+    await clickLastEnabledSSHDialogButton(CASE_MARKER);
+    await waitForSSHError(CASE_MARKER);
+    await button("关闭", '[data-testid="ssh-dialog"]');
+    await $('[data-testid="ssh-dialog"]').waitForDisplayed({ reverse: true });
+    await browser.waitUntil(
+      () =>
+        browser.execute(() =>
+          Boolean(
+            document.querySelector("[data-unfinished-connections]")?.textContent?.includes("::1"),
+          ),
+        ),
+      { timeout: 10_000, timeoutMsg: `${CASE_MARKER}: IPv6 失败线路没有进入未完成列表` },
+    );
+    // 地址不能构成成员身份时 admission 在写入前失败，不产生预留。
+    expect(await reservedHosts()).toHaveLength(1);
+    // 同一原因曾让 connectHost 选线时抛错：一条 IPv6 线路会让所有设备的侧栏重连失败。
+    expect(
+      (
+        await callHandoffHost<{ id: string }>(ServiceChannels.RemoteProjects, "connectHost", [
+          original.hostId,
+        ])
+      ).id,
+    ).toBe(original.hostId);
     await button("清理全部", "[data-unfinished-connections]");
     await clickTestIdByDom(TID_CONFIRM_DIALOG_CONFIRM);
     await unfinished.waitForExist({ reverse: true });
     expect(await $$("[data-source-server-card]").length).toBe(1);
+    // Bug 原因：清理只改 settings，预留行成为孤儿，侧栏每次刷新都对它 readTree 并持续报 host-offline。
+    expect(await reservedHosts()).toHaveLength(0);
   });
 });

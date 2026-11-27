@@ -1,8 +1,9 @@
 // 统一 runner 与旧手工入口均使用隔离 HOME；不能因 runId 前缀不同拒绝安全夹具。
 import { DatabaseSync } from "node:sqlite";
 import { join, basename } from "node:path";
+import { isE2EHomeDirName } from "#e2e/helpers/e2e-runtime-paths";
 import { mkdir, writeFile } from "node:fs/promises";
-import { waitForWorkspaceApp, DEFAULT_WORKSPACE } from "../../../helpers/desktop-app.js";
+import { waitForWorkspaceApp, DEFAULT_WORKSPACE } from "#e2e/helpers/desktop-app";
 import { restartIntoWorkspacePreservingProfile } from "#e2e/helpers/model-provider-restart-runtime";
 import { loginWithApiKey } from "#e2e/helpers/v4-conversation";
 import { TID_AUTOMATIONS_OPEN } from "@raspberrycode/shared/test-ids";
@@ -55,8 +56,8 @@ describe("虚拟项目旧产品体验", () => {
     const home = process.env.RASPBERRYCODE_E2E_HOME_DIR;
     if (
       !home ||
-      ![".e2e-home-", "raspberrycode-project-behavior-e2e-"].some((prefix) =>
-        basename(home).startsWith(prefix),
+      !(
+        isE2EHomeDirName(basename(home)) || basename(home).startsWith("raspberrycode-project-behavior-e2e-")
       )
     )
       throw new Error("isolated project behavior E2E HOME required");

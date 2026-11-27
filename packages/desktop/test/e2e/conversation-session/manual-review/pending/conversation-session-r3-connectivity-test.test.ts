@@ -8,15 +8,15 @@ import {
   TID_MODEL_PROVIDER_MODEL_INPUT,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData, clickTestIdByDom, DEFAULT_WORKSPACE } from "../../../helpers/desktop-app.js";
-import { getUpstreamRequestRecordCount } from "../../../helpers/conversation-session-network.js";
+import { clearAppData, clickTestIdByDom, DEFAULT_WORKSPACE } from "#e2e/helpers/desktop-app";
+import { getUpstreamRequestRecordCount } from "#e2e/helpers/conversation-session-network";
 import {
   connectSSHWorkspaceAndSendFirstTurn,
   prepareSSHLifecycle,
   type SSHLifecycleProvider,
-} from "../../../helpers/ssh-remote-lifecycle.js";
-import { readRemoteTabSnapshot, runSSHCommand } from "../../../helpers/ssh-remote-p0.js";
-import { selectV4TaskById } from "../../../helpers/v4-conversation.js";
+} from "#e2e/helpers/ssh-remote-lifecycle";
+import { readRemoteTabSnapshot, runSSHCommand } from "#e2e/helpers/ssh-remote-p0";
+import { selectV4TaskById } from "#e2e/helpers/v4-conversation";
 
 const CASE_MARKER = "E2E_R3_CONNECTIVITY_TEST";
 const artifactDir = resolve(

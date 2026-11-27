@@ -1,17 +1,17 @@
-import { waitForToolCallBlockByToolCallId } from "../helpers/conversation-session-tool.js";
+import { waitForToolCallBlockByToolCallId } from "#e2e/helpers/conversation-session-tool";
 import { DatabaseSync } from "node:sqlite";
 import { join } from "node:path";
 import { TID_TASK_ITEM, TID_V4_SUBAGENT_OPEN_SIDE_PANE, testId } from "@raspberrycode/shared/test-ids";
-import { clearAppData, getE2EAppDataPaths } from "../helpers/desktop-app.js";
+import { clearAppData, getE2EAppDataPaths } from "#e2e/helpers/desktop-app";
 import {
   prepareV4ConversationE2E,
   sendV4Prompt,
   getV4PaneSnapshot,
   waitForV4AssistantMessageContaining,
   waitForV4Pane,
-} from "../helpers/v4-conversation.js";
-import { restartIntoWorkspacePreservingProfile } from "../helpers/model-provider-restart.js";
-import { ensureToolCrossProductFullAccessMode } from "../helpers/conversation-session-tool-cross-product.js";
+} from "#e2e/helpers/v4-conversation";
+import { restartIntoWorkspacePreservingProfile } from "#e2e/helpers/model-provider-restart";
+import { ensureToolCrossProductFullAccessMode } from "#e2e/helpers/conversation-session-tool-cross-product";
 
 const PARENT = "E2E_SUBAGENT_SIDEBAR_PARENT";
 const PARENT_DONE = "E2E_SUBAGENT_SIDEBAR_PARENT_DONE";

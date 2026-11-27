@@ -1,4 +1,4 @@
-import { openMobilePairingPage } from "#e2e/helpers/mobile-pairing";
+import { openMobilePairingPage, seedMobileFixtureLogin } from "#e2e/helpers/mobile-pairing";
 import { execFile } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -9,28 +9,28 @@ import {
   TID_V4_COMPOSER_SEND,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../../../helpers/desktop-app.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
 import {
   getUpstreamRequestRecordCount,
   waitForUpstreamRequest,
-} from "../../../helpers/conversation-session-network.js";
+} from "#e2e/helpers/conversation-session-network";
 import {
   connectSSHWorkspaceAndSendFirstTurn,
   listRemoteAgentProcesses,
   prepareSSHLifecycle,
   type SSHLifecycleProvider,
-} from "../../../helpers/ssh-remote-lifecycle.js";
+} from "#e2e/helpers/ssh-remote-lifecycle";
 import {
   readHostProcesses,
   readRemoteTabSnapshot,
   runSSHCommand,
-} from "../../../helpers/ssh-remote-p0.js";
+} from "#e2e/helpers/ssh-remote-p0";
 import {
   getV4Messages,
   sendV4PromptAndWaitAccepted,
   waitForV4AssistantMessageContaining,
   waitForV4ConversationState,
-} from "../../../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_MARKER = "E2E_R3_SOAK_DUAL";
 const artifactDir = resolve(process.env.RASPBERRYCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/r3-soak-dual");
@@ -231,6 +231,8 @@ describe(`${CASE_MARKER}: Desktop continuous + Mobile replayable 同时运行的
       hasTouch: true,
       locale: "zh-CN",
     });
+    // 新浏览器上下文不继承 Desktop 的测试账号；否则停在登录页，尚未进入长稳循环。
+    await seedMobileFixtureLogin(mobileContext);
     const mobile: PwPage = await mobileContext.newPage();
     await openMobilePairingPage(mobile, pairUrl, {
       artifactDir,

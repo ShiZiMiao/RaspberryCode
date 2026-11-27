@@ -4,7 +4,7 @@
  */
 export const clientUpdateContractModule = {
   id: "client-update-contract",
-  requires: [],
+  requires: ["shared"],
   provides: ["client-update-contract"],
   publicEntrypoints: ["index.ts", "contract.ts"],
 } as const;

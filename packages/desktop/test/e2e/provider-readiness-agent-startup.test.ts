@@ -1,4 +1,4 @@
-import { openWorkspaceDraftFromSidebar } from "./helpers/workspace-agent-warmup.js";
+import { openWorkspaceDraftFromSidebar } from "#e2e/helpers/workspace-agent-warmup";
 import { BUILTIN_PROVIDER_TEMPLATE_IDS, decodeCustomModelValue } from "@raspberrycode/shared";
 import {
   TID_CHAT_ERROR_BANNER,
@@ -23,13 +23,13 @@ import {
   setInputValueByTestIdDom,
   waitForDefaultWorkspaceReady,
   waitForTestIdByDom,
-} from "./helpers/desktop-app.js";
+} from "#e2e/helpers/desktop-app";
 import {
   PROVIDER_READINESS_HISTORY_ASSISTANT_TEXT,
   PROVIDER_READINESS_HISTORY_SESSION_ID,
   PROVIDER_READINESS_HISTORY_TITLE,
   PROVIDER_READINESS_HISTORY_USER_TEXT,
-} from "./helpers/provider-readiness-history-fixture.js";
+} from "#e2e/helpers/provider-readiness-history-fixture";
 import {
   selectV4TaskById,
   waitForV4ComposerText,
@@ -43,7 +43,7 @@ import {
   switchToElectronRendererTarget,
   waitForAgentProcessCount,
   waitForResourceManagerReady,
-} from "./helpers/resource-manager.js";
+} from "#e2e/helpers/resource-manager";
 
 const E2E_PROVIDER_API_KEY = "e2e-login-api-key";
 

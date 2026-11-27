@@ -4,32 +4,25 @@
 // 2) 图片与视频进入同一个 gallery，并通过按钮/方向键首尾循环，图片工具与视频 controls 隔离；
 // 3) Desktop sent video 优先播放 artifact/local_ref 路径，非 fast-start MP4 也支持 seek，无可用路径时走 artifact 分片；
 // 4) 不可解码视频保留 gallery 导航/重开，edit 与完整进程重启后仍按持久化原始序号预览。
-import { mkdir, open, readFile, rm } from "node:fs/promises";
+import { mkdir, open, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { ElectronMock } from "@wdio/electron-types";
-import {
-  TID_CHAT_ATTACHMENT_BUTTON,
-  TID_CHAT_ATTACHMENT_MENU_ITEM,
-  TID_V4_ATTACHMENT,
-  TID_V4_EDIT_ATTACHMENT_REMOVE,
-  TID_V4_EDIT_SUBMIT,
-  TID_V4_ROW_ATTACHMENTS,
-  testId,
-} from "@raspberrycode/shared/test-ids";
+import { TID_V4_ATTACHMENT, TID_V4_ROW_ATTACHMENTS } from "@raspberrycode/shared/test-ids";
 import { PROTOCOL_V4_LIMITS } from "@raspberrycode/shared/raspberrycode-protocol-v4";
-import { DEFAULT_WORKSPACE, clearAppData, clickTestIdByDom } from "../helpers/desktop-app.js";
-import { restartIntoWorkspacePreservingProfile } from "../helpers/model-provider-restart.js";
+import { DEFAULT_WORKSPACE, clearAppData } from "#e2e/helpers/desktop-app";
+import { restartIntoWorkspacePreservingProfile } from "#e2e/helpers/model-provider-restart";
+import { removeV4ComposerAttachmentAt } from "#e2e/helpers/v4-composer-edit";
 import {
   beginFirstV4UserQueryEdit,
   clickV4Send,
   pasteV4ComposerFileAttachment,
   pasteV4ComposerImageAttachment,
+  pickV4ComposerFiles,
   prepareV4ConversationE2E,
   selectV4TaskById,
   waitForV4Pane,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_ROOT = join(DEFAULT_WORKSPACE, ".raspberrycode-e2e", "conversation-session-v4-video-preview");
 const PLAYABLE_VIDEO_FILENAME = "e2e-composer-preview.mp4";
@@ -38,7 +31,7 @@ const UNSUPPORTED_VIDEO_FILENAME = "e2e-unsupported.mov";
 const LARGE_VIDEO_FILENAME = "e2e-sent-large.mp4";
 const CHUNK_FALLBACK_VIDEO_FILENAME = "e2e-chunk-fallback.ogg";
 const VIDEO_SOURCE_PATH = fileURLToPath(
-  new URL("../fixtures/media/sample-video.mp4", import.meta.url),
+  new URL("../../fixtures/media/sample-video.mp4", import.meta.url),
 );
 const MEDIA_KINDS = ["video", "image", "video", "video", "video"] as const;
 
@@ -80,15 +73,54 @@ describe("v4 VI06/VI07：image/video 媒体 gallery 与 edit", () => {
     // Bug 根因：旧 E2E 只使用 moov 在 mdat 前的 fast-start MP4，无法触发自定义
     // scheme 对文件尾元数据的读取；改用同一可播 fixture 的尾部 moov 形态覆盖真实回归。
     const sourceVideo = moveMoovBoxBehindMediaData(await readFile(VIDEO_SOURCE_PATH));
+    const playableVideoPath = join(CASE_ROOT, PLAYABLE_VIDEO_FILENAME);
     const largeVideoPath = join(CASE_ROOT, LARGE_VIDEO_FILENAME);
     await mkdir(CASE_ROOT, { recursive: true });
     await createSparseLargePlayableMp4(largeVideoPath, sourceVideo);
-    const showOpenDialogMock = await browser.electron.mock("dialog", "showOpenDialog");
+    await writeFile(playableVideoPath, sourceVideo);
 
-    await pasteV4ComposerFileAttachment(PLAYABLE_VIDEO_FILENAME, {
-      base64: sourceVideo.toString("base64"),
-      mimeType: "video/mp4",
+    // 合成的 new File 没有磁盘路径，无法命中共享入口错误剥离本地媒体预览的分支。
+    await browser.execute(() => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.id = "e2e-local-video-drop";
+      // 修复原因：默认样式的 file input 追加在 body 末尾，Windows 下会落在可视区外/被判定不可交互，
+      // setValue 报 did not become interactable；固定到视口左上角并置顶，保证可交互。
+      Object.assign(input.style, {
+        position: "fixed",
+        top: "0",
+        left: "0",
+        width: "100px",
+        height: "24px",
+        opacity: "1",
+        zIndex: "2147483647",
+      });
+      document.body.append(input);
     });
+    try {
+      await $("#e2e-local-video-drop").setValue(playableVideoPath);
+      const paths = await browser.execute(() => {
+        const input = document.querySelector<HTMLInputElement>("#e2e-local-video-drop");
+        const file = input?.files?.[0];
+        const target = document.querySelector<HTMLElement>(
+          '[data-v4-conversation-drop-target="true"]',
+        );
+        if (!file || !target) throw new Error("缺少本地视频 File 或会话 drop surface");
+        const bridge = (
+          window as Window & { raspberrycode?: { getPathForFile(file: File): string | null } }
+        ).raspberrycode;
+        const data = new DataTransfer();
+        data.items.add(file);
+        const result = [bridge?.getPathForFile(file), bridge?.getPathForFile(data.files[0]!)];
+        target.dispatchEvent(
+          new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: data }),
+        );
+        return result;
+      });
+      expect(paths).toEqual([playableVideoPath, playableVideoPath]);
+    } finally {
+      await browser.execute(() => document.querySelector("#e2e-local-video-drop")?.remove());
+    }
     await pasteV4ComposerImageAttachment(GALLERY_IMAGE_FILENAME);
     await pasteV4ComposerFileAttachment(UNSUPPORTED_VIDEO_FILENAME, {
       base64: Buffer.from("not playable", "utf8").toString("base64"),
@@ -100,7 +132,7 @@ describe("v4 VI06/VI07：image/video 媒体 gallery 与 edit", () => {
       base64: Buffer.from("not playable", "utf8").toString("base64"),
       mimeType: "video/ogg",
     });
-    await pickNativeFiles([largeVideoPath], showOpenDialogMock);
+    await pickV4ComposerFiles([largeVideoPath]);
 
     const composerCards = await waitForComposerMediaCards(MEDIA_KINDS);
     expect(composerCards.map(({ width }) => width)).toEqual([48, 48, 48, 48, 48]);
@@ -113,6 +145,7 @@ describe("v4 VI06/VI07：image/video 媒体 gallery 与 edit", () => {
       null,
     ]);
     expect(composerCards.slice(0, 4).every(({ src }) => src.startsWith("blob:"))).toBe(true);
+    // Bug 根因：视频 input File 仍采用本机路径预览；本用例不把路径视频改成 Blob 卡片。
     expect(composerCards[4]?.src.startsWith("blob:")).toBe(false);
 
     await openComposerMedia(0);
@@ -157,7 +190,13 @@ describe("v4 VI06/VI07：image/video 媒体 gallery 与 edit", () => {
     expect(sentCards[3]?.src.startsWith("blob:")).toBe(true);
     expect(sentCards[4]?.src.startsWith("raspberrycode-media:")).toBe(true);
     expect(localMediaPath(sentCards[0]?.src).split(/[\\/]/)).toContain("video-cache");
-    expect(localMediaPath(sentCards[4]?.src)).toBe(largeVideoPath);
+    // 修复原因：Windows 路径大小写不敏感，实际路径盘符后目录大小写（Code/code）可能与测试拼出的不同；
+    // 比较时在 Windows 上忽略大小写，避免把大小写差异当成路径不一致。
+    const normalizeWinPath = (value: string) =>
+      process.platform === "win32" ? value.toLowerCase() : value;
+    expect(normalizeWinPath(localMediaPath(sentCards[4]?.src))).toBe(
+      normalizeWinPath(largeVideoPath),
+    );
     await expectUnauthorizedLocalMediaPathRejected(VIDEO_SOURCE_PATH);
     await waitForVideoBlob("video/ogg");
     expect(
@@ -188,25 +227,20 @@ describe("v4 VI06/VI07：image/video 媒体 gallery 与 edit", () => {
     await waitForPlayableVideo(LARGE_VIDEO_FILENAME, largeVideoThumbnailSrc);
     await closeMediaPreview();
 
-    const rowId = await beginFirstV4UserQueryEdit("");
-    await waitForEditedMediaCards(rowId, MEDIA_KINDS);
-    await clickTestIdByDom(testId(TID_V4_EDIT_ATTACHMENT_REMOVE, `${rowId}-0`), {
-      timeout: 15_000,
-      timeoutMsg: `v4 edit 第一个 video 删除按钮没有出现: rowId=${rowId}`,
-    });
-    await waitForEditedMediaCards(rowId, ["image", "video", "video", "video"]);
+    // composer 编辑态载入原有序 refs，复用 composer 48px 媒体卡（AL13）。
+    await beginFirstV4UserQueryEdit("");
+    await waitForEditedComposerMediaCards(MEDIA_KINDS);
+    await removeV4ComposerAttachmentAt(0);
+    await waitForEditedComposerMediaCards(["image", "video", "video", "video"]);
 
     // 删除原索引 0 后，大视频展示索引前移，但 preview query 仍必须携带持久化原索引 4。
-    await openEditedMedia(rowId, 3);
+    await openComposerMedia(3);
     await waitForPlayableVideo(LARGE_VIDEO_FILENAME, largeVideoThumbnailSrc);
     await browser.keys(["ArrowRight"]);
     await waitForGalleryImage(GALLERY_IMAGE_FILENAME);
     await closeMediaPreview();
 
-    await clickTestIdByDom(testId(TID_V4_EDIT_SUBMIT, rowId), {
-      timeout: 15_000,
-      timeoutMsg: `v4 mixed media edit 提交按钮不可点击: rowId=${rowId}`,
-    });
+    await clickV4Send();
     await waitForV4TimelineContaining("V4_VIDEO_PREVIEW_EDIT_OK", 45_000);
     const editedSentCards = await waitForSentMediaCards(["image", "video", "video", "video"]);
     expect(editedSentCards[3]?.src.startsWith("raspberrycode-media:")).toBe(true);
@@ -226,7 +260,9 @@ describe("v4 VI06/VI07：image/video 媒体 gallery 与 edit", () => {
     const coldCards = await waitForSentMediaCards(["image", "video", "video", "video"]);
     expect(localMediaPath(coldCards[1]?.src).split(/[\\/]/)).toContain("video-cache");
     expect(coldCards[2]?.src.startsWith("blob:")).toBe(true);
-    expect(localMediaPath(coldCards[3]?.src)).toBe(largeVideoPath);
+    expect(normalizeWinPath(localMediaPath(coldCards[3]?.src))).toBe(
+      normalizeWinPath(largeVideoPath),
+    );
     await openSentMedia(3);
     await waitForPlayableVideo(LARGE_VIDEO_FILENAME, coldCards[3]?.src);
     await seekPreviewVideo(LARGE_VIDEO_FILENAME);
@@ -297,19 +333,6 @@ function findTopLevelMp4Box(source: Buffer, expectedType: string): Mp4Box {
   throw new Error(`MP4 E2E fixture 缺少 ${expectedType} box`);
 }
 
-async function pickNativeFiles(paths: string[], showOpenDialogMock: ElectronMock) {
-  await showOpenDialogMock.mockResolvedValueOnce({ canceled: false, filePaths: paths });
-  const trigger = await $(`[data-testid="${TID_CHAT_ATTACHMENT_BUTTON}"]`);
-  await trigger.waitForClickable({ timeout: 15_000 });
-  await trigger.click();
-  const menuItem = await $(`[data-testid="${TID_CHAT_ATTACHMENT_MENU_ITEM}"]`);
-  await menuItem.waitForClickable({ timeout: 10_000 });
-  await menuItem.click();
-  await expect(showOpenDialogMock).toHaveBeenCalledWith({
-    properties: ["openFile", "multiSelections"],
-  });
-}
-
 async function waitForComposerMediaCards(expectedKinds: readonly MediaKind[]) {
   let cards: MediaCardState[] = [];
   await browser.waitUntil(
@@ -358,32 +381,35 @@ function mediaCardsMatch(
   );
 }
 
-async function waitForEditedMediaCards(rowId: number, expectedKinds: readonly MediaKind[]) {
-  const attachmentsTestId = testId(TID_V4_ROW_ATTACHMENTS, String(rowId)) as string;
+// 编辑态载入的是 session-owned ref，图片不一定有本地 blob URL（见 chat-message-queue spec），
+// 因此不复用 waitForComposerMediaCards 的 blob/src 断言，只校验顺序、种类、ready 与 48px 尺寸。
+async function waitForEditedComposerMediaCards(expectedKinds: readonly MediaKind[]) {
   await browser.waitUntil(
     () =>
       browser.execute(
-        (attachmentsTestId, kinds) => {
-          const group = document.querySelector<HTMLElement>(`[data-testid="${attachmentsTestId}"]`);
+        (attachmentPrefix, kinds) => {
           const cards = Array.from(
-            group?.querySelectorAll<HTMLElement>("[data-v4-user-edit-attachment-kind]") ?? [],
+            document.querySelectorAll<HTMLElement>(
+              `[data-testid^="${attachmentPrefix}-"][data-upload-status]`,
+            ),
           );
           return (
             cards.length === kinds.length &&
             cards.every((card, index) => {
               const rect = card.getBoundingClientRect();
               return (
-                card.getAttribute("data-v4-user-edit-attachment-kind") === kinds[index] &&
+                card.getAttribute("data-composer-attachment-kind") === kinds[index] &&
+                card.getAttribute("data-upload-status") === "ready" &&
                 Math.round(rect.width) === 48 &&
                 Math.round(rect.height) === 48
               );
             })
           );
         },
-        attachmentsTestId,
+        TID_V4_ATTACHMENT,
         [...expectedKinds],
       ),
-    { timeout: 15_000, timeoutMsg: `v4 edit 媒体卡片状态没有收敛: rowId=${rowId}` },
+    { timeout: 15_000, timeoutMsg: "v4 composer 编辑态媒体卡片状态没有收敛" },
   );
 }
 
@@ -412,24 +438,6 @@ async function openSentMedia(index: number) {
   await target.waitForClickable({
     timeout: 15_000,
     timeoutMsg: `sent media card 不可点击: index=${index}`,
-  });
-  await target.click();
-}
-
-async function openEditedMedia(rowId: number, index: number) {
-  const attachmentsTestId = testId(TID_V4_ROW_ATTACHMENTS, String(rowId)) as string;
-  const group = await $(`[data-testid="${attachmentsTestId}"]`);
-  await group.waitForExist({
-    timeout: 15_000,
-    timeoutMsg: `v4 edit media attachment group 不存在: rowId=${rowId}`,
-  });
-  const cards = await group.$$("[data-v4-user-edit-attachment-kind]");
-  const target = cards[index];
-  if (!target) throw new Error(`v4 edit media card 不存在: rowId=${rowId}, index=${index}`);
-  expect(await target.getAttribute("role")).toBe("button");
-  await target.waitForClickable({
-    timeout: 15_000,
-    timeoutMsg: `v4 edit media card 不可点击: rowId=${rowId}, index=${index}`,
   });
   await target.click();
 }

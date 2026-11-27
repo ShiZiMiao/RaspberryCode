@@ -1,11 +1,11 @@
 import { TID_SIDE_PANE_TOGGLE, TID_V4_COMPOSER_INPUT } from "@raspberrycode/shared/test-ids";
-import { clearAppData, switchToNewestWindow } from "../helpers/desktop-app.js";
+import { clearAppData, switchToNewestWindow } from "#e2e/helpers/desktop-app";
 import {
   prepareV4ConversationE2E,
   sendV4Prompt,
   waitForV4AssistantMessageContaining,
   waitForV4ConversationState,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 describe("DBG01 开发者工具请求诊断", () => {
   after(async () => {

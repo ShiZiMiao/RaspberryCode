@@ -355,3 +355,13 @@ export type {
   GroupNode,
   MoveGroupNode,
 } from "#src/task-groups/contract.js";
+
+export { IManagedWorktreeService } from "./managed-worktree-tasks/contract.js";
+export type {
+  ManagedWorktreeGroup,
+  ManagedWorktreeWorkspace,
+  StartManagedWorktreeCreationResult,
+} from "./managed-worktree-tasks/contract.js";
+
+export { IVoiceInputService } from "./voice-input/contract.js";
+export type { VoiceInputErrorCode, VoiceInputEvent } from "./voice-input/contract.js";

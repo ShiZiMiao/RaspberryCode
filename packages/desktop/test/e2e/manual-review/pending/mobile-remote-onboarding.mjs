@@ -1,7 +1,7 @@
 // ONBOARD-REMOTE-01：真实引导组件、远程服务装配、手机 attachment allowlist 与 WebSocket RPC 的浏览器边界回归。
 // 首页按钮/Root key 重建由夹具驱动；不覆盖真实 relay 配对或 SSH/WSL/Docker transport。
 // R3 下 SSH/WSL/Docker 与 Server 都走 Source 全转发，引导记录 owner 是 Source，不是本机 Local Host。
-// 运行：pnpm exec tsx packages/desktop/test/e2e/manual-review/pending/mobile-remote-onboarding.mjs
+// 运行：pnpm exec tsx packages/desktop/test/e2e/remote-control/connection/manual-review/pending/mobile-remote-onboarding.mjs
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -20,11 +20,11 @@ import {
   ServiceCollection,
 } from "@raspberrycode/services";
 import { setDataBaseDir } from "@raspberrycode/services/node";
-import { createOnboardingRecordService } from "../../../../../services/src/onboarding/onboardingRecordService.js";
-import { createServerRemoteWorkspaceServiceCollection } from "../../../../src/host/remoteWorkspaceServiceCollection.js";
-import { exposeWindowHostAttachmentServices } from "../../../../src/host/windowHostAttachmentRpcPolicy.js";
+import { createOnboardingRecordService } from "../../../../../../../services/src/onboarding/onboardingRecordService.js";
+import { createServerRemoteWorkspaceServiceCollection } from "../../../../../../src/host/remoteWorkspaceServiceCollection.js";
+import { exposeWindowHostAttachmentServices } from "../../../../../../src/host/windowHostAttachmentRpcPolicy.js";
 
-const repoRoot = fileURLToPath(new URL("../../../../../../", import.meta.url));
+const repoRoot = fileURLToPath(new URL("../../../../../../../../", import.meta.url));
 const artifacts = resolve(repoRoot, ".tmp/mobile-remote-onboarding-e2e");
 const dataDir = await mkdtemp(resolve(tmpdir(), "onboarding-remote-e2e-"));
 await mkdir(artifacts, { recursive: true });

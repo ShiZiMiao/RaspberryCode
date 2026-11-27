@@ -1,5 +1,6 @@
 // 统一 runner 与旧手工入口均使用隔离 HOME；不能因 runId 前缀不同拒绝安全夹具。
-import { selectNativeProjectDirectories } from "../../../helpers/project-sidebar.js";
+import { isE2EHomeDirName } from "#e2e/helpers/e2e-runtime-paths";
+import { selectNativeProjectDirectories } from "#e2e/helpers/project-sidebar";
 import { basename, join } from "node:path";
 import { copyFile, mkdir, writeFile } from "node:fs/promises";
 import {
@@ -13,9 +14,9 @@ import {
   setInputValueByTestIdDom,
   waitForWorkspaceApp,
   DEFAULT_WORKSPACE,
-} from "../../../helpers/desktop-app.js";
-import { waitForUpstreamNetworkCapture } from "../../../helpers/upstream-capture.js";
-import { restartIntoWorkspacePreservingProfile } from "../../../helpers/model-provider-restart-runtime.js";
+} from "#e2e/helpers/desktop-app";
+import { waitForUpstreamNetworkCapture } from "#e2e/helpers/upstream-capture";
+import { restartIntoWorkspacePreservingProfile } from "#e2e/helpers/model-provider-restart-runtime";
 
 describe("虚拟项目多目录冷恢复", () => {
   after(async () => {
@@ -30,9 +31,9 @@ describe("虚拟项目多目录冷恢复", () => {
     const home = process.env.RASPBERRYCODE_E2E_HOME_DIR!;
     if (
       !home ||
-      ![".e2e-home-", "raspberrycode-virtual-project-e2e-"].some((prefix) =>
-        basename(home).startsWith(prefix),
-      )
+      // 修复原因：Windows CI 单 WDIO job 使用默认 `.e2e-home`（无 runId 后缀），旧前缀
+      // `.e2e-home-` 把隔离 HOME 误判为日常目录；改用 isE2EHomeDirName，只接受 `.e2e-home` 与 `.e2e-home-*` 两种布局。
+      !(isE2EHomeDirName(basename(home)) || basename(home).startsWith("raspberrycode-virtual-project-e2e-"))
     )
       throw new Error("隔离 HOME required");
     const roots = ["A", "B", "C"].map((name) => join(home, `E2E_VP16_${name}`));

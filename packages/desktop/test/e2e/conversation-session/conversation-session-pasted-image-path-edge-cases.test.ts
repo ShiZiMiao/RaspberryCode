@@ -7,19 +7,19 @@ import {
   TID_CHAT_MODEL_SELECT_ITEM,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData, getE2EAppDataPaths, waitForTestIdByDom } from "../helpers/desktop-app.js";
+import { clearAppData, getE2EAppDataPaths, waitForTestIdByDom } from "#e2e/helpers/desktop-app";
 import {
   assertUpstreamRequestCapture,
   waitForUpstreamNetworkCapture,
-} from "../helpers/upstream-capture.js";
+} from "#e2e/helpers/upstream-capture";
 import {
   selectUpstreamProviderModelById,
   UPSTREAM_MODEL,
   waitForUpstreamModelSelected,
-} from "../helpers/upstream-provider.js";
-import { restartWithSeededOpenAIProviders } from "../helpers/custom-openai-provider.js";
-import { countUpstreamRequestsContaining } from "../helpers/conversation-session-network.js";
-import { startConversationModelProviderReplayServer } from "../helpers/model-provider-replay.js";
+} from "#e2e/helpers/upstream-provider";
+import { restartWithSeededOpenAIProviders } from "#e2e/helpers/custom-openai-provider";
+import { countUpstreamRequestsContaining } from "#e2e/helpers/conversation-session-network";
+import { startConversationModelProviderReplayServer } from "#e2e/helpers/model-provider-replay";
 import {
   clickV4Send,
   pasteV4ComposerImageAttachment,
@@ -28,7 +28,7 @@ import {
   setV4ComposerText,
   waitForV4AssistantMessageContaining,
   waitForV4Pane,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_NAME = "conversation-session-pasted-image-path-edge-cases";
 const UNKNOWN_MODEL = "e2e-image-unknown-capability-model";

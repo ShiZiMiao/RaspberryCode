@@ -3,7 +3,7 @@ import {
   TID_COMPOSER_WORKSPACE_TRIGGER,
   TID_SSH_DIALOG,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData, clickTestIdByWebDriver } from "../helpers/desktop-app.js";
+import { clearAppData, clickTestIdByWebDriver } from "#e2e/helpers/desktop-app";
 import { prepareV4ConversationE2E } from "#e2e/helpers/v4-conversation";
 
 describe("会话区远程连接弹窗与工作区菜单互斥 E2E", () => {

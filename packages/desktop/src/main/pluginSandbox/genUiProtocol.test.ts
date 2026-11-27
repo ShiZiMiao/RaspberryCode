@@ -7,16 +7,28 @@ const fragment = `<html><head><!--__RASPBERRYCODE_GEN_UI_STYLES__--><script src=
 function fixture(kind: "gen-ui" | "mcp-app", html = fragment, missing = false) {
   const registry = createPluginSandboxRegistry();
   const instance = { runtimeId: "a", generation: 1, token: "one", appIdentity: "a".repeat(64) };
-  const handle = registry.register({
-    instance,
-    contentKind: kind === "gen-ui" ? kind : undefined,
-    ownerWebContentsId: 1,
-    workspacePath: "/repo",
-    sessionId: "s",
-    scopeId: "view",
-    html,
-    ...(kind === "mcp-app" ? { pluginId: "p", serverName: "m" } : {}),
-  });
+  const handle = registry.register(
+    kind === "gen-ui"
+      ? {
+          instance,
+          contentKind: "gen-ui",
+          ownerWebContentsId: 1,
+          workspacePath: "/repo",
+          sessionId: "s",
+          scopeId: "view",
+          html,
+        }
+      : {
+          instance,
+          ownerWebContentsId: 1,
+          workspacePath: "/repo",
+          sessionId: "s",
+          scopeId: "view",
+          html,
+          pluginId: "p",
+          serverName: "m",
+        },
+  );
   const resources: Record<string, string> = {
     "visualize.css": "/* preset styles */",
     "visualize.html": "<!--__INLINE_VISUALIZATION_FRAGMENT__--><script>innerKit()</script>",

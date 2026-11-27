@@ -1,4 +1,4 @@
-import { openWorkspaceDraftFromSidebar } from "../helpers/workspace-agent-warmup.js";
+import { openWorkspaceDraftFromSidebar } from "#e2e/helpers/workspace-agent-warmup";
 // S01 / S05 / S08 门禁：composer 聚合入口、兼容触发器与 Session Skill catalog 生命周期。
 // 证据层 L3：
 // 1) 首轮固定回复建立一个 session（写入 sessions-index）；
@@ -13,7 +13,7 @@ import {
   clearAppData,
   getE2EAppDataPaths,
   setInputValueByTestIdDom,
-} from "../helpers/desktop-app.js";
+} from "#e2e/helpers/desktop-app";
 import { TID_CHAT_ATTACHMENT_BUTTON, TID_V4_COMPOSER_INPUT } from "@raspberrycode/shared/test-ids";
 import {
   clickV4SlashOption,
@@ -26,7 +26,7 @@ import {
   waitForV4MentionOptionPrefix,
   waitForV4Pane,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const SESSION_SKILL_NAME = "e2e-session-skill-catalog";
 const SESSION_SKILL_DIRECTORY = join(

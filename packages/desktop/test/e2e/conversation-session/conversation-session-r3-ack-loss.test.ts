@@ -9,25 +9,25 @@ import {
 import { resolve } from "node:path";
 import { BufferWriter, serialize } from "@raspberrycode/rpc";
 import { ServiceChannels } from "@raspberrycode/shared";
-import { clearAppData } from "../helpers/desktop-app.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
 import {
   getUpstreamRequestRecordCount,
   countUpstreamRequests,
   waitForUpstreamRequest,
-} from "../helpers/conversation-session-network.js";
+} from "#e2e/helpers/conversation-session-network";
 import {
   connectSSHWorkspaceAndSendFirstTurn,
   createSSHLifecycleProvider,
   readRemoteCoreIdentity,
   type SSHLifecycleProvider,
-} from "../helpers/ssh-remote-lifecycle.js";
+} from "#e2e/helpers/ssh-remote-lifecycle";
 import {
   readHostProcesses,
   readRemoteTabSnapshot,
   readSSHRuntimeConfig,
   runSSHCommand,
   type SSHConnectionConfig,
-} from "../helpers/ssh-remote-p0.js";
+} from "#e2e/helpers/ssh-remote-p0";
 import {
   clickV4Send,
   getV4ConversationState,
@@ -35,7 +35,7 @@ import {
   prepareV4ConversationE2E,
   setV4ComposerText,
   waitForV4ConversationState,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE_MARKER = "E2E_R3_ACK_LOSS";
 const artifactDir = resolve(process.env.RASPBERRYCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/r3-ack-loss");

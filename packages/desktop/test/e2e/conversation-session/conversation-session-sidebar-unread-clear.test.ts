@@ -2,7 +2,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { TID_TASK_ITEM, testId } from "@raspberrycode/shared/test-ids";
-import { clearAppData, clickTestIdByDom } from "../helpers/desktop-app.js";
+import { clearAppData, clickTestIdByDom } from "#e2e/helpers/desktop-app";
 import {
   getV4PaneSnapshot,
   prepareV4ConversationE2E,
@@ -11,8 +11,8 @@ import {
   startNewV4Draft,
   waitForV4Pane,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
-import { ensureUpstreamProviderForE2E } from "../helpers/upstream-provider.js";
+} from "#e2e/helpers/v4-conversation";
+import { ensureUpstreamProviderForE2E } from "#e2e/helpers/upstream-provider";
 
 const CASE_TIMEOUT_MS = 120_000;
 const SEED_MARKER = "E2E_SIDEBAR_UNREAD_CLEAR_SEED";

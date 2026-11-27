@@ -1,25 +1,25 @@
-import { registerIncomingMessageActiveCases } from "../helpers/incoming-message-active-cases.js";
+import { registerIncomingMessageActiveCases } from "#e2e/helpers/incoming-message-active-cases";
 import {
   INCOMING_MESSAGE_MODES,
   prepareIncomingMessageCapability,
-} from "../helpers/incoming-message-capability.js";
-import { assertIncomingMessage } from "../helpers/incoming-message-evidence.js";
+} from "#e2e/helpers/incoming-message-capability";
+import { assertIncomingMessage } from "#e2e/helpers/incoming-message-evidence";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { TID_TOOL_SUMMARY_TRIGGER, TID_V4_SUBAGENT_OPEN_SIDE_PANE } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../helpers/desktop-app.js";
-import type { E2ENetworkCaptureArtifact } from "../helpers/network-capture-proxy.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
+import type { E2ENetworkCaptureArtifact } from "#e2e/helpers/network-capture-proxy";
 import {
   findFirstUpstreamRequestIndex,
   getUpstreamRequestEvidence,
   getUpstreamRequestRecordCount,
   waitForUpstreamRequest,
-} from "../helpers/conversation-session-network.js";
-import { resolveE2ERuntimePath } from "../helpers/e2e-runtime-paths.js";
+} from "#e2e/helpers/conversation-session-network";
+import { resolveE2ERuntimePath } from "#e2e/helpers/e2e-runtime-paths";
 import {
   getToolCallBlockByToolCallId,
   waitForToolCallBlockByToolCallId,
-} from "../helpers/conversation-session-tool.js";
+} from "#e2e/helpers/conversation-session-tool";
 import {
   clickV4Stop,
   getV4PaneSnapshot,
@@ -30,7 +30,7 @@ import {
   switchV4Mode,
   waitForV4Pane,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const E2E_TIMEOUT_MS = 240_000;
 const E2E_ROOT = resolveE2ERuntimePath("conversation-session-subagent-respond-to-coordinator");

@@ -14,7 +14,7 @@ import {
   TID_V4_COMPOSER_SEND,
   TID_WORKSPACE_HEADER,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../helpers/desktop-app.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
 import {
   prepareV4ConversationE2E,
   selectV4TaskById,
@@ -22,7 +22,7 @@ import {
   waitForV4AssistantMessageContaining,
   waitForV4Pane,
   waitForV4UserMessageContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 // spec：docs/ui/side-pane-full-view.md；用例：docs/testing/side-pane-tabs-e2e-case-catalog.md（SPFV-007/008）
 const SIDE_FRAME = '[data-workspace-side-frame="true"]';

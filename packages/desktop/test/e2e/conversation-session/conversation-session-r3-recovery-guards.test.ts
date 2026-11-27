@@ -6,18 +6,18 @@ import {
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parseRemoteWorkspaceIdentity } from "@raspberrycode/shared";
-import { clearAppData, readSettings, seedSettings } from "../helpers/desktop-app.js";
+import { clearAppData, readSettings, seedSettings } from "#e2e/helpers/desktop-app";
 import {
   connectSSHWorkspaceAndSendFirstTurn,
   prepareSSHLifecycle,
   waitForRendererAfterColdRestart,
   type SSHLifecycleProvider,
-} from "../helpers/ssh-remote-lifecycle.js";
+} from "#e2e/helpers/ssh-remote-lifecycle";
 import {
   readHostProcesses,
   readRemoteTabSnapshot,
   waitForRemoteTab,
-} from "../helpers/ssh-remote-p0.js";
+} from "#e2e/helpers/ssh-remote-p0";
 
 const CASE_MARKER = "E2E_R3_RECOVERY_GUARDS";
 const artifactDir = resolve(

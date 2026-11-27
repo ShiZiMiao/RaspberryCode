@@ -6,7 +6,7 @@
  * 契约自包含（不引用 legacy shared），与 shared 的 Locale 保持结构同构。
  */
 
-type Locale = "zh-CN" | "en-US";
+import type { Locale } from "../protocol.js";
 
 /** 更新日志载荷；GitHub 方案下正文来自 release body，标题来自 release name。 */
 export interface PostUpdateReleaseNotesPayload {

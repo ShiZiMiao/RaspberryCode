@@ -41,7 +41,7 @@
      重启前若有进行中的 agent 会话，先经确认弹窗。
 6. **手动检查**（菜单点击或设置页按钮，任意模式可用）：向发起窗口推送 `UpdateCheckResult`
    toast：已是最新 / 发现新版本 / 正在下载 / 已就绪 / 开发态跳过 / 检查失败。
-   **自动模式下的语义（2026-11-23 对齐上游 ZCode）**：若本次检查已触发自动下载
+   **自动模式下的语义（2026-11-23 对齐上游 RaspberryCode）**：若本次检查已触发自动下载
    （`downloadingVersion` 已设置），结果必须返回 `downloading` 而**不是** `available`。
    原因：自动下载是异步发起的，`download-progress` 事件尚未到达时状态仍是
    `update-available`，直接映射成 `available` 会误报「发现新版本」，让用户以为要手动操作，

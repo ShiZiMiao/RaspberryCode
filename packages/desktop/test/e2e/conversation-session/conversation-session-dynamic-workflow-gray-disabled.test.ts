@@ -1,8 +1,13 @@
 import { readFile } from "node:fs/promises";
 import { TID_SETTINGS_DYNAMIC_WORKFLOW_MODE_ITEM } from "@raspberrycode/shared";
 import { testId } from "@raspberrycode/shared/test-ids";
-import { clearAppData, readSettings, waitForTestIdByDom } from "../helpers/desktop-app.js";
-import { prepareV4ConversationE2E, startNewV4Draft } from "../helpers/v4-conversation.js";
+import {
+  clearAppData,
+  pinE2ELocale,
+  readSettings,
+  waitForTestIdByDom,
+} from "#e2e/helpers/desktop-app";
+import { prepareV4ConversationE2E, startNewV4Draft } from "#e2e/helpers/v4-conversation";
 import {
   AUTOMATIONS_CONTENT_SELECTOR,
   PLUS_GOAL_OPTION_ID,
@@ -16,7 +21,7 @@ import {
   hasTestIdInDom,
   openAutomationsPage,
   openDynamicWorkflowModeSelect,
-  openGeneralSettings,
+  openAgentBehaviorSettings,
   openPlusMenu,
   openSlashPanelWithCatalogReady,
   readDynamicWorkflowGrayMockStatus,
@@ -24,18 +29,20 @@ import {
   readPlusMenuAddOptionIds,
   selectDynamicWorkflowMode,
   setComposerDraft,
-} from "../helpers/dynamic-workflow-gray.js";
-import { sel } from "../helpers/selectors.js";
+} from "#e2e/helpers/dynamic-workflow-gray";
+import { sel } from "#e2e/helpers/selectors";
 
 // DWG-08（disabled 档）：服务端 /client/configs 不下发 dynamicWorkflow key，
 // 三个入口必须同时消失——`+` 菜单的「工作流」、`/` 面板的 workflow、自动化页的「工作流」标签。
-// DWG-23（disabled 档）：服务端只给默认值，设置 › 常规的模式行照样出现，用户选「始终开启」后入口回来。
+// DWG-23（disabled 档）：服务端只给默认值，设置 › Agent 能力 › 行为与工具的模式行照样出现，用户选「始终开启」后入口回来。
 // 服务端形状由 dynamic-workflow-config-mock-server.ts 按本文件名选档；
 // 契约见 docs/dynamic-workflow/launch.md「Gray release: the `dynamicWorkflow` feature key」。
 // E2E_DWF_GRAY：只读入口，不发送 prompt；空 provider fixture 是有意的合同。
 describe("动态工作流灰度未命中（disabled）", () => {
   before(async () => {
     await prepareV4ConversationE2E();
+    // 断言中文文案：固定界面语言，不跟随宿主系统语言（容器里默认英文）。
+    await pinE2ELocale("zh-CN");
   });
   afterEach(async () => {
     const capturePath = process.env.E2E_PROVIDER_CAPTURE_PATH?.trim();
@@ -87,8 +94,8 @@ describe("动态工作流灰度未命中（disabled）", () => {
   it("DWG-23 默认关闭时设置行照样出现，选「始终开启」后工作流入口回来", async function () {
     this.timeout(240000);
 
-    // 1) 设置 › 常规：服务端没下发 key，行仍在，显示「关闭」，「默认」标签只在「关闭」上。
-    await openGeneralSettings();
+    // 1) 设置 › Agent 能力 › 行为与工具：服务端没下发 key，行仍在，显示「关闭」，「默认」标签只在「关闭」上。
+    await openAgentBehaviorSettings();
     await browser.waitUntil(
       async () => (await readDynamicWorkflowModeTriggerText()).includes("关闭"),
       { timeout: 30000, timeoutMsg: "服务端默认关闭时动态工作流模式行没有出现或没有显示「关闭」" },
@@ -116,16 +123,17 @@ describe("动态工作流灰度未命中（disabled）", () => {
     });
 
     // 4) 新草稿的 + 菜单出现「工作流」：Host 已按用户选择给 CLI 重发 enabled:true 的策略。
+    // Bug 根因：旧写法在 waitUntil 里反复开关 + 菜单；每次打开都会新发一次 Plugin catalog
+    // 请求（约 1s），请求积压饿死新 draft 的 workspace/readPresentation，catalog 30s 内到不了。
+    // 修复：与 DWG-08 相同，先用 `/` 面板等 catalog 送达，再只打开一次 + 菜单读快照。
     await startNewV4Draft();
-    await setComposerDraft("");
-    await browser.waitUntil(
-      async () => {
-        await openPlusMenu();
-        const ids = await readPlusMenuAddOptionIds();
-        await closePlusMenu();
-        return ids.includes(PLUS_GOAL_OPTION_ID) && ids.includes(PLUS_WORKFLOW_OPTION_ID);
-      },
-      { timeout: 30000, timeoutMsg: "选「始终开启」后新草稿的 + 菜单仍没有工作流" },
-    );
+    const slashIds = await openSlashPanelWithCatalogReady();
+    expect(slashIds).toContain(SLASH_WORKFLOW_OPTION_ID);
+    await closeSlashPanel();
+    await openPlusMenu();
+    const addIds = await readPlusMenuAddOptionIds();
+    await closePlusMenu();
+    expect(addIds).toContain(PLUS_GOAL_OPTION_ID);
+    expect(addIds).toContain(PLUS_WORKFLOW_OPTION_ID);
   });
 });

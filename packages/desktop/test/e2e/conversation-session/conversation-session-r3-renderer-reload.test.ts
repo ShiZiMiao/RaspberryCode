@@ -3,7 +3,7 @@ import { join, resolve } from "node:path";
 import { countRendererReloadAcks } from "#e2e/helpers/remote-renderer-ready-evidence";
 import { waitForV4Pane } from "#e2e/helpers/v4-conversation";
 import { TID_TASK_ITEM, testId } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../helpers/desktop-app.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
 import {
   connectSSHWorkspaceAndSendFirstTurn,
   prepareSSHLifecycle,
@@ -13,12 +13,12 @@ import {
   waitForRendererAfterColdRestart,
   type SSHLifecycleProvider,
   type SSHLifecycleTask,
-} from "../helpers/ssh-remote-lifecycle.js";
+} from "#e2e/helpers/ssh-remote-lifecycle";
 import {
   readHostProcesses,
   readRemoteTabSnapshot,
   waitForRemoteTab,
-} from "../helpers/ssh-remote-p0.js";
+} from "#e2e/helpers/ssh-remote-p0";
 
 const CASE_MARKER = "E2E_R3_RENDERER_RELOAD";
 const artifactDir = resolve(

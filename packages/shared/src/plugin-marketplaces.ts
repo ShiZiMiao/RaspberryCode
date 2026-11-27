@@ -34,7 +34,7 @@ export const DEFAULT_ENABLED_OFFICIAL_PLUGIN_IDS: ReadonlySet<string> = new Set(
   // Settings 会把它当成默认关闭，与 CLI 实际启用状态不一致。
   "visualize@raspberrycode-plugins-official",
   "raspberrycode-site@raspberrycode-plugins-official",
-  // 电脑控制回退为默认关闭，故 computer-use 不在此名单内。
+  // 电脑控制和交互视图默认关闭，故 computer-use、visualize 不在此名单内。
   // 该集合必须与 official-plugin-definitions.ts 里标了 defaultEnabled 的插件逐一对应，
   // bootstrap 的「Settings 默认启用集合与 CLI 的官方插件声明一致」单测机械对照两者。
 ]);

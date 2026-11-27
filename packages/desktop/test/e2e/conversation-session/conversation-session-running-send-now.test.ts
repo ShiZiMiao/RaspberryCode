@@ -4,44 +4,40 @@ import {
   TID_V4_QUEUE_ITEM_SEND_NOW,
   TID_V4_TIMELINE,
 } from "@raspberrycode/shared/test-ids";
-import {
-  clearAppData,
-  readSettings,
-  waitForDefaultWorkspaceReady,
-} from "../helpers/desktop-app.js";
+import { clearAppData, readSettings, waitForDefaultWorkspaceReady } from "#e2e/helpers/desktop-app";
 import {
   E2E_READONLY_TOOL_FILE_CONTENT,
   ensureReadonlyToolFixtureFile,
-} from "../helpers/conversation-session-readonly-tool.js";
+} from "#e2e/helpers/conversation-session-readonly-tool";
 import {
   INCOMING_MESSAGE_MODES,
   prepareIncomingMessageCapability,
-} from "../helpers/incoming-message-capability.js";
+} from "#e2e/helpers/incoming-message-capability";
 import {
   assertAppendOnly,
   assertPlainUserInput,
   wireText,
-} from "../helpers/incoming-message-evidence.js";
+} from "#e2e/helpers/incoming-message-evidence";
 import {
   UPSTREAM_MODEL,
   UPSTREAM_THOUGHT_LEVEL,
   selectUpstreamModelById,
   selectUpstreamThoughtLevelValue,
-} from "../helpers/upstream-provider.js";
+} from "#e2e/helpers/upstream-provider";
 import {
   countUpstreamRequestsContaining,
   getUpstreamRequestEvidence,
   expectNoUpstreamRequestForTextWithin,
   waitForUpstreamRequest,
   waitForUpstreamRequestContaining,
-} from "../helpers/conversation-session-network.js";
+} from "#e2e/helpers/conversation-session-network";
 import {
   clickFirstQueueSendNow,
   clickQueueSendNow,
   getQueueItems,
   waitForQueueCount,
   waitForQueueOrderContaining,
-} from "../helpers/conversation-session-queue.js";
+} from "#e2e/helpers/conversation-session-queue";
 import {
   E2E_REPLY_TOKEN,
   clickV4Stop,
@@ -56,7 +52,7 @@ import {
   waitForV4ConversationState,
   waitForV4UserMessageContaining,
   waitForV4AssistantMessageContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const RUNNING_SEND_NOW_TIMEOUT_MS = 180000;
 
@@ -151,17 +147,12 @@ describe("会话区 Running Queue 立即引导 E2E", () => {
       [firstMarker, secondMarker],
       "running send-now 非队首点击前没有按 FIFO 呈现两条 text",
     );
-    expect(queuedBeforeSendNow.map((item) => item.kind)).toEqual([
-      "text",
-      "text",
-    ]);
+    expect(queuedBeforeSendNow.map((item) => item.kind)).toEqual(["text", "text"]);
     const remainingQueueItem = queuedBeforeSendNow[0]!;
     const selectedQueueItem = queuedBeforeSendNow[1]!;
 
-    const firstRequestsBefore =
-      await countUpstreamRequestsContaining(firstMarker);
-    const secondRequestsBefore =
-      await countUpstreamRequestsContaining(secondMarker);
+    const firstRequestsBefore = await countUpstreamRequestsContaining(firstMarker);
+    const secondRequestsBefore = await countUpstreamRequestsContaining(secondMarker);
     const sentNowItem = await clickQueueSendNow(selectedQueueItem.id);
     expect(sentNowItem.id).toBe(selectedQueueItem.id);
     expect(sentNowItem.content).toContain(secondMarker);
@@ -188,9 +179,7 @@ describe("会话区 Running Queue 立即引导 E2E", () => {
     // V4 timeline message id 与 runtime command queue id 属于不同身份域；
     // 被点项是否保留以唯一 marker、用户行与剩余 queue item 共同证明。
     await expectNoUpstreamRequestForTextWithin(firstMarker, 900);
-    expect(await countUpstreamRequestsContaining(firstMarker)).toBe(
-      firstRequestsBefore,
-    );
+    expect(await countUpstreamRequestsContaining(firstMarker)).toBe(firstRequestsBefore);
     expect(await countUpstreamRequestsContaining(secondMarker)).toBeGreaterThan(
       secondRequestsBefore,
     );
@@ -251,10 +240,8 @@ describe("会话区 Running Queue 立即引导 E2E", () => {
     );
     const remainingQueueItem = queuedBeforeSendNow[0]!;
     const selectedQueueItem = queuedBeforeSendNow[1]!;
-    const firstRequestsBefore =
-      await countUpstreamRequestsContaining(firstMarker);
-    const secondRequestsBefore =
-      await countUpstreamRequestsContaining(secondMarker);
+    const firstRequestsBefore = await countUpstreamRequestsContaining(firstMarker);
+    const secondRequestsBefore = await countUpstreamRequestsContaining(secondMarker);
 
     await doubleClickQueueSendNow(selectedQueueItem.id);
     await waitForUpstreamRequestContaining(secondMarker, 60000);
@@ -275,9 +262,7 @@ describe("会话区 Running Queue 立即引导 E2E", () => {
     expect(queuedAfterDoubleClick[0]?.id).toBe(remainingQueueItem.id);
     expect(queuedAfterDoubleClick[0]?.content).toContain(firstMarker);
     expect(await countUpstreamRequestsContaining(firstMarker)).toBe(firstRequestsBefore);
-    expect(await countUpstreamRequestsContaining(secondMarker)).toBe(
-      secondRequestsBefore + 1,
-    );
+    expect(await countUpstreamRequestsContaining(secondMarker)).toBe(secondRequestsBefore + 1);
     const selectedUserMessages = (await getV4Messages("user")).filter((message) =>
       message.text.includes(secondMarker),
     );
@@ -339,13 +324,13 @@ describe("会话区 Running Queue 立即引导 E2E", () => {
     expect(JSON.stringify(selectedRequests[0]!.requestJson)).not.toContain(
       SEND_NOW_SEGMENT_INTERRUPTED_REPLY,
     );
-    // 被点消息是 tool_result 之后的独立用户文本：被停止的那次请求已发出的内容原样保留，
-    // 新请求只在末尾追加，已写入的缓存仍可读到。
     const [heldRequest] = await getUpstreamRequestEvidence({
       includes: [markers.baseMarker, E2E_READONLY_TOOL_FILE_CONTENT],
       excludes: [markers.queuedMarker, "Generate a concise title"],
     });
     expect(heldRequest).toBeDefined();
+    // 被点消息是 tool_result 之后的独立用户文本：被停止的那次请求已发出的内容原样保留，
+    // 新请求只在末尾追加，已写入的缓存仍可读到。token 预算提醒默认关闭，请求里没有会随新一轮移动的提醒。
     assertAppendOnly(heldRequest!.requestJson, selectedRequests[0]!.requestJson);
     await assertPlainUserInput(selectedRequests[0]!.requestJson, {
       body: buildQueuedPrompt(markers.queuedMarker),

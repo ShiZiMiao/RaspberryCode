@@ -16,7 +16,7 @@ The generated task is synthetic test data. Always back up before writing and rec
 
 ## Quick Commands
 
-From the z-code repository root:
+From the raspberrycode repository root:
 
 ```bash
 node .agents/skills/raspberrycode-large-task-fixture/scripts/generate-large-task-fixture.mjs \

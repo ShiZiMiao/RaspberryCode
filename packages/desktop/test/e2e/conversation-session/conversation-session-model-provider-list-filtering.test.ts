@@ -5,11 +5,11 @@ import {
   TID_CHAT_MODEL_SELECT_TRIGGER,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { DEFAULT_WORKSPACE, clearAppData, waitForWorkspaceApp } from "../helpers/desktop-app.js";
+import { DEFAULT_WORKSPACE, clearAppData, waitForWorkspaceApp } from "#e2e/helpers/desktop-app";
 import {
   assertUpstreamRequestCapture,
   waitForUpstreamNetworkCapture,
-} from "../helpers/upstream-capture.js";
+} from "#e2e/helpers/upstream-capture";
 import {
   UPSTREAM_ALTERNATE_PROVIDER_ID,
   UPSTREAM_PROVIDER_ID,
@@ -18,7 +18,7 @@ import {
   getSelectedUpstreamModelLabel,
   openComposerProviderList,
   selectUpstreamProviderModelById,
-} from "../helpers/upstream-provider.js";
+} from "#e2e/helpers/upstream-provider";
 import {
   E2E_REPLY_TOKEN,
   prepareV4ConversationE2E,
@@ -28,7 +28,7 @@ import {
   waitForV4ComposerText,
   waitForV4UserMessageContaining,
 } from "#e2e/helpers/v4-conversation";
-import { sel } from "../helpers/selectors.js";
+import { sel } from "#e2e/helpers/selectors";
 
 const FILTERED_PROVIDER_CASES = [
   { id: "e2e-hidden-provider", model: "hidden-provider-model" },

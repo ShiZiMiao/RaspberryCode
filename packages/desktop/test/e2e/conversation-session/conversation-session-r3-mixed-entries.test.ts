@@ -15,7 +15,7 @@ import {
   sendSSHFollowTurn,
   waitForRendererAfterColdRestart,
   type SSHLifecycleProvider,
-} from "../helpers/ssh-remote-lifecycle.js";
+} from "#e2e/helpers/ssh-remote-lifecycle";
 import {
   prepareSSHConnectionPage,
   openSSHSourceDirectory,
@@ -24,11 +24,11 @@ import {
   selectSSHRemoteDirectory,
   waitForRemoteTab,
   waitForSSHDirectoryStep,
-} from "../helpers/ssh-remote-p0.js";
+} from "#e2e/helpers/ssh-remote-p0";
 import {
   openWorkspaceDraftFromSidebar,
   selectTaskOrganizeMode,
-} from "../helpers/workspace-agent-warmup.js";
+} from "#e2e/helpers/workspace-agent-warmup";
 
 const CASE_MARKER = "E2E_R3_MIXED_ENTRIES";
 const artifactDir = resolve(

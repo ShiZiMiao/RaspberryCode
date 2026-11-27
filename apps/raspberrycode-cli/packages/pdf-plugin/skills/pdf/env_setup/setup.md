@@ -1,5 +1,22 @@
 # PDF Skill — Environment Setup Guide
 
+## Python interpreter selection
+
+Run Python scripts and package installation with `"$(command -v raspberrycode-python || command -v python3)"`. This selects the preinstalled entry when available and otherwise the existing system Python.
+
+If neither the preinstalled entry nor a system Python is available and `RASPBERRYCODE_PREINSTALLED_TOOLS_AVAILABLE` is set, stop before running a Python script or any setup installer. Explain: “预装版本未就绪或已关闭，请在 帮助 → 预装工具 中查看” (the preinstalled version is not ready or is disabled; check **Help → Preinstalled tools**). Let the user choose waiting, enabling Python, or installing system Python. Without that variable, keep the existing installation guidance.
+
+After the user chooses system installation, run the Python installation command from [Manual Install by Platform](#manual-install-by-platform) directly; do not rerun the setup preflight while Python is still missing. Make the installed interpreter visible to the current shell, then repeat interpreter selection and continue setup. No environment override is needed.
+
+If the selected preinstalled Python cannot run or its package installation fails, stop this step and explain the cause. Ask the user to choose either their own Python for this step (including any package installation into that Python) or turning off Python in **Help → Preinstalled tools**. Do not switch interpreters automatically after a failure. Errors in the document or script itself follow the existing troubleshooting route.
+
+## LibreOffice availability
+
+Use this section when the unified launcher finds no usable installation. On desktop, first ask the user to wait for managed preparation or let the Agent install.
+
+First run `"$(command -v raspberrycode-python || command -v python3)" "$PDF_SKILL_DIR/../../scripts/raspberrycode_libreoffice.py" check`. The launcher discovers the preinstalled entry on PATH; desktop availability only selects the installation guidance. If no program is usable on desktop, report the preparation state and reason, then ask the user to wait or let the Agent install. After installation, continue through the unified launcher, not soffice directly. Python, Node and other dependencies keep their existing setup rules.
+
+
 This document contains full platform-specific instructions for setting up the PDF skill environment.
 The model should read this file when first-time setup is needed.
 
@@ -62,6 +79,10 @@ Run the platform-appropriate setup script:
 > Install these optional engines **on demand, after asking the user** (they involve large
 > downloads / long first-run waits) — do not install them up front.
 >
+> On desktop (`RASPBERRYCODE_PREINSTALLED_TOOLS_AVAILABLE` is set), this applies only after the user chooses installation in
+> [LibreOffice availability](#libreoffice-availability): first report the preparation state and let the user choose
+> waiting or installation.
+>
 > **Once an Office→PDF task is requested, LibreOffice MUST be installed — not substituted.** Using
 > the user's already-installed Word/WPS/Keynote/Pages *instead of* installing it is **forbidden**, and
 > the package being large (several hundred MB) is **not** a reason to skip the install. Required:
@@ -79,7 +100,7 @@ Run the platform-appropriate setup script:
 ```bash
 # ── Core (always) ──
 brew install python3
-python3 -m pip install reportlab pypdf PyMuPDF pikepdf pdfplumber
+"$(command -v raspberrycode-python || command -v python3)" -m pip install reportlab pypdf PyMuPDF pikepdf pdfplumber
 
 # ── Optional: Creative/HTML pipeline (install on demand, with user's OK — large Chromium download) ──
 brew install node
@@ -98,7 +119,7 @@ brew install --cask libreoffice   # fallback if the mirror is unreachable
 ```bash
 # ── Core (always) ──
 sudo apt install python3 python3-pip
-python3 -m pip install reportlab pypdf PyMuPDF pikepdf pdfplumber
+"$(command -v raspberrycode-python || command -v python3)" -m pip install reportlab pypdf PyMuPDF pikepdf pdfplumber
 
 # ── Optional: Creative/HTML pipeline (install on demand, with user's OK) ──
 sudo apt install nodejs npm
@@ -116,7 +137,9 @@ sudo apt install libreoffice-core   # fallback if the mirror is unreachable
 ```powershell
 winget install Python.Python.3.11
 winget install OpenJS.NodeJS.LTS
-python -m pip install pikepdf pdfplumber pypdf reportlab PyMuPDF
+$PY = Get-Command raspberrycode-python -ErrorAction SilentlyContinue
+if (-not $PY) { $PY = Get-Command python3, python, py -ErrorAction SilentlyContinue | Select-Object -First 1 }
+& $PY.Source -m pip install pikepdf pdfplumber pypdf reportlab PyMuPDF
 npm install -g playwright@1.50.0
 # Pinned to 1.50.0 — npmmirror has Chromium rev 1155 for this version
 npx playwright install chromium
@@ -134,16 +157,16 @@ Alternative Windows package managers:
 
 ## Step 3: Font Installation
 
-Fonts are downloaded individually from a font mirror on first setup. The mirror base URL comes from the `OFFICE_SKILL_FONT_CDN_BASE` environment variable — there is no built-in default (provider-neutral policy: no brand CDN); point it at a self-hosted or internal mirror of `font_list.txt` (see **Manual Font Installation** below).
+Fonts are downloaded individually from CDN on first setup.
 
-- **Mirror base**: `$OFFICE_SKILL_FONT_CDN_BASE` (required for font download; empty = skip and use system fonts)
+- **CDN base**: `https://z-cdn.chatglm.cn/office-skill/fonts/`
 - **Font list**: `env_setup/font_list.txt` (78 fonts, one relative path per line)
 - **Marker file**: `.office-skill-fonts-installed` in the user font directory prevents re-download
 - Special characters in filenames (e.g., `[`, `]`) are URL-encoded automatically by the setup script
 
 The setup scripts read `font_list.txt`, check which fonts are already installed, and download only the missing ones. Each font is saved flat (filename only) to the user font directory.
 
-### Mirror Directory Structure (78 fonts)
+### CDN Directory Structure (78 fonts)
 
 | Directory | Count | Description |
 |-----------|-------|-------------|
@@ -170,11 +193,11 @@ The setup scripts read `font_list.txt`, check which fonts are already installed,
 
 ### Manual Font Installation
 
-If the mirror is unreachable, download fonts manually from any source hosting the same open-source fonts. Example:
+If CDN is unreachable, download fonts manually. Example:
 
 ```bash
 # Download a single font (use static-weight files, NOT variable fonts)
-curl -fSLO "$OFFICE_SKILL_FONT_CDN_BASE/chinese/NotoSansSC-Regular.ttf"
+curl -fSLO "https://z-cdn.chatglm.cn/office-skill/fonts/chinese/NotoSansSC-Regular.ttf"
 # Copy to user font dir
 cp "NotoSansSC-Regular.ttf" ~/Library/Fonts/   # macOS
 ```
@@ -184,7 +207,7 @@ Or download all fonts listed in `font_list.txt`:
 ```bash
 while read f; do
     encoded=$(echo "$f" | sed 's/\[/%5B/g; s/\]/%5D/g')
-    curl -fSLO "$OFFICE_SKILL_FONT_CDN_BASE/$encoded"
+    curl -fSLO "https://z-cdn.chatglm.cn/office-skill/fonts/$encoded"
 done < env_setup/font_list.txt
 ```
 
@@ -207,7 +230,7 @@ If default sources are unreachable, use China mirrors:
 ### pip (Tsinghua mirror)
 
 ```bash
-python3 -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple \
+"$(command -v raspberrycode-python || command -v python3)" -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple \
   --trusted-host pypi.tuna.tsinghua.edu.cn \
   pikepdf pdfplumber pypdf reportlab PyMuPDF
 ```
@@ -228,7 +251,9 @@ PLAYWRIGHT_DOWNLOAD_HOST=https://npmmirror.com/mirrors/playwright/ npx playwrigh
 ### Windows (PowerShell) China mirrors
 
 ```powershell
-python -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --trusted-host pypi.tuna.tsinghua.edu.cn pikepdf pdfplumber pypdf reportlab PyMuPDF
+$PY = Get-Command raspberrycode-python -ErrorAction SilentlyContinue
+if (-not $PY) { $PY = Get-Command python3, python, py -ErrorAction SilentlyContinue | Select-Object -First 1 }
+& $PY.Source -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --trusted-host pypi.tuna.tsinghua.edu.cn pikepdf pdfplumber pypdf reportlab PyMuPDF
 npm install -g playwright@1.50.0 --registry https://registry.npmmirror.com
 # Pinned to 1.50.0 — npmmirror has Chromium rev 1155 for this version
 $env:PLAYWRIGHT_DOWNLOAD_HOST = "https://npmmirror.com/mirrors/playwright/"
@@ -246,6 +271,8 @@ npx playwright install chromium
 ---
 
 ## LibreOffice — Recommended Download Source (Tsinghua TUNA mirror)
+
+Use this section when the unified launcher finds no usable installation. On desktop, first ask the user to wait for managed preparation or let the Agent install.
 
 **Prefer this mirror over the official libreoffice.org download and over `brew`/`apt`/`winget`
 package sources** — it is much faster on Chinese networks and ships the current full build.
@@ -286,7 +313,7 @@ curl -fSLO "$BASE/LibreOffice_${LO_VER}_Linux_${LO_TAG}_deb.tar.gz"
 tar -xzf "LibreOffice_${LO_VER}_Linux_${LO_TAG}_deb.tar.gz"
 sudo dpkg -i LibreOffice_${LO_VER}*/DEBS/*.deb
 sudo apt-get install -f -y     # resolve any missing dependencies
-soffice --version              # verify (binary lands in /usr/bin or /opt/libreoffice*/program)
+"$(command -v raspberrycode-python || command -v python3)" "$PDF_SKILL_DIR/../../scripts/raspberrycode_libreoffice.py" check              # verify (binary lands in /usr/bin or /opt/libreoffice*/program)
 ```
 
 If `soffice` is not on `PATH` after install, register it — see
@@ -307,7 +334,7 @@ curl -fSLO "$BASE/LibreOffice_${LO_VER}_MacOS_${LO_TAG}.dmg"
 hdiutil attach "LibreOffice_${LO_VER}_MacOS_${LO_TAG}.dmg"
 cp -R "/Volumes/LibreOffice/LibreOffice.app" /Applications/
 hdiutil detach "/Volumes/LibreOffice"
-/Applications/LibreOffice.app/Contents/MacOS/soffice --version   # verify
+"$(command -v raspberrycode-python || command -v python3)" "$PDF_SKILL_DIR/../../scripts/raspberrycode_libreoffice.py" check   # verify
 ```
 
 `brew install --cask libreoffice` is the fallback if the mirror is unreachable.
@@ -323,7 +350,9 @@ $Msi  = "$env:TEMP\LibreOffice_${LoVer}_Win_${LoTag}.msi"
 
 Invoke-WebRequest -Uri "$Base/LibreOffice_${LoVer}_Win_${LoTag}.msi" -OutFile $Msi
 Start-Process msiexec.exe -ArgumentList "/i `"$Msi`" /qn" -Wait   # silent install (needs admin)
-& "C:\Program Files\LibreOffice\program\soffice.exe" --version    # verify
+$PY = Get-Command raspberrycode-python -ErrorAction SilentlyContinue
+if (-not $PY) { $PY = Get-Command python3, python, py -ErrorAction SilentlyContinue | Select-Object -First 1 }
+& $PY.Source "$env:PDF_SKILL_DIR/../../scripts/raspberrycode_libreoffice.py" check    # verify
 ```
 
 `winget install TheDocumentFoundation.LibreOffice` is the fallback if the mirror is unreachable.
@@ -351,7 +380,7 @@ Get-Command soffice -ErrorAction SilentlyContinue; Test-Path "C:\Program Files\L
 
 ```bash
 sudo ln -sf /opt/libreoffice*/program/soffice /usr/local/bin/soffice
-soffice --version   # re-verify: must print a version, not "command not found"
+"$(command -v raspberrycode-python || command -v python3)" "$PDF_SKILL_DIR/../../scripts/raspberrycode_libreoffice.py" check   # re-verify: must print a version, not "command not found"
 ```
 
 If the distro package was used instead of the mirror, `soffice` normally lands in `/usr/bin` already
@@ -361,7 +390,7 @@ and no link is needed.
 
 ```bash
 sudo ln -sf /Applications/LibreOffice.app/Contents/MacOS/soffice /usr/local/bin/soffice
-soffice --version   # re-verify
+"$(command -v raspberrycode-python || command -v python3)" "$PDF_SKILL_DIR/../../scripts/raspberrycode_libreoffice.py" check   # re-verify
 ```
 
 On Apple Silicon, `/usr/local/bin` is not always on `PATH` — if the verify still fails, link into
@@ -375,6 +404,12 @@ $UserPath = [Environment]::GetEnvironmentVariable("PATH", "User")
 if ($UserPath -notlike "*$LoDir*") { setx PATH "$UserPath;$LoDir" }
 ```
 
-`setx` only affects **newly launched** shells. For the remainder of the current session, call the
-binary by its full path: `& "C:\Program Files\LibreOffice\program\soffice.exe" --version`.
+`setx` only affects **newly launched** shells. The unified launcher also checks the default install
+directory, so verify in the current session with:
+
+```powershell
+$PY = Get-Command raspberrycode-python -ErrorAction SilentlyContinue
+if (-not $PY) { $PY = Get-Command python3, python, py -ErrorAction SilentlyContinue | Select-Object -First 1 }
+& $PY.Source "$env:PDF_SKILL_DIR/../../scripts/raspberrycode_libreoffice.py" check
+```
 

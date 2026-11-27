@@ -3,7 +3,7 @@ import {
   PROCESS_RESOURCE_EVENT_NAMES,
   checkProcessResourceEventProperties,
 } from "@raspberrycode/shared";
-import { clearAppData, waitForDefaultWorkspaceReady } from "./helpers/desktop-app.js";
+import { clearAppData, waitForDefaultWorkspaceReady } from "#e2e/helpers/desktop-app";
 
 /**
  * PRT-023：开发态 / E2E 的 1 分钟趋势窗口过后，

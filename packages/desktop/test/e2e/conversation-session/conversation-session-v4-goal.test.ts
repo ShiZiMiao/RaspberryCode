@@ -1,18 +1,17 @@
+import { openStatusCapsule } from "#e2e/helpers/status-capsule";
+import { waitForControlledReplay } from "#e2e/helpers/controlled-replay";
 // M4 门禁：sendGoalCommand（v4 composer slash `/goal <目标>`）。
 // 证据层 L3：建立 session → composer `/goal E2E_V4_GOAL_OBJECTIVE …` → handleSlashCommand →
 // dispatchCommand("sendGoalCommand") → v4-bridge goalSession(set) → TargetChanged 事件 →
 // reducer 更新 goal 状态 → unified status-panel shell 投影 objective + active。
 // 证明 goal slash 入口 + goal 状态投影 + 摘要 timer/pause/resume UI 全链路。
-import { TID_CHAT_SUMMARY_PANEL, TID_V4_COMPOSER_INPUT } from "@raspberrycode/shared/test-ids";
-import {
-  clearAppData,
-  setInputValueByTestIdDom,
-} from "../helpers/desktop-app.js";
-import { selectUpstreamThoughtLevelValue } from "../helpers/upstream-provider.js";
+import { TID_V4_COMPOSER_INPUT } from "@raspberrycode/shared/test-ids";
+import { clearAppData, setInputValueByTestIdDom } from "#e2e/helpers/desktop-app";
+import { selectUpstreamThoughtLevelValue } from "#e2e/helpers/upstream-provider";
 import {
   assertUpstreamThoughtLevelCapture,
   waitForUpstreamNetworkRequestStarted,
-} from "../helpers/upstream-capture.js";
+} from "#e2e/helpers/upstream-capture";
 import {
   clickV4Send,
   getV4GoalProjection,
@@ -20,7 +19,8 @@ import {
   sendV4Prompt,
   waitForV4Pane,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
+  waitForLatestV4CommandAck,
+} from "#e2e/helpers/v4-conversation";
 
 describe("v4 M4 门禁：sendGoalCommand（/goal slash）", () => {
   after(async () => {
@@ -53,10 +53,7 @@ describe("v4 M4 门禁：sendGoalCommand（/goal slash）", () => {
     await browser.waitUntil(
       async () => {
         const banner = await getV4GoalProjection();
-        return (
-          banner !== null &&
-          (banner.objective ?? "").includes("E2E_V4_GOAL_OBJECTIVE")
-        );
+        return banner !== null && (banner.objective ?? "").includes("E2E_V4_GOAL_OBJECTIVE");
       },
       {
         timeout: 45000,
@@ -69,61 +66,44 @@ describe("v4 M4 门禁：sendGoalCommand（/goal slash）", () => {
     const goalRequest = await waitForUpstreamNetworkRequestStarted("E2E_V4_GOAL_OBJECTIVE");
     assertUpstreamThoughtLevelCapture(goalRequest, "low");
 
-    // Bug 原因：状态面板在窄窗口会自动收成 mini 胶囊，折叠态只提供展开入口，
-    // 不渲染 pause/resume。旧用例直接找 pause，把合法的响应式布局误报成投影失败。
-    await browser.waitUntil(
-      async () =>
-        browser.execute((panelTestId) => {
-          const panel = document.querySelector<HTMLElement>(
-            `[data-testid="${panelTestId}"]`,
-          );
-          if (!panel) return false;
-          if (panel.dataset.state === "collapsed") {
-            panel.querySelector<HTMLButtonElement>("button")?.click();
-            return false;
-          }
-          return panel.dataset.state === "expanded";
-        }, TID_CHAT_SUMMARY_PANEL),
-      { timeout: 15000, timeoutMsg: "goal 状态面板没有展开" },
-    );
+    // 首个输出会新增消息行并递增 revision；只等请求开始就点击，会偶发收到
+    // proto.staleRevision。先等真实输出投影，再由关卡保持运行态，不靠固定慢流窗口。
+    await waitForControlledReplay("v4-goal-continuation-slow");
+    await waitForV4TimelineContaining("V4_GOAL_STREAMING", 15000);
+
+    await openStatusCapsule("goal", 15000);
 
     await browser.waitUntil(
       async () =>
         browser.execute(() => {
-          const button = document.querySelector<HTMLButtonElement>(
-            '[data-goal-action="pause"]',
-          );
+          const button = document.querySelector<HTMLButtonElement>('[data-goal-action="pause"]');
           return Boolean(button && !button.disabled);
         }),
       { timeout: 15000, timeoutMsg: "active goal 没有可用的 pauseGoal 按钮" },
     );
     const activeElapsed = await browser.execute(() => {
-      const metric = document.querySelector<HTMLElement>(
-        "[data-goal-elapsed-seconds]",
-      );
+      const metric = document.querySelector<HTMLElement>("[data-goal-elapsed-seconds]");
       return Number(metric?.getAttribute("data-goal-elapsed-seconds") ?? -1);
     });
     expect(activeElapsed).toBeGreaterThanOrEqual(0);
     const paused = await browser.execute(() => {
-      const button = document.querySelector<HTMLButtonElement>(
-        '[data-goal-action="pause"]',
-      );
+      const button = document.querySelector<HTMLButtonElement>('[data-goal-action="pause"]');
       if (!button || button.disabled) return false;
       button.click();
       return true;
     });
     expect(paused).toBe(true);
-    await browser.waitUntil(
-      async () => (await getV4GoalProjection())?.status === "paused",
-      { timeout: 15000, timeoutMsg: "pauseGoal 后目标没有进入 paused" },
-    );
+    // 点击成功不代表命令已接纳；保留 ACK，区分版本冲突与投影未更新。
+    expect(await waitForLatestV4CommandAck("pauseGoal")).toMatchObject({ status: "accepted" });
+    await browser.waitUntil(async () => (await getV4GoalProjection())?.status === "paused", {
+      timeout: 15000,
+      timeoutMsg: "pauseGoal 后目标没有进入 paused",
+    });
 
     await browser.waitUntil(
       async () =>
         browser.execute(() => {
-          const button = document.querySelector<HTMLButtonElement>(
-            '[data-goal-action="resume"]',
-          );
+          const button = document.querySelector<HTMLButtonElement>('[data-goal-action="resume"]');
           return Boolean(button && !button.disabled);
         }),
       {
@@ -132,20 +112,17 @@ describe("v4 M4 门禁：sendGoalCommand（/goal slash）", () => {
       },
     );
     const resumed = await browser.execute(() => {
-      const button = document.querySelector<HTMLButtonElement>(
-        '[data-goal-action="resume"]',
-      );
+      const button = document.querySelector<HTMLButtonElement>('[data-goal-action="resume"]');
       if (!button || button.disabled) return false;
       button.click();
       return true;
     });
     expect(resumed).toBe(true);
+    expect(await waitForLatestV4CommandAck("resumeGoal")).toMatchObject({ status: "accepted" });
     await browser.waitUntil(
       async () => {
         const status = (await getV4GoalProjection())?.status;
-        return (
-          status === "active" || status === "verifying" || status === "verified"
-        );
+        return status === "active" || status === "verifying" || status === "verified";
       },
       { timeout: 45000, timeoutMsg: "resumeGoal 后目标没有恢复或完成" },
     );

@@ -1,12 +1,12 @@
 // BG34：active goal 仅剩 background Agent 时输入直发；notification verifier 完成后自动消费 future queue。
 import { TID_V4_COMPOSER } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../helpers/desktop-app.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
 import {
   countUpstreamRequests,
   findFirstUpstreamRequestIndex,
   getUpstreamRequestRecordCount,
   waitForUpstreamRequest,
-} from "../helpers/conversation-session-network.js";
+} from "#e2e/helpers/conversation-session-network";
 import {
   getV4GoalProjection,
   getV4PaneSnapshot,
@@ -17,7 +17,7 @@ import {
   waitForV4Pane,
   waitForV4QueueCount,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const E2E_TIMEOUT_MS = 180000;
 

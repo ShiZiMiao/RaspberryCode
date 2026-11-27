@@ -1,12 +1,12 @@
 import { TID_TASK_ITEM, testId } from "@raspberrycode/shared/test-ids";
-import { DEFAULT_WORKSPACE, clearAppData, waitForWorkspaceApp } from "../helpers/desktop-app.js";
+import { DEFAULT_WORKSPACE, clearAppData, waitForWorkspaceApp } from "#e2e/helpers/desktop-app";
 import {
   TASK_INDEX_ROW_AUTHORITY_MISSING_SUMMARY_ID,
   TASK_INDEX_ROW_AUTHORITY_MISSING_SUMMARY_TITLE,
   TASK_INDEX_ROW_AUTHORITY_TASK_IDS,
   TASK_INDEX_ROW_AUTHORITY_TOTAL,
-} from "../helpers/task-list-row-authority-fixture.js";
-import { ensureProjectExpanded, projectSectionSelector } from "../helpers/project-sidebar.js";
+} from "#e2e/helpers/task-list-row-authority-fixture";
+import { ensureProjectExpanded, projectSectionSelector } from "#e2e/helpers/project-sidebar";
 
 const CASE_TIMEOUT_MS = 120_000;
 

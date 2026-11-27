@@ -2,8 +2,8 @@ import { readFile } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { TID_BROWSER_ADDRESS_INPUT, TID_BROWSER_WEBVIEW } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../helpers/desktop-app.js";
-import type { E2ENetworkCaptureArtifact } from "../helpers/network-capture-proxy.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
+import type { E2ENetworkCaptureArtifact } from "#e2e/helpers/network-capture-proxy";
 import {
   prepareV4ConversationE2E,
   sendV4Prompt,
@@ -13,7 +13,7 @@ import {
 } from "#e2e/helpers/v4-conversation";
 import { waitForUpstreamRequest } from "#e2e/helpers/conversation-session-network";
 import { waitForToolCallBlockByToolName } from "#e2e/helpers/conversation-session-tool";
-import { ensureToolCrossProductFullAccessMode } from "../helpers/conversation-session-tool-cross-product.js";
+import { ensureToolCrossProductFullAccessMode } from "#e2e/helpers/conversation-session-tool-cross-product";
 
 const PARENT_MARKER = "E2E_BROWSER_SUBAGENT_BOUNDARY_PARENT";
 const CHILD_MARKER = "E2E_BROWSER_SUBAGENT_BOUNDARY_CHILD";

@@ -1,24 +1,24 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
-import type { ElectronMock } from "@wdio/electron-types";
 import { TID_CHAT_ATTACHMENT_BUTTON, TID_CHAT_ATTACHMENT_MENU_ITEM } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../helpers/desktop-app.js";
-import { prepareV4ConversationE2E, startNewV4Draft } from "#e2e/helpers/v4-conversation";
+import { clearAppData } from "#e2e/helpers/desktop-app";
+import {
+  pickV4ComposerFiles,
+  prepareV4ConversationE2E,
+  startNewV4Draft,
+} from "#e2e/helpers/v4-conversation";
 
 const NATIVE_FILE_PICKER_TIMEOUT_MS = 180000;
 const ATTACHMENT_LIMIT = 8;
 
 describe("会话区 native 文件选择器附件数量边界 E2E", () => {
   const fixtureRoot = join(tmpdir(), `raspberrycode-e2e-native-file-picker-attachments-${Date.now()}`);
-  let showOpenDialogMock: ElectronMock | null = null;
-
   before(async function () {
     this.timeout(NATIVE_FILE_PICKER_TIMEOUT_MS);
 
     await prepareV4ConversationE2E();
     await createFixtureFiles(fixtureRoot);
-    showOpenDialogMock = await browser.electron.mock("dialog", "showOpenDialog");
   });
 
   after(async () => {
@@ -41,7 +41,7 @@ describe("会话区 native 文件选择器附件数量边界 E2E", () => {
     const selectedPaths = [fixturePath(fixtureRoot, "single-config.json")];
     const expectedFilenames = selectedPaths.map((path) => basename(path));
 
-    await pickNativeFiles(selectedPaths, showOpenDialogMock);
+    await pickV4ComposerFiles(selectedPaths);
     await assertComposerAttachments(expectedFilenames, {
       iconIncludes: ["material-icons/json.svg"],
     });
@@ -58,7 +58,7 @@ describe("会话区 native 文件选择器附件数量边界 E2E", () => {
     ];
     const expectedFilenames = selectedPaths.map((path) => basename(path));
 
-    await pickNativeFiles(selectedPaths, showOpenDialogMock);
+    await pickV4ComposerFiles(selectedPaths);
     await assertComposerAttachments(expectedFilenames, {
       iconIncludes: ["material-icons/json.svg", "material-icons/markdown.svg"],
     });
@@ -76,7 +76,7 @@ describe("会话区 native 文件选择器附件数量边界 E2E", () => {
       .map((path) => basename(path));
     const rejectedFilename = basename(selectedPaths[ATTACHMENT_LIMIT] ?? "");
 
-    await pickNativeFiles(selectedPaths, showOpenDialogMock);
+    await pickV4ComposerFiles(selectedPaths);
     await assertComposerAttachments(acceptedFilenames, {
       iconIncludes: ["material-icons/json.svg"],
       rejectedFilenames: [rejectedFilename],
@@ -89,13 +89,30 @@ describe("会话区 native 文件选择器附件数量边界 E2E", () => {
     const paths = Array.from({ length: 8 }, (_, index) =>
       fixturePath(fixtureRoot, `limit-${String(index + 1).padStart(2, "0")}.json`),
     );
-    await pickNativeFiles(paths, showOpenDialogMock);
+    await pickV4ComposerFiles(paths);
     await assertComposerAttachments(paths.map((path) => basename(path)));
-    await showOpenDialogMock!.mockClear();
-    await showOpenDialogMock!.mockResolvedValue({ canceled: true, filePaths: [] });
+    // 满额时应在打开系统选择器前拦截，监听真实 input click 而非已清空的 files。
+    await browser.execute(() => {
+      const input = document.querySelector<HTMLInputElement>('input[type="file"]');
+      if (!input) throw new Error("缺少附件文件输入框");
+      input.dataset.e2eClickCount = "0";
+      input.addEventListener(
+        "click",
+        (event) => {
+          event.preventDefault();
+          input.dataset.e2eClickCount = "1";
+        },
+        { capture: true, once: true },
+      );
+    });
     await clickAttachmentMenuItem();
     await assertAttachmentLimitWarningVisible(true);
-    await expect(showOpenDialogMock!).not.toHaveBeenCalled();
+    expect(
+      await browser.execute(() => {
+        const input = document.querySelector<HTMLInputElement>('input[type="file"]');
+        return input?.dataset.e2eClickCount;
+      }),
+    ).toBe("0");
 
     for (let attempt = 0; attempt < 2; attempt++) {
       await assertAttachmentLimitWarningVisible(false);
@@ -124,7 +141,7 @@ describe("会话区 native 文件选择器附件数量边界 E2E", () => {
       remove.click();
     });
     const replacement = fixturePath(fixtureRoot, "single-config.json");
-    await pickNativeFiles([replacement], showOpenDialogMock);
+    await pickV4ComposerFiles([replacement]);
     await assertComposerAttachments(
       [...paths.slice(1), replacement].map((path) => basename(path)),
       { rejectedFilenames: [basename(paths[0]!)] },
@@ -154,22 +171,6 @@ async function createFixtureFiles(root: string) {
 
 function fixturePath(root: string, filename: string) {
   return join(root, filename);
-}
-
-async function pickNativeFiles(paths: string[], showOpenDialogMock: ElectronMock | null) {
-  if (!showOpenDialogMock) {
-    throw new Error("native file picker mock 未初始化");
-  }
-
-  await showOpenDialogMock.mockResolvedValueOnce({
-    canceled: false,
-    filePaths: paths,
-  });
-
-  await clickAttachmentMenuItem();
-  await expect(showOpenDialogMock).toHaveBeenCalledWith({
-    properties: ["openFile", "multiSelections"],
-  });
 }
 
 async function clickAttachmentMenuItem() {

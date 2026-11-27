@@ -1,13 +1,16 @@
 // 统一 runner 与旧手工入口均使用隔离 HOME；不能因 runId 前缀不同拒绝安全夹具。
+import { isE2EHomeDirName } from "#e2e/helpers/e2e-runtime-paths";
 import {
   installHandoffRpcProbe,
   callHandoffHost,
   removeRemoteProjectEntryForRow,
+  restoreHandoffProbes,
 } from "#e2e/helpers/remote-project-handoff-probe";
 import { openWorkspaceDraftFromSidebar } from "#e2e/helpers/workspace-agent-warmup";
+import { setRendererViewport, clearRendererViewport } from "#e2e/helpers/renderer-viewport";
 import type { VirtualProject } from "@raspberrycode/services";
-import { selectNativeProjectDirectories } from "../helpers/project-sidebar.js";
-import { openScopeProjectSubmenu } from "../helpers/settings-scope-menu.js";
+import { selectNativeProjectDirectories } from "#e2e/helpers/project-sidebar";
+import { openScopeProjectSubmenu } from "#e2e/helpers/settings-scope-menu";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { join, basename, resolve } from "node:path";
@@ -39,10 +42,10 @@ import {
   clickTestIdByDom,
   waitForWorkspaceApp,
   DEFAULT_WORKSPACE,
-} from "../helpers/desktop-app.js";
+} from "#e2e/helpers/desktop-app";
 
-import { waitForUpstreamNetworkCapture } from "../helpers/upstream-capture.js";
-import { loginWithApiKey, prepareV4ConversationE2E } from "../helpers/v4-conversation.js";
+import { waitForUpstreamNetworkCapture } from "#e2e/helpers/upstream-capture";
+import { loginWithApiKey, prepareV4ConversationE2E } from "#e2e/helpers/v4-conversation";
 
 describe("虚拟项目", () => {
   before(async () => {
@@ -207,12 +210,288 @@ describe("虚拟项目", () => {
     await original.$('[data-testid="virtual-project-create-task"]').click();
     await waitForWorkspaceApp(DEFAULT_WORKSPACE, 30_000);
   });
+  it("VP20：单 workspace 查看文件显示完整路径并适配窄屏", async function () {
+    this.timeout(60_000);
+    const original = $('[data-project-name="RaspberryCodeProject"]');
+    await original.waitForDisplayed();
+    const appearance = await browser.execute(() => ({
+      width: innerWidth,
+      theme: (
+        window as Window & { __testActions?: { getTheme(): string } }
+      ).__testActions!.getTheme(),
+    }));
+    const sidebarExpanded = () =>
+      browser.execute(() => {
+        const shell = document.querySelector('[data-workspace-shell="true"]')!;
+        return (
+          Number.parseFloat(
+            getComputedStyle(shell).getPropertyValue("--workspace-sidebar-panel-width"),
+          ) > 200
+        );
+      });
+    const ensureSidebarExpanded = async () => {
+      if (!(await sidebarExpanded()))
+        await $('button[aria-label="Toggle sidebar"], button[aria-label="切换侧边栏"]').click();
+      await browser.waitUntil(sidebarExpanded);
+      await original.waitForDisplayed();
+    };
+    const files = $('[data-testid="virtual-project-context-files-0"]');
+    try {
+      const openMenu = async () => {
+        await original.$('[data-testid="virtual-project-row"]').click({ button: "right" });
+        await files.waitForDisplayed();
+      };
+      await openMenu();
+      // 先打开菜单再缩放；桌面窄屏不代表手机导航入口。
+      for (const width of [1200, 390]) {
+        await setRendererViewport(width, 844);
+        if (width < 400) {
+          // 修复原因：窗口缩小后 300ms resize idle 才自动收起侧栏，菜单随之被关闭/卸载，
+          // 此前紧接着 await animation.finished 会因动画被取消而 AbortError。
+          // 先等收起这一可观察结果落定并关掉菜单，再展开侧栏并重新打开菜单，只在稳定布局上测量。
+          await browser.waitUntil(async () => !(await sidebarExpanded()), {
+            timeoutMsg: "窄屏没有自动收起侧栏",
+          });
+          await browser.keys("Escape");
+          await files.waitForExist({ reverse: true });
+          await ensureSidebarExpanded();
+          await openMenu();
+        }
+        for (const theme of ["light", "dark"]) {
+          await browser.execute((value) => {
+            (
+              window as Window & { __testActions?: { setTheme(theme: string): void } }
+            ).__testActions!.setTheme(value);
+          }, theme);
+          await browser.waitUntil(() =>
+            browser.execute(
+              (value) => document.documentElement.classList.contains(`theme-${value}`),
+              theme,
+            ),
+          );
+          expect(await files.getText()).toBe(`查看文件 · ${DEFAULT_WORKSPACE}`);
+          const fit = await browser.execute(async () => {
+            const menu = document.querySelector('[data-slot="context-menu-content"]')!;
+            await Promise.all(menu.getAnimations().map((animation) => animation.finished));
+            const bounds = menu.getBoundingClientRect();
+            return { left: bounds.left, right: bounds.right, viewport: innerWidth };
+          });
+          expect(fit.left).toBeGreaterThanOrEqual(0);
+          expect(fit.right).toBeLessThanOrEqual(fit.viewport);
+          await browser.saveScreenshot(
+            join(process.env.RASPBERRYCODE_E2E_ARTIFACT_DIR!, `VP20-single-root-${width}-${theme}.png`),
+          );
+        }
+      }
+    } finally {
+      // 新增项目详情后 Escape 先交给详情层；先离开 hover 区再关闭右键菜单。
+      const outside = await browser.execute(() => ({ x: innerWidth - 8, y: 8 }));
+      await browser.action("pointer").move(outside).perform();
+      await $('[data-testid="project-identity-details"]').waitForExist({ reverse: true });
+      await browser.keys("Escape");
+      await files.waitForExist({ reverse: true });
+      await clearRendererViewport();
+      await browser.waitUntil(() =>
+        browser.execute((width) => innerWidth === width, appearance.width),
+      );
+      await ensureSidebarExpanded();
+      await browser.execute((value) => {
+        (
+          window as Window & { __testActions?: { setTheme(theme: string): void } }
+        ).__testActions!.setTheme(value);
+      }, appearance.theme);
+    }
+  });
+  it("VP20：本地项目共用详情，单多目录完整展示且不重复名称", async function () {
+    this.timeout(180_000);
+    const paths = ["one", "two-with-a-long-directory-name-for-hover-layout"].map((name) =>
+      join(DEFAULT_WORKSPACE, ".raspberrycode-e2e", "project-hover-details", name),
+    );
+    await Promise.all(paths.map((path) => mkdir(path, { recursive: true })));
+    const cases = [
+      { name: "RaspberryCodeProject", paths: [DEFAULT_WORKSPACE] },
+      { name: "E2E_PROJECT_HOVER_MULTI", paths },
+      { name: "E2E_PROJECT_HOVER_EMPTY", paths: [] },
+    ];
+    for (const project of cases.slice(1)) {
+      if (!project.paths.length) {
+        // UI 创建后进入草稿会分配默认 root；通过真实 Host 仅登记空项目，不触发任务创建。
+        await installHandoffRpcProbe();
+        try {
+          await callHandoffHost(ServiceChannels.Project, "saveProject", [
+            { name: project.name, roots: [] },
+          ]);
+        } finally {
+          await restoreHandoffProbes();
+        }
+        continue;
+      }
+      await openLocalProjectEditor();
+      await $('[data-testid="virtual-project-name"]').setValue(project.name);
+      for (const path of project.paths) await chooseProjectRoot(path);
+      await $('[data-testid="virtual-project-save"]').click();
+      if (project.paths.length) {
+        await $('[data-testid="project-folder-trust-confirm"]').waitForDisplayed();
+        await $('[data-testid="project-folder-trust-confirm"]').click();
+      }
+      await $('[data-slot="dialog-overlay"]').waitForExist({ reverse: true });
+    }
+    const appearance = await browser.execute(() => ({
+      width: innerWidth,
+      theme: (
+        window as Window & { __testActions?: { getTheme(): string } }
+      ).__testActions!.getTheme(),
+    }));
+    const details = $('[data-testid="project-identity-details"]');
+    const closeDetails = async () => {
+      const outside = await browser.execute(() => ({ x: innerWidth - 8, y: 8 }));
+      await browser.action("pointer").move(outside).perform();
+      await browser.executeAsync((done) => requestAnimationFrame(() => done()));
+      expect(await details.isExisting()).toBe(false);
+    };
+    try {
+      for (const project of cases) {
+        const layouts =
+          project.paths.length === 2
+            ? ([
+                { width: 1200, theme: "light", locale: "zh-CN" },
+                { width: 1200, theme: "dark", locale: "en-US" },
+                { width: 390, theme: "light", locale: "en-US" },
+                { width: 390, theme: "dark", locale: "zh-CN" },
+              ] as const)
+            : ([{ width: 1200, theme: "light", locale: "zh-CN" }] as const);
+        for (const { width, theme, locale } of layouts) {
+          const previousWidth = await browser.execute(() => innerWidth);
+          await setRendererViewport(width, 844);
+          await browser.execute(
+            (theme, locale) => {
+              const actions = (
+                window as Window & {
+                  __testActions?: {
+                    setTheme(value: string): void;
+                    setLocale(value: "zh-CN" | "en-US"): void;
+                  };
+                }
+              ).__testActions!;
+              actions.setTheme(theme);
+              actions.setLocale(locale);
+            },
+            theme,
+            locale,
+          );
+          // viewport 更新后 Shell 在后续帧收起侧栏，先完成布局再读取开关状态。
+          await browser.executeAsync((done) =>
+            requestAnimationFrame(() => requestAnimationFrame(() => done())),
+          );
+          const sidebarExpanded = () =>
+            browser.execute(() => {
+              const shell = document.querySelector('[data-workspace-shell="true"]')!;
+              return (
+                Number.parseFloat(
+                  getComputedStyle(shell).getPropertyValue("--workspace-sidebar-panel-width"),
+                ) > 200
+              );
+            });
+          // 真实 resize 会等 idle 后自动收起；等待实际状态，不能在收起前抢先 hover。
+          if (width === 390 && previousWidth !== width) {
+            await browser.waitUntil(async () => !(await sidebarExpanded()));
+          }
+          if (!(await sidebarExpanded())) {
+            await $('button[aria-label="Toggle sidebar"], button[aria-label="切换侧边栏"]').click();
+          }
+          await browser.waitUntil(sidebarExpanded);
+          // 修复原因：CSS 变量先于侧栏宽度过渡（200ms）变化，只看变量就 moveTo 会落在仍在动画的侧栏上，
+          // hover 卡片不出现；等侧栏面板的过渡全部结束后再 hover。
+          await browser.waitUntil(() =>
+            browser.execute(
+              () =>
+                document.querySelector('[data-workspace-sidebar-panel="true"]')!.getAnimations()
+                  .length === 0,
+            ),
+          );
+          for (const entry of ["sidebar", "composer"]) {
+            if (entry === "composer") {
+              await $('[data-testid="composer-workspace-trigger"]').click();
+              await $('[data-testid="composer-project-menu"] input').setValue(project.name);
+            }
+            const scope = entry === "sidebar" ? "aside" : '[data-testid="composer-project-menu"]';
+            const target = $(`${scope} [data-project-name="${project.name}"]`);
+            await (
+              entry === "sidebar" ? target.$('[data-testid="virtual-project-toggle"]') : target
+            ).moveTo();
+            await details.waitForDisplayed();
+            expect(await details.$("strong").getText()).toBe(project.name);
+            expect(await details.$$("dt").map((field) => field.getText())).toEqual([
+              locale === "zh-CN" ? "目录" : "Directory",
+            ]);
+            expect(await details.$$("dd > div").map((path) => path.getText())).toEqual(
+              project.paths,
+            );
+            if (!project.paths.length) expect(await details.$("dd").getText()).toBe("—");
+            const geometry = await browser.execute(async () => {
+              const card = document.querySelector('[data-testid="project-identity-details"]')!;
+              await Promise.all(card.getAnimations().map((animation) => animation.finished));
+              const bounds = card.getBoundingClientRect();
+              return {
+                left: bounds.left,
+                right: bounds.right,
+                top: bounds.top,
+                bottom: bounds.bottom,
+                width: innerWidth,
+                height: innerHeight,
+                cardWidth: bounds.width,
+                valueWidth: card.querySelector("dd")!.getBoundingClientRect().width,
+              };
+            });
+            expect(geometry.left).toBeGreaterThanOrEqual(0);
+            expect(geometry.right).toBeLessThanOrEqual(geometry.width);
+            expect(geometry.top).toBeGreaterThanOrEqual(0);
+            expect(geometry.bottom).toBeLessThanOrEqual(geometry.height);
+            expect(geometry.valueWidth).toBeGreaterThanOrEqual(
+              Math.min(120, geometry.cardWidth - 32),
+            );
+            await browser.saveScreenshot(
+              join(
+                process.env.RASPBERRYCODE_E2E_ARTIFACT_DIR!,
+                `VP20-hover-${project.paths.length}-${entry}-${width}-${theme}-${locale}.png`,
+              ),
+            );
+            await details.moveTo();
+            expect(await details.isDisplayed()).toBe(true);
+            await closeDetails();
+            if (entry === "composer") {
+              await browser.keys("Escape");
+              await $('[data-testid="composer-project-menu"]').waitForExist({ reverse: true });
+            }
+          }
+        }
+      }
+    } finally {
+      await browser.keys("Escape");
+      await clearRendererViewport();
+      await browser.execute((theme) => {
+        const actions = (
+          window as Window & {
+            __testActions?: {
+              setTheme(value: string): void;
+              setLocale(value: "zh-CN"): void;
+            };
+          }
+        ).__testActions!;
+        actions.setTheme(theme);
+        actions.setLocale("zh-CN");
+      }, appearance.theme);
+    }
+  });
   it("VP22：已有目录列表、设为主要与编辑器删除", async function () {
     this.timeout(90_000);
     const testHome = process.env.RASPBERRYCODE_E2E_HOME_DIR!;
     if (
-      ![".e2e-home-", "raspberrycode-virtual-project-e2e-"].some((prefix) =>
-        basename(testHome).startsWith(prefix),
+      // 修复原因：Windows CI 单 WDIO job 使用默认 `.e2e-home`（无 runId 后缀），旧前缀
+      // `.e2e-home-` 把隔离 HOME 误判为日常目录；改用 isE2EHomeDirName，只接受 `.e2e-home` 与 `.e2e-home-*` 两种布局。
+      !(
+        isE2EHomeDirName(basename(testHome)) ||
+        basename(testHome).startsWith("raspberrycode-virtual-project-e2e-")
       )
     )
       throw new Error("隔离 HOME required");
@@ -321,8 +600,11 @@ describe("虚拟项目", () => {
     const testHome = process.env.RASPBERRYCODE_E2E_HOME_DIR!;
     if (
       !testHome ||
-      ![".e2e-home-", "raspberrycode-virtual-project-e2e-"].some((prefix) =>
-        basename(testHome).startsWith(prefix),
+      // 修复原因：Windows CI 单 WDIO job 使用默认 `.e2e-home`（无 runId 后缀），旧前缀
+      // `.e2e-home-` 把隔离 HOME 误判为日常目录；改用 isE2EHomeDirName，只接受 `.e2e-home` 与 `.e2e-home-*` 两种布局。
+      !(
+        isE2EHomeDirName(basename(testHome)) ||
+        basename(testHome).startsWith("raspberrycode-virtual-project-e2e-")
       )
     )
       throw new Error("隔离 HOME required");
@@ -425,8 +707,11 @@ describe("虚拟项目", () => {
     const testHome = process.env.RASPBERRYCODE_E2E_HOME_DIR;
     if (
       !testHome ||
-      ![".e2e-home-", "raspberrycode-virtual-project-e2e-"].some((prefix) =>
-        basename(testHome).startsWith(prefix),
+      // 修复原因：Windows CI 单 WDIO job 使用默认 `.e2e-home`（无 runId 后缀），旧前缀
+      // `.e2e-home-` 把隔离 HOME 误判为日常目录；改用 isE2EHomeDirName，只接受 `.e2e-home` 与 `.e2e-home-*` 两种布局。
+      !(
+        isE2EHomeDirName(basename(testHome)) ||
+        basename(testHome).startsWith("raspberrycode-virtual-project-e2e-")
       )
     )
       throw new Error("isolated temporary E2E HOME required");
@@ -450,8 +735,11 @@ describe("虚拟项目", () => {
     const testHome = process.env.RASPBERRYCODE_E2E_HOME_DIR;
     if (
       !testHome ||
-      ![".e2e-home-", "raspberrycode-virtual-project-e2e-"].some((prefix) =>
-        basename(testHome).startsWith(prefix),
+      // 修复原因：Windows CI 单 WDIO job 使用默认 `.e2e-home`（无 runId 后缀），旧前缀
+      // `.e2e-home-` 把隔离 HOME 误判为日常目录；改用 isE2EHomeDirName，只接受 `.e2e-home` 与 `.e2e-home-*` 两种布局。
+      !(
+        isE2EHomeDirName(basename(testHome)) ||
+        basename(testHome).startsWith("raspberrycode-virtual-project-e2e-")
       )
     )
       throw new Error("isolated temporary E2E HOME required");
@@ -560,8 +848,11 @@ describe("虚拟项目", () => {
     const testHome = process.env.RASPBERRYCODE_E2E_HOME_DIR;
     if (
       !testHome ||
-      ![".e2e-home-", "raspberrycode-virtual-project-e2e-"].some((prefix) =>
-        basename(testHome).startsWith(prefix),
+      // 修复原因：Windows CI 单 WDIO job 使用默认 `.e2e-home`（无 runId 后缀），旧前缀
+      // `.e2e-home-` 把隔离 HOME 误判为日常目录；改用 isE2EHomeDirName，只接受 `.e2e-home` 与 `.e2e-home-*` 两种布局。
+      !(
+        isE2EHomeDirName(basename(testHome)) ||
+        basename(testHome).startsWith("raspberrycode-virtual-project-e2e-")
       )
     )
       throw new Error("isolated E2E HOME required");
@@ -896,9 +1187,20 @@ describe("虚拟项目", () => {
         timeout: 60_000,
       });
       const coldCapture = await waitForUpstreamNetworkCapture("E2E_VP18_COLD");
-      const coldRequest = JSON.stringify(coldCapture.requestJson);
-      expect(coldRequest.includes("E2E_VP18_REMOTE_COLD_SKILL")).toBe(true);
-      expect(coldRequest.includes("E2E_VP17_REMOTE_EXTRA_SKILL")).toBe(false);
+      const initialMessages = (captured.requestJson as { messages: unknown[] }).messages;
+      const coldMessages = (coldCapture.requestJson as { messages: unknown[] }).messages;
+      // Skill 公告只追加，冷恢复不改写旧历史；全文排除旧 marker 会把正确恢复误报成失败。
+      // cache_control 是本次请求的缓存断点，会移到新消息；它不属于持久化历史内容。
+      const historyContent = (messages: unknown[]) =>
+        JSON.stringify(messages, (key, value: unknown) =>
+          key === "cache_control" ? undefined : value,
+        );
+      expect(historyContent(coldMessages.slice(0, initialMessages.length))).toBe(
+        historyContent(initialMessages),
+      );
+      const appendedMessages = JSON.stringify(coldMessages.slice(initialMessages.length));
+      expect(appendedMessages).toContain("E2E_VP18_REMOTE_COLD_SKILL");
+      expect(appendedMessages).not.toContain("E2E_VP17_REMOTE_EXTRA_SKILL");
       expect(currentRuntime()).toBeTruthy();
       expect(currentRuntime()).not.toBe(previousRuntime);
       await browser.saveScreenshot(
@@ -999,10 +1301,10 @@ describe("虚拟项目", () => {
         factsDb.close();
       }
       await writeFile(join(process.env.RASPBERRYCODE_E2E_ARTIFACT_DIR!, "VP17-server.log"), output);
-      if (process.env.DEEPSEEK_E2E_CAPTURE_PATH)
+      if (process.env.E2E_PROVIDER_CAPTURE_PATH)
         await writeFile(
           join(process.env.RASPBERRYCODE_E2E_ARTIFACT_DIR!, "VP17-network.json"),
-          await readFile(process.env.DEEPSEEK_E2E_CAPTURE_PATH),
+          await readFile(process.env.E2E_PROVIDER_CAPTURE_PATH),
         );
     }
   });
@@ -1124,8 +1426,11 @@ describe("虚拟项目", () => {
     this.timeout(90_000);
     const testHome = process.env.RASPBERRYCODE_E2E_HOME_DIR!;
     if (
-      ![".e2e-home-", "raspberrycode-virtual-project-e2e-"].some((prefix) =>
-        basename(testHome).startsWith(prefix),
+      // 修复原因：Windows CI 单 WDIO job 使用默认 `.e2e-home`（无 runId 后缀），旧前缀
+      // `.e2e-home-` 把隔离 HOME 误判为日常目录；改用 isE2EHomeDirName，只接受 `.e2e-home` 与 `.e2e-home-*` 两种布局。
+      !(
+        isE2EHomeDirName(basename(testHome)) ||
+        basename(testHome).startsWith("raspberrycode-virtual-project-e2e-")
       )
     )
       throw new Error("隔离 HOME required");
@@ -1169,12 +1474,16 @@ describe("虚拟项目", () => {
       await scope.click();
       // 项目在「本机」的「项目」子菜单里（19 号票）。
       await openScopeProjectSubmenu("local");
+      // 修复原因：Windows 下 root 是 `C:\...` 路径，CSS 属性字符串里的 `\` 会被当作转义，
+      // 选择器永远不匹配（VP11 Windows 失败）；按 CSS 字符串规则转义 `\` 与 `"`。
+      const scopeOption = (root: string) =>
+        `[data-testid="${testId("plugin-settings-scope-option", root).replace(/[\\"]/g, "\\$&")}"]`;
       for (const root of roots) {
-        const selector = `[data-testid="${testId("plugin-settings-scope-option", root)}"]`;
+        const selector = scopeOption(root);
         await $(selector).waitForDisplayed();
         expect(await $$(selector).length).toBe(1);
       }
-      await $(`[data-testid="${testId("plugin-settings-scope-option", roots[1]!)}"]`).click();
+      await $(scopeOption(roots[1]!)).click();
       expect(await scope.getAttribute("data-plugin-scope-key")).toBe(roots[1]);
       expect(await workspacePaths()).not.toContain(roots[1]);
       await clickTestIdByDom(testId(TID_SETTINGS_SECTION_NAV, "hooks"));
@@ -1332,7 +1641,7 @@ async function captureProjectDialogLayouts(stage: string) {
       await emulate(width);
       await browser.waitUntil(() => browser.execute((expected) => innerWidth === expected, width));
       for (const dark of [false, true]) {
-        await setTheme(dark ? "zai-dark" : "zai-light");
+        await setTheme(dark ? "dark" : "light");
         const fit = await browser.execute(() => {
           const dialog = document.querySelector('[role="dialog"]')!;
           const bounds = dialog.getBoundingClientRect();

@@ -1,10 +1,10 @@
 import { ModelConfig, ProviderConfig } from "@raspberrycode/provider";
 import { NodePersonalProviderConfigRepository } from "@raspberrycode/provider-node";
-import { clearAppData, getE2EAppDataPaths } from "../helpers/desktop-app.js";
+import { clearAppData, getE2EAppDataPaths } from "#e2e/helpers/desktop-app";
 import {
   selectUpstreamProviderModelById,
   selectUpstreamThoughtLevelValue,
-} from "../helpers/upstream-provider.js";
+} from "#e2e/helpers/upstream-provider";
 import {
   E2E_BIGMODEL_PLAN_PROVIDER_ID,
   E2E_PLAN_DEFAULT_MODEL,
@@ -18,8 +18,8 @@ import {
   waitForDraftThoughtLevelState,
   waitForSelectedModel,
   waitForV4DraftModelConfig,
-} from "../helpers/model-provider-restart.js";
-import { prepareV4ConversationE2E } from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/model-provider-restart";
+import { prepareV4ConversationE2E } from "#e2e/helpers/v4-conversation";
 
 describe("模型 Provider Turbo 跨能力切换 E2E", () => {
   after(async () => {

@@ -1,6 +1,5 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { TID_CHAT_ATTACHMENT_BUTTON, TID_CHAT_ATTACHMENT_MENU_ITEM } from "@raspberrycode/shared/test-ids";
 import { clearAppData } from "#e2e/helpers/desktop-app";
 import { resolveE2ERuntimePath } from "#e2e/helpers/e2e-runtime-paths";
 import {
@@ -10,6 +9,7 @@ import {
 import {
   clickV4Send,
   getV4ComposerAttachments,
+  pickV4ComposerFiles,
   prepareV4ConversationE2E,
   setV4ComposerText,
   waitForV4Pane,
@@ -78,14 +78,7 @@ describe("T18：大文本附件编码采样边界", () => {
       ).toThrow();
       await writeFile(path, bytes);
 
-      const picker = await browser.electron.mock("dialog", "showOpenDialog");
-      await picker.mockResolvedValueOnce({ canceled: false, filePaths: [path] });
-      const trigger = await $(`[data-testid="${TID_CHAT_ATTACHMENT_BUTTON}"]`);
-      await trigger.waitForClickable();
-      await trigger.click();
-      const menu = await $(`[data-testid="${TID_CHAT_ATTACHMENT_MENU_ITEM}"]`);
-      await menu.waitForClickable();
-      await menu.click();
+      await pickV4ComposerFiles([path]);
       await browser.waitUntil(
         async () => {
           const attachments = await getV4ComposerAttachments();

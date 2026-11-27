@@ -20,8 +20,8 @@ import {
   TID_WORKSPACE_HEADER,
   testId,
 } from "@raspberrycode/shared/test-ids";
-import { clearAppData } from "../helpers/desktop-app.js";
-import { prepareV4ConversationE2E } from "../helpers/v4-conversation.js";
+import { clearAppData } from "#e2e/helpers/desktop-app";
+import { prepareV4ConversationE2E } from "#e2e/helpers/v4-conversation";
 
 // spec：docs/ui/side-pane-full-view.md；用例：docs/testing/side-pane-tabs-e2e-case-catalog.md（SPFV）
 const SIDE_FRAME = '[data-workspace-side-frame="true"]';
@@ -51,9 +51,27 @@ interface Rect {
   height: number;
 }
 
+interface HostMotionProbe {
+  transitions: string[];
+  firstFloatingFrame: Rect | null;
+  stop: () => void;
+}
+
 describe("Side Pane 完整视图（SPFV）", () => {
   before(async () => {
     await prepareV4ConversationE2E({ skipProvider: true });
+    // 运行日志确认冷启预热回填会重新同步面板 scope；完整视图用例先等待投影就绪。
+    await browser.waitUntil(
+      () =>
+        browser.execute(() => {
+          const pane = document.querySelector('[data-session-id="draft"]');
+          return (
+            pane?.getAttribute("data-session-lifecycle") === "ready" &&
+            Boolean(pane.getAttribute("data-projection-seq"))
+          );
+        }),
+      { timeout: 30_000, timeoutMsg: "完整视图用例的草稿投影尚未就绪" },
+    );
     await browser.execute(() =>
       window.localStorage.removeItem("raspberrycode:side-pane-full-view:floating-anchor"),
     );
@@ -153,8 +171,13 @@ describe("Side Pane 完整视图（SPFV）", () => {
     expect(await $(COMPOSER_PROJECT_TRIGGER).isExisting()).toBe(true);
     await markComposerEditor();
 
+    await startHostMotionProbe();
     await $(TAB).click();
     await waitForHostMode("floating");
+    const motion = await finishHostMotionProbe();
+    expect(motion.transitions).toEqual([]);
+    if (!motion.firstFloatingFrame) throw new Error("未采到切换 tab 后的首个浮窗绘制帧");
+    expect(rectsClose(motion.firstFloatingFrame, await readRect(HOST), 1)).toBe(true);
     await browser.waitUntil(
       async () => {
         const host = await readRect(HOST);
@@ -167,8 +190,6 @@ describe("Side Pane 完整视图（SPFV）", () => {
       },
       { timeout: 5_000, timeoutMsg: "浮窗没有收起在右下角" },
     );
-    // 修复原因：对话 tab 切回浮窗时宿主几何有过渡，过渡中分两次读宿主和输入区会得到不同帧的坐标。
-    await waitForHostTransitionsSettled();
     // 收起态没有外层：输入区与浮窗同宽、底边对齐，抽屉藏在输入框后面。
     const host = await readRect(HOST);
     const dock = await readRect(COMPOSER_DOCK);
@@ -232,17 +253,25 @@ describe("Side Pane 完整视图（SPFV）", () => {
         const samples: Array<{ host: number; dock: number }> = [];
         (window as unknown as { __spfvRestoreSamples: typeof samples }).__spfvRestoreSamples =
           samples;
-        const start = performance.now();
+        const probe = window as unknown as { __spfvRestoreComplete: boolean };
+        probe.__spfvRestoreComplete = false;
+        let start = 0;
         const tick = () => {
           const host = document.querySelector(hostSelector)?.getBoundingClientRect();
           const dock = document.querySelector(dockSelector)?.getBoundingClientRect();
           samples.push({ host: host?.height ?? 0, dock: dock?.height ?? 0 });
           if (performance.now() - start < 500) requestAnimationFrame(tick);
+          else probe.__spfvRestoreComplete = true;
         };
-        document.addEventListener("pointerdown", () => requestAnimationFrame(tick), {
-          capture: true,
-          once: true,
-        });
+        document.addEventListener(
+          "pointerdown",
+          () => {
+            // 采样窗口从真实按下开始，排除 WebDriver 命令往返时间。
+            start = performance.now();
+            requestAnimationFrame(tick);
+          },
+          { capture: true, once: true },
+        );
       },
       HOST,
       COMPOSER_DOCK,
@@ -259,13 +288,13 @@ describe("Side Pane 完整视图（SPFV）", () => {
       { timeout: 5_000, timeoutMsg: "恢复后输入框没有获得焦点" },
     );
     await waitForComposerText(COMPOSER_INPUT, DRAFT_TEXT);
+    // 日志中 500ms 只获得 8 帧；几何回归应等待采样完成，不用宿主刷新率作为前置条件。
     await browser.waitUntil(
       async () =>
-        (await browser.execute(
-          () =>
-            (window as unknown as { __spfvRestoreSamples: unknown[] }).__spfvRestoreSamples.length,
-        )) > 20,
-      { timeout: 5_000, timeoutMsg: "恢复动画采样不足" },
+        await browser.execute(
+          () => (window as unknown as { __spfvRestoreComplete: boolean }).__spfvRestoreComplete,
+        ),
+      { timeout: 5_000, timeoutMsg: "恢复动画采样未完成" },
     );
     await waitForHostTransitionsSettled();
     const finalHost = await readRect(HOST);
@@ -275,6 +304,7 @@ describe("Side Pane 完整视图（SPFV）", () => {
         (window as unknown as { __spfvRestoreSamples: Array<{ host: number; dock: number }> })
           .__spfvRestoreSamples,
     );
+    expect(restoreSamples.length).toBeGreaterThan(1);
     expect(Math.max(...restoreSamples.map((sample) => sample.host))).toBeLessThanOrEqual(
       finalHost.height + 1,
     );
@@ -294,12 +324,11 @@ describe("Side Pane 完整视图（SPFV）", () => {
     await focusFloatingComposer();
     await waitForHeader(true);
     const handle = await $(`[data-testid="${TID_SIDE_PANE_FULL_VIEW_HANDLE}"]`);
-    // 修复原因：上一个用例刚从对话 tab 切回浮窗，浮窗几何还在从铺满 slot 过渡到浮窗大小；
-    // 过渡中读到的 ⠿ 坐标会让按下点落在浮窗外（面板内容上），拖动变成终端选区。
-    // 两次读数比较不可靠（同一渲染帧内读数天然相同），改为等宿主没有正在运行的过渡。
+    // 聚焦仍会播放操作栏展开动画，等结束后读取拖动柄坐标。
     await waitForHostTransitionsSettled();
     const handleRect = await readRect(`[data-testid="${TID_SIDE_PANE_FULL_VIEW_HANDLE}"]`);
     const slot = await readRect(SLOT);
+    await startHostMotionProbe();
     await browser
       .action("pointer", { parameters: { pointerType: "mouse" } })
       .move({ x: Math.round(handleRect.left + 8), y: Math.round(handleRect.top + 8) })
@@ -312,6 +341,9 @@ describe("Side Pane 完整视图（SPFV）", () => {
       .move({ x: Math.round(slot.left + 300), y: Math.round(slot.top + 40), duration: 200 })
       .up({ button: 0 })
       .perform();
+    const snapMotion = await finishHostMotionProbe();
+    expect(snapMotion.transitions).toContain("left");
+    expect(snapMotion.transitions).toContain("top");
     await browser.waitUntil(
       async () => {
         const host = await readRect(HOST);
@@ -347,8 +379,11 @@ describe("Side Pane 完整视图（SPFV）", () => {
   it("SPFV-E2E-005 用上 / 下按钮展开与收起消息流", async () => {
     await focusFloatingComposer();
     await waitForHeader(true);
+    await waitForHostTransitionsSettled();
     expect(await $(EXPAND).getAttribute("aria-expanded")).toBe("false");
+    await startHostMotionProbe();
     await $(EXPAND).click();
+    expect((await finishHostMotionProbe()).transitions).toContain("height");
     await browser.waitUntil(
       async () =>
         (await $(HOST).getAttribute("data-floating")) === "expanded" &&
@@ -362,7 +397,9 @@ describe("Side Pane 完整视图（SPFV）", () => {
     expect(timeline.bottom).toBeLessThanOrEqual((await readRect(COMPOSER_DOCK)).top - 8);
     await saveThemeScreenshots("spfv-expanded");
 
+    await startHostMotionProbe();
     await $(EXPAND).click();
+    expect((await finishHostMotionProbe()).transitions).toContain("height");
     await browser.waitUntil(
       async () =>
         (await $(HOST).getAttribute("data-floating")) === "collapsed" &&
@@ -469,10 +506,36 @@ async function realKeys(keys: string[]) {
 }
 
 async function clickSlotTopLeft() {
-  const slot = await readRect(SLOT);
+  await waitForHostTransitionsSettled();
+  // 浮窗已吸附左上时，固定 slot + 60 会点进浮窗，不能验证外部点击失焦。
+  // 用真实命中结果选择 slot 内、浮窗外的位置，保留原生指针与 blur 链路。
+  const point = await browser.execute(
+    (slotSelector, hostSelector) => {
+      const slot = document.querySelector(slotSelector)!.getBoundingClientRect();
+      const candidates = [
+        { x: slot.left + 60, y: slot.top + 60 },
+        { x: slot.right - 60, y: slot.bottom - 60 },
+        { x: slot.right - 60, y: slot.top + 60 },
+      ];
+      const outside = candidates.find((point) => {
+        const hit = document.elementFromPoint(point.x, point.y);
+        return hit && !hit.closest(hostSelector);
+      });
+      if (!outside) throw new Error("找不到浮窗外的 slot 点击位置");
+      return {
+        x: Math.round(outside.x),
+        y: Math.round(outside.y),
+        originalInsideFloating: Boolean(
+          document.elementFromPoint(candidates[0]!.x, candidates[0]!.y)?.closest(hostSelector),
+        ),
+      };
+    },
+    SLOT,
+    HOST,
+  );
   await browser
     .action("pointer", { parameters: { pointerType: "mouse" } })
-    .move({ x: Math.round(slot.left + 60), y: Math.round(slot.top + 60) })
+    .move({ x: point.x, y: point.y })
     .down({ button: 0 })
     .up({ button: 0 })
     .perform();
@@ -565,6 +628,66 @@ async function waitForHostTransitionsSettled() {
         HOST,
       ),
     { timeout: 5_000, timeoutMsg: "完整视图宿主的几何过渡没有结束" },
+  );
+}
+
+async function startHostMotionProbe() {
+  await browser.execute((selector) => {
+    const host = document.querySelector<HTMLElement>(selector);
+    if (!host) throw new Error("缺少完整视图宿主");
+    const probeWindow = window as typeof window & { __spfvMotionProbe?: HostMotionProbe };
+    probeWindow.__spfvMotionProbe?.stop();
+    let frame: number | undefined;
+    const probe: HostMotionProbe = {
+      transitions: [],
+      firstFloatingFrame: null,
+      stop: () => {
+        host.removeEventListener("transitionrun", onTransition);
+        observer.disconnect();
+        if (frame !== undefined) cancelAnimationFrame(frame);
+      },
+    };
+    const onTransition = (event: TransitionEvent) => {
+      if (event.target === host) probe.transitions.push(event.propertyName);
+    };
+    // 在真实点击前监听，避免 WebDriver 往返已跨过 150ms 动画而只看到终态。
+    const observer = new MutationObserver(() => {
+      if (host.dataset.sidePaneFullViewHost !== "floating" || frame !== undefined) return;
+      frame = requestAnimationFrame(() => {
+        const rect = host.getBoundingClientRect();
+        probe.firstFloatingFrame = {
+          left: rect.left,
+          top: rect.top,
+          right: rect.right,
+          bottom: rect.bottom,
+          width: rect.width,
+          height: rect.height,
+        };
+      });
+    });
+    observer.observe(host, {
+      attributes: true,
+      attributeFilter: ["data-side-pane-full-view-host", "data-floating", "style"],
+    });
+    host.addEventListener("transitionrun", onTransition);
+    probeWindow.__spfvMotionProbe = probe;
+  }, HOST);
+}
+
+async function finishHostMotionProbe() {
+  await waitForHostTransitionsSettled();
+  return browser.execute(
+    () =>
+      new Promise<Omit<HostMotionProbe, "stop">>((resolve) => {
+        requestAnimationFrame(() => {
+          const probeWindow = window as typeof window & { __spfvMotionProbe?: HostMotionProbe };
+          const probe = probeWindow.__spfvMotionProbe;
+          if (!probe) throw new Error("缺少浮窗动画采样");
+          probe.stop();
+          delete probeWindow.__spfvMotionProbe;
+          resolve({ transitions: probe.transitions, firstFloatingFrame: probe.firstFloatingFrame });
+        });
+      }),
   );
 }
 

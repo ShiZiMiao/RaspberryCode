@@ -1,11 +1,11 @@
 import { TID_V4_COMPOSER_INPUT } from "@raspberrycode/shared/test-ids";
-import { clearAppData, setInputValueByTestIdDom } from "../helpers/desktop-app.js";
+import { clearAppData, setInputValueByTestIdDom } from "#e2e/helpers/desktop-app";
 import {
   assertUpstreamRequestCapture,
   assertUpstreamThoughtLevelCapture,
   waitForUpstreamNetworkCapture,
-} from "../helpers/upstream-capture.js";
-import { UPSTREAM_MODEL, UPSTREAM_PROVIDER_ID } from "../helpers/upstream-provider.js";
+} from "#e2e/helpers/upstream-capture";
+import { UPSTREAM_MODEL, UPSTREAM_PROVIDER_ID } from "#e2e/helpers/upstream-provider";
 import {
   getV4ModelConfig,
   getV4ComposerText,
@@ -16,8 +16,8 @@ import {
   switchV4Model,
   waitForV4ComposerSelectionReady,
   waitForV4Pane,
-} from "../helpers/v4-conversation.js";
-import { isV4TurnCompleted } from "../helpers/v4-turn-completion.js";
+} from "#e2e/helpers/v4-conversation";
+import { isV4TurnCompleted } from "#e2e/helpers/v4-turn-completion";
 
 // 修复原因：formal admission 禁止依赖整套 legacy conversation-session helper；
 // 此 case 只需要稳定回复文本，因此把常量留在 case 内，避免重新引入旧测试栈。

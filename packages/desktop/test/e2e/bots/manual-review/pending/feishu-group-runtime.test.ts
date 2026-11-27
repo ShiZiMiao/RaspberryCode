@@ -1,19 +1,19 @@
 import { setRendererViewport, clearRendererViewport } from "#e2e/helpers/renderer-viewport";
-import { skipOccupationOnboardingIfPresent } from "../../../helpers/occupation-onboarding.js";
-import { restartWithSeededOpenAIProviders } from "../../../helpers/custom-openai-provider.js";
+import { skipOccupationOnboardingIfPresent } from "#e2e/helpers/occupation-onboarding";
+import { restartWithSeededOpenAIProviders } from "#e2e/helpers/custom-openai-provider";
 import {
   selectUpstreamProviderModelById,
   waitForUpstreamModelSelected,
-} from "../../../helpers/upstream-provider.js";
-import { startConversationModelProviderReplayServer } from "../../../helpers/model-provider-replay.js";
+} from "#e2e/helpers/upstream-provider";
+import { startConversationModelProviderReplayServer } from "#e2e/helpers/model-provider-replay";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { DatabaseSync } from "node:sqlite";
 import { join } from "node:path";
 import type { BotInboundMessage } from "@raspberrycode/shared";
-import { createFeishuConfig } from "../../helpers/bots-service-harness.js";
-import { resolveE2EStorageRoot } from "../../../helpers/e2e-runtime-paths.js";
-import { clearAppData } from "../../../helpers/desktop-app.js";
-import { getTaskStoreSnapshot } from "../../../helpers/conversation-session-store.js";
+import { createFeishuConfig } from "#e2e/bots/helpers/bots-service-harness";
+import { resolveE2EStorageRoot } from "#e2e/helpers/e2e-runtime-paths";
+import { clearAppData } from "#e2e/helpers/desktop-app";
+import { getTaskStoreSnapshot } from "#e2e/helpers/conversation-session-store";
 import {
   prepareV4ConversationE2E,
   sendV4Prompt,
@@ -25,7 +25,7 @@ import {
   clickV4QueueItemDelete,
   clickV4Stop,
   selectV4TaskById,
-} from "../../../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 describe("BOT-E2E-GR-02/04 real Host CLI group queue", () => {
   let replay: Awaited<ReturnType<typeof startConversationModelProviderReplayServer>>;

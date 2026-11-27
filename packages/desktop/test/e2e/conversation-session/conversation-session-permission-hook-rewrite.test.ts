@@ -10,14 +10,14 @@ import {
   seedCliConfig,
   snapshotCliConfig,
   type CliConfigSnapshot,
-} from "../helpers/desktop-app.js";
-import { resolveE2ERuntimePath } from "../helpers/e2e-runtime-paths.js";
-import { skipOccupationOnboardingIfPresent } from "../helpers/occupation-onboarding.js";
+} from "#e2e/helpers/desktop-app";
+import { resolveE2ERuntimePath } from "#e2e/helpers/e2e-runtime-paths";
+import { skipOccupationOnboardingIfPresent } from "#e2e/helpers/occupation-onboarding";
 import {
   ELECTRON_WINDOW_RECORDING_CAPTURE_MODE,
   startElectronWindowRecording,
-} from "../helpers/electron-window-recorder.js";
-import { getLatestUpstreamToolResultByToolCallId } from "../helpers/conversation-session-network.js";
+} from "#e2e/helpers/electron-window-recorder";
+import { getLatestUpstreamToolResultByToolCallId } from "#e2e/helpers/conversation-session-network";
 import {
   getV4PaneSnapshot,
   prepareV4ConversationE2E,
@@ -25,7 +25,7 @@ import {
   switchV4Mode,
   waitForV4PermissionDialogInComposerDock,
   waitForV4TimelineContaining,
-} from "../helpers/v4-conversation.js";
+} from "#e2e/helpers/v4-conversation";
 
 const CASE = "conversation-session-permission-hook-rewrite";
 const MARKER = "E2E_PERMISSION_HOOK_REWRITE";
@@ -63,7 +63,7 @@ describe("PermissionRequest Hook 改写后的确认替换", () => {
     await mkdir(ARTIFACT, { recursive: true });
     const source = fileURLToPath(
       new URL(
-        "../fixtures/fs/conversation-session/conversation-session-permission-hook-rewrite/hook.mjs",
+        "../../fixtures/fs/conversation-session/conversation-session-permission-hook-rewrite/hook.mjs",
         import.meta.url,
       ),
     );
@@ -116,12 +116,13 @@ describe("PermissionRequest Hook 改写后的确认替换", () => {
     this.timeout(180000);
     await observeAndDelayFirstApproval();
     // 转正后强制录屏会让无 ffmpeg 的默认回放在业务通过后失败；仅人工审核需要视频。
-    const recording = process.env.RASPBERRYCODE_E2E_MANUAL_REVIEW === "1"
-      ? await startElectronWindowRecording({
-          outputPath: join(ARTIFACT, "approval-replacement.webm"),
-          frameIntervalMs: 100,
-        })
-      : null;
+    const recording =
+      process.env.RASPBERRYCODE_E2E_MANUAL_REVIEW === "1"
+        ? await startElectronWindowRecording({
+            outputPath: join(ARTIFACT, "approval-replacement.webm"),
+            frameIntervalMs: 100,
+          })
+        : null;
     let staleResponse: Record<string, unknown> | undefined;
     try {
       await sendV4Prompt(
