@@ -888,6 +888,25 @@ export default {
       patchNsisInstallSectionFile(nsisInstallSectionPath),
     );
     nsisInstallSectionOriginalSource = patchResult.originalSource;
+
+    // 修复原因（2026-11-27，合并上游 v4.0.0 时丢失）：installUtil.nsh 的补丁调用
+    // 曾被同步合并丢弃，只剩 import。结果是 customOldUninstallPrepare 不再被插入
+    // `uninstallOldVersion`，$RaspberryCodeCleanupSource 永远没有赋值；makensis 以
+    // warning 6001（"--warnings-as-errors" 下即构建失败）中断 Windows 打包。
+    // 同时旧版本清理的备份/恢复逻辑整体失效，必须与 installSection 补丁成对应用。
+    const installUtilPath = resolve(dirname(nsisInstallSectionPath), "include", "installUtil.nsh");
+    const installUtilPatch = await runTimedAsync("beforePack:patchNsisInstallUtil", () =>
+      patchNsisInstallUtilFile(installUtilPath),
+    );
+    if (installUtilPatch.changed) {
+      process.once("exit", () => {
+        restoreNsisInstallSectionFileSync({
+          filePath: installUtilPath,
+          originalSource: installUtilPatch.originalSource,
+        });
+      });
+    }
+
     if (patchResult.changed) {
       // electron-builder 在当前进程内随后才会编译 NSIS；等整个构建进程退出后恢复 node_modules
       // 中的上游模板，避免把一次打包的定制内容永久留在开发依赖里。
