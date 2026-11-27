@@ -1,13 +1,16 @@
 cmake_minimum_required(VERSION 3.20)
-project(zcode_runtime_host LANGUAGES CXX)
+project(raspberrycode_runtime_host LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-add_executable(zcode-runtime-host main.cpp)
-add_executable(zcode-runtime-host-acceptance EXCLUDE_FROM_ALL acceptance.cpp)
-add_executable(zcode-installer-process-helper installer-process-helper.cpp)
-add_executable(zcode-installer-process-fixture EXCLUDE_FROM_ALL installer-process-fixture.cpp)
-target_link_libraries(zcode-installer-process-fixture PRIVATE advapi32)
-foreach(target zcode-runtime-host zcode-runtime-host-acceptance zcode-installer-process-helper zcode-installer-process-fixture)
+# target 名必须与构建脚本（scripts/build-windows-runtime-host.mjs）和 electron-builder
+# 期望的产物名一致（raspberrycode-*）。品牌同步时曾遗漏这里，导致
+# `--target raspberrycode-runtime-host` 报 MSB1009（找不到 zcode-*.vcxproj）。
+add_executable(raspberrycode-runtime-host main.cpp)
+add_executable(raspberrycode-runtime-host-acceptance EXCLUDE_FROM_ALL acceptance.cpp)
+add_executable(raspberrycode-installer-process-helper installer-process-helper.cpp)
+add_executable(raspberrycode-installer-process-fixture EXCLUDE_FROM_ALL installer-process-fixture.cpp)
+target_link_libraries(raspberrycode-installer-process-fixture PRIVATE advapi32)
+foreach(target raspberrycode-runtime-host raspberrycode-runtime-host-acceptance raspberrycode-installer-process-helper raspberrycode-installer-process-fixture)
   if(MSVC)
     target_compile_options(${target} PRIVATE /W4 /utf-8)
   else()
