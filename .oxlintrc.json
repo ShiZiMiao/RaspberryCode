@@ -164,6 +164,14 @@
         "src/runtime/agent-runtime.ts",
         "src/tool/executor/call-runner.ts",
         "src/runtime/methods/compact-active.ts",
+        // CLI 独立 lint 入口（scripts/run-cli-lint.mjs）按包 cwd 运行时，显式配置文件以仓库根
+        // 为基准匹配 overrides；下列存量超限文件同样不为行数机械拆分。
+        "**/apps/raspberrycode-cli/packages/adapters/src/fs/index.ts",
+        "**/apps/raspberrycode-cli/packages/debug/src/App.tsx",
+        "**/apps/raspberrycode-cli/packages/debug/server/analyzer.ts",
+        "**/apps/raspberrycode-cli/packages/bootstrap/src/raspberrycode-protocol-v4/conversation-topic-publisher.ts",
+        "**/apps/raspberrycode-cli/packages/bootstrap/src/raspberrycode-protocol-v4/cold-event-merge.ts",
+        "**/apps/raspberrycode-cli/packages/telemetry/src/agent-trace-runtime.ts",
         "**/packages/ui/src/remote-connection-flow/index.ts"
       ],
       "rules": {

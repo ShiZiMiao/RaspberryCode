@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
+import { promisify } from "node:util";
 import { dirname, resolve, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadPolicy } from "./architecture/policy.mjs";
@@ -10,6 +12,8 @@ import { classifyLintDiagnostics, parseLintCommand } from "./cli-lint-admission.
 const exec = promisify(execFile);
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const cli = resolve(root, "apps/raspberrycode-cli");
+// 根配置排除了整个 CLI；包内 oxlint 必须改用显式配置，否则会 0 文件可 lint。
+const cliConfig = resolve(root, ".oxlintrc.cli.json");
 
 async function main() {
   await loadPolicy(root);
@@ -31,13 +35,25 @@ async function main() {
         throw error;
       }
       if (!manifest.scripts?.lint) continue;
-      const args = [...parseLintCommand(manifest.scripts.lint), "--format", "json"];
-      // 沿用各包解析出的 oxlint 版本、cwd 和原参数；包级配置仍由 oxlint 自己读取。
-      const pnpm = process.env.npm_execpath;
-      if (!pnpm) throw new Error("请通过 pnpm lint 运行 CLI lint");
+      // 包自带的 .oxlintrc.json（如 dynamic-workflow）承载语料/生成物豁免，必须保留就近发现；
+      // 其余包继承根配置会带上「忽略整个 CLI」的 ignorePatterns，改用显式 CLI 配置。
+      const configArgs = existsSync(resolve(cwd, ".oxlintrc.json")) ? [] : ["--config", cliConfig];
+      const args = [...configArgs, ...parseLintCommand(manifest.scripts.lint), "--format", "json"];
+      // 沿用各包解析出的 oxlint 版本、cwd 和原参数。
+      // 修复原因：Windows（mise 安装）下 npm_execpath 指向原生 pnpm.exe，把它交给 node 执行
+      // 会按 JS 解析 MZ 头并抛 SyntaxError。改为直接解析包内 oxlint 的 JS 入口，跨平台一致。
+      let oxlintBin;
+      try {
+        oxlintBin = resolve(
+          dirname(createRequire(import.meta.url).resolve("oxlint/package.json", { paths: [cwd] })),
+          "bin/oxlint",
+        );
+      } catch {
+        throw new Error(`${manifest.name}: 未解析到 oxlint，请确认依赖已安装`);
+      }
       let result;
       try {
-        result = await exec(process.execPath, [pnpm, "exec", "oxlint", ...args], {
+        result = await exec(process.execPath, [oxlintBin, ...args], {
           cwd,
           maxBuffer: 16 * 1024 * 1024,
         });

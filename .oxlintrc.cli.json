@@ -1,0 +1,15 @@
+{
+  // CLI 独立 lint 入口（scripts/run-cli-lint.mjs）专用配置，通过 oxlint --config 显式传入。
+  // 根 .oxlintrc.json 用 ignorePatterns 把 apps/raspberrycode-cli 排除在根门禁之外；包内 oxlint
+  // 若继承该排除会报「No files found to lint」并以 exit 1 失败，因此这里必须重写 ignorePatterns。
+  // 文件名刻意不用 .oxlintrc.json，避免根扫描就近发现后把整个 CLI 重新拉回根门禁。
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "extends": ["./.oxlintrc.json"],
+  "ignorePatterns": [
+    "**/dist/**",
+    "**/node_modules/**",
+    "**/.turbo/**",
+    "**/scratch/**",
+    "**/coverage/**"
+  ]
+}
