@@ -22,11 +22,14 @@ export function WebElementContextAttachmentChip({
   contentAlign = "start",
   onRemove,
   onRemoveAll,
+  testId,
 }: {
   contexts: readonly WebElementContextComposerAttachment[];
   contentAlign?: AttachmentHoverCardContentProps["align"];
   onRemove?: (id: string) => void;
   onRemoveAll?: () => void;
+  /** 输入框侧的可观测钩子；共享的历史消息 pill 不传，避免同页出现多个计数节点。 */
+  testId?: string;
 }) {
   const { intl } = useRaspberryCodeIntl();
   if (contexts.length === 0) {
@@ -48,6 +51,9 @@ export function WebElementContextAttachmentChip({
       label={label}
       onRemoveAll={onRemoveAll}
       removeLabel={removeLabel}
+      {...(testId
+        ? { triggerProps: { "data-testid": testId, "data-count": String(contexts.length) } }
+        : {})}
     >
       {contexts.map((context) => (
         <div

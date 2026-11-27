@@ -28,7 +28,6 @@ const forkIsolatedTests = [
   "packages/desktop/test/cdnPreloadScript.test.ts",
   "packages/desktop/test/desktopRuntimeEnv.test.ts",
   "packages/desktop/test/e2eDesktopBuildCache.test.ts",
-  "packages/desktop/test/e2eSummarySpecCoverage.test.ts",
   "packages/desktop/test/migrateStableFeedScript.test.ts",
   "packages/desktop/test/pluginE2EAdmissionScripts.test.ts",
   "packages/desktop/test/uploadOssScript.test.ts",

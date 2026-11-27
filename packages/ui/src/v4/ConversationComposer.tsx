@@ -59,6 +59,7 @@ import {
   TID_V4_ATTACHMENT_UPLOAD_PROGRESS,
   TID_V4_ATTACHMENT_UPLOAD_RETRY,
   TID_V4_STOP,
+  TID_WEB_ELEMENT_CONTEXT_CHIP,
   testId,
 } from "@raspberrycode/shared/test-ids";
 import type {
@@ -2618,6 +2619,7 @@ function ConversationComposerImpl({
               contexts={webElementContexts}
               onRemove={removeWebElementContext}
               onRemoveAll={clearWebElementContexts}
+              testId={TID_WEB_ELEMENT_CONTEXT_CHIP}
             />
             <PluginUiModelContextChip
               contexts={pluginUiContexts}

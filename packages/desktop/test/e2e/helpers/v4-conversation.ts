@@ -1744,22 +1744,6 @@ export function getV4InputControlState(): Promise<{
   );
 }
 
-/** 点击 autoDrain 开关（setAutoDrain 命令）。 */
-export async function clickV4AutoDrainToggle() {
-  return clickTestIdByDom(TID_V4_AUTODRAIN_TOGGLE, {
-    timeout: 15000,
-    timeoutMsg: "v4 autoDrain 开关没有出现",
-  });
-}
-
-/** 点击 followupMode 开关（setFollowupMode 命令）。 */
-export async function clickV4FollowupToggle() {
-  return clickTestIdByDom(TID_V4_FOLLOWUP_TOGGLE, {
-    timeout: 15000,
-    timeoutMsg: "v4 followupMode 开关没有出现",
-  });
-}
-
 /** 拖拽某 queue 项到目标 queue 项上（按 queueItemId）。 */
 export async function dragV4QueueItemOnto(sourceQueueItemId: string, targetQueueItemId: string) {
   const positions = (await browser.execute(
