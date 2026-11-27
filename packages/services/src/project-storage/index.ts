@@ -94,6 +94,15 @@ export const projectStorage: ProjectStorageContract = {
           apply: repairRemoteTaskOwnership,
         },
         {
+          // 上游 v4.0.0 的 worktree 列与部分索引；与 0010_remote_task_ownership 是两个独立迁移，
+          // 合并时两者都要保留（CONTRACT.md「迁移 ID 独立」）。已有安装从未执行过它，
+          // 由本次迁移补上；全新安装按顺序执行。
+          id: "0010_task_worktree_root",
+          appVersion: "3.18.0",
+          touchedTables: ["tasks"],
+          sql: TASK_WORKTREE_ROOT_SQL,
+        },
+        {
           // 占位行回收需要「占位建立时刻」。该列由 addProjectSchema 的 ensureColumns 声明，
           // 但那条路径只在一次性迁移 0005 里跑；已有安装不会再进 0005，新列就永远加不上。
           // 单独开一条幂等迁移，让 upgrade 与全新安装都能拿到这一列。
