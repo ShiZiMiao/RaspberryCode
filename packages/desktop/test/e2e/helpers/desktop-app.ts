@@ -976,6 +976,9 @@ export interface WorkspaceAppProbeParams {
   sessionPanePrefix: string;
   composerWorkspaceTriggerTestId: string;
   expectedPath: string;
+  // 冷启动首页：产品在无历史任务时激活 conversation backing workspace，而不是
+  // RaspberryCodeProject。等待默认工作区时两者都应视为已进入可操作主界面。
+  acceptConversationWorkspace?: boolean;
 }
 
 // 在 renderer 内执行（browser.execute 序列化），不能引用模块作用域变量。
@@ -1010,8 +1013,21 @@ export function probeWorkspaceAppState(
   const conversationWorkspaceReady =
     params.expectedPath.replace(/\\/g, "/").endsWith("/.raspberrycode/workspace/default") &&
     Boolean(document.querySelector(`[data-testid="${params.composerWorkspaceTriggerTestId}"]`));
+  // 冷启动首页激活的是 conversation backing workspace；调用方等待默认项目时也接受它。
+  // 只对默认工作区开放：显式等待其它项目路径时仍必须匹配 expectedPath。
+  const conversationHomeReady =
+    params.acceptConversationWorkspace === true &&
+    (
+      window as Window & {
+        __raspberrycodeTabStoreE2E?: { getState(): { activeWorkspacePath?: string | null } };
+      }
+    )
+      .__raspberrycodeTabStoreE2E?.getState()
+      .activeWorkspacePath?.replace(/\\/g, "/")
+      .endsWith("/.raspberrycode/workspace/default") === true &&
+    Boolean(document.querySelector(`[data-testid="${params.composerWorkspaceTriggerTestId}"]`));
   // v4 硬切后聊天区是 v4 session pane（testid 带 paneId 后缀，用前缀匹配）。
-  return (workspaceItem || conversationWorkspaceReady) &&
+  return (workspaceItem || conversationWorkspaceReady || conversationHomeReady) &&
     document.querySelector(`[data-testid^="${params.sessionPanePrefix}-"]`)
     ? "ready"
     : "pending";
@@ -1029,6 +1045,8 @@ export async function waitForWorkspaceApp(workspacePath: string, timeout = 10000
     sessionPanePrefix: TID_V4_SESSION_PANE,
     composerWorkspaceTriggerTestId: TID_COMPOSER_WORKSPACE_TRIGGER,
     expectedPath: workspacePath,
+    // 默认项目在冷启动首页场景下不会成为激活工作区，conversation backing workspace 是等价可用状态。
+    acceptConversationWorkspace: workspacePath === DEFAULT_WORKSPACE,
   };
 
   try {

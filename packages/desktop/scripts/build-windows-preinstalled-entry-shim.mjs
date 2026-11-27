@@ -144,7 +144,7 @@ async function build(outputDir, targetArch, source, deadline) {
         "Visual Studio 17 2022",
         "-A",
         targetArch === "arm64" ? "ARM64" : "x64",
-        `-DZCODE_SHIM_OUTPUT_DIR=${builtDir.replaceAll("\\", "/")}`,
+        `-DRASPBERRYCODE_SHIM_OUTPUT_DIR=${builtDir.replaceAll("\\", "/")}`,
       ],
       deadline,
     );

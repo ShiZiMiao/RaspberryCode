@@ -56,7 +56,7 @@ describe("desktop tsup chunk isolation", () => {
     expect(
       resolvePreinstalledToolsTestBuild({
         NODE_ENV: "production",
-        VITE_ZCODE_E2E_STORE_BRIDGE: "1",
+        VITE_RASPBERRYCODE_E2E_STORE_BRIDGE: "1",
       }),
     ).toBe(true);
   });

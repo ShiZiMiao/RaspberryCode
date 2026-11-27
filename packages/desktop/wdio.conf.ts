@@ -4025,6 +4025,9 @@ async function seedUpstreamE2EModelConfig(specs: string[] = []) {
       // 240/80 小窗口验证 queued goal 前置 auto compact，必须显式保留原环境合同。
       spec.includes("conversation-session-goal-run-cases.test.ts") ||
       spec.includes("conversation-session-model-switch-auto-compact.test.ts") ||
+      // subagent 运行时刷新用 240/80 小窗口逼出自动 compact 后的再次刷新，转正后不再位于
+      // manual-review 目录，必须显式保留同一个小窗口合同。
+      spec.includes("conversation-session-subagent-runtime-refresh.test.ts") ||
       // Bugfix: tool/edit/fork 模型继承 spec 不验证 guard；manual-review 的
       // 240/80 小窗口会让普通 completed 历史也被压缩 guard 合法取消，掩盖继承断言。
       // E10 merged assistant fork 复现只验证 fork 边界，必须保留默认上下文窗口，
@@ -4034,6 +4037,14 @@ async function seedUpstreamE2EModelConfig(specs: string[] = []) {
       // P06 必须连续经过 tool-batch 与 text-only 两个 steer drain 边界；240-token
       // 小窗口会在第三次主请求前插入 auto compact，覆盖掉本 case 要验证的时序。
       (spec.includes("test/e2e/conversation-session/manual-review/") &&
+        // 这些用例验证的是普通窗口下的 history/queue/compact 语义；manual-review 的 240/80
+        // 小窗口会提前插入 auto compact，改变待验证的窗口合同，必须保留默认上下文。
+        !spec.includes("conversation-session-web-remote-unread.test.ts") &&
+        !spec.includes("conversation-session-tool-history-order.test.ts") &&
+        !spec.includes("conversation-session-model-switch-queue.test.ts") &&
+        !spec.includes("conversation-session-compact-actions.test.ts") &&
+        !spec.includes("conversation-session-first-send.test.ts") &&
+        !spec.includes("conversation-session-compact.test.ts") &&
         !spec.includes("conversation-session-model-switch-tool-edit-fork.test.ts") &&
         !spec.includes("conversation-session-fork-merged-assistant.test.ts") &&
         !spec.includes("conversation-session-bash-read-state.test.ts") &&

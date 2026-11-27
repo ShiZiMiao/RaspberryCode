@@ -2,7 +2,10 @@ import { TID_TASK_SETTINGS_BUTTON } from "@raspberrycode/shared/test-ids";
 import { sel } from "./selectors.js";
 
 // 新隔离 profile 的引导会覆盖工作区；通过真实 UI 完成，不伪造业务记录。
-export async function skipOccupationOnboardingIfPresent() {
+// keepCloudDialog：需要断言投放弹窗本身的用例传 true 保留弹窗。
+export async function skipOccupationOnboardingIfPresent(
+  options: { keepCloudDialog?: boolean } = {},
+) {
   await browser.waitUntil(
     async () =>
       (await $('[data-testid="onboarding-page"]').isExisting()) ||

@@ -29,7 +29,8 @@ const REMOTE_TMP_ASSERTION_SOURCES = new Set([
   // 用例转正会移动文件；精确路径豁免必须随迁移更新，仍只放行下面列出的场景。
   "conversation-session/remote/installation/conversation-session-r3-install-environment.test.ts",
   // 数字 UID 的 HOME/workdir 位于被测 Docker 容器；不是 Desktop 宿主上的 runtime 文件。
-  "conversation-session/remote/connection/conversation-session-r3-docker-transport.test.ts",
+  // 合入时该用例仍留在 manual-review/pending 布局下，豁免路径随实际文件登记。
+  "conversation-session/manual-review/pending/conversation-session-r3-docker-transport.test.ts",
   // 修复原因：以下用例在 10-27 / 11-03 合入时未登记豁免，守卫在 staging 上已失败。
   // 被测 SSH/Docker 容器内的 /tmp：私有 tmp 挂载、探针夹具、采样/kill 日志、鉴权计数与安装包。
   "conversation-session/remote/installation/conversation-session-r3-daemon-service-fallback.test.ts",

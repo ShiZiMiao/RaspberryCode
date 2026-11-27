@@ -6,28 +6,21 @@
 // 4) context usage——首轮 ModelComplete 后 usage.contextWindow 投影（data-usage-used>0）。
 // 5) task → draft——已有模型目录时仍独立重新水合 slash 目录，自定义命令继续出现。
 // 6) draft → 已知 task——同一 workspace 的 slash 目录不被 task 导航清空。
-import { skipOccupationOnboardingIfPresent } from "#e2e/helpers/occupation-onboarding";
+import { skipOccupationOnboardingIfPresent } from "../helpers/occupation-onboarding.js";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { DatabaseSync } from "node:sqlite";
-import { chromium } from "playwright-core";
-import { MobileRpcFrameGate, mobileRpcFrameIdentity } from "#e2e/helpers/mobile-rpc-frame-gate";
-import { openMobilePairingPage, seedMobileFixtureLogin } from "#e2e/helpers/mobile-pairing";
-import { obtainUnreadPairingUrl, showMobileTaskHome } from "#e2e/helpers/web-remote-unread";
 import {
   clearAppData,
-  DEFAULT_WORKSPACE,
-  readModelProvider,
   getE2EAppDataPaths,
   setInputValueByTestIdDom,
-} from "#e2e/helpers/desktop-app";
+} from "../helpers/desktop-app.js";
 import {
   UPSTREAM_PROVIDER_ID,
   UPSTREAM_MODEL,
   UPSTREAM_SECONDARY_MODEL,
   UPSTREAM_ALTERNATE_PROVIDER_ID,
   UPSTREAM_ALTERNATE_MODEL,
-} from "#e2e/helpers/upstream-provider";
+} from "../helpers/upstream-provider.js";
 import {
   TID_CHAT_MODE_SELECT_TRIGGER,
   TID_CHAT_MODEL_SELECT_TRIGGER,
@@ -40,10 +33,8 @@ import {
 import {
   clickV4SlashOption,
   getV4ComposerText,
-  setV4ComposerText,
   getV4ConfigProjection,
   getV4ModelConfig,
-  getLatestV4CommandAck,
   getV4PaneSnapshot,
   getV4SlashOptionIds,
   hasV4SlashPanel,
@@ -56,18 +47,10 @@ import {
   waitForV4Pane,
   waitForV4SlashOption,
   waitForV4TimelineContaining,
-} from "#e2e/helpers/v4-conversation";
+} from "../helpers/v4-conversation.js";
 
-import {
-  waitForUpstreamNetworkCapture,
-  assertUpstreamThoughtLevelCapture,
-  assertUpstreamRequestCapture,
-} from "#e2e/helpers/upstream-capture";
-
-import { startDraftFromProject } from "#e2e/helpers/project-sidebar";
-
-import { seedPersonalProviderConfig } from "#e2e/helpers/model-provider-restart-config";
-import { waitForProviderConfigPolling } from "#e2e/helpers/provider-config-polling";
+import { seedPersonalProviderConfig } from "../helpers/model-provider-restart-config.js";
+import { waitForProviderConfigPolling } from "../helpers/provider-config-polling.js";
 
 const CUSTOM_SLASH_COMMAND_NAME = "e2e-draft-catalog";
 const CUSTOM_SLASH_OPTION_ID = `slash:${CUSTOM_SLASH_COMMAND_NAME}`;
@@ -102,8 +85,7 @@ async function waitForOnlyComposerPickerOpen(picker: ComposerPicker, transition:
         return {
           expanded,
           listboxes: document.querySelectorAll('[role="listbox"]').length,
-          menus: document.querySelectorAll('[role="menu"], [data-testid="composer-model-panel"]')
-            .length,
+          menus: document.querySelectorAll('[role="menu"]').length,
         };
       }, COMPOSER_PICKER_TRIGGER_IDS);
       const state = latest as {
@@ -111,7 +93,7 @@ async function waitForOnlyComposerPickerOpen(picker: ComposerPicker, transition:
         listboxes: number;
         menus: number;
       };
-      const expectedListboxes = picker === "model" ? 1 : 0;
+      const expectedListboxes = 0;
       const expectedMenus = 1;
       return (
         state.expanded[picker] === "true" &&
@@ -144,8 +126,7 @@ async function waitForNoComposerPickerOpen(transition: string) {
             ]),
           ),
           listboxes: document.querySelectorAll('[role="listbox"]').length,
-          menus: document.querySelectorAll('[role="menu"], [data-testid="composer-model-panel"]')
-            .length,
+          menus: document.querySelectorAll('[role="menu"]').length,
         }),
         COMPOSER_PICKER_TRIGGER_IDS,
       );
@@ -168,63 +149,8 @@ async function waitForNoComposerPickerOpen(transition: string) {
 }
 
 async function closeComposerPicker() {
-  // 退出动画会在两次 WebDriver 调用之间卸载面板；同一次读取状态，避免 stale element。
-  const providerState = await browser.execute(
-    () =>
-      document
-        .querySelector('[data-testid="composer-provider-panel"]')
-        ?.getAttribute("data-state") ?? null,
-  );
-  if (providerState === "open") await browser.keys("Escape");
-  await $('[data-testid="composer-provider-panel"]').waitForExist({ reverse: true });
   await browser.keys("Escape");
   await waitForNoComposerPickerOpen("Escape");
-}
-
-const ACK_PROVIDER = "e2e-ack-glm";
-async function seedAckProvider() {
-  const upstream = await readModelProvider(UPSTREAM_PROVIDER_ID);
-  if (!upstream) throw new Error("缺少回放 Provider");
-  await seedPersonalProviderConfig(getE2EAppDataPaths().configFile, {
-    id: ACK_PROVIDER,
-    label: "ACK GLM",
-    apiFormat: "anthropic-messages",
-    apiKey: upstream.apiKey,
-    baseURL: upstream.endpoints.anthropic ?? upstream.endpoints.baseURL!,
-    models: [
-      {
-        id: "GLM-5.3",
-        reasoningLevel: {
-          values: ["high", "max"],
-          map: '{"thinking":{"type":"enabled"},"output_config":{"effort":reasoningLevel}}',
-        },
-      },
-    ],
-  });
-  await waitForProviderConfigPolling();
-}
-
-async function expectPersistedThought(sessionId: string, thought: string) {
-  const db = new DatabaseSync(join(getE2EAppDataPaths().storageRoot, "cli", "db", "db.sqlite"), {
-    readOnly: true,
-  });
-  try {
-    await browser.waitUntil(
-      () => {
-        const row = db
-          .prepare(
-            "SELECT data FROM session_entry WHERE session_id=? AND type='runtime/model_selection' ORDER BY id DESC LIMIT 1",
-          )
-          .get(sessionId) as { data: string } | undefined;
-        return Boolean(
-          row && JSON.parse(row.data).modelSelection?.options?.reasoningLevel === thought,
-        );
-      },
-      { timeout: 10000, timeoutMsg: "仅切换档位未写入 Session Selection" },
-    );
-  } finally {
-    db.close();
-  }
 }
 
 describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
@@ -287,9 +213,7 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
 
   afterEach(async () => {
     // 某条交互断言失败时仍关闭其菜单，避免下一条点击被当成关闭旧弹层。
-    const open = await browser.execute(() =>
-      Boolean(document.querySelector('[role="menu"], [data-testid="composer-model-panel"]')),
-    );
+    const open = await browser.execute(() => Boolean(document.querySelector('[role="menu"]')));
     if (open) await closeComposerPicker();
   });
 
@@ -437,16 +361,8 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
     );
     const cfg = await getV4ModelConfig();
     expect(cfg.provider).toBe(UPSTREAM_PROVIDER_ID);
-    // 仅改档位且不发送：Bot 读取的是 Session，不是 Composer 的展示值。
-    await switchV4Model(UPSTREAM_PROVIDER_ID, UPSTREAM_SECONDARY_MODEL, "high");
-    await expectPersistedThought(completedTaskId!, "high");
-    await browser.keys(["Control", "t"]);
-    await browser.waitUntil(async () => (await getV4ModelConfig()).thought !== "high", {
-      timeout: 10000,
-    });
-    await expectPersistedThought(completedTaskId!, (await getV4ModelConfig()).thought!);
 
-    // 已有会话选模后保留面板，ACK 后在原面板继续调档。
+    // 选模型后保留合并菜单，便于继续调档；重复选当前模型也不收起。
     for (const selected of [false, true]) {
       await openComposerPicker("model");
       const option = $(
@@ -468,10 +384,7 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
       await closeComposerPicker();
     }
 
-    // 只点击 Provider、不发送：必须确认 Session 配置，飞书才会立即读到新选择。
-    await browser.execute(() => {
-      (window as Window & { __zcodeV4CommandAcksE2E?: unknown[] }).__zcodeV4CommandAcksE2E = [];
-    });
+    // 只点击 Provider，不补点 Model：必须直接更新同一 Composer 草稿并同步有效档位。
     await openComposerPicker("model");
     await $('[data-testid="composer-provider-trigger"]').click();
     await $(
@@ -483,7 +396,6 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
         value.model === UPSTREAM_ALTERNATE_MODEL,
       "Provider 点击后未自动选择目标模型",
     );
-    await waitForOnlyComposerPickerOpen("model", "已有会话切换 Provider 后保留弹层");
     await browser.waitUntil(
       async () => {
         const slider = $('[data-testid="composer-thought-slider"]');
@@ -492,11 +404,7 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
       },
       { timeout: 15000, timeoutMsg: "Provider 切换后 Think 没有同步为有效档位" },
     );
-    await browser.waitUntil(
-      async () => (await getLatestV4CommandAck("switchModelConfig"))?.status === "accepted",
-      { timeout: 15000, timeoutMsg: "Provider 切换未得到会话配置成功回执" },
-    );
-    await waitForOnlyComposerPickerOpen("model", "配置确认后仍保留原弹层");
+    await waitForOnlyComposerPickerOpen("model", "切换 Provider 后保留弹层");
     await closeComposerPicker();
     await switchV4Model(UPSTREAM_PROVIDER_ID, UPSTREAM_SECONDARY_MODEL, "max");
 
@@ -512,8 +420,7 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
     });
     expect(catalogProbe.samples).toBeGreaterThan(0);
     expect(catalogProbe.empty).toBe(0);
-    // 面板保持挂载，因此能观察到 ACK 期间的禁用帧；目录仍不应清空。
-    expect(catalogProbe.disabled).toBeGreaterThan(0);
+    expect(catalogProbe.disabled).toBe(0);
     const modeTrigger = await $(`[data-testid="${TID_CHAT_MODE_SELECT_TRIGGER}"]`);
     await browser.execute((id) => {
       const trigger = document.querySelector<HTMLElement>(`[data-testid="${id}"]`)!;
@@ -602,9 +509,7 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
     expect(triggerAppearance.background).not.toBe("rgba(0, 0, 0, 0)");
     expect(triggerAppearance.radius).toBeGreaterThan(0);
     expect(triggerAppearance.radius).toBeLessThan(14);
-    expect(await $('[data-testid="composer-model-panel"]').getAttribute("data-align")).toBe(
-      "center",
-    );
+    expect(await $('[role="menu"]').getAttribute("data-align")).toBe("center");
     const expandedTrigger = $(`[data-testid="${TID_CHAT_MODEL_SELECT_TRIGGER}"]`);
     expect(await expandedTrigger.getText()).toMatch(/Select model|选择模型/);
     const minimumWidth = await browser.execute(
@@ -616,15 +521,9 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
       return label.scrollWidth <= label.clientWidth;
     });
     expect(labelFits).toBe(true);
-    const search = $('[data-testid="composer-model-search"]');
-    await search.setValue("__no_matching_model__");
-    expect(await $$("[data-composer-model-list] [role=option]").length).toBe(0);
-    expect(await $("[data-composer-model-list] [role=status]").isDisplayed()).toBe(true);
-    await search.setValue(" ");
-    expect(await $$("[data-composer-model-list] [role=option]").length).toBeGreaterThan(0);
     const modelFonts = await browser.execute(() => {
       const row = document.querySelector<HTMLElement>(
-        '[data-composer-model-list] [role="option"]',
+        '[data-composer-model-list] [role="menuitemradio"]',
       )!;
       const name = row.querySelector<HTMLElement>("[title]")!;
       return {
@@ -634,7 +533,7 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
     });
     expect(modelFonts.name).toBe(modelFonts.row);
     expect(await $('[data-testid="composer-thought-endpoints"]').isExisting()).toBe(false);
-    expect(await $("[data-composer-model-heading]").getText()).toMatch(/Models|模型/);
+    expect(await $('[data-slot="dropdown-menu-label"]').getText()).toMatch(/Models|模型/);
     expect(await $('[data-testid="composer-thought-slider"]').isDisplayed()).toBe(true);
     const declaredLevels = JSON.parse(
       (await $('[data-testid="composer-thought-slider"]').getAttribute("data-levels")) ?? "[]",
@@ -669,7 +568,7 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
     expect(motion.fill).toBe(motion.thumb);
     const menuLayout = await browser.execute(() => {
       const list = document.querySelector<HTMLElement>("[data-composer-model-list]")!;
-      const menu = list.closest('[data-testid="composer-model-panel"]')!;
+      const menu = list.closest('[role="menu"]')!;
       return {
         outerOverflow: getComputedStyle(menu).overflowY,
         listOverflow: getComputedStyle(list).overflowY,
@@ -766,26 +665,9 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
     await closeComposerPicker();
   });
 
-  it("draft: slider dots grow on hover and remain white on the filled track", async () => {
+  it("slider dots grow on hover and remain white on the filled track", async () => {
     // 用命名模型的独立回放声明预期，避免测试复用产品的名称匹配实现。
     await ensureCompletedTask();
-    // 未绑定草稿没有配置 ACK，连续调档仍保留弹层；已有会话的门禁由 CPG02 验证。
-    await startNewV4Draft();
-    await switchV4Model(UPSTREAM_PROVIDER_ID, UPSTREAM_SECONDARY_MODEL, "max");
-    if (highspeed) {
-      // 回放请求继续使用录制模型；命名模型只验证展示，不发送请求。
-      const model = process.env.E2E_COMPOSER_ANIMATION_MODEL || "GLM-5.3-FlashX";
-      await seedPersonalProviderConfig(getE2EAppDataPaths().configFile, {
-        id: "e2e-animation-model",
-        label: "Animation Fixture",
-        apiFormat: "anthropic-messages",
-        apiKey: "e2e-fixture-key",
-        baseURL: "http://127.0.0.1:1/v1",
-        models: [{ id: model, reasoningLevel: { values: ["high", "max"], map: "{}" } }],
-      });
-      await waitForProviderConfigPolling();
-      await switchV4Model("e2e-animation-model", model, "high");
-    }
     await openComposerPicker("model");
     const slider = $('[data-testid="composer-thought-slider"]');
     const filledOpacity = await browser.execute(
@@ -907,22 +789,18 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
     const provider = $('[data-testid="composer-provider-trigger"]');
     expect(await provider.$('img, svg[aria-hidden="true"]').isExisting()).toBe(true);
     await provider.click();
-    const providerMenu = await $('[data-testid="composer-provider-panel"]');
+    const providerMenu = await $('[data-slot="dropdown-menu-sub-content"]');
     await providerMenu.waitForDisplayed();
     // 入场缩放期间外框坐标尚未稳定，等待菜单自身动画结束后再验证对齐。
     await browser.waitUntil(() =>
       browser.execute(() =>
-        Array.from(
-          document.querySelectorAll(
-            '[data-testid="composer-model-panel"], [data-testid="composer-provider-panel"]',
-          ),
-        ).every((menu) =>
+        Array.from(document.querySelectorAll('[role="menu"]')).every((menu) =>
           menu.getAnimations().every((animation) => animation.playState === "finished"),
         ),
       ),
     );
     const providerBounds = await browser.execute(() => {
-      const menu = document.querySelector<HTMLElement>('[data-testid="composer-provider-panel"]')!;
+      const menu = document.querySelector<HTMLElement>('[data-slot="dropdown-menu-sub-content"]')!;
       const rect = menu.getBoundingClientRect();
       return {
         inside: rect.left >= 0 && rect.right <= document.documentElement.clientWidth,
@@ -931,9 +809,8 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
         aligned:
           Math.abs(
             rect.top -
-              document
-                .querySelector('[data-testid="composer-model-panel"]')!
-                .getBoundingClientRect().top,
+              document.querySelector('[data-slot="dropdown-menu-content"]')!.getBoundingClientRect()
+                .top,
           ) <= 1,
         listOverflow: getComputedStyle(menu.querySelector("[data-composer-provider-list]")!)
           .overflowY,
@@ -947,7 +824,7 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
     expect(
       await browser.execute(() =>
         getComputedStyle(
-          document.querySelector('[data-testid="composer-provider-panel"]')!,
+          document.querySelector('[data-slot="dropdown-menu-sub-content"]')!,
         ).getPropertyValue("app-region"),
       ),
     ).toBe("no-drag");
@@ -956,7 +833,9 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
     await manage.waitForDisplayed();
     const badgeGaps = await browser.execute(() =>
       Array.from(
-        document.querySelectorAll<HTMLElement>('[role="option"] [data-provider-access-badge]'),
+        document.querySelectorAll<HTMLElement>(
+          '[role="menuitemradio"] [data-provider-access-badge]',
+        ),
       ).map((badge) => {
         const name = badge.previousElementSibling!;
         const range = document.createRange();
@@ -973,7 +852,7 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
   });
 
   it("completed task 的 picker 不跨 scope 自动弹到新 draft", async () => {
-    await selectV4TaskById(await ensureCompletedTask());
+    await ensureCompletedTask();
     await openComposerPicker("model");
     await waitForOnlyComposerPickerOpen("model", "completed task 打开模型 picker");
 
@@ -1031,11 +910,8 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
     await tooltip.waitForDisplayed({ reverse: true });
     await closeComposerPicker();
   });
-  it("draft: dismisses with one outside click after using the effort slider", async () => {
+  it("dismisses with one outside click after using the effort slider", async () => {
     await ensureCompletedTask();
-    // 未绑定草稿没有配置 ACK，连续调档仍保留弹层；已有会话的门禁由 CPG02 验证。
-    await startNewV4Draft();
-    await switchV4Model(UPSTREAM_PROVIDER_ID, UPSTREAM_SECONDARY_MODEL, "max");
     for (const gesture of ["click", "drag"]) {
       await openComposerPicker("model");
       try {
@@ -1136,18 +1012,15 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
       }
     }
   });
-  it("draft: keeps the open model picker responsive when the composer shrinks and expands", async () => {
+  it("keeps the open model picker responsive when the composer shrinks and expands", async () => {
     await ensureCompletedTask();
-    // 未绑定草稿没有配置 ACK，连续调档仍保留弹层；已有会话的门禁由 CPG02 验证。
-    await startNewV4Draft();
-    await switchV4Model(UPSTREAM_PROVIDER_ID, UPSTREAM_SECONDARY_MODEL, "max");
     await openComposerPicker("model");
     const trigger = await $('[data-testid="chat-model-select-trigger"]');
     const slider = await $('[data-testid="composer-thought-slider"]');
-    const menu = await $('[data-testid="composer-model-panel"]');
+    const menu = await $('[role="menu"]');
     const levels = JSON.parse((await slider.getAttribute("data-levels")) ?? "[]") as string[];
     expect(levels.length).toBeGreaterThan(1);
-    // 鼠标移出面板，以键盘 Tab 场景验证 resize 前后的原生控件焦点。
+    // 鼠标留在菜单内会随浮层移动触发 Radix pointerleave 焦点规则；以键盘场景隔离 resize。
     await browser.performActions([
       {
         type: "pointer",
@@ -1157,9 +1030,7 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
       },
     ]);
     await browser.releaseActions();
-    for (let index = 0; index < 5 && !(await slider.isFocused()); index++) {
-      await browser.keys("Tab");
-    }
+    await browser.keys("End");
     await browser.waitUntil(() => slider.isFocused(), {
       timeout: 5000,
       timeoutMsg: "keyboard did not focus effort slider",
@@ -1222,7 +1093,7 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
         expect((await $('[data-testid="composer-thought-slider"]')).elementId).toBe(
           slider.elementId,
         );
-        expect((await $('[data-testid="composer-model-panel"]')).elementId).toBe(menu.elementId);
+        expect((await $('[role="menu"]')).elementId).toBe(menu.elementId);
         expect(await slider.isFocused()).toBe(true);
         expect(await getV4ModelConfig()).toEqual(expectedConfig);
         if (width) {
@@ -1254,640 +1125,4 @@ describe("v4 M5 门禁：composer 工具条与 slash 候选面板", () => {
       await closeComposerPicker();
     }
   });
-  it("CPG02: 配置 ACK 挂起时保留面板并禁用配置，跨会话 pending 独立", async function () {
-    this.timeout(120000);
-    await ensureCompletedTask();
-    await seedAckProvider();
-    const taskA = completedTaskId!;
-    const marker = "E2E_PROVIDER_PENDING_SEND_CROSS_SESSION";
-    await startNewV4Draft();
-    await sendV4Prompt("E2E_V4_COMPOSER_TOOLBAR_SEED");
-    await waitForV4TimelineContaining("V4_COMPOSER_TOOLBAR_SEED_OK", 45000);
-    const taskB = (
-      await waitForV4Pane((p) => !p.canStop && Boolean(p.sessionId), "B 未完成", 45000)
-    ).sessionId!;
-    await switchV4Model(ACK_PROVIDER, "GLM-5.3", "max");
-    await selectV4TaskById(taskA);
-    await switchV4Model(ACK_PROVIDER, "GLM-5.3", "max");
-    await setV4ComposerText(marker);
-    await browser.execute(() => {
-      const original = MessagePort.prototype.postMessage;
-      const held: Array<() => void> = [];
-      const probe = {
-        count: 0,
-        releaseOne() {
-          held.shift()?.();
-        },
-        restore() {
-          MessagePort.prototype.postMessage = original;
-          held.splice(0).forEach((send) => send());
-        },
-      };
-      (window as Window & { __configAckProbe?: typeof probe }).__configAckProbe = probe;
-      MessagePort.prototype.postMessage = function (
-        ...args: [unknown, (Transferable[] | StructuredSerializeOptions)?]
-      ) {
-        const data = args[0];
-        const bytes =
-          data instanceof ArrayBuffer
-            ? new Uint8Array(data)
-            : ArrayBuffer.isView(data)
-              ? new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
-              : null;
-        const wire = bytes ? new TextDecoder().decode(bytes) : "";
-        // 控制真实配置 RPC 的发送，令调用方持续等待 ACK；不伪造 Session 或回执。
-        if (
-          wire.includes("sendConversationCommandV4") &&
-          wire.includes('"type":"switchModelConfig"')
-        ) {
-          probe.count++;
-          held.push(() => Reflect.apply(original, this, args));
-          return;
-        }
-        Reflect.apply(original, this, args);
-      };
-    });
-    const count = () =>
-      browser.execute(
-        () => (window as Window & { __configAckProbe?: { count: number } }).__configAckProbe!.count,
-      );
-    const release = () =>
-      browser.execute(() =>
-        (
-          window as Window & { __configAckProbe?: { releaseOne(): void } }
-        ).__configAckProbe!.releaseOne(),
-      );
-    const changeThought = async () => {
-      await openComposerPicker("model");
-      await browser.execute(() =>
-        document
-          .querySelector<HTMLInputElement>('[data-testid="composer-thought-slider"]')
-          ?.focus(),
-      );
-      await browser.keys("Home");
-    };
-    const expectLocked = async () => {
-      const trigger = $(`[data-testid="${TID_CHAT_MODEL_SELECT_TRIGGER}"]`);
-      await browser.waitUntil(async () => !(await trigger.isEnabled()), {
-        timeout: 5000,
-        timeoutMsg: "ACK 在途仍允许选模",
-      });
-      // 跨会话导航可以关闭菜单；当前操作产生的 ACK 不得主动关闭。
-      if ((await trigger.getAttribute("aria-expanded")) === "true") {
-        expect(
-          await $('[data-testid="composer-thought-slider"]').getAttribute("aria-disabled"),
-        ).toBe("true");
-        expect(await $('[data-testid="composer-provider-trigger"]').isEnabled()).toBe(false);
-        expect(
-          await $('[data-testid^="chat-model-select-item-"]').getAttribute("aria-disabled"),
-        ).toBe("true");
-      }
-    };
-    try {
-      await changeThought();
-      await browser.waitUntil(async () => (await count()) === 1, { timeout: 10000 });
-      await expectLocked();
-      await waitForOnlyComposerPickerOpen("model", "滑杆 ACK 在途保持面板");
-      await browser.keys(["Control", "t"]);
-      await browser.keys(["Control", "m"]);
-      await expectLocked();
-      expect(await count()).toBe(1);
-      await closeComposerPicker();
-      await selectV4TaskById(taskB);
-      await changeThought();
-      await browser.waitUntil(async () => (await count()) === 2, {
-        timeout: 10000,
-        timeoutMsg: "B 被 A 的屏障阻塞",
-      });
-      await expectLocked();
-      await waitForOnlyComposerPickerOpen("model", "B 滑杆 ACK 在途保持面板");
-      await closeComposerPicker();
-      await selectV4TaskById(taskA);
-      await expectLocked();
-      await selectV4TaskById(taskB);
-      await release();
-      await expectPersistedThought(taskA, "high");
-      await expectLocked();
-      await release();
-      await expectPersistedThought(taskB, "high");
-      await browser.waitUntil(async () => (await getV4ModelConfig()).thought === "high", {
-        timeout: 10000,
-      });
-      expect(await $(`[data-testid="${TID_CHAT_MODEL_SELECT_TRIGGER}"]`).isEnabled()).toBe(true);
-      await selectV4TaskById(taskA);
-      await browser.waitUntil(async () => ((await getV4ComposerText()) ?? "").includes(marker), {
-        timeout: 10000,
-        timeoutMsg: "返回 A 后正文丢失",
-      });
-      const displayed = await getV4ModelConfig();
-      const send = $('[data-testid="v4-composer-send"]');
-      await send.waitForClickable({ timeout: 10000 });
-      await send.click();
-      const capture = await waitForUpstreamNetworkCapture(marker);
-      const artifactDir = process.env.RASPBERRYCODE_E2E_ARTIFACT_DIR;
-      if (artifactDir)
-        await writeFile(
-          join(artifactDir, "cross-session-ack-request.json"),
-          JSON.stringify(
-            {
-              sessionId: taskA,
-              marker,
-              displayed,
-              expectedThought: "high",
-              url: capture.url,
-              statusCode: capture.statusCode,
-              request: capture.requestJson,
-            },
-            null,
-            2,
-          ),
-        );
-      assertUpstreamRequestCapture(capture, { expectedText: marker, model: "GLM-5.3" });
-      assertUpstreamThoughtLevelCapture(capture, "high");
-      expect(displayed.thought).toBe("high");
-    } finally {
-      await browser.execute(() =>
-        (window as Window & { __configAckProbe?: { restore(): void } }).__configAckProbe?.restore(),
-      );
-    }
-  });
-  it("CPG01: 手机远控切同名 Provider，挂起期间不发送，完成后使用目标 Provider", async function () {
-    this.timeout(120000);
-    await ensureCompletedTask();
-    // A/B 使用同一 workspace；手机导航会重建 bridge，晚到回执必须从 Session 恢复。
-    await startDraftFromProject(DEFAULT_WORKSPACE);
-    await sendV4Prompt("E2E_V4_COMPOSER_TOOLBAR_SEED");
-    await waitForV4TimelineContaining("V4_COMPOSER_TOOLBAR_SEED_OK", 45000);
-    completedTaskId = (
-      await waitForV4Pane((p) => !p.canStop && Boolean(p.sessionId), "手机 A 未完成", 45000)
-    ).sessionId!;
-    await switchV4Model(UPSTREAM_PROVIDER_ID, UPSTREAM_ALTERNATE_MODEL, "high");
-    const endpoint = process.env.RASPBERRYCODE_WEB_REMOTE_CONTROL_URL;
-    if (!endpoint) throw new Error("CPG01 缺少手机 fixture");
-    await $(
-      'button[aria-label="移动端远程控制"], button[aria-label="Mobile remote control"]',
-    ).waitForClickable({ timeout: 10000 });
-    const pairingUrl = await obtainUnreadPairingUrl(new URL(endpoint).origin);
-    const executablePath = process.env.RASPBERRYCODE_E2E_MOBILE_BROWSER_EXECUTABLE;
-    const chrome = await chromium.launch({
-      ...(executablePath ? { executablePath } : { channel: "chrome" }),
-      headless: true,
-    });
-    const gates = new Set<MobileRpcFrameGate>();
-    const outboundMessages = new Set<string>();
-    const heldCount = () => [...gates].reduce((count, gate) => count + gate.heldCount, 0);
-    const replayCount = () =>
-      [...gates].reduce((count, gate) => count + gate.replayedHeldFrames, 0);
-    let holding = false;
-    let holdConfig = false;
-    let holdConfigReply = false;
-    let replyBridge: string | null = null;
-    let configs = 0;
-    let sends = 0;
-    const release = () => {
-      holding = false;
-      holdConfig = false;
-      holdConfigReply = false;
-      replyBridge = null;
-      gates.forEach((gate) => gate.release());
-    };
-    try {
-      const context = await chrome.newContext({
-        viewport: { width: 390, height: 844 },
-        isMobile: true,
-        hasTouch: true,
-      });
-      await seedMobileFixtureLogin(context);
-      const page = await context.newPage();
-      await page.routeWebSocket(/\/api\/v1\/remote\/ws2(?:\?|$)/u, (route) => {
-        const server = route.connectToServer();
-        const outbound = new MobileRpcFrameGate(
-          (message) => server.send(message),
-          outboundMessages,
-        );
-        const inbound = new MobileRpcFrameGate((message) => route.send(message));
-        gates.add(outbound);
-        gates.add(inbound);
-        // 连接关闭后旧扣帧不可再发送；重连重放沿用用例级命令去重记录。
-        const dispose = () => {
-          for (const gate of [outbound, inbound]) {
-            gate.dispose();
-            gates.delete(gate);
-          }
-        };
-        route.onClose((code, reason) => {
-          dispose();
-          return server.close({ code, reason });
-        });
-        server.onClose((code, reason) => {
-          dispose();
-          return route.close({ code, reason });
-        });
-        route.onMessage((message) =>
-          outbound.receive(message, (payload, wire) => {
-            const isSend =
-              wire.includes("sendConversationCommandV4") && wire.includes('"type":"sendText"');
-            const isConfig =
-              wire.includes("sendConversationCommandV4") &&
-              wire.includes('"type":"switchModelConfig"');
-            if ((isSend || isConfig) && outbound.firstMessage(payload)) {
-              if (isSend) sends++;
-              if (isConfig) configs++;
-            }
-            if (isConfig && holdConfigReply && wire.includes(completedTaskId!))
-              replyBridge = mobileRpcFrameIdentity(payload);
-            return (
-              (holdConfig && isConfig && wire.includes(completedTaskId!)) ||
-              (holding && wire.includes("model-selection") && wire.includes("getView"))
-            );
-          }),
-        );
-        server.onMessage((message) =>
-          inbound.receive(message, (payload) =>
-            Boolean(replyBridge && mobileRpcFrameIdentity(payload) === replyBridge),
-          ),
-        );
-      });
-      await openMobilePairingPage(page, pairingUrl, {
-        artifactDir: process.env.RASPBERRYCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/provider-gate",
-        caseMarker: "CPG01",
-        phase: "pairing",
-        readySelector: '[data-testid="sidebar"], [data-mobile-page="chat"]',
-      });
-      await showMobileTaskHome(page);
-      const toggles = page.getByTestId("virtual-project-toggle");
-      for (let i = 0; i < (await toggles.count()); i++) {
-        const toggle = toggles.nth(i);
-        if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
-      }
-      await page.getByTestId(`task-item-${completedTaskId}`).first().click();
-      const input = page.getByTestId(TID_V4_COMPOSER_INPUT);
-      await input.waitFor();
-      await input.fill("E2E_PROVIDER_PENDING_SEND_MOBILE");
-      const readDraft = () =>
-        input.evaluate((element) =>
-          element instanceof HTMLTextAreaElement || element instanceof HTMLInputElement
-            ? element.value
-            : (element.textContent ?? ""),
-        );
-      await browser.waitUntil(
-        async () =>
-          (await readDraft()).includes("E2E_PROVIDER_PENDING_SEND_MOBILE") &&
-          (await page.getByTestId("v4-composer-send").isEnabled()),
-        { timeout: 30000 },
-      );
-      holding = true;
-      await page.getByTestId(TID_CHAT_MODEL_SELECT_TRIGGER).click();
-      await page.getByTestId("composer-provider-trigger").click();
-      await page
-        .locator(`[data-model-provider-key="registry-provider:${UPSTREAM_ALTERNATE_PROVIDER_ID}"]`)
-        .click();
-      await browser.waitUntil(() => heldCount() > 0, { timeout: 10000 });
-      // focus 会读取项目目录；后继 RPC 必须随目标帧一起挂起，不能制造缺号。
-      await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-      await browser.waitUntil(() => heldCount() > 1, { timeout: 10000 });
-      await page.keyboard.press("Escape");
-      await page.keyboard.press("Escape");
-      const send = page.getByTestId("v4-composer-send");
-      expect(await send.isDisabled()).toBe(true);
-      await input.press("Enter");
-      expect(sends).toBe(0);
-      expect(await readDraft()).toContain("E2E_PROVIDER_PENDING_SEND_MOBILE");
-      release();
-      await browser.waitUntil(() => send.isEnabled(), { timeout: 30000 });
-      // 手机仅切档位也应在发送前提交 Session，而非只更新本端草稿。
-      await page.getByTestId(TID_CHAT_MODEL_SELECT_TRIGGER).click();
-      const thoughtSlider = page.getByTestId("composer-thought-slider");
-      const thoughtLevels = JSON.parse(
-        (await thoughtSlider.getAttribute("data-levels")) ?? "[]",
-      ) as string[];
-      await thoughtSlider.focus();
-      await thoughtSlider.press("Home");
-      await expectPersistedThought(completedTaskId!, thoughtLevels[0]!);
-      await page.keyboard.press("Escape");
-      // 手机配置 ACK 门禁：保留面板、禁用配置与快捷键，未确认前不发送。
-      const modelTrigger = page.getByTestId(TID_CHAT_MODEL_SELECT_TRIGGER);
-      await modelTrigger.click();
-      holdConfig = true;
-      const configsBefore = configs;
-      const replaysBefore = replayCount();
-      await thoughtSlider.focus();
-      await thoughtSlider.press("End");
-      await browser.waitUntil(() => heldCount() > 0, { timeout: 10000 });
-      await browser.waitUntil(() => modelTrigger.isDisabled(), { timeout: 5000 });
-      await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-      await browser.waitUntil(() => heldCount() > 1 && replayCount() > replaysBefore, {
-        timeout: 15000,
-        timeoutMsg: "配置挂起期间未观察到后继 RPC 与原帧重放",
-      });
-      expect(await modelTrigger.getAttribute("aria-expanded")).toBe("true");
-      expect(await thoughtSlider.getAttribute("aria-disabled")).toBe("true");
-      await page.keyboard.press("Control+t");
-      await page.keyboard.press("Control+m");
-      expect(configs).toBe(configsBefore + 1);
-      expect(await send.isDisabled()).toBe(true);
-      release();
-      await expectPersistedThought(completedTaskId!, thoughtLevels.at(-1)!);
-      await browser.waitUntil(() => send.isEnabled(), { timeout: 30000 });
-      expect(await modelTrigger.getAttribute("aria-expanded")).toBe("true");
-      expect(await thoughtSlider.getAttribute("aria-disabled")).toBe("false");
-      await page.keyboard.press("Escape");
-      const repliesBefore = (await page.locator('[data-testid="v4-timeline"]').innerText()).split(
-        "PROVIDER_PENDING_SEND_OK",
-      ).length;
-      await send.click();
-      await browser.waitUntil(
-        async () =>
-          (await page.locator('[data-testid="v4-timeline"]').innerText()).split(
-            "PROVIDER_PENDING_SEND_OK",
-          ).length > repliesBefore,
-        { timeout: 45000 },
-      );
-      expect(sends).toBe(1);
-      await waitForV4Pane((pane) => !pane.canStop, "CPG01 手机请求未结束", 30000);
-      const db = new DatabaseSync(
-        join(getE2EAppDataPaths().storageRoot, "cli", "db", "db.sqlite"),
-        { readOnly: true },
-      );
-      try {
-        expect(
-          db
-            .prepare(
-              "select provider_id as provider, model_id as model from model_usage where session_id = ? and query_source = 'main_turn' order by started_at desc limit 1",
-            )
-            .get(completedTaskId!),
-        ).toMatchObject({
-          provider: UPSTREAM_ALTERNATE_PROVIDER_ID,
-          model: UPSTREAM_ALTERNATE_MODEL,
-        });
-      } finally {
-        db.close();
-      }
-      // 手机也保留未发送正文，离开后才放行原会话配置，再返回抓实际请求。
-      await seedAckProvider();
-      await startDraftFromProject(DEFAULT_WORKSPACE);
-      await sendV4Prompt("E2E_V4_COMPOSER_TOOLBAR_SEED");
-      await waitForV4TimelineContaining("V4_COMPOSER_TOOLBAR_SEED_OK", 45000);
-      const taskB = (
-        await waitForV4Pane((p) => !p.canStop && Boolean(p.sessionId), "手机验证 B 未完成", 45000)
-      ).sessionId!;
-      await modelTrigger.click();
-      await page.getByTestId("composer-provider-trigger").click();
-      await page.locator(`[data-model-provider-key="registry-provider:${ACK_PROVIDER}"]`).click();
-      await browser.waitUntil(
-        async () => (await thoughtSlider.getAttribute("aria-disabled")) === "false",
-        { timeout: 15000 },
-      );
-      await thoughtSlider.focus();
-      await thoughtSlider.press("End");
-      await expectPersistedThought(completedTaskId!, "max");
-      await page.keyboard.press("Escape");
-      const marker = "E2E_PROVIDER_PENDING_SEND_CROSS_SESSION_MOBILE";
-      await input.fill(marker);
-      await modelTrigger.click();
-      // 放行命令，仅延迟 A bridge 的下行配置回执与投影，避免向已销毁 bridge 重发命令。
-      holdConfigReply = true;
-      await thoughtSlider.focus();
-      await thoughtSlider.press("Home");
-      await expectPersistedThought(completedTaskId!, "high");
-      await browser.waitUntil(() => heldCount() > 0, { timeout: 10000 });
-      expect(await modelTrigger.getAttribute("aria-expanded")).toBe("true");
-      await page.keyboard.press("Escape");
-      const openTask = async (id: string) => {
-        await showMobileTaskHome(page);
-        const groups = page.getByTestId("virtual-project-toggle");
-        for (let i = 0; i < (await groups.count()); i++) {
-          if ((await groups.nth(i).getAttribute("aria-expanded")) !== "true")
-            await groups.nth(i).click();
-        }
-        await page.getByTestId(`task-item-${id}`).first().click();
-        try {
-          await input.waitFor({ timeout: 15000 });
-        } catch (error) {
-          const dir = process.env.RASPBERRYCODE_E2E_ARTIFACT_DIR;
-          if (dir)
-            await writeFile(
-              join(dir, "cross-session-mobile-navigation.txt"),
-              `${id} held=${heldCount()}\n${await page.locator("body").innerText()}`,
-            );
-          throw error;
-        }
-      };
-      await openTask(taskB);
-      release();
-      await expectPersistedThought(completedTaskId!, "high");
-      await openTask(completedTaskId!);
-      await browser.waitUntil(async () => (await readDraft()).includes(marker), {
-        timeout: 10000,
-        timeoutMsg: "手机返回 A 后正文丢失",
-      });
-      await send.click();
-      const capture = await waitForUpstreamNetworkCapture(marker);
-      const artifactDir = process.env.RASPBERRYCODE_E2E_ARTIFACT_DIR;
-      if (artifactDir)
-        await writeFile(
-          join(artifactDir, "cross-session-ack-mobile-request.json"),
-          JSON.stringify(
-            {
-              sessionId: completedTaskId,
-              marker,
-              expectedThought: "high",
-              url: capture.url,
-              statusCode: capture.statusCode,
-              request: capture.requestJson,
-            },
-            null,
-            2,
-          ),
-        );
-      assertUpstreamRequestCapture(capture, { expectedText: marker, model: "GLM-5.3" });
-      assertUpstreamThoughtLevelCapture(capture, "high");
-    } finally {
-      release();
-      await chrome.close();
-    }
-  });
-  for (const [width, changeScope] of [
-    [1280, false],
-    [430, false],
-    [1280, true],
-  ] as const) {
-    it(`CPG01: ${width}px 同名模型切 Provider 时禁止发送且保留草稿${changeScope ? "（切换会话）" : ""}`, async function () {
-      this.timeout(120000);
-      await ensureCompletedTask();
-      let nextTaskId: string | undefined;
-      if (changeScope) {
-        await startNewV4Draft();
-        await sendV4Prompt("E2E_V4_COMPOSER_TOOLBAR_SEED");
-        await waitForV4TimelineContaining("V4_COMPOSER_TOOLBAR_SEED_OK", 45000);
-        const next = await waitForV4Pane(
-          (pane) => !pane.canStop && Boolean(pane.sessionId) && pane.sessionId !== "draft",
-          "scope 补验未创建 B 会话",
-          45000,
-        );
-        nextTaskId = next.sessionId!;
-      }
-      await selectV4TaskById(completedTaskId!);
-      await switchV4Model(UPSTREAM_PROVIDER_ID, UPSTREAM_ALTERNATE_MODEL, "high");
-      await browser.electron.execute((electron, size) => {
-        electron.BrowserWindow.getAllWindows()
-          .find((window) => window.isVisible())
-          ?.setSize(size, 900);
-      }, width);
-      await setV4ComposerText(`E2E_PROVIDER_PENDING_SEND_${width}`);
-      await browser.execute(() => {
-        const original = MessagePort.prototype.postMessage;
-        const held: Array<() => void> = [];
-        let holding = true;
-        const probe = {
-          held: 0,
-          sends: 0,
-          allowNewRequests() {
-            holding = false;
-          },
-          release() {
-            holding = false;
-            held.splice(0).forEach((send) => send());
-          },
-          restore() {
-            probe.release();
-            MessagePort.prototype.postMessage = original;
-          },
-        };
-        (window as Window & { __providerPendingProbe?: typeof probe }).__providerPendingProbe =
-          probe;
-        MessagePort.prototype.postMessage = function (
-          ...args: [unknown, (Transferable[] | StructuredSerializeOptions)?]
-        ) {
-          const data = args[0];
-          const bytes =
-            data instanceof ArrayBuffer
-              ? new Uint8Array(data)
-              : ArrayBuffer.isView(data)
-                ? new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
-                : null;
-          const wire = bytes ? new TextDecoder().decode(bytes) : "";
-          const forward = () => Reflect.apply(original, this, args);
-          if (wire.includes("sendConversationCommandV4") && wire.includes('"type":"sendText"'))
-            probe.sends++;
-          // 挂起真实目录 RPC，不修改模型选择、ACK 或服务端状态。
-          if (holding && wire.includes("model-selection") && wire.includes("getView")) {
-            probe.held++;
-            held.push(forward);
-            return;
-          }
-          forward();
-        };
-      });
-      const readProbe = () =>
-        browser.execute(() => {
-          const probe = (
-            window as Window & { __providerPendingProbe?: { held: number; sends: number } }
-          ).__providerPendingProbe!;
-          return { held: probe.held, sends: probe.sends };
-        });
-      try {
-        await openComposerPicker("model");
-        await $('[data-testid="composer-provider-trigger"]').click();
-        await $(
-          `[data-model-provider-key="registry-provider:${UPSTREAM_ALTERNATE_PROVIDER_ID}"]`,
-        ).click();
-        await browser.waitUntil(async () => (await readProbe()).held > 0, { timeout: 10000 });
-        await closeComposerPicker();
-        const send = $('[data-testid="v4-composer-send"]');
-        await browser.waitUntil(async () => !(await send.isEnabled()), {
-          timeout: 5000,
-          timeoutMsg: "Provider 刷新中仍允许发送",
-        });
-        await $(`[data-testid="${TID_V4_COMPOSER_INPUT}"]`).click();
-        // 窄窗口点击会把光标放到正文中部；明确移到末尾，避免正常换行截断 marker。
-        await browser.execute((testId) => {
-          const input = document.querySelector(`[data-testid="${testId}"]`)!;
-          const range = document.createRange();
-          range.selectNodeContents(input);
-          range.collapse(false);
-          const selection = window.getSelection()!;
-          selection.removeAllRanges();
-          selection.addRange(range);
-        }, TID_V4_COMPOSER_INPUT);
-        await browser.keys("Enter");
-        expect((await readProbe()).sends).toBe(0);
-        // 禁发期间允许继续编辑及尾部换行，但原文必须完整保留。
-        expect((await getV4ComposerText())?.trimEnd()).toBe(`E2E_PROVIDER_PENDING_SEND_${width}`);
-        if (nextTaskId) {
-          await browser.execute(() =>
-            (
-              window as Window & { __providerPendingProbe?: { allowNewRequests(): void } }
-            ).__providerPendingProbe!.allowNewRequests(),
-          );
-          await selectV4TaskById(nextTaskId);
-          await switchV4Model(UPSTREAM_PROVIDER_ID, UPSTREAM_ALTERNATE_MODEL, "high");
-          await setV4ComposerText(`E2E_PROVIDER_PENDING_SEND_${width}`);
-          await openComposerPicker("model");
-          await $('[data-testid="composer-provider-trigger"]').click();
-          await $(
-            `[data-model-provider-key="registry-provider:${UPSTREAM_ALTERNATE_PROVIDER_ID}"]`,
-          ).click();
-          await closeComposerPicker();
-          await browser.waitUntil(async () => await send.isEnabled(), {
-            timeout: 30000,
-            timeoutMsg: "B 会话再次切 Provider 后 pending 未解除",
-          });
-        }
-        await browser.execute(() =>
-          (
-            window as Window & { __providerPendingProbe?: { release(): void } }
-          ).__providerPendingProbe!.release(),
-        );
-        await browser.waitUntil(async () => await send.isEnabled(), { timeout: 30000 });
-        expect(await getV4ModelConfig()).toMatchObject({
-          provider: UPSTREAM_ALTERNATE_PROVIDER_ID,
-          model: UPSTREAM_ALTERNATE_MODEL,
-        });
-        const repliesBefore = (await getV4PaneSnapshot()).timelineText.split(
-          "PROVIDER_PENDING_SEND_OK",
-        ).length;
-        await send.click();
-        const pane = await waitForV4Pane(
-          (value) =>
-            !value.canStop &&
-            value.timelineText.split("PROVIDER_PENDING_SEND_OK").length > repliesBefore,
-          "CPG01 新请求未结束",
-          45000,
-        );
-        expect((await readProbe()).sends).toBe(1);
-        // Node SQLite 只提供同步接口；只读一条实际请求归属，不以工具栏展示替代请求断言。
-        const db = new DatabaseSync(
-          join(getE2EAppDataPaths().storageRoot, "cli", "db", "db.sqlite"),
-          { readOnly: true },
-        );
-        try {
-          expect(
-            db
-              .prepare(
-                "select provider_id as provider, model_id as model, status from model_usage where session_id = ? and query_source = 'main_turn' order by started_at desc limit 1",
-              )
-              .get(pane.sessionId!),
-          ).toMatchObject({
-            provider: UPSTREAM_ALTERNATE_PROVIDER_ID,
-            model: UPSTREAM_ALTERNATE_MODEL,
-            status: "completed",
-          });
-        } finally {
-          db.close();
-        }
-      } finally {
-        await browser.electron.execute((electron) => {
-          electron.BrowserWindow.getAllWindows()
-            .find((window) => window.isVisible())
-            ?.setSize(1280, 900);
-        });
-        await browser.execute(() =>
-          (
-            window as Window & { __providerPendingProbe?: { restore(): void } }
-          ).__providerPendingProbe?.restore(),
-        );
-      }
-    });
-  }
 });

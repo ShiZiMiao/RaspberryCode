@@ -56,7 +56,7 @@ if (!building) {
   await mkdir(value("-B"), { recursive: true });
   await writeFile(join(value("-B"), "fixture.json"), JSON.stringify({
     source: value("-S"), arch: value("-A"),
-    output: args.find((arg) => arg.startsWith("-DZCODE_SHIM_OUTPUT_DIR=")).split("=").slice(1).join("=")
+    output: args.find((arg) => arg.startsWith("-DRASPBERRYCODE_SHIM_OUTPUT_DIR=")).split("=").slice(1).join("=")
   }));
 } else {
   if (process.env.SHIM_BUILD_HANG === "1") {

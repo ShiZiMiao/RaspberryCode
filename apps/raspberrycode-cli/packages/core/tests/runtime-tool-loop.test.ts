@@ -11259,7 +11259,6 @@ describe("AgentRuntime tool loop", () => {
     const toolCompleted = deferred();
     const fallbackProviderId = "account:legacy-card-provider";
     let fallbackCallCount = 0;
-    let fallbackCallCount = 0;
     let toolHandlerCallCount = 0;
 
     registry.register({

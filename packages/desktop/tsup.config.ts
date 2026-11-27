@@ -205,7 +205,7 @@ const desktopTsupBundleSecurityOptions = resolveDesktopTsupBundleSecurityOptions
 export function resolvePreinstalledToolsTestBuild(
   env: Record<string, string | undefined>,
 ): boolean {
-  return env.VITE_ZCODE_E2E_STORE_BRIDGE === "1";
+  return env.VITE_RASPBERRYCODE_E2E_STORE_BRIDGE === "1";
 }
 
 function createSharedDefines() {

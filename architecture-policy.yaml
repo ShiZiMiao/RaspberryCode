@@ -2026,6 +2026,18 @@ exceptions:
     rule: unmanaged-new-file
     paths: [ packages/raspberrycode-cua/vitest.config.ts ]
     reason: 该文件只装配测试项目，开源占位版本用于保持根单测入口可运行；不包含 producer 运行逻辑，不为同目录实现文件开放例外。
+  - id: image-preview-editor-shared-entries
+    rule: unmanaged-new-file
+    paths:
+      - packages/ui/src/hooks/useImageFilePreview.ts
+      - packages/ui/src/lib/copyPreviewImage.ts
+      - packages/ui/src/lib/imagePreviewDownload.ts
+      - packages/ui/src/v4/ConversationImageFileMention.tsx
+    reason: 图片预览编辑器按上游模块清单拆出的 hook、浏览器下载/复制工具与 v4 mention 入口，均由 packages/ui/src/image-preview-editor/module.ts 统一声明，复用既有 file-menu 与预览 owner；不改变模块边界，也不接管整个 ui 目录。
+  - id: shared-vitest-project-config
+    rule: unmanaged-new-file
+    paths: [ packages/shared/vitest.config.ts ]
+    reason: packages/shared 的单测项目配置只装配测试环境与别名，不参与运行时代码；不改变 shared 模块边界。
   - id: project-location-cache-recovery-existing-edit
     rule: unmanaged-new-file
     paths:
