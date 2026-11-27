@@ -17,7 +17,8 @@ SilentInstall silent
 !define APP_DESCRIPTION "RaspberryCode NSIS smoke fixture"
 !define APP_FILENAME "RaspberryCode"
 !define APP_ID "dev.raspberrycode.installer-nsh-smoke"
-!define UNINSTALL_FILENAME "uninstaller.exe"
+; customInstall 宏会写入卸载注册表键；夹具必须提供同一常量，否则 /WX 下 warning 6000 失败。
+!define UNINSTALL_REGISTRY_KEY "Software\\RaspberryCodeInstallerSmoke"
 ; 对齐 electron-builder 真实生成脚本（common.nsh/installer.nsi）的编译期常量：
 ; customRemoveFiles 的快捷方式兜底清理依赖 SHORTCUT_NAME。
 !define SHORTCUT_NAME "RaspberryCode"

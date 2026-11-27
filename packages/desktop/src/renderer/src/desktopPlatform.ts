@@ -197,6 +197,7 @@ export function createDesktopPlatform(options: {
       window.raspberrycode.openInEditor(editorId, path, editorOptions),
     executeDesktopCommand: (command) => window.raspberrycode.executeDesktopCommand(command),
     setApplicationLocale: (locale) => window.raspberrycode.setApplicationLocale(locale),
+    setReplyLanguage: (language) => window.raspberrycode.setReplyLanguage(language),
     getSystemLocale: () =>
       window.raspberrycode.getSystemLocale?.() ??
       Promise.resolve(navigator.language.toLowerCase().startsWith("zh") ? "zh-CN" : "en-US"),

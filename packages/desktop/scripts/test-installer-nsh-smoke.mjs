@@ -98,6 +98,9 @@ function compileFixture({
     `/DELECTRON_BUILDER_NSIS_INCLUDE_DIR=${resolve(appBuilderLibDir, "templates/nsis/include")}`,
     `/DNSIS_PLUGIN_DIR=${resolve(nsisResourcesDir, "plugins/x86-unicode")}`,
     `/DRASPBERRYCODE_INSTALLER_NSH=${installerNshPath}`,
+    // 正式构建由 afterPack 生成按架构的 helper define；夹具不调用该宏，
+    // 显式传入退出码 0 的桩即可跳过 include，避免 /WX 把缺失 include 的 warning 7000 当失败。
+    `/DRASPBERRYCODE_INSTALLER_PROCESS_HELPER=${join(process.env.SystemRoot ?? "C:\\Windows", "System32", "attrib.exe")}`,
     `/DFIXTURE_EXE=${process.env.ComSpec ?? "C:\\Windows\\System32\\cmd.exe"}`,
     `/DOUTPUT_FILE=${outputPath}`,
     `/DDEFAULT_LOG_PATH=${defaultLogPath}`,

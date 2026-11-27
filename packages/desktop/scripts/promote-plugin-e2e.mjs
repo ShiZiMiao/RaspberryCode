@@ -91,7 +91,11 @@ function promote({ apply, reviewed, spec }) {
     warnings.push("Do not apply until screenshots and behavior have passed human review.");
 
   if (errors.length === 0) {
-    actions.push(`Move ${relative(repoRoot, sourcePath)} -> ${relative(repoRoot, targetPath)}`);
+    // 输出统一使用 POSIX 分隔符：Windows 的 path.relative 会返回反斜杠，
+    // 与测试/CI 日志中的仓库相对路径格式不一致。
+    actions.push(
+      `Move ${relative(repoRoot, sourcePath).replaceAll("\\", "/")} -> ${relative(repoRoot, targetPath).replaceAll("\\", "/")}`,
+    );
     actions.push(
       "Rewrite pending helper imports and update the case manifest and coverage matrix paths.",
     );

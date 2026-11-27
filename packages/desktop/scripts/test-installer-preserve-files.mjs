@@ -18,6 +18,9 @@ const NSIS_CHECKSUM =
   "VKMiizYdmNdJOWpRGz4trl4lD++BvYP2irAXpMilheUP0pc93iKlWAoP843Vlraj8YG19CVn0j+dCo/hURz9+Q==";
 const NSIS_RESOURCES_CHECKSUM =
   "Dqd6g+2buwwvoG1Vyf6BHR1b+25QMmPcwZx40atOT57gH27rkjOei1L0JTldxZu4NFoEmW4kJgZ3DlSWVON3+Q==";
+// 夹具没有真实进程 helper；用 attrib.exe 作为退出码 0 的桩。
+// 不能传 Node：helper 会以应用 exe 为参数执行，Node 会把文本载荷当脚本解析而失败。
+const PROCESS_HELPER_STUB = join(process.env.SystemRoot ?? "C:\\Windows", "System32", "attrib.exe");
 
 if (process.platform !== "win32") {
   process.stdout.write("[installer-preserve-files] skipped: Windows only\n");
@@ -42,7 +45,11 @@ if (process.platform !== "win32") {
         `/DELECTRON_BUILDER_NSIS_INCLUDE_DIR=${resolve(appBuilderLibDir, "templates/nsis/include")}`,
         `/DNSIS_PLUGIN_DIR=${resolve(nsisResourcesDir, "plugins/x86-unicode")}`,
         `/DRASPBERRYCODE_INSTALLER_NSH=${installerNshPath}`,
-        `/DFIXTURE_EXE=${process.env.ComSpec ?? "C:\\Windows\\System32\\cmd.exe"}`,
+        // 正式构建由 afterPack 生成按架构的 helper define；夹具不调用该宏，
+        // 显式传入任意存在的文件即可跳过 include，避免 /WX 把缺失 include 的 warning 7000 当失败。
+        `/DRASPBERRYCODE_INSTALLER_PROCESS_HELPER=${PROCESS_HELPER_STUB}`,
+        // 夹具只校验文件字节，不执行该载荷；用 .nsi 文本文件避免 32 位 NSIS 的 System32 重定向。
+        `/DFIXTURE_EXE=${fixturePath}`,
         `/DOUTPUT_FILE=${uninstallerOutput}`,
         fixturePath,
       ],
@@ -76,7 +83,11 @@ if (process.platform !== "win32") {
         `/DELECTRON_BUILDER_NSIS_INCLUDE_DIR=${resolve(appBuilderLibDir, "templates/nsis/include")}`,
         `/DNSIS_PLUGIN_DIR=${resolve(nsisResourcesDir, "plugins/x86-unicode")}`,
         `/DRASPBERRYCODE_INSTALLER_NSH=${installerNshPath}`,
-        `/DFIXTURE_EXE=${process.env.ComSpec ?? "C:\\Windows\\System32\\cmd.exe"}`,
+        // 正式构建由 afterPack 生成按架构的 helper define；夹具不调用该宏，
+        // 显式传入任意存在的文件即可跳过 include，避免 /WX 把缺失 include 的 warning 7000 当失败。
+        `/DRASPBERRYCODE_INSTALLER_PROCESS_HELPER=${PROCESS_HELPER_STUB}`,
+        // 夹具只校验文件字节，不执行该载荷；用 .nsi 文本文件避免 32 位 NSIS 的 System32 重定向。
+        `/DFIXTURE_EXE=${fixturePath}`,
         `/DOUTPUT_FILE=${outputPath}`,
         fixturePath,
       ];
@@ -112,7 +123,11 @@ if (process.platform !== "win32") {
       `/DELECTRON_BUILDER_NSIS_INCLUDE_DIR=${resolve(appBuilderLibDir, "templates/nsis/include")}`,
       `/DNSIS_PLUGIN_DIR=${resolve(nsisResourcesDir, "plugins/x86-unicode")}`,
       `/DRASPBERRYCODE_INSTALLER_NSH=${installerNshPath}`,
-      `/DFIXTURE_EXE=${process.env.ComSpec ?? "C:\\Windows\\System32\\cmd.exe"}`,
+      // 夹具不调用 process helper 宏；显式传入存在的文件跳过 afterPack 生成文件，
+      // 避免 /WX 把缺失 include 的 warning 7000 当成编译失败。
+      `/DRASPBERRYCODE_INSTALLER_PROCESS_HELPER=${PROCESS_HELPER_STUB}`,
+      // 夹具只校验文件字节，不执行该载荷；用 .nsi 文本文件避免 32 位 NSIS 的 System32 重定向。
+      `/DFIXTURE_EXE=${fixturePath}`,
       `/DOUTPUT_FILE=${failureOutputPath}`,
       `/DRASPBERRYCODE_UNINSTALLER_LOG_PATH=${failureLogPath}`,
       "/DFAIL_DELETE",
@@ -184,7 +199,7 @@ if (process.platform !== "win32") {
       recoveryArgs.push(
         `/DOUTPUT_FILE=${recoveryOutputPath}`,
         "/DRECOVERY_TEST",
-        `/DZCODE_INSTALLER_DEFAULT_LOG_PATH=${installerLogPath}`,
+        `/DRASPBERRYCODE_INSTALLER_DEFAULT_LOG_PATH=${installerLogPath}`,
         `/DOLD_CLEANUP_EXE=${installSucceeds ? legacySelfUninstaller : failureOutputPath}`,
       );
       if (scenario.startsWith("self-manifest")) recoveryArgs.push("/DSELF_MANIFEST");
@@ -251,11 +266,14 @@ if (process.platform !== "win32") {
         throw new Error(`${scenario}: wrong new-payload installation state`);
       }
       if (installSucceeds) {
-        if (
-          !readFileSync(join(recoveryInstallDir, "RaspberryCode.exe")).equals(readFileSync(fixturePath)) ||
-          readFileSync(installMarker, "utf8") !== "removed"
-        ) {
-          throw new Error(`${scenario}: new application payload was not installed after cleanup`);
+        const installedAppPath = join(recoveryInstallDir, "RaspberryCode.exe");
+        const installedApp = existsSync(installedAppPath) ? readFileSync(installedAppPath) : null;
+        const marker = existsSync(installMarker) ? readFileSync(installMarker, "utf8") : "<missing>";
+        if (!installedApp?.equals(readFileSync(fixturePath)) || marker !== "removed") {
+          throw new Error(
+            `${scenario}: new application payload was not installed after cleanup ` +
+              `(app=${installedApp ? `${installedApp.length}B` : "missing"}, marker=${marker})`,
+          );
         }
       } else if (scenario === "backup-and-uninstall-failure") {
         if (existsSync(join(recoveryInstallDir, "RaspberryCode.exe"))) {

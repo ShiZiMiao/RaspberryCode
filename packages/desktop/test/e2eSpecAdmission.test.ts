@@ -83,20 +83,13 @@ async function loadMochaTimeoutConfig(holdMs = 0) {
 
 describe("desktop E2E environment-gated formal spec admission", () => {
   // 混合文件曾被 SSH 门禁整份排除；分开入口后，本地覆盖不能再依赖远端环境。
+  // 手机远控（web-remote-*）与 remote-settings-safeguards 已随业务拆分/降级为
+  // manual-review，不再属于本仓库的正式 spec 集合，因此这里只保留仍存在的本地/SSH 对。
   it.each([
-    ...["terminal", "unread"].map((scenario) => {
-      const local = `conversation-session/remote/mobile/conversation-session-web-remote-${scenario}.test.ts`;
-      return [scenario, local, local.replace(".test.ts", "-ssh.test.ts")];
-    }),
     [
       "settings polish",
       "settings/general/settings-ui-polish.test.ts",
       "settings/general/settings-ui-polish-ssh.test.ts",
-    ],
-    [
-      "settings notice",
-      "conversation-session/remote/configuration/conversation-session-settings-no-editing-notice.test.ts",
-      "conversation-session/remote/configuration/conversation-session-remote-settings-safeguards.test.ts",
     ],
   ])("keeps local %s coverage without SSH", (_scenario, localSpec, sshSpec) => {
     const local = `./test/e2e/${localSpec}`;
@@ -186,20 +179,19 @@ describe("desktop E2E environment-gated formal spec admission", () => {
         ...resolveEnvironmentGatedFormalSpecExcludes({ env: {}, targeted: false }),
       ],
     });
-    for (const scenario of ["terminal", "unread"]) {
-      const spec = `test/e2e/conversation-session/remote/mobile/conversation-session-web-remote-${scenario}.test.ts`;
-      expect(selected).toContain(spec);
-      const config = { mochaOpts: { timeout: readBudget(patterns) } };
-      applyWorkerBudget(config, [resolve("packages/desktop", spec)]);
-      expect(config.mochaOpts.timeout).toBe(15 * 60_000);
-    }
+    // 手机远控（web-remote-*）已随业务拆分移除；用仍存在的本机长用例
+    // 验证 worker 预算按实际文件生效（HK20 声明 180 秒）。
+    const longRemoteSpec =
+      "test/e2e/conversation-session/hooks/conversation-session-hook-trust-worktree.test.ts";
+    expect(selected).toContain(longRemoteSpec);
+    const budgetConfig = { mochaOpts: { timeout: readBudget(patterns) } };
+    applyWorkerBudget(budgetConfig, [resolve("packages/desktop", longRemoteSpec)]);
+    expect(budgetConfig.mochaOpts.timeout).toBe(180_000);
     const config = { mochaOpts: { timeout: 30 * 60_000 } };
     applyWorkerBudget(config, ["test/e2e/infrastructure/smoke/smoke.test.ts"]);
     expect(config.mochaOpts.timeout).toBe(30 * 60_000);
     const unlimited = { mochaOpts: { timeout: 0 } };
-    applyWorkerBudget(unlimited, [
-      "test/e2e/conversation-session/remote/mobile/conversation-session-web-remote-terminal.test.ts",
-    ]);
+    applyWorkerBudget(unlimited, [longRemoteSpec]);
     expect(unlimited.mochaOpts.timeout).toBe(0);
   });
 
@@ -212,7 +204,7 @@ describe("desktop E2E environment-gated formal spec admission", () => {
     applyWorkerBudget(config, ["test/e2e/infrastructure/smoke/smoke.test.ts"]);
     expect(config.mochaOpts).toEqual({ timeout: 123_000, grep: "example", rootHooks });
     applyWorkerBudget(config, [
-      "test/e2e/conversation-session/remote/mobile/conversation-session-web-remote-terminal.test.ts",
+      "test/e2e/conversation-session/remote/navigation/conversation-session-remote-sidebar-menus.test.ts",
     ]);
     expect(config.mochaOpts.timeout).toBe(903_000);
     expect(config.mochaOpts.rootHooks).toBe(rootHooks);

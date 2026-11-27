@@ -16,7 +16,7 @@ ENV CI=1 \
     XDG_CACHE_HOME=/workspace/.cache \
     WDIO_BROWSER_DRIVER_CACHE_DIR=/workspace/.cache/wdio-browser-drivers \
     RASPBERRYCODE_E2E_CONTAINER=1 \
-    RASPBERRYCODE_E2E_SPEC=./test/e2e/container-boot.test.ts,./test/e2e/smoke.test.ts,./test/e2e/e2ecase-regression.test.ts,./test/e2e/upstream-provider.test.ts \
+    RASPBERRYCODE_E2E_SPEC=./test/e2e/infrastructure/smoke/container-boot.test.ts,./test/e2e/infrastructure/smoke/smoke.test.ts,./test/e2e/infrastructure/smoke/e2ecase-regression.test.ts,./test/e2e/infrastructure/smoke/upstream-provider.test.ts \
     ELECTRON_DISABLE_SECURITY_WARNINGS=1 \
     TURBO_TELEMETRY_DISABLED=1
 

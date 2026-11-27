@@ -30,6 +30,10 @@ export type {
 export { createModelAdapter } from "./model-factory.js";
 export type { CreateModelAdapterOptions } from "./model-factory.js";
 export {
+  buildCliRaspberryCodeSourceHeaders,
+  createRuntimeAiSdkModelExecutionConfig,
+} from "./model-config.js";
+export {
   createDefaultProviderEndpointRoutingPort,
   resolveProcessProviderEndpointRoutingPort,
 } from "./provider-endpoint-routing.js";

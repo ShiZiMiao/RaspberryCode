@@ -148,6 +148,7 @@ export function UpdateSettingsSection({ isDesktop }: { isDesktop?: boolean }) {
   return (
     <>
       <SettingsRow
+        searchId="settings.autoDownloadAndInstallUpdates"
         label={intl.formatMessage({ id: "settings.update.autoUpdate" })}
         description={intl.formatMessage({ id: "settings.update.autoUpdateDescription" })}
         control={

@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select.js";
 import { cn } from "@/components/lib/utils.js";
+import { useSettingsSearchTarget, type SettingsSearchId } from "@/settings-search/contract.js";
 
 /**
  * Settings 与同级管理页在窗口框架内共享同一内容列。
@@ -107,20 +108,32 @@ export function ThemePreviewCard({
 }
 
 export function SettingsRow({
+  searchId,
   label,
   description,
   control,
   detail,
   controlLayout = "default",
 }: {
+  searchId?: SettingsSearchId;
   label: ReactNode;
   description?: ReactNode;
   control: ReactNode;
   detail?: ReactNode;
   controlLayout?: "default" | "wide";
 }) {
+  const { ref, highlighted } = useSettingsSearchTarget(searchId);
   return (
-    <div className="border-t border-border px-4 py-3 first:border-t-0">
+    <div
+      ref={ref}
+      tabIndex={searchId ? -1 : undefined}
+      data-settings-search-id={searchId}
+      data-settings-search-highlighted={highlighted || undefined}
+      className={cn(
+        "border-t border-border px-4 py-3 first:border-t-0",
+        highlighted && "bg-accent ring-1 ring-inset ring-input-border-focused",
+      )}
+    >
       <div
         className={cn(
           "grid items-center gap-4",

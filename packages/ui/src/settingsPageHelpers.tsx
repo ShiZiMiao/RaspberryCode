@@ -6,12 +6,15 @@ import type {
   LocalePreference,
   RaspberryCodeInteractionBehavior,
 } from "@raspberrycode/shared";
-import { appToolSearchModeSchema } from "@raspberrycode/shared";
+import { appToolSearchModeSchema, REPLY_LANGUAGE_MAX_LENGTH } from "@raspberrycode/shared";
 import {
+  TID_SETTINGS_AGENT_ALWAYS_BACKGROUND_SWITCH,
   TID_SETTINGS_ASK_USER_QUESTION_AUTO_RESOLUTION_SWITCH,
   TID_SETTINGS_NATIVE_SEARCH_SWITCH,
+  TID_SETTINGS_REPLY_LANGUAGE_INPUT,
   TID_SETTINGS_TOOL_SEARCH_SELECT,
   TID_SETTINGS_TOOL_SEARCH_OPTION,
+  TID_SETTINGS_TOTAL_TOKENS_REMINDER_SWITCH,
 } from "@raspberrycode/shared/test-ids";
 import { useState, useCallback, useEffect } from "react";
 import type { IPlatformService } from "@raspberrycode/shared";
@@ -30,13 +33,18 @@ import {
 import { Switch } from "@/components/ui/switch.js";
 import { Input } from "@/components/ui/input.js";
 import { Button } from "@/components/ui/button.js";
+import { toast } from "@/components/ui/toast.js";
 import { SettingsBadge, SettingsGroupCard, SettingsRow } from "@/settings/SettingsPageParts.js";
 import { DataBaseDirControl } from "@/settings/DataBaseDirControl.js";
 import { useRaspberryCodeIntl } from "@/i18n/IntlProvider.js";
 import { useOptionalServices } from "@/hooks/useServices.js";
+import { usePlatform } from "@/hooks/usePlatform.js";
+import { isImeComposingKeyEvent } from "@/lib/imeComposition.js";
+import { logger } from "@/logger.js";
 import { ProactiveSuggestionsSetting } from "@/settings/ProactiveSuggestionsSetting.js";
 import { NextInputPredictionSetting } from "@/next-input-suggestions/index.js";
 import { DynamicWorkflowModeSetting } from "@/settings/DynamicWorkflowModeSetting.js";
+import { PluginAutoRecommendationSetting } from "@/settings/PluginAutoRecommendationSetting.js";
 import { EndpointOriginSetting } from "@/settings/EndpointOriginSetting.js";
 import { UpdateSettingsSection } from "@/client-update/index.js";
 import { normalizeInterfaceMode, type InterfaceMode } from "@/lib/interfaceMode.js";
@@ -77,6 +85,7 @@ export function TaskAutoArchiveSettings({
   return (
     <SettingsGroupCard>
       <SettingsRow
+        searchId="settings.taskAutoArchive"
         controlLayout="wide"
         label={intl.formatMessage({ id: "settings.taskAutoArchive" })}
         description={intl.formatMessage({
@@ -94,6 +103,7 @@ export function TaskAutoArchiveSettings({
         }
       />
       <SettingsRow
+        searchId="settings.taskAutoArchiveDays"
         controlLayout="wide"
         label={intl.formatMessage({ id: "settings.taskAutoArchiveDays" })}
         description={intl.formatMessage({
@@ -145,9 +155,6 @@ export function GeneralSectionContent({
   terminalFontFamily = "",
   integratedTerminalShell = { mode: "auto" },
   integratedTerminalShellOptions = [],
-  toolSearchMode = "off",
-  onToolSearchModeChange,
-  nativeSearchEnhancementsEnabled,
   httpProxy = "",
   httpProxyNoProxy = "",
   httpProxyCaCertPath = "",
@@ -160,20 +167,14 @@ export function GeneralSectionContent({
   setLocalePreference,
   setNotificationEnabled,
   setNotificationSoundEnabled,
-  messageStreamShowReasoning,
-  messageStreamShowTodos,
   toolGroupingExploreEnabled,
   toolGroupingTerminalEnabled,
   toolGroupingChangesEnabled,
-  raspberrycodeInteractionBehavior,
-  askUserQuestionAutoResolutionEnabled = true,
-  modelIoFullRetentionEnabled = false,
   onDataBaseDirChange,
   onSelectDataBaseDir,
   onTerminalInheritSystemProfileChange = async () => {},
   onTerminalFontFamilyChange = async () => {},
   onIntegratedTerminalShellChange = async () => {},
-  onNativeSearchEnhancementsEnabledChange,
   onHttpProxyChange = async () => {},
   onHttpProxyNoProxyChange = async () => {},
   onHttpProxyCaCertPathChange = async () => {},
@@ -181,14 +182,9 @@ export function GeneralSectionContent({
   onKeepAwakeWhileRunningChange = async () => {},
   onStartupShowHomeChange = async () => {},
   onDesktopChromiumHardwareAccelerationChange = async () => {},
-  onMessageStreamShowReasoningChange,
-  onMessageStreamShowTodosChange,
   onToolGroupingExploreEnabledChange,
   onToolGroupingTerminalEnabledChange,
   onToolGroupingChangesEnabledChange,
-  onRaspberryCodeInteractionBehaviorChange,
-  onAskUserQuestionAutoResolutionEnabledChange = async () => {},
-  onModelIoFullRetentionEnabledChange = async () => {},
   onOpenOnboardingDialog,
 }: {
   localePreference: LocalePreference;
@@ -206,9 +202,6 @@ export function GeneralSectionContent({
   terminalFontFamily: string;
   integratedTerminalShell?: IntegratedTerminalShellSelection;
   integratedTerminalShellOptions?: IntegratedTerminalShellOption[];
-  toolSearchMode?: AppToolSearchMode;
-  onToolSearchModeChange: (mode: AppToolSearchMode) => Promise<void>;
-  nativeSearchEnhancementsEnabled: boolean;
   httpProxy?: string;
   httpProxyNoProxy?: string;
   httpProxyCaCertPath?: string;
@@ -231,20 +224,14 @@ export function GeneralSectionContent({
   setLocalePreference: (locale: LocalePreference) => void;
   setNotificationEnabled: (enabled: boolean) => void;
   setNotificationSoundEnabled: (enabled: boolean) => void;
-  messageStreamShowReasoning: boolean;
-  messageStreamShowTodos: boolean;
   toolGroupingExploreEnabled: boolean;
   toolGroupingTerminalEnabled: boolean;
   toolGroupingChangesEnabled: boolean;
-  raspberrycodeInteractionBehavior: RaspberryCodeInteractionBehavior;
-  askUserQuestionAutoResolutionEnabled?: boolean;
-  modelIoFullRetentionEnabled?: boolean;
   onDataBaseDirChange: (dir: string) => Promise<void>;
   onSelectDataBaseDir: () => Promise<string | null>;
   onTerminalInheritSystemProfileChange: (enabled: boolean) => Promise<void>;
   onTerminalFontFamilyChange: (fontFamily: string) => Promise<void>;
   onIntegratedTerminalShellChange?: (selection: IntegratedTerminalShellSelection) => Promise<void>;
-  onNativeSearchEnhancementsEnabledChange: (enabled: boolean) => Promise<void>;
   onHttpProxyChange?: (httpProxy: string) => Promise<void>;
   onHttpProxyNoProxyChange?: (noProxy: string) => Promise<void>;
   onHttpProxyCaCertPathChange?: (caCertPath: string) => Promise<void>;
@@ -252,14 +239,9 @@ export function GeneralSectionContent({
   onStartupShowHomeChange?: (enabled: boolean) => Promise<void>;
   onKeepAwakeWhileRunningChange?: (enabled: boolean) => Promise<void>;
   onDesktopChromiumHardwareAccelerationChange?: (enabled: boolean) => Promise<void>;
-  onMessageStreamShowReasoningChange: (enabled: boolean) => Promise<void>;
-  onMessageStreamShowTodosChange: (enabled: boolean) => Promise<void>;
   onToolGroupingExploreEnabledChange: (enabled: boolean) => Promise<void>;
   onToolGroupingTerminalEnabledChange: (enabled: boolean) => Promise<void>;
   onToolGroupingChangesEnabledChange: (enabled: boolean) => Promise<void>;
-  onRaspberryCodeInteractionBehaviorChange: (behavior: RaspberryCodeInteractionBehavior) => Promise<void>;
-  onAskUserQuestionAutoResolutionEnabledChange?: (enabled: boolean) => Promise<void>;
-  onModelIoFullRetentionEnabledChange?: (enabled: boolean) => Promise<void>;
   onOpenOnboardingDialog: () => void;
 }) {
   const { intl } = useRaspberryCodeIntl();
@@ -371,6 +353,7 @@ export function GeneralSectionContent({
     <div className="space-y-4">
       <SettingsGroupCard>
         <SettingsRow
+          searchId="settings.locale"
           label={intl.formatMessage({ id: "settings.locale" })}
           description={intl.formatMessage({ id: "settings.localeDescription" })}
           control={
@@ -412,6 +395,7 @@ export function GeneralSectionContent({
 
       <SettingsGroupCard>
         <SettingsRow
+          searchId="settings.interfaceMode"
           controlLayout="wide"
           label={intl.formatMessage({ id: "settings.interfaceMode" })}
           description={intl.formatMessage({ id: "settings.interfaceMode.description" })}
@@ -444,6 +428,7 @@ export function GeneralSectionContent({
 
       <SettingsGroupCard>
         <SettingsRow
+          searchId="settings.terminalProfile"
           label={intl.formatMessage({ id: "settings.terminalProfile" })}
           description={intl.formatMessage({ id: "settings.terminalProfileDescription" })}
           control={
@@ -456,6 +441,7 @@ export function GeneralSectionContent({
           }
         />
         <SettingsRow
+          searchId="settings.terminalFontFamily"
           label={intl.formatMessage({ id: "settings.terminalFontFamily" })}
           description={intl.formatMessage({ id: "settings.terminalFontFamilyDescription" })}
           control={
@@ -492,6 +478,7 @@ export function GeneralSectionContent({
       <SettingsGroupCard>
         {showIntegratedTerminalShell ? (
           <SettingsRow
+            searchId="settings.integratedTerminalShell"
             label={intl.formatMessage({ id: "settings.integratedTerminalShell" })}
             description={intl.formatMessage({
               id: "settings.integratedTerminalShellDescription",
@@ -520,66 +507,11 @@ export function GeneralSectionContent({
             }
           />
         ) : null}
-        <SettingsRow
-          label={intl.formatMessage({ id: "settings.toolSearch" })}
-          description={intl.formatMessage({ id: "settings.toolSearchDescription" })}
-          detail={
-            <p className="text-ui-sm leading-5 text-foreground-subtle">
-              {intl.formatMessage({ id: "settings.toolSearchExperimentalNotice" })}
-            </p>
-          }
-          control={
-            <Select
-              value={toolSearchMode}
-              onValueChange={(value) => {
-                void onToolSearchModeChange(appToolSearchModeSchema.parse(value));
-              }}
-            >
-              <SelectTrigger
-                size="lg"
-                className="w-[260px] min-w-0 justify-between"
-                data-testid={TID_SETTINGS_TOOL_SEARCH_SELECT}
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {appToolSearchModeSchema.options.map((mode) => (
-                  <SelectItem
-                    key={mode}
-                    value={mode}
-                    data-testid={testId(TID_SETTINGS_TOOL_SEARCH_OPTION, mode)}
-                  >
-                    {intl.formatMessage({ id: `settings.toolSearch.${mode}` })}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          }
-        />
-        <SettingsRow
-          label={intl.formatMessage({
-            id: "settings.nativeSearchEnhancements",
-          })}
-          description={intl.formatMessage({
-            id: "settings.nativeSearchEnhancementsDescription",
-          })}
-          control={
-            <Switch
-              aria-label={intl.formatMessage({
-                id: "settings.nativeSearchEnhancements",
-              })}
-              checked={nativeSearchEnhancementsEnabled}
-              data-testid={TID_SETTINGS_NATIVE_SEARCH_SWITCH}
-              onCheckedChange={(checked) => {
-                void onNativeSearchEnhancementsEnabledChange(checked);
-              }}
-            />
-          }
-        />
       </SettingsGroupCard>
 
       <SettingsGroupCard>
         <SettingsRow
+          searchId="settings.httpProxy"
           label={intl.formatMessage({ id: "settings.httpProxy" })}
           description={intl.formatMessage({ id: "settings.httpProxyDescription" })}
           control={
@@ -613,6 +545,7 @@ export function GeneralSectionContent({
         />
         {/* No Proxy 与 HTTP 代理共同决定同一出口策略，必须贴在代理地址下面。*/}
         <SettingsRow
+          searchId="settings.httpProxyNoProxy"
           label={intl.formatMessage({ id: "settings.httpProxyNoProxy" })}
           description={intl.formatMessage({
             id: "settings.httpProxyNoProxyDescription",
@@ -648,6 +581,7 @@ export function GeneralSectionContent({
         />
         {/* 自定义 CA 属于 HTTP 代理的同一网络出口策略，必须跟代理输入放在同一卡片里。*/}
         <SettingsRow
+          searchId="settings.httpProxyCaCertPath"
           label={intl.formatMessage({ id: "settings.httpProxyCaCertPath" })}
           description={intl.formatMessage({
             id: "settings.httpProxyCaCertPathDescription",
@@ -687,6 +621,7 @@ export function GeneralSectionContent({
         {isDesktop ? (
           <>
             <SettingsRow
+              searchId="settings.desktopChromiumHardwareAcceleration"
               label={intl.formatMessage({
                 id: "settings.desktopChromiumHardwareAcceleration",
               })}
@@ -723,6 +658,7 @@ export function GeneralSectionContent({
           </>
         ) : null}
         <SettingsRow
+          searchId="settings.notification"
           label={intl.formatMessage({ id: "settings.notification" })}
           description={intl.formatMessage({
             id: "settings.notificationDescription",
@@ -732,6 +668,7 @@ export function GeneralSectionContent({
           }
         />
         <SettingsRow
+          searchId="settings.notificationSound"
           label={intl.formatMessage({ id: "settings.notificationSound" })}
           description={intl.formatMessage({
             id: "settings.notificationSoundDescription",
@@ -746,6 +683,7 @@ export function GeneralSectionContent({
         />
         {isWindowsDesktop || isLinuxDesktop ? (
           <SettingsRow
+            searchId="settings.closeToTrayOnWindows"
             label={intl.formatMessage({ id: "settings.closeToTrayOnWindows" })}
             description={
               linuxCloseToTray?.unavailable
@@ -771,6 +709,7 @@ export function GeneralSectionContent({
         ) : null}
         {isDesktop ? (
           <SettingsRow
+            searchId="settings.keepAwakeWhileRunning"
             label={intl.formatMessage({ id: "settings.keepAwakeWhileRunning" })}
             description={intl.formatMessage({
               id: "settings.keepAwakeWhileRunningDescription",
@@ -791,106 +730,12 @@ export function GeneralSectionContent({
       </SettingsGroupCard>
 
       <SettingsGroupCard>
-        <SettingsRow
-          label={intl.formatMessage({ id: "settings.raspberrycodeInteractionBehavior" })}
-          description={intl.formatMessage({
-            id: "settings.raspberrycodeInteractionBehaviorDescription",
-          })}
-          control={
-            <Select
-              value={raspberrycodeInteractionBehavior}
-              onValueChange={(value) => {
-                void onRaspberryCodeInteractionBehaviorChange(value as RaspberryCodeInteractionBehavior);
-              }}
-            >
-              <SelectTrigger size="lg" className="w-[260px] min-w-0 justify-between">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {RASPBERRYCODE_INTERACTION_BEHAVIOR_OPTIONS.map((behavior) => (
-                  <SelectItem key={behavior} value={behavior}>
-                    {intl.formatMessage({
-                      id: `settings.raspberrycodeInteractionBehavior.option.${behavior}`,
-                    })}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          }
-        />
-        <SettingsRow
-          label={intl.formatMessage({
-            id: "settings.askUserQuestionAutoResolution",
-          })}
-          description={intl.formatMessage({
-            id: "settings.askUserQuestionAutoResolutionDescription",
-          })}
-          control={
-            <Switch
-              aria-label={intl.formatMessage({
-                id: "settings.askUserQuestionAutoResolution",
-              })}
-              checked={askUserQuestionAutoResolutionEnabled}
-              data-testid={TID_SETTINGS_ASK_USER_QUESTION_AUTO_RESOLUTION_SWITCH}
-              onCheckedChange={(checked) => {
-                void onAskUserQuestionAutoResolutionEnabledChange(checked);
-              }}
-            />
-          }
-        />
-        {/* docs/dynamic-workflow/launch.md「The user's choice」：服务端未提供时整行不渲染。 */}
-        {hasServices ? <DynamicWorkflowModeSetting /> : null}
         {/* C2：端点设置扶正到设置页（原隐藏弹窗/帮助菜单入口已下线）。 */}
         {hasServices ? <EndpointOriginSetting /> : null}
         {/* 客户端 GitHub 自更新设置（spec：specs/client-github-self-update.md）；仅桌面端展示。
             与 EndpointOriginSetting 同挂 hasServices 门后：本组件依赖 Settings/Platform 上下文，
             无服务上下文的渲染环境（如单测直渲 GeneralSectionContent）不得强制挂载。 */}
         {hasServices ? <UpdateSettingsSection isDesktop={isDesktop} /> : null}
-        <SettingsRow
-          label={intl.formatMessage({ id: "settings.modelIoFullRetention" })}
-          description={intl.formatMessage({
-            id: "settings.modelIoFullRetentionDescription",
-          })}
-          control={
-            <Switch
-              aria-label={intl.formatMessage({ id: "settings.modelIoFullRetention" })}
-              checked={modelIoFullRetentionEnabled}
-              onCheckedChange={(checked) => {
-                void onModelIoFullRetentionEnabledChange(checked);
-              }}
-            />
-          }
-        />
-        <SettingsRow
-          label={intl.formatMessage({ id: "settings.messageStreamShowReasoning" })}
-          description={intl.formatMessage({
-            id: "settings.messageStreamShowReasoningDescription",
-          })}
-          control={
-            <Switch
-              aria-label={intl.formatMessage({ id: "settings.messageStreamShowReasoning" })}
-              checked={messageStreamShowReasoning}
-              onCheckedChange={(checked) => {
-                void onMessageStreamShowReasoningChange(checked);
-              }}
-            />
-          }
-        />
-        <SettingsRow
-          label={intl.formatMessage({ id: "settings.messageStreamShowTodos" })}
-          description={intl.formatMessage({
-            id: "settings.messageStreamShowTodosDescription",
-          })}
-          control={
-            <Switch
-              aria-label={intl.formatMessage({ id: "settings.messageStreamShowTodos" })}
-              checked={messageStreamShowTodos}
-              onCheckedChange={(checked) => {
-                void onMessageStreamShowTodosChange(checked);
-              }}
-            />
-          }
-        />
         <SettingsRow
           label={intl.formatMessage({ id: "settings.toolGroupingExplore" })}
           description={intl.formatMessage({
@@ -940,6 +785,7 @@ export function GeneralSectionContent({
 
       <SettingsGroupCard>
         <SettingsRow
+          searchId="settings.dataBaseDir"
           label={intl.formatMessage({ id: "settings.dataBaseDir" })}
           description={intl.formatMessage({
             id: "settings.dataBaseDirDescription",
@@ -957,6 +803,7 @@ export function GeneralSectionContent({
 
       <SettingsGroupCard>
         <SettingsRow
+          searchId="settings.onboarding"
           label={intl.formatMessage({ id: "settings.onboarding" })}
           description={intl.formatMessage({
             id: "settings.onboardingDescription",
@@ -965,6 +812,303 @@ export function GeneralSectionContent({
             <Button type="button" size="lg" variant="outline" onClick={onOpenOnboardingDialog}>
               {intl.formatMessage({ id: "settings.onboardingOpen" })}
             </Button>
+          }
+        />
+      </SettingsGroupCard>
+    </div>
+  );
+}
+
+function ReplyLanguageSetting({ value = "" }: { value?: string }) {
+  const { intl } = useRaspberryCodeIntl();
+  const platform = usePlatform();
+  const [draft, setDraft] = useState(value);
+  // 已保存的值变化（保存成功后的快照刷新、其他窗口修改）时，草稿跟上。
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+
+  const label = intl.formatMessage({ id: "settings.replyLanguage" });
+
+  const commit = async () => {
+    const next = draft.trim();
+    setDraft(next);
+    if (next === value) return;
+    try {
+      await platform.setReplyLanguage?.(next);
+    } catch (error) {
+      setDraft(value);
+      logger.warn("[settings] 保存回复语言失败", { error: String(error) });
+      toast(intl.formatMessage({ id: "settings.replyLanguageSaveError" }));
+    }
+  };
+
+  // 不包外层元素：SettingsRow 靠 first:border-t-0 画行间分隔线，包一层会让它变成首行而丢掉上边框。
+  return (
+    <SettingsRow
+      searchId="settings.replyLanguage"
+      label={label}
+      description={intl.formatMessage({ id: "settings.replyLanguageDescription" })}
+      controlLayout="wide"
+      control={
+        platform.setReplyLanguage ? (
+          <Input
+            size="lg"
+            value={draft}
+            maxLength={REPLY_LANGUAGE_MAX_LENGTH}
+            spellCheck={false}
+            placeholder={intl.formatMessage({ id: "settings.replyLanguagePlaceholder" })}
+            aria-label={label}
+            data-testid={TID_SETTINGS_REPLY_LANGUAGE_INPUT}
+            onChange={(event) => setDraft(event.currentTarget.value)}
+            onBlur={() => void commit()}
+            onKeyDown={(event) => {
+              if (isImeComposingKeyEvent(event)) return;
+              if (event.key === "Enter") {
+                event.currentTarget.blur();
+              } else if (event.key === "Escape") {
+                event.preventDefault();
+                setDraft(value);
+              }
+            }}
+            className="w-full"
+          />
+        ) : (
+          <p className="text-ui-sm leading-5 text-foreground-subtle">
+            {intl.formatMessage({ id: "settings.replyLanguageLocalOnly" })}
+          </p>
+        )
+      }
+    />
+  );
+}
+
+/** Agent 行为与工具：从常规设置拆出的 Agent 能力配置，搜索索引与 E2E 共用同一批行锚点。 */
+export function AgentBehaviorSectionContent({
+  toolSearchMode = "off",
+  onToolSearchModeChange,
+  nativeSearchEnhancementsEnabled,
+  totalTokensReminderEnabled = false,
+  agentAlwaysBackgroundEnabled = true,
+  messageStreamShowReasoning,
+  messageStreamShowTodos,
+  raspberrycodeInteractionBehavior,
+  askUserQuestionAutoResolutionEnabled = true,
+  modelIoFullRetentionEnabled = false,
+  onNativeSearchEnhancementsEnabledChange,
+  onTotalTokensReminderEnabledChange = async () => {},
+  onAgentAlwaysBackgroundEnabledChange = async () => {},
+  onMessageStreamShowReasoningChange,
+  onMessageStreamShowTodosChange,
+  onRaspberryCodeInteractionBehaviorChange,
+  onAskUserQuestionAutoResolutionEnabledChange = async () => {},
+  onModelIoFullRetentionEnabledChange = async () => {},
+  replyLanguage,
+}: {
+  toolSearchMode?: AppToolSearchMode;
+  onToolSearchModeChange: (mode: AppToolSearchMode) => Promise<void>;
+  nativeSearchEnhancementsEnabled: boolean;
+  totalTokensReminderEnabled?: boolean;
+  agentAlwaysBackgroundEnabled?: boolean;
+  messageStreamShowReasoning: boolean;
+  messageStreamShowTodos: boolean;
+  raspberrycodeInteractionBehavior: RaspberryCodeInteractionBehavior;
+  askUserQuestionAutoResolutionEnabled?: boolean;
+  modelIoFullRetentionEnabled?: boolean;
+  onNativeSearchEnhancementsEnabledChange: (enabled: boolean) => Promise<void>;
+  onTotalTokensReminderEnabledChange?: (enabled: boolean) => Promise<void>;
+  onAgentAlwaysBackgroundEnabledChange?: (enabled: boolean) => Promise<void>;
+  onMessageStreamShowReasoningChange: (enabled: boolean) => Promise<void>;
+  onMessageStreamShowTodosChange: (enabled: boolean) => Promise<void>;
+  onRaspberryCodeInteractionBehaviorChange: (
+    behavior: RaspberryCodeInteractionBehavior,
+  ) => Promise<void>;
+  onAskUserQuestionAutoResolutionEnabledChange?: (enabled: boolean) => Promise<void>;
+  onModelIoFullRetentionEnabledChange?: (enabled: boolean) => Promise<void>;
+  replyLanguage?: string;
+}) {
+  const { intl } = useRaspberryCodeIntl();
+  const hasServices = Boolean(useOptionalServices());
+
+  return (
+    <div className="space-y-4">
+      <SettingsGroupCard>
+        <SettingsRow
+          searchId="settings.toolSearch"
+          label={intl.formatMessage({ id: "settings.toolSearch" })}
+          description={intl.formatMessage({ id: "settings.toolSearchDescription" })}
+          detail={
+            <p className="text-ui-sm leading-5 text-foreground-subtle">
+              {intl.formatMessage({ id: "settings.toolSearchExperimentalNotice" })}
+            </p>
+          }
+          control={
+            <Select
+              value={toolSearchMode}
+              onValueChange={(value) => {
+                void onToolSearchModeChange(appToolSearchModeSchema.parse(value));
+              }}
+            >
+              <SelectTrigger
+                size="lg"
+                className="w-[260px] min-w-0 justify-between"
+                data-testid={TID_SETTINGS_TOOL_SEARCH_SELECT}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {appToolSearchModeSchema.options.map((mode) => (
+                  <SelectItem
+                    key={mode}
+                    value={mode}
+                    data-testid={testId(TID_SETTINGS_TOOL_SEARCH_OPTION, mode)}
+                  >
+                    {intl.formatMessage({ id: `settings.toolSearch.${mode}` })}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          }
+        />
+        <SettingsRow
+          searchId="settings.nativeSearchEnhancements"
+          label={intl.formatMessage({ id: "settings.nativeSearchEnhancements" })}
+          description={intl.formatMessage({ id: "settings.nativeSearchEnhancementsDescription" })}
+          control={
+            <Switch
+              aria-label={intl.formatMessage({ id: "settings.nativeSearchEnhancements" })}
+              checked={nativeSearchEnhancementsEnabled}
+              data-testid={TID_SETTINGS_NATIVE_SEARCH_SWITCH}
+              onCheckedChange={(checked) => {
+                void onNativeSearchEnhancementsEnabledChange(checked);
+              }}
+            />
+          }
+        />
+        <SettingsRow
+          searchId="settings.totalTokensReminder"
+          label={intl.formatMessage({ id: "settings.totalTokensReminder" })}
+          description={intl.formatMessage({ id: "settings.totalTokensReminderDescription" })}
+          control={
+            <Switch
+              aria-label={intl.formatMessage({ id: "settings.totalTokensReminder" })}
+              checked={totalTokensReminderEnabled}
+              data-testid={TID_SETTINGS_TOTAL_TOKENS_REMINDER_SWITCH}
+              onCheckedChange={(checked) => {
+                void onTotalTokensReminderEnabledChange(checked);
+              }}
+            />
+          }
+        />
+        <SettingsRow
+          searchId="settings.agentAlwaysBackground"
+          label={intl.formatMessage({ id: "settings.agentAlwaysBackground" })}
+          description={intl.formatMessage({ id: "settings.agentAlwaysBackgroundDescription" })}
+          control={
+            <Switch
+              aria-label={intl.formatMessage({ id: "settings.agentAlwaysBackground" })}
+              checked={agentAlwaysBackgroundEnabled}
+              data-testid={TID_SETTINGS_AGENT_ALWAYS_BACKGROUND_SWITCH}
+              onCheckedChange={(checked) => {
+                void onAgentAlwaysBackgroundEnabledChange(checked);
+              }}
+            />
+          }
+        />
+      </SettingsGroupCard>
+
+      <SettingsGroupCard>
+        <ReplyLanguageSetting value={replyLanguage} />
+        <SettingsRow
+          searchId="settings.raspberrycodeInteractionBehavior"
+          label={intl.formatMessage({ id: "settings.raspberrycodeInteractionBehavior" })}
+          description={intl.formatMessage({
+            id: "settings.raspberrycodeInteractionBehaviorDescription",
+          })}
+          control={
+            <Select
+              value={raspberrycodeInteractionBehavior}
+              onValueChange={(value) => {
+                void onRaspberryCodeInteractionBehaviorChange(
+                  value as RaspberryCodeInteractionBehavior,
+                );
+              }}
+            >
+              <SelectTrigger size="lg" className="w-[260px] min-w-0 justify-between">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {RASPBERRYCODE_INTERACTION_BEHAVIOR_OPTIONS.map((behavior) => (
+                  <SelectItem key={behavior} value={behavior}>
+                    {intl.formatMessage({
+                      id: `settings.raspberrycodeInteractionBehavior.option.${behavior}`,
+                    })}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          }
+        />
+        <SettingsRow
+          searchId="settings.askUserQuestionAutoResolution"
+          label={intl.formatMessage({ id: "settings.askUserQuestionAutoResolution" })}
+          description={intl.formatMessage({
+            id: "settings.askUserQuestionAutoResolutionDescription",
+          })}
+          control={
+            <Switch
+              aria-label={intl.formatMessage({ id: "settings.askUserQuestionAutoResolution" })}
+              checked={askUserQuestionAutoResolutionEnabled}
+              data-testid={TID_SETTINGS_ASK_USER_QUESTION_AUTO_RESOLUTION_SWITCH}
+              onCheckedChange={(checked) => {
+                void onAskUserQuestionAutoResolutionEnabledChange(checked);
+              }}
+            />
+          }
+        />
+        <PluginAutoRecommendationSetting />
+        {/* docs/dynamic-workflow/launch.md「The user's choice」：服务端未提供时整行不渲染。 */}
+        {hasServices ? <DynamicWorkflowModeSetting /> : null}
+        <SettingsRow
+          searchId="settings.modelIoFullRetention"
+          label={intl.formatMessage({ id: "settings.modelIoFullRetention" })}
+          description={intl.formatMessage({ id: "settings.modelIoFullRetentionDescription" })}
+          control={
+            <Switch
+              aria-label={intl.formatMessage({ id: "settings.modelIoFullRetention" })}
+              checked={modelIoFullRetentionEnabled}
+              onCheckedChange={(checked) => {
+                void onModelIoFullRetentionEnabledChange(checked);
+              }}
+            />
+          }
+        />
+        <SettingsRow
+          searchId="settings.messageStreamShowReasoning"
+          label={intl.formatMessage({ id: "settings.messageStreamShowReasoning" })}
+          description={intl.formatMessage({ id: "settings.messageStreamShowReasoningDescription" })}
+          control={
+            <Switch
+              aria-label={intl.formatMessage({ id: "settings.messageStreamShowReasoning" })}
+              checked={messageStreamShowReasoning}
+              onCheckedChange={(checked) => {
+                void onMessageStreamShowReasoningChange(checked);
+              }}
+            />
+          }
+        />
+        <SettingsRow
+          searchId="settings.messageStreamShowTodos"
+          label={intl.formatMessage({ id: "settings.messageStreamShowTodos" })}
+          description={intl.formatMessage({ id: "settings.messageStreamShowTodosDescription" })}
+          control={
+            <Switch
+              aria-label={intl.formatMessage({ id: "settings.messageStreamShowTodos" })}
+              checked={messageStreamShowTodos}
+              onCheckedChange={(checked) => {
+                void onMessageStreamShowTodosChange(checked);
+              }}
+            />
           }
         />
       </SettingsGroupCard>

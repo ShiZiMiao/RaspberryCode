@@ -105,12 +105,18 @@ import { useBaseWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
 import { resolveModelProviderConnectivityWorkspacePath } from "@/lib/modelProviderConnectivityTarget.js";
 import {
   createSettingsPageConfig,
+  AgentBehaviorSectionContent,
   GeneralSectionContent,
   GeneralSectionHeader,
   TaskAutoArchiveSettings,
   isSettingsSectionAvailable,
   resolveSettingsSectionForPlatform,
 } from "@/settingsPageHelpers.js";
+import {
+  SettingsSearch,
+  SettingsSearchTargetContext,
+  type SettingsSearchId,
+} from "@/settings-search/index.js";
 import { SourceServerManagementPanel } from "@/settings/SourceServerManagementPanel.js";
 import { useSourceServerManagementSnapshot } from "@/hooks/useSourceServerManagementSnapshot.js";
 import { useOptionalRemoteWorkspaceController } from "@/remote/useRemoteWorkspaceController.js";
@@ -394,6 +400,18 @@ export function SettingsPage({
     },
     [activeSection],
   );
+  // 搜索定位目标：只表达“本次要高亮的设置行”，不持有配置值；普通导航会清空它。
+  const [searchTarget, setSearchTarget] = useState<{ id: SettingsSearchId } | null>(null);
+  const navigateToSettingsSection = useCallback(
+    (section: SettingsSectionId, setting?: SettingsSearchId) => {
+      setPluginNavigationOrigin(undefined);
+      setTargetSourceServerId(undefined);
+      setSettingsSectionNavigationVersion((version) => version + 1);
+      setActiveSettingsSection(section);
+      setSearchTarget(setting ? { id: setting } : null);
+    },
+    [setActiveSettingsSection],
+  );
   useEffect(() => {
     if (!isSettingsSectionAvailable(activeSection, Boolean(isDesktop))) {
       setActiveSettingsSection("general");
@@ -489,6 +507,9 @@ export function SettingsPage({
   const askUserQuestionAutoResolutionEnabled =
     sharedSettings?.askUserQuestionAutoResolutionEnabled !== false;
   const modelIoFullRetentionEnabled = sharedSettings?.modelIoFullRetentionEnabled === true;
+  const replyLanguage = sharedSettings?.replyLanguage ?? "";
+  const totalTokensReminderEnabled = sharedSettings?.totalTokensReminderEnabled === true;
+  const agentAlwaysBackgroundEnabled = sharedSettings?.agentAlwaysBackgroundEnabled !== false;
   const [dataBaseDir, setDataBaseDir] = useState("");
   const [terminalInheritSystemProfile, setTerminalInheritSystemProfile] = useState(true);
   const [terminalFontFamily, setTerminalFontFamily] = useState("");
@@ -729,6 +750,36 @@ export function SettingsPage({
         action: "toggle_model_io_retention",
         trigger: "switch",
         operation: () => updateSharedSettings({ modelIoFullRetentionEnabled: enabled }),
+        completed: {
+          resultSource: "shared_settings",
+          stateAfter: enabled ? "enabled" : "disabled",
+        },
+      });
+    },
+    [updateSharedSettings],
+  );
+  const handleTotalTokensReminderEnabledChange = useCallback(
+    async (enabled: boolean) => {
+      await runSettingsActionAsync({
+        featureId: "settings.conversation",
+        action: "toggle_total_tokens_reminder",
+        trigger: "switch",
+        operation: () => updateSharedSettings({ totalTokensReminderEnabled: enabled }),
+        completed: {
+          resultSource: "shared_settings",
+          stateAfter: enabled ? "enabled" : "disabled",
+        },
+      });
+    },
+    [updateSharedSettings],
+  );
+  const handleAgentAlwaysBackgroundEnabledChange = useCallback(
+    async (enabled: boolean) => {
+      await runSettingsActionAsync({
+        featureId: "settings.conversation",
+        action: "toggle_agent_always_background",
+        trigger: "switch",
+        operation: () => updateSharedSettings({ agentAlwaysBackgroundEnabled: enabled }),
         completed: {
           resultSource: "shared_settings",
           stateAfter: enabled ? "enabled" : "disabled",
@@ -1163,7 +1214,8 @@ export function SettingsPage({
     (activeSection === "plugin" && pluginNavigationOrigin === "plugin-store");
 
   return (
-    <>
+    <SettingsSearchTargetContext.Provider value={searchTarget}>
+      <>
       <DesktopWindowFrame
         title={intl.formatMessage({ id: "settings.title" })}
         isDesktop={isDesktop}
@@ -1242,6 +1294,21 @@ export function SettingsPage({
                     </Button>
                   </ControlHintTooltip>
                 ) : null}
+              </div>
+
+              <div className="px-3 pb-3">
+                <SettingsSearch
+                  sections={settingsSections}
+                  availability={{
+                    desktop: Boolean(isDesktop),
+                    windowsHost: hostPlatform === "win32",
+                    tray: Boolean(isWindowsDesktop || isLinuxDesktop),
+                    notWindows: !isWindowsDesktop,
+                    macDesktop: Boolean(isDesktop && isMacDesktop),
+                    computerUse: Boolean(isDesktop),
+                  }}
+                  onSelect={({ section, setting }) => navigateToSettingsSection(section, setting)}
+                />
               </div>
 
               <nav
@@ -1475,9 +1542,6 @@ export function SettingsPage({
                               terminalFontFamily={terminalFontFamily}
                               integratedTerminalShell={integratedTerminalShell}
                               integratedTerminalShellOptions={integratedTerminalShellOptions}
-                              toolSearchMode={toolSearchMode}
-                              onToolSearchModeChange={handleToolSearchModeChange}
-                              nativeSearchEnhancementsEnabled={nativeSearchEnhancementsEnabled}
                               httpProxy={httpProxy}
                               httpProxyNoProxy={httpProxyNoProxy}
                               httpProxyCaCertPath={httpProxyCaCertPath}
@@ -1514,16 +1578,9 @@ export function SettingsPage({
                                   failureStage: "local_commit",
                                 })
                               }
-                              messageStreamShowReasoning={messageStreamShowReasoning}
-                              messageStreamShowTodos={messageStreamShowTodos}
                               toolGroupingExploreEnabled={toolGroupingExploreEnabled}
                               toolGroupingTerminalEnabled={toolGroupingTerminalEnabled}
                               toolGroupingChangesEnabled={toolGroupingChangesEnabled}
-                              raspberrycodeInteractionBehavior={raspberrycodeInteractionBehavior}
-                              askUserQuestionAutoResolutionEnabled={
-                                askUserQuestionAutoResolutionEnabled
-                              }
-                              modelIoFullRetentionEnabled={modelIoFullRetentionEnabled}
                               onDataBaseDirChange={handleDataBaseDirChange}
                               onSelectDataBaseDir={selectDirectory}
                               onTerminalInheritSystemProfileChange={
@@ -1531,12 +1588,6 @@ export function SettingsPage({
                               }
                               onTerminalFontFamilyChange={handleTerminalFontFamilyChange}
                               onIntegratedTerminalShellChange={handleIntegratedTerminalShellChange}
-                              onNativeSearchEnhancementsEnabledChange={
-                                handleNativeSearchEnhancementsEnabledChange
-                              }
-                              onModelIoFullRetentionEnabledChange={
-                                handleModelIoFullRetentionEnabledChange
-                              }
                               onHttpProxyChange={handleHttpProxyChange}
                               onHttpProxyNoProxyChange={handleHttpProxyNoProxyChange}
                               onHttpProxyCaCertPathChange={handleHttpProxyCaCertPathChange}
@@ -1545,10 +1596,6 @@ export function SettingsPage({
                               onDesktopChromiumHardwareAccelerationChange={
                                 handleDesktopChromiumHardwareAccelerationChange
                               }
-                              onMessageStreamShowReasoningChange={
-                                handleMessageStreamShowReasoningChange
-                              }
-                              onMessageStreamShowTodosChange={handleMessageStreamShowTodosChange}
                               onToolGroupingExploreEnabledChange={
                                 handleToolGroupingExploreEnabledChange
                               }
@@ -1557,12 +1604,6 @@ export function SettingsPage({
                               }
                               onToolGroupingChangesEnabledChange={
                                 handleToolGroupingChangesEnabledChange
-                              }
-                              onRaspberryCodeInteractionBehaviorChange={
-                                handleRaspberryCodeInteractionBehaviorChange
-                              }
-                              onAskUserQuestionAutoResolutionEnabledChange={
-                                handleAskUserQuestionAutoResolutionEnabledChange
                               }
                               onOpenOnboardingDialog={() =>
                                 runUserAction({
@@ -1575,6 +1616,44 @@ export function SettingsPage({
                                   completed: { resultSource: "local_commit" },
                                   failureStage: "dialog_open",
                                 })
+                              }
+                            />
+                          ) : activeSection === "agentBehavior" ? (
+                            <AgentBehaviorSectionContent
+                              toolSearchMode={toolSearchMode}
+                              onToolSearchModeChange={handleToolSearchModeChange}
+                              nativeSearchEnhancementsEnabled={nativeSearchEnhancementsEnabled}
+                              onNativeSearchEnhancementsEnabledChange={
+                                handleNativeSearchEnhancementsEnabledChange
+                              }
+                              totalTokensReminderEnabled={totalTokensReminderEnabled}
+                              onTotalTokensReminderEnabledChange={
+                                handleTotalTokensReminderEnabledChange
+                              }
+                              agentAlwaysBackgroundEnabled={agentAlwaysBackgroundEnabled}
+                              onAgentAlwaysBackgroundEnabledChange={
+                                handleAgentAlwaysBackgroundEnabledChange
+                              }
+                              messageStreamShowReasoning={messageStreamShowReasoning}
+                              messageStreamShowTodos={messageStreamShowTodos}
+                              raspberrycodeInteractionBehavior={raspberrycodeInteractionBehavior}
+                              askUserQuestionAutoResolutionEnabled={
+                                askUserQuestionAutoResolutionEnabled
+                              }
+                              modelIoFullRetentionEnabled={modelIoFullRetentionEnabled}
+                              replyLanguage={replyLanguage}
+                              onMessageStreamShowReasoningChange={
+                                handleMessageStreamShowReasoningChange
+                              }
+                              onMessageStreamShowTodosChange={handleMessageStreamShowTodosChange}
+                              onRaspberryCodeInteractionBehaviorChange={
+                                handleRaspberryCodeInteractionBehaviorChange
+                              }
+                              onAskUserQuestionAutoResolutionEnabledChange={
+                                handleAskUserQuestionAutoResolutionEnabledChange
+                              }
+                              onModelIoFullRetentionEnabledChange={
+                                handleModelIoFullRetentionEnabledChange
                               }
                             />
                           ) : activeSection === "dataSync" ? (
@@ -1905,5 +1984,6 @@ export function SettingsPage({
         </div>
       </DesktopWindowFrame>
     </>
+    </SettingsSearchTargetContext.Provider>
   );
 }

@@ -802,6 +802,9 @@ contextBridge.exposeInMainWorld("raspberrycode", {
   /** 同步应用菜单语言 */
   setApplicationLocale: (locale: Locale) =>
     ipcRenderer.invoke(PlatformChannels.SetApplicationLocale, locale),
+  /** 保存 Agent 回复语言（空串表示清除） */
+  setReplyLanguage: (language: string) =>
+    ipcRenderer.invoke(PlatformChannels.SetReplyLanguage, language),
   /** 读取宿主系统语言 */
   getSystemLocale: (): Promise<Locale> => ipcRenderer.invoke(PlatformChannels.GetSystemLocale),
   /** 同步标题栏亮暗色 */

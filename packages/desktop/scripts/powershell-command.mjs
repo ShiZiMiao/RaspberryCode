@@ -22,7 +22,7 @@ function encodeUtf8Value(value) {
   return Buffer.from(value, "utf8").toString("base64");
 }
 
-export function createEncodedPowerShellArgs(script, values = []) {
+export function createEncodedPowerShellArgs(script, values = [], options = {}) {
   // Windows PowerShell 5.1 会把普通 `-Command` 后续 argv 拼回命令文本，
   // 不会把它们注入 `$args`。动态值先单独编码，再放进 `-EncodedCommand`，同时避免
   // Program Files 空格、引号或分号被 PowerShell 二次解析成脚本内容。
@@ -35,7 +35,10 @@ export function createEncodedPowerShellArgs(script, values = []) {
   // Bugfix: PowerShell 5.1 默认按系统 OEM 代码页写 stdout，中文 Windows 上非 ASCII 值
   // 会被调用方的 UTF-8 解码读成乱码；序言固定输出编码为 UTF-8（现调用方输出均为
   // base64/ASCII 不受影响，未来非 ASCII 输出由此保持往返保真）。
-  const outputEncoding = "[Console]::OutputEncoding=[Text.Encoding]::UTF8;";
+  // 受限语言模式（ConstrainedLanguage）禁止 [Console]/[Text.Encoding] 等 .NET 类型；
+  // 只写文件的调用方传 outputEncoding:false，保持脚本可在受限语言下执行。
+  const outputEncoding =
+    options.outputEncoding === false ? "" : "[Console]::OutputEncoding=[Text.Encoding]::UTF8;";
   const encodedCommand = Buffer.from(
     `${outputEncoding}${valueBindings}${script}`,
     "utf16le",
@@ -81,7 +84,7 @@ export async function readWindowsAuthenticodeSignature(filePath) {
     await new Promise((resolve, reject) => {
       childProcess.execFile(
         "powershell.exe",
-        createEncodedPowerShellArgs(script),
+        createEncodedPowerShellArgs(script, [], { outputEncoding: false }),
         { encoding: "utf8", timeout: 30_000, windowsHide: true },
         (error, _stdout, stderr) => {
           if (error) reject(error);

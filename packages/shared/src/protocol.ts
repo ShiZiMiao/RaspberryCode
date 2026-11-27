@@ -402,6 +402,8 @@ export interface AppSettings {
   /** 已完成过引导（老用户免等待记录判定用）；引导不再采集职业。 */
   onboardingCompleted?: boolean;
   proactiveSuggestionsEnabled?: boolean;
+  /** 插件自动推荐；默认关闭，避免未经用户同意安装插件。 */
+  pluginAutoRecommendationEnabled?: boolean;
   /** Agent 回复结束后预测用户下一步输入；默认开启（spec：specs/next-input-suggestions.md）。 */
   nextInputPredictionEnabled?: boolean;
   /** 新版只保存活动执行目录；不表达项目/连接成员，null 表示明确清空。 */

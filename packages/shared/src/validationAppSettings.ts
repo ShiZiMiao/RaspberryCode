@@ -598,6 +598,8 @@ const appSettingsObjectSchema = z.object({
   /** 已完成过引导：用于老用户免等待记录判定的 UI 放行，不再借用职业字段。 */
   onboardingCompleted: z.boolean().default(false),
   proactiveSuggestionsEnabled: z.boolean().optional(),
+  // 插件自动推荐（设置页 Agent 行为分区）：默认关闭，避免未经用户同意安装插件。
+  pluginAutoRecommendationEnabled: z.boolean().default(false),
   // 下一步输入预测（spec：specs/next-input-suggestions.md）：默认开启。
   nextInputPredictionEnabled: z.boolean().default(true),
   memoryEnabled: z.boolean().default(false),
@@ -727,6 +729,7 @@ export const appSettingsPatchSchema = z.object({
   toolSearchMode: appToolSearchModeSchema.optional(),
   onboardingCompleted: z.boolean().optional(),
   proactiveSuggestionsEnabled: z.boolean().optional(),
+  pluginAutoRecommendationEnabled: z.boolean().optional(),
   nextInputPredictionEnabled: z.boolean().optional(),
   memoryEnabled: z.boolean().optional(),
   agentAlwaysBackgroundEnabled: z.boolean().optional(),

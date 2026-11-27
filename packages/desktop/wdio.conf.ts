@@ -108,10 +108,16 @@ import { prepareAccessToken401Fixture } from "./test/e2e/helpers/access-token-40
 import { createE2EReplayFixtureVariables } from "./test/e2e/helpers/e2e-runtime-paths.js";
 import { stageE2EAppOutput } from "./test/e2e/helpers/e2e-app-output-stage.js";
 import { withE2EDesktopBuildLock } from "./scripts/ensure-e2e-desktop-build.mjs";
+import { PREINSTALLED_ENTRY_SHIM_PROCESS_TIMEOUT_MS } from "./scripts/build-windows-preinstalled-entry-shim.mjs";
 import {
   ensureSshRemoteReleaseAssets,
   resolveSshRemoteReleaseScope,
 } from "./test/e2e/helpers/e2e-ssh-remote-release-assets.js";
+import {
+  listSpecsRequiringRemoteRelease,
+  REMOTE_RELEASE_DIR_ENV,
+} from "./test/e2e/helpers/e2e-remote-release-requirement.js";
+import { resolveE2EScheduledSpecFiles } from "./test/e2e/helpers/e2e-spec-resolution.js";
 import {
   ASK_USER_QUESTION_E2E_CLOCK_SCALE_ENV,
   BUILTIN_MODEL_PROVIDER_IDS,
@@ -884,6 +890,9 @@ function prepareDesktopAppBuild() {
     console.log(`[e2e] using packaged app: ${E2E_PACKAGED_APP_BINARY_PATH}`);
     return;
   }
+  // Bug 原因：轻量构建不产出预装入口 shim，Windows 安装到运行检查时才失败。
+  // 在复用判断之前准备，避免旧 out 存在但本机原生资源缺失时进入 case。
+  ensureWindowsPreinstalledEntryShim();
   // 修复原因：WDIO 配置会先被 esbuild 解析，CI 可执行字符串必须保持 ASCII 引号。
   // shard 的 mock 端口在父构建后才分配；有网页 mock 时必须按当前端口重建编译期 origin。
   if (shouldReuseDesktopE2EBuild(process.env)) {
@@ -896,6 +905,31 @@ function prepareDesktopAppBuild() {
   // 因此 WDIO 入口始终先构建，确保测试使用当前源码对应的桌面产物。
   runPnpmWorkspaceCommand(["--filter", "@raspberrycode/desktop", "build:no-runtime-assets"]);
   assertDesktopE2EBuildReady("onPrepare build");
+}
+
+// 非 Windows 由脚本 --if-windows 跳过；--ensure 按源码摘要复用已有产物，只在缺失或过期时调用 CMake。
+// 调用方持有 E2E build 锁，分片 runner 不会并发写同一个 bundled-tools 目录。
+function ensureWindowsPreinstalledEntryShim() {
+  if (process.platform !== "win32") return;
+  const targetArch = (process.env.RASPBERRYCODE_TARGET_ARCH ?? process.arch).toLowerCase();
+  // 分片父进程已准备缓存；child 只校验并取得独立副本，不能再次编译共享产物。
+  const mode = shouldReuseDesktopE2EBuild(process.env) ? "--check" : "--ensure";
+  execFileSync(
+    process.execPath,
+    [
+      resolve(REPO_ROOT, "packages/desktop/scripts/build-windows-preinstalled-entry-shim.mjs"),
+      mode,
+      "--stage-dir",
+      resolve(E2E_RUN_CACHE_DIR, "bundled-tools", `win32-${targetArch}`, "preinstalled-entry-shim"),
+    ],
+    {
+      cwd: REPO_ROOT,
+      env: createPnpmChildEnv(),
+      stdio: "inherit",
+      timeout: PREINSTALLED_ENTRY_SHIM_PROCESS_TIMEOUT_MS,
+      killSignal: "SIGKILL",
+    },
+  );
 }
 
 function runPnpmWorkspaceCommand(
@@ -937,46 +971,86 @@ async function stageDesktopE2EAppOutput() {
   // 使用写时复制降低多 shard 的准备成本；不能使用共享 inode 的硬链接，否则类型检查
   // 原地覆盖 out/host 时会同时破坏已经启动的隔离副本。
   await stageE2EAppOutput(DESKTOP_BUILD_OUTPUT_DIR, E2E_APP_OUTPUT_DIR);
-  if (
-    hasRequiredSshE2EEnvironment(process.env) ||
-    process.env.RASPBERRYCODE_E2E_SSH_HOST?.trim() ||
-    process.env.RASPBERRYCODE_E2E_SSH_A_HOST?.trim() ||
-    process.env.RASPBERRYCODE_E2E_SSH_B_HOST?.trim()
-  ) {
-    // Bug 根因：CI 只有 build:remote:assets job 产出 mock-cdn/releases/<version>，且跑在通用
-    // macos runner 槽位；conversation e2e 在专用 runner 上，mock-cdn 工作区持久化目录互不
-    // 相通，版本 bump 后专用 runner 必然缺新版本 release，直接 fatal 会把每次升级变成
-    // CI-only 失败。改为缺目录时自动跑 prepare:remote-assets（幂等），产出后仍缺失才
-    // fail-closed。
-    // Bug 根因：packages/desktop 的 prepare:remote-assets 已随 legacy asset pipeline 一并删除，
-    // `pnpm --filter @raspberrycode/desktop prepare:remote-assets` 会以 ERR_PNPM_RECURSIVE_RUN_NO_SCRIPT
-    // 失败并让所有 SSH E2E 在 onPrepare 阶段 fatal；必须调用根 package.json 的
-    // prepare:remote-assets（→ @raspberrycode/server-cli stage:remote-assets）。runPnpmWorkspaceCommand
-    // 的 cwd 固定为 REPO_ROOT，直接传脚本名即可命中根脚本。
-    // 本机 Docker runner 声明「只需 Linux」时，helper 改读 descriptor 判断两个 Linux 目标，
-    // 并只调用 `RASPBERRYCODE_ENV=test pnpm prepare:remote-assets:linux`；未声明时行为不变。
-    await ensureSshRemoteReleaseAssets({
-      releaseDir: E2E_REMOTE_RELEASE_SOURCE_DIR,
-      scope: resolveSshRemoteReleaseScope(process.env),
-      prepareReleaseAssets: (request) =>
-        runPnpmWorkspaceCommand([request.script], {
-          // 防挂死上限：冷缓存全量 prepare 约 10 分钟，给到 30 分钟只兑现在「彻底卡死」时
-          // 让 onPrepare 失败退出，正常慢路径不受影响。
-          timeoutMs: 30 * 60 * 1000,
-          env: request.env,
-        }),
-    });
-    // Bug 根因：dual-SSH case 只配置 A/B target；若这里只识别 common host，就不会把
-    // 当前源码构建的 remote release 放进 runId 隔离目录，远端会继续复用同版本的旧
-    // server bundle，并用旧协议 schema 拒绝 enabledSource 等新字段。
-    await stageE2EAppOutput(E2E_REMOTE_RELEASE_SOURCE_DIR, E2E_REMOTE_RELEASE_OUTPUT_DIR);
-  }
   if (!existsSync(E2E_APP_ENTRY_POINT)) {
     throw new Error(`[e2e] staged desktop main entrypoint missing: ${E2E_APP_ENTRY_POINT}`);
   }
   if (!isRendererE2EStoreBridgeCompiled(E2E_APP_RENDERER_ASSETS_DIR)) {
     throw new Error("[e2e] staged renderer is missing VITE_RASPBERRYCODE_E2E_STORE_BRIDGE=1");
   }
+}
+
+/**
+ * 只为本轮调度 spec 中真正依赖 SSH remote release 的用例准备远端包。
+ * 判据是 spec 的 import 关系，而不是 runner 是否配置了 SSH 环境变量：
+ * CI 的 SSH 凭据是项目级变量，只改普通 spec 的 MR 不应触发全平台远端包重建。
+ */
+async function prepareSshRemoteReleaseForRun(
+  specs: string[],
+  agentBundleBuiltThisRun: boolean,
+): Promise<void> {
+  if (
+    !hasRequiredSshE2EEnvironment(process.env) &&
+    !process.env.RASPBERRYCODE_E2E_SSH_HOST?.trim() &&
+    !process.env.RASPBERRYCODE_E2E_SSH_A_HOST?.trim() &&
+    !process.env.RASPBERRYCODE_E2E_SSH_B_HOST?.trim()
+  ) {
+    return;
+  }
+  const requiredSpecs = await listSpecsRequiringRemoteRelease({
+    desktopDir: DESKTOP_DIR,
+    specFiles: resolveE2EScheduledSpecFiles({
+      baseDir: DESKTOP_DIR,
+      exclude: config.exclude ?? [],
+      specs,
+    }),
+  });
+  if (requiredSpecs.length === 0) {
+    console.log("[e2e] no scheduled spec needs the SSH remote release; skipping remote assets");
+    return;
+  }
+  console.log(
+    `[e2e] ${requiredSpecs.length} scheduled spec(s) need the SSH remote release, e.g. ${requiredSpecs[0]}`,
+  );
+  // 与桌面构建同一把锁：mock-cdn/releases/<version> 是工作区共享目录，并行 runner 不能同时重建。
+  await measureE2ELifecyclePhase("prepare:remote-release", { specs: requiredSpecs }, () =>
+    withE2EDesktopBuildLock({}, async () => {
+      // Bug 根因：CI 只有 build:remote:assets job 产出 mock-cdn/releases/<version>，且跑在通用
+      // macos runner 槽位；conversation e2e 在专用 runner 上，mock-cdn 工作区持久化目录互不
+      // 相通，版本 bump 后专用 runner 必然缺新版本 release，直接 fatal 会把每次升级变成
+      // CI-only 失败。改为缺目录时自动跑 prepare:remote-assets（幂等），产出后仍缺失才
+      // fail-closed。
+      // Bug 根因：packages/desktop 的 prepare:remote-assets 已随 legacy asset pipeline 一并删除，
+      // `pnpm --filter @raspberrycode/desktop prepare:remote-assets` 会以 ERR_PNPM_RECURSIVE_RUN_NO_SCRIPT
+      // 失败并让所有 SSH E2E 在 onPrepare 阶段 fatal；必须调用根 package.json 的
+      // prepare:remote-assets（→ @raspberrycode/server-cli stage:remote-assets）。runPnpmWorkspaceCommand
+      // 的 cwd 固定为 REPO_ROOT，直接传脚本名即可命中根脚本。
+      // 本机 Docker runner 声明「只需 Linux」时，helper 改读 descriptor 判断两个 Linux 目标，
+      // 并只调用 `RASPBERRYCODE_ENV=test pnpm prepare:remote-assets:linux`；未声明时行为不变。
+      await ensureSshRemoteReleaseAssets({
+        releaseDir: E2E_REMOTE_RELEASE_SOURCE_DIR,
+        buildRevision: process.env.CI_COMMIT_SHA,
+        scope: resolveSshRemoteReleaseScope(process.env),
+        // 只有本轮 onPrepare 真实构建过 agent 才让打包器复用；SKIP_AGENT_BUILD 的旧 bundle 必须重建。
+        agentBundleBuiltThisRun,
+        prepareReleaseAssets: (request) =>
+          runPnpmWorkspaceCommand([request.script, ...request.args], {
+            // 防挂死上限：冷缓存全量 prepare 约 10 分钟，给到 30 分钟只兑现在「彻底卡死」时
+            // 让 onPrepare 失败退出，正常慢路径不受影响。
+            timeoutMs: 30 * 60 * 1000,
+            env: request.env,
+          }),
+      });
+      // Bug 根因：dual-SSH case 只配置 A/B target；若这里只识别 common host，就不会把
+      // 当前源码构建的 remote release 放进 runId 隔离目录，远端会继续复用同版本的旧
+      // server bundle，并用旧协议 schema 拒绝 enabledSource 等新字段。
+      await stageE2EAppOutput(E2E_REMOTE_RELEASE_SOURCE_DIR, E2E_REMOTE_RELEASE_OUTPUT_DIR);
+    }),
+  );
+  // worker 的兜底检查只认 onPrepare 下发的目录：runnerEnv 是传给 worker 的唯一可靠通道。
+  if (!config.runnerEnv) {
+    throw new Error("wdio config 缺少 runnerEnv，remote release 目录无法透传给 worker");
+  }
+  Object.assign(config.runnerEnv, { [REMOTE_RELEASE_DIR_ENV]: E2E_REMOTE_RELEASE_OUTPUT_DIR });
 }
 
 function isRendererE2EStoreBridgeCompiled(rendererAssetsDir: string) {
@@ -4269,6 +4343,213 @@ function buildUpstreamE2EAnthropicBaseUrl() {
   return baseURL.endsWith("/anthropic") ? baseURL : `${baseURL}/anthropic`;
 }
 
+// 按 worker 实际 spec 计算 Mocha 外层预算：glob 在 launcher 阶段无法命中文件级预算，
+// 用例内的 this.timeout 也突破不了外层计时器，必须在 Mocha 初始化前补齐。
+// 保持自包含（只依赖 requestSecuritySpecTimeout 与 PLUGIN_NO_GIT_GITHUB_ARCHIVE_SPEC），
+// e2eSpecAdmission.test.ts 会提取本函数体单独求值。
+function resolveMochaTimeout(specs: string[]): number {
+  const pluginNoGitGitHubArchiveE2E = specs.some((spec) =>
+    spec.includes(PLUGIN_NO_GIT_GITHUB_ARCHIVE_SPEC),
+  );
+  const workspacePluginRemoteExplicitSyncE2E = specs.some((spec) =>
+    spec.includes("conversation-session-plugin-remote-explicit-sync-workspace.test.ts"),
+  );
+  return (
+    Math.max(
+      requestSecuritySpecTimeout(specs, 120000),
+      ...[
+        {
+          // 独立 SSH 用例要等真实首装；WDIO 外层不能先于用例声明的预算截断。
+          matched: specs.some((spec) => spec.endsWith("settings-ui-polish-ssh.test.ts")),
+          ms: 10 * 60_000,
+        },
+        {
+          // 此用例包含真实 SSH 首装、目录复用、设置定位、16 张截图和原目录重连；
+          // 探测校验与残留 daemon 恢复同样经过真实首装和故障恢复，不能在状态断言前被截断。
+          // Mocha 外层须与用例的 15 分钟预算一致，不能在首装解压时被默认 120 秒截断。
+          // 五工具真实资源候选同样包含串行解压及文档处理；首轮已在 LO 解压时被外层截断。
+          // 其余预装候选也在用例内声明了 3～15 分钟预算，但用例内 this.timeout 无法改变外层计时，
+          // 原先只放行 real-loopback，其他候选实际仍按 120 秒截断。
+          matched: specs.some(
+            (spec) =>
+              spec.endsWith("conversation-session-remote-sidebar-menus.test.ts") ||
+              spec.endsWith("conversation-session-ssh-probe-validation.test.ts") ||
+              spec.endsWith("conversation-session-remote-restart-stale-daemon-ssh.test.ts") ||
+              spec.endsWith("conversation-session-r3-ui-pairwise.test.ts") ||
+              spec.endsWith("conversation-session-remote-accessibility.test.ts") ||
+              spec.endsWith("conversation-session-project-settings-return.test.ts") ||
+              spec.endsWith("conversation-session-remote-settings-safeguards.test.ts") ||
+              spec.endsWith(
+                "conversation-session-remote-workspace-folder-unresponsive-ssh.test.ts",
+              ) ||
+              spec.endsWith("conversation-session-ssh-unsupported-target-errors.test.ts") ||
+              spec.endsWith("conversation-session-remote-shared-root-peer-host-ssh.test.ts") ||
+              spec.endsWith("conversation-session-remote-server-root-replaced-ssh.test.ts") ||
+              // 草稿模型迁移与 Built-in 刷新节奏都要等服务端下发的 60 秒间隔到期，前者还含多次重启。
+              spec.endsWith("conversation-session-draft-model-migration.test.ts") ||
+              spec.endsWith("provider-builtin-refresh-cadence.test.ts") ||
+              /conversation-session-preinstalled-tools-[a-z-]+\.test\.ts$/.test(spec),
+          ),
+          ms: 15 * 60_000,
+        },
+        {
+          // 此回归故意阻塞文件系统线程并等待多次目录期限；须保留原 25 分钟总预算，
+          // 各目录操作自身的失败期限不变，不能在进入恢复断言前被通用 120 秒截断。
+          // real-loopback 在 Windows 上 Defender 逐个扫描解包文件，用例实测 14 分 11 秒，
+          // 15 分钟余量不足 1 分钟；单独放宽到 25 分钟，与用例内预算一致。
+          matched: specs.some(
+            (spec) =>
+              spec.endsWith(
+                "conversation-session-remote-workspace-folder-thread-exhaustion-ssh.test.ts",
+              ) ||
+              spec.endsWith("conversation-session-preinstalled-tools-real-loopback.test.ts") ||
+              // Bug 原因：转正后的远程用例由 runner 去掉 manual-review 等待预算，外层退回 120 秒，
+              // 真实 SSH 首装加连接就会用完，RPR-01 在 Composer 断言前被截断。与用例内 25 分钟一致。
+              spec.endsWith("conversation-session-remote-composer-plan-reselect.test.ts") ||
+              spec.endsWith(
+                "conversation-session-remote-composer-plan-switch-wait-provisioning.test.ts",
+              ),
+          ),
+          ms: 25 * 60_000,
+        },
+        {
+          matched: specs.some((spec) =>
+            spec.endsWith("conversation-session-preinstalled-tools-builtin-cdn.test.ts"),
+          ),
+          ms: 60 * 60_000,
+        },
+        {
+          // 用例不稳定原因：RDUX15 串行走 SSH、Docker 四个入口的后台连接，用例内声明 20 分钟预算，
+          // 但 this.timeout 无法覆盖外层，负载高时在 Docker 段被 120 秒截断（Error: Timeout）。
+          // 远端草稿串行覆盖首装、桌面/手机恢复及本地首发，同样声明 20 分钟预算。
+          // 安装环境专项也沿用原定 20 分钟，包含真实首装和受限目标检查。
+          matched: specs.some(
+            (spec) =>
+              spec.endsWith("conversation-session-background-connection.test.ts") ||
+              spec.endsWith("conversation-session-remote-draft-prewarm.test.ts") ||
+              spec.endsWith("conversation-session-r3-install-environment.test.ts") ||
+              spec.endsWith("conversation-session-project-device-visibility-ssh.test.ts"),
+          ),
+          ms: 20 * 60_000,
+        },
+        {
+          // 走查用例串行完成真实首装、失败/取消/后台、设置页与停容器掉线恢复，并全程录屏；
+          // 与用例内 30 分钟预算一致。
+          // OS 服务回退与真实双版本升级同样保留各自原定的 30 分钟预算。
+          matched: specs.some(
+            (spec) =>
+              spec.endsWith("conversation-session-remote-ui-walkthrough.test.ts") ||
+              spec.endsWith("conversation-session-r3-daemon-service-fallback.test.ts") ||
+              spec.endsWith("conversation-session-release-3163-upgrade.test.ts"),
+          ),
+          ms: 30 * 60_000,
+        },
+        {
+          // Bug 原因：完整数据同步演示按章节录制并验证六类配置，原有 90 分钟预算只写在
+          // test body；WDIO 外层仍在 120 秒截断，导致正常章节尚未完成便退出且没有最终事实。
+          matched: specs.some((spec) =>
+            spec.endsWith("conversation-session-remote-data-sync-demo-walkthrough.test.ts"),
+          ),
+          ms: 90 * 60_000,
+        },
+        {
+          // 同版本异 SHA 更新要先触发 running-task guard，再取消/确认和重连；
+          // 外层 120 秒曾在 guard 等待期间截断，须沿用用例原有 35 分钟预算。
+          matched: specs.some((spec) =>
+            spec.endsWith("conversation-session-r3-server-update.test.ts"),
+          ),
+          ms: 35 * 60_000,
+        },
+        {
+          // 手机用例串行完成真实 SSH 安装、relay 配对和断网恢复；同步其原定预算，
+          // 避免 WDIO 在手机离线期间按默认 120 秒截断，this.timeout 无法覆盖外层。
+          // DSYNC-18 的本机六类配置验证同样声明 40 分钟；外层提前截断后异步步骤
+          // 仍会继续执行，并与下一条 case 争抢输入框，须在进入 test body 前应用预算。
+          matched: specs.some(
+            (spec) =>
+              spec.endsWith("conversation-session-r3-mobile.test.ts") ||
+              spec.endsWith("conversation-session-r3-mobile-permission.test.ts") ||
+              spec.endsWith("conversation-session-local-config-runtime-usage.test.ts"),
+          ),
+          ms: 40 * 60_000,
+        },
+        {
+          matched:
+            pluginNoGitGitHubArchiveE2E ||
+            workspacePluginRemoteExplicitSyncE2E ||
+            specs.some((spec) => spec.endsWith("conversation-session-subagent-cross-host.test.ts")),
+          ms: 600000,
+        },
+        {
+          // SHR14/SHR17 串行跑两个 workspace、四轮父子请求与设置保存，用例声明
+          // this.timeout(240000)，但外层 Mocha 包裹先按 120 秒截断（Windows 上实测约 130 秒）。
+          matched: specs.some((spec) =>
+            spec.endsWith("conversation-session-subagent-multi-workspace.test.ts"),
+          ),
+          ms: 240000,
+        },
+        {
+          // HK20 含建 worktree、两次进设置页与 8 组布局截图，用例声明 180 秒；
+          // 用例内 this.timeout 突破不了外层 120 秒，须在此登记同一预算。
+          // 写字面量：e2eSpecAdmission.test.ts 只提取本函数体求值，模块常量在那里未定义。
+          matched: specs.some((spec) =>
+            spec.endsWith("conversation-session-hook-trust-worktree.test.ts"),
+          ),
+          ms: 180000,
+        },
+        {
+          // 修复原因：以下用例内 this.timeout 无法突破外层 120 秒，Windows 上实测都会被截断：
+          // SIP 串行验证多入口推荐并在多宽度、双主题截图（约 10 分钟）；插件市场 17 个评审步骤
+          // 全程录屏（约 5 分钟）；Highspeed 抽卡含两次重启（约 5 分钟）；VP13 串行完成桌面项目
+          // 操作、手机配对与草稿恢复。预算与用例内声明一致。
+          matched: specs.some((spec) =>
+            spec.endsWith("conversation-session-start-plan-independent.test.ts"),
+          ),
+          ms: 900000,
+        },
+        {
+          matched: specs.some(
+            (spec) =>
+              spec.endsWith("plugin-management-ui-market.test.ts") ||
+              spec.endsWith("conversation-session-virtual-project-mobile.test.ts"),
+          ),
+          ms: 600000,
+        },
+        {
+          matched: specs.some((spec) =>
+            spec.endsWith("conversation-session-highspeed-card.test.ts"),
+          ),
+          ms: 420000,
+        },
+        {
+          // 后台 Bash 冷恢复回归等待真实 child 结束、120s publisher grace 及 60s 清理节拍。
+          matched: specs.some((spec) =>
+            spec.endsWith("conversation-session-background-bash-output.test.ts"),
+          ),
+          ms: 360000,
+        },
+        {
+          // 长稳用例按既有轮数运行；外层不得在第一轮后按普通用例的两分钟预算退出。
+          matched: specs.some((spec) =>
+            spec.endsWith("conversation-session-r3-soak-reconnect.test.ts"),
+          ),
+          ms: 150 * 60_000,
+        },
+        {
+          matched: specs.some((spec) => spec.endsWith("conversation-session-r3-soak-dual.test.ts")),
+          ms: (() => {
+            const minutes = Number(process.env.R3_SOAK2_MINUTES || "25");
+            // 非法值仍由用例自身明确报错；这里只提供与原用例一致的有效预算。
+            return ((Number.isFinite(minutes) && minutes > 0 ? minutes : 25) + 20) * 60_000;
+          })(),
+        },
+      ]
+        .filter((budget) => budget.matched)
+        .map((budget) => budget.ms),
+    ) + manualReviewHoldMs
+  );
+}
+
 export const config: WebdriverIO.Config = {
   runner: "local",
   // 修复原因：waitUntil 的 timeout 无法中断内部已经发出的 WebDriver HTTP 请求；
@@ -4439,40 +4720,7 @@ export const config: WebdriverIO.Config = {
     // Bug 根因：Mocha adapter 会在进入 test body 前按 config timeout 包裹用例，
     // 因此用例内的 this.timeout 无法为人工保留阶段追加预算。显式 hold 只扩展
     // manual-review 运行，不改变普通 E2E 的 120 秒上限。
-    timeout:
-      (configuredE2ESpecs.some(
-        (spec) =>
-          spec.endsWith("conversation-session-remote-sidebar-menus.test.ts") ||
-          spec.endsWith("conversation-session-ssh-probe-validation.test.ts"),
-      )
-        ? // 此用例包含真实 SSH 首装、目录复用、设置定位、16 张截图和原目录重连；
-          // 探测校验用例同样经过真实首装与已有设备故障恢复，不能在到达状态断言前被截断。
-          // Mocha 外层须与用例的 15 分钟预算一致，不能在首装解压时被默认 120 秒截断。
-          15 * 60_000
-        : configuredE2ESpecs.some((spec) =>
-              spec.endsWith("conversation-session-remote-ui-walkthrough.test.ts"),
-            )
-          ? // 走查用例串行完成真实首装、失败/取消/后台、设置页与停容器掉线恢复，并全程录屏；
-            // 与用例内 30 分钟预算一致。
-            30 * 60_000
-          : configuredE2ESpecs.some((spec) =>
-                spec.endsWith("conversation-session-r3-mobile.test.ts"),
-              )
-            ? // 此用例串行完成真实 SSH 安装、两次 relay 配对和断网恢复；同步其原定预算，
-              // 避免 WDIO 在手机离线期间按默认 120 秒截断，this.timeout 无法覆盖外层。
-              40 * 60_000
-            : pluginNoGitGitHubArchiveE2E ||
-                workspacePluginRemoteExplicitSyncE2E ||
-                configuredE2ESpecs.some((spec) =>
-                  spec.endsWith("conversation-session-subagent-cross-host.test.ts"),
-                )
-              ? 600000
-              : // 后台 Bash 冷恢复回归等待真实 child 结束、120s publisher grace 及 60s 清理节拍。
-                configuredE2ESpecs.some((spec) =>
-                    spec.endsWith("conversation-session-background-bash-output.test.ts"),
-                  )
-                ? 360000
-                : requestSecuritySpecTimeout(configuredE2ESpecs, 120000)) + manualReviewHoldMs,
+    timeout: resolveMochaTimeout(configuredE2ESpecs),
   },
   async onPrepare() {
     try {
@@ -4505,17 +4753,48 @@ export const config: WebdriverIO.Config = {
             prepareDesktopAppBuild();
             if (!E2E_PACKAGED_APP_BINARY_PATH) await stageDesktopE2EAppOutput();
           });
-        // 旧覆盖报告只有路径，不能证明源码版本；复用构建不得追认当前工作树。
-        if (process.env.RASPBERRYCODE_E2E_SOURCE_EVIDENCE === "1") {
-          await withE2ESourceEvidence({
-            freshBuild: !E2E_PACKAGED_APP_BINARY_PATH && !shouldReuseDesktopE2EBuild(process.env),
-            captureSources: () => captureWorkspaceSources(REPO_ROOT),
-            build: buildAndStage,
-            appOutputDir: E2E_APP_OUTPUT_DIR,
-            artifactDir: e2eReporter.artifactDir,
-          });
-        } else await buildAndStage();
-        prepareRaspberryCodeAgentServer();
+        // 子步骤计时写入 lifecycle-events.ndjson 与 summary.md，用来定位准备阶段的耗时来源。
+        await measureE2ELifecyclePhase(
+          "prepare:desktop-build",
+          { specs: configuredE2ESpecs },
+          async () => {
+            // 旧覆盖报告只有路径，不能证明源码版本；复用构建不得追认当前工作树。
+            if (process.env.RASPBERRYCODE_E2E_SOURCE_EVIDENCE === "1") {
+              await withE2ESourceEvidence({
+                freshBuild:
+                  !E2E_PACKAGED_APP_BINARY_PATH && !shouldReuseDesktopE2EBuild(process.env),
+                captureSources: () => captureWorkspaceSources(REPO_ROOT),
+                build: buildAndStage,
+                appOutputDir: E2E_APP_OUTPUT_DIR,
+                artifactDir: e2eReporter.artifactDir,
+              });
+            } else await buildAndStage();
+          },
+        );
+        // agent 必须先于 remote release 构建：remote release 的各 target 复用本轮这一个 bundle。
+        const agentBundleBuiltThisRun = await measureE2ELifecyclePhase(
+          "prepare:agent-build",
+          { specs: configuredE2ESpecs },
+          async () => {
+            prepareRaspberryCodeAgentServer();
+            return (
+              !E2E_PACKAGED_APP_BINARY_PATH &&
+              process.env.RASPBERRYCODE_E2E_SKIP_AGENT_BUILD !== "1"
+            );
+          },
+        );
+        if (!E2E_PACKAGED_APP_BINARY_PATH)
+          await prepareSshRemoteReleaseForRun(configuredE2ESpecs, agentBundleBuiltThisRun);
+        // 正式包使用随包 CLI，模板 seed 源不同，不预热；缺模板时各 HOME 照常冷 seed。
+        if (!E2E_PACKAGED_APP_BINARY_PATH) {
+          await measureE2ELifecyclePhase(
+            "prepare:plugin-cache",
+            { specs: configuredE2ESpecs },
+            async () => {
+              // 本仓库未启用共享插件缓存预热；保留阶段名以对齐上游生命周期报告。
+            },
+          );
+        }
       });
     } catch (error) {
       // 修复原因：WDIO 会把 onPrepare 异常记录成 hook error 后继续派发 worker，
@@ -4532,6 +4811,15 @@ export const config: WebdriverIO.Config = {
     });
   },
   async beforeSession(_config, capabilities, specs, cid) {
+    // glob 在 launcher 中不能命中文件预算；必须在 Mocha 初始化前按 worker 实际文件补齐。
+    // 保留显式更大或关闭计时器的配置，不能在用例内才修正已经启动的外层计时器。
+    _config.mochaOpts = {
+      ..._config.mochaOpts,
+      timeout:
+        _config.mochaOpts?.timeout === 0
+          ? 0
+          : Math.max(_config.mochaOpts?.timeout ?? 0, resolveMochaTimeout(specs)),
+    };
     // Bugfix: 现有 e2e 会读写 ~/.raspberrycode/v2；如果多个 spec 复用真实 HOME，
     // 上一个 spec 的凭据、最近项目和 localStorage 会串到下一个 spec，
     // 既污染开发者本机数据，也让“首次启动”类断言变得随机。
