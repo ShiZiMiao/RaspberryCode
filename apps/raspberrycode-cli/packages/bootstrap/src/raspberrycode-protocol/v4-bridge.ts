@@ -650,6 +650,7 @@ export function createConversationV4Gateway(
       !shouldAutoDrainV4QueueHead({
         autoDrain: head.autoDrain,
         dispatchState: head.dispatchState,
+        editLocked: head.editLocked,
         sessionBusy: Boolean(record.activeAbortController) || coreForegroundBusy,
         targetStatus,
       })

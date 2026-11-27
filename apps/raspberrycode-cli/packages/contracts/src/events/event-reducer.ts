@@ -11,6 +11,7 @@ import type {
   TurnSteerDiscardedPayload,
   TurnSteerDrainedPayload,
   TurnSteerDeliveryChangedPayload,
+  TurnSteerEditLockChangedPayload,
   TurnSteerQueuedPayload,
   TurnSteerReorderedPayload,
   ToolCallScheduledPayload,
@@ -360,6 +361,8 @@ export class EventReducer {
         queuedAt: existing?.queuedAt ?? e.timestamp,
         targetTurnId: payload.targetTurnId,
         traceId: e.traceId,
+        // 编辑事件不是重新准入；composer 编辑锁随项保留，直到显式解锁事件。
+        editLock: existing?.editLock,
       };
       return {
         ...p,
@@ -388,6 +391,22 @@ export class EventReducer {
                         fallbackReasonCode: payload.fallbackReasonCode,
                       }
                     : undefined),
+              }
+            : item,
+        ),
+        updatedAt: e.timestamp,
+      };
+    },
+
+    [EventTypes.TurnSteerEditLockChanged]: (p, e) => {
+      const payload = e.payload as TurnSteerEditLockChangedPayload;
+      return {
+        ...p,
+        pendingSteerInputs: p.pendingSteerInputs.map((item) =>
+          item.pendingInputId === payload.pendingInputId
+            ? {
+                ...item,
+                ...(payload.editLock ? { editLock: { ...payload.editLock } } : { editLock: undefined }),
               }
             : item,
         ),

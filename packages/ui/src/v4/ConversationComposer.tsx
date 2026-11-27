@@ -40,6 +40,8 @@ import {
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from "react";
+import { flushSync } from "react-dom";
+import { isComposerEditScopeId } from "@/composer-edit-mode/contract.js";
 import { cn } from "@/components/lib/utils.js";
 import {
   type RaspberryCodeProvider,
@@ -176,7 +178,10 @@ import {
   registerV4ComposerDraftReader,
   consumeV4ComposerDraftWorkspaceTransferRequest,
 } from "@/v4/composer/composerDraftWorkspaceTransfer.js";
-import { useComposerAttachments } from "@/v4/composer/useComposerAttachments.js";
+import {
+  buildScopeKey,
+  useComposerAttachments,
+} from "@/v4/composer/useComposerAttachments.js";
 import type { ConversationDropTargetController } from "@/v4/composer/conversationDropTarget.js";
 import { CodeCommentAttachmentChip } from "@/v4/composer/CodeCommentAttachmentChip.js";
 import { removeCodeCommentPreview } from "@/v4/composer/codeCommentPreviewSync.js";
@@ -373,7 +378,7 @@ export interface ComposerRestoreRequest {
   attachments: readonly AttachmentRef[];
   config?: Pick<V4ComposerDraft, "mode" | "planEnabled" | "modelSelection">;
   /**
-   * 允许覆盖输入框现有草稿。缺省 false：queue 撤回编辑必须让用户自己处理既有草稿，
+   * 允许覆盖输入框现有草稿。缺省 false：必须让用户自己处理既有草稿，
    * 静默覆盖会丢掉他没提交的内容。回退是用户明确要求「回到发这条消息之前」，
    * 覆盖草稿正是他要的语义，所以显式传 true。
    */
@@ -570,11 +575,27 @@ export interface ConversationComposerProps {
   externalTextInsertRequest?: ExternalTextInsertRequest | null;
   onExternalTextInsertApplied?: (requestId: number) => void;
   /**
-   * 队列“编辑”在 delete ACK 后把完整未来意图取回输入框。
+   * 回退（revertUserQuery）成功后把原消息文本/附件取回输入框。
    * requestId + session/workspace binding 保证幂等且不会串写其他 task。
    */
   composerRestoreRequest?: ComposerRestoreRequest | null;
   onComposerRestoreApplied?: (requestId: number) => void;
+  /**
+   * composer 编辑态（docs/ui/composer-edit-mode.md）：草稿切到 edit scope，原草稿留在原 scope；
+   * 退出编辑态只需切回，即可完整恢复原草稿。缺省 = sessionId 对应的普通 scope。
+   */
+  draftScopeId?: string;
+  /** 编辑态状态条，渲染在输入框卡片内顶部。 */
+  editBar?: ReactNode;
+  /** 点击原消息位置的「正在下方编辑」占位时递增：只聚焦输入框，不滚动。 */
+  editFocusRequest?: number;
+  /** 状态条的「对话 + 文件重置」等编辑态动作递增：按当前内容走同一提交流程。 */
+  editSubmitRequest?: number;
+  /**
+   * 一次提交已被接纳且附件已移交、草稿已结算后回调（scopeId = 提交时的草稿 scope）。
+   * composer 编辑态据此退出：必须晚于附件 adopt，否则切回原 scope 会把新附件当未发送清理。
+   */
+  onSubmissionSettled?: (scopeId: string) => void;
   /** 副屏会话不提供 goal 能力；协议层仍会拒绝直接调用。 */
   suppressGoalCommands?: boolean;
   /** App 层本地斜杠命令（如 `/side`），由 SessionPane 按门禁组装后透传。 */
@@ -656,6 +677,11 @@ function ConversationComposerImpl({
   onExternalTextInsertApplied,
   composerRestoreRequest = null,
   onComposerRestoreApplied,
+  draftScopeId: draftScopeIdProp,
+  editBar,
+  editFocusRequest = 0,
+  editSubmitRequest = 0,
+  onSubmissionSettled,
   suppressGoalCommands = false,
   appSlashCommands,
   onDropTargetControllerChange,
@@ -686,6 +712,7 @@ function ConversationComposerImpl({
     ...(remoteSessionId ? { remoteSessionId } : {}),
   });
   const draftScopeId =
+    draftScopeIdProp ??
     sessionId ??
     (rootDraftScopeKey ? `${V4_DRAFT_SCOPE_ROOT}:${rootDraftScopeKey}` : V4_DRAFT_SCOPE_ROOT);
   const workspaceKey = workspaceIdentity?.trim() || workspacePath;
@@ -931,7 +958,8 @@ function ConversationComposerImpl({
     removeReference: removeConversationSelectionReference,
     clearReferences: clearConversationSelectionReferences,
   } = useConversationSelectionReferences({
-    sessionId,
+    // 编辑态的会话引用属于 edit scope，不能与原草稿共用同一份。
+    sessionId: draftScopeIdProp ?? sessionId,
     workspaceKey,
     draftScopeKey: rootDraftScopeKey,
   });
@@ -1259,7 +1287,7 @@ function ConversationComposerImpl({
               },
             }
           : {}),
-        // 撤回项携带独立 Submission 配置；沿用草稿 owner，一次恢复且保留已处理授权标记。
+        // 回退项携带独立 Submission 配置；沿用草稿 owner，一次恢复且保留已处理授权标记。
         restoreDraftConfig: (config) =>
           replaceComposerDraft({
             ...ownerDraftRef.current.draft,
@@ -1305,6 +1333,8 @@ function ConversationComposerImpl({
     workspaceKey,
   ]);
 
+  // 最近一次已把草稿载入 Lexical 的 edit scope；只用于编辑态顶部内容的显示时机。
+  const [appliedDraftScopeId, setAppliedDraftScopeId] = useState<string | null>(null);
   // scope 切换：先落旧 scope 草稿，再恢复新 scope（editorStateJson 优先，退纯文本）。
   useEffect(() => {
     const previousTarget = draftTargetRef.current;
@@ -1367,8 +1397,13 @@ function ConversationComposerImpl({
     let unsubscribeSettled: (() => void) | null = null;
     const applyDraft = () => {
       const api = inputApiRef.current;
+      if (api) restoreDraftInto(api);
+      // 与草稿正文同一帧显示编辑态顶部内容（见 editPresentationReady）；输入框未就绪时
+      // 没有正文可等，也必须放行，否则编辑态状态条（含「取消」）不会出现。
+      if (isComposerEditScopeId(draftScopeId)) {
+        flushSync(() => setAppliedDraftScopeId(draftScopeId));
+      }
       if (!api) return;
-      restoreDraftInto(api);
       // Bug 根因（R3A-B-07）：ACK 丢失时传输先 reject，提交正文被恢复回草稿；随即断连让
       // SessionPane 连同本组件卸载，闭包里的结算订阅一起消失。重连重挂后正文从草稿回填，
       // 权威 projection 到达却无人清空，用户再点发送就重复归属。这里在回填后向模块级账本
@@ -1427,6 +1462,27 @@ function ConversationComposerImpl({
       scopeId: draftScopeId,
     };
   }, [composerDraft, draftScopeId, workspaceIdentity, workspacePath]);
+
+  // 离开 composer 编辑态的 edit scope 时（取消、切换目标）丢弃其中未提交的附件；
+  // 已提交的附件在结算时已 adopt 并移除，这里只剩需要按未发送规则清理的部分。
+  const previousDraftScopeIdRef = useRef(draftScopeId);
+  useEffect(() => {
+    const previousScopeId = previousDraftScopeIdRef.current;
+    previousDraftScopeIdRef.current = draftScopeId;
+    if (previousScopeId === draftScopeId || !isComposerEditScopeId(previousScopeId)) return;
+    attachmentsApi.clearAttachments(
+      undefined,
+      buildScopeKey(workspacePath, workspaceIdentity, previousScopeId),
+    );
+  }, [attachmentsApi, draftScopeId, workspaceIdentity, workspacePath]);
+
+  const lastEditFocusRequestRef = useRef(editFocusRequest);
+  useEffect(() => {
+    if (lastEditFocusRequestRef.current === editFocusRequest) return;
+    lastEditFocusRequestRef.current = editFocusRequest;
+    // 占位点击是用户显式意图：直接聚焦，不受自动聚焦策略限制，也不滚动时间线。
+    inputApiRef.current?.focus();
+  }, [editFocusRequest]);
 
   // 外部预填和 scope 恢复可能在同一轮发生。若预填 effect 先执行，后续恢复会用旧草稿
   // 覆盖用户刚点的 Example Prompt；因此必须在 scope 恢复之后应用并确认单次插入请求。
@@ -1768,8 +1824,8 @@ function ConversationComposerImpl({
           updateText("");
         }
         // 正文先按事务结算；附件交接失败或发送 Promise 迟到异常，都不能复活已接纳的正文。
-        await attachmentsApi.adoptSentAttachments(submittedAttachmentIds);
-        attachmentsApi.clearAttachments(submittedAttachmentIds);
+        await attachmentsApi.adoptSentAttachments(submittedAttachmentIds, submittedScopeKey);
+        attachmentsApi.clearAttachments(submittedAttachmentIds, submittedScopeKey);
         currentCodeCommentContexts.forEach(removeCodeCommentContext);
         currentWebElementContexts.forEach((context) => removeWebElementContext(context.id));
         currentPluginUiContexts.forEach((context) => removePluginUiContext(context.id));
@@ -1779,6 +1835,8 @@ function ConversationComposerImpl({
         currentConversationSelections.forEach((reference) =>
           removeConversationSelectionReference(reference.id),
         );
+        // 编辑态在附件 adopt 之后才退出：先切回原 scope 会把新附件当未发送清理。
+        onSubmissionSettled?.(submittedScopeId);
       };
       const subscribeToCommandResolution = (commandId: string) => {
         let active = true;
@@ -1980,6 +2038,7 @@ function ConversationComposerImpl({
       telemetryDraftConfig,
       modelSelectionView,
       onSendText,
+      onSubmissionSettled,
       persistDraftNow,
       provider,
       removeCodeCommentContext,
@@ -1998,6 +2057,14 @@ function ConversationComposerImpl({
       workspacePath,
     ],
   );
+
+  const lastEditSubmitRequestRef = useRef(editSubmitRequest);
+  useEffect(() => {
+    if (lastEditSubmitRequestRef.current === editSubmitRequest) return;
+    lastEditSubmitRequestRef.current = editSubmitRequest;
+    // 与发送按钮共用提交事务：草稿冻结、附件门禁、失败恢复与成功结算保持一致。
+    void submit();
+  }, [editSubmitRequest, submit]);
 
   const handleUserInputClear = useCallback(() => {
     conversationTelemetry?.resetComposerInputStart();
@@ -2256,7 +2323,7 @@ function ConversationComposerImpl({
       ),
     [composerAttachments],
   );
-  const topContentNode = useMemo(() => {
+  const attachmentsTopContentNode = useMemo(() => {
     if (
       composerAttachments.length === 0 &&
       codeCommentContexts.length === 0 &&
@@ -2598,6 +2665,22 @@ function ConversationComposerImpl({
     onOpenCodeViewer,
     openPptxElementReference,
   ]);
+
+  // Bug 根因：草稿正文晚一帧（rAF）才载入 Lexical，状态条与附件行却随 scope 切换立即渲染；
+  // 多行编辑时队列面板会先因状态条上移、下一帧再因正文上移（两次跳位，B09g 逐帧采样复现）。
+  // 进入 edit scope 时等正文载入后再显示顶部内容，使高度变化只发生一次。
+  const editPresentationReady =
+    !isComposerEditScopeId(draftScopeId) || appliedDraftScopeId === draftScopeId;
+  const topContentNode = !editPresentationReady
+    ? null
+    : editBar && attachmentsTopContentNode
+      ? (
+          <div className="flex w-full max-w-full flex-col gap-2">
+            {editBar}
+            {attachmentsTopContentNode}
+          </div>
+        )
+      : (editBar ?? attachmentsTopContentNode);
 
   // 发送/停止控制簇（对齐旧 ChatViewComposer.submitControlNode 结构：
   // 左侧 model/thought/usage 簇 + 右侧 stop 或 send）。

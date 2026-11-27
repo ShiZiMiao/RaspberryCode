@@ -338,6 +338,7 @@ function queueStateEventIndexes(events: readonly SessionEvent[]): Set<number> {
   const queuedLifecycleById = new Map<string, number[]>();
   const latestDispatchById = new Map<string, number>();
   const latestDeliveryChangeById = new Map<string, number>();
+  const latestEditLockById = new Map<string, number>();
   const pendingIds = new Set<string>();
   let latestReorder: number | null = null;
   let latestAutoDrain: number | null = null;
@@ -364,12 +365,18 @@ function queueStateEventIndexes(events: readonly SessionEvent[]): Set<number> {
       if (id) latestDeliveryChangeById.set(id, index);
       return;
     }
+    if (event.type === SessionEventType.TurnSteerEditLockChanged) {
+      const id = stringField(event.payload, "pendingInputId");
+      if (id) latestEditLockById.set(id, index);
+      return;
+    }
     if (event.type === SessionEventType.TurnSteerDrained) {
       for (const id of stringArrayField(event.payload, "pendingInputIds")) {
         pendingIds.delete(id);
         queuedLifecycleById.delete(id);
         latestDispatchById.delete(id);
         latestDeliveryChangeById.delete(id);
+        latestEditLockById.delete(id);
       }
       return;
     }
@@ -379,6 +386,7 @@ function queueStateEventIndexes(events: readonly SessionEvent[]): Set<number> {
         queuedLifecycleById.delete(id);
         latestDispatchById.delete(id);
         latestDeliveryChangeById.delete(id);
+        latestEditLockById.delete(id);
       }
       return;
     }
@@ -389,6 +397,7 @@ function queueStateEventIndexes(events: readonly SessionEvent[]): Set<number> {
         queuedLifecycleById.delete(id);
         latestDispatchById.delete(id);
         latestDeliveryChangeById.delete(id);
+        latestEditLockById.delete(id);
       }
       return;
     }
@@ -402,6 +411,7 @@ function queueStateEventIndexes(events: readonly SessionEvent[]): Set<number> {
     const queuedLifecycle = queuedLifecycleById.get(id) ?? [];
     const dispatch = latestDispatchById.get(id);
     const deliveryChange = latestDeliveryChangeById.get(id);
+    const editLock = latestEditLockById.get(id);
     // editQueueItem 在旧事件里可能只重发新 text，完整 intent/附件/来源
     // 仍只在首次 queued 事件。从空投影 cold replay 时必须保留该 id
     // 自最近一次 admission 起的全部 queued 生命周期，让 reducer 原地合并字段。
@@ -409,6 +419,7 @@ function queueStateEventIndexes(events: readonly SessionEvent[]): Set<number> {
     const latestQueued = queuedLifecycle.at(-1) ?? -1;
     if (dispatch !== undefined && dispatch > latestQueued) keep.add(dispatch);
     if (deliveryChange !== undefined && deliveryChange > latestQueued) keep.add(deliveryChange);
+    if (editLock !== undefined && editLock > latestQueued) keep.add(editLock);
   }
   if (latestReorder !== null && pendingIds.size > 0) keep.add(latestReorder);
   if (latestAutoDrain !== null) keep.add(latestAutoDrain);
@@ -862,6 +873,7 @@ export function mergeColdConversationEvents(input: MergeInput): ColdEventMergeRe
       event.type === SessionEventType.TurnSteerQueued ||
       event.type === SessionEventType.TurnSteerDeliveryChanged ||
       event.type === SessionEventType.TurnSteerDispatchChanged ||
+      event.type === SessionEventType.TurnSteerEditLockChanged ||
       event.type === SessionEventType.TurnSteerDrained ||
       event.type === SessionEventType.TurnSteerDiscarded ||
       event.type === SessionEventType.SessionInputPromoted ||

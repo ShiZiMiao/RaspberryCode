@@ -17,6 +17,8 @@ import type {
   TodoItem,
   SessionGoal,
   McpConnectionSnapshot,
+  PendingInputEditLock,
+  PendingTurnAttachment,
   TargetChangedPayload,
   DynamicWorkflowRunProgressPayload,
   UserInputAutoResolutionUpdatedPayload,
@@ -52,8 +54,10 @@ import type {
   ContextUsageToolDetail,
   ContinueActiveTargetLoopOptions,
   DrainedPendingInputDiagnostics,
+  EditPendingInputResult,
   ForegroundPromotionLeaseMode,
   EnqueueSubagentMessageInput,
+  LockPendingInputEditResult,
   ResumeSessionOptions,
   ResumeSessionResult,
   RunModelTextRequestOptions,
@@ -209,9 +213,27 @@ export interface AgentRuntimeCoreMethods {
   }): Promise<boolean>;
   editPendingInputById(options: {
     pendingInputId: string;
-    newText: string;
+    newText?: string;
+    editorId?: string;
+    attachmentRefs?: NonNullable<TurnInputIntentMetadata["attachmentRefs"]>;
+    attachments?: PendingTurnAttachment[];
+    conversationQuotes?: TurnInputIntentMetadata["conversationQuotes"];
+    modelSelection?: ModelSelection;
+    mode?: TurnInputIntentMetadata["mode"];
+    planEnabled?: boolean;
+    dropHighspeed?: boolean;
+    traceContext: TraceContext;
+  }): Promise<EditPendingInputResult>;
+  lockPendingInputEdit(options: {
+    pendingInputId: string;
+    editLock: PendingInputEditLock;
+    traceContext: TraceContext;
+  }): Promise<LockPendingInputEditResult>;
+  releasePendingInputEdit(options: {
+    pendingInputId: string;
     traceContext: TraceContext;
   }): Promise<boolean>;
+  getPendingInputEditLock(pendingInputId: string): PendingInputEditLock | undefined;
   reorderPendingInput(options: {
     pendingInputId: string;
     beforePendingInputId: string | null;

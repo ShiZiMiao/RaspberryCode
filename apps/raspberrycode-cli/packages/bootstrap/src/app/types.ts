@@ -38,6 +38,7 @@ import type {
   ModelUsage,
   TopicResourcePort,
   PdfDocumentPort,
+  PendingInputEditLock,
   PermissionBrokerPort,
   PluginLoadOutcome,
   PluginMetadata,
@@ -72,8 +73,11 @@ import type {
   AgentRuntimeConfig,
   AmendWorkflowRunSettingsInput,
   AmendWorkflowRunSettingsResult,
+  EditPendingInputOptions,
+  EditPendingInputResult,
   ExecuteTurnOptions,
   ExpertWorkflowCommandResult,
+  LockPendingInputEditResult,
   McpAppProvidedToolDefinition,
   McpAppProvidedToolExecutor,
   ModelExecutionContext,
@@ -791,12 +795,26 @@ export interface RaspberryCodeApp {
     reservationId: string,
     options?: { traceContext?: TraceContext },
   ): Promise<boolean>;
-  /** v4 queue 单项编辑：按 pendingInputId 替换排队输入文本（保位）。返回是否命中。 */
+  /** v4 queue 单项编辑：按 pendingInputId 原地写回正文/附件/提交配置（保位）。 */
   editQueueItem(
     pendingInputId: string,
-    newText: string,
+    newText?: string,
+    options?: Omit<EditPendingInputOptions, "pendingInputId" | "newText"> & {
+      traceContext?: TraceContext;
+    },
+  ): Promise<EditPendingInputResult>;
+  /** composer 编辑态冻结排队项：锁与 reservation 互斥，只对仍在队列中的项生效。 */
+  lockQueueItemEdit(
+    pendingInputId: string,
+    editLock: PendingInputEditLock,
+    options?: { traceContext?: TraceContext },
+  ): Promise<LockPendingInputEditResult>;
+  /** 解除编辑锁：发起端取消、刷新后自愈，或其他端在发起端离线时手动解除。 */
+  releaseQueueItemEdit(
+    pendingInputId: string,
     options?: { traceContext?: TraceContext },
   ): Promise<boolean>;
+  getQueueItemEditLock(pendingInputId: string): PendingInputEditLock | undefined;
   /** v4 queue 重排：移动 pendingInputId 到 beforePendingInputId 之前（null=队尾）。 */
   reorderQueueItem(
     pendingInputId: string,

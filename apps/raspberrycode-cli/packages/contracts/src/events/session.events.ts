@@ -96,6 +96,8 @@ export const SessionEventType = {
   TurnSteerDeliveryChanged: "turn_steer_delivery_changed",
   // sendQueuedNow 原子提升：reservation/promoting/rollback 均进入事件流，投影不本地猜测。
   TurnSteerDispatchChanged: "turn_steer_dispatch_changed",
+  // composer 编辑态冻结排队项：锁只活在 CLI 进程内，投影据此停住自动续跑并隐藏操作。
+  TurnSteerEditLockChanged: "turn_steer_edit_lock_changed",
   TurnSteerDrained: "turn_steer_drained",
   TurnSteerRejected: "turn_steer_rejected",
   TurnSteerDiscarded: "turn_steer_discarded",
@@ -567,6 +569,20 @@ export interface TurnSteerDispatchChangedPayload {
   reservationId?: string;
   state: "queued" | "reserved" | "promoting";
   targetTurnId: TurnId;
+}
+
+/** editorId = 单个窗口/标签页的编辑器实例；clientId 同设备多窗口共享，不能单独作为归属。 */
+export interface PendingInputEditLock {
+  editorId: string;
+  clientId: string;
+  inputOrigin?: "desktop" | "mobile";
+}
+
+export interface TurnSteerEditLockChangedPayload {
+  pendingInputId: string;
+  targetTurnId: TurnId;
+  /** 缺省 = 已释放。 */
+  editLock?: PendingInputEditLock;
 }
 
 export interface QueueAutoDrainChangedPayload {
@@ -1308,6 +1324,7 @@ export type SessionEventPayload =
   | TurnSteerQueuedPayload
   | TurnSteerDeliveryChangedPayload
   | TurnSteerDispatchChangedPayload
+  | TurnSteerEditLockChangedPayload
   | TurnSteerDrainedPayload
   | TurnSteerReorderedPayload
   | QueueAutoDrainChangedPayload

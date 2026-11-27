@@ -4,7 +4,6 @@ import { act, createElement, Fragment, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type {
-  AttachmentRef,
   CommandAck,
   CommandEnvelope,
   ConversationRowTarget,
@@ -65,11 +64,7 @@ const {
     };
     onFork?: (target: ConversationRowTarget) => void;
     onRetry?: (target: ConversationRowTarget) => void;
-    onEdit?: (
-      target: ConversationRowTarget,
-      newText: string,
-      attachments?: readonly AttachmentRef[],
-    ) => Promise<boolean | void> | boolean | void;
+    onEdit?: (target: ConversationRowTarget) => Promise<void> | void;
   }>,
 }));
 
@@ -950,15 +945,7 @@ describe("SessionPane user query editing", () => {
     });
   });
 
-  it("dispatches editUserQuery with edited text and original attachments", async () => {
-    const attachments: AttachmentRef[] = [
-      {
-        bytes: 12,
-        fileName: "note.txt",
-        mime: "text/plain",
-        ref: "/workspace/note.txt",
-      },
-    ];
+  it("duplicate fork ACK 导航既有 child，失败 ACK 即使带 result 也不导航", async () => {
     projectionState.current = {
       status: "live",
       snapshot: makeSnapshot(),
@@ -967,166 +954,17 @@ describe("SessionPane user query editing", () => {
       optimisticCommands: [],
       loadingOlder: false,
     };
-    const root: Root = createRoot(installMinimalDom());
-
-    await act(async () => {
-      root.render(
-        createElement(
-          RaspberryCodeIntlProvider,
-          { initialLocale: "zh-CN" },
-          createElement(SessionPane, {
-            paneId: "workspace-main",
-            sessionId: "session-1",
-            workspacePath: "/workspace",
-          }),
-        ),
-      );
-      await flushMicrotasks();
-    });
-
-    await act(async () => {
-      await timelineProps
-        .at(-1)
-        ?.onEdit?.({ rowId: 42, entityId: "message-user-42" }, "改过的问题", attachments);
-    });
-
-    expect(sendCommandMock).toHaveBeenCalledTimes(1);
-    expect(sendCommandMock.mock.calls[0]?.[0]).toMatchObject({
-      baseRevision: 7,
-      baseLogEpoch: "epoch-1",
-      payload: {
-        attachments,
-        newText: "改过的问题",
-        target: { rowId: 42, entityId: "message-user-42" },
-      },
-      sessionId: "session-1",
-      type: "editUserQuery",
-    });
-
-    await act(async () => {
-      root.unmount();
-    });
-  });
-
-
-
-  it("serializes an explicit empty attachment list when edit removes every ref", async () => {
-    projectionState.current = {
-      status: "live",
-      snapshot: makeSnapshot(),
-      subscriptionId: "sub-1",
-      lastError: null,
-      optimisticCommands: [],
-      loadingOlder: false,
-    };
-    const root: Root = createRoot(installMinimalDom());
-
-    await act(async () => {
-      root.render(
-        createElement(
-          RaspberryCodeIntlProvider,
-          { initialLocale: "zh-CN" },
-          createElement(SessionPane, {
-            paneId: "workspace-main",
-            sessionId: "session-1",
-            workspacePath: "/workspace",
-          }),
-        ),
-      );
-      await flushMicrotasks();
-    });
-
-    await act(async () => {
-      await timelineProps
-        .at(-1)
-        ?.onEdit?.({ rowId: 42, entityId: "message-user-42" }, "保留正文", []);
-    });
-
-    expect(sendCommandMock.mock.calls[0]?.[0]).toMatchObject({
-      payload: {
-        attachments: [],
-        newText: "保留正文",
-        target: { rowId: 42, entityId: "message-user-42" },
-      },
-      type: "editUserQuery",
-    });
-
-    await act(async () => root.unmount());
-  });
-
-  it("keeps accepted legacy fork-disposition edit ACK on the current session", async () => {
-    projectionState.current = {
-      status: "live",
-      snapshot: makeSnapshot(),
-      subscriptionId: "sub-1",
-      lastError: null,
-      optimisticCommands: [],
-      loadingOlder: false,
-    };
-    sendCommandMock.mockImplementationOnce(async (envelope: CommandEnvelope) => ({
-      commandId: envelope.commandId,
-      revisionAtDecision: 7,
-      status: "accepted",
-      result: {
-        type: "editUserQuery",
-        disposition: "fork",
-        sessionId: "session-child",
-      },
-    }));
-    const onSessionCreated = vi.fn();
-    const root: Root = createRoot(installMinimalDom());
-    await act(async () => {
-      root.render(
-        createElement(
-          RaspberryCodeIntlProvider,
-          { initialLocale: "zh-CN" },
-          createElement(SessionPane, {
-            paneId: "workspace-main",
-            sessionId: "session-1",
-            workspacePath: "/workspace",
-            onSessionCreated,
-          }),
-        ),
-      );
-      await flushMicrotasks();
-    });
-
-    await act(async () => {
-      await timelineProps
-        .at(-1)
-        ?.onEdit?.({ rowId: 42, entityId: "message-user-42" }, "edited child text");
-    });
-
-    expect(onSessionCreated).not.toHaveBeenCalled();
-    await act(async () => root.unmount());
-  });
-
-  it("duplicate fork ACK 导航既有 child，edit 与失败 ACK 即使带 result 也不导航", async () => {
-    projectionState.current = {
-      status: "live",
-      snapshot: makeSnapshot(),
-      subscriptionId: "sub-1",
-      lastError: null,
-      optimisticCommands: [],
-      loadingOlder: false,
-    };
-    const ack = (
-      status: CommandAck["status"],
-      type: "forkAssistant" | "editUserQuery",
-      sessionId: string,
-    ): CommandAck => ({
-      commandId: `cmd-${status}-${type}`,
+    const ack = (status: CommandAck["status"], sessionId: string): CommandAck => ({
+      commandId: `cmd-${status}-fork`,
       revisionAtDecision: 7,
       status,
-      result:
-        type === "forkAssistant" ? { type, sessionId } : { type, disposition: "fork", sessionId },
+      result: { type: "forkAssistant", sessionId },
     });
     sendCommandMock
-      .mockResolvedValueOnce(ack("duplicate", "editUserQuery", "session-edit-existing"))
-      .mockResolvedValueOnce(ack("duplicate", "forkAssistant", "session-fork-existing"))
-      .mockResolvedValueOnce(ack("failed", "editUserQuery", "session-failed"))
-      .mockResolvedValueOnce(ack("rejected", "editUserQuery", "session-rejected"))
-      .mockResolvedValueOnce(ack("stale", "editUserQuery", "session-stale"));
+      .mockResolvedValueOnce(ack("duplicate", "session-fork-existing"))
+      .mockResolvedValueOnce(ack("failed", "session-failed"))
+      .mockResolvedValueOnce(ack("rejected", "session-rejected"))
+      .mockResolvedValueOnce(ack("stale", "session-stale"));
     const onSessionCreated = vi.fn();
     const root: Root = createRoot(installMinimalDom());
     await act(async () => {
@@ -1146,12 +984,11 @@ describe("SessionPane user query editing", () => {
     });
     const target = { rowId: 42, entityId: "message-target-42" };
     await act(async () => {
-      await timelineProps.at(-1)?.onEdit?.(target, "duplicate edit");
       timelineProps.at(-1)?.onFork?.(target);
       await flushMicrotasks();
-      await timelineProps.at(-1)?.onEdit?.(target, "failed edit");
-      await timelineProps.at(-1)?.onEdit?.(target, "rejected edit");
-      await timelineProps.at(-1)?.onEdit?.(target, "stale edit");
+      timelineProps.at(-1)?.onFork?.(target);
+      timelineProps.at(-1)?.onFork?.(target);
+      timelineProps.at(-1)?.onFork?.(target);
       await flushMicrotasks();
     });
 

@@ -4,7 +4,11 @@ import type { RuntimeInputPresentation } from "./runtime-input-presentation.js";
 // Session Ports - Core interfaces for session management
 // ============================================================
 
-import type { ErrorAttribution, SessionEvent } from "../events/session.events.js";
+import type {
+  ErrorAttribution,
+  PendingInputEditLock,
+  SessionEvent,
+} from "../events/session.events.js";
 import type {
   InteractionRequestOrigin,
   MessageId,
@@ -183,6 +187,8 @@ export interface PendingSteerInputInfo {
   targetTurnId: TurnId;
   traceId: TraceId;
   intent?: TurnInputIntentMetadata;
+  /** composer 编辑态冻结：锁只活在 CLI 进程内，投影据此停住自动续跑并隐藏操作。 */
+  editLock?: PendingInputEditLock;
 }
 
 export interface ActiveToolCall {
@@ -469,6 +475,8 @@ export interface PendingTurnInput {
   automationId?: string;
   /** 当前 pending input drain 后不向 provider 暴露的工具名。 */
   toolDisallowlist?: readonly string[];
+  /** composer 编辑态冻结：锁只活在 CLI 进程内，投影据此停住自动续跑并隐藏操作。 */
+  editLock?: PendingInputEditLock;
   turnId: TurnId;
 }
 

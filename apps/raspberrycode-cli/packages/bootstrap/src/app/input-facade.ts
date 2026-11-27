@@ -25,6 +25,9 @@ type InputFacade = Pick<
   | "enqueueDeferredInput"
   | "recordInputHistory"
   | "editQueueItem"
+  | "lockQueueItemEdit"
+  | "releaseQueueItemEdit"
+  | "getQueueItemEditLock"
   | "recallPreviousInputHistory"
   | "removeQueueItem"
   | "reserveQueueItem"
@@ -330,13 +333,33 @@ export function createInputFacade(deps: CreateInputFacadeDeps): InputFacade {
         traceContext: options?.traceContext ?? deps.traceContext,
       }),
     editQueueItem: async (pendingInputId, newText, options) => {
-      // v4 queue 单项编辑：替换排队输入文本（reducer 同 id 原地更新，保位）。
+      // v4 queue 单项编辑：原地写回正文/附件/提交配置（reducer 同 id 原地更新，保位）。
       return deps.runtime.editPendingInputById({
         pendingInputId,
-        newText,
+        ...(newText !== undefined ? { newText } : {}),
+        ...(options?.editorId ? { editorId: options.editorId } : {}),
+        ...(options?.attachmentRefs ? { attachmentRefs: options.attachmentRefs } : {}),
+        ...(options?.attachments ? { attachments: options.attachments } : {}),
+        ...(options?.conversationQuotes ? { conversationQuotes: options.conversationQuotes } : {}),
+        ...(options?.modelSelection ? { modelSelection: options.modelSelection } : {}),
+        ...(options?.mode ? { mode: options.mode } : {}),
+        ...(options?.planEnabled !== undefined ? { planEnabled: options.planEnabled } : {}),
+        ...(options?.dropHighspeed ? { dropHighspeed: options.dropHighspeed } : {}),
         traceContext: options?.traceContext ?? deps.traceContext,
       });
     },
+    lockQueueItemEdit: async (pendingInputId, editLock, options) =>
+      deps.runtime.lockPendingInputEdit({
+        pendingInputId,
+        editLock,
+        traceContext: options?.traceContext ?? deps.traceContext,
+      }),
+    releaseQueueItemEdit: async (pendingInputId, options) =>
+      deps.runtime.releasePendingInputEdit({
+        pendingInputId,
+        traceContext: options?.traceContext ?? deps.traceContext,
+      }),
+    getQueueItemEditLock: (pendingInputId) => deps.runtime.getPendingInputEditLock(pendingInputId),
     reorderQueueItem: async (pendingInputId, beforePendingInputId, options) => {
       // v4 queue 重排：移动排队项到锚点前（null=队尾）。
       return deps.runtime.reorderPendingInput({

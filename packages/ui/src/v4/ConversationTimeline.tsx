@@ -22,7 +22,6 @@ import { ArrowDownIcon } from "lucide-react";
 import { TID_V4_TIMELINE, TID_V4_TIMELINE_BOTTOM } from "@raspberrycode/shared/test-ids";
 import type {
   ApiRetryState,
-  AttachmentRef,
   CommandAck,
   ConversationRow,
   ConversationRowTarget,
@@ -44,7 +43,10 @@ import {
   type PluginUiRowPinResolver,
 } from "@/plugin-ui/index.js";
 import { ConversationPendingGuideList } from "@/v4/ConversationPendingGuideList.js";
-import type { AssistantFeedbackHandler } from "@/v4/ConversationRowView.js";
+import type {
+  AssistantFeedbackHandler,
+  UserInputEditHandler,
+} from "@/v4/ConversationRowView.js";
 import { ConversationTurnNavigator } from "@/v4/ConversationTurnNavigator.js";
 import type { ConversationRowRenderContext } from "@/v4/conversationRowContext.js";
 import {
@@ -287,12 +289,7 @@ export interface ConversationTimelineProps {
   onFork?: (target: ConversationRowTarget) => void;
   onRetry?: (target: ConversationRowTarget) => void;
   onFeedbackChange?: AssistantFeedbackHandler;
-  onEdit?: (
-    target: ConversationRowTarget,
-    newText: string,
-    attachments?: readonly AttachmentRef[],
-    workspaceMode?: "preserve" | "rewind",
-  ) => Promise<CommandAck | boolean | void> | CommandAck | boolean | void;
+  onEdit?: UserInputEditHandler;
   /** user 行「回退」入口（revertUserQuery，回退到发送前且不重发）。 */
   onRevert?: (target: ConversationRowTarget) => Promise<CommandAck | boolean | void> | CommandAck | boolean | void;
   /** 还有更早历史可拉（窗口首行 > 全序首行）。 */

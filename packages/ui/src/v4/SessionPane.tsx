@@ -53,6 +53,7 @@ import type {
   SessionModelTransition,
   V4ConversationFileChangesResult,
 } from "@raspberrycode/shared/raspberrycode-protocol-v4";
+import { submissionModeSchema } from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import { logger } from "@/logger.js";
 import {
   PluginUiSessionProvider,
@@ -121,6 +122,15 @@ import {
 } from "@/v4/ConversationComposer.js";
 import type { ConversationDropTargetController } from "@/v4/composer/conversationDropTarget.js";
 import { shouldIgnoreEscapeForStopGeneration } from "@/v4/composer/escapeStop.js";
+import {
+  ComposerEditBar,
+  composerEditSessionKey,
+  getComposerEditSession,
+  useComposerEditMode,
+  useComposerEditStore,
+  type ComposerEditSession,
+  useQueueConfigApplyPrompt,
+} from "@/composer-edit-mode/index.js";
 import { useConversationPanePresentation } from "@/side-pane-full-view/index.js";
 import { ConversationDraftEmptyState } from "@/v4/ConversationDraftEmptyState.js";
 import { ConversationDraftSuggestedPromptsContainer } from "@/v4/ConversationDraftSuggestedPromptsContainer.js";
@@ -205,7 +215,6 @@ import { useSessionOpenArmsTelemetry } from "@/v4/telemetry/useSessionOpenArmsTe
 import {
   parseV4VisibleSlashCommand,
   parseSelectionSideSlashCommand,
-  v4QueuedCommandText,
   type V4VisibleSlashCommand,
 } from "@/v4/slashCommands.js";
 import { useSlashCommands } from "@/hooks/useSlashCommands.js";
@@ -426,41 +435,33 @@ function isConversationFileDrag(dataTransfer: DataTransfer): boolean {
   );
 }
 
-export interface QueuedComposerRestoreTarget {
-  baseRevision: number;
-  queueItemId: string;
-  sourceCommandId: string;
-  inputKind: "sendText" | "sendGoalCommand";
-  text: string;
-  attachments: readonly AttachmentRef[];
-  config?: ComposerRestoreRequest["config"];
+/**
+ * 编辑排队消息时 kind 不变（docs/ui/composer-edit-mode.md）：goal 项必须保留 /goal，
+ * 普通项不能改成 /goal 命令，否则 CLI 原地替换后消费语义与用户看到的文字不一致。
+ */
+export function composerEditQueueKindMismatch(
+  inputKind: ComposerEditSession["inputKind"],
+  text: string,
+): "goal" | "text" | null {
+  const isGoal = parseV4VisibleSlashCommand(text.trim())?.kind === "sendGoalCommand";
+  if (inputKind === "sendGoalCommand" && !isGoal) return "goal";
+  if (inputKind === "sendText" && isGoal) return "text";
+  return null;
 }
 
-export function resolveQueuedComposerRestore(
-  snapshot: ConversationSnapshot,
-  queueItemId: string,
-): QueuedComposerRestoreTarget | null {
-  const item = snapshot.queue.items.find((candidate) => candidate.queueItemId === queueItemId);
-  if (!item || item.kind === "compact") return null;
-  const restoresModelSelection = item.modelSelection !== undefined;
-  const config = {
-    ...(item.mode ? { mode: item.mode } : {}),
-    ...(typeof item.planEnabled === "boolean" ? { planEnabled: item.planEnabled } : {}),
-    ...(restoresModelSelection ? { modelSelection: item.modelSelection } : {}),
+// 配置 reader 只捕获配置 ref/模型投影；不能因复用回调而带住 SessionPane 的旧 lease。
+function createDraftConfigReader(
+  draftConfigRef: ReturnType<typeof useDraftConfigControl>["draftConfigRef"],
+) {
+  return () => {
+    const config = draftConfigRef.current;
+    const mode = submissionModeSchema.safeParse(config.mode);
+    return {
+      ...(mode.success ? { mode: mode.data } : {}),
+      planEnabled: config.planEnabled ?? false,
+      ...(config.modelSelection ? { modelSelection: config.modelSelection } : {}),
+    };
   };
-  return {
-    baseRevision: snapshot.revision,
-    queueItemId,
-    sourceCommandId: item.sourceCommandId,
-    inputKind: item.kind,
-    text: v4QueuedCommandText(item.kind, item.text),
-    attachments: item.attachments.map((attachment) => ({ ...attachment })),
-    ...(Object.keys(config).length > 0 ? { config } : {}),
-  };
-}
-
-export function shouldRestoreQueuedComposerFromAck(status: CommandAck["status"]): boolean {
-  return status === "accepted" || status === "duplicate";
 }
 
 interface SessionPaneLeaseBinding {
@@ -805,19 +806,16 @@ export function SessionPane({
     [onAutoOpenAssistantPptx],
   );
   const composerDraftStateRef = useRef({ hasContent: false, busy: false });
-  // 稳定引用（依赖为空）：只读 ref，供 rowContext.hasComposerDraft 使用。
-  // 定义必须早于 rowContext 的 useMemo，否则会在初始化前被引用。
-  const readComposerHasDraft = useCallback(() => composerDraftStateRef.current.hasContent, []);
-  const [queueEditOperation, setQueueEditOperation] = useState<{
-    queueItemId: string;
-    sessionId: string;
-    workspaceKey: string;
-  } | null>(null);
-  const queueEditOperationRef = useRef(queueEditOperation);
-  queueEditOperationRef.current = queueEditOperation;
+  // composer 编辑态下用于判断「是否已改动」：只在切换编辑目标时读取。
+  const composerTextRef = useRef("");
+  const composerEditWorkspaceModeRef = useRef<"preserve" | "rewind">("preserve");
+  const [composerEditSubmitRequest, setComposerEditSubmitRequest] = useState(0);
   const [composerRestoreRequest, setComposerRestoreRequest] =
     useState<ComposerRestoreRequest | null>(null);
   const nextComposerRestoreRequestIdRef = useRef(1);
+  // 稳定引用（依赖为空）：只读 ref，供 rowContext.hasComposerDraft 使用。
+  // 定义必须早于 rowContext 的 useMemo，否则会在初始化前被引用。
+  const readComposerHasDraft = useCallback(() => composerDraftStateRef.current.hasContent, []);
   const timelineScrollToBottomRef = useRef<(() => void) | null>(null);
   const timelineScrollToQueryRef = useRef<
     ((target: { unitIndex: number; rowId: number }) => void) | null
@@ -1023,6 +1021,12 @@ export function SessionPane({
   const draftAgentStartupAllowed =
     providerAgentStartupAllowed && remoteAvailable && draftProjectReady;
 
+  // composer 编辑态：草稿切到 edit scope（docs/ui/composer-edit-mode.md），原草稿留在原 scope。
+  const composerEditScopeId = useComposerEditStore((store) =>
+    sessionId
+      ? store.sessions[composerEditSessionKey(workspaceKey, sessionId)]?.scopeId
+      : undefined,
+  );
   // Composer 保存下一次 Submission 的 renderer intent；prewarm session 仅承载草稿预热。
   const {
     composerDraft,
@@ -1034,6 +1038,7 @@ export function SessionPane({
     handleDraftSelectModel,
     handleDraftSelectThought,
     handleDraftSwitchMode,
+    keepEditConfigOnExit,
     observeDraftPermissionGrant,
     promoteComposerDraft,
     captureAcceptedModelSelection,
@@ -1051,6 +1056,7 @@ export function SessionPane({
     sessionConfig: runtimeReady && snapshot?.sessionId === sessionId ? snapshot.config : null,
     agentStartupAllowed: draftAgentStartupAllowed,
     modelSelectionService,
+    editScopeId: composerEditScopeId ?? null,
   });
   const modelSelectionView =
     modelSelectionRead.state.status === "ready" ? modelSelectionRead.state.view : null;
@@ -3006,7 +3012,187 @@ export function SessionPane({
     timelineScrollToBottomRef.current?.();
   }, []);
 
-  const handleSendText = useCallback(
+  const handleEdit = useCallback(
+    async (
+      target: ConversationRowTarget,
+      newText: string,
+      attachments?: readonly AttachmentRef[],
+      workspaceMode: "preserve" | "rewind" = "preserve",
+      conversationQuotes?: import("@raspberrycode/shared").ConversationSelectionText[],
+    ) => {
+      const current = snapshotRef.current;
+      if (!sessionId || current === null) return false;
+      if (
+        !newText.trim() &&
+        (!attachments || attachments.length === 0) &&
+        !conversationQuotes?.length
+      ) {
+        logger.warn("[v4-pane] edit 跳过：行内编辑内容为空且无附件");
+        return false;
+      }
+      const ack = await dispatchCommand(
+        "editUserQuery",
+        {
+          target,
+          newText,
+          workspaceMode,
+          conversationQuotes,
+          // editUserQuery 的 attachments 缺省表示保留 canonical 原附件；
+          // 只有显式透传 []，CLI 才能区分“用户删除全部”与“调用方未修改附件”。
+          ...(attachments ? { attachments: [...attachments] } : {}),
+        },
+        sessionId,
+        current.revision,
+        current.logEpoch,
+      );
+      if (ack.status !== "accepted" && ack.status !== "duplicate") {
+        logger.warn(`[v4-pane] edit 被拒绝: ${ack.status} ${ack.reasonCode ?? ""}`);
+        return false;
+      }
+      // fork ACK 只做旧协议解码兼容；新 edit 永不导航 child。blocked 由行内冲突弹窗处理。
+      return ack;
+    },
+    [dispatchCommand, sessionId],
+  );
+  const readComposerDraftConfig = useMemo(
+    () => createDraftConfigReader(draftConfigRef),
+    [draftConfigRef],
+  );
+  const dispatchComposerEditCommand = useCallback(
+    (
+      type: "lockQueueItemEdit" | "releaseQueueItemEdit",
+      payload: Record<string, unknown>,
+      targetSessionId: string,
+    ) => dispatchCommand(type, payload, targetSessionId),
+    [dispatchCommand],
+  );
+  const composerEdit = useComposerEditMode({
+    sessionId,
+    workspacePath,
+    workspaceIdentity,
+    workspaceKey,
+    remoteSessionId: remoteSessionId ?? undefined,
+    snapshot,
+    snapshotRef,
+    composerDraftStateRef,
+    composerTextRef,
+    readCurrentDraftConfig: readComposerDraftConfig,
+    readAttachment: runtimeReady ? attachmentRead : undefined,
+    dispatchCommand: dispatchComposerEditCommand,
+    intl,
+  });
+  const composerEditInvalidReasonRef = useRef(composerEdit.invalidReason);
+  composerEditInvalidReasonRef.current = composerEdit.invalidReason;
+  const { finishEdit: finishComposerEdit, editorId: composerEditorId } = composerEdit;
+  const readQueueItems = useCallback(
+    () => (snapshotRef.current?.sessionId === sessionId ? snapshotRef.current.queue.items : null),
+    [sessionId],
+  );
+  const promptApplyEditConfigToQueue = useQueueConfigApplyPrompt({
+    sessionId,
+    readQueueItems,
+    dispatchCommand,
+  });
+
+  /**
+   * composer 编辑态的发送路由（docs/ui/composer-edit-mode.md）：发送按钮与 Enter 不变，
+   * 只把提交改投 editUserQuery / editQueueItem。返回 blocked 让 composer 保留编辑内容。
+   */
+  const submitComposerEdit = useCallback(
+    async (
+      editSession: ComposerEditSession,
+      text: string,
+      options?: ConversationComposerSendOptions,
+    ): Promise<ConversationComposerSendResult> => {
+      const workspaceMode = composerEditWorkspaceModeRef.current;
+      composerEditWorkspaceModeRef.current = "preserve";
+      const current = snapshotRef.current;
+      if (!sessionId || current === null) return "blocked";
+      const submission =
+        options?.submission === undefined ? createSubmissionFromComposer() : options.submission;
+      // composer 展示的就是完整附件列表：显式提交完整数组，[] 表示用户删除了全部附件。
+      const attachments = options?.attachments ?? [];
+      const editKey = composerEditSessionKey(workspaceKey, sessionId);
+      if (editSession.target.kind === "userQuery") {
+        const result = await handleEdit(
+          { rowId: editSession.target.rowId, entityId: editSession.target.entityId },
+          text,
+          attachments,
+          workspaceMode,
+          // 引用缺省会让 CLI 回退到原消息的引用；编辑态展示的是完整列表，必须显式提交。
+          options?.conversationQuotes ?? [],
+        );
+        if (result === false) {
+          toast(intl.formatMessage({ id: "chat.composerEdit.saveFailed" }));
+          return "blocked";
+        }
+        if (
+          result.result?.type === "editUserQuery" &&
+          result.result.disposition === "blocked" &&
+          result.result.preview
+        ) {
+          // 「对话 + 文件重置」遇到文件冲突：保持编辑态，由冲突对话框决定是否只重置对话。
+          useComposerEditStore
+            .getState()
+            .update(editKey, { conflictPreview: result.result.preview });
+          return "blocked";
+        }
+        // 编辑态在 composer 结算（附件 adopt）后由 onSubmissionSettled 退出。
+        focusTimelineToLatest();
+        if (submission) promptApplyEditConfigToQueue(submission);
+        return "sent";
+      }
+      const kindMismatch = composerEditQueueKindMismatch(editSession.inputKind, text);
+      if (kindMismatch) {
+        toast(intl.formatMessage({ id: `chat.composerEdit.kindMismatch.${kindMismatch}` }));
+        return "blocked";
+      }
+      const ack = await dispatchCommand(
+        "editQueueItem",
+        {
+          queueItemId: editSession.target.queueItemId,
+          newText: text,
+          editorId: composerEditorId,
+          attachments: [...attachments],
+          // composer 展示的是完整引用列表：显式提交，[] 表示用户移除了全部会话引用。
+          conversationQuotes: options?.conversationQuotes ?? [],
+          ...(submission
+            ? {
+                modelSelection: submission.modelSelection,
+                mode: submission.mode,
+                planEnabled: submission.planEnabled,
+              }
+            : {}),
+        },
+        // Bug 根因：曾按 CAS 携带 baseRevision；运行中 revision 持续递增，提交被 staleRevision
+        // 拒绝后编辑态无法退出（goal 队列 E2E 并发跑时复现）。并发保护改由 CLI 编辑锁承担。
+        sessionId,
+      );
+      if (ack.status === "accepted" || ack.status === "duplicate") {
+        if (submission) promptApplyEditConfigToQueue(submission, editSession.target.queueItemId);
+        return "sent";
+      }
+      logger.warn(`[v4-pane] editQueueItem 被拒绝: ${ack.status} ${ack.reasonCode ?? ""}`);
+      // noop / lockLost 由投影驱动状态条进入失效态；其余失败提示重试，编辑内容都保留。
+      if (ack.status !== "noop" && ack.reasonCode !== "guard.queueEditLockLost") {
+        toast(intl.formatMessage({ id: "chat.composerEdit.saveFailed" }));
+      }
+      return "blocked";
+    },
+    [
+      composerEditorId,
+      createSubmissionFromComposer,
+      dispatchCommand,
+      focusTimelineToLatest,
+      handleEdit,
+      intl,
+      promptApplyEditConfigToQueue,
+      sessionId,
+      workspaceKey,
+    ],
+  );
+
+  const sendComposerText = useCallback(
     async (
       text: string,
       options?: ConversationComposerSendOptions,
@@ -3050,6 +3236,23 @@ export function SessionPane({
     },
     [dispatchSendText, focusTimelineToLatest, intl, sessionId],
   );
+
+  const handleSendText = useCallback(
+    async (
+      text: string,
+      options?: ConversationComposerSendOptions,
+    ): Promise<ConversationComposerSendResult> => {
+      const editSession = sessionId
+        ? getComposerEditSession(composerEditSessionKey(workspaceKey, sessionId))
+        : undefined;
+      if (editSession && composerEditInvalidReasonRef.current === null) {
+        return submitComposerEdit(editSession, text, options);
+      }
+      // 失效态的发送是普通新消息；结算后同样由 onSubmissionSettled 退出编辑态并恢复原草稿。
+      return sendComposerText(text, options);
+    },
+    [sendComposerText, sessionId, submitComposerEdit, workspaceKey],
+  );
   // 上面那个 ref 的唯一赋值点（见 handleSendWorkflowSaveRequest 的说明）。
   sendTextRef.current = handleSendText;
 
@@ -3058,6 +3261,46 @@ export function SessionPane({
       composerDraftStateRef.current = state;
     },
     [],
+  );
+  const handleComposerTextChange = useCallback((text: string) => {
+    composerTextRef.current = text;
+  }, []);
+  const handleComposerRestoreApplied = useCallback((requestId: number) => {
+    setComposerRestoreRequest((current) => (current?.requestId === requestId ? null : current));
+  }, []);
+  const handleComposerSubmissionSettled = useCallback(
+    (scopeId: string) => {
+      if (!sessionId) return;
+      const editSession = getComposerEditSession(composerEditSessionKey(workspaceKey, sessionId));
+      // 只结束本次提交所属的编辑；提交期间已切换到另一编辑目标时保持新编辑态。
+      if (editSession?.scopeId !== scopeId) return;
+      // 提交成功：回到原草稿时保留编辑态的模型与 mode（docs/ui/composer-edit-mode.md）。
+      keepEditConfigOnExit(scopeId);
+      finishComposerEdit();
+    },
+    [finishComposerEdit, keepEditConfigOnExit, sessionId, workspaceKey],
+  );
+  const handleComposerEditRewindWorkspace = useCallback(() => {
+    composerEditWorkspaceModeRef.current = "rewind";
+    setComposerEditSubmitRequest((request) => request + 1);
+  }, []);
+  const handleComposerEditConflictConversationOnly = useCallback(() => {
+    if (sessionId) {
+      useComposerEditStore
+        .getState()
+        .update(composerEditSessionKey(workspaceKey, sessionId), { conflictPreview: undefined });
+    }
+    composerEditWorkspaceModeRef.current = "preserve";
+    setComposerEditSubmitRequest((request) => request + 1);
+  }, [sessionId, workspaceKey]);
+  const handleComposerEditConflictOpenChange = useCallback(
+    (open: boolean) => {
+      if (open || !sessionId) return;
+      useComposerEditStore
+        .getState()
+        .update(composerEditSessionKey(workspaceKey, sessionId), { conflictPreview: undefined });
+    },
+    [sessionId, workspaceKey],
   );
   // 下一步输入预测（spec：specs/next-input-suggestions.md）：点击建议条直接发送，
   // 悬浮按钮把文本追加到输入框。两个回调保持稳定引用，避免整条时间线重渲染。
@@ -3095,17 +3338,6 @@ export function SessionPane({
     sharedSettings?.nextInputPredictionEnabled,
     snapshot?.revision,
   ]);
-  const clearQueueEditOperation = useCallback(() => {
-    queueEditOperationRef.current = null;
-    setQueueEditOperation(null);
-  }, []);
-  const handleComposerRestoreApplied = useCallback(
-    (requestId: number) => {
-      setComposerRestoreRequest((current) => (current?.requestId === requestId ? null : current));
-      clearQueueEditOperation();
-    },
-    [clearQueueEditOperation],
-  );
   const handleFork = useCallback(
     (target: ConversationRowTarget) => {
       const current = snapshotRef.current;
@@ -3131,48 +3363,6 @@ export function SessionPane({
     [dispatchCommand, onSessionCreated, sessionId],
   );
 
-  const handleEdit = useCallback(
-    async (
-      target: ConversationRowTarget,
-      newText: string,
-      attachments?: readonly AttachmentRef[],
-      workspaceMode: "preserve" | "rewind" = "preserve",
-      conversationQuotes?: import("@raspberrycode/shared").ConversationSelectionText[],
-    ) => {
-      const current = snapshotRef.current;
-      if (!sessionId || current === null) return false;
-      if (
-        !newText.trim() &&
-        (!attachments || attachments.length === 0) &&
-        !conversationQuotes?.length
-      ) {
-        logger.warn("[v4-pane] edit 跳过：行内编辑内容为空且无附件");
-        return false;
-      }
-      const ack = await dispatchCommand(
-        "editUserQuery",
-        {
-          target,
-          newText,
-          workspaceMode,
-          conversationQuotes,
-          // editUserQuery 的 attachments 缺省表示保留 canonical 原附件；
-          // 只有显式透传 []，CLI 才能区分“用户删除全部”与“调用方未修改附件”。
-          ...(attachments ? { attachments: [...attachments] } : {}),
-        },
-        sessionId,
-        current.revision,
-        current.logEpoch,
-      );
-      if (ack.status !== "accepted" && ack.status !== "duplicate") {
-        logger.warn(`[v4-pane] edit 被拒绝: ${ack.status} ${ack.reasonCode ?? ""}`);
-        return false;
-      }
-      // fork ACK 只做旧协议解码兼容；新 edit 永不导航 child。blocked 由行内冲突弹窗处理。
-      return ack;
-    },
-    [dispatchCommand, sessionId],
-  );
 
   /**
    * 回退（只回退不重发）。
@@ -3305,69 +3495,6 @@ export function SessionPane({
       );
     },
     [dispatchCommand, sessionId],
-  );
-
-  const handleEditQueueItem = useCallback(
-    async (queueItemId: string): Promise<void> => {
-      const current = snapshotRef.current;
-      if (!sessionId || current === null || queueEditOperationRef.current) return;
-      if (composerDraftStateRef.current.hasContent || composerDraftStateRef.current.busy) {
-        toast(intl.formatMessage({ id: "chat.queue.editDraftConflict" }));
-        return;
-      }
-      const restoreTarget = resolveQueuedComposerRestore(current, queueItemId);
-      if (!restoreTarget) {
-        logger.warn(`[v4-pane] queue 撤回编辑跳过：queue item 不存在或不可编辑 ${queueItemId}`);
-        return;
-      }
-      const operation = { queueItemId, sessionId, workspaceKey };
-      queueEditOperationRef.current = operation;
-      setQueueEditOperation(operation);
-      try {
-        const ack = await dispatchCommand(
-          "deleteQueueItem",
-          { queueItemId },
-          sessionId,
-          restoreTarget.baseRevision,
-        );
-        if (!shouldRestoreQueuedComposerFromAck(ack.status)) {
-          logger.warn(`[v4-pane] queue 撤回编辑被拒绝: ${ack.status} ${ack.reasonCode ?? ""}`);
-          toast(intl.formatMessage({ id: "chat.queue.editRestoreFailed" }));
-          clearQueueEditOperation();
-          return;
-        }
-        pendingCommandRegistry.settle(sessionId, restoreTarget.sourceCommandId);
-        const currentBinding = composerBindingRef.current;
-        if (
-          currentBinding.sessionId !== sessionId ||
-          currentBinding.workspaceKey !== workspaceKey
-        ) {
-          // delete ACK 异步返回时 pane 可能已切 task；旧实现若直接 setText，
-          // 会把原 session 的 queue payload 写进新 task。权威删除保留，但本地恢复必须放弃。
-          logger.warn("[v4-pane] queue 撤回编辑未恢复：ACK 返回前 composer 已切换", {
-            queueItemId,
-            sessionId,
-            workspaceKey,
-          });
-          clearQueueEditOperation();
-          return;
-        }
-        setComposerRestoreRequest({
-          requestId: nextComposerRestoreRequestIdRef.current++,
-          sessionId,
-          workspaceKey,
-          inputKind: restoreTarget.inputKind,
-          text: restoreTarget.text,
-          attachments: restoreTarget.attachments,
-          config: restoreTarget.config,
-        });
-      } catch (error) {
-        logger.warn("[v4-pane] queue 撤回编辑命令失败", error);
-        toast(intl.formatMessage({ id: "chat.queue.editRestoreFailed" }));
-        clearQueueEditOperation();
-      }
-    },
-    [clearQueueEditOperation, dispatchCommand, intl, sessionId, workspaceKey],
   );
 
   const handleSendQueuedNow = useCallback(
@@ -3872,8 +3999,6 @@ export function SessionPane({
   const connecting =
     sessionId !== null &&
     (snapshot === null || (state.status === "connecting" && !snapshot.runtimeInitialization));
-  const queueEditActiveForCurrentComposer =
-    queueEditOperation?.sessionId === sessionId && queueEditOperation.workspaceKey === workspaceKey;
   const errored = sessionId !== null && state.status === "error";
   useSessionSubscriptionErrorTelemetry({
     supervisor: conversationTelemetry,
@@ -4236,7 +4361,6 @@ export function SessionPane({
       disabled={
         connecting ||
         draftRuntimeRebuilding ||
-        queueEditActiveForCurrentComposer ||
         quotaBanner.state.blocksSubmit
       }
       isMobileOverlay={compactForOverlay}
@@ -4254,9 +4378,28 @@ export function SessionPane({
       provider={provider}
       telemetryVisible={telemetryVisible && conversationTelemetryForegroundEnabled}
       onSendText={handleSendText}
+      onTextChange={handleComposerTextChange}
       onDraftStateChange={handleComposerDraftStateChange}
       composerRestoreRequest={composerRestoreRequest}
       onComposerRestoreApplied={handleComposerRestoreApplied}
+      onSubmissionSettled={handleComposerSubmissionSettled}
+      draftScopeId={composerEditScopeId}
+      editFocusRequest={composerEdit.editSession?.focusRequest ?? 0}
+      editSubmitRequest={composerEditSubmitRequest}
+      editBar={
+        composerEdit.editSession ? (
+          <ComposerEditBar
+            target={composerEdit.editSession.target}
+            invalidReason={composerEdit.invalidReason}
+            workspaceRewind={composerEdit.editSession.workspaceRewind}
+            submitting={state.optimisticCommands.some(
+              (command) => command.type === "editUserQuery" || command.type === "editQueueItem",
+            )}
+            onRewindWorkspace={handleComposerEditRewindWorkspace}
+            onCancel={composerEdit.cancelEdit}
+          />
+        ) : undefined
+      }
       onStop={handleStopFromButton}
       onSelectModel={handleSelectModel}
       onSelectThought={handleSelectThought}
@@ -4308,10 +4451,17 @@ export function SessionPane({
           key="conversation-queue"
           queue={pendingGuideProjection?.visibleQueue ?? snapshot.queue}
           onDeleteItem={handleDeleteQueueItem}
-          onEditItem={handleEditQueueItem}
-          pendingEditQueueItemId={
-            queueEditActiveForCurrentComposer ? queueEditOperation.queueItemId : null
+          onEditItem={composerEdit.beginQueueItemEdit}
+          pendingEditQueueItemId={composerEdit.pendingLockQueueItemId}
+          editorId={composerEdit.editorId}
+          activeEditQueueItemId={
+            composerEdit.editSession?.target.kind === "queueItem"
+              ? composerEdit.editSession.target.queueItemId
+              : null
           }
+          activeEditLockConfirmed={composerEdit.editSession?.lockConfirmed ?? false}
+          onReleaseEditLock={composerEdit.releaseQueueItemEditLock}
+          onFocusEditInComposer={composerEdit.requestEditFocus}
           onSendNow={handleSendQueuedNow}
           onMoveItem={handleReorderQueueItem}
           onResume={handleResumeQueue}
@@ -4568,7 +4718,7 @@ export function SessionPane({
                       ? handleAssistantFeedback
                       : undefined
                   }
-                  onEdit={editActionsEnabled ? handleEdit : undefined}
+                  onEdit={editActionsEnabled ? composerEdit.beginUserQueryEdit : undefined}
                   onRevert={editActionsEnabled ? handleRevert : undefined}
                   canLoadOlder={timelineSnapshot ? hasOlderRows(timelineSnapshot) : false}
                   loadingOlder={timelineSnapshot ? state.loadingOlder : false}

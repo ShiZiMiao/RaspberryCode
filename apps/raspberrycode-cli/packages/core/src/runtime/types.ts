@@ -47,6 +47,7 @@ import type {
   ModelUsageSummary,
   ModelInputMessage,
   MessageWithParts,
+  PendingTurnAttachment,
   PendingTurnInput,
   TurnInputIntentMetadata,
   TurnSteerResult,
@@ -822,6 +823,31 @@ export interface DrainedPendingInputDiagnostics {
   /** 本次 drain 注入的输入附带的工具隐藏列表，下一次 provider 请求必须继续生效。 */
   toolDisallowlist?: readonly string[];
 }
+
+/** composer 编辑态写回排队项（docs/ui/composer-edit-mode.md）；可选字段缺省 = 保留原值。 */
+export interface EditPendingInputOptions {
+  pendingInputId: string;
+  /**
+   * 缺省 = 保留原输入，只改配置（applyQueueItemsConfig）。不能由调用方用投影 text 回填：
+   * 投影 text 经过 genUi 归一化，写回会丢掉输入里的上下文。
+   */
+  newText?: string;
+  /** 携带时必须持有该编辑器的锁；成功后同一调用释放锁。 */
+  editorId?: string;
+  attachmentRefs?: NonNullable<TurnInputIntentMetadata["attachmentRefs"]>;
+  attachments?: PendingTurnAttachment[];
+  conversationQuotes?: TurnInputIntentMetadata["conversationQuotes"];
+  modelSelection?: ModelSelection;
+  mode?: TurnInputIntentMetadata["mode"];
+  planEnabled?: boolean;
+  /** 用户改了模型：入队时冻结的 Highspeed 卡不能再覆盖用户的新选择。 */
+  dropHighspeed?: boolean;
+}
+
+/** editLocked = 该项被他人锁定且调用方未持锁；lockLost = 调用方声明的锁已不在。 */
+export type EditPendingInputResult = "edited" | "missing" | "editLocked" | "lockLost";
+
+export type LockPendingInputEditResult = "locked" | "missing" | "reserved" | "lockedByOther";
 
 export interface ProviderContextUsageSnapshot {
   cacheReadTokens?: number;

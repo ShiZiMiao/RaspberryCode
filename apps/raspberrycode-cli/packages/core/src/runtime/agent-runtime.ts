@@ -29,6 +29,8 @@ import type {
   ModelToolContract,
   PermissionBrokerPort,
   PermissionBrokerRequest,
+  PendingInputEditLock,
+  PendingTurnAttachment,
   ProjectId,
   SessionEventSink,
   SessionEventStorePort,
@@ -105,9 +107,11 @@ import type {
   ContinueActiveTargetLoopOptions,
   ConversationBeforeInputForkOptions,
   ConversationRewindResult,
+  EditPendingInputResult,
   ExecuteToolsOptions,
   ExecuteToolsResult,
   ExecuteTurnOptions,
+  LockPendingInputEditResult,
   PromptAdmissionOptions,
   PromptAdmissionReceipt,
   ForegroundPromotionLeaseMode,
@@ -250,6 +254,8 @@ export class AgentRuntime {
   private pendingInputSequence = 0;
   /** sendQueuedNow reservation；只活在当前 CLI 进程，防 drain/多端重复提升。 */
   private pendingInputReservations = new Map<string, string>();
+  /** composer 编辑态冻结锁；只活在当前 CLI 进程，不使用超时释放。 */
+  private pendingInputEditLocks = new Map<string, PendingInputEditLock>();
   // v4 setAutoDrain：false 时排队输入不自动消费
   // （turn-stop 不续跑、roundtrip 间不 drain），保留成 held 供显式消费。
   private queueAutoDrain = true;
@@ -582,9 +588,29 @@ export interface AgentRuntime {
   /** v4 queue 单项编辑：按 pendingInputId 替换排队输入文本（保位）。 */
   editPendingInputById(options: {
     pendingInputId: string;
-    newText: string;
+    newText?: string;
+    editorId?: string;
+    attachmentRefs?: NonNullable<TurnInputIntentMetadata["attachmentRefs"]>;
+    attachments?: PendingTurnAttachment[];
+    conversationQuotes?: TurnInputIntentMetadata["conversationQuotes"];
+    modelSelection?: ModelSelection;
+    mode?: TurnInputIntentMetadata["mode"];
+    planEnabled?: boolean;
+    dropHighspeed?: boolean;
+    traceContext?: TraceContext;
+  }): Promise<EditPendingInputResult>;
+  /** composer 编辑态冻结排队项：锁与 reservation 互斥，只对仍在队列中的项生效。 */
+  lockPendingInputEdit(options: {
+    pendingInputId: string;
+    editLock: PendingInputEditLock;
+    traceContext?: TraceContext;
+  }): Promise<LockPendingInputEditResult>;
+  /** 解除编辑锁：发起端取消、刷新后自愈，或其他端在发起端离线时手动解除。 */
+  releasePendingInputEdit(options: {
+    pendingInputId: string;
     traceContext?: TraceContext;
   }): Promise<boolean>;
+  getPendingInputEditLock(pendingInputId: string): PendingInputEditLock | undefined;
   /** v4 queue 重排：移动 pendingInputId 到 beforePendingInputId 之前（null=队尾）。 */
   reorderPendingInput(options: {
     pendingInputId: string;

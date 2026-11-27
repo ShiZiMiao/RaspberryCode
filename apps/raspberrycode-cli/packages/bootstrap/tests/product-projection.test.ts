@@ -6664,6 +6664,120 @@ describe("fork / modelChange marker", () => {
     expect(items[1]!.text).toBe("第二条");
   });
 
+  // ── M4：composer 编辑锁（TurnSteerEditLockChanged → queue item editLock）──
+  it("A/B：编辑锁随项投影，编辑重入保留，显式解锁后移除", () => {
+    const log = new EventLog();
+    log.push(SessionEventType.SessionCreated, { mode: "default", contextWindow: 200_000 });
+    log.push(SessionEventType.TurnStarted, { turnNumber: 1, input: "跑" }, { turnId: "t1" });
+    log.push(
+      SessionEventType.TurnSteerQueued,
+      {
+        pendingInputId: "q1",
+        input: "排队原文",
+        inputPreview: "排队原文",
+        inputSize: 12,
+        queueLength: 1,
+        targetTurnId: "t1",
+      },
+      { turnId: "t1" },
+    );
+    log.push(SessionEventType.TurnSteerEditLockChanged, {
+      pendingInputId: "q1",
+      targetTurnId: "t1",
+      editLock: { editorId: "editor-1", clientId: "desktop-client", inputOrigin: "desktop" },
+    });
+    // 编辑提交（同 id 重入）不是重新准入，锁必须保留到显式解锁。
+    log.push(
+      SessionEventType.TurnSteerQueued,
+      {
+        pendingInputId: "q1",
+        input: "改后文本",
+        inputPreview: "改后文本",
+        inputSize: 12,
+        queueLength: 1,
+        targetTurnId: "t1",
+      },
+      { turnId: "t1" },
+    );
+    const { projection } = runAll(log.events);
+    expect(projection.getSnapshot().queue.items[0]).toMatchObject({
+      text: "改后文本",
+      editLock: { editorId: "editor-1", clientId: "desktop-client", inputOrigin: "desktop" },
+    });
+
+    log.push(SessionEventType.TurnSteerEditLockChanged, {
+      pendingInputId: "q1",
+      targetTurnId: "t1",
+    });
+    const afterRelease = runAll(log.events).projection.getSnapshot().queue.items[0]!;
+    expect("editLock" in afterRelease).toBe(false);
+  });
+
+  // ── M4：userInput 行提交配置（composer 编辑态载入原消息的模型/mode/Plan）──
+  it("A/B：TurnStarted 与 queue drain 的 userInput 行都投影提交配置", () => {
+    const log = new EventLog();
+    log.push(SessionEventType.SessionCreated, { mode: "default", contextWindow: 200_000 });
+    log.push(
+      SessionEventType.TurnStarted,
+      {
+        turnNumber: 1,
+        input: "原始问题",
+        inputId: "command-1",
+        messageId: "user-1",
+        intent: {
+          sourceCommandId: "command-1",
+          kind: "sendText",
+          modelSelection: { providerId: "provider-a", modelId: "model-a" },
+          mode: "guarded",
+          planEnabled: false,
+        },
+      },
+      { turnId: "t1" },
+    );
+    const { projection } = runAll(log.events);
+    expect(projection.getSnapshot().rows.window.find((row) => row.kind === "userInput")).toMatchObject(
+      {
+        modelSelection: { providerId: "provider-a", modelId: "model-a" },
+        mode: "guarded",
+        planEnabled: false,
+      },
+    );
+
+    log.push(
+      SessionEventType.TurnSteerDrained,
+      {
+        pendingInputIds: ["pi-1"],
+        targetTurnId: "t1",
+        injectedMessageIds: ["message-drained"],
+        drainedInputs: [
+          {
+            pendingInputId: "pi-1",
+            messageId: "message-drained",
+            text: "排队问题",
+            delivery: "queue",
+            intent: {
+              sourceCommandId: "command-2",
+              queueItemId: "pi-1",
+              kind: "sendText",
+              modelSelection: { providerId: "provider-b", modelId: "model-b" },
+              mode: "yolo",
+              planEnabled: true,
+            },
+          },
+        ],
+      },
+      { turnId: "t1" },
+    );
+    const drained = runAll(log.events).projection.getSnapshot().rows.window.at(-1);
+    expect(drained).toMatchObject({
+      kind: "userInput",
+      text: "排队问题",
+      modelSelection: { providerId: "provider-b", modelId: "model-b" },
+      mode: "yolo",
+      planEnabled: true,
+    });
+  });
+
   // ── M4：queue 重排（TurnSteerReordered → 按新序重排 queue rows）──
   it("A/B：reorderQueueItem —— 按 orderedPendingInputIds 重排 queue", () => {
     const log = new EventLog();

@@ -48,6 +48,9 @@ import {
 } from "#e2e/helpers/v4-conversation";
 
 const DRAFT_TEXT = "E2E_QEF_DRAFT 保留的原草稿";
+// 下一步输入预测也是模型请求，且上下文里包含最后一条 user 消息；证据查询必须排除它，
+// 否则会先命中预测请求（用草稿模型）而误判队列项没有按新配置消费。
+const INPUT_PREDICTION_PROMPT_MARKERS = ["你是输入预测器", "你是输入补全器"];
 
 describe("B09 排队消息冻结编辑", () => {
   afterEach(async () => {
@@ -136,24 +139,32 @@ describe("B09 排队消息冻结编辑", () => {
     await confirmV4ComposerEditApplyQueue();
 
     await waitForUpstreamRequest(
-      { lastUserMessageIncludes: ["E2E_QEF_C_EDITED"] },
+      {
+        lastUserMessageIncludes: ["E2E_QEF_C_EDITED"],
+        excludes: INPUT_PREDICTION_PROMPT_MARKERS,
+      },
       "解锁后冻结项没有按新内容消费",
       45000,
     );
     const [consumedC] = await getUpstreamRequestEvidence({
       lastUserMessageIncludes: ["E2E_QEF_C_EDITED"],
+      excludes: INPUT_PREDICTION_PROMPT_MARKERS,
     });
     expect(consumedC?.requestJson).toMatchObject({ model: UPSTREAM_SECONDARY_MODEL });
     // C 是慢流：确认应用时 D 仍在排队；释放后 D 按应用的新模型消费。
     await releaseControlledReplay("qef-c");
     await waitForV4TimelineContaining("QEF_C_REPLY", 45000);
     await waitForUpstreamRequest(
-      { lastUserMessageIncludes: ["E2E_QEF_D"] },
+      {
+        lastUserMessageIncludes: ["E2E_QEF_D"],
+        excludes: INPUT_PREDICTION_PROMPT_MARKERS,
+      },
       "应用到排队消息后 D 没有被消费",
       45000,
     );
     const [consumedD] = await getUpstreamRequestEvidence({
       lastUserMessageIncludes: ["E2E_QEF_D"],
+      excludes: INPUT_PREDICTION_PROMPT_MARKERS,
     });
     expect(consumedD?.requestJson).toMatchObject({ model: UPSTREAM_SECONDARY_MODEL });
     await waitForV4TimelineContaining("QEF_D_REPLY", 45000);

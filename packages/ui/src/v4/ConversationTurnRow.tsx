@@ -1,5 +1,4 @@
 import type {
-  AttachmentRef,
   CommandAck,
   ConversationRow,
   ConversationRowTarget,
@@ -12,6 +11,7 @@ import { ConversationRowView } from "@/v4/ConversationRowView.js";
 import type {
   AssistantFeedbackHandler,
   EditWorkspaceRewindAvailability,
+  UserInputEditHandler,
 } from "@/v4/ConversationRowView.js";
 import type { ConversationRowRenderContext } from "@/v4/conversationRowContext.js";
 import type { ConversationTurnRenderUnit } from "@/v4/conversationTurnRenderUnits.js";
@@ -23,12 +23,7 @@ interface ConversationTurnRowProps {
   onFork?: (target: ConversationRowTarget) => void;
   onRetry?: (target: ConversationRowTarget) => void;
   onFeedbackChange?: AssistantFeedbackHandler;
-  onEdit?: (
-    target: ConversationRowTarget,
-    newText: string,
-    attachments?: readonly AttachmentRef[],
-    workspaceMode?: "preserve" | "rewind",
-  ) => Promise<CommandAck | boolean | void> | CommandAck | boolean | void;
+  onEdit?: UserInputEditHandler;
   /** user 行「回退」入口（revertUserQuery）。可见性由 row.actions.canRevert 裁决。 */
   onRevert?: (
     target: ConversationRowTarget,

@@ -6,6 +6,8 @@ import type { DatabaseSync } from "node:sqlite";
 import type {
   MessageInfo,
   MessagePart,
+  ModelSelection,
+  PendingTurnAttachment,
   SessionId,
   SessionInputDelivery,
   SessionInputRecord,
@@ -97,6 +99,12 @@ interface SessionInputPatch {
   intent?: TurnInputIntentMetadata;
   text?: string;
   queuePosition?: number;
+  /** composer 编辑态写回：附件引用与提交配置必须同步 durable intent。 */
+  attachmentRefs?: NonNullable<TurnInputIntentMetadata["attachmentRefs"]>;
+  attachments?: PendingTurnAttachment[];
+  modelSelection?: ModelSelection;
+  mode?: TurnInputIntentMetadata["mode"];
+  planEnabled?: boolean;
 }
 
 function patchObject(value: unknown, patch: SessionInputPatch): unknown {
@@ -107,6 +115,11 @@ function patchObject(value: unknown, patch: SessionInputPatch): unknown {
   return {
     ...current,
     ...(patch.text !== undefined ? { text: patch.text } : {}),
+    ...(patch.attachmentRefs !== undefined ? { attachmentRefs: patch.attachmentRefs } : {}),
+    ...(patch.attachments !== undefined ? { attachments: patch.attachments } : {}),
+    ...(patch.modelSelection !== undefined ? { modelSelection: patch.modelSelection } : {}),
+    ...(patch.mode !== undefined ? { mode: patch.mode } : {}),
+    ...(patch.planEnabled !== undefined ? { planEnabled: patch.planEnabled } : {}),
     ...(patch.queuePosition !== undefined || intent?.queuePosition !== undefined
       ? {
           order:

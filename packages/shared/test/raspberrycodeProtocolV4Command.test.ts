@@ -523,7 +523,6 @@ describe("raspberrycode-protocol-v4 command", () => {
     expect([...COMMANDS_REQUIRING_BASE_REVISION].sort()).toEqual(
       [
         "deleteQueueItem",
-        "editQueueItem",
         "editUserQuery",
         "revertUserQuery",
         "applyFileRewind",
@@ -540,6 +539,71 @@ describe("raspberrycode-protocol-v4 command", () => {
         "switchModelConfig",
       ].sort(),
     );
+  });
+
+  // 冻结编辑（docs/ui/composer-edit-mode.md）：editQueueItem 不走 CAS，并发保护是 CLI 编辑锁。
+  it("parses composer edit lock commands without CAS fields", () => {
+    const lock = parseCommandEnvelope({
+      commandId: "cmd-lock-1",
+      clientId: "client-1",
+      sessionId: "s-1",
+      type: "lockQueueItemEdit",
+      payload: { queueItemId: "q-1", editorId: "editor-1" },
+      issuedAt: 1000,
+    });
+    expect(lock.ok).toBe(true);
+
+    const release = parseCommandEnvelope({
+      commandId: "cmd-release-1",
+      clientId: "client-1",
+      sessionId: "s-1",
+      type: "releaseQueueItemEdit",
+      payload: { queueItemId: "q-1" },
+      issuedAt: 1000,
+    });
+    expect(release.ok).toBe(true);
+
+    const edit = parseCommandEnvelope({
+      commandId: "cmd-edit-1",
+      clientId: "client-1",
+      sessionId: "s-1",
+      type: "editQueueItem",
+      payload: {
+        queueItemId: "q-1",
+        newText: "改后文本",
+        editorId: "editor-1",
+        attachments: [],
+        mode: "build",
+        planEnabled: false,
+      },
+      issuedAt: 1000,
+    });
+    expect(edit.ok).toBe(true);
+    if (edit.ok) {
+      expect(edit.envelope.payload).toMatchObject({
+        queueItemId: "q-1",
+        newText: "改后文本",
+        editorId: "editor-1",
+        attachments: [],
+        mode: "build",
+        planEnabled: false,
+      });
+    }
+  });
+
+  it("requires newText on editQueueItem and a config field on applyQueueItemsConfig", () => {
+    expect(
+      commandPayloadSchemas.editQueueItem.safeParse({ queueItemId: "q-1" }).success,
+    ).toBe(false);
+    expect(
+      commandPayloadSchemas.applyQueueItemsConfig.safeParse({ queueItemIds: ["q-1"] }).success,
+    ).toBe(false);
+    expect(
+      commandPayloadSchemas.applyQueueItemsConfig.safeParse({
+        queueItemIds: ["q-1"],
+        mode: "plan",
+      }).success,
+    ).toBe(true);
   });
 
 

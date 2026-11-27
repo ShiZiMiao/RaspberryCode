@@ -8,6 +8,7 @@ import type {
   TurnId,
   ModelToolContract,
   PermissionBrokerPort,
+  PendingInputEditLock,
   SessionEventSink,
   SessionEventStorePort,
   SessionId,
@@ -169,6 +170,7 @@ export interface AgentRuntimeInternal
   activeTurnStartReservation?: ActiveTurnStartReservation;
   pendingInputSequence: number;
   pendingInputReservations: Map<string, string>;
+  pendingInputEditLocks: Map<string, PendingInputEditLock>;
   permissionFullAccessPending?: boolean;
   pendingInputDrains?: number;
   lastPermissionGrantId?: string;

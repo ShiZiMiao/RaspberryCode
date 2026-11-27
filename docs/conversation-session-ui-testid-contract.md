@@ -53,7 +53,7 @@ V4 formal E2E 读取的是产品协议 materialization，不复用旧 M3/M4 debu
   取消用 `TID_V4_COMPOSER_EDIT_CANCEL`，切换目标确认弹窗为 `TID_V4_COMPOSER_EDIT_SWITCH_DIALOG`（复用 ConfirmDialog，确认按钮 `TID_CONFIRM_DIALOG_CONFIRM`）。原位置占位为
   `TID_V4_EDIT_IN_COMPOSER_HINT + rowId` 与 `TID_V4_QUEUE_ITEM_EDIT_LOCK + queueItemId`（`data-edit-lock-owner=self|other`），
   queue `li` 暴露 `data-edit-locked`，远端锁的解除按钮为 `TID_V4_QUEUE_ITEM_RELEASE_EDIT + queueItemId`。
-  `TID_V4_EDIT_INPUT/SUBMIT/CANCEL/ATTACHMENT_REMOVE` 随行内编辑器在实现时删除。
+  `TID_V4_EDIT_INPUT/SUBMIT/CANCEL/ATTACHMENT_REMOVE` 已随行内编辑器删除，不得重新引入。
 
 ## 动态后缀规则
 

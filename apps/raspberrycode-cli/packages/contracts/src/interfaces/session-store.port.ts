@@ -1221,6 +1221,14 @@ export interface SessionStorePort {
       intent?: import("./session.port.js").TurnInputIntentMetadata;
       text?: string;
       queuePosition?: number;
+      /** composer 编辑态写回：附件引用与提交配置必须同步 durable intent。 */
+      attachmentRefs?: NonNullable<
+        import("./session.port.js").TurnInputIntentMetadata["attachmentRefs"]
+      >;
+      attachments?: import("./session.port.js").PendingTurnAttachment[];
+      modelSelection?: import("../model/model.js").ModelSelection;
+      mode?: import("./session.port.js").TurnInputIntentMetadata["mode"];
+      planEnabled?: boolean;
     }>;
   }): Promise<void>;
   /**

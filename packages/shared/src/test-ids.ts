@@ -720,14 +720,6 @@ export const TID_V4_REVERT_CONFIRM_DIALOG = "v4-revert-confirm-dialog";
 export const TID_V4_REVERT_CONFIRM = "v4-revert-confirm";
 /** v4 回退确认弹窗的取消按钮 */
 export const TID_V4_REVERT_CANCEL = "v4-revert-cancel";
-/** v4 user query 编辑输入框（动态后缀为 rowId） */
-export const TID_V4_EDIT_INPUT = "v4-edit-input";
-/** v4 user query 编辑提交按钮（动态后缀为 rowId） */
-export const TID_V4_EDIT_SUBMIT = "v4-edit-submit";
-/** v4 user query 编辑取消按钮（动态后缀为 rowId） */
-export const TID_V4_EDIT_CANCEL = "v4-edit-cancel";
-/** v4 user query 编辑附件删除按钮（动态后缀为 rowId-index） */
-export const TID_V4_EDIT_ATTACHMENT_REMOVE = "v4-edit-attachment-remove";
 export const TID_V4_EDIT_REWIND_WORKSPACE = "v4-edit-rewind-workspace";
 /** v4 edit 文件冲突弹窗 */
 export const TID_V4_EDIT_WORKSPACE_CONFLICT_DIALOG = "v4-edit-workspace-conflict-dialog";

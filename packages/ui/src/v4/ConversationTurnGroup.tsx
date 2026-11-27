@@ -19,7 +19,6 @@ import {
 } from "@raspberrycode/shared/test-ids";
 import type {
   ApiRetryState,
-  AttachmentRef,
   CommandAck,
   ConversationRowTarget,
   TurnHeaderRow,
@@ -79,6 +78,7 @@ import { readAssistantFeedback } from "@/v4/ConversationRowView.js";
 import type {
   AssistantFeedbackHandler,
   EditWorkspaceRewindAvailability,
+  UserInputEditHandler,
 } from "@/v4/ConversationRowView.js";
 import {
   isConversationReasoningRowVisible,
@@ -105,12 +105,7 @@ interface ConversationTurnGroupProps {
   onFork?: (target: ConversationRowTarget) => void;
   onRetry?: (target: ConversationRowTarget) => void;
   onFeedbackChange?: AssistantFeedbackHandler;
-  onEdit?: (
-    target: ConversationRowTarget,
-    newText: string,
-    attachments?: readonly AttachmentRef[],
-    workspaceMode?: "preserve" | "rewind",
-  ) => Promise<CommandAck | boolean | void> | CommandAck | boolean | void;
+  onEdit?: UserInputEditHandler;
   /** user 行「回退」入口（revertUserQuery）。可见性由 row.actions.canRevert 裁决。 */
   onRevert?: (target: ConversationRowTarget) => Promise<CommandAck | boolean | void> | CommandAck | boolean | void;
   /** 会话首轮：顶部留白由 Timeline 的状态胶囊 inset 提供，本轮不再留顶部 padding。 */

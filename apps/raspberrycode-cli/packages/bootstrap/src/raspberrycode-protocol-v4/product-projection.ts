@@ -47,6 +47,7 @@ import type {
   TurnSteerDeliveryChangedPayload,
   TurnSteerDiscardedPayload,
   TurnSteerDispatchChangedPayload,
+  TurnSteerEditLockChangedPayload,
   TurnSteerDrainedPayload,
   TurnSteerQueuedPayload,
   UserInputAutoResolutionUpdatedPayload,
@@ -158,6 +159,7 @@ import {
   mapCompactMarkerStatus,
   mapGoalStatus,
   mapTurnResultToHeaderState,
+  userInputSubmittedConfig,
 } from "./projection-rows.js";
 import {
   HYDRATION_TRACE_ID,
@@ -1571,6 +1573,8 @@ export class ProductProjection {
         return this.onTurnSteerDeliveryChanged(event);
       case SessionEventType.TurnSteerDispatchChanged:
         return this.onTurnSteerDispatchChanged(event);
+      case SessionEventType.TurnSteerEditLockChanged:
+        return this.onTurnSteerEditLockChanged(event);
       case SessionEventType.TurnSteerDrained:
         return this.onTurnSteerDrained(event);
       case SessionEventType.TurnSteerDiscarded:
@@ -2223,6 +2227,7 @@ export class ProductProjection {
         ...(rootSourceCommandId ? { rootSourceCommandId } : {}),
         ...(fact.inputOrigin ? { inputOrigin: fact.inputOrigin } : {}),
         ...(fact.conversationQuotes ? { conversationQuotes: fact.conversationQuotes } : {}),
+        ...userInputSubmittedConfig(fact),
         ...(fact.botGroupSource ? { botGroupSource: fact.botGroupSource } : {}),
         ...(fact.clientId ? { clientId: fact.clientId } : {}),
         ...(fact.workflowLaunch ? { workflowLaunch: fact.workflowLaunch } : {}),
@@ -3749,6 +3754,8 @@ export class ProductProjection {
       dispatch: { state: "queued" },
       automationId: payload.automationId ?? existing?.automationId,
       ...(payload.toolDisallowlist ? { toolDisallowlist: [...payload.toolDisallowlist] } : {}),
+      // 编辑事件不是重新准入；composer 编辑锁随项保留，直到显式解锁事件。
+      ...(existing?.editLock ? { editLock: existing.editLock } : {}),
       admittedAt: payload.intent?.admittedAt ?? existing?.admittedAt ?? this.ms(event),
     };
     // 投递语义侧表：payload 未带（旧 runtime 事件）时按当前 followupMode 兜底。
@@ -3794,6 +3801,27 @@ export class ProductProjection {
               ? { ...candidate, dispatch }
               : candidate,
           ),
+        }),
+      },
+    ];
+  }
+
+  private onTurnSteerEditLockChanged(event: SessionEvent): ConversationDelta[] {
+    const payload = event.payload as TurnSteerEditLockChangedPayload;
+    if (!this.snapshot.queue.items.some((item) => item.queueItemId === payload.pendingInputId)) {
+      return [];
+    }
+    return [
+      {
+        op: "state.updated",
+        patch: this.queuePatch({
+          ...this.snapshot.queue,
+          items: this.snapshot.queue.items.map((item) => {
+            if (item.queueItemId !== payload.pendingInputId) return item;
+            if (payload.editLock) return { ...item, editLock: { ...payload.editLock } };
+            const { editLock: _released, ...rest } = item;
+            return rest;
+          }),
         }),
       },
     ];
@@ -3918,6 +3946,9 @@ export class ProductProjection {
         ...(item.intent?.conversationQuotes
           ? { conversationQuotes: item.intent.conversationQuotes }
           : {}),
+        // Bug 根因：queue/guide drain 的 real-user 行同样可编辑，曾漏投影提交配置，编辑时被当作
+        // 旧消息沿用当前工具栏，重跑会静默换模型/权限。与 TurnStarted 共用投影。
+        ...userInputSubmittedConfig(item.intent),
         ...(item.intent?.botGroupSource ? { botGroupSource: item.intent.botGroupSource } : {}),
         ...(item.intent?.clientId ? { clientId: item.intent.clientId } : {}),
         ...(item.intent?.attachmentRefs?.length ? { attachments: item.intent.attachmentRefs } : {}),

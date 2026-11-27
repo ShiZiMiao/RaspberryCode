@@ -7,6 +7,8 @@ import { SessionEventType, type SessionEvent } from "@raspberrycode/contracts";
 import type { CommandEnvelope, QueueItem } from "@raspberrycode/shared/raspberrycode-protocol-v4";
 import { V4CommandExecutor } from "../src/raspberrycode-protocol-v4/commands/executor.js";
 import {
+  V4QueueEditLockLostError,
+  V4QueueItemEditLockedError,
   V4QueueItemTextUnavailableError,
   V4QueueItemReservedError,
   V4QueueItemNotEditableError,
@@ -53,11 +55,14 @@ function makeApp(overrides: Record<string, unknown> = {}) {
     markQueueItemPromoting: vi.fn().mockResolvedValue(true),
     releaseQueueItemReservation: vi.fn().mockResolvedValue(true),
     removeQueueItem: vi.fn().mockResolvedValue(true),
-    editQueueItem: vi.fn().mockResolvedValue(true),
+    editQueueItem: vi.fn().mockResolvedValue("edited"),
+    lockQueueItemEdit: vi.fn().mockResolvedValue("locked"),
+    releaseQueueItemEdit: vi.fn().mockResolvedValue(true),
     reorderQueueItem: vi.fn().mockResolvedValue(true),
     setQueueAutoDrain: vi.fn().mockResolvedValue(undefined),
     setFollowupMode: vi.fn().mockResolvedValue(undefined),
     runtime: {
+      getPendingInputEditLock: vi.fn(() => undefined),
       acquireForegroundPromotionLease: vi.fn().mockImplementation(({ leaseId }) => {
         if (foregroundPromotionLeaseId && foregroundPromotionLeaseId !== leaseId) {
           return { kind: "conflict", leaseId: foregroundPromotionLeaseId };
@@ -263,7 +268,195 @@ describe("v4 原生 queue 单项命令", () => {
     await new V4CommandExecutor(makeHost(record)).execute(
       envelope("editQueueItem", { queueItemId: "q-1", newText: "改后文本" }),
     );
-    expect(app.editQueueItem).toHaveBeenCalledWith("q-1", "改后文本");
+    expect(app.editQueueItem).toHaveBeenCalledWith("q-1", "改后文本", {});
+  });
+
+  it("editQueueItem：编辑态提交回写附件/模型/mode/planEnabled 并声明 editorId", async () => {
+    const app = makeApp();
+    const record = makeRecord({ app });
+    await new V4CommandExecutor(makeHost(record)).execute(
+      envelope("editQueueItem", {
+        queueItemId: "q-1",
+        newText: "改后文本",
+        editorId: "editor-1",
+        attachments: [{ ref: "/tmp/new.txt", fileName: "new.txt", mime: "text/plain", bytes: 3 }],
+        modelSelection: { providerId: "p2", modelId: "m2" },
+        mode: "build",
+        planEnabled: false,
+      }),
+    );
+    expect(app.editQueueItem).toHaveBeenCalledWith("q-1", "改后文本", {
+      editorId: "editor-1",
+      attachmentRefs: [
+        { ref: "/tmp/new.txt", fileName: "new.txt", mime: "text/plain", bytes: 3 },
+      ],
+      attachments: [
+        expect.objectContaining({ path: "/tmp/new.txt", filename: "new.txt", type: "file" }),
+      ],
+      modelSelection: { providerId: "p2", modelId: "m2" },
+      mode: "build",
+      planEnabled: false,
+      // 模型变了：入队时冻结的加速卡执行材料必须丢弃。
+      dropHighspeed: true,
+    });
+  });
+
+  it("editQueueItem：锁被他人持有/已丢失/项已消失分别给出可判别错误", async () => {
+    const editLocked = makeApp({ editQueueItem: vi.fn().mockResolvedValue("editLocked") });
+    await expect(
+      new V4CommandExecutor(makeHost(makeRecord({ app: editLocked }))).execute(
+        envelope("editQueueItem", { queueItemId: "q-1", newText: "x", editorId: "editor-1" }),
+      ),
+    ).rejects.toBeInstanceOf(V4QueueItemEditLockedError);
+
+    const lockLost = makeApp({ editQueueItem: vi.fn().mockResolvedValue("lockLost") });
+    await expect(
+      new V4CommandExecutor(makeHost(makeRecord({ app: lockLost }))).execute(
+        envelope("editQueueItem", { queueItemId: "q-1", newText: "x", editorId: "editor-1" }),
+      ),
+    ).rejects.toBeInstanceOf(V4QueueEditLockLostError);
+
+    const missing = makeApp({ editQueueItem: vi.fn().mockResolvedValue("missing") });
+    await expect(
+      new V4CommandExecutor(makeHost(makeRecord({ app: missing }))).execute(
+        envelope("editQueueItem", { queueItemId: "q-gone", newText: "x" }),
+      ),
+    ).rejects.toMatchObject({ reasonCode: "queue.itemMissing" });
+  });
+
+  it("lockQueueItemEdit：直驱 app.lockQueueItemEdit 并透传可信 inputOrigin", async () => {
+    const app = makeApp();
+    const record = makeRecord({ app });
+    await new V4CommandExecutor(makeHost(record)).execute({
+      ...envelope("lockQueueItemEdit", { queueItemId: "q-1", editorId: "editor-1" }),
+      clientId: "desktop-client",
+      inputOrigin: "desktop",
+    } as CommandEnvelope);
+    expect(app.lockQueueItemEdit).toHaveBeenCalledWith("q-1", {
+      editorId: "editor-1",
+      clientId: "desktop-client",
+      inputOrigin: "desktop",
+    });
+  });
+
+  it("lockQueueItemEdit：reserved/lockedByOther/missing 映射为可判别错误", async () => {
+    const reserved = makeApp({ lockQueueItemEdit: vi.fn().mockResolvedValue("reserved") });
+    await expect(
+      new V4CommandExecutor(makeHost(makeRecord({ app: reserved }))).execute(
+        envelope("lockQueueItemEdit", { queueItemId: "q-1", editorId: "editor-1" }),
+      ),
+    ).rejects.toBeInstanceOf(V4QueueItemReservedError);
+
+    const lockedByOther = makeApp({
+      lockQueueItemEdit: vi.fn().mockResolvedValue("lockedByOther"),
+    });
+    await expect(
+      new V4CommandExecutor(makeHost(makeRecord({ app: lockedByOther }))).execute(
+        envelope("lockQueueItemEdit", { queueItemId: "q-1", editorId: "editor-1" }),
+      ),
+    ).rejects.toBeInstanceOf(V4QueueItemEditLockedError);
+
+    const missing = makeApp({ lockQueueItemEdit: vi.fn().mockResolvedValue("missing") });
+    await expect(
+      new V4CommandExecutor(makeHost(makeRecord({ app: missing }))).execute(
+        envelope("lockQueueItemEdit", { queueItemId: "q-gone", editorId: "editor-1" }),
+      ),
+    ).rejects.toMatchObject({ reasonCode: "queue.itemMissing" });
+  });
+
+  it("lockQueueItemEdit：compact 项不可编辑", async () => {
+    const app = makeApp();
+    const host = makeHost(makeRecord({ app }), {
+      getQueueItem: vi
+        .fn()
+        .mockReturnValue(queueItem({ kind: "compact", text: "/compact", attachments: [] })),
+    });
+    await expect(
+      new V4CommandExecutor(host).execute(
+        envelope("lockQueueItemEdit", { queueItemId: "q-1", editorId: "editor-1" }),
+      ),
+    ).rejects.toBeInstanceOf(V4QueueItemNotEditableError);
+    expect(app.lockQueueItemEdit).not.toHaveBeenCalled();
+  });
+
+  it("releaseQueueItemEdit：解锁后重评自动续跑；未持锁 = noop", async () => {
+    const app = makeApp();
+    const host = makeHost(makeRecord({ app }));
+    await new V4CommandExecutor(host).execute(
+      envelope("releaseQueueItemEdit", { queueItemId: "q-1" }),
+    );
+    expect(app.releaseQueueItemEdit).toHaveBeenCalledWith("q-1");
+    expect(host.legacyMutations).toEqual(["queue_edit_lock_released"]);
+
+    const missing = makeApp({ releaseQueueItemEdit: vi.fn().mockResolvedValue(false) });
+    await expect(
+      new V4CommandExecutor(makeHost(makeRecord({ app: missing }))).execute(
+        envelope("releaseQueueItemEdit", { queueItemId: "q-1" }),
+      ),
+    ).rejects.toMatchObject({ reasonCode: "queue.editLockMissing" });
+  });
+
+  it("applyQueueItemsConfig：只改写仍在 queued 的普通项，全部跳过 = noop", async () => {
+    const app = makeApp();
+    const items = new Map([
+      ["q-1", queueItem({ queueItemId: "q-1" })],
+      ["q-compact", queueItem({ queueItemId: "q-compact", kind: "compact", text: "/compact" })],
+      [
+        "q-promoting",
+        queueItem({ queueItemId: "q-promoting", dispatch: { state: "promoting" } }),
+      ],
+    ]);
+    const host = makeHost(makeRecord({ app }), {
+      getQueueItem: vi.fn((_sessionId: string, id: string) => items.get(id) ?? null),
+    });
+    await new V4CommandExecutor(host).execute(
+      envelope("applyQueueItemsConfig", {
+        queueItemIds: ["q-1", "q-compact", "q-promoting", "q-gone"],
+        modelSelection: { providerId: "p2", modelId: "m2" },
+        mode: "build",
+      }),
+    );
+    expect(app.editQueueItem).toHaveBeenCalledTimes(1);
+    expect(app.editQueueItem).toHaveBeenCalledWith("q-1", undefined, {
+      modelSelection: { providerId: "p2", modelId: "m2" },
+      mode: "build",
+      dropHighspeed: true,
+    });
+
+    const noopApp = makeApp();
+    await expect(
+      new V4CommandExecutor(
+        makeHost(makeRecord({ app: noopApp }), {
+          getQueueItem: vi.fn().mockReturnValue(null),
+        }),
+      ).execute(
+        envelope("applyQueueItemsConfig", {
+          queueItemIds: ["q-gone"],
+          mode: "build",
+        }),
+      ),
+    ).rejects.toMatchObject({ reasonCode: "queue.itemMissing" });
+  });
+
+  it("冻结项拒绝删除/重排/立即发送", async () => {
+    const app = makeApp({
+      runtime: { getPendingInputEditLock: vi.fn(() => ({ editorId: "editor-1" })) },
+    });
+    const host = makeHost(makeRecord({ app }));
+    await expect(
+      new V4CommandExecutor(host).execute(envelope("deleteQueueItem", { queueItemId: "q-1" })),
+    ).rejects.toBeInstanceOf(V4QueueItemEditLockedError);
+    await expect(
+      new V4CommandExecutor(host).execute(
+        envelope("reorderQueueItem", { queueItemId: "q-1", beforeQueueItemId: null }),
+      ),
+    ).rejects.toBeInstanceOf(V4QueueItemEditLockedError);
+    await expect(
+      new V4CommandExecutor(host).execute(envelope("sendQueuedNow", { queueItemId: "q-1" })),
+    ).rejects.toBeInstanceOf(V4QueueItemEditLockedError);
+    expect(app.removeQueueItem).not.toHaveBeenCalled();
+    expect(app.reorderQueueItem).not.toHaveBeenCalled();
+    expect(app.sendInput).not.toHaveBeenCalled();
   });
 
   it("editQueueItem：typed compact 不可编辑，避免 kind 与可见文本分裂", async () => {
@@ -357,6 +550,27 @@ describe("v4 普通 queue 自动消费 goal gate", () => {
       ).toBe(true);
     },
   );
+
+  it("队首被 composer 编辑态冻结时停住，解锁后恢复自动消费", () => {
+    expect(
+      shouldAutoDrainV4QueueHead({
+        autoDrain: true,
+        dispatchState: "queued",
+        editLocked: true,
+        sessionBusy: false,
+        targetStatus: null,
+      }),
+    ).toBe(false);
+    expect(
+      shouldAutoDrainV4QueueHead({
+        autoDrain: true,
+        dispatchState: "queued",
+        editLocked: false,
+        sessionBusy: false,
+        targetStatus: null,
+      }),
+    ).toBe(true);
+  });
 });
 
 describe("v4 原生 sendQueuedNow", () => {

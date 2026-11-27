@@ -9847,7 +9847,7 @@ describe("AgentRuntime tool loop", () => {
         newText: "first edited",
         traceContext,
       }),
-    ).resolves.toBe(true);
+    ).resolves.toBe("edited");
     await expect(
       runtime.reorderPendingInput({
         pendingInputId: second.pendingInputId,
