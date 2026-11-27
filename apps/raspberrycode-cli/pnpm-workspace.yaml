@@ -1,6 +1,13 @@
 packages:
   - "packages/*"
   - "tools/*"
+  # 合并后 CLI 依赖这些仓库根 workspace 包；不纳入会让 CLI 无法独立安装（workspace:* 解析失败）。
+  - "../../packages/model-option-map"
+  - "../../packages/provider"
+  - "../../packages/provider-node"
+  - "../../packages/shared"
+  - "../../packages/raspberrycode-cua"
+  - "../../packages/formal-proof"
 
 supportedArchitectures:
   os:
