@@ -762,6 +762,13 @@ async function main() {
     "electron-builder.config.js",
     osBuilderFlagMap[os],
     archBuilderFlagMap[arch],
+    // 修复原因（2026-11-27）：配置里有 publish（GitHub），在 CI 环境变量或当前提交恰有 tag 时
+    // electron-builder 会隐式进入 onTag/onTagOrDraft 发布分支，因缺 GH_TOKEN 以
+    // "GitHub Personal Access Token is not set" 中断，产物虽然已生成却让整个打包失败。
+    // 本仓库的发布由 `gh release create/upload` 显式完成（见 docs/versioning.md），
+    // 打包阶段必须固定 --publish never，避免隐式上传与缺 token 失败。
+    "--publish",
+    "never",
   ];
 
   console.log(`[bundle] target=${os}/${arch}`);
