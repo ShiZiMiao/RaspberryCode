@@ -99,12 +99,25 @@ function main() {
   });
   child.stdout.on("data", () => {});
 
-  const cleanup = () => {
+  const cleanup = async () => {
     spawnSync("taskkill", ["/T", "/F", "/PID", String(child.pid)], {
       windowsHide: true,
       stdio: "ignore",
     });
-    rmSync(smokeRoot, { force: true, recursive: true });
+    // 修复原因（2026-11-27 实测）：taskkill 返回时目标进程可能仍持有临时目录句柄，
+    // 立即 rmSync 会在 Windows 抛 EPERM，冒烟脚本自己把构建判成失败（产物其实是正常的）。
+    // 清理属于尽力项：先等进程真正退出，再带重试删除；仍失败只告警，不影响冒烟结论。
+    const deadline = Date.now() + 5_000;
+    while (child.exitCode === null && child.signalCode === null && Date.now() < deadline) {
+      await new Promise((resolveWait) => setTimeout(resolveWait, 100));
+    }
+    try {
+      rmSync(smokeRoot, { force: true, recursive: true, maxRetries: 5, retryDelay: 200 });
+    } catch (error) {
+      console.warn(
+        `[smoke-packaged-app] 临时目录清理失败（不影响冒烟结论）: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   };
 
   return new Promise((resolvePromise) => {
@@ -114,7 +127,7 @@ function main() {
       exitedEarly = true;
       if (!evaluated) console.error(`[smoke-packaged-app] 进程提前退出 code=${code}`);
     });
-    setTimeout(() => {
+    setTimeout(async () => {
       evaluated = true;
       const failures = [];
       if (exitedEarly) failures.push("进程在观察窗内提前退出（模块加载崩溃、初始化失败，或与运行中的正式实例抢单实例锁）");
@@ -128,7 +141,7 @@ function main() {
           `存在标题为 Error 的异常弹窗窗口（pids: ${errorDialogs.map((e) => e.pid).join(",")}）`,
         );
       }
-      cleanup();
+      await cleanup();
       if (failures.length > 0) {
         console.error(`[smoke-packaged-app] FAILED:\n- ${failures.join("\n- ")}`);
         resolvePromise(1);
