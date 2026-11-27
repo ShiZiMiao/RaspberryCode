@@ -12,37 +12,19 @@ const processLifecycleTests = [
 ];
 const forkIsolatedTests = [
   ...processLifecycleTests,
-  // 真实显示进程树和独立配置读者都在 5 秒内等待启动；并发调度延迟曾触发截止。
-  // 放入串行组保留真实进程和原时限，避免把启动排队误判为资源隔离或读锁失败。
-  "packages/desktop/test/r3RemoteProcess.test.ts",
+  // 独立配置读者在 5 秒内等待启动；放入串行组保留真实进程和原时限。
   "packages/provider-node/test/personal-config-read-lock.test.ts",
-  // 原生 fs.watch 集成在批量并发时曾等不到通知；串行验证真实接线，去重逻辑由受控事件单测覆盖。
-  "packages/services/src/gen-ui/adapters/stateStorage.test.ts",
   // electron-builder 下载 NSIS 时把进程 stdio 传给子进程，不能使用 threads 的虚拟 stdio。
   "packages/desktop/test/windowsInstallerCompile.test.ts",
   // NSIS makensis 编译属重资源子进程：两个安装器用例并发编译曾互相打挂（单跑均过）。
   "packages/desktop/test/windowsInstallerNshSmoke.test.ts",
   "packages/desktop/test/windowsInstallerPreserveFiles.test.ts",
-  // 原生 fs.watch 通知在批量并发下曾等不到（单跑过），沿用 stateStorage 先例串行验证真实接线。
+  // 原生 fs.watch 通知在批量并发下曾等不到（单跑过），串行验证真实接线。
   "packages/services/test/subagentRuntimeConfigWatcher.test.ts",
   "packages/desktop/test/cdnPreloadScript.test.ts",
   "packages/desktop/test/desktopRuntimeEnv.test.ts",
   "packages/desktop/test/e2eDesktopBuildCache.test.ts",
-  "packages/desktop/test/migrateStableFeedScript.test.ts",
   "packages/desktop/test/pluginE2EAdmissionScripts.test.ts",
-  "packages/desktop/test/uploadOssScript.test.ts",
-  // 发布脚本会启动真实 Node/工具子进程，批量 threads 下曾打穿 30s；沿用发布类串行隔离。
-  "packages/desktop/test/notarizeMacosScript.test.ts",
-  "packages/desktop/test/publishReleaseScript.test.ts",
-  // 选源集成测试连续启动 Git、Bash 和 Node；并发启动排队会打穿 30s，沿用发布类串行隔离。
-  "packages/web/test/remoteFrontendBuildSource.test.ts",
-  // Sharp 闭包装配后要启动真实 Node 加载原生库；并行热启动曾触发其 15s 子进程限时。
-  "packages/desktop/test/dev-cua-plugin-runtime.test.ts",
-  // 全量并发时真实心跳与嵌套构建会被调度延迟打穿；单独运行均通过，沿用串行组保留原时限。
-  "packages/desktop/test/webRemoteControlTransport.test.ts",
-  "packages/web/test/webRemoteControlTransport.test.ts",
-  "packages/provider-node/test/builtin-provider-build.test.ts",
-  "packages/provider-node/test/builtin-provider-test-config-sync.test.ts",
   "packages/server/test/remoteDeploy.test.ts",
   // Bugfix: 该集成测试会启动数百个真实 Git 子进程；放在普通 threads 并发组会让
   // macOS 进程启动队列饥饿，表现为 git init 长时间停在 dyld_start。
