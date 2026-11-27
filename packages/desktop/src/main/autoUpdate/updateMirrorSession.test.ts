@@ -10,6 +10,11 @@ const DOWNLOAD_URL =
 /** 检查阶段的元数据请求：不带 /releases/download/ 段，旧实现会漏掉它。 */
 const ATOM_URL = "https://github.com/ShiZiMiao/RaspberryCode/releases.atom";
 const LATEST_URL = "https://github.com/ShiZiMiao/RaspberryCode/releases/latest";
+/** 路径式镜像：保留 owner/repo 路径，只替换源站。 */
+const MIRRORED_PREFIX = `${DEFAULT_UPDATE_MIRROR_PREFIX}ShiZiMiao/RaspberryCode/`;
+const MIRRORED_DOWNLOAD = `${MIRRORED_PREFIX}releases/download/v0.2.0/RaspberryCode-0.2.0-win-x64.exe`;
+const MIRRORED_ATOM = `${MIRRORED_PREFIX}releases.atom`;
+const MIRRORED_LATEST = `${MIRRORED_PREFIX}releases/latest`;
 
 /** 构造只记录调用的假 session，用来验证重定向行为而不依赖 Electron。 */
 function createFakeSession() {
@@ -49,7 +54,7 @@ describe("installUpdateMirrorRedirect", () => {
     });
 
     const result = fake.dispatch(DOWNLOAD_URL);
-    expect(result.redirectURL).toBe(`${DEFAULT_UPDATE_MIRROR_PREFIX}${DOWNLOAD_URL}`);
+    expect(result.redirectURL).toBe(MIRRORED_DOWNLOAD);
   });
 
   it("检查阶段三条请求全部改写（这是修复「检查更新失败」的关键）", () => {
@@ -60,13 +65,9 @@ describe("installUpdateMirrorRedirect", () => {
     });
 
     // 只改下载段的话，无代理用户会在第一条 atom 就超时，永远走不到下载。
-    expect(fake.dispatch(ATOM_URL).redirectURL).toBe(`${DEFAULT_UPDATE_MIRROR_PREFIX}${ATOM_URL}`);
-    expect(fake.dispatch(LATEST_URL).redirectURL).toBe(
-      `${DEFAULT_UPDATE_MIRROR_PREFIX}${LATEST_URL}`,
-    );
-    expect(fake.dispatch(DOWNLOAD_URL).redirectURL).toBe(
-      `${DEFAULT_UPDATE_MIRROR_PREFIX}${DOWNLOAD_URL}`,
-    );
+    expect(fake.dispatch(ATOM_URL).redirectURL).toBe(MIRRORED_ATOM);
+    expect(fake.dispatch(LATEST_URL).redirectURL).toBe(MIRRORED_LATEST);
+    expect(fake.dispatch(DOWNLOAD_URL).redirectURL).toBe(MIRRORED_DOWNLOAD);
   });
 
   it("镜像前缀可动态切换（getMirrorPrefix 优先于静态值）", () => {
@@ -79,10 +80,14 @@ describe("installUpdateMirrorRedirect", () => {
       mirrorPrefix: "https://ignored.example/",
     });
 
-    expect(fake.dispatch(DOWNLOAD_URL).redirectURL).toBe(`https://first.example/${DOWNLOAD_URL}`);
+    expect(fake.dispatch(DOWNLOAD_URL).redirectURL).toBe(
+      "https://first.example/ShiZiMiao/RaspberryCode/releases/download/v0.2.0/RaspberryCode-0.2.0-win-x64.exe",
+    );
     // 运行期切换（模拟用户改配置）：下一次请求立即生效
     prefix = "https://second.example/";
-    expect(fake.dispatch(DOWNLOAD_URL).redirectURL).toBe(`https://second.example/${DOWNLOAD_URL}`);
+    expect(fake.dispatch(DOWNLOAD_URL).redirectURL).toBe(
+      "https://second.example/ShiZiMiao/RaspberryCode/releases/download/v0.2.0/RaspberryCode-0.2.0-win-x64.exe",
+    );
     // 空串表示禁用镜像 → 不改写，等价直连
     prefix = "";
     expect(fake.dispatch(DOWNLOAD_URL).redirectURL).toBeUndefined();

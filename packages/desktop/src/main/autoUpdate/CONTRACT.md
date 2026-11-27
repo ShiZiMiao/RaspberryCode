@@ -19,11 +19,12 @@
   与状态机，`updateMirrorSession.ts` 负责 webRequest 接线。**mirror 阶段重写 github.com
   全站**（不只 /releases/download/），因为检查阶段第一条是 `releases.atom`，只拦下载会让
   无代理用户在第一条就超时。
-- **默认镜像固定为 `https://cdn.akaere.online/`**（2026-11-26 实测通过 atom /
-  releases/latest JSON / Range / latest.yml 四项判据），事实源是
+- **默认镜像固定为自建 `https://ghm.shizimiao.cc.cd/`**（2026-11-27 实测通过 atom /
+  releases/latest JSON / Range / latest.yml / descriptor 五项判据），事实源是
   `packages/shared/src/client-update/contract.ts` 的
   `DEFAULT_UPDATE_MIRROR_PREFIX`。`updateMirror.ts` 只是重新导出，**不要在这里重新定义**。
   远程资产下载（`packages/server/src/remote/remoteAssetCdn.ts`）共用同一常量。
+  镜像是**路径式**（`https://<mirror>/<owner>/<repo>/...`），与「前缀 + 完整原 URL」互不兼容。
   > 0.2.9 回归教训：`gh-proxy.org` 对 `releases/latest` 返回镜像首页 HTML，
   > GitHubProvider 解析 JSON 失败，检查更新直接报错。选镜像必须实测这一条。
 - **镜像前缀可配置**：由 `AppSettings.updateMirrorPrefix` 提供，`updateMirrorSession` 通过

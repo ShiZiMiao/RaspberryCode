@@ -3,7 +3,7 @@
  *
  * 为什么在这一层：electron-updater 的 GitHubProvider 下载 URL 由 baseUrl 拼装，
  * resolveFiles 是私有方法、createClient 也不可注入，无法靠 PublishConfiguration
- * 接入「前缀 + 完整原 URL」形态的镜像（实测只换 host 会 403）。
+ * 接入路径式镜像（`https://<mirror>/<owner>/<repo>/...`）。
  * onBeforeRequest 的 redirectURL 是唯一无需 fork 依赖的接入点。
  *
  * 约束：

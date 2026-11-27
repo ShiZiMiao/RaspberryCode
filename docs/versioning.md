@@ -159,7 +159,11 @@ gh release upload v<version> --repo ShiZiMiao/RaspberryCode \
 | 远程资产 | `packages/server/src/remote/remoteAssetCdn.ts` 的 `withGithubMirror` | `releases/download/...` |
 
 **默认镜像的唯一事实源**：`packages/shared/src/client-update/contract.ts` 的
-`DEFAULT_UPDATE_MIRROR_PREFIX`（`https://cdn.akaere.online/`）。两边都从这里取，改一处即两边生效。
+`DEFAULT_UPDATE_MIRROR_PREFIX`（`https://ghm.shizimiao.cc.cd/`）。两边都从这里取，改一处即两边生效。
+
+镜像形态是**路径式**：`https://<mirror>/<owner>/<repo>/...`，即保留 GitHub 路径、只替换源站。
+它与早期的「前缀 + 完整原 URL」（`https://<mirror>/https://github.com/...`）互不兼容，
+后者打到路径式镜像会 404。
 
 为什么要共用：两条链路是两个包、两个进程、两套网络栈（前者走 Electron `webRequest`，
 后者走 Host 子进程 undici，`Session.setProxy` 影响不到它），代码无法复用，
@@ -169,17 +173,18 @@ gh release upload v<version> --repo ShiZiMiao/RaspberryCode \
 共同语义是**镜像在前、直连兜底在后，绝不把镜像作唯一候选**。
 客户端自更新的回退链路固定为 `mirror → direct → manual`。
 
-默认镜像 `https://cdn.akaere.online/` 在 2026-11-26 实测通过四项硬条件：
+默认镜像 `https://ghm.shizimiao.cc.cd/`（自建）在 2026-11-27 实测通过五项硬条件：
 1. 能代理 `releases.atom` 且响应体是真实 Atom XML（含 `<feed>`）；
 2. 能代理 `releases/latest`，带 `Accept: application/json` 时返回含 `tag_name` 的 JSON；
-3. 支持单 Range（206 且长度等于请求区间）；
-4. 能正确返回含 `version` + `sha512` 的 `latest.yml`。
+3. 支持单 Range（206 且长度等于请求区间，首块为真实文件头）；
+4. 能正确返回含 `version` + `sha512` 的 `latest.yml`；
+5. 能返回 `source-server-release.json` 服务端发布描述符。
 
 第 2 条是 0.2.9 的回归点：`gh-proxy.org` 对 `releases/latest` 返回镜像首页 HTML，
 检查更新会直接报错。选镜像时必须实测这一条，只看状态码 200 不够。
 
 镜像失效时用户可在设置里覆盖 `updateMirrorPrefix`（空串 = 只走直连），
-无需发版。不再维护发版前探测与候选列表。
+无需发版；覆盖值同样必须是路径式镜像根。不再维护发版前探测与候选列表。
 
 ## 发版检查清单
 

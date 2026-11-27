@@ -76,9 +76,11 @@ describe("remoteAssetCdn GitHub 镜像候选", () => {
     expect(isGithubReleaseDownloadUrl("https://github.com/o/r/releases/tag/v1")).toBe(false);
   });
 
-  it("镜像地址应为「前缀 + 完整原 URL」，且不重复前缀", () => {
+  it("镜像地址应为「替换源站、保留路径」，且不重复前缀", () => {
     const mirrored = toRemoteAssetMirrorUrl(GITHUB_ASSET, "https://ghfast.top/");
-    expect(mirrored).toBe(`https://ghfast.top/${GITHUB_ASSET}`);
+    expect(mirrored).toBe(
+      "https://ghfast.top/ShiZiMiao/RaspberryCode/releases/download/v0.2.5/raspberrycode-server-linux-x64.tar.gz",
+    );
     // 已经是镜像地址时必须幂等，否则回退链会拼出 https://m/https://m/https://...
     expect(toRemoteAssetMirrorUrl(mirrored, "https://ghfast.top/")).toBe(mirrored);
   });
@@ -90,7 +92,10 @@ describe("remoteAssetCdn GitHub 镜像候选", () => {
 
   it("镜像候选应排在直连之前，并保留直连兜底", () => {
     const urls = withGithubMirror([GITHUB_ASSET], "https://ghfast.top/");
-    expect(urls).toEqual([`https://ghfast.top/${GITHUB_ASSET}`, GITHUB_ASSET]);
+    expect(urls).toEqual([
+      "https://ghfast.top/ShiZiMiao/RaspberryCode/releases/download/v0.2.5/raspberrycode-server-linux-x64.tar.gz",
+      GITHUB_ASSET,
+    ]);
     // 关键不变量：直连必须仍在候选里。镜像服务稳定性不受我们控制，
     // 缺兜底会让镜像挂掉时远端升级直接失败。
     expect(urls).toContain(GITHUB_ASSET);
@@ -100,7 +105,7 @@ describe("remoteAssetCdn GitHub 镜像候选", () => {
     const cdn = "https://cdn.example.com/raspberrycode/electron/releases/0.2.5/x.tar.gz";
     const urls = withGithubMirror([GITHUB_ASSET, cdn], "https://ghfast.top/");
     expect(urls.filter((url) => url.startsWith("https://ghfast.top/"))).toEqual([
-      `https://ghfast.top/${GITHUB_ASSET}`,
+      "https://ghfast.top/ShiZiMiao/RaspberryCode/releases/download/v0.2.5/raspberrycode-server-linux-x64.tar.gz",
     ]);
     expect(urls).toContain(cdn);
   });
@@ -111,15 +116,18 @@ describe("remoteAssetCdn GitHub 镜像候选", () => {
     const urls = withGithubMirror([GITHUB_ASSET, second], "https://ghfast.top/");
     // 逐个文件交错会让每个文件都先吃一次镜像失败，这里要求整体分段。
     expect(urls.slice(0, 2)).toEqual([
-      `https://ghfast.top/${GITHUB_ASSET}`,
-      `https://ghfast.top/${second}`,
+      "https://ghfast.top/ShiZiMiao/RaspberryCode/releases/download/v0.2.5/raspberrycode-server-linux-x64.tar.gz",
+      "https://ghfast.top/ShiZiMiao/RaspberryCode/releases/download/v0.2.5/raspberrycode-server-linux-arm64.tar.gz",
     ]);
     expect(urls.slice(2)).toEqual([GITHUB_ASSET, second]);
   });
 
   it("同一 URL 重复传入不产生重复候选", () => {
     const urls = withGithubMirror([GITHUB_ASSET, GITHUB_ASSET], "https://ghfast.top/");
-    expect(urls).toEqual([`https://ghfast.top/${GITHUB_ASSET}`, GITHUB_ASSET]);
+    expect(urls).toEqual([
+      "https://ghfast.top/ShiZiMiao/RaspberryCode/releases/download/v0.2.5/raspberrycode-server-linux-x64.tar.gz",
+      GITHUB_ASSET,
+    ]);
   });
 });
 
@@ -173,7 +181,7 @@ describe("remoteAssetCdn 带版本段的发布根", () => {
  * 与客户端自更新共用默认镜像（2026-11-26）。
  *
  * 背景：这里原本固定写着 `https://ghfast.top/`，而它早已对 atom 返回 403、
- * 下载速度也大幅劣化。客户端那边已固定为 `https://cdn.akaere.online/`，
+ * 下载速度也大幅劣化。客户端那边已固定为自建 `https://ghm.shizimiao.cc.cd/`，
  * 若远程资产仍用旧的写死值，就会出现「客户端已切到新镜像、远程升级还在用旧镜像」。
  *
  * 因此默认前缀的事实源上移到 `@raspberrycode/shared/client-update`，两边共用一份。
@@ -185,7 +193,10 @@ describe("withGithubMirror 与客户端共用默认镜像", () => {
 
   it("默认使用 shared 的单一镜像前缀", () => {
     const out = withGithubMirror([ASSET]);
-    expect(out).toEqual([`${DEFAULT_UPDATE_MIRROR_PREFIX}${ASSET}`, ASSET]);
+    expect(out).toEqual([
+      `${DEFAULT_UPDATE_MIRROR_PREFIX}ShiZiMiao/RaspberryCode/releases/download/v0.2.8/pkg-linux-x64.tar.gz`,
+      ASSET,
+    ]);
   });
 
   it("直连永远排在最后，不会被镜像挤掉（镜像挂了仍能升级）", () => {

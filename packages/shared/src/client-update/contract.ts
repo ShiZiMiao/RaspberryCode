@@ -89,7 +89,11 @@ export const DEFAULT_UPDATE_FEED_GITHUB = {
 /**
  * 默认更新镜像前缀——**两条下载链路的唯一事实源**。
  *
- * 形态是「前缀 + 完整原 URL」：`https://cdn.akaere.online/https://github.com/...`。
+ * 形态是「路径式」：镜像保留 GitHub 的 `<owner>/<repo>/...` 路径，只替换源站，
+ * 即 `https://<mirror>/<owner>/<repo>/...`。注意这与早期的「前缀 + 完整原 URL」
+ * （`https://<mirror>/https://github.com/...`）不同：两种形态互不兼容，
+ * 路径式镜像拿到后者会直接 404。
+ *
  * 只对 GitHub 的 release 资产与元数据请求有效，自建 CDN 不加。
  *
  * 为什么放在 shared 而不是各自的包里：客户端自更新（`desktop/.../updateMirror.ts`）
@@ -99,12 +103,13 @@ export const DEFAULT_UPDATE_FEED_GITHUB = {
  * 若各自维护一份，必然出现「一边已切换到新镜像、另一边还在用旧镜像」的错位。
  *
  * 为什么固定一家：维护「发版前探测 30+ 家 → 按速度取前 3 → 运行时候选轮换」的
- * 成本高于收益。2026-11-26 实测 `https://cdn.akaere.online/` 通过四项硬条件：
+ * 成本高于收益。2026-11-27 实测自建镜像 `https://ghm.shizimiao.cc.cd/` 通过五项硬条件：
  *   1. 能代理 `releases.atom`，且响应体是真实 Atom XML（含 `<feed>`）；
  *   2. 能代理 `releases/latest`，且带 `Accept: application/json` 时返回含
  *      `tag_name` 的 JSON（electron-updater 的 GitHubProvider 靠它取最新 tag）；
- *   3. 支持单 Range（206 且长度等于请求区间）；
- *   4. 能正确返回含 `version` + `sha512` 的 `latest.yml`。
+ *   3. 支持单 Range（206 且长度等于请求区间，首块为真实文件头）；
+ *   4. 能正确返回含 `version` + `sha512` 的 `latest.yml`；
+ *   5. 能返回 `source-server-release.json` 描述符（远程资产链路同源）。
  *
  * 第 2 条是 0.2.9 的回归点：`gh-proxy.org` 对 `releases/latest` 会 301 到
  * `gh-proxy.com/https:/github.com/...`（单斜杠）并返回镜像首页 HTML，
@@ -113,6 +118,7 @@ export const DEFAULT_UPDATE_FEED_GITHUB = {
  *
  * 失败链路固定为 `mirror → direct → manual`：镜像失败直接走 GitHub 直连，
  * 直连也失败才进入手动下载。镜像失效时可通过 setting.json 的
- * `updateMirrorPrefix` 覆盖或设为空串（只走直连），无需发版。
+ * `updateMirrorPrefix` 覆盖或设为空串（只走直连），无需发版；
+ * 覆盖值同样必须是路径式镜像根（`https://<mirror>/`）。
  */
-export const DEFAULT_UPDATE_MIRROR_PREFIX = "https://cdn.akaere.online/";
+export const DEFAULT_UPDATE_MIRROR_PREFIX = "https://ghm.shizimiao.cc.cd/";

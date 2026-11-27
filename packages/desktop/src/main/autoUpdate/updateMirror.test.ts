@@ -62,16 +62,32 @@ describe("isGithubMirrorTarget（新语义，覆盖检查阶段）", () => {
 });
 
 describe("toMirrorUrl", () => {
-  // 注意：本 describe 里的 `https://gh-proxy.com` 只是**任取的样例前缀**，
-  // 用于验证「前缀 + 完整原 URL」的拼接与末尾斜杠归一化，
+  // 注意：本 describe 里的 `https://ghfast.top` 只是**任取的样例前缀**，
+  // 用于验证路径式拼接（保留 owner/repo 路径、只替换源站）与末尾斜杠归一化，
   // 不代表默认镜像。默认镜像是 `DEFAULT_UPDATE_MIRROR_PREFIX`。
-  it("前缀 + 完整原 URL（镜像要求保留 https://github.com 整段）", () => {
-    expect(toMirrorUrl(DOWNLOAD_URL, "https://gh-proxy.com")).toBe(
-      `https://gh-proxy.com/${DOWNLOAD_URL}`,
+  it("路径式：保留 owner/repo 路径，只替换源站", () => {
+    expect(toMirrorUrl(DOWNLOAD_URL, "https://ghfast.top")).toBe(
+      "https://ghfast.top/ShiZiMiao/RaspberryCode/releases/download/v0.1.0/RaspberryCode-0.1.0-win-x64.exe",
     );
-    expect(toMirrorUrl(DOWNLOAD_URL, "https://gh-proxy.com/")).toBe(
-      `https://gh-proxy.com/${DOWNLOAD_URL}`,
+    expect(toMirrorUrl(DOWNLOAD_URL, "https://ghfast.top/")).toBe(
+      "https://ghfast.top/ShiZiMiao/RaspberryCode/releases/download/v0.1.0/RaspberryCode-0.1.0-win-x64.exe",
     );
+  });
+
+  it("检查阶段元数据请求同样改写，且保留查询串", () => {
+    expect(toMirrorUrl("https://github.com/o/r/releases.atom", "https://m.example/")).toBe(
+      "https://m.example/o/r/releases.atom",
+    );
+    expect(toMirrorUrl("https://github.com/o/r/releases/download/v1/a?x=1", "https://m.example/")).toBe(
+      "https://m.example/o/r/releases/download/v1/a?x=1",
+    );
+  });
+
+  it("非 github.com 地址与畸形 URL 不改写", () => {
+    expect(toMirrorUrl("https://api.github.com/repos/o/r/releases", "https://m.example/")).toBe(
+      "https://api.github.com/repos/o/r/releases",
+    );
+    expect(toMirrorUrl("not a url", "https://m.example/")).toBe("not a url");
   });
 
   it("空前缀不改写（等价直连）", () => {
@@ -79,22 +95,22 @@ describe("toMirrorUrl", () => {
     expect(toMirrorUrl(DOWNLOAD_URL, "   ")).toBe(DOWNLOAD_URL);
   });
 
-  it("默认镜像固定为 cdn.akaere.online，且形状合法", () => {
-    expect(DEFAULT_UPDATE_MIRROR_PREFIX).toBe("https://cdn.akaere.online/");
+  it("默认镜像固定为自建 ghm.shizimiao.cc.cd，且形状合法", () => {
+    expect(DEFAULT_UPDATE_MIRROR_PREFIX).toBe("https://ghm.shizimiao.cc.cd/");
     const url = new URL(DEFAULT_UPDATE_MIRROR_PREFIX);
     // 必须是 https：http 前缀会被 Electron 当作不安全重定向拒绝。
     expect(url.protocol).toBe("https:");
     // 必须以 / 结尾：前缀拼接语义依赖它（toMirrorUrl 会补，但常量里写清更不易错）。
     expect(DEFAULT_UPDATE_MIRROR_PREFIX.endsWith("/")).toBe(true);
-    // 必须只是 origin，不带路径：带路径会让「前缀 + 完整原 URL」拼出错误地址。
+    // 路径式镜像是「镜像根 + GitHub 路径」，所以镜像根本身必须只是 origin。
     expect(url.pathname).toBe("/");
   });
 });
 
 describe("resolveDownloadUrl", () => {
-  it("mirror 走镜像前缀", () => {
-    expect(resolveDownloadUrl(DOWNLOAD_URL, "mirror", "https://gh-proxy.com/")).toBe(
-      `https://gh-proxy.com/${DOWNLOAD_URL}`,
+  it("mirror 走路径式镜像前缀", () => {
+    expect(resolveDownloadUrl(DOWNLOAD_URL, "mirror", "https://ghfast.top/")).toBe(
+      "https://ghfast.top/ShiZiMiao/RaspberryCode/releases/download/v0.1.0/RaspberryCode-0.1.0-win-x64.exe",
     );
   });
 

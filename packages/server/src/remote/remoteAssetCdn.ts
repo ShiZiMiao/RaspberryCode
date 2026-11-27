@@ -57,9 +57,10 @@ export function buildReleaseBaseCandidates(remoteCdnBaseUrls: string[], version:
  * 一次远端升级要等十几分钟。**这与应用更新遇到的是同一个网络问题、同一批镜像**。
  * 若两边各写一份，必然出现「客户端已切到新镜像、远程资产还在用旧镜像」的错位。
  *
- * 镜像形态是「前缀 + 完整原 URL」（`https://<mirror>/https://github.com/...`），
- * 只对 GitHub 的 release 资产下载有效，因此仅当 URL 落在 github.com 的
- * `/<owner>/<repo>/releases/download/` 路径下才追加候选。自建 CDN/OSS 不加。
+ * 镜像形态是「路径式」：保留 GitHub 的 `/<owner>/<repo>/releases/download/` 路径，
+ * 只替换源站（`https://<mirror>/<owner>/<repo>/...`）。只对 GitHub 的 release 资产
+ * 下载有效，因此仅当 URL 落在 github.com 的 `/<owner>/<repo>/releases/download/`
+ * 路径下才追加候选。自建 CDN/OSS 不加。
  */
 export const DEFAULT_REMOTE_ASSET_MIRROR_PREFIX: string = DEFAULT_UPDATE_MIRROR_PREFIX;
 
@@ -74,7 +75,7 @@ export function isGithubReleaseDownloadUrl(rawUrl: string): boolean {
   }
 }
 
-/** 把 GitHub 下载地址改写为镜像地址；前缀为空或非 GitHub 地址时原样返回。 */
+/** 把 GitHub 下载地址改写为路径式镜像地址；前缀为空或非 GitHub 地址时原样返回。 */
 export function toRemoteAssetMirrorUrl(rawUrl: string, mirrorPrefix: string): string {
   const prefix = mirrorPrefix.trim();
   if (!prefix) return rawUrl;
@@ -82,7 +83,8 @@ export function toRemoteAssetMirrorUrl(rawUrl: string, mirrorPrefix: string): st
   // 已经是镜像地址时不重复加前缀（否则回退链会拼出 https://m/https://m/https://...）。
   if (rawUrl.startsWith(prefix.endsWith("/") ? prefix : `${prefix}/`)) return rawUrl;
   const normalizedPrefix = prefix.endsWith("/") ? prefix : `${prefix}/`;
-  return `${normalizedPrefix}${rawUrl}`;
+  const parsed = new URL(rawUrl);
+  return `${normalizedPrefix}${parsed.pathname.replace(/^\/+/u, "")}${parsed.search}`;
 }
 
 /**
