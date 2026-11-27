@@ -712,7 +712,7 @@ describe("BU-E2E-021：内置浏览器设计工具", () => {
     const beforeForge = await readFile(richFile, "utf-8");
     await guestEval(
       LOCAL_GUEST_PREFIX,
-      `(() => { for (const events of [[{ type: "edit-commit", property: "text", value: "E2E_FORGED" }], [{ type: "history", redo: false }]]) window.postMessage({ __zcodeDesign: 1, events }, "*"); return true; })()`,
+      `(() => { for (const events of [[{ type: "edit-commit", property: "text", value: "E2E_FORGED" }], [{ type: "history", redo: false }]]) window.postMessage({ __raspberrycodeDesign: 1, events }, "*"); return true; })()`,
     );
     await browser.pause(2_000);
     if ((await readFile(richFile, "utf-8")) !== beforeForge) {

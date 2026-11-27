@@ -210,6 +210,12 @@ export function resolvePreinstalledToolsTestBuild(
 
 function createSharedDefines() {
   return {
+    // 修复原因（2026-11-27，合并上游 v4.0.0 时丢了 define）：preinstalled-tools 的 E2E 开关
+    // 只有 declare、没有定义，源码被原样打进 out/preinstalled-tools/process.js 后在生产机会抛
+    // ReferenceError（顶层即读取），同时残留品牌串触发中立性审计 P0。这里恢复构建期注入。
+    __RASPBERRYCODE_PREINSTALL_TEST_BUILD__: JSON.stringify(
+      resolvePreinstalledToolsTestBuild(process.env),
+    ),
     __RASPBERRYCODE_VERSION__: JSON.stringify(buildMetadata.appVersion),
     __RASPBERRYCODE_MIN_COMPATIBLE_VERSION__: JSON.stringify(buildMetadata.minCompatibleVersion),
     __RASPBERRYCODE_COMMIT__: JSON.stringify(buildMetadata.buildCommitId),

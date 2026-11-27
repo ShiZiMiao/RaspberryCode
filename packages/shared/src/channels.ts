@@ -549,7 +549,7 @@ export const EmbeddedBrowserWebviewChannels = {
 
 /** 设计运行时 postMessage 信封：`{ [messageKey]: 1, events: unknown[] }`；events 序列化后超过上限（UTF-8 字节）的消息 preload 直接丢弃。 */
 export const EMBEDDED_BROWSER_DESIGN_BRIDGE = {
-  messageKey: "__zcodeDesign",
+  messageKey: "__raspberrycodeDesign",
   maxMessageBytes: 256 * 1024,
 } as const;
 

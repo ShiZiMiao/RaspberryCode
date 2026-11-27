@@ -102,3 +102,6 @@ launch-rc.bat
 # 上面的 `.tmp-verify/` 只匹配那个具体目录，带 `-` 后缀的其他临时文件会漏网，
 # 导致 pre-push 的「工作区不干净」误拦（0.2.8 发版时实测）。
 /.tmp-*
+
+# 打包期生成的 NSIS define（含本机绝对路径），不得入库
+packages/desktop/build/generated/

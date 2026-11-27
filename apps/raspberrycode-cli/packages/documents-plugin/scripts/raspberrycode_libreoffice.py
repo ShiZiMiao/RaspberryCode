@@ -241,7 +241,7 @@ async def _prepare_recalculation(profile: Path, filename: Path):
     macro = profile / 'user/basic/Standard/RaspberryCode.xba'
     text = await asyncio.to_thread(macro.read_text, encoding='utf-8')
     # file URL 会编码引号和中文；不把原始文件名拼进 Basic 代码。
-    text = text.replace('__ZCODE_INPUT_URI__', source.as_uri()).replace('__ZCODE_RECEIPT_URI__', receipt.as_uri())
+    text = text.replace('__RASPBERRYCODE_INPUT_URI__', source.as_uri()).replace('__RASPBERRYCODE_RECEIPT_URI__', receipt.as_uri())
     await asyncio.to_thread(macro.write_text, text, encoding='utf-8')
     return receipt
 

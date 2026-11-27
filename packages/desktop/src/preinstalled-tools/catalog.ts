@@ -5,7 +5,7 @@ import {
 } from "@raspberrycode/shared/preinstalled-tools";
 import preinstalledToolCatalog from "@desktop/preinstalled-tools/catalog.json" with { type: "json" };
 
-declare const __ZCODE_PREINSTALL_TEST_BUILD__: boolean;
+declare const __RASPBERRYCODE_PREINSTALL_TEST_BUILD__: boolean;
 
 const PREINSTALLED_TOOLS_CDN_BASE_URL = "https://cdn-raspberrycode.z.ai/raspberrycode/preinstalled-tools";
 const PREINSTALLED_TOOLS_CDN_BASE_URL_ENV = "RASPBERRYCODE_PREINSTALLED_TOOLS_CDN_BASE_URL";
@@ -31,7 +31,7 @@ export async function loadPreinstalledToolsCatalog(logger: {
 }): Promise<PreinstalledToolConfiguration[] | null> {
   try {
     const catalog: unknown =
-      __ZCODE_PREINSTALL_TEST_BUILD__ && process.env.RASPBERRYCODE_E2E_PREINSTALLED_TOOLS_CATALOG
+      __RASPBERRYCODE_PREINSTALL_TEST_BUILD__ && process.env.RASPBERRYCODE_E2E_PREINSTALLED_TOOLS_CATALOG
         ? JSON.parse(await readFile(process.env.RASPBERRYCODE_E2E_PREINSTALLED_TOOLS_CATALOG, "utf8"))
         : preinstalledToolCatalog;
     const { tools, downloadBaseUrlsError } = resolvePreinstalledToolsCatalog(

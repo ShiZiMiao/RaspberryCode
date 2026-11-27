@@ -193,7 +193,7 @@ describe("BU-E2E-023：内置浏览器设备预设、导出、file:// 自动刷�
       pagePrefix,
       `(() => { const frame = document.createElement("iframe");
         frame.srcdoc = ${JSON.stringify(
-          `<script>parent.postMessage({ __zcodeDesign: 1, events: [{ type: "slide-changed", index: 1, count: ${SLIDE_COUNT} }] }, "*");</script>`,
+          `<script>parent.postMessage({ __raspberrycodeDesign: 1, events: [{ type: "slide-changed", index: 1, count: ${SLIDE_COUNT} }] }, "*");</script>`,
         )};
         document.body.appendChild(frame); return true; })()`,
     );
@@ -394,7 +394,7 @@ async function postSlideChanged(index: number, padding?: string): Promise<void> 
   };
   await guestEval(
     pagePrefix,
-    `window.postMessage({ __zcodeDesign: 1, events: [${JSON.stringify(event)}] }, "*"); true`,
+    `window.postMessage({ __raspberrycodeDesign: 1, events: [${JSON.stringify(event)}] }, "*"); true`,
   );
   if (padding) {
     await browser.pause(2_000);

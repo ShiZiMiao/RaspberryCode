@@ -30,7 +30,7 @@ export function installDesignRuntime(
   inspector: ElementInspector,
   readSignals: (maxCount: number) => DesignPageSignals,
 ): DesignRuntimeReply<DesignPageInfo> {
-  const stateKey = "__zcodeDesignRuntime";
+  const stateKey = "__raspberrycodeDesignRuntime";
   type RuntimeHandle = {
     version: string;
     run: (command: DesignRuntimeCommand) => DesignRuntimeReply;

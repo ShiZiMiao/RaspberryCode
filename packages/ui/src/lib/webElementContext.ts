@@ -8,7 +8,7 @@ export const WEB_ELEMENT_CONTEXT_ADD_TO_CHAT_EVENT = "raspberrycode:web-element-
 export const WEB_ELEMENT_CONTEXT_REMOVE_FROM_CHAT_EVENT =
   "raspberrycode:web-element-context-remove-from-chat";
 /** 事件 detail 上的标记键：只更新已有的同 id 引用（不新加） */
-export const WEB_ELEMENT_CONTEXT_UPDATE_ONLY = "__zcodeUpdateOnly";
+export const WEB_ELEMENT_CONTEXT_UPDATE_ONLY = "__raspberrycodeUpdateOnly";
 /** 输入框里用户删掉了引用（与上面「浏览器要求撤回」方向相反）；浏览器设计工具据此取消页面上的选中 */
 export const WEB_ELEMENT_CONTEXTS_REMOVED_EVENT = "raspberrycode:web-element-contexts-removed";
 

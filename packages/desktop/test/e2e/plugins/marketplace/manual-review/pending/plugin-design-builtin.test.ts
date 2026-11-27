@@ -109,7 +109,7 @@ describe("PLM-DESIGN-001 Design 默认关闭与选择元素安装引导", () => 
     await clickPluginControl("plugin-store-card", { pluginId: DESIGN_ID });
     await setPluginEnabledThroughUi(DESIGN_ID, false);
     await browser.waitUntil(
-      async () => (await guestEval(origin, "typeof window.__zcodeDesignRuntime")) === "undefined",
+      async () => (await guestEval(origin, "typeof window.__raspberrycodeDesignRuntime")) === "undefined",
       { timeout: 10_000, timeoutMsg: "停用后原页面的设计运行时应卸下" },
     );
   });
